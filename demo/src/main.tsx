@@ -193,8 +193,7 @@ function App() {
   }
 
   function focusFromChange(before: JsonDoc, after: JsonDoc, nextFocusIds = diffFocusIds(before, after)) {
-    const selectedCandidate = firstVisibleFocusId(after, nextFocusIds) ?? selectedId;
-    const recovered = recoverFocus(after, nextFocusIds, selectedCandidate);
+    const recovered = recoverChangeFocus(after, nextFocusIds, selectedId);
 
     setSelectedId(recovered.selectedId);
     setFocusedIds(recovered.focusedIds);
@@ -969,6 +968,16 @@ function recoverFocus(doc: JsonDoc, focusedIds: NodeId[], selectedId: NodeId) {
   };
 }
 
+function recoverChangeFocus(doc: JsonDoc, focusedIds: NodeId[], fallbackId: NodeId) {
+  const existingFocusIds = uniqueIds(focusedIds.filter((id) => doc.nodes[id] !== undefined));
+  const selectedId = firstVisibleFocusId(doc, existingFocusIds) ?? firstExisting(doc, existingFocusIds) ?? (doc.nodes[fallbackId] !== undefined ? fallbackId : doc.rootId);
+
+  return {
+    selectedId,
+    focusedIds: existingFocusIds.length > 0 ? existingFocusIds : [selectedId],
+  };
+}
+
 function firstVisibleFocusId(doc: JsonDoc, focusedIds: NodeId[]): NodeId | null {
   for (const id of focusedIds) {
     const node = doc.nodes[id];
@@ -978,7 +987,7 @@ function firstVisibleFocusId(doc: JsonDoc, focusedIds: NodeId[]): NodeId | null 
     }
   }
 
-  return firstExisting(doc, focusedIds);
+  return null;
 }
 
 function diffFocusIds(before: JsonDoc, after: JsonDoc): NodeId[] {
