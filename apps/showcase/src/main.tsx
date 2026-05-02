@@ -713,6 +713,9 @@ function TreeView({
         <button
           type="button"
           className={nodeClass("tree-item", nodeId, selectedId, focusedSet)}
+          data-node-id={nodeId}
+          data-selected={nodeId === selectedId ? "true" : undefined}
+          aria-selected={nodeId === selectedId}
           style={{ "--depth": depth } as CSSProperties}
           onClick={() => onSelect(nodeId)}
           title={`${nodeLabel(doc, node)} · ${node.id}`}
@@ -784,6 +787,39 @@ function treeSelectionId(doc: JsonDoc, nodeId: NodeId): NodeId {
   return doc.rootId;
 }
 
+function createSelectionBridge(doc: JsonDoc, selectedId: NodeId, focusedSet: Set<NodeId>) {
+  const selectedLayerId = treeSelectionId(doc, selectedId);
+  const selectedPreviewId = previewSelectionId(doc, selectedId);
+
+  return {
+    selectedLayerId,
+    selectedPreviewId,
+    focusedLayerIds: mapSelectionSet(doc, focusedSet, treeSelectionId, selectedLayerId),
+    focusedPreviewIds: mapSelectionSet(doc, focusedSet, previewSelectionId, selectedPreviewId),
+  };
+}
+
+function previewSelectionId(doc: JsonDoc, nodeId: NodeId): NodeId {
+  return visibleObjectNodeForSelection(doc, nodeId)?.id ?? (doc.nodes[nodeId] === undefined ? doc.rootId : nodeId);
+}
+
+function mapSelectionSet(
+  doc: JsonDoc,
+  focusedSet: Set<NodeId>,
+  normalize: (doc: JsonDoc, nodeId: NodeId) => NodeId,
+  selectedId: NodeId,
+) {
+  const mapped = new Set<NodeId>([selectedId]);
+
+  for (const id of focusedSet) {
+    if (doc.nodes[id] !== undefined) {
+      mapped.add(normalize(doc, id));
+    }
+  }
+
+  return mapped;
+}
+
 function treeDisplayLabel(doc: JsonDoc, node: JsonNode) {
   if (node.type === "object") {
     return (
@@ -818,11 +854,13 @@ function treeDisplayMeta(doc: JsonDoc, node: JsonNode) {
 function MobileBuilderCanvas({
   doc,
   selectedId,
+  selectedPreviewId,
   focusedSet,
   onSelect,
 }: {
   doc: JsonDoc;
   selectedId: NodeId;
+  selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
 }) {
@@ -830,7 +868,6 @@ function MobileBuilderCanvas({
   const nodeId = (name: string) => nodeIdsByName.get(name) ?? null;
   const text = (name: string, fallback: string) => uiTextByName(doc, name)?.text ?? fallback;
   const rectLabel = (name: string, fallback: string) => uiRectByName(doc, name)?.label ?? fallback;
-  const selectedObjectId = visibleObjectNodeForSelection(doc, selectedId)?.id ?? (doc.nodes[selectedId] === undefined ? doc.rootId : selectedId);
   const binding = selectedComponentBinding(doc, selectedId);
   const heroImage = uiImageByName(doc, "MarketHeroImage") ?? {
     label: "MarketHeroImage",
@@ -852,7 +889,14 @@ function MobileBuilderCanvas({
   };
 
   return (
-    <div className="builder-preview-grid">
+    <SelectablePreview
+      nodeId={doc.rootId}
+      selectedPreviewId={selectedPreviewId}
+      focusedSet={focusedSet}
+      onSelect={onSelect}
+      className="builder-preview-grid"
+      label="ZodCrudBuilder"
+    >
       <section className="device-workbench" aria-label="Mobile application screen mockup">
         <div className="device-caption">
           <Smartphone />
@@ -861,7 +905,7 @@ function MobileBuilderCanvas({
 
         <SelectablePreview
           nodeId={nodeId("MobileRecordScreen")}
-          selectedObjectId={selectedObjectId}
+          selectedPreviewId={selectedPreviewId}
           focusedSet={focusedSet}
           onSelect={onSelect}
           className="phone-device"
@@ -881,7 +925,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("AppToolbar")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="mobile-app-toolbar"
@@ -890,7 +934,7 @@ function MobileBuilderCanvas({
                 <div>
                   <SelectableInline
                     nodeId={nodeId("ToolbarEyebrowText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="toolbar-eyebrow"
@@ -900,7 +944,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("ToolbarTitleText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="toolbar-title"
@@ -912,7 +956,7 @@ function MobileBuilderCanvas({
                 <div className="mobile-toolbar-actions">
                   <SelectableInline
                     nodeId={nodeId("SearchIcon")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="toolbar-action-button"
@@ -922,7 +966,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("NotificationIcon")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="toolbar-action-button"
@@ -935,7 +979,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("MarketHeroImage")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="visual-hero-card"
@@ -945,7 +989,7 @@ function MobileBuilderCanvas({
                 <div className="visual-hero-overlay">
                   <SelectableInline
                     nodeId={nodeId("HeroMediaFieldText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="hero-field-label"
@@ -955,7 +999,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("HeroTitleText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="hero-title"
@@ -968,7 +1012,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("SchemaStatusCard")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="schema-health-card"
@@ -976,7 +1020,7 @@ function MobileBuilderCanvas({
               >
                 <SelectableInline
                   nodeId={nodeId("SchemaValidIcon")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="health-icon"
@@ -987,7 +1031,7 @@ function MobileBuilderCanvas({
                 <div>
                   <SelectableInline
                     nodeId={nodeId("SchemaNameText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="schema-name"
@@ -997,7 +1041,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("SnapshotStatusText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="schema-status"
@@ -1007,7 +1051,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("HydratedFieldsText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="schema-detail"
@@ -1018,7 +1062,7 @@ function MobileBuilderCanvas({
                 </div>
                 <SelectableInline
                   nodeId={nodeId("SafeParseBadge")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="safeparse-badge"
@@ -1030,7 +1074,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("CrudModeTabs")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="mobile-segmented"
@@ -1038,7 +1082,7 @@ function MobileBuilderCanvas({
               >
                 <SelectableInline
                   nodeId={nodeId("CreateModeText")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="mode-segment active"
@@ -1048,7 +1092,7 @@ function MobileBuilderCanvas({
                 </SelectableInline>
                 <SelectableInline
                   nodeId={nodeId("ReadModeText")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="mode-segment"
@@ -1058,7 +1102,7 @@ function MobileBuilderCanvas({
                 </SelectableInline>
                 <SelectableInline
                   nodeId={nodeId("UpdateModeText")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="mode-segment"
@@ -1070,7 +1114,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("CustomerNameField")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="field-card hero-field"
@@ -1079,7 +1123,7 @@ function MobileBuilderCanvas({
                 <div className="field-heading">
                   <SelectableInline
                     nodeId={nodeId("CustomerLabelText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="field-title"
@@ -1089,7 +1133,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("CustomerFieldPathText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="field-path"
@@ -1101,7 +1145,7 @@ function MobileBuilderCanvas({
                 <div className="input-control">
                   <SelectableInline
                     nodeId={nodeId("CustomerValueText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="input-value"
@@ -1111,7 +1155,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("CustomerSelectIcon")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="input-icon"
@@ -1122,7 +1166,7 @@ function MobileBuilderCanvas({
                 </div>
                 <SelectableInline
                   nodeId={nodeId("CustomerSchemaText")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="schema-inline"
@@ -1134,7 +1178,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("OrderStatusField")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="field-card status-field"
@@ -1143,7 +1187,7 @@ function MobileBuilderCanvas({
                 <div className="field-heading">
                   <SelectableInline
                     nodeId={nodeId("StatusLabelText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="field-title"
@@ -1153,7 +1197,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("StatusFieldPathText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="field-path"
@@ -1165,7 +1209,7 @@ function MobileBuilderCanvas({
                 <div className="status-pills">
                   <SelectableInline
                     nodeId={nodeId("DraftStatusText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="status-pill active"
@@ -1175,7 +1219,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("PaidStatusText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="status-pill"
@@ -1185,7 +1229,7 @@ function MobileBuilderCanvas({
                   </SelectableInline>
                   <SelectableInline
                     nodeId={nodeId("SentStatusText")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="status-pill"
@@ -1198,7 +1242,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("LineItemsList")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="line-items-panel"
@@ -1208,7 +1252,7 @@ function MobileBuilderCanvas({
                   <div>
                     <SelectableInline
                       nodeId={nodeId("LineItemsTitleText")}
-                      selectedObjectId={selectedObjectId}
+                      selectedPreviewId={selectedPreviewId}
                       focusedSet={focusedSet}
                       onSelect={onSelect}
                       className="list-title"
@@ -1218,7 +1262,7 @@ function MobileBuilderCanvas({
                     </SelectableInline>
                     <SelectableInline
                       nodeId={nodeId("LineItemsPathText")}
-                      selectedObjectId={selectedObjectId}
+                      selectedPreviewId={selectedPreviewId}
                       focusedSet={focusedSet}
                       onSelect={onSelect}
                       className="list-path"
@@ -1229,7 +1273,7 @@ function MobileBuilderCanvas({
                   </div>
                   <SelectableInline
                     nodeId={nodeId("AddLineItemIcon")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="add-row"
@@ -1240,7 +1284,7 @@ function MobileBuilderCanvas({
                 </div>
                 <SelectablePreview
                   nodeId={nodeId("OrganicLineItemFlex")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="line-item-row"
@@ -1248,7 +1292,7 @@ function MobileBuilderCanvas({
                 >
                   <SelectablePreview
                     nodeId={nodeId("OrganicBundleImage")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="line-item-thumb-frame"
@@ -1259,7 +1303,7 @@ function MobileBuilderCanvas({
                   <div>
                     <SelectableInline
                       nodeId={nodeId("OrganicBundleTitleText")}
-                      selectedObjectId={selectedObjectId}
+                      selectedPreviewId={selectedPreviewId}
                       focusedSet={focusedSet}
                       onSelect={onSelect}
                       className="line-item-title"
@@ -1269,7 +1313,7 @@ function MobileBuilderCanvas({
                     </SelectableInline>
                     <SelectableInline
                       nodeId={nodeId("OrganicBundleMetaText")}
-                      selectedObjectId={selectedObjectId}
+                      selectedPreviewId={selectedPreviewId}
                       focusedSet={focusedSet}
                       onSelect={onSelect}
                       className="line-item-meta"
@@ -1280,7 +1324,7 @@ function MobileBuilderCanvas({
                   </div>
                   <SelectableInline
                     nodeId={nodeId("OrganicStatusBadge")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="line-item-badge"
@@ -1291,7 +1335,7 @@ function MobileBuilderCanvas({
                 </SelectablePreview>
                 <SelectablePreview
                   nodeId={nodeId("ColdChainLineItemFlex")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="line-item-row"
@@ -1299,7 +1343,7 @@ function MobileBuilderCanvas({
                 >
                   <SelectablePreview
                     nodeId={nodeId("ColdChainImage")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="line-item-thumb-frame"
@@ -1310,7 +1354,7 @@ function MobileBuilderCanvas({
                   <div>
                     <SelectableInline
                       nodeId={nodeId("ColdChainTitleText")}
-                      selectedObjectId={selectedObjectId}
+                      selectedPreviewId={selectedPreviewId}
                       focusedSet={focusedSet}
                       onSelect={onSelect}
                       className="line-item-title"
@@ -1320,7 +1364,7 @@ function MobileBuilderCanvas({
                     </SelectableInline>
                     <SelectableInline
                       nodeId={nodeId("ColdChainMetaText")}
-                      selectedObjectId={selectedObjectId}
+                      selectedPreviewId={selectedPreviewId}
                       focusedSet={focusedSet}
                       onSelect={onSelect}
                       className="line-item-meta"
@@ -1331,7 +1375,7 @@ function MobileBuilderCanvas({
                   </div>
                   <SelectableInline
                     nodeId={nodeId("ColdChainStatusBadge")}
-                    selectedObjectId={selectedObjectId}
+                    selectedPreviewId={selectedPreviewId}
                     focusedSet={focusedSet}
                     onSelect={onSelect}
                     className="line-item-badge"
@@ -1344,7 +1388,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("SaveButton")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="mobile-primary-action"
@@ -1352,7 +1396,7 @@ function MobileBuilderCanvas({
               >
                 <SelectableInline
                   nodeId={nodeId("SaveButtonText")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="save-button-text"
@@ -1362,7 +1406,7 @@ function MobileBuilderCanvas({
                 </SelectableInline>
                 <SelectableInline
                   nodeId={nodeId("SaveButtonIcon")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="save-button-icon"
@@ -1374,7 +1418,7 @@ function MobileBuilderCanvas({
 
               <SelectablePreview
                 nodeId={nodeId("BottomNavFlex")}
-                selectedObjectId={selectedObjectId}
+                selectedPreviewId={selectedPreviewId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="mobile-bottom-nav"
@@ -1382,7 +1426,7 @@ function MobileBuilderCanvas({
               >
                 <SelectableInline
                   nodeId={nodeId("LayoutTabIcon")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="bottom-nav-button active"
@@ -1392,7 +1436,7 @@ function MobileBuilderCanvas({
                 </SelectableInline>
                 <SelectableInline
                   nodeId={nodeId("DatabaseTabIcon")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="bottom-nav-button"
@@ -1402,7 +1446,7 @@ function MobileBuilderCanvas({
                 </SelectableInline>
                 <SelectableInline
                   nodeId={nodeId("HistoryTabIcon")}
-                  selectedObjectId={selectedObjectId}
+                  selectedPreviewId={selectedPreviewId}
                   focusedSet={focusedSet}
                   onSelect={onSelect}
                   className="bottom-nav-button"
@@ -1443,13 +1487,13 @@ function MobileBuilderCanvas({
           </div>
         </dl>
       </aside>
-    </div>
+    </SelectablePreview>
   );
 }
 
 function SelectablePreview({
   nodeId,
-  selectedObjectId,
+  selectedPreviewId,
   focusedSet,
   onSelect,
   className,
@@ -1457,20 +1501,24 @@ function SelectablePreview({
   children,
 }: {
   nodeId: NodeId | null;
-  selectedObjectId: NodeId;
+  selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
   className: string;
   label: string;
   children: ReactNode;
 }) {
-  const classes = previewNodeClass(className, nodeId, selectedObjectId, focusedSet);
+  const classes = previewNodeClass(className, nodeId, selectedPreviewId, focusedSet);
 
   return (
     <div
       className={classes}
+      data-node-id={nodeId ?? undefined}
       data-node-label={label}
+      data-selected={nodeId === selectedPreviewId ? "true" : undefined}
       role="button"
+      aria-label={label}
+      aria-pressed={nodeId === selectedPreviewId}
       tabIndex={nodeId === null ? -1 : 0}
       onClick={(event) => {
         if (nodeId === null) {
@@ -1493,7 +1541,7 @@ function SelectablePreview({
 
 function SelectableInline({
   nodeId,
-  selectedObjectId,
+  selectedPreviewId,
   focusedSet,
   onSelect,
   className,
@@ -1501,20 +1549,24 @@ function SelectableInline({
   children,
 }: {
   nodeId: NodeId | null;
-  selectedObjectId: NodeId;
+  selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
   className: string;
   label: string;
   children: ReactNode;
 }) {
-  const classes = previewNodeClass(className, nodeId, selectedObjectId, focusedSet);
+  const classes = previewNodeClass(className, nodeId, selectedPreviewId, focusedSet);
 
   return (
     <span
       className={classes}
+      data-node-id={nodeId ?? undefined}
       data-node-label={label}
+      data-selected={nodeId === selectedPreviewId ? "true" : undefined}
       role="button"
+      aria-label={label}
+      aria-pressed={nodeId === selectedPreviewId}
       tabIndex={nodeId === null ? -1 : 0}
       onClick={(event) => {
         if (nodeId === null) {
@@ -1843,7 +1895,7 @@ function nodeClass(
 function previewNodeClass(
   base: string,
   nodeId: NodeId | null,
-  selectedObjectId: NodeId,
+  selectedPreviewId: NodeId,
   focusedSet: Set<NodeId>,
 ) {
   const classes = [base, "preview-selectable"];
@@ -1852,7 +1904,7 @@ function previewNodeClass(
     classes.push("focused");
   }
 
-  if (nodeId !== null && nodeId === selectedObjectId) {
+  if (nodeId !== null && nodeId === selectedPreviewId) {
     classes.push("selected");
   }
 
