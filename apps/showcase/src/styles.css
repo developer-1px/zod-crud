@@ -494,14 +494,21 @@ button:focus-visible,
   width: min(1060px, calc(100% - 64px));
   min-width: 320px;
   margin: 32px auto;
+  container-type: inline-size;
 }
 
 .builder-preview-grid {
   display: grid;
-  grid-template-columns: minmax(330px, 410px) minmax(230px, 280px);
+  grid-template-columns: minmax(300px, 410px);
   justify-content: center;
   align-items: start;
   gap: 24px;
+}
+
+@container (min-width: 760px) {
+  .builder-preview-grid {
+    grid-template-columns: minmax(330px, 410px) minmax(230px, 280px);
+  }
 }
 
 .device-workbench {
@@ -976,6 +983,7 @@ button:focus-visible,
 .canvas-binding-panel {
   display: grid;
   gap: 12px;
+  width: 100%;
   min-width: 0;
   padding: 14px;
   border: 1px solid #cad3de;
