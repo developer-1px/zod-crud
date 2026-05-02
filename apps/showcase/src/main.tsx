@@ -35,6 +35,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
@@ -199,6 +200,10 @@ function App() {
   const selectedNode = doc.nodes[selectedId] ?? doc.nodes[doc.rootId];
   const selectedBinding = useMemo(() => selectedComponentBinding(doc, selectedId), [doc, selectedId]);
   const focusedSet = useMemo(() => new Set(focusedIds.filter((id) => doc.nodes[id] !== undefined)), [doc, focusedIds]);
+  const selectionBridge = useMemo(
+    () => createSelectionBridge(doc, selectedId, focusedSet),
+    [doc, focusedSet, selectedId],
+  );
 
   useEffect(() => {
     const recovered = recoverFocus(doc, focusedIds, selectedId);
@@ -519,8 +524,8 @@ function App() {
           <TreeView
             doc={doc}
             nodeId={doc.rootId}
-            selectedId={selectedId}
-            focusedSet={focusedSet}
+            selectedId={selectionBridge.selectedLayerId}
+            focusedSet={selectionBridge.focusedLayerIds}
             onSelect={selectNode}
           />
         </aside>
@@ -544,77 +549,80 @@ function App() {
               <MobileBuilderCanvas
                 doc={doc}
                 selectedId={selectedId}
-                focusedSet={focusedSet}
+                selectedPreviewId={selectionBridge.selectedPreviewId}
+                focusedSet={selectionBridge.focusedPreviewIds}
                 onSelect={selectNode}
               />
             </div>
           </div>
         </section>
 
-        <aside className="inspector">
-          <section className="panel selection-panel">
-            <PanelTitle icon={<SlidersHorizontal />} title="Inspector" />
-            <ComponentBindingPanel binding={selectedBinding} />
-            <dl className="property-grid">
-              <div>
-                <dt>Selection</dt>
-                <dd>{selectedNode === undefined ? "none" : nodeLabel(doc, selectedNode)}</dd>
-              </div>
-              <div>
-                <dt>ID</dt>
-                <dd>{selectedNode?.id ?? "none"}</dd>
-              </div>
-              <div>
-                <dt>Type</dt>
-                <dd>{selectedNode?.type ?? "none"}</dd>
-              </div>
-              <div>
-                <dt>Parent</dt>
-                <dd>{selectedNode?.parentId ?? "root"}</dd>
-              </div>
-              <div>
-                <dt>Children</dt>
-                <dd>{selectedNode?.children.length ?? 0}</dd>
-              </div>
-              <div>
-                <dt>Focus</dt>
-                <dd>{focusedSet.size}</dd>
-              </div>
-            </dl>
-          </section>
+        <aside className="panel inspector control-panel">
+          <PanelTitle icon={<SlidersHorizontal />} title="Inspector" />
+          <div className="control-panel-body">
+            <section className="control-section selection-panel">
+              <ComponentBindingPanel binding={selectedBinding} />
+              <dl className="property-grid">
+                <div>
+                  <dt>Selection</dt>
+                  <dd>{selectedNode === undefined ? "none" : nodeLabel(doc, selectedNode)}</dd>
+                </div>
+                <div>
+                  <dt>ID</dt>
+                  <dd>{selectedNode?.id ?? "none"}</dd>
+                </div>
+                <div>
+                  <dt>Type</dt>
+                  <dd>{selectedNode?.type ?? "none"}</dd>
+                </div>
+                <div>
+                  <dt>Parent</dt>
+                  <dd>{selectedNode?.parentId ?? "root"}</dd>
+                </div>
+                <div>
+                  <dt>Children</dt>
+                  <dd>{selectedNode?.children.length ?? 0}</dd>
+                </div>
+                <div>
+                  <dt>Focus</dt>
+                  <dd>{focusedSet.size}</dd>
+                </div>
+              </dl>
+            </section>
 
-          <section className="panel">
-            <PanelTitle icon={<Table2 />} title="Nodes" />
-            <NodeTable
-              doc={doc}
-              selectedId={selectedId}
-              focusedSet={focusedSet}
-              onSelect={selectNode}
-            />
-          </section>
+            <section className="control-section">
+              <SectionTitle icon={<Table2 />} title="Nodes" />
+              <NodeTable
+                doc={doc}
+                selectedId={selectedId}
+                focusedSet={focusedSet}
+                onSelect={selectNode}
+              />
+            </section>
 
-          <section className="panel split-panel">
-            <div>
-              <PanelTitle icon={<Braces />} title="JSON" />
-              <pre className="json-view">{JSON.stringify(json, null, 2)}</pre>
-            </div>
-            <div>
-              <PanelTitle icon={<Clipboard />} title="Clipboard" />
-              <pre className="json-view clipboard-view">{clipboardJson || "empty"}</pre>
-            </div>
-          </section>
+            <section className="control-section split-section">
+              <div>
+                <SectionTitle icon={<Braces />} title="JSON" />
+                <pre className="json-view">{JSON.stringify(json, null, 2)}</pre>
+              </div>
+              <div>
+                <SectionTitle icon={<Clipboard />} title="Clipboard" />
+                <pre className="json-view clipboard-view">{clipboardJson || "empty"}</pre>
+              </div>
+            </section>
 
-          <section className="panel">
-            <PanelTitle icon={<History />} title="Timeline" />
-            <ul className="log-list">
-              {logs.map((entry) => (
-                <li key={entry.id} className={entry.ok ? "ok" : "fail"}>
-                  <span>{entry.label}</span>
-                  <small>{entry.ok ? "ok" : entry.reason}</small>
-                </li>
-              ))}
-            </ul>
-          </section>
+            <section className="control-section">
+              <SectionTitle icon={<History />} title="Timeline" />
+              <ul className="log-list">
+                {logs.map((entry) => (
+                  <li key={entry.id} className={entry.ok ? "ok" : "fail"}>
+                    <span>{entry.label}</span>
+                    <small>{entry.ok ? "ok" : entry.reason}</small>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </div>
         </aside>
       </section>
 
@@ -667,18 +675,29 @@ function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
   );
 }
 
+function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
+  return (
+    <div className="section-title">
+      {icon}
+      <h3>{title}</h3>
+    </div>
+  );
+}
+
 function TreeView({
   doc,
   nodeId,
   selectedId,
   focusedSet,
   onSelect,
+  depth = 0,
 }: {
   doc: JsonDoc;
   nodeId: NodeId;
   selectedId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
+  depth?: number;
 }) {
   const node = doc.nodes[nodeId];
 
@@ -686,20 +705,24 @@ function TreeView({
     return null;
   }
 
+  const childIds = visibleTreeChildIds(doc, nodeId);
+
   return (
     <ul className="tree-list">
       <li>
         <button
           type="button"
           className={nodeClass("tree-item", nodeId, selectedId, focusedSet)}
+          style={{ "--depth": depth } as CSSProperties}
           onClick={() => onSelect(nodeId)}
+          title={`${nodeLabel(doc, node)} · ${node.id}`}
         >
-          <span>{nodeLabel(doc, node)}</span>
-          <small>{node.id}</small>
+          <span>{treeDisplayLabel(doc, node)}</span>
+          <small>{treeDisplayMeta(doc, node)}</small>
         </button>
-        {node.children.length > 0 ? (
+        {childIds.length > 0 ? (
           <div className="tree-children">
-            {node.children.map((childId) => (
+            {childIds.map((childId) => (
               <TreeView
                 key={childId}
                 doc={doc}
@@ -707,6 +730,7 @@ function TreeView({
                 selectedId={selectedId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
+                depth={depth + 1}
               />
             ))}
           </div>
@@ -714,6 +738,81 @@ function TreeView({
       </li>
     </ul>
   );
+}
+
+function visibleTreeChildIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const node = doc.nodes[nodeId];
+
+  if (node === undefined) {
+    return [];
+  }
+
+  return node.children.flatMap((childId) => {
+    const child = doc.nodes[childId];
+
+    if (child === undefined) {
+      return [];
+    }
+
+    if (isLayerNode(doc, child)) {
+      return [child.id];
+    }
+
+    return visibleTreeChildIds(doc, child.id);
+  });
+}
+
+function isLayerNode(doc: JsonDoc, node: JsonNode) {
+  return node.id === doc.rootId || (node.type === "object" && primitiveField(doc, node.id, "kind") !== null);
+}
+
+function treeSelectionId(doc: JsonDoc, nodeId: NodeId): NodeId {
+  let current = doc.nodes[nodeId] ?? doc.nodes[doc.rootId];
+
+  while (current !== undefined) {
+    if (isLayerNode(doc, current)) {
+      return current.id;
+    }
+
+    if (current.parentId === null) {
+      break;
+    }
+
+    current = doc.nodes[current.parentId];
+  }
+
+  return doc.rootId;
+}
+
+function treeDisplayLabel(doc: JsonDoc, node: JsonNode) {
+  if (node.type === "object") {
+    return (
+      primitiveField(doc, node.id, "name") ??
+      primitiveField(doc, node.id, "label") ??
+      primitiveField(doc, node.id, "text") ??
+      primitiveField(doc, node.id, "kind") ??
+      "object"
+    );
+  }
+
+  if (node.type === "array") {
+    return node.key === null ? "array" : `${String(node.key)}[]`;
+  }
+
+  const key = node.key === null ? "value" : String(node.key);
+  return `${key}: ${String(node.value)}`;
+}
+
+function treeDisplayMeta(doc: JsonDoc, node: JsonNode) {
+  if (node.type === "object") {
+    return primitiveField(doc, node.id, "kind") ?? "object";
+  }
+
+  if (node.type === "array") {
+    return `${node.children.length}`;
+  }
+
+  return node.type;
 }
 
 function MobileBuilderCanvas({
@@ -727,34 +826,25 @@ function MobileBuilderCanvas({
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
 }) {
-  const previewIds = useMemo(
-    () => ({
-      screen: uiObjectIdByField(doc, "name", "MobileRecordScreen"),
-      toolbar: uiObjectIdByField(doc, "name", "AppToolbar"),
-      schemaStatus: uiObjectIdByField(doc, "name", "SchemaStatusCard"),
-      heroImage: uiObjectIdByField(doc, "label", "MarketHeroImage"),
-      customerName: uiObjectIdByField(doc, "name", "CustomerNameField"),
-      orderStatus: uiObjectIdByField(doc, "name", "OrderStatusField"),
-      lineItems: uiObjectIdByField(doc, "name", "LineItemsList"),
-      saveButton: uiObjectIdByField(doc, "label", "SaveButton"),
-    }),
-    [doc],
-  );
+  const nodeIdsByName = useMemo(() => designNodeIdsByName(doc), [doc]);
+  const nodeId = (name: string) => nodeIdsByName.get(name) ?? null;
+  const text = (name: string, fallback: string) => uiTextByName(doc, name)?.text ?? fallback;
+  const rectLabel = (name: string, fallback: string) => uiRectByName(doc, name)?.label ?? fallback;
   const selectedObjectId = visibleObjectNodeForSelection(doc, selectedId)?.id ?? (doc.nodes[selectedId] === undefined ? doc.rootId : selectedId);
   const binding = selectedComponentBinding(doc, selectedId);
-  const heroImage = uiImageByLabel(doc, "MarketHeroImage") ?? {
+  const heroImage = uiImageByName(doc, "MarketHeroImage") ?? {
     label: "MarketHeroImage",
     src: CONTENT_IMAGES.marketHero,
     alt: "Fresh produce crates for a wholesale order",
     aspect: "wide" as const,
   };
-  const organicImage = uiImageByLabel(doc, "OrganicBundleImage") ?? {
+  const organicImage = uiImageByName(doc, "OrganicBundleImage") ?? {
     label: "OrganicBundleImage",
     src: CONTENT_IMAGES.organicBundle,
     alt: "Organic vegetables bundle",
     aspect: "thumb" as const,
   };
-  const coldChainImage = uiImageByLabel(doc, "ColdChainImage") ?? {
+  const coldChainImage = uiImageByName(doc, "ColdChainImage") ?? {
     label: "ColdChainImage",
     src: CONTENT_IMAGES.coldChain,
     alt: "Prepared cold chain food package",
@@ -770,7 +860,7 @@ function MobileBuilderCanvas({
         </div>
 
         <SelectablePreview
-          nodeId={previewIds.screen}
+          nodeId={nodeId("MobileRecordScreen")}
           selectedObjectId={selectedObjectId}
           focusedSet={focusedSet}
           onSelect={onSelect}
@@ -790,7 +880,7 @@ function MobileBuilderCanvas({
               </div>
 
               <SelectablePreview
-                nodeId={previewIds.toolbar}
+                nodeId={nodeId("AppToolbar")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
@@ -798,17 +888,53 @@ function MobileBuilderCanvas({
                 label="AppToolbar"
               >
                 <div>
-                  <small>FieldOps</small>
-                  <h3>Order intake</h3>
+                  <SelectableInline
+                    nodeId={nodeId("ToolbarEyebrowText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="toolbar-eyebrow"
+                    label="ToolbarEyebrowText"
+                  >
+                    {text("ToolbarEyebrowText", "FieldOps")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("ToolbarTitleText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="toolbar-title"
+                    label="ToolbarTitleText"
+                  >
+                    {text("ToolbarTitleText", "Order intake")}
+                  </SelectableInline>
                 </div>
-                <div className="mobile-toolbar-actions" aria-hidden="true">
-                  <span><Search /></span>
-                  <span><Bell /></span>
+                <div className="mobile-toolbar-actions">
+                  <SelectableInline
+                    nodeId={nodeId("SearchIcon")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="toolbar-action-button"
+                    label="SearchIcon"
+                  >
+                    <Search />
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("NotificationIcon")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="toolbar-action-button"
+                    label="NotificationIcon"
+                  >
+                    <Bell />
+                  </SelectableInline>
                 </div>
               </SelectablePreview>
 
               <SelectablePreview
-                nodeId={previewIds.heroImage}
+                nodeId={nodeId("MarketHeroImage")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
@@ -817,36 +943,133 @@ function MobileBuilderCanvas({
               >
                 <img src={heroImage.src} alt={heroImage.alt} />
                 <div className="visual-hero-overlay">
-                  <small>media.hero.src</small>
-                  <strong>Fresh produce order</strong>
+                  <SelectableInline
+                    nodeId={nodeId("HeroMediaFieldText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="hero-field-label"
+                    label="HeroMediaFieldText"
+                  >
+                    {text("HeroMediaFieldText", "media.hero.src")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("HeroTitleText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="hero-title"
+                    label="HeroTitleText"
+                  >
+                    {text("HeroTitleText", "Fresh produce order")}
+                  </SelectableInline>
                 </div>
               </SelectablePreview>
 
               <SelectablePreview
-                nodeId={previewIds.schemaStatus}
+                nodeId={nodeId("SchemaStatusCard")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="schema-health-card"
                 label="SchemaStatusCard"
               >
-                <div className="health-icon" aria-hidden="true"><CheckCircle2 /></div>
+                <SelectableInline
+                  nodeId={nodeId("SchemaValidIcon")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="health-icon"
+                  label="SchemaValidIcon"
+                >
+                  <CheckCircle2 />
+                </SelectableInline>
                 <div>
-                  <small>SalesOrderSchema</small>
-                  <strong>Valid snapshot</strong>
-                  <span>8 fields hydrated by zod-crud</span>
+                  <SelectableInline
+                    nodeId={nodeId("SchemaNameText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="schema-name"
+                    label="SchemaNameText"
+                  >
+                    {text("SchemaNameText", "SalesOrderSchema")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("SnapshotStatusText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="schema-status"
+                    label="SnapshotStatusText"
+                  >
+                    {text("SnapshotStatusText", "Valid snapshot")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("HydratedFieldsText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="schema-detail"
+                    label="HydratedFieldsText"
+                  >
+                    {text("HydratedFieldsText", "8 fields hydrated by zod-crud")}
+                  </SelectableInline>
                 </div>
-                <code>safeParse</code>
+                <SelectableInline
+                  nodeId={nodeId("SafeParseBadge")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="safeparse-badge"
+                  label="SafeParseBadge"
+                >
+                  {rectLabel("SafeParseBadge", "safeParse")}
+                </SelectableInline>
               </SelectablePreview>
 
-              <div className="mobile-segmented" aria-label="CRUD mode">
-                <span className="active">Create</span>
-                <span>Read</span>
-                <span>Update</span>
-              </div>
+              <SelectablePreview
+                nodeId={nodeId("CrudModeTabs")}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="mobile-segmented"
+                label="CrudModeTabs"
+              >
+                <SelectableInline
+                  nodeId={nodeId("CreateModeText")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="mode-segment active"
+                  label="CreateModeText"
+                >
+                  {text("CreateModeText", "Create")}
+                </SelectableInline>
+                <SelectableInline
+                  nodeId={nodeId("ReadModeText")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="mode-segment"
+                  label="ReadModeText"
+                >
+                  {text("ReadModeText", "Read")}
+                </SelectableInline>
+                <SelectableInline
+                  nodeId={nodeId("UpdateModeText")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="mode-segment"
+                  label="UpdateModeText"
+                >
+                  {text("UpdateModeText", "Update")}
+                </SelectableInline>
+              </SelectablePreview>
 
               <SelectablePreview
-                nodeId={previewIds.customerName}
+                nodeId={nodeId("CustomerNameField")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
@@ -854,18 +1077,63 @@ function MobileBuilderCanvas({
                 label="CustomerNameField"
               >
                 <div className="field-heading">
-                  <span>Customer</span>
-                  <small>customer.name</small>
+                  <SelectableInline
+                    nodeId={nodeId("CustomerLabelText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="field-title"
+                    label="CustomerLabelText"
+                  >
+                    {text("CustomerLabelText", "Customer")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("CustomerFieldPathText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="field-path"
+                    label="CustomerFieldPathText"
+                  >
+                    {text("CustomerFieldPathText", "customer.name")}
+                  </SelectableInline>
                 </div>
                 <div className="input-control">
-                  <strong>Acme Market</strong>
-                  <ChevronDown aria-hidden="true" />
+                  <SelectableInline
+                    nodeId={nodeId("CustomerValueText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="input-value"
+                    label="CustomerValueText"
+                  >
+                    {text("CustomerValueText", "Acme Market")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("CustomerSelectIcon")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="input-icon"
+                    label="CustomerSelectIcon"
+                  >
+                    <ChevronDown />
+                  </SelectableInline>
                 </div>
-                <p>z.string().min(2)</p>
+                <SelectableInline
+                  nodeId={nodeId("CustomerSchemaText")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="schema-inline"
+                  label="CustomerSchemaText"
+                >
+                  {text("CustomerSchemaText", "z.string().min(2)")}
+                </SelectableInline>
               </SelectablePreview>
 
               <SelectablePreview
-                nodeId={previewIds.orderStatus}
+                nodeId={nodeId("OrderStatusField")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
@@ -873,18 +1141,63 @@ function MobileBuilderCanvas({
                 label="OrderStatusField"
               >
                 <div className="field-heading">
-                  <span>Status</span>
-                  <small>status</small>
+                  <SelectableInline
+                    nodeId={nodeId("StatusLabelText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="field-title"
+                    label="StatusLabelText"
+                  >
+                    {text("StatusLabelText", "Status")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("StatusFieldPathText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="field-path"
+                    label="StatusFieldPathText"
+                  >
+                    {text("StatusFieldPathText", "status")}
+                  </SelectableInline>
                 </div>
                 <div className="status-pills">
-                  <span className="active">Draft</span>
-                  <span>Paid</span>
-                  <span>Sent</span>
+                  <SelectableInline
+                    nodeId={nodeId("DraftStatusText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="status-pill active"
+                    label="DraftStatusText"
+                  >
+                    {text("DraftStatusText", "Draft")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("PaidStatusText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="status-pill"
+                    label="PaidStatusText"
+                  >
+                    {text("PaidStatusText", "Paid")}
+                  </SelectableInline>
+                  <SelectableInline
+                    nodeId={nodeId("SentStatusText")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="status-pill"
+                    label="SentStatusText"
+                  >
+                    {text("SentStatusText", "Sent")}
+                  </SelectableInline>
                 </div>
               </SelectablePreview>
 
               <SelectablePreview
-                nodeId={previewIds.lineItems}
+                nodeId={nodeId("LineItemsList")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
@@ -893,46 +1206,211 @@ function MobileBuilderCanvas({
               >
                 <div className="list-heading">
                   <div>
-                    <span>Line items</span>
-                    <small>lineItems[]</small>
+                    <SelectableInline
+                      nodeId={nodeId("LineItemsTitleText")}
+                      selectedObjectId={selectedObjectId}
+                      focusedSet={focusedSet}
+                      onSelect={onSelect}
+                      className="list-title"
+                      label="LineItemsTitleText"
+                    >
+                      {text("LineItemsTitleText", "Line items")}
+                    </SelectableInline>
+                    <SelectableInline
+                      nodeId={nodeId("LineItemsPathText")}
+                      selectedObjectId={selectedObjectId}
+                      focusedSet={focusedSet}
+                      onSelect={onSelect}
+                      className="list-path"
+                      label="LineItemsPathText"
+                    >
+                      {text("LineItemsPathText", "lineItems[]")}
+                    </SelectableInline>
                   </div>
-                  <span className="add-row" aria-hidden="true"><Plus /></span>
+                  <SelectableInline
+                    nodeId={nodeId("AddLineItemIcon")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="add-row"
+                    label="AddLineItemIcon"
+                  >
+                    <Plus />
+                  </SelectableInline>
                 </div>
-                <div className="line-item-row">
-                  <img className="line-item-thumb" src={organicImage.src} alt={organicImage.alt} />
+                <SelectablePreview
+                  nodeId={nodeId("OrganicLineItemFlex")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="line-item-row"
+                  label="OrganicLineItemFlex"
+                >
+                  <SelectablePreview
+                    nodeId={nodeId("OrganicBundleImage")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="line-item-thumb-frame"
+                    label="OrganicBundleImage"
+                  >
+                    <img className="line-item-thumb" src={organicImage.src} alt={organicImage.alt} />
+                  </SelectablePreview>
                   <div>
-                    <strong>Organic bundle</strong>
-                    <small>qty 4 - $128.00</small>
+                    <SelectableInline
+                      nodeId={nodeId("OrganicBundleTitleText")}
+                      selectedObjectId={selectedObjectId}
+                      focusedSet={focusedSet}
+                      onSelect={onSelect}
+                      className="line-item-title"
+                      label="OrganicBundleTitleText"
+                    >
+                      {text("OrganicBundleTitleText", "Organic bundle")}
+                    </SelectableInline>
+                    <SelectableInline
+                      nodeId={nodeId("OrganicBundleMetaText")}
+                      selectedObjectId={selectedObjectId}
+                      focusedSet={focusedSet}
+                      onSelect={onSelect}
+                      className="line-item-meta"
+                      label="OrganicBundleMetaText"
+                    >
+                      {text("OrganicBundleMetaText", "qty 4 - $128.00")}
+                    </SelectableInline>
                   </div>
-                  <b>ok</b>
-                </div>
-                <div className="line-item-row">
-                  <img className="line-item-thumb" src={coldChainImage.src} alt={coldChainImage.alt} />
+                  <SelectableInline
+                    nodeId={nodeId("OrganicStatusBadge")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="line-item-badge"
+                    label="OrganicStatusBadge"
+                  >
+                    {rectLabel("OrganicStatusBadge", "ok")}
+                  </SelectableInline>
+                </SelectablePreview>
+                <SelectablePreview
+                  nodeId={nodeId("ColdChainLineItemFlex")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="line-item-row"
+                  label="ColdChainLineItemFlex"
+                >
+                  <SelectablePreview
+                    nodeId={nodeId("ColdChainImage")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="line-item-thumb-frame"
+                    label="ColdChainImage"
+                  >
+                    <img className="line-item-thumb" src={coldChainImage.src} alt={coldChainImage.alt} />
+                  </SelectablePreview>
                   <div>
-                    <strong>Cold chain fee</strong>
-                    <small>qty 1 - $18.00</small>
+                    <SelectableInline
+                      nodeId={nodeId("ColdChainTitleText")}
+                      selectedObjectId={selectedObjectId}
+                      focusedSet={focusedSet}
+                      onSelect={onSelect}
+                      className="line-item-title"
+                      label="ColdChainTitleText"
+                    >
+                      {text("ColdChainTitleText", "Cold chain fee")}
+                    </SelectableInline>
+                    <SelectableInline
+                      nodeId={nodeId("ColdChainMetaText")}
+                      selectedObjectId={selectedObjectId}
+                      focusedSet={focusedSet}
+                      onSelect={onSelect}
+                      className="line-item-meta"
+                      label="ColdChainMetaText"
+                    >
+                      {text("ColdChainMetaText", "qty 1 - $18.00")}
+                    </SelectableInline>
                   </div>
-                  <b>new</b>
-                </div>
+                  <SelectableInline
+                    nodeId={nodeId("ColdChainStatusBadge")}
+                    selectedObjectId={selectedObjectId}
+                    focusedSet={focusedSet}
+                    onSelect={onSelect}
+                    className="line-item-badge"
+                    label="ColdChainStatusBadge"
+                  >
+                    {rectLabel("ColdChainStatusBadge", "new")}
+                  </SelectableInline>
+                </SelectablePreview>
               </SelectablePreview>
 
               <SelectablePreview
-                nodeId={previewIds.saveButton}
+                nodeId={nodeId("SaveButton")}
                 selectedObjectId={selectedObjectId}
                 focusedSet={focusedSet}
                 onSelect={onSelect}
                 className="mobile-primary-action"
                 label="SaveButton"
               >
-                <span>Save record</span>
-                <SendHorizontal aria-hidden="true" />
+                <SelectableInline
+                  nodeId={nodeId("SaveButtonText")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="save-button-text"
+                  label="SaveButtonText"
+                >
+                  {text("SaveButtonText", "Save record")}
+                </SelectableInline>
+                <SelectableInline
+                  nodeId={nodeId("SaveButtonIcon")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="save-button-icon"
+                  label="SaveButtonIcon"
+                >
+                  <SendHorizontal />
+                </SelectableInline>
               </SelectablePreview>
 
-              <div className="mobile-bottom-nav" aria-hidden="true">
-                <span className="active"><LayoutTemplate /></span>
-                <span><Database /></span>
-                <span><History /></span>
-              </div>
+              <SelectablePreview
+                nodeId={nodeId("BottomNavFlex")}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="mobile-bottom-nav"
+                label="BottomNavFlex"
+              >
+                <SelectableInline
+                  nodeId={nodeId("LayoutTabIcon")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="bottom-nav-button active"
+                  label="LayoutTabIcon"
+                >
+                  <LayoutTemplate />
+                </SelectableInline>
+                <SelectableInline
+                  nodeId={nodeId("DatabaseTabIcon")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="bottom-nav-button"
+                  label="DatabaseTabIcon"
+                >
+                  <Database />
+                </SelectableInline>
+                <SelectableInline
+                  nodeId={nodeId("HistoryTabIcon")}
+                  selectedObjectId={selectedObjectId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                  className="bottom-nav-button"
+                  label="HistoryTabIcon"
+                >
+                  <History />
+                </SelectableInline>
+              </SelectablePreview>
             </div>
           </div>
         </SelectablePreview>
@@ -1010,6 +1488,50 @@ function SelectablePreview({
     >
       {children}
     </div>
+  );
+}
+
+function SelectableInline({
+  nodeId,
+  selectedObjectId,
+  focusedSet,
+  onSelect,
+  className,
+  label,
+  children,
+}: {
+  nodeId: NodeId | null;
+  selectedObjectId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+  className: string;
+  label: string;
+  children: ReactNode;
+}) {
+  const classes = previewNodeClass(className, nodeId, selectedObjectId, focusedSet);
+
+  return (
+    <span
+      className={classes}
+      data-node-label={label}
+      role="button"
+      tabIndex={nodeId === null ? -1 : 0}
+      onClick={(event) => {
+        if (nodeId === null) {
+          return;
+        }
+
+        event.stopPropagation();
+        onSelect(nodeId);
+      }}
+      onKeyDown={(event) => {
+        if (nodeId !== null) {
+          selectNodeFromKeyboard(event, nodeId, onSelect);
+        }
+      }}
+    >
+      {children}
+    </span>
   );
 }
 
@@ -1104,6 +1626,36 @@ function CanvasNode({
             />
           ))}
         </div>
+      </div>
+    );
+  }
+
+  if (isUiFlex(value)) {
+    const childrenArrayId = childIdByKey(doc, nodeId, "children");
+    const childIds = childrenArrayId ? doc.nodes[childrenArrayId]?.children ?? [] : [];
+
+    return (
+      <div
+        className={`${className} flex-node flex-${value.direction}`}
+        style={{ gap: value.gap }}
+        role="button"
+        tabIndex={0}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(nodeId);
+        }}
+        onKeyDown={(event) => selectNodeFromKeyboard(event, nodeId, onSelect)}
+      >
+        {childIds.map((childId) => (
+          <CanvasNode
+            key={childId}
+            doc={doc}
+            nodeId={childId}
+            selectedId={selectedId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
+        ))}
       </div>
     );
   }
@@ -1401,8 +1953,48 @@ function uiObjectIdByField(doc: JsonDoc, key: string, value: string): NodeId | n
   return null;
 }
 
-function uiImageByLabel(doc: JsonDoc, label: string): Extract<UiNode, { kind: "image" }> | null {
-  const nodeId = uiObjectIdByField(doc, "label", label);
+function designNodeIdsByName(doc: JsonDoc) {
+  const ids = new Map<string, NodeId>();
+
+  for (const node of Object.values(doc.nodes)) {
+    if (node.type !== "object") {
+      continue;
+    }
+
+    const name = primitiveField(doc, node.id, "name");
+
+    if (name !== null) {
+      ids.set(name, node.id);
+    }
+  }
+
+  return ids;
+}
+
+function uiTextByName(doc: JsonDoc, name: string): Extract<UiNode, { kind: "text" }> | null {
+  const nodeId = uiObjectIdByField(doc, "name", name);
+
+  if (nodeId === null) {
+    return null;
+  }
+
+  const value = deserialize(doc, nodeId);
+  return isUiText(value) ? value : null;
+}
+
+function uiRectByName(doc: JsonDoc, name: string): Extract<UiNode, { kind: "rect" }> | null {
+  const nodeId = uiObjectIdByField(doc, "name", name);
+
+  if (nodeId === null) {
+    return null;
+  }
+
+  const value = deserialize(doc, nodeId);
+  return isUiRect(value) ? value : null;
+}
+
+function uiImageByName(doc: JsonDoc, name: string): Extract<UiNode, { kind: "image" }> | null {
+  const nodeId = uiObjectIdByField(doc, "name", name);
 
   if (nodeId === null) {
     return null;
@@ -1725,6 +2317,16 @@ function uniqueIds(ids: NodeId[]) {
 
 function isUiFrame(value: JsonValue): value is Extract<UiNode, { kind: "frame" }> {
   return isRecord(value) && value.kind === "frame" && Array.isArray(value.children);
+}
+
+function isUiFlex(value: JsonValue): value is Extract<UiNode, { kind: "flex" }> {
+  return (
+    isRecord(value) &&
+    value.kind === "flex" &&
+    (value.direction === "row" || value.direction === "column") &&
+    typeof value.gap === "number" &&
+    Array.isArray(value.children)
+  );
 }
 
 function isUiText(value: JsonValue): value is Extract<UiNode, { kind: "text" }> {

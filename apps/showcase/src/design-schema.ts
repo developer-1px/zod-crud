@@ -39,6 +39,11 @@ export const DesignImageAspectSchema = z.union([
   z.literal("thumb"),
 ]);
 
+export const DesignFlexDirectionSchema = z.union([
+  z.literal("row"),
+  z.literal("column"),
+]);
+
 export const DesignOperationSchema = z.union([
   z.literal("create"),
   z.literal("read"),
@@ -75,10 +80,18 @@ export type DesignTone = z.infer<typeof DesignToneSchema>;
 export type DesignFill = z.infer<typeof DesignFillSchema>;
 export type DesignIconName = z.infer<typeof DesignIconNameSchema>;
 export type DesignImageAspect = z.infer<typeof DesignImageAspectSchema>;
+export type DesignFlexDirection = z.infer<typeof DesignFlexDirectionSchema>;
 
 export type UiFrameNode = DesignNodeBase & {
   kind: "frame";
   fill: string;
+  children: UiNode[];
+};
+
+export type UiFlexNode = DesignNodeBase & {
+  kind: "flex";
+  direction: DesignFlexDirection;
+  gap: number;
   children: UiNode[];
 };
 
@@ -113,6 +126,7 @@ export type UiImageNode = DesignNodeBase & {
 
 export type UiNode =
   | UiFrameNode
+  | UiFlexNode
   | UiTextNode
   | UiRectNode
   | UiIconNode
@@ -155,9 +169,19 @@ export const FrameNodeSchema: z.ZodType<UiFrameNode> = z.lazy(() =>
   }),
 );
 
+export const FlexNodeSchema: z.ZodType<UiFlexNode> = z.lazy(() =>
+  DesignNodeBaseSchema.extend({
+    kind: z.literal("flex"),
+    direction: DesignFlexDirectionSchema,
+    gap: z.number().min(0).max(64),
+    children: z.array(DesignNodeSchema),
+  }),
+);
+
 export const DesignNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
   z.union([
     FrameNodeSchema,
+    FlexNodeSchema,
     TextNodeSchema,
     RectNodeSchema,
     IconNodeSchema,
@@ -180,10 +204,26 @@ export const initialDesignJson = {
           name: "AppToolbar",
           fill: "#ffffff",
           children: [
-            { kind: "text", name: "ToolbarEyebrowText", text: "FieldOps", tone: "muted" },
-            { kind: "text", name: "ToolbarTitleText", text: "Order intake", tone: "ink" },
-            { kind: "icon", name: "SearchIcon", label: "Search", icon: "search", tone: "ink" },
-            { kind: "icon", name: "NotificationIcon", label: "Notifications", icon: "bell", tone: "ink" },
+            {
+              kind: "flex",
+              name: "ToolbarTitleFlex",
+              direction: "column",
+              gap: 2,
+              children: [
+                { kind: "text", name: "ToolbarEyebrowText", text: "FieldOps", tone: "muted" },
+                { kind: "text", name: "ToolbarTitleText", text: "Order intake", tone: "ink" },
+              ],
+            },
+            {
+              kind: "flex",
+              name: "ToolbarActionsFlex",
+              direction: "row",
+              gap: 7,
+              children: [
+                { kind: "icon", name: "SearchIcon", label: "Search", icon: "search", tone: "ink" },
+                { kind: "icon", name: "NotificationIcon", label: "Notifications", icon: "bell", tone: "ink" },
+              ],
+            },
             { kind: "rect", name: "SyncStatus", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
           ],
         },
@@ -203,16 +243,25 @@ export const initialDesignJson = {
           fill: "#eaf8f2",
           children: [
             { kind: "icon", name: "SchemaValidIcon", label: "Valid", icon: "check-circle", tone: "accent" },
-            { kind: "text", name: "SchemaNameText", text: "SalesOrderSchema", tone: "accent" },
-            { kind: "text", name: "SnapshotStatusText", text: "Valid snapshot", tone: "ink" },
-            { kind: "text", name: "HydratedFieldsText", text: "8 fields hydrated by zod-crud", tone: "muted" },
+            {
+              kind: "flex",
+              name: "SchemaCopyFlex",
+              direction: "column",
+              gap: 2,
+              children: [
+                { kind: "text", name: "SchemaNameText", text: "SalesOrderSchema", tone: "accent" },
+                { kind: "text", name: "SnapshotStatusText", text: "Valid snapshot", tone: "ink" },
+                { kind: "text", name: "HydratedFieldsText", text: "8 fields hydrated by zod-crud", tone: "muted" },
+              ],
+            },
             { kind: "rect", name: "SafeParseBadge", label: "safeParse", fill: "teal", width: 92, height: 28 },
           ],
         },
         {
-          kind: "frame",
+          kind: "flex",
           name: "CrudModeTabs",
-          fill: "#ffffff",
+          direction: "row",
+          gap: 3,
           children: [
             { kind: "text", name: "CreateModeText", text: "Create", tone: "ink" },
             { kind: "text", name: "ReadModeText", text: "Read", tone: "muted" },
@@ -224,10 +273,26 @@ export const initialDesignJson = {
           name: "CustomerNameField",
           fill: "#ffffff",
           children: [
-            { kind: "text", name: "CustomerLabelText", text: "Customer", tone: "ink" },
-            { kind: "text", name: "CustomerFieldPathText", text: "customer.name", tone: "muted" },
-            { kind: "text", name: "CustomerValueText", text: "Acme Market", tone: "ink" },
-            { kind: "icon", name: "CustomerSelectIcon", label: "Open customer options", icon: "chevron-down", tone: "ink" },
+            {
+              kind: "flex",
+              name: "CustomerHeadingFlex",
+              direction: "row",
+              gap: 10,
+              children: [
+                { kind: "text", name: "CustomerLabelText", text: "Customer", tone: "ink" },
+                { kind: "text", name: "CustomerFieldPathText", text: "customer.name", tone: "muted" },
+              ],
+            },
+            {
+              kind: "flex",
+              name: "CustomerInputFlex",
+              direction: "row",
+              gap: 8,
+              children: [
+                { kind: "text", name: "CustomerValueText", text: "Acme Market", tone: "ink" },
+                { kind: "icon", name: "CustomerSelectIcon", label: "Open customer options", icon: "chevron-down", tone: "ink" },
+              ],
+            },
             { kind: "text", name: "CustomerSchemaText", text: "z.string().min(2)", tone: "accent" },
           ],
         },
@@ -236,11 +301,27 @@ export const initialDesignJson = {
           name: "OrderStatusField",
           fill: "#ffffff",
           children: [
-            { kind: "text", name: "StatusLabelText", text: "Status", tone: "ink" },
-            { kind: "text", name: "StatusFieldPathText", text: "status", tone: "muted" },
-            { kind: "text", name: "DraftStatusText", text: "Draft", tone: "ink" },
-            { kind: "text", name: "PaidStatusText", text: "Paid", tone: "ink" },
-            { kind: "text", name: "SentStatusText", text: "Sent", tone: "ink" },
+            {
+              kind: "flex",
+              name: "StatusHeadingFlex",
+              direction: "row",
+              gap: 10,
+              children: [
+                { kind: "text", name: "StatusLabelText", text: "Status", tone: "ink" },
+                { kind: "text", name: "StatusFieldPathText", text: "status", tone: "muted" },
+              ],
+            },
+            {
+              kind: "flex",
+              name: "StatusPillsFlex",
+              direction: "row",
+              gap: 6,
+              children: [
+                { kind: "text", name: "DraftStatusText", text: "Draft", tone: "ink" },
+                { kind: "text", name: "PaidStatusText", text: "Paid", tone: "ink" },
+                { kind: "text", name: "SentStatusText", text: "Sent", tone: "ink" },
+              ],
+            },
           ],
         },
         {
@@ -248,40 +329,79 @@ export const initialDesignJson = {
           name: "LineItemsList",
           fill: "#ffffff",
           children: [
-            { kind: "text", name: "LineItemsTitleText", text: "Line items", tone: "ink" },
-            { kind: "text", name: "LineItemsPathText", text: "lineItems[]", tone: "muted" },
-            { kind: "icon", name: "AddLineItemIcon", label: "Add line item", icon: "plus", tone: "ink" },
             {
-              kind: "image",
-              name: "OrganicBundleImage",
-              label: "OrganicBundleImage",
-              src: CONTENT_IMAGES.organicBundle,
-              alt: "Organic vegetables bundle",
-              aspect: "thumb",
+              kind: "flex",
+              name: "LineItemsHeadingFlex",
+              direction: "row",
+              gap: 10,
+              children: [
+                { kind: "text", name: "LineItemsTitleText", text: "Line items", tone: "ink" },
+                { kind: "text", name: "LineItemsPathText", text: "lineItems[]", tone: "muted" },
+                { kind: "icon", name: "AddLineItemIcon", label: "Add line item", icon: "plus", tone: "ink" },
+              ],
             },
-            { kind: "text", name: "OrganicBundleTitleText", text: "Organic bundle", tone: "ink" },
-            { kind: "text", name: "OrganicBundleMetaText", text: "qty 4 - $128.00", tone: "muted" },
-            { kind: "rect", name: "OrganicStatusBadge", label: "ok", fill: "blue", width: 44, height: 24 },
             {
-              kind: "image",
-              name: "ColdChainImage",
-              label: "ColdChainImage",
-              src: CONTENT_IMAGES.coldChain,
-              alt: "Prepared cold chain food package",
-              aspect: "thumb",
+              kind: "flex",
+              name: "OrganicLineItemFlex",
+              direction: "row",
+              gap: 9,
+              children: [
+                {
+                  kind: "image",
+                  name: "OrganicBundleImage",
+                  label: "OrganicBundleImage",
+                  src: CONTENT_IMAGES.organicBundle,
+                  alt: "Organic vegetables bundle",
+                  aspect: "thumb",
+                },
+                { kind: "text", name: "OrganicBundleTitleText", text: "Organic bundle", tone: "ink" },
+                { kind: "text", name: "OrganicBundleMetaText", text: "qty 4 - $128.00", tone: "muted" },
+                { kind: "rect", name: "OrganicStatusBadge", label: "ok", fill: "blue", width: 44, height: 24 },
+              ],
             },
-            { kind: "text", name: "ColdChainTitleText", text: "Cold chain fee", tone: "ink" },
-            { kind: "text", name: "ColdChainMetaText", text: "qty 1 - $18.00", tone: "muted" },
-            { kind: "rect", name: "ColdChainStatusBadge", label: "new", fill: "blue", width: 44, height: 24 },
+            {
+              kind: "flex",
+              name: "ColdChainLineItemFlex",
+              direction: "row",
+              gap: 9,
+              children: [
+                {
+                  kind: "image",
+                  name: "ColdChainImage",
+                  label: "ColdChainImage",
+                  src: CONTENT_IMAGES.coldChain,
+                  alt: "Prepared cold chain food package",
+                  aspect: "thumb",
+                },
+                { kind: "text", name: "ColdChainTitleText", text: "Cold chain fee", tone: "ink" },
+                { kind: "text", name: "ColdChainMetaText", text: "qty 1 - $18.00", tone: "muted" },
+                { kind: "rect", name: "ColdChainStatusBadge", label: "new", fill: "blue", width: 44, height: 24 },
+              ],
+            },
             { kind: "rect", name: "LineItemsRepeater", label: "Repeater", fill: "violet", width: 220, height: 76 },
           ],
         },
-        { kind: "rect", name: "SaveButton", label: "SaveButton", fill: "teal", width: 260, height: 48 },
-        { kind: "text", name: "SaveButtonText", text: "Save record", tone: "inverse" },
-        { kind: "icon", name: "SaveButtonIcon", label: "Save", icon: "send", tone: "inverse" },
-        { kind: "icon", name: "LayoutTabIcon", label: "Design tab", icon: "layout-template", tone: "accent" },
-        { kind: "icon", name: "DatabaseTabIcon", label: "Data tab", icon: "database", tone: "ink" },
-        { kind: "icon", name: "HistoryTabIcon", label: "History tab", icon: "history", tone: "ink" },
+        {
+          kind: "flex",
+          name: "SaveButton",
+          direction: "row",
+          gap: 8,
+          children: [
+            { kind: "text", name: "SaveButtonText", text: "Save record", tone: "inverse" },
+            { kind: "icon", name: "SaveButtonIcon", label: "Save", icon: "send", tone: "inverse" },
+          ],
+        },
+        {
+          kind: "flex",
+          name: "BottomNavFlex",
+          direction: "row",
+          gap: 8,
+          children: [
+            { kind: "icon", name: "LayoutTabIcon", label: "Design tab", icon: "layout-template", tone: "accent" },
+            { kind: "icon", name: "DatabaseTabIcon", label: "Data tab", icon: "database", tone: "ink" },
+            { kind: "icon", name: "HistoryTabIcon", label: "History tab", icon: "history", tone: "ink" },
+          ],
+        },
       ],
     },
     {
