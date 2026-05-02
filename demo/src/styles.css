@@ -942,6 +942,10 @@ tr.paste-fail {
     border-left: 0;
   }
 
+  .tree-panel {
+    max-height: 38vh;
+  }
+
   .canvas-shell {
     min-height: 520px;
   }

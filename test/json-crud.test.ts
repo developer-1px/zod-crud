@@ -168,6 +168,72 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("discovers paste child arrays from the Zod schema instead of child key conventions only", () => {
+    const Schema = z.object({
+      items: z.array(z.string()),
+      selected: z.string(),
+    });
+    const editor = createJsonCrud(Schema, {
+      items: [],
+      selected: "hello",
+    });
+    const rootId = editor.snapshot().rootId;
+    const selectedId = editor.find(rootId, "selected");
+
+    editor.copy(selectedId!);
+
+    expect(editor.paste(rootId).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      items: ["hello"],
+      selected: "hello",
+    });
+  });
+
+  it("tries schema-discovered array candidates until Zod accepts one", () => {
+    const Schema = z.object({
+      numbers: z.array(z.number()),
+      strings: z.array(z.string()),
+      selected: z.string(),
+    });
+    const editor = createJsonCrud(Schema, {
+      numbers: [],
+      strings: [],
+      selected: "hello",
+    });
+    const rootId = editor.snapshot().rootId;
+    const selectedId = editor.find(rootId, "selected");
+
+    editor.copy(selectedId!);
+
+    expect(editor.paste(rootId).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      numbers: [],
+      strings: ["hello"],
+      selected: "hello",
+    });
+  });
+
+  it("prefers Zod-declared array fields over child key fallbacks", () => {
+    const Schema = z.object({
+      items: z.array(z.string()),
+      selected: z.string(),
+    }).catchall(JsonValueSchema);
+    const editor = createJsonCrud(Schema, {
+      items: [],
+      selected: "hello",
+    });
+    const rootId = editor.snapshot().rootId;
+    const selectedId = editor.find(rootId, "selected");
+
+    editor.copy(selectedId!);
+
+    expect(editor.paste(rootId).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      items: ["hello"],
+      selected: "hello",
+    });
+  });
+
   it("rejects paste when neither child insertion nor overwrite matches the target schema", () => {
     const editor = createEditor();
     const rootId = editor.snapshot().rootId;
@@ -280,6 +346,21 @@ describe("JsonCrud", () => {
     expect(editor.toJson()).toEqual({ items: { a: { name: "Bea" } } });
   });
 
+  it("traverses numeric record keys like Zod does", () => {
+    const Schema = z.record(z.number().int().positive(), z.object({ name: z.string() }));
+    const editor = createJsonCrud(Schema, { "1": { name: "Ann" } } as z.input<typeof Schema>);
+    const itemId = editor.find(editor.snapshot().rootId, "1");
+    const nameId = editor.find(itemId!, "name");
+
+    expect(editor.update(nameId!, "Bea").ok).toBe(true);
+    expect(editor.toJson()).toEqual({ "1": { name: "Bea" } });
+
+    expect(() => createJsonCrud(Schema, { "1.5": { name: "Ann" } } as z.input<typeof Schema>)).toThrow();
+    expect(createJsonCrud(Schema, { "01": { name: "Cal" } } as z.input<typeof Schema>).toJson()).toEqual({
+      "1": { name: "Cal" },
+    });
+  });
+
   it("edits passthrough and catchall object fields that already exist in the document", () => {
     const PassthroughSchema = z.object({ name: z.string() }).passthrough() as z.ZodType<JsonValue>;
     const passthroughEditor = createJsonCrud(PassthroughSchema, {
@@ -316,6 +397,15 @@ describe("JsonCrud", () => {
     expect(editor.toJson()).toEqual({ name: "Bea", count: 2 });
   });
 
+  it("traverses identity-like pipe schemas that keep structural JSON output", () => {
+    const Schema = z.object({ name: z.string() }).transform((value) => value);
+    const editor = createJsonCrud(Schema, { name: "Ann" });
+    const nameId = editor.find(editor.snapshot().rootId, "name");
+
+    expect(editor.update(nameId!, "Bea").ok).toBe(true);
+    expect(editor.toJson()).toEqual({ name: "Bea" });
+  });
+
   it("rejects mutations when Zod would strip or coerce the committed value", () => {
     const ObjectSchema = z.object({ name: z.string() });
     const objectEditor = createJsonCrud(ObjectSchema, { name: "Ann" });
@@ -338,6 +428,16 @@ describe("JsonCrud", () => {
     expect(editor.toJson()).toEqual({ name: "untitled" });
   });
 
+  it("types the public JsonCrud constructor with the schema input", () => {
+    if (false) {
+      // @ts-expect-error count must be a number for this schema input.
+      new JsonCrud(z.object({ count: z.number() }), { count: "bad" });
+    }
+
+    const editor = new JsonCrud(z.object({ count: z.number() }), { count: 1 });
+    expect(editor.toJson()).toEqual({ count: 1 });
+  });
+
   it("rejects schemas whose parsed output cannot be validated again as stored JSON", () => {
     const Schema = z.string().transform((value) => value.length);
 
@@ -351,6 +451,42 @@ describe("JsonCrud", () => {
     expect(editor.create(rootId, 0.5, "x").ok).toBe(false);
     expect(editor.create(rootId, Number.NaN, "x").ok).toBe(false);
     expect(editor.toJson()).toEqual(["a", "b"]);
+  });
+
+  it("does not turn a failed self-sibling paste into a no-op overwrite", () => {
+    const editor = createJsonCrud(z.array(z.string()).max(1), ["a"]);
+    const itemId = editor.find(editor.snapshot().rootId, 0);
+
+    editor.copy(itemId!);
+
+    expect(editor.paste(itemId!).ok).toBe(false);
+    expect(editor.undo()).toBe(false);
+    expect(editor.toJson()).toEqual(["a"]);
+  });
+
+  it("does not reuse node ids after delete when resolving clipboard source behavior", () => {
+    const ChildSchema = z.object({ label: z.string() });
+    const ItemSchema = z.object({
+      label: z.string(),
+      children: z.array(ChildSchema).optional(),
+    });
+    const Schema = z.object({ children: z.array(ItemSchema) }) as z.ZodType<JsonValue>;
+    const editor = createJsonCrud(Schema, {
+      children: [{ label: "old" }],
+    });
+    const childrenId = editor.find(editor.snapshot().rootId, "children");
+    const oldId = editor.find(childrenId!, 0);
+
+    editor.copy(oldId!);
+    expect(editor.delete(oldId!).ok).toBe(true);
+    expect(editor.create(childrenId!, 0, { label: "new" }).ok).toBe(true);
+
+    const newId = editor.find(childrenId!, 0);
+    expect(newId).not.toBe(oldId);
+    expect(editor.paste(newId!).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      children: [{ label: "new", children: [{ label: "old" }] }],
+    });
   });
 
   it("returns failures for invalid ids without mutating canPaste state", () => {

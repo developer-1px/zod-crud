@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -26,8 +26,9 @@ try {
     },
   );
   const [packResult] = JSON.parse(packOutput);
-  const tarball = join(workspace, packResult.filename);
-  const consumer = join(workspace, "consumer");
+  const tarball = isAbsolute(packResult.filename)
+    ? packResult.filename
+    : join(workspace, packResult.filename);
   const zodPackage = join(repoRoot, "node_modules", "zod");
 
   if (!existsSync(tarball)) {
@@ -62,7 +63,6 @@ try {
     ].join("\n"),
   );
 
-  await rm(consumer, { force: true, recursive: true });
   await writeFile(
     join(workspace, "package.json"),
     JSON.stringify({
@@ -70,12 +70,17 @@ try {
       type: "module",
       dependencies: {
         "zod-crud": `file:${tarball}`,
-        zod: `file:${zodPackage}`,
       },
     }, null, 2),
   );
 
-  run("npm", ["install", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], workspace);
+  run("npm", ["install", "--legacy-peer-deps", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], workspace);
+  await mkdir(join(workspace, "node_modules"), { recursive: true });
+
+  if (!existsSync(join(workspace, "node_modules", "zod"))) {
+    await symlink(zodPackage, join(workspace, "node_modules", "zod"), "dir");
+  }
+
   run("node", ["smoke.mjs"], workspace);
   run(
     "node",

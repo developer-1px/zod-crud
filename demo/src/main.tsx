@@ -158,6 +158,14 @@ function App() {
 
     return statuses;
   }, [clipboardJson, doc]);
+  const selectedPasteStatus = pasteStatus[selectedId];
+  const canCreateChild = findInsertionArray(doc, selectedId) !== null;
+  const canUpdateSelected = editableStringNodeId(doc, selectedId) !== null;
+  const canCutSelected = selectedId !== doc.rootId;
+  const canDeleteSelected = selectedId !== doc.rootId;
+  const canPasteSelected = selectedPasteStatus?.ok === true;
+  const canUndo = editorRef.current.canUndo();
+  const canRedo = editorRef.current.canRedo();
 
   function refresh() {
     setVersion((current) => current + 1);
@@ -330,6 +338,10 @@ function App() {
         !event.altKey &&
         !event.shiftKey
       ) {
+        if (!canDeleteSelected) {
+          return;
+        }
+
         event.preventDefault();
         deleteSelected();
         return;
@@ -348,12 +360,20 @@ function App() {
       }
 
       if (key === "x" && !event.shiftKey) {
+        if (!canCutSelected) {
+          return;
+        }
+
         event.preventDefault();
         cutSelected();
         return;
       }
 
       if (key === "v" && !event.shiftKey) {
+        if (!canPasteSelected) {
+          return;
+        }
+
         event.preventDefault();
         pasteSelected();
         return;
@@ -363,9 +383,13 @@ function App() {
         event.preventDefault();
 
         if (event.shiftKey) {
-          run("redo shortcut", () => editorRef.current.redo());
+          if (canRedo) {
+            run("redo shortcut", () => editorRef.current.redo());
+          }
         } else {
-          run("undo shortcut", () => editorRef.current.undo());
+          if (canUndo) {
+            run("undo shortcut", () => editorRef.current.undo());
+          }
         }
       }
     }
@@ -396,8 +420,8 @@ function App() {
         </div>
 
         <div className="toolbar top-actions" aria-label="History controls">
-          <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} />
-          <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} />
+          <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} disabled={!canUndo} />
+          <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} disabled={!canRedo} />
           <IconButton label="Reset" onClick={reset} icon={<RefreshCcw />} />
         </div>
       </header>
@@ -413,20 +437,20 @@ function App() {
           >
             <MousePointer2 />
           </button>
-          <IconButton label="Create text" onClick={appendText} icon={<Type />} />
-          <IconButton label="Create rect" onClick={appendRect} icon={<Square />} />
-          <IconButton label="Update" onClick={editSelected} icon={<Pencil />} />
+          <IconButton label="Create text" onClick={appendText} icon={<Type />} disabled={!canCreateChild} />
+          <IconButton label="Create rect" onClick={appendRect} icon={<Square />} disabled={!canCreateChild} />
+          <IconButton label="Update" onClick={editSelected} icon={<Pencil />} disabled={!canUpdateSelected} />
           <div className="rail-separator" />
           <IconButton label="Copy" shortcut="Cmd+C" onClick={copySelected} icon={<Copy />} />
-          <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} />
+          <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} disabled={!canCutSelected} />
           <IconButton
             label="Paste"
             shortcut="Cmd+V"
             onClick={pasteSelected}
             icon={<Clipboard />}
-            disabled={clipboardJson.length === 0}
+            disabled={!canPasteSelected}
           />
-          <IconButton label="Delete" shortcut="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
+          <IconButton label="Delete" shortcut="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" disabled={!canDeleteSelected} />
         </nav>
 
         <aside className="panel tree-panel">
