@@ -93,5 +93,6 @@ const json = editor.toJson();
 - `copy`, `cut`, `paste`
 - `undo`, `redo`
 - visual focus recovery for changed nodes in the demo
+- visual keyboard shortcuts: `Cmd+C`, `Cmd+X`, `Cmd+V`, `Cmd+Z`, `Shift+Cmd+Z`
 - recursive Zod object/array/union path validation
 - `children` convention for child paste, configurable via `childKeys`

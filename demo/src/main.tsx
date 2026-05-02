@@ -283,6 +283,53 @@ function App() {
     refresh();
   }
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented || isEditableShortcutTarget(event.target)) {
+        return;
+      }
+
+      const isCommand = event.metaKey || event.ctrlKey;
+
+      if (!isCommand || event.altKey) {
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+
+      if (key === "c" && !event.shiftKey) {
+        event.preventDefault();
+        copySelected();
+        return;
+      }
+
+      if (key === "x" && !event.shiftKey) {
+        event.preventDefault();
+        cutSelected();
+        return;
+      }
+
+      if (key === "v" && !event.shiftKey) {
+        event.preventDefault();
+        pasteSelected();
+        return;
+      }
+
+      if (key === "z") {
+        event.preventDefault();
+
+        if (event.shiftKey) {
+          run("redo shortcut", () => editorRef.current.redo());
+        } else {
+          run("undo shortcut", () => editorRef.current.undo());
+        }
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   return (
     <main className="app">
       <header className="topbar">
@@ -294,12 +341,12 @@ function App() {
           <IconButton label="Create text" onClick={appendText} icon={<Type />} />
           <IconButton label="Create rect" onClick={appendRect} icon={<Square />} />
           <IconButton label="Update" onClick={editSelected} icon={<Pencil />} />
-          <IconButton label="Copy" onClick={copySelected} icon={<Copy />} />
-          <IconButton label="Cut" onClick={cutSelected} icon={<Scissors />} />
-          <IconButton label="Paste" onClick={pasteSelected} icon={<Clipboard />} />
+          <IconButton label="Copy" shortcut="Cmd+C" onClick={copySelected} icon={<Copy />} />
+          <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} />
+          <IconButton label="Paste" shortcut="Cmd+V" onClick={pasteSelected} icon={<Clipboard />} />
           <IconButton label="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
-          <IconButton label="Undo" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} />
-          <IconButton label="Redo" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} />
+          <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} />
+          <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} />
           <IconButton label="Reset" onClick={reset} icon={<RefreshCcw />} />
         </div>
       </header>
@@ -378,17 +425,24 @@ function App() {
 
 function IconButton({
   label,
+  shortcut,
   icon,
   onClick,
   tone = "neutral",
 }: {
   label: string;
+  shortcut?: string;
   icon: ReactNode;
   onClick: () => void;
   tone?: "neutral" | "danger";
 }) {
   return (
-    <button className={`icon-button ${tone}`} type="button" onClick={onClick} title={label}>
+    <button
+      className={`icon-button ${tone}`}
+      type="button"
+      onClick={onClick}
+      title={shortcut === undefined ? label : `${label} (${shortcut})`}
+    >
       {icon}
       <span>{label}</span>
     </button>
@@ -718,6 +772,15 @@ function editableStringNodeId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
 
 function operationSucceeded(result: OperationResult | boolean | "ok") {
   return result === true || result === "ok" || (typeof result === "object" && result.ok);
+}
+
+function isEditableShortcutTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tagName = target.tagName.toLowerCase();
+  return tagName === "input" || tagName === "textarea" || tagName === "select" || target.isContentEditable;
 }
 
 function recoverFocus(doc: JsonDoc, focusedIds: NodeId[], selectedId: NodeId) {
