@@ -168,21 +168,24 @@ function App() {
     setFocusedIds([nodeId]);
   }
 
-  function focusFromChange(before: JsonDoc, after: JsonDoc) {
-    const diffIds = diffFocusIds(before, after);
-    const recovered = recoverFocus(after, diffIds, selectedId);
+  function focusFromChange(before: JsonDoc, after: JsonDoc, nextFocusIds = diffFocusIds(before, after)) {
+    const recovered = recoverFocus(after, nextFocusIds, selectedId);
 
     setSelectedId(recovered.selectedId);
     setFocusedIds(recovered.focusedIds);
   }
 
-  function run(label: string, operation: () => OperationResult | boolean | "ok") {
+  function run(
+    label: string,
+    operation: () => OperationResult | boolean | "ok",
+    focusResolver?: (before: JsonDoc, after: JsonDoc) => NodeId[],
+  ) {
     const before = editorRef.current.snapshot();
     const result = operation();
     const after = editorRef.current.snapshot();
 
     if (operationSucceeded(result) && !sameDoc(before, after)) {
-      focusFromChange(before, after);
+      focusFromChange(before, after, focusResolver?.(before, after));
     }
 
     pushLog(label, result);
@@ -197,15 +200,21 @@ function App() {
 
   function cutSelected() {
     const value = editorRef.current.read(selectedId);
-    run(`cut ${selectedId}`, () => {
-      const result = editorRef.current.cut(selectedId);
+    const targetId = selectedId;
 
-      if (result.ok) {
-        setClipboardJson(JSON.stringify(value, null, 2));
-      }
+    run(
+      `cut ${targetId}`,
+      () => {
+        const result = editorRef.current.cut(targetId);
 
-      return result;
-    });
+        if (result.ok) {
+          setClipboardJson(JSON.stringify(value, null, 2));
+        }
+
+        return result;
+      },
+      (before, after) => deletionFocusIds(before, after, targetId),
+    );
   }
 
   function pasteSelected() {
@@ -213,7 +222,13 @@ function App() {
   }
 
   function deleteSelected() {
-    run(`delete ${selectedId}`, () => editorRef.current.delete(selectedId));
+    const targetId = selectedId;
+
+    run(
+      `delete ${targetId}`,
+      () => editorRef.current.delete(targetId),
+      (before, after) => deletionFocusIds(before, after, targetId),
+    );
   }
 
   function appendText() {
@@ -829,6 +844,68 @@ function diffFocusIds(before: JsonDoc, after: JsonDoc): NodeId[] {
   }
 
   return sortByDocumentOrder(after, uniqueIds(changedIds));
+}
+
+function deletionFocusIds(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId[] {
+  if (after.nodes[removedId] !== undefined) {
+    return [removedId];
+  }
+
+  const removedNode = before.nodes[removedId];
+
+  if (removedNode?.parentId === null || removedNode?.parentId === undefined) {
+    return [after.rootId];
+  }
+
+  const parentBefore = before.nodes[removedNode.parentId];
+
+  if (parentBefore === undefined) {
+    return [after.rootId];
+  }
+
+  const removedIndex = parentBefore.children.indexOf(removedId);
+
+  if (removedIndex >= 0) {
+    const nextSiblingId = firstExisting(after, parentBefore.children.slice(removedIndex + 1));
+
+    if (nextSiblingId !== null) {
+      return [nextSiblingId];
+    }
+
+    const previousSiblingId = firstExisting(after, parentBefore.children.slice(0, removedIndex).reverse());
+
+    if (previousSiblingId !== null) {
+      return [previousSiblingId];
+    }
+  }
+
+  return [recoverParentForRemovedNode(before, after, parentBefore.id)];
+}
+
+function firstExisting(doc: JsonDoc, nodeIds: NodeId[]): NodeId | null {
+  return nodeIds.find((id) => doc.nodes[id] !== undefined) ?? null;
+}
+
+function recoverParentForRemovedNode(before: JsonDoc, after: JsonDoc, parentId: NodeId): NodeId {
+  let current = before.nodes[parentId];
+
+  while (current !== undefined) {
+    if (after.nodes[current.id] !== undefined && !isHiddenStructureNode(current)) {
+      return current.id;
+    }
+
+    if (current.parentId === null) {
+      break;
+    }
+
+    current = before.nodes[current.parentId];
+  }
+
+  return after.rootId;
+}
+
+function isHiddenStructureNode(node: JsonNode) {
+  return node.type === "array" && node.key === "children";
 }
 
 function recoverRemovedNode(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
