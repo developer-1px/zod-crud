@@ -120,6 +120,43 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("pastes a copied node onto itself as an array sibling before trying child arrays", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const sectionId = editor.find(childrenId!, 0);
+
+    editor.copy(sectionId!);
+
+    expect(editor.paste(sectionId!).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+      ],
+    });
+  });
+
   it("rejects paste when neither child insertion nor overwrite matches the target schema", () => {
     const editor = createEditor();
     const rootId = editor.snapshot().rootId;

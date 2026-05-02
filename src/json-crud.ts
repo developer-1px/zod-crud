@@ -88,7 +88,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
   private readonly childKeys: string[];
   private undoStack: JsonDoc[] = [];
   private redoStack: JsonDoc[] = [];
-  private clipboard: { value: JsonValue } | null = null;
+  private clipboard: { value: JsonValue; sourceId: NodeId | null } | null = null;
 
   constructor(schema: z.ZodType<T>, initialValue: unknown, options: JsonCrudOptions = {}) {
     const parsed = schema.safeParse(initialValue);
@@ -190,7 +190,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
 
   copy(nodeId: NodeId): JsonValue {
     const value = this.read(nodeId);
-    this.clipboard = { value };
+    this.clipboard = { value, sourceId: nodeId };
     return cloneJson(value);
   }
 
@@ -204,7 +204,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
       const result = this.delete(nodeId);
 
       if (result.ok) {
-        this.clipboard = { value };
+        this.clipboard = { value, sourceId: null };
       }
 
       return result;
@@ -229,6 +229,12 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
 
       if (mode === "overwrite") {
         return this.pasteAsOverwrite(targetId, payload);
+      }
+
+      const selfSiblingResult = this.pasteAsSelfSibling(targetId, payload, options.index);
+
+      if (selfSiblingResult?.ok) {
+        return selfSiblingResult;
       }
 
       const childResult = this.pasteAsChild(targetId, payload, childKeys, options.index);
@@ -298,6 +304,40 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
 
       replaceSubtree(next, targetId, payload);
       return this.commitIfValid(next);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  private pasteAsSelfSibling(
+    targetId: NodeId,
+    payload: JsonValue,
+    index?: number,
+  ): OperationResult | null {
+    if (this.clipboard?.sourceId !== targetId) {
+      return null;
+    }
+
+    try {
+      const target = getNode(this.doc, targetId);
+
+      if (target.parentId === null) {
+        return null;
+      }
+
+      const parent = getNode(this.doc, target.parentId);
+
+      if (parent.type !== "array") {
+        return null;
+      }
+
+      const targetIndex = parent.children.indexOf(targetId);
+
+      if (targetIndex === -1) {
+        return null;
+      }
+
+      return this.pasteIntoArray(parent.id, payload, index ?? targetIndex + 1);
     } catch (error) {
       return failure(error);
     }
