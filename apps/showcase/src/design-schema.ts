@@ -180,7 +180,8 @@ export const initialDesignJson = {
           name: "AppToolbar",
           fill: "#ffffff",
           children: [
-            { kind: "text", name: "ToolbarTitleText", text: "Orders", tone: "ink" },
+            { kind: "text", name: "ToolbarEyebrowText", text: "FieldOps", tone: "muted" },
+            { kind: "text", name: "ToolbarTitleText", text: "Order intake", tone: "ink" },
             { kind: "icon", name: "SearchIcon", label: "Search", icon: "search", tone: "ink" },
             { kind: "icon", name: "NotificationIcon", label: "Notifications", icon: "bell", tone: "ink" },
             { kind: "rect", name: "SyncStatus", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
@@ -194,6 +195,8 @@ export const initialDesignJson = {
           alt: "Fresh produce crates for a wholesale order",
           aspect: "wide",
         },
+        { kind: "text", name: "HeroMediaFieldText", text: "media.hero.src", tone: "inverse" },
+        { kind: "text", name: "HeroTitleText", text: "Fresh produce order", tone: "inverse" },
         {
           kind: "frame",
           name: "SchemaStatusCard",
@@ -202,7 +205,18 @@ export const initialDesignJson = {
             { kind: "icon", name: "SchemaValidIcon", label: "Valid", icon: "check-circle", tone: "accent" },
             { kind: "text", name: "SchemaNameText", text: "SalesOrderSchema", tone: "accent" },
             { kind: "text", name: "SnapshotStatusText", text: "Valid snapshot", tone: "ink" },
+            { kind: "text", name: "HydratedFieldsText", text: "8 fields hydrated by zod-crud", tone: "muted" },
             { kind: "rect", name: "SafeParseBadge", label: "safeParse", fill: "teal", width: 92, height: 28 },
+          ],
+        },
+        {
+          kind: "frame",
+          name: "CrudModeTabs",
+          fill: "#ffffff",
+          children: [
+            { kind: "text", name: "CreateModeText", text: "Create", tone: "ink" },
+            { kind: "text", name: "ReadModeText", text: "Read", tone: "muted" },
+            { kind: "text", name: "UpdateModeText", text: "Update", tone: "muted" },
           ],
         },
         {
