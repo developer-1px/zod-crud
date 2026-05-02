@@ -44,6 +44,8 @@ type JsonNode = {
 
 ## Usage
 
+`zod-crud` is ESM-only. Use `import` from Node ESM, TypeScript, or a bundler.
+
 ```ts
 import * as z from "zod";
 import { createJsonCrud } from "zod-crud";

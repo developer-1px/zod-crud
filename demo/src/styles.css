@@ -54,6 +54,10 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: not-allowed;
+}
+
 button:focus-visible,
 [role="button"]:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--accent) 70%, white);
@@ -202,6 +206,14 @@ button:focus-visible,
 .icon-button:hover {
   border-color: var(--border-strong);
   background: #f6f8fb;
+}
+
+.icon-button:disabled,
+.icon-button:disabled:hover {
+  border-color: var(--border);
+  background: var(--chrome-strong);
+  color: var(--faint);
+  opacity: 0.55;
 }
 
 .icon-button.danger {

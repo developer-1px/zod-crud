@@ -19,7 +19,15 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
-import { StrictMode, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  StrictMode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type ReactNode,
+} from "react";
 import { createRoot } from "react-dom/client";
 import * as z from "zod";
 
@@ -110,6 +118,7 @@ function makeEditor() {
 
 function App() {
   const editorRef = useRef(makeEditor());
+  const nextLogIdRef = useRef(2);
   const initialRootId = editorRef.current.snapshot().rootId;
   const [version, setVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<NodeId>(initialRootId);
@@ -157,7 +166,8 @@ function App() {
   function pushLog(label: string, result: OperationResult | boolean | "ok") {
     const ok = result === true || result === "ok" || (typeof result === "object" && result.ok);
     const reason = typeof result === "object" && !result.ok ? result.reason : undefined;
-    const entry: LogEntry = { id: Date.now(), label, ok };
+    const entry: LogEntry = { id: nextLogIdRef.current, label, ok };
+    nextLogIdRef.current += 1;
 
     if (reason !== undefined) {
       entry.reason = reason;
@@ -175,7 +185,8 @@ function App() {
   }
 
   function focusFromChange(before: JsonDoc, after: JsonDoc, nextFocusIds = diffFocusIds(before, after)) {
-    const recovered = recoverFocus(after, nextFocusIds, selectedId);
+    const selectedCandidate = firstVisibleFocusId(after, nextFocusIds) ?? selectedId;
+    const recovered = recoverFocus(after, nextFocusIds, selectedCandidate);
 
     setSelectedId(recovered.selectedId);
     setFocusedIds(recovered.focusedIds);
@@ -408,7 +419,13 @@ function App() {
           <div className="rail-separator" />
           <IconButton label="Copy" shortcut="Cmd+C" onClick={copySelected} icon={<Copy />} />
           <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} />
-          <IconButton label="Paste" shortcut="Cmd+V" onClick={pasteSelected} icon={<Clipboard />} />
+          <IconButton
+            label="Paste"
+            shortcut="Cmd+V"
+            onClick={pasteSelected}
+            icon={<Clipboard />}
+            disabled={clipboardJson.length === 0}
+          />
           <IconButton label="Delete" shortcut="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
         </nav>
 
@@ -535,18 +552,21 @@ function IconButton({
   icon,
   onClick,
   tone = "neutral",
+  disabled = false,
 }: {
   label: string;
   shortcut?: string;
   icon: ReactNode;
   onClick: () => void;
   tone?: "neutral" | "danger";
+  disabled?: boolean;
 }) {
   return (
     <button
       className={`icon-button ${tone}`}
       type="button"
       onClick={onClick}
+      disabled={disabled}
       title={shortcut === undefined ? label : `${label} (${shortcut})`}
     >
       {icon}
@@ -655,6 +675,7 @@ function CanvasNode({
           event.stopPropagation();
           onSelect(nodeId);
         }}
+        onKeyDown={(event) => selectNodeFromKeyboard(event, nodeId, onSelect)}
       >
         <div className="frame-header">
           <strong>{value.name}</strong>
@@ -687,6 +708,7 @@ function CanvasNode({
           event.stopPropagation();
           onSelect(nodeId);
         }}
+        onKeyDown={(event) => selectNodeFromKeyboard(event, nodeId, onSelect)}
       >
         {value.text}
       </div>
@@ -704,6 +726,7 @@ function CanvasNode({
           event.stopPropagation();
           onSelect(nodeId);
         }}
+        onKeyDown={(event) => selectNodeFromKeyboard(event, nodeId, onSelect)}
       >
         {value.label}
       </div>
@@ -715,6 +738,20 @@ function CanvasNode({
       {nodeLabel(doc, node)}
     </button>
   );
+}
+
+function selectNodeFromKeyboard(
+  event: ReactKeyboardEvent<HTMLElement>,
+  nodeId: NodeId,
+  onSelect: (nodeId: NodeId) => void,
+) {
+  if (event.key !== "Enter" && event.key !== " ") {
+    return;
+  }
+
+  event.preventDefault();
+  event.stopPropagation();
+  onSelect(nodeId);
 }
 
 function NodeTable({
@@ -906,6 +943,18 @@ function recoverFocus(doc: JsonDoc, focusedIds: NodeId[], selectedId: NodeId) {
     selectedId: fallback,
     focusedIds: [fallback],
   };
+}
+
+function firstVisibleFocusId(doc: JsonDoc, focusedIds: NodeId[]): NodeId | null {
+  for (const id of focusedIds) {
+    const node = doc.nodes[id];
+
+    if (node !== undefined && !isHiddenStructureNode(node)) {
+      return id;
+    }
+  }
+
+  return firstExisting(doc, focusedIds);
 }
 
 function diffFocusIds(before: JsonDoc, after: JsonDoc): NodeId[] {

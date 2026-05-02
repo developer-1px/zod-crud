@@ -36,7 +36,16 @@ export function deserialize(doc: JsonDoc, nodeId: NodeId = doc.rootId): JsonValu
         throw new Error(`Object child ${child.id} has non-string key.`);
       }
 
-      object[child.key] = deserialize(doc, child.id);
+      if (hasOwn(object, child.key)) {
+        throw new Error(`Object node ${node.id} has duplicate key: ${child.key}.`);
+      }
+
+      Object.defineProperty(object, child.key, {
+        configurable: true,
+        enumerable: true,
+        value: deserialize(doc, child.id),
+        writable: true,
+      });
     }
 
     return object;
@@ -65,9 +74,9 @@ export function getPath(doc: JsonDoc, nodeId: NodeId): JsonPath {
   return path.reverse();
 }
 
-export function createJsonCrud<T extends JsonValue>(
-  schema: z.ZodType<T>,
-  initialValue: T,
+export function createJsonCrud<T extends JsonValue, I = unknown>(
+  schema: z.ZodType<T, I>,
+  initialValue: I,
   options: JsonCrudOptions = {},
 ): JsonCrud<T> {
   return new JsonCrud(schema, initialValue, options);
@@ -81,7 +90,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
   private redoStack: JsonDoc[] = [];
   private clipboard: { value: JsonValue } | null = null;
 
-  constructor(schema: z.ZodType<T>, initialValue: T, options: JsonCrudOptions = {}) {
+  constructor(schema: z.ZodType<T>, initialValue: unknown, options: JsonCrudOptions = {}) {
     const parsed = schema.safeParse(initialValue);
 
     if (!parsed.success) {
@@ -115,10 +124,10 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
   }
 
   create(parentId: NodeId, key: string | number, value: JsonValue): OperationResult {
-    const next = cloneDoc(this.doc);
-    const parentPath = getPath(next, parentId);
-
     try {
+      const next = cloneDoc(this.doc);
+      const parentPath = getPath(next, parentId);
+
       insertChild(next, parentId, key, value);
       const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
 
@@ -126,27 +135,25 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
         return validation;
       }
 
-      this.commit(next);
-      return { ok: true };
+      return this.commitIfValid(next);
     } catch (error) {
       return failure(error);
     }
   }
 
   update(nodeId: NodeId, value: JsonValue): OperationResult {
-    const path = getPath(this.doc, nodeId);
-    const validation = this.validateAtPath(path, value);
-
-    if (!validation.ok) {
-      return validation;
-    }
-
-    const next = cloneDoc(this.doc);
-
     try {
+      const path = getPath(this.doc, nodeId);
+      const validation = this.validateAtPath(path, value);
+
+      if (!validation.ok) {
+        return validation;
+      }
+
+      const next = cloneDoc(this.doc);
+
       replaceSubtree(next, nodeId, value);
-      this.commit(next);
-      return { ok: true };
+      return this.commitIfValid(next);
     } catch (error) {
       return failure(error);
     }
@@ -157,17 +164,17 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
       return { ok: false, reason: "Cannot delete the root node." };
     }
 
-    const node = getNode(this.doc, nodeId);
-    const parentId = node.parentId;
-
-    if (parentId === null) {
-      return { ok: false, reason: "Cannot delete a node without a parent." };
-    }
-
-    const parentPath = getPath(this.doc, parentId);
-    const next = cloneDoc(this.doc);
-
     try {
+      const node = getNode(this.doc, nodeId);
+      const parentId = node.parentId;
+
+      if (parentId === null) {
+        return { ok: false, reason: "Cannot delete a node without a parent." };
+      }
+
+      const parentPath = getPath(this.doc, parentId);
+      const next = cloneDoc(this.doc);
+
       removeSubtree(next, nodeId);
       const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
 
@@ -175,8 +182,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
         return validation;
       }
 
-      this.commit(next);
-      return { ok: true };
+      return this.commitIfValid(next);
     } catch (error) {
       return failure(error);
     }
@@ -193,34 +199,48 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
       return { ok: false, reason: "Cannot cut the root node." };
     }
 
-    this.copy(nodeId);
-    return this.delete(nodeId);
+    try {
+      const value = this.read(nodeId);
+      const result = this.delete(nodeId);
+
+      if (result.ok) {
+        this.clipboard = { value };
+      }
+
+      return result;
+    } catch (error) {
+      return failure(error);
+    }
   }
 
   paste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
-    if (this.clipboard === null) {
-      return { ok: false, reason: "Clipboard is empty." };
-    }
+    try {
+      if (this.clipboard === null) {
+        return { ok: false, reason: "Clipboard is empty." };
+      }
 
-    const payload = cloneJson(this.clipboard.value);
-    const mode = options.mode ?? "auto";
-    const childKeys = options.childKeys ?? this.childKeys;
+      const payload = cloneJson(this.clipboard.value);
+      const mode = options.mode ?? "auto";
+      const childKeys = options.childKeys ?? this.childKeys;
 
-    if (mode === "child") {
-      return this.pasteAsChild(targetId, payload, childKeys, options.index);
-    }
+      if (mode === "child") {
+        return this.pasteAsChild(targetId, payload, childKeys, options.index);
+      }
 
-    if (mode === "overwrite") {
+      if (mode === "overwrite") {
+        return this.pasteAsOverwrite(targetId, payload);
+      }
+
+      const childResult = this.pasteAsChild(targetId, payload, childKeys, options.index);
+
+      if (childResult.ok) {
+        return childResult;
+      }
+
       return this.pasteAsOverwrite(targetId, payload);
+    } catch (error) {
+      return failure(error);
     }
-
-    const childResult = this.pasteAsChild(targetId, payload, childKeys, options.index);
-
-    if (childResult.ok) {
-      return childResult;
-    }
-
-    return this.pasteAsOverwrite(targetId, payload);
   }
 
   canPaste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
@@ -231,13 +251,14 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
     const before = cloneDoc(this.doc);
     const undo = this.undoStack.map(cloneDoc);
     const redo = this.redoStack.map(cloneDoc);
-    const result = this.paste(targetId, options);
-
-    this.doc = before;
-    this.undoStack = undo;
-    this.redoStack = redo;
-
-    return result.ok ? { ok: true } : result;
+    try {
+      const result = this.paste(targetId, options);
+      return result.ok ? { ok: true } : result;
+    } finally {
+      this.doc = before;
+      this.undoStack = undo;
+      this.redoStack = redo;
+    }
   }
 
   undo(): boolean {
@@ -265,19 +286,18 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
   }
 
   private pasteAsOverwrite(targetId: NodeId, payload: JsonValue): OperationResult {
-    const path = getPath(this.doc, targetId);
-    const validation = this.validateAtPath(path, payload);
-
-    if (!validation.ok) {
-      return validation;
-    }
-
-    const next = cloneDoc(this.doc);
-
     try {
+      const path = getPath(this.doc, targetId);
+      const validation = this.validateAtPath(path, payload);
+
+      if (!validation.ok) {
+        return validation;
+      }
+
+      const next = cloneDoc(this.doc);
+
       replaceSubtree(next, targetId, payload);
-      this.commit(next);
-      return { ok: true };
+      return this.commitIfValid(next);
     } catch (error) {
       return failure(error);
     }
@@ -289,7 +309,13 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
     childKeys: string[],
     index?: number,
   ): OperationResult {
-    const target = getNode(this.doc, targetId);
+    let target: JsonNode;
+
+    try {
+      target = getNode(this.doc, targetId);
+    } catch (error) {
+      return failure(error);
+    }
 
     if (target.type === "array") {
       return this.pasteIntoArray(targetId, payload, index);
@@ -319,21 +345,21 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
     payload: JsonValue,
     index?: number,
   ): OperationResult {
-    const targetPath = getPath(this.doc, targetId);
-    const childArrayPath = [...targetPath, childKey];
-    const childArraySchema = schemaAtPath(this.schema, childArrayPath);
-
-    if (childArraySchema === null || !isArraySchema(childArraySchema)) {
-      return {
-        ok: false,
-        reason: `Path ${formatPath(childArrayPath)} is not an array schema.`,
-      };
-    }
-
-    const next = cloneDoc(this.doc);
-    const childArrayId = ensureObjectArrayField(next, targetId, childKey);
-
     try {
+      const targetPath = getPath(this.doc, targetId);
+      const childArrayPath = [...targetPath, childKey];
+      const childArraySchema = schemaAtPath(this.schema, childArrayPath);
+
+      if (childArraySchema === null || !isArraySchema(childArraySchema)) {
+        return {
+          ok: false,
+          reason: `Path ${formatPath(childArrayPath)} is not an array schema.`,
+        };
+      }
+
+      const next = cloneDoc(this.doc);
+      const childArrayId = ensureObjectArrayField(next, targetId, childKey);
+
       insertChild(next, childArrayId, index ?? getNode(next, childArrayId).children.length, payload);
       const validation = this.validateAtPath(childArrayPath, deserialize(next, childArrayId));
 
@@ -341,8 +367,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
         return validation;
       }
 
-      this.commit(next);
-      return { ok: true };
+      return this.commitIfValid(next);
     } catch (error) {
       return failure(error);
     }
@@ -353,10 +378,10 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
     payload: JsonValue,
     index?: number,
   ): OperationResult {
-    const path = getPath(this.doc, arrayId);
-    const next = cloneDoc(this.doc);
-
     try {
+      const path = getPath(this.doc, arrayId);
+      const next = cloneDoc(this.doc);
+
       insertChild(next, arrayId, index ?? getNode(next, arrayId).children.length, payload);
       const validation = this.validateAtPath(path, deserialize(next, arrayId));
 
@@ -364,8 +389,7 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
         return validation;
       }
 
-      this.commit(next);
-      return { ok: true };
+      return this.commitIfValid(next);
     } catch (error) {
       return failure(error);
     }
@@ -391,6 +415,39 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
       };
     }
 
+    return { ok: true };
+  }
+
+  private validateDocument(doc: JsonDoc): OperationResult {
+    const value = deserialize(doc);
+    const result = this.schema.safeParse(value);
+
+    if (!result.success) {
+      return {
+        ok: false,
+        reason: "Document does not match the root schema.",
+        error: result.error,
+      };
+    }
+
+    if (!sameJson(result.data, value)) {
+      return {
+        ok: false,
+        reason: "Document does not match the root schema exactly.",
+      };
+    }
+
+    return { ok: true };
+  }
+
+  private commitIfValid(next: JsonDoc): OperationResult {
+    const validation = this.validateDocument(next);
+
+    if (!validation.ok) {
+      return validation;
+    }
+
+    this.commit(next);
     return { ok: true };
   }
 
@@ -485,6 +542,10 @@ function insertChild(doc: JsonDoc, parentId: NodeId, key: string | number, value
   if (parent.type === "array") {
     if (typeof key !== "number") {
       throw new Error("Array children require a numeric index.");
+    }
+
+    if (!Number.isInteger(key)) {
+      throw new Error(`Array index must be an integer: ${key}.`);
     }
 
     if (key < 0 || key > parent.children.length) {
@@ -619,7 +680,7 @@ function schemaAtPath(schema: AnySchema, path: JsonPath): AnySchema | null {
     current = schemaChild(current, key);
   }
 
-  return current === null ? null : unwrapTransparent(current);
+  return current;
 }
 
 function schemaChild(schema: AnySchema, key: string | number): AnySchema | null {
@@ -635,7 +696,7 @@ function schemaChild(schema: AnySchema, key: string | number): AnySchema | null 
   }
 
   if (type === "array") {
-    if (typeof key !== "number") {
+    if (typeof key !== "number" || !Number.isInteger(key)) {
       return null;
     }
 
@@ -643,11 +704,15 @@ function schemaChild(schema: AnySchema, key: string | number): AnySchema | null 
   }
 
   if (type === "tuple") {
-    if (typeof key !== "number") {
+    if (typeof key !== "number" || !Number.isInteger(key)) {
       return null;
     }
 
     return tupleElement(current, key);
+  }
+
+  if (type === "record") {
+    return recordValue(current, key);
   }
 
   if (type === "union") {
@@ -738,6 +803,21 @@ function tupleElement(schema: AnySchema, index: number): AnySchema | null {
   return (def.rest as AnySchema | undefined) ?? null;
 }
 
+function recordValue(schema: AnySchema, key: string | number): AnySchema | null {
+  if (typeof key !== "string") {
+    return null;
+  }
+
+  const def = schemaDef(schema);
+  const keySchema = def.keyType as AnySchema | undefined;
+
+  if (keySchema !== undefined && !keySchema.safeParse(key).success) {
+    return null;
+  }
+
+  return (def.valueType as AnySchema | undefined) ?? null;
+}
+
 function objectShape(schema: AnySchema): Record<string, AnySchema> {
   const shape = (schema as { shape?: Record<string, AnySchema> }).shape;
 
@@ -802,8 +882,39 @@ function cloneJson<T extends JsonValue>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+function sameJson(left: JsonValue, right: JsonValue): boolean {
+  if (Array.isArray(left) || Array.isArray(right)) {
+    if (!Array.isArray(left) || !Array.isArray(right) || left.length !== right.length) {
+      return false;
+    }
+
+    return left.every((item, index) => sameJson(item, right[index]!));
+  }
+
+  if (isJsonObject(left) || isJsonObject(right)) {
+    if (!isJsonObject(left) || !isJsonObject(right)) {
+      return false;
+    }
+
+    const leftKeys = Object.keys(left).sort();
+    const rightKeys = Object.keys(right).sort();
+
+    if (leftKeys.length !== rightKeys.length || !leftKeys.every((key, index) => key === rightKeys[index])) {
+      return false;
+    }
+
+    return leftKeys.every((key) => sameJson(left[key]!, right[key]!));
+  }
+
+  return left === right;
+}
+
 function isJsonObject(value: JsonValue): value is Record<string, JsonValue> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function hasOwn(object: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, key);
 }
 
 function formatPath(path: JsonPath): string {
