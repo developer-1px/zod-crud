@@ -626,9 +626,9 @@ button:focus-visible,
 
 .mobile-app-screen {
   display: grid;
-  grid-template-rows: auto auto auto auto auto auto minmax(0, 1fr) auto auto;
+  grid-template-rows: auto auto auto auto auto auto auto minmax(0, 1fr) auto auto;
   gap: 11px;
-  min-height: 720px;
+  min-height: 820px;
   padding: 16px 14px 12px;
   border: 1px solid #111821;
   border-radius: 23px;
@@ -723,6 +723,56 @@ button:focus-visible,
   border-radius: 8px;
   background: #ffffff;
   color: #354357;
+}
+
+.visual-hero-card {
+  display: grid;
+  min-height: 114px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #dce5ef;
+  box-shadow: 0 12px 28px rgb(23 27 32 / 12%);
+}
+
+.visual-hero-card img,
+.visual-hero-overlay {
+  grid-area: 1 / 1;
+}
+
+.visual-hero-card img {
+  width: 100%;
+  height: 100%;
+  min-height: 114px;
+  object-fit: cover;
+}
+
+.visual-hero-overlay {
+  display: grid;
+  align-content: end;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px;
+  background: linear-gradient(180deg, transparent 25%, rgb(13 20 31 / 78%) 100%);
+  color: #ffffff;
+}
+
+.visual-hero-overlay small {
+  overflow: hidden;
+  color: rgb(255 255 255 / 76%);
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.visual-hero-overlay strong {
+  overflow: hidden;
+  font-size: 16px;
+  font-weight: 820;
+  letter-spacing: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .schema-health-card {
@@ -903,14 +953,23 @@ button:focus-visible,
 
 .line-item-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
   align-items: center;
   gap: 9px;
-  min-height: 48px;
-  padding: 8px;
+  min-height: 58px;
+  padding: 7px;
   border: 1px solid #eef1f5;
   border-radius: 7px;
   background: #fbfcfe;
+}
+
+.line-item-thumb {
+  width: 42px;
+  height: 42px;
+  border: 1px solid #e1e7ef;
+  border-radius: 7px;
+  object-fit: cover;
+  background: #e8edf4;
 }
 
 .line-item-row strong {
@@ -1179,6 +1238,23 @@ button:focus-visible,
   background: #ffffff;
   color: #4d6178;
   font-size: 11px;
+}
+
+.image-node {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.image-wide {
+  width: min(100%, 360px);
+  aspect-ratio: 16 / 9;
+}
+
+.image-thumb {
+  width: 72px;
+  aspect-ratio: 1;
 }
 
 .focused {
@@ -1708,7 +1784,7 @@ tr.focused.selected {
   }
 
   .mobile-app-screen {
-    min-height: 670px;
+    min-height: 760px;
     border-radius: 20px;
   }
 

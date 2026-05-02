@@ -71,6 +71,13 @@ type UiNode =
       fill: "teal" | "amber" | "violet";
       width: number;
       height: number;
+    }
+  | {
+      kind: "image";
+      label: string;
+      src: string;
+      alt: string;
+      aspect: "wide" | "thumb";
     };
 
 const UiNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
@@ -93,8 +100,21 @@ const UiNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
       width: z.number().min(40).max(420),
       height: z.number().min(24).max(180),
     }),
+    z.object({
+      kind: z.literal("image"),
+      label: z.string(),
+      src: z.string().url(),
+      alt: z.string(),
+      aspect: z.union([z.literal("wide"), z.literal("thumb")]),
+    }),
   ]),
 );
+
+const CONTENT_IMAGES = {
+  marketHero: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=720&q=80",
+  organicBundle: "https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=240&q=80",
+  coldChain: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=240&q=80",
+} as const;
 
 const initialJson: UiNode = {
   kind: "frame",
@@ -114,6 +134,13 @@ const initialJson: UiNode = {
             { kind: "text", text: "Orders", tone: "ink" },
             { kind: "rect", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
           ],
+        },
+        {
+          kind: "image",
+          label: "MarketHeroImage",
+          src: CONTENT_IMAGES.marketHero,
+          alt: "Fresh produce crates for a wholesale order",
+          aspect: "wide",
         },
         {
           kind: "frame",
@@ -148,6 +175,20 @@ const initialJson: UiNode = {
           fill: "#ffffff",
           children: [
             { kind: "text", text: "lineItems[]", tone: "ink" },
+            {
+              kind: "image",
+              label: "OrganicBundleImage",
+              src: CONTENT_IMAGES.organicBundle,
+              alt: "Organic vegetables bundle",
+              aspect: "thumb",
+            },
+            {
+              kind: "image",
+              label: "ColdChainImage",
+              src: CONTENT_IMAGES.coldChain,
+              alt: "Prepared cold chain food package",
+              aspect: "thumb",
+            },
             { kind: "rect", label: "Repeater", fill: "violet", width: 220, height: 76 },
           ],
         },
@@ -212,6 +253,14 @@ const CRUD_BINDINGS: Record<string, ComponentBinding> = {
     state: "valid",
     validation: "Displays parser output and CRUD availability.",
   },
+  MarketHeroImage: {
+    component: "Hero image",
+    field: "media.hero.src",
+    schema: "z.string().url()",
+    operation: "read + update",
+    state: "loaded",
+    validation: "The image URL is part of the validated zod-crud document.",
+  },
   CustomerNameField: {
     component: "Text input",
     field: "customer.name",
@@ -235,6 +284,22 @@ const CRUD_BINDINGS: Record<string, ComponentBinding> = {
     operation: "create + delete",
     state: "2 rows",
     validation: "Each list row is a child node in the zod-crud document.",
+  },
+  OrganicBundleImage: {
+    component: "Line item image",
+    field: "lineItems[0].image",
+    schema: "z.string().url()",
+    operation: "read + update",
+    state: "loaded",
+    validation: "Product thumbnails can be treated as editable media fields.",
+  },
+  ColdChainImage: {
+    component: "Line item image",
+    field: "lineItems[1].image",
+    schema: "z.string().url()",
+    operation: "read + update",
+    state: "loaded",
+    validation: "Product thumbnails can be treated as editable media fields.",
   },
   SaveButton: {
     component: "Primary action",
@@ -813,6 +878,7 @@ function MobileBuilderCanvas({
       screen: uiObjectIdByField(doc, "name", "MobileRecordScreen"),
       toolbar: uiObjectIdByField(doc, "name", "AppToolbar"),
       schemaStatus: uiObjectIdByField(doc, "name", "SchemaStatusCard"),
+      heroImage: uiObjectIdByField(doc, "label", "MarketHeroImage"),
       customerName: uiObjectIdByField(doc, "name", "CustomerNameField"),
       orderStatus: uiObjectIdByField(doc, "name", "OrderStatusField"),
       lineItems: uiObjectIdByField(doc, "name", "LineItemsList"),
@@ -822,6 +888,24 @@ function MobileBuilderCanvas({
   );
   const selectedObjectId = visibleObjectNodeForSelection(doc, selectedId)?.id ?? (doc.nodes[selectedId] === undefined ? doc.rootId : selectedId);
   const binding = selectedComponentBinding(doc, selectedId);
+  const heroImage = uiImageByLabel(doc, "MarketHeroImage") ?? {
+    label: "MarketHeroImage",
+    src: CONTENT_IMAGES.marketHero,
+    alt: "Fresh produce crates for a wholesale order",
+    aspect: "wide" as const,
+  };
+  const organicImage = uiImageByLabel(doc, "OrganicBundleImage") ?? {
+    label: "OrganicBundleImage",
+    src: CONTENT_IMAGES.organicBundle,
+    alt: "Organic vegetables bundle",
+    aspect: "thumb" as const,
+  };
+  const coldChainImage = uiImageByLabel(doc, "ColdChainImage") ?? {
+    label: "ColdChainImage",
+    src: CONTENT_IMAGES.coldChain,
+    alt: "Prepared cold chain food package",
+    aspect: "thumb" as const,
+  };
 
   return (
     <div className="builder-preview-grid">
@@ -866,6 +950,21 @@ function MobileBuilderCanvas({
                 <div className="mobile-toolbar-actions" aria-hidden="true">
                   <span><Search /></span>
                   <span><Bell /></span>
+                </div>
+              </SelectablePreview>
+
+              <SelectablePreview
+                nodeId={previewIds.heroImage}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="visual-hero-card"
+                label="MarketHeroImage"
+              >
+                <img src={heroImage.src} alt={heroImage.alt} />
+                <div className="visual-hero-overlay">
+                  <small>media.hero.src</small>
+                  <strong>Fresh produce order</strong>
                 </div>
               </SelectablePreview>
 
@@ -946,7 +1045,7 @@ function MobileBuilderCanvas({
                   <span className="add-row" aria-hidden="true"><Plus /></span>
                 </div>
                 <div className="line-item-row">
-                  <span className="item-dot teal" />
+                  <img className="line-item-thumb" src={organicImage.src} alt={organicImage.alt} />
                   <div>
                     <strong>Organic bundle</strong>
                     <small>qty 4 - $128.00</small>
@@ -954,7 +1053,7 @@ function MobileBuilderCanvas({
                   <b>ok</b>
                 </div>
                 <div className="line-item-row">
-                  <span className="item-dot amber" />
+                  <img className="line-item-thumb" src={coldChainImage.src} alt={coldChainImage.alt} />
                   <div>
                     <strong>Cold chain fee</strong>
                     <small>qty 1 - $18.00</small>
@@ -1190,6 +1289,23 @@ function CanvasNode({
     );
   }
 
+  if (isUiImage(value)) {
+    return (
+      <img
+        className={`${className} image-node image-${value.aspect}`}
+        src={value.src}
+        alt={value.alt}
+        role="button"
+        tabIndex={0}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(nodeId);
+        }}
+        onKeyDown={(event) => selectNodeFromKeyboard(event, nodeId, onSelect)}
+      />
+    );
+  }
+
   return (
     <button type="button" className={`${className} leaf-node`} onClick={() => onSelect(nodeId)}>
       {nodeLabel(doc, node)}
@@ -1388,6 +1504,17 @@ function uiObjectIdByField(doc: JsonDoc, key: string, value: string): NodeId | n
   }
 
   return null;
+}
+
+function uiImageByLabel(doc: JsonDoc, label: string): Extract<UiNode, { kind: "image" }> | null {
+  const nodeId = uiObjectIdByField(doc, "label", label);
+
+  if (nodeId === null) {
+    return null;
+  }
+
+  const value = deserialize(doc, nodeId);
+  return isUiImage(value) ? value : null;
 }
 
 function nodeLabel(doc: JsonDoc, node: JsonNode) {
@@ -1711,6 +1838,17 @@ function isUiText(value: JsonValue): value is Extract<UiNode, { kind: "text" }> 
 
 function isUiRect(value: JsonValue): value is Extract<UiNode, { kind: "rect" }> {
   return isRecord(value) && value.kind === "rect" && typeof value.label === "string";
+}
+
+function isUiImage(value: JsonValue): value is Extract<UiNode, { kind: "image" }> {
+  return (
+    isRecord(value) &&
+    value.kind === "image" &&
+    typeof value.label === "string" &&
+    typeof value.src === "string" &&
+    typeof value.alt === "string" &&
+    (value.aspect === "wide" || value.aspect === "thumb")
+  );
 }
 
 function isRecord(value: JsonValue): value is Record<string, JsonValue> {
