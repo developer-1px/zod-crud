@@ -190,6 +190,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<NodeId>(initialRootId);
   const [focusedIds, setFocusedIds] = useState<NodeId[]>([initialRootId]);
   const [clipboardJson, setClipboardJson] = useState<string>("");
+  const [clipboardValue, setClipboardValue] = useState<JsonValue | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: 1, label: "load initial JSON", ok: true },
   ]);
@@ -217,12 +218,18 @@ function App() {
   }, [doc, focusedIds, selectedId]);
 
   const selectedPasteStatus = useMemo(() => {
-    if (clipboardJson.length === 0) {
+    if (clipboardValue === null) {
       return undefined;
     }
 
+    const contentPasteTargetId = contentPasteTargetNodeId(doc, selectedId, clipboardValue);
+
+    if (contentPasteTargetId !== null) {
+      return { ok: true };
+    }
+
     return editorRef.current.canPaste(selectedId);
-  }, [clipboardJson, doc, selectedId]);
+  }, [clipboardValue, doc, selectedId]);
   const canCreateChild = findInsertionArray(doc, selectedId) !== null;
   const canUpdateSelected = editableStringNodeId(doc, selectedId) !== null;
   const canCutSelected = selectedId !== doc.rootId;
@@ -282,6 +289,7 @@ function App() {
 
   function copySelected() {
     const value = editorRef.current.copy(selectedId);
+    setClipboardValue(value);
     setClipboardJson(JSON.stringify(value, null, 2));
     pushLog(`copy ${selectedId}`, "ok");
   }
@@ -296,6 +304,7 @@ function App() {
         const result = editorRef.current.cut(targetId);
 
         if (result.ok) {
+          setClipboardValue(value);
           setClipboardJson(JSON.stringify(value, null, 2));
         }
 
@@ -306,7 +315,23 @@ function App() {
   }
 
   function pasteSelected() {
-    run(`paste into ${selectedId}`, () => editorRef.current.paste(selectedId));
+    const contentTargetId = clipboardValue === null ? null : contentPasteTargetNodeId(doc, selectedId, clipboardValue);
+
+    run(
+      `paste into ${selectedId}`,
+      () => {
+        if (clipboardValue !== null && contentTargetId !== null) {
+          const contentResult = pasteContentOnly(editorRef.current, doc, selectedId, clipboardValue);
+
+          if (contentResult.ok) {
+            return contentResult;
+          }
+        }
+
+        return editorRef.current.paste(selectedId);
+      },
+      contentTargetId === null ? undefined : () => [selectedId],
+    );
   }
 
   function deleteSelected() {
@@ -383,6 +408,7 @@ function App() {
     editorRef.current = makeEditor();
     setSelectedId(editorRef.current.snapshot().rootId);
     setFocusedIds([editorRef.current.snapshot().rootId]);
+    setClipboardValue(null);
     setClipboardJson("");
     pushLog("reset document", "ok");
     refresh();
@@ -1925,6 +1951,141 @@ function firstCollectionArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
   }
 
   return collections.children.find((childId) => doc.nodes[childId]?.type === "array") ?? null;
+}
+
+function pasteContentOnly(
+  editor: ReturnType<typeof makeEditor>,
+  doc: JsonDoc,
+  selectedId: NodeId,
+  clipboardValue: JsonValue,
+): OperationResult {
+  const content = copiedContentValue(clipboardValue);
+
+  if (content === null) {
+    return { ok: false, reason: "Clipboard has no pasteable content field." };
+  }
+
+  const targetId = contentPasteTargetNodeId(doc, selectedId, clipboardValue);
+
+  if (targetId === null) {
+    return { ok: false, reason: "Selected node has no compatible content field." };
+  }
+
+  return editor.update(targetId, content.value);
+}
+
+function contentPasteTargetNodeId(doc: JsonDoc, selectedId: NodeId, clipboardValue: JsonValue): NodeId | null {
+  const content = copiedContentValue(clipboardValue);
+
+  if (content === null) {
+    return null;
+  }
+
+  return firstContentTargetNodeId(doc, selectedId, content);
+}
+
+function firstContentTargetNodeId(
+  doc: JsonDoc,
+  nodeId: NodeId,
+  content: { kind: string | null; value: string },
+): NodeId | null {
+  const node = doc.nodes[nodeId];
+
+  if (node === undefined) {
+    return null;
+  }
+
+  if (node.type === "string" && contentPrimitiveKeyAccepts(node.key, content.kind)) {
+    return node.id;
+  }
+
+  if (node.type !== "object") {
+    return null;
+  }
+
+  const kind = primitiveField(doc, node.id, "kind");
+  const directKey = contentFieldKeyForTargetKind(kind, content.kind);
+
+  if (directKey !== null) {
+    const directId = childIdByKey(doc, node.id, directKey);
+    const directNode = directId === null ? undefined : doc.nodes[directId];
+
+    if (directNode?.type === "string") {
+      return directNode.id;
+    }
+  }
+
+  for (const childId of designContentChildIds(doc, node.id)) {
+    const targetId = firstContentTargetNodeId(doc, childId, content);
+
+    if (targetId !== null) {
+      return targetId;
+    }
+  }
+
+  return null;
+}
+
+function copiedContentValue(value: JsonValue): { kind: string | null; value: string } | null {
+  if (typeof value === "string") {
+    return { kind: null, value };
+  }
+
+  if (!isRecord(value) || typeof value.kind !== "string") {
+    return null;
+  }
+
+  if (value.kind === "text" && typeof value.text === "string") {
+    return { kind: "text", value: value.text };
+  }
+
+  if ((value.kind === "rect" || value.kind === "icon") && typeof value.label === "string") {
+    return { kind: value.kind, value: value.label };
+  }
+
+  if (value.kind === "image" && typeof value.src === "string") {
+    return { kind: "image", value: value.src };
+  }
+
+  return null;
+}
+
+function contentPrimitiveKeyAccepts(key: string | number | null, sourceKind: string | null) {
+  if (key === "text" || key === "label") {
+    return sourceKind !== "image";
+  }
+
+  return key === "src" && sourceKind === "image";
+}
+
+function contentFieldKeyForTargetKind(targetKind: string | null, sourceKind: string | null) {
+  if (targetKind === "text") {
+    return sourceKind === "image" ? null : "text";
+  }
+
+  if (targetKind === "rect" || targetKind === "icon") {
+    return sourceKind === "image" ? null : "label";
+  }
+
+  if (targetKind === "image") {
+    return sourceKind === "image" ? "src" : null;
+  }
+
+  return null;
+}
+
+function designContentChildIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const node = doc.nodes[nodeId];
+
+  if (node === undefined) {
+    return [];
+  }
+
+  if (primitiveField(doc, nodeId, "kind") === "group") {
+    return designEntityChildIds(doc, nodeId);
+  }
+
+  return designChildIds(doc, nodeId);
 }
 
 function editableStringNodeId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
