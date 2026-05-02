@@ -679,22 +679,6 @@ button:focus-visible,
   background: #ffffff;
 }
 
-.paste-ok {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--success) 26%, transparent);
-}
-
-.paste-fail {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 18%, transparent);
-}
-
-.selected.paste-ok,
-.selected.paste-fail {
-  border-color: var(--accent) !important;
-  box-shadow:
-    0 0 0 1px var(--accent),
-    0 0 0 4px color-mix(in srgb, var(--accent) 16%, transparent);
-}
-
 .focused.selected {
   box-shadow:
     0 0 0 1px var(--accent),
@@ -822,14 +806,6 @@ tr.focused {
 
 tr.focused.selected {
   background: color-mix(in srgb, var(--accent-weak) 76%, var(--warning-weak));
-}
-
-tr.paste-ok {
-  background: var(--success-weak);
-}
-
-tr.paste-fail {
-  background: var(--danger-weak);
 }
 
 .json-view {

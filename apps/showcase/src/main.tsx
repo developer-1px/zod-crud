@@ -145,16 +145,13 @@ function App() {
     }
   }, [doc, focusedIds, selectedId]);
 
-  const pasteStatus = useMemo(() => {
+  const selectedPasteStatus = useMemo(() => {
     if (clipboardJson.length === 0) {
-      return {};
+      return undefined;
     }
 
-    return {
-      [selectedId]: editorRef.current.canPaste(selectedId),
-    };
+    return editorRef.current.canPaste(selectedId);
   }, [clipboardJson, doc, selectedId]);
-  const selectedPasteStatus = pasteStatus[selectedId];
   const canCreateChild = findInsertionArray(doc, selectedId) !== null;
   const canUpdateSelected = editableStringNodeId(doc, selectedId) !== null;
   const canCutSelected = selectedId !== doc.rootId;
@@ -455,7 +452,6 @@ function App() {
             nodeId={doc.rootId}
             selectedId={selectedId}
             focusedSet={focusedSet}
-            pasteStatus={pasteStatus}
             onSelect={selectNode}
           />
         </aside>
@@ -481,7 +477,6 @@ function App() {
                 nodeId={doc.rootId}
                 selectedId={selectedId}
                 focusedSet={focusedSet}
-                pasteStatus={pasteStatus}
                 onSelect={selectNode}
               />
             </div>
@@ -525,7 +520,6 @@ function App() {
               doc={doc}
               selectedId={selectedId}
               focusedSet={focusedSet}
-              pasteStatus={pasteStatus}
               onSelect={selectNode}
             />
           </section>
@@ -609,14 +603,12 @@ function TreeView({
   nodeId,
   selectedId,
   focusedSet,
-  pasteStatus,
   onSelect,
 }: {
   doc: JsonDoc;
   nodeId: NodeId;
   selectedId: NodeId;
   focusedSet: Set<NodeId>;
-  pasteStatus: Record<NodeId, OperationResult>;
   onSelect: (nodeId: NodeId) => void;
 }) {
   const node = doc.nodes[nodeId];
@@ -630,7 +622,7 @@ function TreeView({
       <li>
         <button
           type="button"
-          className={nodeClass("tree-item", nodeId, selectedId, focusedSet, pasteStatus)}
+          className={nodeClass("tree-item", nodeId, selectedId, focusedSet)}
           onClick={() => onSelect(nodeId)}
         >
           <span>{nodeLabel(doc, node)}</span>
@@ -645,7 +637,6 @@ function TreeView({
                 nodeId={childId}
                 selectedId={selectedId}
                 focusedSet={focusedSet}
-                pasteStatus={pasteStatus}
                 onSelect={onSelect}
               />
             ))}
@@ -661,14 +652,12 @@ function CanvasNode({
   nodeId,
   selectedId,
   focusedSet,
-  pasteStatus,
   onSelect,
 }: {
   doc: JsonDoc;
   nodeId: NodeId;
   selectedId: NodeId;
   focusedSet: Set<NodeId>;
-  pasteStatus: Record<NodeId, OperationResult>;
   onSelect: (nodeId: NodeId) => void;
 }) {
   const node = doc.nodes[nodeId];
@@ -678,7 +667,7 @@ function CanvasNode({
   }
 
   const value = deserialize(doc, nodeId);
-  const className = nodeClass("canvas-node", nodeId, selectedId, focusedSet, pasteStatus);
+  const className = nodeClass("canvas-node", nodeId, selectedId, focusedSet);
 
   if (isUiFrame(value)) {
     const childrenArrayId = childIdByKey(doc, nodeId, "children");
@@ -708,7 +697,6 @@ function CanvasNode({
               nodeId={childId}
               selectedId={selectedId}
               focusedSet={focusedSet}
-              pasteStatus={pasteStatus}
               onSelect={onSelect}
             />
           ))}
@@ -777,13 +765,11 @@ function NodeTable({
   doc,
   selectedId,
   focusedSet,
-  pasteStatus,
   onSelect,
 }: {
   doc: JsonDoc;
   selectedId: NodeId;
   focusedSet: Set<NodeId>;
-  pasteStatus: Record<NodeId, OperationResult>;
   onSelect: (nodeId: NodeId) => void;
 }) {
   const rows = Object.values(doc.nodes);
@@ -805,7 +791,7 @@ function NodeTable({
           {rows.map((node) => (
             <tr
               key={node.id}
-              className={nodeClass("", node.id, selectedId, focusedSet, pasteStatus)}
+              className={nodeClass("", node.id, selectedId, focusedSet)}
               onClick={() => onSelect(node.id)}
             >
               <td>{node.id}</td>
@@ -827,9 +813,7 @@ function nodeClass(
   nodeId: NodeId,
   selectedId: NodeId,
   focusedSet: Set<NodeId>,
-  pasteStatus: Record<NodeId, OperationResult>,
 ) {
-  const status = pasteStatus[nodeId];
   const classes = [base];
 
   if (focusedSet.has(nodeId)) {
@@ -838,10 +822,6 @@ function nodeClass(
 
   if (nodeId === selectedId) {
     classes.push("selected");
-  }
-
-  if (status !== undefined) {
-    classes.push(status.ok ? "paste-ok" : "paste-fail");
   }
 
   return classes.filter(Boolean).join(" ");
