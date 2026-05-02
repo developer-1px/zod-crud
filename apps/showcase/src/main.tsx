@@ -1,16 +1,26 @@
 import {
+  Bell,
   Braces,
+  CheckCircle2,
+  ChevronDown,
   Clipboard,
   Copy,
+  Database,
+  FileCode2,
   History,
+  LayoutTemplate,
   Layers,
   MousePointer2,
   Move,
   Pencil,
+  Plus,
   Redo2,
   RefreshCcw,
+  Search,
   Scissors,
+  SendHorizontal,
   SlidersHorizontal,
+  Smartphone,
   Square,
   Table2,
   Trash2,
@@ -88,21 +98,160 @@ const UiNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
 
 const initialJson: UiNode = {
   kind: "frame",
-  name: "Root",
-  fill: "#f7f8fa",
+  name: "ZodCrudBuilder",
+  fill: "#eef2f7",
   children: [
     {
       kind: "frame",
-      name: "Toolbar",
-      fill: "#ffffff",
+      name: "MobileRecordScreen",
+      fill: "#f9fbff",
       children: [
-        { kind: "text", text: "Document Header", tone: "ink" },
-        { kind: "rect", label: "Action", fill: "teal", width: 124, height: 34 },
+        {
+          kind: "frame",
+          name: "AppToolbar",
+          fill: "#ffffff",
+          children: [
+            { kind: "text", text: "Orders", tone: "ink" },
+            { kind: "rect", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
+          ],
+        },
+        {
+          kind: "frame",
+          name: "SchemaStatusCard",
+          fill: "#eaf8f2",
+          children: [
+            { kind: "text", text: "SalesOrderSchema", tone: "accent" },
+            { kind: "rect", label: "Valid", fill: "teal", width: 72, height: 28 },
+          ],
+        },
+        {
+          kind: "frame",
+          name: "CustomerNameField",
+          fill: "#ffffff",
+          children: [
+            { kind: "text", text: "customer.name", tone: "ink" },
+            { kind: "rect", label: "TextInput", fill: "violet", width: 210, height: 44 },
+          ],
+        },
+        {
+          kind: "frame",
+          name: "OrderStatusField",
+          fill: "#ffffff",
+          children: [
+            { kind: "text", text: "status", tone: "ink" },
+            { kind: "rect", label: "Select", fill: "amber", width: 132, height: 38 },
+          ],
+        },
+        {
+          kind: "frame",
+          name: "LineItemsList",
+          fill: "#ffffff",
+          children: [
+            { kind: "text", text: "lineItems[]", tone: "ink" },
+            { kind: "rect", label: "Repeater", fill: "violet", width: 220, height: 76 },
+          ],
+        },
+        { kind: "rect", label: "SaveButton", fill: "teal", width: 260, height: 48 },
       ],
     },
-    { kind: "text", text: "Validated Text", tone: "accent" },
-    { kind: "rect", label: "Panel", fill: "violet", width: 180, height: 72 },
+    {
+      kind: "frame",
+      name: "PropertyPanel",
+      fill: "#ffffff",
+      children: [
+        { kind: "text", text: "selected component", tone: "ink" },
+        { kind: "rect", label: "CRUD field binding", fill: "violet", width: 188, height: 42 },
+      ],
+    },
   ],
+};
+
+type ComponentBinding = {
+  component: string;
+  field: string;
+  schema: string;
+  operation: string;
+  state: string;
+  validation: string;
+};
+
+type SelectedComponentBinding = ComponentBinding & {
+  nodeId: NodeId | "none";
+};
+
+const CRUD_BINDINGS: Record<string, ComponentBinding> = {
+  ZodCrudBuilder: {
+    component: "Builder document",
+    field: "$root",
+    schema: "UiBuilderSchema",
+    operation: "deserialize + snapshot",
+    state: "synced",
+    validation: "Every canvas edit is checked against the Zod schema.",
+  },
+  MobileRecordScreen: {
+    component: "Mobile app screen",
+    field: "salesOrder",
+    schema: "SalesOrderSchema",
+    operation: "create + read",
+    state: "ready",
+    validation: "Object-level guard before the screen is persisted.",
+  },
+  AppToolbar: {
+    component: "Top toolbar",
+    field: "meta.updatedAt",
+    schema: "z.coerce.date()",
+    operation: "read",
+    state: "live",
+    validation: "Shows the latest valid snapshot timestamp.",
+  },
+  SchemaStatusCard: {
+    component: "Schema status card",
+    field: "$validation",
+    schema: "safeParse(result)",
+    operation: "read",
+    state: "valid",
+    validation: "Displays parser output and CRUD availability.",
+  },
+  CustomerNameField: {
+    component: "Text input",
+    field: "customer.name",
+    schema: "z.string().min(2)",
+    operation: "create + update",
+    state: "dirty",
+    validation: "Required field, validates on blur and before save.",
+  },
+  OrderStatusField: {
+    component: "Status select",
+    field: "status",
+    schema: "z.enum(['draft', 'paid', 'sent'])",
+    operation: "update",
+    state: "draft",
+    validation: "Enum values drive the segmented status control.",
+  },
+  LineItemsList: {
+    component: "Repeater list",
+    field: "lineItems[]",
+    schema: "z.array(LineItemSchema).min(1)",
+    operation: "create + delete",
+    state: "2 rows",
+    validation: "Each list row is a child node in the zod-crud document.",
+  },
+  SaveButton: {
+    component: "Primary action",
+    field: "$commit",
+    schema: "SalesOrderSchema.safeParse",
+    operation: "update + serialize",
+    state: "enabled",
+    validation: "Disabled until the current snapshot is parse-safe.",
+  },
+  PropertyPanel: {
+    component: "Inspector panel",
+    field: "$selection",
+    schema: "NodeSelectionSchema",
+    operation: "read + update",
+    state: "selected",
+    validation: "Selection metadata comes from the zod-crud node graph.",
+  },
 };
 
 type LogEntry = {
@@ -131,6 +280,7 @@ function App() {
   const doc = useMemo(() => editorRef.current.snapshot(), [version]);
   const json = useMemo(() => editorRef.current.toJson(), [version]);
   const selectedNode = doc.nodes[selectedId] ?? doc.nodes[doc.rootId];
+  const selectedBinding = useMemo(() => selectedComponentBinding(doc, selectedId), [doc, selectedId]);
   const focusedSet = useMemo(() => new Set(focusedIds.filter((id) => doc.nodes[id] !== undefined)), [doc, focusedIds]);
 
   useEffect(() => {
@@ -472,9 +622,8 @@ function App() {
 
           <div className="canvas-viewport">
             <div className="canvas-stage">
-              <CanvasNode
+              <MobileBuilderCanvas
                 doc={doc}
-                nodeId={doc.rootId}
                 selectedId={selectedId}
                 focusedSet={focusedSet}
                 onSelect={selectNode}
@@ -486,6 +635,7 @@ function App() {
         <aside className="inspector">
           <section className="panel selection-panel">
             <PanelTitle icon={<SlidersHorizontal />} title="Inspector" />
+            <ComponentBindingPanel binding={selectedBinding} />
             <dl className="property-grid">
               <div>
                 <dt>Selection</dt>
@@ -644,6 +794,306 @@ function TreeView({
         ) : null}
       </li>
     </ul>
+  );
+}
+
+function MobileBuilderCanvas({
+  doc,
+  selectedId,
+  focusedSet,
+  onSelect,
+}: {
+  doc: JsonDoc;
+  selectedId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+}) {
+  const previewIds = useMemo(
+    () => ({
+      screen: uiObjectIdByField(doc, "name", "MobileRecordScreen"),
+      toolbar: uiObjectIdByField(doc, "name", "AppToolbar"),
+      schemaStatus: uiObjectIdByField(doc, "name", "SchemaStatusCard"),
+      customerName: uiObjectIdByField(doc, "name", "CustomerNameField"),
+      orderStatus: uiObjectIdByField(doc, "name", "OrderStatusField"),
+      lineItems: uiObjectIdByField(doc, "name", "LineItemsList"),
+      saveButton: uiObjectIdByField(doc, "label", "SaveButton"),
+    }),
+    [doc],
+  );
+  const selectedObjectId = visibleObjectNodeForSelection(doc, selectedId)?.id ?? (doc.nodes[selectedId] === undefined ? doc.rootId : selectedId);
+  const binding = selectedComponentBinding(doc, selectedId);
+
+  return (
+    <div className="builder-preview-grid">
+      <section className="device-workbench" aria-label="Mobile application screen mockup">
+        <div className="device-caption">
+          <Smartphone />
+          <span>mobile CRUD screen</span>
+        </div>
+
+        <SelectablePreview
+          nodeId={previewIds.screen}
+          selectedObjectId={selectedObjectId}
+          focusedSet={focusedSet}
+          onSelect={onSelect}
+          className="phone-device"
+          label="MobileRecordScreen"
+        >
+          <div className="phone-hardware">
+            <div className="phone-speaker" aria-hidden="true" />
+            <div className="mobile-app-screen">
+              <div className="mobile-statusbar">
+                <span>9:41</span>
+                <div aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+
+              <SelectablePreview
+                nodeId={previewIds.toolbar}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="mobile-app-toolbar"
+                label="AppToolbar"
+              >
+                <div>
+                  <small>FieldOps</small>
+                  <h3>Order intake</h3>
+                </div>
+                <div className="mobile-toolbar-actions" aria-hidden="true">
+                  <span><Search /></span>
+                  <span><Bell /></span>
+                </div>
+              </SelectablePreview>
+
+              <SelectablePreview
+                nodeId={previewIds.schemaStatus}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="schema-health-card"
+                label="SchemaStatusCard"
+              >
+                <div className="health-icon" aria-hidden="true"><CheckCircle2 /></div>
+                <div>
+                  <small>SalesOrderSchema</small>
+                  <strong>Valid snapshot</strong>
+                  <span>8 fields hydrated by zod-crud</span>
+                </div>
+                <code>safeParse</code>
+              </SelectablePreview>
+
+              <div className="mobile-segmented" aria-label="CRUD mode">
+                <span className="active">Create</span>
+                <span>Read</span>
+                <span>Update</span>
+              </div>
+
+              <SelectablePreview
+                nodeId={previewIds.customerName}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="field-card hero-field"
+                label="CustomerNameField"
+              >
+                <div className="field-heading">
+                  <span>Customer</span>
+                  <small>customer.name</small>
+                </div>
+                <div className="input-control">
+                  <strong>Acme Market</strong>
+                  <ChevronDown aria-hidden="true" />
+                </div>
+                <p>z.string().min(2)</p>
+              </SelectablePreview>
+
+              <SelectablePreview
+                nodeId={previewIds.orderStatus}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="field-card status-field"
+                label="OrderStatusField"
+              >
+                <div className="field-heading">
+                  <span>Status</span>
+                  <small>status</small>
+                </div>
+                <div className="status-pills">
+                  <span className="active">Draft</span>
+                  <span>Paid</span>
+                  <span>Sent</span>
+                </div>
+              </SelectablePreview>
+
+              <SelectablePreview
+                nodeId={previewIds.lineItems}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="line-items-panel"
+                label="LineItemsList"
+              >
+                <div className="list-heading">
+                  <div>
+                    <span>Line items</span>
+                    <small>lineItems[]</small>
+                  </div>
+                  <span className="add-row" aria-hidden="true"><Plus /></span>
+                </div>
+                <div className="line-item-row">
+                  <span className="item-dot teal" />
+                  <div>
+                    <strong>Organic bundle</strong>
+                    <small>qty 4 - $128.00</small>
+                  </div>
+                  <b>ok</b>
+                </div>
+                <div className="line-item-row">
+                  <span className="item-dot amber" />
+                  <div>
+                    <strong>Cold chain fee</strong>
+                    <small>qty 1 - $18.00</small>
+                  </div>
+                  <b>new</b>
+                </div>
+              </SelectablePreview>
+
+              <SelectablePreview
+                nodeId={previewIds.saveButton}
+                selectedObjectId={selectedObjectId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+                className="mobile-primary-action"
+                label="SaveButton"
+              >
+                <span>Save record</span>
+                <SendHorizontal aria-hidden="true" />
+              </SelectablePreview>
+
+              <div className="mobile-bottom-nav" aria-hidden="true">
+                <span className="active"><LayoutTemplate /></span>
+                <span><Database /></span>
+                <span><History /></span>
+              </div>
+            </div>
+          </div>
+        </SelectablePreview>
+      </section>
+
+      <aside className="canvas-binding-panel" aria-label="Selected binding summary">
+        <div className="binding-panel-header">
+          <FileCode2 />
+          <div>
+            <span>Selected binding</span>
+            <strong>{binding.component}</strong>
+          </div>
+        </div>
+        <dl>
+          <div>
+            <dt>CRUD field</dt>
+            <dd>{binding.field}</dd>
+          </div>
+          <div>
+            <dt>Zod schema</dt>
+            <dd>{binding.schema}</dd>
+          </div>
+          <div>
+            <dt>Operation</dt>
+            <dd>{binding.operation}</dd>
+          </div>
+          <div>
+            <dt>State</dt>
+            <dd>{binding.state}</dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
+  );
+}
+
+function SelectablePreview({
+  nodeId,
+  selectedObjectId,
+  focusedSet,
+  onSelect,
+  className,
+  label,
+  children,
+}: {
+  nodeId: NodeId | null;
+  selectedObjectId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+  className: string;
+  label: string;
+  children: ReactNode;
+}) {
+  const classes = previewNodeClass(className, nodeId, selectedObjectId, focusedSet);
+
+  return (
+    <div
+      className={classes}
+      data-node-label={label}
+      role="button"
+      tabIndex={nodeId === null ? -1 : 0}
+      onClick={(event) => {
+        if (nodeId === null) {
+          return;
+        }
+
+        event.stopPropagation();
+        onSelect(nodeId);
+      }}
+      onKeyDown={(event) => {
+        if (nodeId !== null) {
+          selectNodeFromKeyboard(event, nodeId, onSelect);
+        }
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function ComponentBindingPanel({ binding }: { binding: SelectedComponentBinding }) {
+  return (
+    <div className="component-binding-card">
+      <div className="binding-eyebrow">
+        <LayoutTemplate />
+        <span>Selected component</span>
+      </div>
+      <div className="binding-heading">
+        <strong>{binding.component}</strong>
+        <code>{binding.nodeId}</code>
+      </div>
+      <div className="binding-form">
+        <label>
+          <span>CRUD field</span>
+          <input value={binding.field} readOnly />
+        </label>
+        <label>
+          <span>Zod schema</span>
+          <input value={binding.schema} readOnly />
+        </label>
+        <label>
+          <span>Operation</span>
+          <input value={binding.operation} readOnly />
+        </label>
+        <label>
+          <span>State</span>
+          <input value={binding.state} readOnly />
+        </label>
+      </div>
+      <div className="binding-validation">
+        <CheckCircle2 />
+        <span>{binding.validation}</span>
+      </div>
+    </div>
   );
 }
 
@@ -827,11 +1277,133 @@ function nodeClass(
   return classes.filter(Boolean).join(" ");
 }
 
+function previewNodeClass(
+  base: string,
+  nodeId: NodeId | null,
+  selectedObjectId: NodeId,
+  focusedSet: Set<NodeId>,
+) {
+  const classes = [base, "preview-selectable"];
+
+  if (nodeId !== null && focusedSet.has(nodeId)) {
+    classes.push("focused");
+  }
+
+  if (nodeId !== null && nodeId === selectedObjectId) {
+    classes.push("selected");
+  }
+
+  return classes.join(" ");
+}
+
+function selectedComponentBinding(doc: JsonDoc, selectedId: NodeId): SelectedComponentBinding {
+  const sourceNode = visibleObjectNodeForSelection(doc, selectedId) ?? doc.nodes[selectedId] ?? doc.nodes[doc.rootId];
+
+  if (sourceNode === undefined) {
+    return {
+      nodeId: "none",
+      component: "No selection",
+      field: "$selection",
+      schema: "unknown",
+      operation: "read",
+      state: "empty",
+      validation: "No zod-crud node is selected.",
+    };
+  }
+
+  const sourceKey =
+    primitiveField(doc, sourceNode.id, "name") ??
+    primitiveField(doc, sourceNode.id, "label") ??
+    primitiveField(doc, sourceNode.id, "text") ??
+    String(sourceNode.value ?? sourceNode.type);
+  const binding = CRUD_BINDINGS[sourceKey] ?? fallbackBinding(doc, sourceNode);
+
+  return {
+    ...binding,
+    nodeId: sourceNode.id,
+  };
+}
+
+function fallbackBinding(doc: JsonDoc, node: JsonNode): ComponentBinding {
+  const key = node.key === null ? "$root" : String(node.key);
+  const kind = primitiveField(doc, node.id, "kind") ?? node.type;
+
+  return {
+    component: node.type === "object" ? `${kind} component` : `${node.type} node`,
+    field: key,
+    schema: schemaLabelForNode(node),
+    operation: node.children.length > 0 ? "read" : "update",
+    state: node.id === doc.rootId ? "root" : "selected",
+    validation: "Assign a CRUD binding to turn this node into an editable field.",
+  };
+}
+
+function schemaLabelForNode(node: JsonNode) {
+  if (node.type === "object") {
+    return "z.object(...)";
+  }
+
+  if (node.type === "array") {
+    return "z.array(...)";
+  }
+
+  if (node.type === "string") {
+    return "z.string()";
+  }
+
+  if (node.type === "number") {
+    return "z.number()";
+  }
+
+  if (node.type === "boolean") {
+    return "z.boolean()";
+  }
+
+  return "z.unknown()";
+}
+
+function visibleObjectNodeForSelection(doc: JsonDoc, nodeId: NodeId): JsonNode | null {
+  let current = doc.nodes[nodeId] ?? null;
+
+  while (current !== null) {
+    if (current.type === "object") {
+      return current;
+    }
+
+    if (current.parentId === null) {
+      return null;
+    }
+
+    current = doc.nodes[current.parentId] ?? null;
+  }
+
+  return null;
+}
+
+function uiObjectIdByField(doc: JsonDoc, key: string, value: string): NodeId | null {
+  for (const node of Object.values(doc.nodes)) {
+    if (node.type === "object" && primitiveField(doc, node.id, key) === value) {
+      return node.id;
+    }
+  }
+
+  return null;
+}
+
 function nodeLabel(doc: JsonDoc, node: JsonNode) {
   const key = node.key === null ? "$" : String(node.key);
 
   if (node.type === "object") {
     const kind = primitiveField(doc, node.id, "kind");
+    const displayName =
+      primitiveField(doc, node.id, "name") ??
+      primitiveField(doc, node.id, "label") ??
+      primitiveField(doc, node.id, "text");
+
+    if (kind !== null && displayName !== null) {
+      return `${key}: ${displayName}`;
+    }
+
     return kind ? `${key}: ${kind}` : `${key}: object`;
   }
 
