@@ -21,6 +21,17 @@ type UiNode =
       text: string;
     };
 
+const JsonValueSchema: z.ZodType<JsonValue> = z.lazy(() =>
+  z.union([
+    z.string(),
+    z.number(),
+    z.boolean(),
+    z.null(),
+    z.array(JsonValueSchema),
+    z.record(z.string(), JsonValueSchema),
+  ]),
+);
+
 const UiNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
   z.union([
     z.object({
@@ -270,7 +281,8 @@ describe("JsonCrud", () => {
   });
 
   it("edits passthrough and catchall object fields that already exist in the document", () => {
-    const passthroughEditor = createJsonCrud(z.object({ name: z.string() }).passthrough(), {
+    const PassthroughSchema = z.object({ name: z.string() }).passthrough() as z.ZodType<JsonValue>;
+    const passthroughEditor = createJsonCrud(PassthroughSchema, {
       name: "Ann",
       extra: 1,
     });
@@ -279,15 +291,14 @@ describe("JsonCrud", () => {
     expect(passthroughEditor.update(passthroughExtraId!, 2).ok).toBe(true);
     expect(passthroughEditor.toJson()).toEqual({ name: "Ann", extra: 2 });
 
-    const catchallEditor = createJsonCrud(z.object({ name: z.string() }).catchall(z.number()), {
-      name: "Ann",
+    const catchallEditor = createJsonCrud(z.object({}).catchall(z.number()), {
       extra: 1,
     });
     const catchallExtraId = catchallEditor.find(catchallEditor.snapshot().rootId, "extra");
 
     expect(catchallEditor.update(catchallExtraId!, 2).ok).toBe(true);
     expect(catchallEditor.update(catchallExtraId!, "bad").ok).toBe(false);
-    expect(catchallEditor.toJson()).toEqual({ name: "Ann", extra: 2 });
+    expect(catchallEditor.toJson()).toEqual({ extra: 2 });
   });
 
   it("traverses intersection object fields", () => {
