@@ -52,7 +52,6 @@ import {
 } from "zod-crud";
 
 import {
-  CONTENT_IMAGES,
   DesignNodeSchema,
   initialDesignJson,
   type DesignIconName,
@@ -864,29 +863,10 @@ function MobileBuilderCanvas({
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
 }) {
-  const nodeIdsByName = useMemo(() => designNodeIdsByName(doc), [doc]);
-  const nodeId = (name: string) => nodeIdsByName.get(name) ?? null;
-  const text = (name: string, fallback: string) => uiTextByName(doc, name)?.text ?? fallback;
-  const rectLabel = (name: string, fallback: string) => uiRectByName(doc, name)?.label ?? fallback;
   const binding = selectedComponentBinding(doc, selectedId);
-  const heroImage = uiImageByName(doc, "MarketHeroImage") ?? {
-    label: "MarketHeroImage",
-    src: CONTENT_IMAGES.marketHero,
-    alt: "Fresh produce crates for a wholesale order",
-    aspect: "wide" as const,
-  };
-  const organicImage = uiImageByName(doc, "OrganicBundleImage") ?? {
-    label: "OrganicBundleImage",
-    src: CONTENT_IMAGES.organicBundle,
-    alt: "Organic vegetables bundle",
-    aspect: "thumb" as const,
-  };
-  const coldChainImage = uiImageByName(doc, "ColdChainImage") ?? {
-    label: "ColdChainImage",
-    src: CONTENT_IMAGES.coldChain,
-    alt: "Prepared cold chain food package",
-    aspect: "thumb" as const,
-  };
+  const rootChildIds = designChildIds(doc, doc.rootId);
+  const mobileScreenId = rootChildIds.find((childId) => primitiveField(doc, childId, "name") === "MobileRecordScreen") ?? null;
+  const sideChildIds = rootChildIds.filter((childId) => childId !== mobileScreenId);
 
   return (
     <SelectablePreview
@@ -902,562 +882,15 @@ function MobileBuilderCanvas({
           <Smartphone />
           <span>record surface</span>
         </div>
-
-        <SelectablePreview
-          nodeId={nodeId("MobileRecordScreen")}
-          selectedPreviewId={selectedPreviewId}
-          focusedSet={focusedSet}
-          onSelect={onSelect}
-          className="phone-device"
-          label="MobileRecordScreen"
-        >
-          <div className="phone-hardware">
-            <div className="phone-speaker" aria-hidden="true" />
-            <div className="mobile-app-screen">
-              <div className="mobile-statusbar">
-                <span>9:41</span>
-                <div aria-hidden="true">
-                  <span />
-                  <span />
-                  <span />
-                </div>
-              </div>
-
-              <SelectablePreview
-                nodeId={nodeId("AppToolbar")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="mobile-app-toolbar"
-                label="AppToolbar"
-              >
-                <div>
-                  <SelectableInline
-                    nodeId={nodeId("ToolbarEyebrowText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="toolbar-eyebrow"
-                    label="ToolbarEyebrowText"
-                  >
-                    {text("ToolbarEyebrowText", "FieldOps")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("ToolbarTitleText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="toolbar-title"
-                    label="ToolbarTitleText"
-                  >
-                    {text("ToolbarTitleText", "Order intake")}
-                  </SelectableInline>
-                </div>
-                <div className="mobile-toolbar-actions">
-                  <SelectableInline
-                    nodeId={nodeId("SearchIcon")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="toolbar-action-button"
-                    label="SearchIcon"
-                  >
-                    <Search />
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("NotificationIcon")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="toolbar-action-button"
-                    label="NotificationIcon"
-                  >
-                    <Bell />
-                  </SelectableInline>
-                </div>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("MarketHeroImage")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="visual-hero-card"
-                label="MarketHeroImage"
-              >
-                <img src={heroImage.src} alt={heroImage.alt} />
-                <div className="visual-hero-overlay">
-                  <SelectableInline
-                    nodeId={nodeId("HeroMediaFieldText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="hero-field-label"
-                    label="HeroMediaFieldText"
-                  >
-                    {text("HeroMediaFieldText", "media.hero.src")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("HeroTitleText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="hero-title"
-                    label="HeroTitleText"
-                  >
-                    {text("HeroTitleText", "Fresh produce order")}
-                  </SelectableInline>
-                </div>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("SchemaStatusCard")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="schema-health-card"
-                label="SchemaStatusCard"
-              >
-                <SelectableInline
-                  nodeId={nodeId("SchemaValidIcon")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="health-icon"
-                  label="SchemaValidIcon"
-                >
-                  <CheckCircle2 />
-                </SelectableInline>
-                <div>
-                  <SelectableInline
-                    nodeId={nodeId("SchemaNameText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="schema-name"
-                    label="SchemaNameText"
-                  >
-                    {text("SchemaNameText", "SalesOrderSchema")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("SnapshotStatusText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="schema-status"
-                    label="SnapshotStatusText"
-                  >
-                    {text("SnapshotStatusText", "Valid snapshot")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("HydratedFieldsText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="schema-detail"
-                    label="HydratedFieldsText"
-                  >
-                    {text("HydratedFieldsText", "8 fields hydrated by zod-crud")}
-                  </SelectableInline>
-                </div>
-                <SelectableInline
-                  nodeId={nodeId("SafeParseBadge")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="safeparse-badge"
-                  label="SafeParseBadge"
-                >
-                  {rectLabel("SafeParseBadge", "safeParse")}
-                </SelectableInline>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("CrudModeTabs")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="mobile-segmented"
-                label="CrudModeTabs"
-              >
-                <SelectableInline
-                  nodeId={nodeId("CreateModeText")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="mode-segment active"
-                  label="CreateModeText"
-                >
-                  {text("CreateModeText", "Create")}
-                </SelectableInline>
-                <SelectableInline
-                  nodeId={nodeId("ReadModeText")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="mode-segment"
-                  label="ReadModeText"
-                >
-                  {text("ReadModeText", "Read")}
-                </SelectableInline>
-                <SelectableInline
-                  nodeId={nodeId("UpdateModeText")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="mode-segment"
-                  label="UpdateModeText"
-                >
-                  {text("UpdateModeText", "Update")}
-                </SelectableInline>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("CustomerNameField")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="field-card hero-field"
-                label="CustomerNameField"
-              >
-                <div className="field-heading">
-                  <SelectableInline
-                    nodeId={nodeId("CustomerLabelText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="field-title"
-                    label="CustomerLabelText"
-                  >
-                    {text("CustomerLabelText", "Customer")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("CustomerFieldPathText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="field-path"
-                    label="CustomerFieldPathText"
-                  >
-                    {text("CustomerFieldPathText", "customer.name")}
-                  </SelectableInline>
-                </div>
-                <div className="input-control">
-                  <SelectableInline
-                    nodeId={nodeId("CustomerValueText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="input-value"
-                    label="CustomerValueText"
-                  >
-                    {text("CustomerValueText", "Acme Market")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("CustomerSelectIcon")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="input-icon"
-                    label="CustomerSelectIcon"
-                  >
-                    <ChevronDown />
-                  </SelectableInline>
-                </div>
-                <SelectableInline
-                  nodeId={nodeId("CustomerSchemaText")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="schema-inline"
-                  label="CustomerSchemaText"
-                >
-                  {text("CustomerSchemaText", "z.string().min(2)")}
-                </SelectableInline>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("OrderStatusField")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="field-card status-field"
-                label="OrderStatusField"
-              >
-                <div className="field-heading">
-                  <SelectableInline
-                    nodeId={nodeId("StatusLabelText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="field-title"
-                    label="StatusLabelText"
-                  >
-                    {text("StatusLabelText", "Status")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("StatusFieldPathText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="field-path"
-                    label="StatusFieldPathText"
-                  >
-                    {text("StatusFieldPathText", "status")}
-                  </SelectableInline>
-                </div>
-                <div className="status-pills">
-                  <SelectableInline
-                    nodeId={nodeId("DraftStatusText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="status-pill active"
-                    label="DraftStatusText"
-                  >
-                    {text("DraftStatusText", "Draft")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("PaidStatusText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="status-pill"
-                    label="PaidStatusText"
-                  >
-                    {text("PaidStatusText", "Paid")}
-                  </SelectableInline>
-                  <SelectableInline
-                    nodeId={nodeId("SentStatusText")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="status-pill"
-                    label="SentStatusText"
-                  >
-                    {text("SentStatusText", "Sent")}
-                  </SelectableInline>
-                </div>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("LineItemsList")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="line-items-panel"
-                label="LineItemsList"
-              >
-                <div className="list-heading">
-                  <div>
-                    <SelectableInline
-                      nodeId={nodeId("LineItemsTitleText")}
-                      selectedPreviewId={selectedPreviewId}
-                      focusedSet={focusedSet}
-                      onSelect={onSelect}
-                      className="list-title"
-                      label="LineItemsTitleText"
-                    >
-                      {text("LineItemsTitleText", "Line items")}
-                    </SelectableInline>
-                    <SelectableInline
-                      nodeId={nodeId("LineItemsPathText")}
-                      selectedPreviewId={selectedPreviewId}
-                      focusedSet={focusedSet}
-                      onSelect={onSelect}
-                      className="list-path"
-                      label="LineItemsPathText"
-                    >
-                      {text("LineItemsPathText", "lineItems[]")}
-                    </SelectableInline>
-                  </div>
-                  <SelectableInline
-                    nodeId={nodeId("AddLineItemIcon")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="add-row"
-                    label="AddLineItemIcon"
-                  >
-                    <Plus />
-                  </SelectableInline>
-                </div>
-                <SelectablePreview
-                  nodeId={nodeId("OrganicLineItemFlex")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="line-item-row"
-                  label="OrganicLineItemFlex"
-                >
-                  <SelectablePreview
-                    nodeId={nodeId("OrganicBundleImage")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="line-item-thumb-frame"
-                    label="OrganicBundleImage"
-                  >
-                    <img className="line-item-thumb" src={organicImage.src} alt={organicImage.alt} />
-                  </SelectablePreview>
-                  <div>
-                    <SelectableInline
-                      nodeId={nodeId("OrganicBundleTitleText")}
-                      selectedPreviewId={selectedPreviewId}
-                      focusedSet={focusedSet}
-                      onSelect={onSelect}
-                      className="line-item-title"
-                      label="OrganicBundleTitleText"
-                    >
-                      {text("OrganicBundleTitleText", "Organic bundle")}
-                    </SelectableInline>
-                    <SelectableInline
-                      nodeId={nodeId("OrganicBundleMetaText")}
-                      selectedPreviewId={selectedPreviewId}
-                      focusedSet={focusedSet}
-                      onSelect={onSelect}
-                      className="line-item-meta"
-                      label="OrganicBundleMetaText"
-                    >
-                      {text("OrganicBundleMetaText", "qty 4 - $128.00")}
-                    </SelectableInline>
-                  </div>
-                  <SelectableInline
-                    nodeId={nodeId("OrganicStatusBadge")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="line-item-badge"
-                    label="OrganicStatusBadge"
-                  >
-                    {rectLabel("OrganicStatusBadge", "ok")}
-                  </SelectableInline>
-                </SelectablePreview>
-                <SelectablePreview
-                  nodeId={nodeId("ColdChainLineItemFlex")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="line-item-row"
-                  label="ColdChainLineItemFlex"
-                >
-                  <SelectablePreview
-                    nodeId={nodeId("ColdChainImage")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="line-item-thumb-frame"
-                    label="ColdChainImage"
-                  >
-                    <img className="line-item-thumb" src={coldChainImage.src} alt={coldChainImage.alt} />
-                  </SelectablePreview>
-                  <div>
-                    <SelectableInline
-                      nodeId={nodeId("ColdChainTitleText")}
-                      selectedPreviewId={selectedPreviewId}
-                      focusedSet={focusedSet}
-                      onSelect={onSelect}
-                      className="line-item-title"
-                      label="ColdChainTitleText"
-                    >
-                      {text("ColdChainTitleText", "Cold chain fee")}
-                    </SelectableInline>
-                    <SelectableInline
-                      nodeId={nodeId("ColdChainMetaText")}
-                      selectedPreviewId={selectedPreviewId}
-                      focusedSet={focusedSet}
-                      onSelect={onSelect}
-                      className="line-item-meta"
-                      label="ColdChainMetaText"
-                    >
-                      {text("ColdChainMetaText", "qty 1 - $18.00")}
-                    </SelectableInline>
-                  </div>
-                  <SelectableInline
-                    nodeId={nodeId("ColdChainStatusBadge")}
-                    selectedPreviewId={selectedPreviewId}
-                    focusedSet={focusedSet}
-                    onSelect={onSelect}
-                    className="line-item-badge"
-                    label="ColdChainStatusBadge"
-                  >
-                    {rectLabel("ColdChainStatusBadge", "new")}
-                  </SelectableInline>
-                </SelectablePreview>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("SaveButton")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="mobile-primary-action"
-                label="SaveButton"
-              >
-                <SelectableInline
-                  nodeId={nodeId("SaveButtonText")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="save-button-text"
-                  label="SaveButtonText"
-                >
-                  {text("SaveButtonText", "Save record")}
-                </SelectableInline>
-                <SelectableInline
-                  nodeId={nodeId("SaveButtonIcon")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="save-button-icon"
-                  label="SaveButtonIcon"
-                >
-                  <SendHorizontal />
-                </SelectableInline>
-              </SelectablePreview>
-
-              <SelectablePreview
-                nodeId={nodeId("BottomNavFlex")}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                className="mobile-bottom-nav"
-                label="BottomNavFlex"
-              >
-                <SelectableInline
-                  nodeId={nodeId("LayoutTabIcon")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="bottom-nav-button active"
-                  label="LayoutTabIcon"
-                >
-                  <LayoutTemplate />
-                </SelectableInline>
-                <SelectableInline
-                  nodeId={nodeId("DatabaseTabIcon")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="bottom-nav-button"
-                  label="DatabaseTabIcon"
-                >
-                  <Database />
-                </SelectableInline>
-                <SelectableInline
-                  nodeId={nodeId("HistoryTabIcon")}
-                  selectedPreviewId={selectedPreviewId}
-                  focusedSet={focusedSet}
-                  onSelect={onSelect}
-                  className="bottom-nav-button"
-                  label="HistoryTabIcon"
-                >
-                  <History />
-                </SelectableInline>
-              </SelectablePreview>
-            </div>
-          </div>
-        </SelectablePreview>
+        {mobileScreenId === null ? null : (
+          <DesignPreviewNode
+            doc={doc}
+            nodeId={mobileScreenId}
+            selectedPreviewId={selectedPreviewId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
+        )}
       </section>
 
       <aside className="canvas-binding-panel" aria-label="Selected binding summary">
@@ -1486,10 +919,319 @@ function MobileBuilderCanvas({
             <dd>{binding.state}</dd>
           </div>
         </dl>
+        {sideChildIds.length === 0 ? null : (
+          <div className="root-side-nodes">
+            {sideChildIds.map((childId) => (
+              <DesignPreviewNode
+                key={childId}
+                doc={doc}
+                nodeId={childId}
+                selectedPreviewId={selectedPreviewId}
+                focusedSet={focusedSet}
+                onSelect={onSelect}
+              />
+            ))}
+          </div>
+        )}
       </aside>
     </SelectablePreview>
   );
 }
+
+function DesignPreviewNode({
+  doc,
+  nodeId,
+  selectedPreviewId,
+  focusedSet,
+  onSelect,
+}: {
+  doc: JsonDoc;
+  nodeId: NodeId;
+  selectedPreviewId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+}) {
+  const node = doc.nodes[nodeId];
+
+  if (node === undefined) {
+    return null;
+  }
+
+  const value = deserialize(doc, nodeId);
+
+  if (isUiFrame(value)) {
+    if (value.name === "MobileRecordScreen") {
+      return (
+        <SelectablePreview
+          nodeId={nodeId}
+          selectedPreviewId={selectedPreviewId}
+          focusedSet={focusedSet}
+          onSelect={onSelect}
+          className="phone-device"
+          label={value.name}
+        >
+          <div className="phone-hardware">
+            <div className="phone-speaker" aria-hidden="true" />
+            <div className="mobile-app-screen">
+              <div className="mobile-statusbar">
+                <span>9:41</span>
+                <div aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+              {designChildIds(doc, nodeId).map((childId) => (
+                <DesignPreviewNode
+                  key={childId}
+                  doc={doc}
+                  nodeId={childId}
+                  selectedPreviewId={selectedPreviewId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          </div>
+        </SelectablePreview>
+      );
+    }
+
+    return (
+      <SelectablePreview
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewContainerClass(value)}
+        label={value.name}
+      >
+        {designChildIds(doc, nodeId).map((childId) => (
+          <DesignPreviewNode
+            key={childId}
+            doc={doc}
+            nodeId={childId}
+            selectedPreviewId={selectedPreviewId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
+        ))}
+      </SelectablePreview>
+    );
+  }
+
+  if (isUiFlex(value)) {
+    return (
+      <SelectablePreview
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewContainerClass(value)}
+        label={value.name}
+        style={{ gap: value.gap }}
+      >
+        {designChildIds(doc, nodeId).map((childId) => (
+          <DesignPreviewNode
+            key={childId}
+            doc={doc}
+            nodeId={childId}
+            selectedPreviewId={selectedPreviewId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
+        ))}
+      </SelectablePreview>
+    );
+  }
+
+  if (isUiText(value)) {
+    return (
+      <SelectableInline
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewTextClass(value)}
+        label={value.name}
+      >
+        {value.text}
+      </SelectableInline>
+    );
+  }
+
+  if (isUiRect(value)) {
+    return (
+      <SelectableInline
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewRectClass(value)}
+        label={value.name}
+      >
+        {value.label}
+      </SelectableInline>
+    );
+  }
+
+  if (isUiIcon(value)) {
+    return (
+      <SelectableInline
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewIconClass(value)}
+        label={value.name}
+      >
+        <IconGlyph icon={value.icon} />
+      </SelectableInline>
+    );
+  }
+
+  if (isUiImage(value)) {
+    return (
+      <SelectablePreview
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewImageClass(value)}
+        label={value.name}
+      >
+        <img className={value.aspect === "thumb" ? "line-item-thumb" : undefined} src={value.src} alt={value.alt} />
+      </SelectablePreview>
+    );
+  }
+
+  return null;
+}
+
+function designChildIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const childrenArrayId = childIdByKey(doc, nodeId, "children");
+  const children = childrenArrayId === null ? undefined : doc.nodes[childrenArrayId];
+
+  return children?.type === "array" ? children.children : [];
+}
+
+function previewContainerClass(value: Extract<UiNode, { kind: "frame" | "flex" }>) {
+  const knownClass = PREVIEW_CONTAINER_CLASSES[value.name];
+
+  if (knownClass !== undefined) {
+    return knownClass;
+  }
+
+  if (value.kind === "flex") {
+    return `preview-flex preview-flex-${value.direction} ${previewNameClass(value.name)}`;
+  }
+
+  return `preview-frame ${previewNameClass(value.name)}`;
+}
+
+function previewTextClass(value: Extract<UiNode, { kind: "text" }>) {
+  return PREVIEW_TEXT_CLASSES[value.name] ?? `preview-text tone-${value.tone} ${previewNameClass(value.name)}`;
+}
+
+function previewRectClass(value: Extract<UiNode, { kind: "rect" }>) {
+  return PREVIEW_RECT_CLASSES[value.name] ?? `preview-rect fill-${value.fill} ${previewNameClass(value.name)}`;
+}
+
+function previewIconClass(value: Extract<UiNode, { kind: "icon" }>) {
+  return PREVIEW_ICON_CLASSES[value.name] ?? `preview-icon tone-${value.tone} ${previewNameClass(value.name)}`;
+}
+
+function previewImageClass(value: Extract<UiNode, { kind: "image" }>) {
+  return PREVIEW_IMAGE_CLASSES[value.name] ?? `preview-image-frame preview-image-${value.aspect} ${previewNameClass(value.name)}`;
+}
+
+function previewNameClass(name: string) {
+  return `preview-name-${name.replace(/[A-Z]/g, (letter, index) => `${index === 0 ? "" : "-"}${letter.toLowerCase()}`).replace(/[^a-z0-9]+/g, "-")}`;
+}
+
+const PREVIEW_CONTAINER_CLASSES: Record<string, string> = {
+  AppToolbar: "mobile-app-toolbar",
+  BottomNavFlex: "mobile-bottom-nav",
+  ColdChainLineItemCopyFlex: "line-item-copy",
+  ColdChainLineItemFlex: "line-item-row",
+  CrudModeTabs: "mobile-segmented",
+  CustomerHeadingFlex: "field-heading",
+  CustomerInputFlex: "input-control",
+  CustomerNameField: "field-card hero-field",
+  HeroCard: "visual-hero-card",
+  HeroOverlayFlex: "visual-hero-overlay",
+  LineItemsHeadingCopyFlex: "list-heading-copy",
+  LineItemsHeadingFlex: "list-heading",
+  LineItemsList: "line-items-panel",
+  OrderStatusField: "field-card status-field",
+  OrganicLineItemCopyFlex: "line-item-copy",
+  OrganicLineItemFlex: "line-item-row",
+  PropertyPanel: "side-property-panel",
+  SaveButton: "mobile-primary-action",
+  SchemaCopyFlex: "schema-copy-stack",
+  SchemaStatusCard: "schema-health-card",
+  StatusHeadingFlex: "field-heading",
+  StatusPillsFlex: "status-pills",
+  ToolbarActionsFlex: "mobile-toolbar-actions",
+  ToolbarTitleFlex: "toolbar-title-stack",
+};
+
+const PREVIEW_TEXT_CLASSES: Record<string, string> = {
+  ColdChainMetaText: "line-item-meta",
+  ColdChainTitleText: "line-item-title",
+  CreateModeText: "mode-segment active",
+  CustomerFieldPathText: "field-path",
+  CustomerLabelText: "field-title",
+  CustomerSchemaText: "schema-inline",
+  CustomerValueText: "input-value",
+  DraftStatusText: "status-pill active",
+  HeroMediaFieldText: "hero-field-label",
+  HeroTitleText: "hero-title",
+  HydratedFieldsText: "schema-detail",
+  LineItemsPathText: "list-path",
+  LineItemsTitleText: "list-title",
+  OrganicBundleMetaText: "line-item-meta",
+  OrganicBundleTitleText: "line-item-title",
+  PaidStatusText: "status-pill",
+  ReadModeText: "mode-segment",
+  SaveButtonText: "save-button-text",
+  SchemaNameText: "schema-name",
+  SelectedComponentText: "side-property-text",
+  SentStatusText: "status-pill",
+  SnapshotStatusText: "schema-status",
+  StatusFieldPathText: "field-path",
+  StatusLabelText: "field-title",
+  ToolbarEyebrowText: "toolbar-eyebrow",
+  ToolbarTitleText: "toolbar-title",
+  UpdateModeText: "mode-segment",
+};
+
+const PREVIEW_RECT_CLASSES: Record<string, string> = {
+  ColdChainStatusBadge: "line-item-badge",
+  CrudFieldBindingControl: "side-property-control",
+  LineItemsRepeater: "repeater-block",
+  OrganicStatusBadge: "line-item-badge",
+  SafeParseBadge: "safeparse-badge",
+  SyncStatus: "sync-status-badge",
+};
+
+const PREVIEW_ICON_CLASSES: Record<string, string> = {
+  AddLineItemIcon: "add-row",
+  CustomerSelectIcon: "input-icon",
+  DatabaseTabIcon: "bottom-nav-button",
+  HistoryTabIcon: "bottom-nav-button",
+  LayoutTabIcon: "bottom-nav-button active",
+  NotificationIcon: "toolbar-action-button",
+  SaveButtonIcon: "save-button-icon",
+  SchemaValidIcon: "health-icon",
+  SearchIcon: "toolbar-action-button",
+};
+
+const PREVIEW_IMAGE_CLASSES: Record<string, string> = {
+  ColdChainImage: "line-item-thumb-frame",
+  MarketHeroImage: "visual-hero-image",
+  OrganicBundleImage: "line-item-thumb-frame",
+};
 
 function SelectablePreview({
   nodeId,
@@ -1498,6 +1240,7 @@ function SelectablePreview({
   onSelect,
   className,
   label,
+  style,
   children,
 }: {
   nodeId: NodeId | null;
@@ -1506,6 +1249,7 @@ function SelectablePreview({
   onSelect: (nodeId: NodeId) => void;
   className: string;
   label: string;
+  style?: CSSProperties;
   children: ReactNode;
 }) {
   const classes = previewNodeClass(className, nodeId, selectedPreviewId, focusedSet);
@@ -1520,6 +1264,7 @@ function SelectablePreview({
       aria-label={label}
       aria-pressed={nodeId === selectedPreviewId}
       tabIndex={nodeId === null ? -1 : 0}
+      style={style}
       onClick={(event) => {
         if (nodeId === null) {
           return;
@@ -1993,67 +1738,6 @@ function visibleObjectNodeForSelection(doc: JsonDoc, nodeId: NodeId): JsonNode |
   }
 
   return null;
-}
-
-function uiObjectIdByField(doc: JsonDoc, key: string, value: string): NodeId | null {
-  for (const node of Object.values(doc.nodes)) {
-    if (node.type === "object" && primitiveField(doc, node.id, key) === value) {
-      return node.id;
-    }
-  }
-
-  return null;
-}
-
-function designNodeIdsByName(doc: JsonDoc) {
-  const ids = new Map<string, NodeId>();
-
-  for (const node of Object.values(doc.nodes)) {
-    if (node.type !== "object") {
-      continue;
-    }
-
-    const name = primitiveField(doc, node.id, "name");
-
-    if (name !== null) {
-      ids.set(name, node.id);
-    }
-  }
-
-  return ids;
-}
-
-function uiTextByName(doc: JsonDoc, name: string): Extract<UiNode, { kind: "text" }> | null {
-  const nodeId = uiObjectIdByField(doc, "name", name);
-
-  if (nodeId === null) {
-    return null;
-  }
-
-  const value = deserialize(doc, nodeId);
-  return isUiText(value) ? value : null;
-}
-
-function uiRectByName(doc: JsonDoc, name: string): Extract<UiNode, { kind: "rect" }> | null {
-  const nodeId = uiObjectIdByField(doc, "name", name);
-
-  if (nodeId === null) {
-    return null;
-  }
-
-  const value = deserialize(doc, nodeId);
-  return isUiRect(value) ? value : null;
-}
-
-function uiImageByName(doc: JsonDoc, name: string): Extract<UiNode, { kind: "image" }> | null {
-  const nodeId = uiObjectIdByField(doc, "name", name);
-
-  if (nodeId === null) {
-    return null;
-  }
-
-  const value = deserialize(doc, nodeId);
-  return isUiImage(value) ? value : null;
 }
 
 function nodeLabel(doc: JsonDoc, node: JsonNode) {
