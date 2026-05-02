@@ -38,7 +38,7 @@ import {
   type KeyboardEvent as ReactKeyboardEvent,
   type ReactNode,
 } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 
 import {
   createJsonCrud,
@@ -1759,7 +1759,15 @@ function isRecord(value: JsonValue): value is Record<string, JsonValue> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-createRoot(document.getElementById("root")!).render(
+type RootElement = HTMLElement & {
+  __zodCrudRoot?: Root;
+};
+
+const rootElement = document.getElementById("root") as RootElement;
+const root = rootElement.__zodCrudRoot ?? createRoot(rootElement);
+rootElement.__zodCrudRoot = root;
+
+root.render(
   <StrictMode>
     <App />
   </StrictMode>,
