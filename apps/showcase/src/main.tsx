@@ -864,9 +864,12 @@ function MobileBuilderCanvas({
   onSelect: (nodeId: NodeId) => void;
 }) {
   const binding = selectedComponentBinding(doc, selectedId);
-  const rootChildIds = designChildIds(doc, doc.rootId);
-  const mobileScreenId = rootChildIds.find((childId) => primitiveField(doc, childId, "name") === "MobileRecordScreen") ?? null;
-  const sideChildIds = rootChildIds.filter((childId) => childId !== mobileScreenId);
+  const rootSlotIds = designSlotIds(doc, doc.rootId);
+  const mobileScreenId =
+    designSlotId(doc, doc.rootId, "screen") ??
+    rootSlotIds.find((childId) => primitiveField(doc, childId, "name") === "MobileRecordScreen") ??
+    null;
+  const sideChildIds = rootSlotIds.filter((childId) => childId !== mobileScreenId);
 
   return (
     <SelectablePreview
@@ -958,6 +961,67 @@ function DesignPreviewNode({
   }
 
   const value = deserialize(doc, nodeId);
+
+  if (isUiGroup(value)) {
+    if (value.name === "MobileRecordScreen") {
+      return (
+        <SelectablePreview
+          nodeId={nodeId}
+          selectedPreviewId={selectedPreviewId}
+          focusedSet={focusedSet}
+          onSelect={onSelect}
+          className="phone-device"
+          label={value.name}
+        >
+          <div className="phone-hardware">
+            <div className="phone-speaker" aria-hidden="true" />
+            <div className="mobile-app-screen">
+              <div className="mobile-statusbar">
+                <span>9:41</span>
+                <div aria-hidden="true">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+              {designEntityChildIds(doc, nodeId).map((childId) => (
+                <DesignPreviewNode
+                  key={childId}
+                  doc={doc}
+                  nodeId={childId}
+                  selectedPreviewId={selectedPreviewId}
+                  focusedSet={focusedSet}
+                  onSelect={onSelect}
+                />
+              ))}
+            </div>
+          </div>
+        </SelectablePreview>
+      );
+    }
+
+    return (
+      <SelectablePreview
+        nodeId={nodeId}
+        selectedPreviewId={selectedPreviewId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        className={previewContainerClass(value)}
+        label={value.name}
+      >
+        {designEntityChildIds(doc, nodeId).map((childId) => (
+          <DesignPreviewNode
+            key={childId}
+            doc={doc}
+            nodeId={childId}
+            selectedPreviewId={selectedPreviewId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
+        ))}
+      </SelectablePreview>
+    );
+  }
 
   if (isUiFrame(value)) {
     if (value.name === "MobileRecordScreen") {
@@ -1115,7 +1179,45 @@ function designChildIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
   return children?.type === "array" ? children.children : [];
 }
 
-function previewContainerClass(value: Extract<UiNode, { kind: "frame" | "flex" }>) {
+function designEntityChildIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const slotIds = designSlotIds(doc, nodeId);
+  const collectionIds = designCollectionItemIds(doc, nodeId);
+
+  return [...slotIds, ...collectionIds];
+}
+
+function designSlotIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const slotsId = childIdByKey(doc, nodeId, "slots");
+  const slots = slotsId === null ? undefined : doc.nodes[slotsId];
+
+  return slots?.type === "object" ? slots.children : [];
+}
+
+function designSlotId(doc: JsonDoc, nodeId: NodeId, slotName: string): NodeId | null {
+  const slotsId = childIdByKey(doc, nodeId, "slots");
+
+  if (slotsId === null) {
+    return null;
+  }
+
+  return childIdByKey(doc, slotsId, slotName);
+}
+
+function designCollectionItemIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const collectionsId = childIdByKey(doc, nodeId, "collections");
+  const collections = collectionsId === null ? undefined : doc.nodes[collectionsId];
+
+  if (collections?.type !== "object") {
+    return [];
+  }
+
+  return collections.children.flatMap((collectionId) => {
+    const collection = doc.nodes[collectionId];
+    return collection?.type === "array" ? collection.children : [];
+  });
+}
+
+function previewContainerClass(value: Extract<UiNode, { kind: "group" | "frame" | "flex" }>) {
   const knownClass = PREVIEW_CONTAINER_CLASSES[value.name];
 
   if (knownClass !== undefined) {
@@ -1804,10 +1906,25 @@ function findInsertionArray(doc: JsonDoc, nodeId: NodeId): NodeId | null {
   if (node.type === "object") {
     const childrenId = childIdByKey(doc, nodeId, "children");
     const children = childrenId ? doc.nodes[childrenId] : undefined;
-    return children?.type === "array" ? children.id : null;
+    if (children?.type === "array") {
+      return children.id;
+    }
+
+    return firstCollectionArrayId(doc, nodeId);
   }
 
   return null;
+}
+
+function firstCollectionArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+  const collectionsId = childIdByKey(doc, nodeId, "collections");
+  const collections = collectionsId === null ? undefined : doc.nodes[collectionsId];
+
+  if (collections?.type !== "object") {
+    return null;
+  }
+
+  return collections.children.find((childId) => doc.nodes[childId]?.type === "array") ?? null;
 }
 
 function editableStringNodeId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
@@ -2053,6 +2170,18 @@ function uniqueIds(ids: NodeId[]) {
 
 function isUiFrame(value: JsonValue): value is Extract<UiNode, { kind: "frame" }> {
   return isRecord(value) && value.kind === "frame" && Array.isArray(value.children);
+}
+
+function isUiGroup(value: JsonValue): value is Extract<UiNode, { kind: "group" }> {
+  return (
+    isRecord(value) &&
+    value.kind === "group" &&
+    typeof value.role === "string" &&
+    value.slots !== undefined &&
+    value.collections !== undefined &&
+    isRecord(value.slots) &&
+    isRecord(value.collections)
+  );
 }
 
 function isUiFlex(value: JsonValue): value is Extract<UiNode, { kind: "flex" }> {

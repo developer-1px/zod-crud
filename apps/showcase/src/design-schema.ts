@@ -124,7 +124,15 @@ export type UiImageNode = DesignNodeBase & {
   aspect: DesignImageAspect;
 };
 
+export type UiGroupNode = DesignNodeBase & {
+  kind: "group";
+  role: string;
+  slots: Record<string, UiNode>;
+  collections: Record<string, UiNode[]>;
+};
+
 export type UiNode =
+  | UiGroupNode
   | UiFrameNode
   | UiFlexNode
   | UiTextNode
@@ -161,6 +169,15 @@ export const ImageNodeSchema: z.ZodType<UiImageNode> = DesignNodeBaseSchema.exte
   aspect: DesignImageAspectSchema,
 });
 
+export const GroupNodeSchema: z.ZodType<UiGroupNode> = z.lazy(() =>
+  DesignNodeBaseSchema.extend({
+    kind: z.literal("group"),
+    role: z.string().min(1),
+    slots: z.record(z.string(), DesignNodeSchema).default({}),
+    collections: z.record(z.string(), z.array(DesignNodeSchema)).default({}),
+  }),
+);
+
 export const FrameNodeSchema: z.ZodType<UiFrameNode> = z.lazy(() =>
   DesignNodeBaseSchema.extend({
     kind: z.literal("frame"),
@@ -180,6 +197,7 @@ export const FlexNodeSchema: z.ZodType<UiFlexNode> = z.lazy(() =>
 
 export const DesignNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
   z.union([
+    GroupNodeSchema,
     FrameNodeSchema,
     FlexNodeSchema,
     TextNodeSchema,
@@ -190,49 +208,50 @@ export const DesignNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
 );
 
 export const initialDesignJson = {
-  kind: "frame",
+  kind: "group",
   name: "ZodCrudBuilder",
-  fill: "#eef2f7",
-  children: [
-    {
-      kind: "frame",
+  role: "builder",
+  slots: {
+    screen: {
+      kind: "group",
       name: "MobileRecordScreen",
-      fill: "#f9fbff",
-      children: [
-        {
-          kind: "frame",
+      role: "mobileScreen",
+      slots: {
+        toolbar: {
+          kind: "group",
           name: "AppToolbar",
-          fill: "#ffffff",
-          children: [
-            {
-              kind: "flex",
+          role: "mobileToolbar",
+          slots: {
+            title: {
+              kind: "group",
               name: "ToolbarTitleFlex",
-              direction: "column",
-              gap: 2,
-              children: [
-                { kind: "text", name: "ToolbarEyebrowText", text: "FieldOps", tone: "muted" },
-                { kind: "text", name: "ToolbarTitleText", text: "Order intake", tone: "ink" },
-              ],
+              role: "toolbarTitleStack",
+              slots: {
+                eyebrow: { kind: "text", name: "ToolbarEyebrowText", text: "FieldOps", tone: "muted" },
+                title: { kind: "text", name: "ToolbarTitleText", text: "Order intake", tone: "ink" },
+              },
+              collections: {},
             },
-            {
-              kind: "flex",
+            actions: {
+              kind: "group",
               name: "ToolbarActionsFlex",
-              direction: "row",
-              gap: 7,
-              children: [
-                { kind: "icon", name: "SearchIcon", label: "Search", icon: "search", tone: "ink" },
-                { kind: "icon", name: "NotificationIcon", label: "Notifications", icon: "bell", tone: "ink" },
-              ],
+              role: "toolbarActions",
+              slots: {
+                search: { kind: "icon", name: "SearchIcon", label: "Search", icon: "search", tone: "ink" },
+                notifications: { kind: "icon", name: "NotificationIcon", label: "Notifications", icon: "bell", tone: "ink" },
+              },
+              collections: {},
             },
-            { kind: "rect", name: "SyncStatus", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
-          ],
+            syncStatus: { kind: "rect", name: "SyncStatus", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
+          },
+          collections: {},
         },
-        {
-          kind: "frame",
+        hero: {
+          kind: "group",
           name: "HeroCard",
-          fill: "#152033",
-          children: [
-            {
+          role: "heroCard",
+          slots: {
+            image: {
               kind: "image",
               name: "MarketHeroImage",
               label: "MarketHeroImage",
@@ -240,217 +259,231 @@ export const initialDesignJson = {
               alt: "Fresh produce crates for a wholesale order",
               aspect: "wide",
             },
-            {
-              kind: "flex",
+            overlay: {
+              kind: "group",
               name: "HeroOverlayFlex",
-              direction: "column",
-              gap: 2,
-              children: [
-                { kind: "text", name: "HeroMediaFieldText", text: "media.hero.src", tone: "inverse" },
-                { kind: "text", name: "HeroTitleText", text: "Fresh produce order", tone: "inverse" },
-              ],
+              role: "heroOverlay",
+              slots: {
+                field: { kind: "text", name: "HeroMediaFieldText", text: "media.hero.src", tone: "inverse" },
+                title: { kind: "text", name: "HeroTitleText", text: "Fresh produce order", tone: "inverse" },
+              },
+              collections: {},
             },
-          ],
+          },
+          collections: {},
         },
-        {
-          kind: "frame",
+        schemaStatus: {
+          kind: "group",
           name: "SchemaStatusCard",
-          fill: "#eaf8f2",
-          children: [
-            { kind: "icon", name: "SchemaValidIcon", label: "Valid", icon: "check-circle", tone: "accent" },
-            {
-              kind: "flex",
+          role: "schemaStatusCard",
+          slots: {
+            icon: { kind: "icon", name: "SchemaValidIcon", label: "Valid", icon: "check-circle", tone: "accent" },
+            copy: {
+              kind: "group",
               name: "SchemaCopyFlex",
-              direction: "column",
-              gap: 2,
-              children: [
-                { kind: "text", name: "SchemaNameText", text: "SalesOrderSchema", tone: "accent" },
-                { kind: "text", name: "SnapshotStatusText", text: "Valid snapshot", tone: "ink" },
-                { kind: "text", name: "HydratedFieldsText", text: "8 fields hydrated by zod-crud", tone: "muted" },
-              ],
+              role: "schemaCopyStack",
+              slots: {
+                schema: { kind: "text", name: "SchemaNameText", text: "SalesOrderSchema", tone: "accent" },
+                status: { kind: "text", name: "SnapshotStatusText", text: "Valid snapshot", tone: "ink" },
+                detail: { kind: "text", name: "HydratedFieldsText", text: "8 fields hydrated by zod-crud", tone: "muted" },
+              },
+              collections: {},
             },
-            { kind: "rect", name: "SafeParseBadge", label: "safeParse", fill: "teal", width: 92, height: 28 },
-          ],
+            badge: { kind: "rect", name: "SafeParseBadge", label: "safeParse", fill: "teal", width: 92, height: 28 },
+          },
+          collections: {},
         },
-        {
-          kind: "flex",
+        crudMode: {
+          kind: "group",
           name: "CrudModeTabs",
-          direction: "row",
-          gap: 3,
-          children: [
-            { kind: "text", name: "CreateModeText", text: "Create", tone: "ink" },
-            { kind: "text", name: "ReadModeText", text: "Read", tone: "muted" },
-            { kind: "text", name: "UpdateModeText", text: "Update", tone: "muted" },
-          ],
+          role: "segmentedControl",
+          slots: {},
+          collections: {
+            options: [
+              { kind: "text", name: "CreateModeText", text: "Create", tone: "ink" },
+              { kind: "text", name: "ReadModeText", text: "Read", tone: "muted" },
+              { kind: "text", name: "UpdateModeText", text: "Update", tone: "muted" },
+            ],
+          },
         },
-        {
-          kind: "frame",
+        customerField: {
+          kind: "group",
           name: "CustomerNameField",
-          fill: "#ffffff",
-          children: [
-            {
-              kind: "flex",
+          role: "fieldCard",
+          slots: {
+            heading: {
+              kind: "group",
               name: "CustomerHeadingFlex",
-              direction: "row",
-              gap: 10,
-              children: [
-                { kind: "text", name: "CustomerLabelText", text: "Customer", tone: "ink" },
-                { kind: "text", name: "CustomerFieldPathText", text: "customer.name", tone: "muted" },
-              ],
+              role: "fieldHeading",
+              slots: {
+                label: { kind: "text", name: "CustomerLabelText", text: "Customer", tone: "ink" },
+                path: { kind: "text", name: "CustomerFieldPathText", text: "customer.name", tone: "muted" },
+              },
+              collections: {},
             },
-            {
-              kind: "flex",
+            input: {
+              kind: "group",
               name: "CustomerInputFlex",
-              direction: "row",
-              gap: 8,
-              children: [
-                { kind: "text", name: "CustomerValueText", text: "Acme Market", tone: "ink" },
-                { kind: "icon", name: "CustomerSelectIcon", label: "Open customer options", icon: "chevron-down", tone: "ink" },
-              ],
+              role: "inputControl",
+              slots: {
+                value: { kind: "text", name: "CustomerValueText", text: "Acme Market", tone: "ink" },
+                icon: { kind: "icon", name: "CustomerSelectIcon", label: "Open customer options", icon: "chevron-down", tone: "ink" },
+              },
+              collections: {},
             },
-            { kind: "text", name: "CustomerSchemaText", text: "z.string().min(2)", tone: "accent" },
-          ],
+            schema: { kind: "text", name: "CustomerSchemaText", text: "z.string().min(2)", tone: "accent" },
+          },
+          collections: {},
         },
-        {
-          kind: "frame",
+        statusField: {
+          kind: "group",
           name: "OrderStatusField",
-          fill: "#ffffff",
-          children: [
-            {
-              kind: "flex",
+          role: "statusField",
+          slots: {
+            heading: {
+              kind: "group",
               name: "StatusHeadingFlex",
-              direction: "row",
-              gap: 10,
-              children: [
-                { kind: "text", name: "StatusLabelText", text: "Status", tone: "ink" },
-                { kind: "text", name: "StatusFieldPathText", text: "status", tone: "muted" },
-              ],
+              role: "fieldHeading",
+              slots: {
+                label: { kind: "text", name: "StatusLabelText", text: "Status", tone: "ink" },
+                path: { kind: "text", name: "StatusFieldPathText", text: "status", tone: "muted" },
+              },
+              collections: {},
             },
-            {
-              kind: "flex",
+            pills: {
+              kind: "group",
               name: "StatusPillsFlex",
-              direction: "row",
-              gap: 6,
-              children: [
-                { kind: "text", name: "DraftStatusText", text: "Draft", tone: "ink" },
-                { kind: "text", name: "PaidStatusText", text: "Paid", tone: "ink" },
-                { kind: "text", name: "SentStatusText", text: "Sent", tone: "ink" },
-              ],
+              role: "statusPills",
+              slots: {},
+              collections: {
+                options: [
+                  { kind: "text", name: "DraftStatusText", text: "Draft", tone: "ink" },
+                  { kind: "text", name: "PaidStatusText", text: "Paid", tone: "ink" },
+                  { kind: "text", name: "SentStatusText", text: "Sent", tone: "ink" },
+                ],
+              },
             },
-          ],
+          },
+          collections: {},
         },
-        {
-          kind: "frame",
+        lineItems: {
+          kind: "group",
           name: "LineItemsList",
-          fill: "#ffffff",
-          children: [
-            {
-              kind: "flex",
+          role: "lineItemsPanel",
+          slots: {
+            heading: {
+              kind: "group",
               name: "LineItemsHeadingFlex",
-              direction: "row",
-              gap: 10,
-              children: [
-                {
-                  kind: "flex",
+              role: "listHeading",
+              slots: {
+                copy: {
+                  kind: "group",
                   name: "LineItemsHeadingCopyFlex",
-                  direction: "column",
-                  gap: 2,
-                  children: [
-                    { kind: "text", name: "LineItemsTitleText", text: "Line items", tone: "ink" },
-                    { kind: "text", name: "LineItemsPathText", text: "lineItems[]", tone: "muted" },
-                  ],
+                  role: "listHeadingCopy",
+                  slots: {
+                    title: { kind: "text", name: "LineItemsTitleText", text: "Line items", tone: "ink" },
+                    path: { kind: "text", name: "LineItemsPathText", text: "lineItems[]", tone: "muted" },
+                  },
+                  collections: {},
                 },
-                { kind: "icon", name: "AddLineItemIcon", label: "Add line item", icon: "plus", tone: "ink" },
-              ],
+                addButton: { kind: "icon", name: "AddLineItemIcon", label: "Add line item", icon: "plus", tone: "ink" },
+              },
+              collections: {},
             },
-            {
-              kind: "flex",
-              name: "OrganicLineItemFlex",
-              direction: "row",
-              gap: 9,
-              children: [
-                {
-                  kind: "image",
-                  name: "OrganicBundleImage",
-                  label: "OrganicBundleImage",
-                  src: CONTENT_IMAGES.organicBundle,
-                  alt: "Organic vegetables bundle",
-                  aspect: "thumb",
+          },
+          collections: {
+            items: [
+              {
+                kind: "group",
+                name: "OrganicLineItemFlex",
+                role: "lineItemRow",
+                slots: {
+                  image: {
+                    kind: "image",
+                    name: "OrganicBundleImage",
+                    label: "OrganicBundleImage",
+                    src: CONTENT_IMAGES.organicBundle,
+                    alt: "Organic vegetables bundle",
+                    aspect: "thumb",
+                  },
+                  copy: {
+                    kind: "group",
+                    name: "OrganicLineItemCopyFlex",
+                    role: "lineItemCopy",
+                    slots: {
+                      title: { kind: "text", name: "OrganicBundleTitleText", text: "Organic bundle", tone: "ink" },
+                      meta: { kind: "text", name: "OrganicBundleMetaText", text: "qty 4 - $128.00", tone: "muted" },
+                    },
+                    collections: {},
+                  },
+                  badge: { kind: "rect", name: "OrganicStatusBadge", label: "ok", fill: "blue", width: 44, height: 24 },
                 },
-                {
-                  kind: "flex",
-                  name: "OrganicLineItemCopyFlex",
-                  direction: "column",
-                  gap: 2,
-                  children: [
-                    { kind: "text", name: "OrganicBundleTitleText", text: "Organic bundle", tone: "ink" },
-                    { kind: "text", name: "OrganicBundleMetaText", text: "qty 4 - $128.00", tone: "muted" },
-                  ],
+                collections: {},
+              },
+              {
+                kind: "group",
+                name: "ColdChainLineItemFlex",
+                role: "lineItemRow",
+                slots: {
+                  image: {
+                    kind: "image",
+                    name: "ColdChainImage",
+                    label: "ColdChainImage",
+                    src: CONTENT_IMAGES.coldChain,
+                    alt: "Prepared cold chain food package",
+                    aspect: "thumb",
+                  },
+                  copy: {
+                    kind: "group",
+                    name: "ColdChainLineItemCopyFlex",
+                    role: "lineItemCopy",
+                    slots: {
+                      title: { kind: "text", name: "ColdChainTitleText", text: "Cold chain fee", tone: "ink" },
+                      meta: { kind: "text", name: "ColdChainMetaText", text: "qty 1 - $18.00", tone: "muted" },
+                    },
+                    collections: {},
+                  },
+                  badge: { kind: "rect", name: "ColdChainStatusBadge", label: "new", fill: "blue", width: 44, height: 24 },
                 },
-                { kind: "rect", name: "OrganicStatusBadge", label: "ok", fill: "blue", width: 44, height: 24 },
-              ],
-            },
-            {
-              kind: "flex",
-              name: "ColdChainLineItemFlex",
-              direction: "row",
-              gap: 9,
-              children: [
-                {
-                  kind: "image",
-                  name: "ColdChainImage",
-                  label: "ColdChainImage",
-                  src: CONTENT_IMAGES.coldChain,
-                  alt: "Prepared cold chain food package",
-                  aspect: "thumb",
-                },
-                {
-                  kind: "flex",
-                  name: "ColdChainLineItemCopyFlex",
-                  direction: "column",
-                  gap: 2,
-                  children: [
-                    { kind: "text", name: "ColdChainTitleText", text: "Cold chain fee", tone: "ink" },
-                    { kind: "text", name: "ColdChainMetaText", text: "qty 1 - $18.00", tone: "muted" },
-                  ],
-                },
-                { kind: "rect", name: "ColdChainStatusBadge", label: "new", fill: "blue", width: 44, height: 24 },
-              ],
-            },
-            { kind: "rect", name: "LineItemsRepeater", label: "Repeater", fill: "violet", width: 220, height: 76 },
-          ],
+                collections: {},
+              },
+            ],
+          },
         },
-        {
-          kind: "flex",
+        saveButton: {
+          kind: "group",
           name: "SaveButton",
-          direction: "row",
-          gap: 8,
-          children: [
-            { kind: "text", name: "SaveButtonText", text: "Save record", tone: "inverse" },
-            { kind: "icon", name: "SaveButtonIcon", label: "Save", icon: "send", tone: "inverse" },
-          ],
+          role: "primaryAction",
+          slots: {
+            label: { kind: "text", name: "SaveButtonText", text: "Save record", tone: "inverse" },
+            icon: { kind: "icon", name: "SaveButtonIcon", label: "Save", icon: "send", tone: "inverse" },
+          },
+          collections: {},
         },
-        {
-          kind: "flex",
+        bottomNav: {
+          kind: "group",
           name: "BottomNavFlex",
-          direction: "row",
-          gap: 8,
-          children: [
-            { kind: "icon", name: "LayoutTabIcon", label: "Design tab", icon: "layout-template", tone: "accent" },
-            { kind: "icon", name: "DatabaseTabIcon", label: "Data tab", icon: "database", tone: "ink" },
-            { kind: "icon", name: "HistoryTabIcon", label: "History tab", icon: "history", tone: "ink" },
-          ],
+          role: "bottomNav",
+          slots: {
+            layout: { kind: "icon", name: "LayoutTabIcon", label: "Design tab", icon: "layout-template", tone: "accent" },
+            data: { kind: "icon", name: "DatabaseTabIcon", label: "Data tab", icon: "database", tone: "ink" },
+            history: { kind: "icon", name: "HistoryTabIcon", label: "History tab", icon: "history", tone: "ink" },
+          },
+          collections: {},
         },
-      ],
+      },
+      collections: {},
     },
-    {
-      kind: "frame",
+    propertyPanel: {
+      kind: "group",
       name: "PropertyPanel",
-      fill: "#ffffff",
-      children: [
-        { kind: "text", name: "SelectedComponentText", text: "selected component", tone: "ink" },
-        { kind: "rect", name: "CrudFieldBindingControl", label: "CRUD field binding", fill: "violet", width: 188, height: 42 },
-      ],
+      role: "propertyPanel",
+      slots: {
+        selectedText: { kind: "text", name: "SelectedComponentText", text: "selected component", tone: "ink" },
+        bindingControl: { kind: "rect", name: "CrudFieldBindingControl", label: "CRUD field binding", fill: "violet", width: 188, height: 42 },
+      },
+      collections: {},
     },
-  ],
+  },
+  collections: {},
 };
