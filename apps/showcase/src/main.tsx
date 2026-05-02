@@ -222,9 +222,9 @@ function App() {
       return undefined;
     }
 
-    const contentPasteTargetId = contentPasteTargetNodeId(doc, selectedId, clipboardValue);
+    const pastePlan = resolvePastePlan(doc, selectedId, clipboardValue);
 
-    if (contentPasteTargetId !== null) {
+    if (pastePlan !== null) {
       return { ok: true };
     }
 
@@ -315,22 +315,22 @@ function App() {
   }
 
   function pasteSelected() {
-    const contentTargetId = clipboardValue === null ? null : contentPasteTargetNodeId(doc, selectedId, clipboardValue);
+    const pastePlan = clipboardValue === null ? null : resolvePastePlan(doc, selectedId, clipboardValue);
 
     run(
       `paste into ${selectedId}`,
       () => {
-        if (clipboardValue !== null && contentTargetId !== null) {
-          const contentResult = pasteContentOnly(editorRef.current, doc, selectedId, clipboardValue);
+        if (clipboardValue !== null && pastePlan !== null) {
+          const plannedResult = pasteWithPlan(editorRef.current, doc, selectedId, clipboardValue, pastePlan);
 
-          if (contentResult.ok) {
-            return contentResult;
+          if (plannedResult.ok) {
+            return plannedResult;
           }
         }
 
         return editorRef.current.paste(selectedId);
       },
-      contentTargetId === null ? undefined : () => [selectedId],
+      pastePlan === null ? undefined : () => [selectedId],
     );
   }
 
@@ -1953,22 +1953,90 @@ function firstCollectionArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
   return collections.children.find((childId) => doc.nodes[childId]?.type === "array") ?? null;
 }
 
-function pasteContentOnly(
+type PastePlan =
+  | { mode: "append"; arrayId: NodeId }
+  | { mode: "content"; targetId: NodeId }
+  | { mode: "overwrite"; targetId: NodeId };
+
+function resolvePastePlan(doc: JsonDoc, selectedId: NodeId, clipboardValue: JsonValue): PastePlan | null {
+  const appendArrayId = appendPasteArrayId(doc, selectedId, clipboardValue);
+
+  if (appendArrayId !== null) {
+    return { mode: "append", arrayId: appendArrayId };
+  }
+
+  const contentTargetId = contentPasteTargetNodeId(doc, selectedId, clipboardValue);
+
+  if (contentTargetId !== null) {
+    return { mode: "content", targetId: contentTargetId };
+  }
+
+  const selectedNode = doc.nodes[selectedId];
+
+  if (selectedNode?.type === "object" && isRecord(clipboardValue)) {
+    return { mode: "overwrite", targetId: selectedId };
+  }
+
+  return null;
+}
+
+function pasteWithPlan(
   editor: ReturnType<typeof makeEditor>,
   doc: JsonDoc,
   selectedId: NodeId,
   clipboardValue: JsonValue,
+  plan: PastePlan,
+): OperationResult {
+  if (plan.mode === "append") {
+    const arrayNode = doc.nodes[plan.arrayId];
+
+    if (arrayNode?.type !== "array") {
+      return { ok: false, reason: "Paste target array is missing." };
+    }
+
+    return editor.create(plan.arrayId, arrayNode.children.length, clipboardValue);
+  }
+
+  if (plan.mode === "content") {
+    return pasteContentOnly(editor, clipboardValue, plan.targetId);
+  }
+
+  return editor.paste(plan.targetId, { mode: "overwrite" });
+}
+
+function appendPasteArrayId(doc: JsonDoc, selectedId: NodeId, clipboardValue: JsonValue): NodeId | null {
+  if (!isRecord(clipboardValue)) {
+    return null;
+  }
+
+  const selectedNode = doc.nodes[selectedId];
+
+  if (selectedNode?.type === "array") {
+    return selectedNode.id;
+  }
+
+  if (selectedNode?.type !== "object") {
+    return null;
+  }
+
+  const targetKind = primitiveField(doc, selectedId, "kind");
+
+  if (targetKind !== "group" && targetKind !== "frame" && targetKind !== "flex") {
+    return null;
+  }
+
+  return firstCollectionArrayId(doc, selectedId);
+}
+
+function pasteContentOnly(
+  editor: ReturnType<typeof makeEditor>,
+  clipboardValue: JsonValue,
+  targetId: NodeId,
 ): OperationResult {
   const content = copiedContentValue(clipboardValue);
 
   if (content === null) {
     return { ok: false, reason: "Clipboard has no pasteable content field." };
-  }
-
-  const targetId = contentPasteTargetNodeId(doc, selectedId, clipboardValue);
-
-  if (targetId === null) {
-    return { ok: false, reason: "Selected node has no compatible content field." };
   }
 
   return editor.update(targetId, content.value);
