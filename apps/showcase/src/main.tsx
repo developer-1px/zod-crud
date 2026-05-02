@@ -2015,6 +2015,12 @@ function appendPasteArrayId(doc: JsonDoc, selectedId: NodeId, clipboardValue: Js
     return selectedNode.id;
   }
 
+  const parentArrayId = parentArrayForItem(doc, selectedId);
+
+  if (parentArrayId !== null) {
+    return parentArrayId;
+  }
+
   if (selectedNode?.type !== "object") {
     return null;
   }
@@ -2026,6 +2032,17 @@ function appendPasteArrayId(doc: JsonDoc, selectedId: NodeId, clipboardValue: Js
   }
 
   return firstCollectionArrayId(doc, selectedId);
+}
+
+function parentArrayForItem(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+  const node = doc.nodes[nodeId];
+
+  if (node?.parentId === null || node?.parentId === undefined) {
+    return null;
+  }
+
+  const parent = doc.nodes[node.parentId];
+  return parent?.type === "array" ? parent.id : null;
 }
 
 function pasteContentOnly(
