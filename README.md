@@ -2,6 +2,10 @@
 
 Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.
 
+The behavior contract lives in [`spec.md`](./spec.md). Treat it as the SSOT for
+operation semantics, Zod compatibility, demo UX expectations, and package
+readiness checks.
+
 The core idea is simple:
 
 ```txt
