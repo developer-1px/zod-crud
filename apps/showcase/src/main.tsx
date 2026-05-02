@@ -1954,15 +1954,15 @@ function firstCollectionArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
 }
 
 type PastePlan =
-  | { mode: "append"; arrayId: NodeId }
+  | { mode: "insert"; arrayId: NodeId; index: number }
   | { mode: "content"; targetId: NodeId }
   | { mode: "overwrite"; targetId: NodeId };
 
 function resolvePastePlan(doc: JsonDoc, selectedId: NodeId, clipboardValue: JsonValue): PastePlan | null {
-  const appendArrayId = appendPasteArrayId(doc, selectedId, clipboardValue);
+  const insertTarget = insertPasteTarget(doc, selectedId, clipboardValue);
 
-  if (appendArrayId !== null) {
-    return { mode: "append", arrayId: appendArrayId };
+  if (insertTarget !== null) {
+    return { mode: "insert", arrayId: insertTarget.arrayId, index: insertTarget.index };
   }
 
   const contentTargetId = contentPasteTargetNodeId(doc, selectedId, clipboardValue);
@@ -1987,14 +1987,14 @@ function pasteWithPlan(
   clipboardValue: JsonValue,
   plan: PastePlan,
 ): OperationResult {
-  if (plan.mode === "append") {
+  if (plan.mode === "insert") {
     const arrayNode = doc.nodes[plan.arrayId];
 
     if (arrayNode?.type !== "array") {
       return { ok: false, reason: "Paste target array is missing." };
     }
 
-    return editor.create(plan.arrayId, arrayNode.children.length, clipboardValue);
+    return editor.create(plan.arrayId, plan.index, clipboardValue);
   }
 
   if (plan.mode === "content") {
@@ -2004,7 +2004,11 @@ function pasteWithPlan(
   return editor.paste(plan.targetId, { mode: "overwrite" });
 }
 
-function appendPasteArrayId(doc: JsonDoc, selectedId: NodeId, clipboardValue: JsonValue): NodeId | null {
+function insertPasteTarget(
+  doc: JsonDoc,
+  selectedId: NodeId,
+  clipboardValue: JsonValue,
+): { arrayId: NodeId; index: number } | null {
   if (!isRecord(clipboardValue)) {
     return null;
   }
@@ -2012,13 +2016,13 @@ function appendPasteArrayId(doc: JsonDoc, selectedId: NodeId, clipboardValue: Js
   const selectedNode = doc.nodes[selectedId];
 
   if (selectedNode?.type === "array") {
-    return selectedNode.id;
+    return { arrayId: selectedNode.id, index: selectedNode.children.length };
   }
 
-  const parentArrayId = parentArrayForItem(doc, selectedId);
+  const parentArrayTarget = parentArrayInsertTarget(doc, selectedId);
 
-  if (parentArrayId !== null) {
-    return parentArrayId;
+  if (parentArrayTarget !== null) {
+    return parentArrayTarget;
   }
 
   if (selectedNode?.type !== "object") {
@@ -2031,10 +2035,15 @@ function appendPasteArrayId(doc: JsonDoc, selectedId: NodeId, clipboardValue: Js
     return null;
   }
 
-  return firstCollectionArrayId(doc, selectedId);
+  const collectionArrayId = firstCollectionArrayId(doc, selectedId);
+  const collectionArray = collectionArrayId === null ? undefined : doc.nodes[collectionArrayId];
+
+  return collectionArray?.type === "array"
+    ? { arrayId: collectionArray.id, index: collectionArray.children.length }
+    : null;
 }
 
-function parentArrayForItem(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+function parentArrayInsertTarget(doc: JsonDoc, nodeId: NodeId): { arrayId: NodeId; index: number } | null {
   const node = doc.nodes[nodeId];
 
   if (node?.parentId === null || node?.parentId === undefined) {
@@ -2042,7 +2051,18 @@ function parentArrayForItem(doc: JsonDoc, nodeId: NodeId): NodeId | null {
   }
 
   const parent = doc.nodes[node.parentId];
-  return parent?.type === "array" ? parent.id : null;
+
+  if (parent?.type !== "array") {
+    return null;
+  }
+
+  const selectedIndex = parent.children.indexOf(nodeId);
+
+  if (selectedIndex === -1) {
+    return null;
+  }
+
+  return { arrayId: parent.id, index: selectedIndex + 1 };
 }
 
 function pasteContentOnly(
