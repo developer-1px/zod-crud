@@ -39,7 +39,6 @@ import {
   type ReactNode,
 } from "react";
 import { createRoot } from "react-dom/client";
-import * as z from "zod";
 
 import {
   createJsonCrud,
@@ -51,161 +50,14 @@ import {
   type OperationResult,
 } from "zod-crud";
 
+import {
+  CONTENT_IMAGES,
+  DesignNodeSchema,
+  initialDesignJson,
+  type DesignIconName,
+  type UiNode,
+} from "./design-schema.js";
 import "./styles.css";
-
-type UiNode =
-  | {
-      kind: "frame";
-      name: string;
-      fill: string;
-      children: UiNode[];
-    }
-  | {
-      kind: "text";
-      text: string;
-      tone: "ink" | "accent" | "danger";
-    }
-  | {
-      kind: "rect";
-      label: string;
-      fill: "teal" | "amber" | "violet";
-      width: number;
-      height: number;
-    }
-  | {
-      kind: "image";
-      label: string;
-      src: string;
-      alt: string;
-      aspect: "wide" | "thumb";
-    };
-
-const UiNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
-  z.union([
-    z.object({
-      kind: z.literal("frame"),
-      name: z.string(),
-      fill: z.string(),
-      children: z.array(UiNodeSchema),
-    }),
-    z.object({
-      kind: z.literal("text"),
-      text: z.string(),
-      tone: z.union([z.literal("ink"), z.literal("accent"), z.literal("danger")]),
-    }),
-    z.object({
-      kind: z.literal("rect"),
-      label: z.string(),
-      fill: z.union([z.literal("teal"), z.literal("amber"), z.literal("violet")]),
-      width: z.number().min(40).max(420),
-      height: z.number().min(24).max(180),
-    }),
-    z.object({
-      kind: z.literal("image"),
-      label: z.string(),
-      src: z.string().url(),
-      alt: z.string(),
-      aspect: z.union([z.literal("wide"), z.literal("thumb")]),
-    }),
-  ]),
-);
-
-const CONTENT_IMAGES = {
-  marketHero: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=720&q=80",
-  organicBundle: "https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=240&q=80",
-  coldChain: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=240&q=80",
-} as const;
-
-const initialJson: UiNode = {
-  kind: "frame",
-  name: "ZodCrudBuilder",
-  fill: "#eef2f7",
-  children: [
-    {
-      kind: "frame",
-      name: "MobileRecordScreen",
-      fill: "#f9fbff",
-      children: [
-        {
-          kind: "frame",
-          name: "AppToolbar",
-          fill: "#ffffff",
-          children: [
-            { kind: "text", text: "Orders", tone: "ink" },
-            { kind: "rect", label: "SyncStatus", fill: "teal", width: 104, height: 30 },
-          ],
-        },
-        {
-          kind: "image",
-          label: "MarketHeroImage",
-          src: CONTENT_IMAGES.marketHero,
-          alt: "Fresh produce crates for a wholesale order",
-          aspect: "wide",
-        },
-        {
-          kind: "frame",
-          name: "SchemaStatusCard",
-          fill: "#eaf8f2",
-          children: [
-            { kind: "text", text: "SalesOrderSchema", tone: "accent" },
-            { kind: "rect", label: "Valid", fill: "teal", width: 72, height: 28 },
-          ],
-        },
-        {
-          kind: "frame",
-          name: "CustomerNameField",
-          fill: "#ffffff",
-          children: [
-            { kind: "text", text: "customer.name", tone: "ink" },
-            { kind: "rect", label: "TextInput", fill: "violet", width: 210, height: 44 },
-          ],
-        },
-        {
-          kind: "frame",
-          name: "OrderStatusField",
-          fill: "#ffffff",
-          children: [
-            { kind: "text", text: "status", tone: "ink" },
-            { kind: "rect", label: "Select", fill: "amber", width: 132, height: 38 },
-          ],
-        },
-        {
-          kind: "frame",
-          name: "LineItemsList",
-          fill: "#ffffff",
-          children: [
-            { kind: "text", text: "lineItems[]", tone: "ink" },
-            {
-              kind: "image",
-              label: "OrganicBundleImage",
-              src: CONTENT_IMAGES.organicBundle,
-              alt: "Organic vegetables bundle",
-              aspect: "thumb",
-            },
-            {
-              kind: "image",
-              label: "ColdChainImage",
-              src: CONTENT_IMAGES.coldChain,
-              alt: "Prepared cold chain food package",
-              aspect: "thumb",
-            },
-            { kind: "rect", label: "Repeater", fill: "violet", width: 220, height: 76 },
-          ],
-        },
-        { kind: "rect", label: "SaveButton", fill: "teal", width: 260, height: 48 },
-      ],
-    },
-    {
-      kind: "frame",
-      name: "PropertyPanel",
-      fill: "#ffffff",
-      children: [
-        { kind: "text", text: "selected component", tone: "ink" },
-        { kind: "rect", label: "CRUD field binding", fill: "violet", width: 188, height: 42 },
-      ],
-    },
-  ],
-};
 
 type ComponentBinding = {
   component: string;
@@ -327,7 +179,7 @@ type LogEntry = {
 };
 
 function makeEditor() {
-  return createJsonCrud(UiNodeSchema, initialJson);
+  return createJsonCrud(DesignNodeSchema, initialDesignJson);
 }
 
 function App() {
@@ -479,6 +331,7 @@ function App() {
 
       return editorRef.current.create(targetArrayId, arrayNode.children.length, {
         kind: "text",
+        name: `Text${arrayNode.children.length + 1}`,
         text: `Text ${arrayNode.children.length + 1}`,
         tone: "ink",
       });
@@ -501,6 +354,7 @@ function App() {
 
       return editorRef.current.create(targetArrayId, arrayNode.children.length, {
         kind: "rect",
+        name: `Box${arrayNode.children.length + 1}`,
         label: `Box ${arrayNode.children.length + 1}`,
         fill: "amber",
         width: 132,
@@ -616,7 +470,7 @@ function App() {
           </div>
           <div className="brand-lockup">
             <h1>zod-crud</h1>
-            <p>Visual editor</p>
+            <p>Spatial schema editor</p>
           </div>
         </div>
 
@@ -912,7 +766,7 @@ function MobileBuilderCanvas({
       <section className="device-workbench" aria-label="Mobile application screen mockup">
         <div className="device-caption">
           <Smartphone />
-          <span>mobile CRUD screen</span>
+          <span>record surface</span>
         </div>
 
         <SelectablePreview
@@ -1306,11 +1160,52 @@ function CanvasNode({
     );
   }
 
+  if (isUiIcon(value)) {
+    return (
+      <div
+        className={`${className} icon-node tone-${value.tone}`}
+        role="button"
+        tabIndex={0}
+        title={value.label}
+        onClick={(event) => {
+          event.stopPropagation();
+          onSelect(nodeId);
+        }}
+        onKeyDown={(event) => selectNodeFromKeyboard(event, nodeId, onSelect)}
+      >
+        <IconGlyph icon={value.icon} />
+      </div>
+    );
+  }
+
   return (
     <button type="button" className={`${className} leaf-node`} onClick={() => onSelect(nodeId)}>
       {nodeLabel(doc, node)}
     </button>
   );
+}
+
+function IconGlyph({ icon }: { icon: DesignIconName }) {
+  switch (icon) {
+    case "search":
+      return <Search />;
+    case "bell":
+      return <Bell />;
+    case "check-circle":
+      return <CheckCircle2 />;
+    case "chevron-down":
+      return <ChevronDown />;
+    case "plus":
+      return <Plus />;
+    case "send":
+      return <SendHorizontal />;
+    case "layout-template":
+      return <LayoutTemplate />;
+    case "database":
+      return <Database />;
+    case "history":
+      return <History />;
+  }
 }
 
 function selectNodeFromKeyboard(
@@ -1848,6 +1743,15 @@ function isUiImage(value: JsonValue): value is Extract<UiNode, { kind: "image" }
     typeof value.src === "string" &&
     typeof value.alt === "string" &&
     (value.aspect === "wide" || value.aspect === "thumb")
+  );
+}
+
+function isUiIcon(value: JsonValue): value is Extract<UiNode, { kind: "icon" }> {
+  return (
+    isRecord(value) &&
+    value.kind === "icon" &&
+    typeof value.label === "string" &&
+    typeof value.icon === "string"
   );
 }
 
