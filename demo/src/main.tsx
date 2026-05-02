@@ -312,13 +312,25 @@ function App() {
         return;
       }
 
+      const key = event.key.toLowerCase();
+
+      if (
+        (key === "backspace" || key === "delete") &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+        deleteSelected();
+        return;
+      }
+
       const isCommand = event.metaKey || event.ctrlKey;
 
       if (!isCommand || event.altKey) {
         return;
       }
-
-      const key = event.key.toLowerCase();
 
       if (key === "c" && !event.shiftKey) {
         event.preventDefault();
@@ -399,7 +411,7 @@ function App() {
           <IconButton label="Copy" shortcut="Cmd+C" onClick={copySelected} icon={<Copy />} />
           <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} />
           <IconButton label="Paste" shortcut="Cmd+V" onClick={pasteSelected} icon={<Clipboard />} />
-          <IconButton label="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
+          <IconButton label="Delete" shortcut="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
         </nav>
 
         <aside className="panel tree-panel">
