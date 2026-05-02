@@ -970,7 +970,10 @@ function recoverFocus(doc: JsonDoc, focusedIds: NodeId[], selectedId: NodeId) {
 
 function recoverChangeFocus(doc: JsonDoc, focusedIds: NodeId[], fallbackId: NodeId) {
   const existingFocusIds = uniqueIds(focusedIds.filter((id) => doc.nodes[id] !== undefined));
-  const selectedId = firstVisibleFocusId(doc, existingFocusIds) ?? firstExisting(doc, existingFocusIds) ?? (doc.nodes[fallbackId] !== undefined ? fallbackId : doc.rootId);
+  const selectedId =
+    firstVisibleFocusId(doc, existingFocusIds) ??
+    firstExisting(doc, existingFocusIds) ??
+    (doc.nodes[fallbackId] !== undefined ? fallbackId : doc.rootId);
 
   return {
     selectedId,
@@ -1083,19 +1086,13 @@ function isHiddenStructureNode(node: JsonNode) {
 }
 
 function recoverRemovedNode(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
-  let current = before.nodes[removedId];
+  const removedNode = before.nodes[removedId];
 
-  while (current?.parentId !== null && current?.parentId !== undefined) {
-    const parent = after.nodes[current.parentId];
-
-    if (parent !== undefined) {
-      return parent.id;
-    }
-
-    current = before.nodes[current.parentId];
+  if (removedNode?.parentId === null || removedNode?.parentId === undefined) {
+    return after.rootId;
   }
 
-  return after.rootId;
+  return recoverParentForRemovedNode(before, after, removedNode.parentId);
 }
 
 function sortByDocumentOrder(doc: JsonDoc, ids: NodeId[]): NodeId[] {
