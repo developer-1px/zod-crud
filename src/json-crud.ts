@@ -100,6 +100,12 @@ export class JsonCrud<T extends JsonValue = JsonValue> {
     this.schema = schema;
     this.doc = serialize(parsed.data);
     this.childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
+
+    const validation = this.validateDocument(this.doc);
+
+    if (!validation.ok) {
+      throw new Error(validation.reason);
+    }
   }
 
   snapshot(): JsonDoc {
@@ -732,7 +738,7 @@ function schemaChild(schema: AnySchema, key: string | number): AnySchema | null 
       return null;
     }
 
-    return objectShape(current)[key] ?? null;
+    return objectShape(current)[key] ?? objectCatchall(current);
   }
 
   if (type === "array") {
@@ -753,6 +759,10 @@ function schemaChild(schema: AnySchema, key: string | number): AnySchema | null 
 
   if (type === "record") {
     return recordValue(current, key);
+  }
+
+  if (type === "intersection") {
+    return intersectionChild(current, key);
   }
 
   if (type === "union") {
@@ -843,6 +853,16 @@ function tupleElement(schema: AnySchema, index: number): AnySchema | null {
   return (def.rest as AnySchema | undefined) ?? null;
 }
 
+function objectCatchall(schema: AnySchema): AnySchema | null {
+  const catchall = schemaDef(schema).catchall as AnySchema | undefined;
+
+  if (catchall === undefined || schemaType(catchall) === "never") {
+    return null;
+  }
+
+  return catchall;
+}
+
 function recordValue(schema: AnySchema, key: string | number): AnySchema | null {
   if (typeof key !== "string") {
     return null;
@@ -857,6 +877,30 @@ function recordValue(schema: AnySchema, key: string | number): AnySchema | null 
 
   return (def.valueType as AnySchema | undefined) ?? null;
 }
+
+function intersectionChild(schema: AnySchema, key: string | number): AnySchema | null {
+  const def = schemaDef(schema);
+  const left = def.left as AnySchema | undefined;
+  const right = def.right as AnySchema | undefined;
+
+  if (left === undefined || right === undefined) {
+    return null;
+  }
+
+  const leftChild = schemaChild(left, key);
+  const rightChild = schemaChild(right, key);
+
+  if (leftChild === null) {
+    return rightChild;
+  }
+
+  if (rightChild === null) {
+    return leftChild;
+  }
+
+  return z.intersection(leftChild, rightChild);
+}
+
 
 function objectShape(schema: AnySchema): Record<string, AnySchema> {
   const shape = (schema as { shape?: Record<string, AnySchema> }).shape;

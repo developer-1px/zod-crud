@@ -269,6 +269,42 @@ describe("JsonCrud", () => {
     expect(editor.toJson()).toEqual({ items: { a: { name: "Bea" } } });
   });
 
+  it("edits passthrough and catchall object fields that already exist in the document", () => {
+    const passthroughEditor = createJsonCrud(z.object({ name: z.string() }).passthrough(), {
+      name: "Ann",
+      extra: 1,
+    });
+    const passthroughExtraId = passthroughEditor.find(passthroughEditor.snapshot().rootId, "extra");
+
+    expect(passthroughEditor.update(passthroughExtraId!, 2).ok).toBe(true);
+    expect(passthroughEditor.toJson()).toEqual({ name: "Ann", extra: 2 });
+
+    const catchallEditor = createJsonCrud(z.object({ name: z.string() }).catchall(z.number()), {
+      name: "Ann",
+      extra: 1,
+    });
+    const catchallExtraId = catchallEditor.find(catchallEditor.snapshot().rootId, "extra");
+
+    expect(catchallEditor.update(catchallExtraId!, 2).ok).toBe(true);
+    expect(catchallEditor.update(catchallExtraId!, "bad").ok).toBe(false);
+    expect(catchallEditor.toJson()).toEqual({ name: "Ann", extra: 2 });
+  });
+
+  it("traverses intersection object fields", () => {
+    const Schema = z.intersection(
+      z.object({ name: z.string() }),
+      z.object({ count: z.number() }),
+    );
+    const editor = createJsonCrud(Schema, { name: "Ann", count: 1 });
+    const rootId = editor.snapshot().rootId;
+    const nameId = editor.find(rootId, "name");
+    const countId = editor.find(rootId, "count");
+
+    expect(editor.update(nameId!, "Bea").ok).toBe(true);
+    expect(editor.update(countId!, 2).ok).toBe(true);
+    expect(editor.toJson()).toEqual({ name: "Bea", count: 2 });
+  });
+
   it("rejects mutations when Zod would strip or coerce the committed value", () => {
     const ObjectSchema = z.object({ name: z.string() });
     const objectEditor = createJsonCrud(ObjectSchema, { name: "Ann" });
@@ -289,6 +325,12 @@ describe("JsonCrud", () => {
     const editor = createJsonCrud(Schema, {});
 
     expect(editor.toJson()).toEqual({ name: "untitled" });
+  });
+
+  it("rejects schemas whose parsed output cannot be validated again as stored JSON", () => {
+    const Schema = z.string().transform((value) => value.length);
+
+    expect(() => createJsonCrud(Schema, "abc")).toThrow("Document does not match the root schema");
   });
 
   it("rejects non-integer array insertion indexes", () => {
