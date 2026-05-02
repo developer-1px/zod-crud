@@ -1,0 +1,36 @@
+{
+  "name": "zod-crud",
+  "version": "0.1.0",
+  "description": "Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "spec.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "prepack": "npm run build",
+    "smoke:package": "node ./test/package-smoke.mjs",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package"
+  },
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^3.0.0",
+    "zod": "^4.0.0"
+  }
+}

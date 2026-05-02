@@ -39,7 +39,7 @@ import {
   type JsonValue,
   type NodeId,
   type OperationResult,
-} from "../../src/index.js";
+} from "zod-crud";
 
 import "./styles.css";
 

@@ -1,34 +1,21 @@
 {
-  "name": "zod-crud",
-  "version": "0.1.0",
-  "description": "Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.",
+  "name": "zod-crud-monorepo",
+  "private": true,
   "type": "module",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "files": [
-    "dist",
-    "spec.md",
-    "src"
+  "workspaces": [
+    "packages/*",
+    "apps/*"
   ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "dev": "vite --host 127.0.0.1",
-    "demo": "vite --host 127.0.0.1",
-    "demo:build": "vite build",
-    "prepack": "npm run build",
-    "smoke:package": "node ./test/package-smoke.mjs",
-    "test": "vitest run --config vitest.config.ts",
-    "typecheck": "tsc -p tsconfig.test.json --noEmit",
-    "verify": "npm run typecheck && npm test && npm run build && npm run demo:build && npm run smoke:package"
-  },
-  "peerDependencies": {
-    "zod": "^4.0.0"
+    "build": "npm run build -w zod-crud",
+    "dev": "npm run dev -w @zod-crud/showcase",
+    "showcase": "npm run dev -w @zod-crud/showcase",
+    "showcase:build": "npm run build -w @zod-crud/showcase",
+    "test": "npm test -w zod-crud",
+    "typecheck": "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/showcase",
+    "smoke:package": "npm run smoke:package -w zod-crud",
+    "verify": "npm run typecheck && npm test && npm run build && npm run showcase:build && npm run smoke:package",
+    "pack:library": "npm pack -w zod-crud"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",

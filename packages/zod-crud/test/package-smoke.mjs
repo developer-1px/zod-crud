@@ -15,6 +15,30 @@ function run(command, args, cwd) {
   });
 }
 
+function existingZodPackage() {
+  return existingPath([
+    join(repoRoot, "node_modules", "zod"),
+    join(repoRoot, "..", "..", "node_modules", "zod"),
+  ]);
+}
+
+function existingTypeScriptBin() {
+  return existingPath([
+    join(repoRoot, "node_modules", "typescript", "bin", "tsc"),
+    join(repoRoot, "..", "..", "node_modules", "typescript", "bin", "tsc"),
+  ]);
+}
+
+function existingPath(candidates) {
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
 try {
   const packOutput = execFileSync(
     "npm",
@@ -29,14 +53,19 @@ try {
   const tarball = isAbsolute(packResult.filename)
     ? packResult.filename
     : join(workspace, packResult.filename);
-  const zodPackage = join(repoRoot, "node_modules", "zod");
+  const zodPackage = existingZodPackage();
+  const typeScriptBin = existingTypeScriptBin();
 
   if (!existsSync(tarball)) {
     throw new Error(`Packed tarball was not created: ${tarball}`);
   }
 
-  if (!existsSync(zodPackage)) {
+  if (zodPackage === null) {
     throw new Error("Local zod dependency is missing. Run npm install first.");
+  }
+
+  if (typeScriptBin === null) {
+    throw new Error("Local TypeScript dependency is missing. Run npm install first.");
   }
 
   await writeFile(
@@ -85,7 +114,7 @@ try {
   run(
     "node",
     [
-      join(repoRoot, "node_modules", "typescript", "bin", "tsc"),
+      typeScriptBin,
       "--noEmit",
       "--skipLibCheck",
       "--target",

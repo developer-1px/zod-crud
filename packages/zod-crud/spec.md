@@ -1,8 +1,8 @@
 # zod-crud Logic Tree Spec
 
 This document is the single source of truth for expected behavior. When code,
-tests, README examples, demo UX, and agent/debug reports disagree, update this
-spec first or explicitly mark the implementation as out of spec.
+tests, README examples, and agent/debug reports disagree, update this spec
+first or explicitly mark the implementation as out of spec.
 
 ## Product Contract
 
@@ -294,55 +294,21 @@ restore next doc
 return true
 ```
 
-## Demo UX Logic
-
-The demo is a visual test harness for the core API. It should behave like a
-small editor, not just a failure logger.
-
-Command availability:
-
-- Undo disabled when `canUndo()` is false.
-- Redo disabled when `canRedo()` is false.
-- Paste disabled when selected target's `canPaste(selectedId)` is not ok.
-- Cut and Delete disabled for root.
-- Create text/rect disabled when selected node has no insertion array.
-- Update disabled when selected node has no editable text/name/label field.
-- Keyboard shortcuts follow the same enabled/disabled rules as buttons.
-
-Selection and focus recovery:
-
-- After create/paste/update, focus changed or inserted visible nodes when
-  possible.
-- After delete/cut, recover to next sibling, previous sibling, visible parent,
-  or root.
-- Undo/redo should prefer visible domain nodes over hidden structural arrays
-  such as `children`.
-- Focus markers may show multiple changed ids, but `selected` should remain a
-  visible, actionable node when possible.
-
-Mobile/layout:
-
-- Primary canvas should be reachable early on mobile.
-- Expanded layer trees should be bounded and internally scrollable rather than
-  pushing the entire editor far below the first viewport.
-- Buttons and labels must not overflow their fixed controls.
-
 ## Package Contract
 
 - Package is ESM-only.
 - `exports["."]` must expose runtime JS and declarations.
 - `prepack` must build `dist` so clean checkout packing works.
-- Published source maps may reference `src` only if `src` is included in the
-  packed files.
+- Published package contents should be limited to `dist`, `README.md`, and
+  `spec.md`.
 - A package smoke test must pack the project, install the tarball into a
   temporary consumer, run a Node ESM import, and typecheck exported types.
-- `npm run verify` is the CI-level gate:
+- Package-level `npm run verify` is the library gate:
 
 ```txt
 typecheck
 test
 build
-demo:build
 smoke:package
 ```
 
@@ -356,7 +322,6 @@ Add or update tests when behavior changes in any of these areas:
 - Undo/redo state transitions.
 - OperationResult failure atomicity.
 - Package import/type surface.
-- Demo command availability or focus recovery.
 
 Regression tests should encode de-facto editor expectations, not only current
 implementation details. If a behavior is debatable, record the chosen rule in
