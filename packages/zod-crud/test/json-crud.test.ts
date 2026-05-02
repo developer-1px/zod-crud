@@ -168,6 +168,90 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("keeps repeated self-paste on the newly pasted sibling instead of falling through to child paste", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const sectionId = editor.find(childrenId!, 0);
+
+    editor.copy(sectionId!);
+
+    expect(editor.paste(sectionId!).ok).toBe(true);
+    const pastedSectionId = editor.find(childrenId!, 1);
+
+    expect(pastedSectionId).not.toBeNull();
+    expect(editor.paste(pastedSectionId!).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+      ],
+    });
+  });
+
+  it("does not update clipboard source semantics during canPaste dry runs", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const sectionId = editor.find(childrenId!, 0);
+
+    editor.copy(sectionId!);
+
+    expect(editor.canPaste(sectionId!).ok).toBe(true);
+    expect(editor.paste(sectionId!).ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+        {
+          kind: "frame",
+          name: "section",
+          children: [],
+        },
+      ],
+    });
+  });
+
   it("discovers paste child arrays from the Zod schema instead of child key conventions only", () => {
     const Schema = z.object({
       items: z.array(z.string()),

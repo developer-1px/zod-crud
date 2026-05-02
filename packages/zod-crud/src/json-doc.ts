@@ -64,7 +64,7 @@ export function getPath(doc: JsonDoc, nodeId: NodeId): JsonPath {
   return path.reverse();
 }
 
-export function createSubtree(
+function createSubtree(
   doc: JsonDoc,
   value: JsonValue,
   parentId: NodeId | null,
@@ -92,7 +92,7 @@ export function createSubtree(
   return id;
 }
 
-export function createNode(
+function createNode(
   id: NodeId,
   value: JsonValue,
   parentId: NodeId | null,

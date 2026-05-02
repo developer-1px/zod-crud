@@ -150,14 +150,10 @@ function App() {
       return {};
     }
 
-    const statuses: Record<NodeId, OperationResult> = {};
-
-    for (const nodeId of Object.keys(doc.nodes)) {
-      statuses[nodeId] = editorRef.current.canPaste(nodeId);
-    }
-
-    return statuses;
-  }, [clipboardJson, doc]);
+    return {
+      [selectedId]: editorRef.current.canPaste(selectedId),
+    };
+  }, [clipboardJson, doc, selectedId]);
   const selectedPasteStatus = pasteStatus[selectedId];
   const canCreateChild = findInsertionArray(doc, selectedId) !== null;
   const canUpdateSelected = editableStringNodeId(doc, selectedId) !== null;

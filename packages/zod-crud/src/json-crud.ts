@@ -28,12 +28,13 @@ import {
 } from "./json-doc.js";
 import { objectArrayFieldKeys, schemaAtPath } from "./schema-path.js";
 
-export { deserialize, getPath, serialize } from "./json-doc.js";
-
 const DEFAULT_CHILD_KEYS = ["children"];
 
 type PasteCandidate = {
-  apply: () => JsonDoc;
+  apply: () => {
+    doc: JsonDoc;
+    pastedRootId: NodeId;
+  };
 };
 
 export function createJsonCrud<T extends JsonValue, I = unknown>(
@@ -205,17 +206,19 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       return { ok: false, reason: "Clipboard is empty." };
     }
 
-    const before = cloneDoc(this.doc);
-    const undo = this.undoStack.map(cloneDoc);
-    const redo = this.redoStack.map(cloneDoc);
     const nextNodeIndex = this.nextNodeIndex;
+
     try {
-      const result = this.paste(targetId, options);
+      const payload = cloneJson(this.clipboard.value);
+      const mode = options.mode ?? "auto";
+      const childKeys = options.childKeys ?? this.childKeys;
+      const candidates = this.buildPasteCandidates(targetId, payload, mode, childKeys, options.index);
+      const result = this.firstValidPasteResult(candidates);
+
       return result.ok ? { ok: true } : result;
+    } catch (error) {
+      return failure(error);
     } finally {
-      this.doc = before;
-      this.undoStack = undo;
-      this.redoStack = redo;
       this.nextNodeIndex = nextNodeIndex;
     }
   }
@@ -290,11 +293,41 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const candidateNodeIndex = this.nextNodeIndex;
 
       try {
-        const next = candidate.apply();
+        const { doc: next, pastedRootId } = candidate.apply();
         const validation = this.validateDocument(next);
 
         if (validation.ok) {
           this.commit(next);
+          this.clipboard = this.clipboard === null
+            ? null
+            : { value: cloneJson(this.clipboard.value), sourceId: pastedRootId };
+          return { ok: true };
+        }
+
+        lastFailure = validation;
+      } catch (error) {
+        lastFailure = failure(error);
+      }
+
+      this.nextNodeIndex = candidateNodeIndex;
+    }
+
+    this.nextNodeIndex = initialNodeIndex;
+    return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
+  }
+
+  private firstValidPasteResult(candidates: PasteCandidate[]): OperationResult {
+    let lastFailure: OperationResult | null = null;
+    const initialNodeIndex = this.nextNodeIndex;
+
+    for (const candidate of candidates) {
+      const candidateNodeIndex = this.nextNodeIndex;
+
+      try {
+        const validation = this.validateDocument(candidate.apply().doc);
+
+        if (validation.ok) {
+          this.nextNodeIndex = initialNodeIndex;
           return { ok: true };
         }
 
@@ -316,7 +349,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         const next = cloneDoc(this.doc);
 
         replaceSubtree(next, targetId, payload, () => this.allocateNodeId());
-        return next;
+        return { doc: next, pastedRootId: targetId };
       },
     };
   }
@@ -383,14 +416,14 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         const next = cloneDoc(this.doc);
         const childArrayId = ensureObjectArrayField(next, targetId, childKey, () => this.allocateNodeId());
 
-        insertChild(
+        const pastedRootId = insertChild(
           next,
           childArrayId,
           index ?? getNode(next, childArrayId).children.length,
           payload,
           () => this.allocateNodeId(),
         );
-        return next;
+        return { doc: next, pastedRootId };
       },
     };
   }
@@ -404,14 +437,14 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       apply: () => {
         const next = cloneDoc(this.doc);
 
-        insertChild(
+        const pastedRootId = insertChild(
           next,
           arrayId,
           index ?? getNode(next, arrayId).children.length,
           payload,
           () => this.allocateNodeId(),
         );
-        return next;
+        return { doc: next, pastedRootId };
       },
     };
   }
