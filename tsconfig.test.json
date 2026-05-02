@@ -1,11 +1,21 @@
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
     "noEmit": true,
     "rootDir": "."
   },
   "include": [
     "src/**/*.ts",
-    "test/**/*.ts"
+    "test/**/*.ts",
+    "demo/**/*.ts",
+    "demo/**/*.tsx",
+    "vite.config.ts",
+    "vitest.config.ts"
   ]
 }
