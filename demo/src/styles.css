@@ -276,6 +276,11 @@ button {
   font-size: 12px;
 }
 
+.focused {
+  border-color: #c28a14 !important;
+  box-shadow: 0 0 0 2px rgb(194 138 20 / 20%);
+}
+
 .selected {
   border-color: #1f6feb !important;
   box-shadow: 0 0 0 2px rgb(31 111 235 / 15%);
@@ -292,6 +297,12 @@ button {
 .selected.paste-ok,
 .selected.paste-fail {
   border-color: #1f6feb !important;
+}
+
+.focused.selected {
+  box-shadow:
+    0 0 0 2px rgb(31 111 235 / 17%),
+    0 0 0 5px rgb(194 138 20 / 18%);
 }
 
 .inspector {
@@ -355,6 +366,14 @@ tr:hover {
 
 tr.selected {
   background: #eff6ff;
+}
+
+tr.focused {
+  background: #fff8e7;
+}
+
+tr.focused.selected {
+  background: #eef6ff;
 }
 
 tr.paste-ok {
@@ -421,6 +440,7 @@ tr.paste-fail {
 
 .statusbar {
   display: flex;
+  flex-wrap: wrap;
   gap: 18px;
   padding: 7px 12px;
   border-top: 1px solid #d8dee6;

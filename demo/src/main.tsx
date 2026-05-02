@@ -104,8 +104,10 @@ function makeEditor() {
 
 function App() {
   const editorRef = useRef(makeEditor());
+  const initialRootId = editorRef.current.snapshot().rootId;
   const [version, setVersion] = useState(0);
-  const [selectedId, setSelectedId] = useState<NodeId>(editorRef.current.snapshot().rootId);
+  const [selectedId, setSelectedId] = useState<NodeId>(initialRootId);
+  const [focusedIds, setFocusedIds] = useState<NodeId[]>([initialRootId]);
   const [clipboardJson, setClipboardJson] = useState<string>("");
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: 1, label: "load initial JSON", ok: true },
@@ -114,12 +116,19 @@ function App() {
   const doc = useMemo(() => editorRef.current.snapshot(), [version]);
   const json = useMemo(() => editorRef.current.toJson(), [version]);
   const selectedNode = doc.nodes[selectedId] ?? doc.nodes[doc.rootId];
+  const focusedSet = useMemo(() => new Set(focusedIds.filter((id) => doc.nodes[id] !== undefined)), [doc, focusedIds]);
 
   useEffect(() => {
-    if (doc.nodes[selectedId] === undefined) {
-      setSelectedId(doc.rootId);
+    const recovered = recoverFocus(doc, focusedIds, selectedId);
+
+    if (selectedId !== recovered.selectedId) {
+      setSelectedId(recovered.selectedId);
     }
-  }, [doc, selectedId]);
+
+    if (!sameIds(focusedIds, recovered.focusedIds)) {
+      setFocusedIds(recovered.focusedIds);
+    }
+  }, [doc, focusedIds, selectedId]);
 
   const pasteStatus = useMemo(() => {
     if (clipboardJson.length === 0) {
@@ -154,8 +163,28 @@ function App() {
     ]);
   }
 
+  function selectNode(nodeId: NodeId) {
+    setSelectedId(nodeId);
+    setFocusedIds([nodeId]);
+  }
+
+  function focusFromChange(before: JsonDoc, after: JsonDoc) {
+    const diffIds = diffFocusIds(before, after);
+    const recovered = recoverFocus(after, diffIds, selectedId);
+
+    setSelectedId(recovered.selectedId);
+    setFocusedIds(recovered.focusedIds);
+  }
+
   function run(label: string, operation: () => OperationResult | boolean | "ok") {
+    const before = editorRef.current.snapshot();
     const result = operation();
+    const after = editorRef.current.snapshot();
+
+    if (operationSucceeded(result) && !sameDoc(before, after)) {
+      focusFromChange(before, after);
+    }
+
     pushLog(label, result);
     refresh();
   }
@@ -168,15 +197,15 @@ function App() {
 
   function cutSelected() {
     const value = editorRef.current.read(selectedId);
-    const result = editorRef.current.cut(selectedId);
+    run(`cut ${selectedId}`, () => {
+      const result = editorRef.current.cut(selectedId);
 
-    if (result.ok) {
-      setClipboardJson(JSON.stringify(value, null, 2));
-      setSelectedId(editorRef.current.snapshot().rootId);
-    }
+      if (result.ok) {
+        setClipboardJson(JSON.stringify(value, null, 2));
+      }
 
-    pushLog(`cut ${selectedId}`, result);
-    refresh();
+      return result;
+    });
   }
 
   function pasteSelected() {
@@ -184,15 +213,7 @@ function App() {
   }
 
   function deleteSelected() {
-    run(`delete ${selectedId}`, () => {
-      const result = editorRef.current.delete(selectedId);
-
-      if (result.ok) {
-        setSelectedId(editorRef.current.snapshot().rootId);
-      }
-
-      return result;
-    });
+    run(`delete ${selectedId}`, () => editorRef.current.delete(selectedId));
   }
 
   function appendText() {
@@ -256,6 +277,7 @@ function App() {
   function reset() {
     editorRef.current = makeEditor();
     setSelectedId(editorRef.current.snapshot().rootId);
+    setFocusedIds([editorRef.current.snapshot().rootId]);
     setClipboardJson("");
     pushLog("reset document", "ok");
     refresh();
@@ -289,8 +311,9 @@ function App() {
             doc={doc}
             nodeId={doc.rootId}
             selectedId={selectedId}
+            focusedSet={focusedSet}
             pasteStatus={pasteStatus}
-            onSelect={setSelectedId}
+            onSelect={selectNode}
           />
         </aside>
 
@@ -300,8 +323,9 @@ function App() {
             doc={doc}
             nodeId={doc.rootId}
             selectedId={selectedId}
+            focusedSet={focusedSet}
             pasteStatus={pasteStatus}
-            onSelect={setSelectedId}
+            onSelect={selectNode}
           />
         </section>
 
@@ -311,8 +335,9 @@ function App() {
             <NodeTable
               doc={doc}
               selectedId={selectedId}
+              focusedSet={focusedSet}
               pasteStatus={pasteStatus}
-              onSelect={setSelectedId}
+              onSelect={selectNode}
             />
           </section>
 
@@ -343,6 +368,7 @@ function App() {
 
       <footer className="statusbar">
         <span>selected: {selectedNode?.id ?? "none"}</span>
+        <span>focus: {focusedSet.size > 0 ? [...focusedSet].join(", ") : "none"}</span>
         <span>type: {selectedNode?.type ?? "none"}</span>
         <span>nodes: {Object.keys(doc.nodes).length}</span>
       </footer>
@@ -382,12 +408,14 @@ function TreeView({
   doc,
   nodeId,
   selectedId,
+  focusedSet,
   pasteStatus,
   onSelect,
 }: {
   doc: JsonDoc;
   nodeId: NodeId;
   selectedId: NodeId;
+  focusedSet: Set<NodeId>;
   pasteStatus: Record<NodeId, OperationResult>;
   onSelect: (nodeId: NodeId) => void;
 }) {
@@ -402,7 +430,7 @@ function TreeView({
       <li>
         <button
           type="button"
-          className={nodeClass("tree-item", nodeId, selectedId, pasteStatus)}
+          className={nodeClass("tree-item", nodeId, selectedId, focusedSet, pasteStatus)}
           onClick={() => onSelect(nodeId)}
         >
           <span>{nodeLabel(doc, node)}</span>
@@ -416,6 +444,7 @@ function TreeView({
                 doc={doc}
                 nodeId={childId}
                 selectedId={selectedId}
+                focusedSet={focusedSet}
                 pasteStatus={pasteStatus}
                 onSelect={onSelect}
               />
@@ -431,12 +460,14 @@ function CanvasNode({
   doc,
   nodeId,
   selectedId,
+  focusedSet,
   pasteStatus,
   onSelect,
 }: {
   doc: JsonDoc;
   nodeId: NodeId;
   selectedId: NodeId;
+  focusedSet: Set<NodeId>;
   pasteStatus: Record<NodeId, OperationResult>;
   onSelect: (nodeId: NodeId) => void;
 }) {
@@ -447,7 +478,7 @@ function CanvasNode({
   }
 
   const value = deserialize(doc, nodeId);
-  const className = nodeClass("canvas-node", nodeId, selectedId, pasteStatus);
+  const className = nodeClass("canvas-node", nodeId, selectedId, focusedSet, pasteStatus);
 
   if (isUiFrame(value)) {
     const childrenArrayId = childIdByKey(doc, nodeId, "children");
@@ -475,6 +506,7 @@ function CanvasNode({
               doc={doc}
               nodeId={childId}
               selectedId={selectedId}
+              focusedSet={focusedSet}
               pasteStatus={pasteStatus}
               onSelect={onSelect}
             />
@@ -527,11 +559,13 @@ function CanvasNode({
 function NodeTable({
   doc,
   selectedId,
+  focusedSet,
   pasteStatus,
   onSelect,
 }: {
   doc: JsonDoc;
   selectedId: NodeId;
+  focusedSet: Set<NodeId>;
   pasteStatus: Record<NodeId, OperationResult>;
   onSelect: (nodeId: NodeId) => void;
 }) {
@@ -554,7 +588,7 @@ function NodeTable({
           {rows.map((node) => (
             <tr
               key={node.id}
-              className={nodeClass("", node.id, selectedId, pasteStatus)}
+              className={nodeClass("", node.id, selectedId, focusedSet, pasteStatus)}
               onClick={() => onSelect(node.id)}
             >
               <td>{node.id}</td>
@@ -575,10 +609,15 @@ function nodeClass(
   base: string,
   nodeId: NodeId,
   selectedId: NodeId,
+  focusedSet: Set<NodeId>,
   pasteStatus: Record<NodeId, OperationResult>,
 ) {
   const status = pasteStatus[nodeId];
   const classes = [base];
+
+  if (focusedSet.has(nodeId)) {
+    classes.push("focused");
+  }
 
   if (nodeId === selectedId) {
     classes.push("selected");
@@ -675,6 +714,132 @@ function editableStringNodeId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
   }
 
   return null;
+}
+
+function operationSucceeded(result: OperationResult | boolean | "ok") {
+  return result === true || result === "ok" || (typeof result === "object" && result.ok);
+}
+
+function recoverFocus(doc: JsonDoc, focusedIds: NodeId[], selectedId: NodeId) {
+  const existingFocusIds = uniqueIds(focusedIds.filter((id) => doc.nodes[id] !== undefined));
+
+  if (existingFocusIds.length > 0) {
+    return {
+      selectedId: doc.nodes[selectedId] !== undefined ? selectedId : existingFocusIds[0]!,
+      focusedIds: existingFocusIds,
+    };
+  }
+
+  const fallback = doc.nodes[selectedId] !== undefined ? selectedId : doc.rootId;
+
+  return {
+    selectedId: fallback,
+    focusedIds: [fallback],
+  };
+}
+
+function diffFocusIds(before: JsonDoc, after: JsonDoc): NodeId[] {
+  const allIds = uniqueIds([...Object.keys(before.nodes), ...Object.keys(after.nodes)]);
+  const changedIds: NodeId[] = [];
+
+  for (const id of allIds) {
+    const beforeNode = before.nodes[id];
+    const afterNode = after.nodes[id];
+
+    if (beforeNode === undefined && afterNode !== undefined) {
+      changedIds.push(id);
+      continue;
+    }
+
+    if (beforeNode !== undefined && afterNode === undefined) {
+      changedIds.push(recoverRemovedNode(before, after, id));
+      continue;
+    }
+
+    if (
+      beforeNode !== undefined &&
+      afterNode !== undefined &&
+      nodeFingerprint(beforeNode) !== nodeFingerprint(afterNode)
+    ) {
+      changedIds.push(id);
+    }
+  }
+
+  return sortByDocumentOrder(after, uniqueIds(changedIds));
+}
+
+function recoverRemovedNode(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
+  let current = before.nodes[removedId];
+
+  while (current?.parentId !== null && current?.parentId !== undefined) {
+    const parent = after.nodes[current.parentId];
+
+    if (parent !== undefined) {
+      return parent.id;
+    }
+
+    current = before.nodes[current.parentId];
+  }
+
+  return after.rootId;
+}
+
+function sortByDocumentOrder(doc: JsonDoc, ids: NodeId[]): NodeId[] {
+  const order = new Map<NodeId, number>();
+  const visit = (nodeId: NodeId) => {
+    const node = doc.nodes[nodeId];
+
+    if (node === undefined) {
+      return;
+    }
+
+    order.set(nodeId, order.size);
+
+    for (const childId of node.children) {
+      visit(childId);
+    }
+  };
+
+  visit(doc.rootId);
+
+  return [...ids].sort((a, b) => (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER));
+}
+
+function nodeFingerprint(node: JsonNode) {
+  return JSON.stringify({
+    type: node.type,
+    parentId: node.parentId,
+    key: node.key,
+    children: node.children,
+    value: node.value,
+  });
+}
+
+function sameDoc(left: JsonDoc, right: JsonDoc) {
+  if (left.rootId !== right.rootId) {
+    return false;
+  }
+
+  const leftIds = Object.keys(left.nodes).sort();
+  const rightIds = Object.keys(right.nodes).sort();
+
+  if (!sameIds(leftIds, rightIds)) {
+    return false;
+  }
+
+  return leftIds.every((id) => {
+    const leftNode = left.nodes[id];
+    const rightNode = right.nodes[id];
+    return leftNode !== undefined && rightNode !== undefined && nodeFingerprint(leftNode) === nodeFingerprint(rightNode);
+  });
+}
+
+function sameIds(left: NodeId[], right: NodeId[]) {
+  return left.length === right.length && left.every((id, index) => id === right[index]);
+}
+
+function uniqueIds(ids: NodeId[]) {
+  return [...new Set(ids)];
 }
 
 function isUiFrame(value: JsonValue): value is Extract<UiNode, { kind: "frame" }> {

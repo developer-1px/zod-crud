@@ -92,5 +92,6 @@ const json = editor.toJson();
 - `create`, `update`, `delete`
 - `copy`, `cut`, `paste`
 - `undo`, `redo`
+- visual focus recovery for changed nodes in the demo
 - recursive Zod object/array/union path validation
 - `children` convention for child paste, configurable via `childKeys`
