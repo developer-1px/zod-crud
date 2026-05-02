@@ -330,7 +330,7 @@ function App() {
 
         return editorRef.current.paste(selectedId);
       },
-      pastePlan === null ? undefined : () => [selectedId],
+      pastePlan === null ? undefined : (_before, after) => pasteFocusIds(after, pastePlan),
     );
   }
 
@@ -1851,21 +1851,26 @@ function schemaLabelForNode(node: JsonNode) {
 }
 
 function visibleObjectNodeForSelection(doc: JsonDoc, nodeId: NodeId): JsonNode | null {
+  const focusableId = focusableUiNodeId(doc, nodeId);
+  return doc.nodes[focusableId] ?? null;
+}
+
+function focusableUiNodeId(doc: JsonDoc, nodeId: NodeId): NodeId {
   let current = doc.nodes[nodeId] ?? null;
 
   while (current !== null) {
-    if (current.type === "object") {
-      return current;
+    if (isLayerNode(doc, current)) {
+      return current.id;
     }
 
     if (current.parentId === null) {
-      return null;
+      return doc.rootId;
     }
 
     current = doc.nodes[current.parentId] ?? null;
   }
 
-  return null;
+  return doc.rootId;
 }
 
 function nodeLabel(doc: JsonDoc, node: JsonNode) {
@@ -2002,6 +2007,25 @@ function pasteWithPlan(
   }
 
   return editor.paste(plan.targetId, { mode: "overwrite" });
+}
+
+function pasteFocusIds(doc: JsonDoc, plan: PastePlan): NodeId[] {
+  if (plan.mode === "insert") {
+    const arrayNode = doc.nodes[plan.arrayId];
+    const insertedId = arrayNode?.type === "array" ? arrayNode.children[plan.index] : undefined;
+
+    if (insertedId !== undefined && doc.nodes[insertedId] !== undefined) {
+      return [focusableUiNodeId(doc, insertedId)];
+    }
+
+    return [focusableUiNodeId(doc, plan.arrayId)];
+  }
+
+  if (plan.mode === "content") {
+    return [focusableUiNodeId(doc, plan.targetId)];
+  }
+
+  return [focusableUiNodeId(doc, plan.targetId)];
 }
 
 function insertPasteTarget(
@@ -2266,8 +2290,8 @@ function firstVisibleFocusId(doc: JsonDoc, focusedIds: NodeId[]): NodeId | null 
   for (const id of focusedIds) {
     const node = doc.nodes[id];
 
-    if (node !== undefined && !isHiddenStructureNode(node)) {
-      return id;
+    if (node !== undefined) {
+      return focusableUiNodeId(doc, id);
     }
   }
 
@@ -2363,7 +2387,10 @@ function recoverParentForRemovedNode(before: JsonDoc, after: JsonDoc, parentId: 
 }
 
 function isHiddenStructureNode(node: JsonNode) {
-  return node.type === "array" && node.key === "children";
+  return (
+    (node.type === "array" && (node.key === "children" || typeof node.key === "string")) ||
+    (node.type === "object" && (node.key === "slots" || node.key === "collections"))
+  );
 }
 
 function recoverRemovedNode(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
