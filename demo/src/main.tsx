@@ -1,17 +1,25 @@
 import {
+  Braces,
   Clipboard,
   Copy,
   FileJson2,
   History,
+  Layers,
+  MousePointer2,
+  Move,
   Pencil,
   Redo2,
   RefreshCcw,
   Scissors,
+  Settings2,
+  SlidersHorizontal,
   Square,
   Table2,
   Trash2,
   Type,
   Undo2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import { StrictMode, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -348,18 +356,25 @@ function App() {
   return (
     <main className="app">
       <header className="topbar">
-        <div>
-          <h1>zod-crud visual test</h1>
-          <p>JSON CRUD copy paste history</p>
+        <div className="topbar-left">
+          <div className="window-controls" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <div className="brand-lockup">
+            <h1>zod-crud</h1>
+            <p>Visual editor</p>
+          </div>
         </div>
-        <div className="toolbar" aria-label="Operations">
-          <IconButton label="Create text" onClick={appendText} icon={<Type />} />
-          <IconButton label="Create rect" onClick={appendRect} icon={<Square />} />
-          <IconButton label="Update" onClick={editSelected} icon={<Pencil />} />
-          <IconButton label="Copy" shortcut="Cmd+C" onClick={copySelected} icon={<Copy />} />
-          <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} />
-          <IconButton label="Paste" shortcut="Cmd+V" onClick={pasteSelected} icon={<Clipboard />} />
-          <IconButton label="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
+
+        <div className="mode-switch" aria-label="Workspace mode">
+          <button className="mode-tab active" type="button">Design</button>
+          <button className="mode-tab" type="button">Data</button>
+          <button className="mode-tab" type="button">History</button>
+        </div>
+
+        <div className="toolbar top-actions" aria-label="History controls">
           <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} />
           <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} />
           <IconButton label="Reset" onClick={reset} icon={<RefreshCcw />} />
@@ -367,8 +382,28 @@ function App() {
       </header>
 
       <section className="workspace">
+        <nav className="tool-rail" aria-label="Editing tools">
+          <button
+            className="rail-tool active"
+            type="button"
+            title="Select"
+            aria-label="Select"
+            onClick={() => selectNode(selectedId)}
+          >
+            <MousePointer2 />
+          </button>
+          <IconButton label="Create text" onClick={appendText} icon={<Type />} />
+          <IconButton label="Create rect" onClick={appendRect} icon={<Square />} />
+          <IconButton label="Update" onClick={editSelected} icon={<Pencil />} />
+          <div className="rail-separator" />
+          <IconButton label="Copy" shortcut="Cmd+C" onClick={copySelected} icon={<Copy />} />
+          <IconButton label="Cut" shortcut="Cmd+X" onClick={cutSelected} icon={<Scissors />} />
+          <IconButton label="Paste" shortcut="Cmd+V" onClick={pasteSelected} icon={<Clipboard />} />
+          <IconButton label="Delete" onClick={deleteSelected} icon={<Trash2 />} tone="danger" />
+        </nav>
+
         <aside className="panel tree-panel">
-          <PanelTitle icon={<History />} title="Tree" />
+          <PanelTitle icon={<Layers />} title="Layers" />
           <TreeView
             doc={doc}
             nodeId={doc.rootId}
@@ -379,21 +414,67 @@ function App() {
           />
         </aside>
 
-        <section className="panel canvas-panel">
-          <PanelTitle icon={<Square />} title="Rendered JSON" />
-          <CanvasNode
-            doc={doc}
-            nodeId={doc.rootId}
-            selectedId={selectedId}
-            focusedSet={focusedSet}
-            pasteStatus={pasteStatus}
-            onSelect={selectNode}
-          />
+        <section className="canvas-shell">
+          <div className="canvas-titlebar">
+            <div className="canvas-title">
+              <Move />
+              <h2>Canvas</h2>
+              <span>{Object.keys(doc.nodes).length} nodes</span>
+            </div>
+            <div className="canvas-controls" aria-label="Canvas view controls">
+              <button type="button" title="Zoom out" aria-label="Zoom out"><ZoomOut /></button>
+              <span>100%</span>
+              <button type="button" title="Zoom in" aria-label="Zoom in"><ZoomIn /></button>
+            </div>
+          </div>
+
+          <div className="canvas-viewport">
+            <div className="canvas-stage">
+              <CanvasNode
+                doc={doc}
+                nodeId={doc.rootId}
+                selectedId={selectedId}
+                focusedSet={focusedSet}
+                pasteStatus={pasteStatus}
+                onSelect={selectNode}
+              />
+            </div>
+          </div>
         </section>
 
         <aside className="inspector">
+          <section className="panel selection-panel">
+            <PanelTitle icon={<SlidersHorizontal />} title="Inspector" />
+            <dl className="property-grid">
+              <div>
+                <dt>Selection</dt>
+                <dd>{selectedNode === undefined ? "none" : nodeLabel(doc, selectedNode)}</dd>
+              </div>
+              <div>
+                <dt>ID</dt>
+                <dd>{selectedNode?.id ?? "none"}</dd>
+              </div>
+              <div>
+                <dt>Type</dt>
+                <dd>{selectedNode?.type ?? "none"}</dd>
+              </div>
+              <div>
+                <dt>Parent</dt>
+                <dd>{selectedNode?.parentId ?? "root"}</dd>
+              </div>
+              <div>
+                <dt>Children</dt>
+                <dd>{selectedNode?.children.length ?? 0}</dd>
+              </div>
+              <div>
+                <dt>Focus</dt>
+                <dd>{focusedSet.size}</dd>
+              </div>
+            </dl>
+          </section>
+
           <section className="panel">
-            <PanelTitle icon={<Table2 />} title="Flat Nodes" />
+            <PanelTitle icon={<Table2 />} title="Nodes" />
             <NodeTable
               doc={doc}
               selectedId={selectedId}
@@ -405,7 +486,7 @@ function App() {
 
           <section className="panel split-panel">
             <div>
-              <PanelTitle icon={<FileJson2 />} title="JSON" />
+              <PanelTitle icon={<Braces />} title="JSON" />
               <pre className="json-view">{JSON.stringify(json, null, 2)}</pre>
             </div>
             <div>
@@ -415,7 +496,7 @@ function App() {
           </section>
 
           <section className="panel">
-            <PanelTitle icon={<History />} title="History" />
+            <PanelTitle icon={<History />} title="Timeline" />
             <ul className="log-list">
               {logs.map((entry) => (
                 <li key={entry.id} className={entry.ok ? "ok" : "fail"}>
@@ -429,10 +510,10 @@ function App() {
       </section>
 
       <footer className="statusbar">
-        <span>selected: {selectedNode?.id ?? "none"}</span>
-        <span>focus: {focusedSet.size > 0 ? [...focusedSet].join(", ") : "none"}</span>
-        <span>type: {selectedNode?.type ?? "none"}</span>
-        <span>nodes: {Object.keys(doc.nodes).length}</span>
+        <span>selected <strong>{selectedNode?.id ?? "none"}</strong></span>
+        <span>focus <strong>{focusedSet.size > 0 ? [...focusedSet].join(", ") : "none"}</strong></span>
+        <span>type <strong>{selectedNode?.type ?? "none"}</strong></span>
+        <span>nodes <strong>{Object.keys(doc.nodes).length}</strong></span>
       </footer>
     </main>
   );
@@ -460,6 +541,7 @@ function IconButton({
     >
       {icon}
       <span>{label}</span>
+      {shortcut === undefined ? null : <kbd>{shortcut}</kbd>}
     </button>
   );
 }
