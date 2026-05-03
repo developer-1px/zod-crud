@@ -16,9 +16,11 @@ import {
   Table,
   Tabs,
   Tag,
+  theme as antdTheme,
   Tree,
   Typography,
   type TableColumnsType,
+  type ThemeConfig,
   type TreeDataNode,
 } from "antd";
 import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
@@ -44,6 +46,82 @@ import {
 
 const { Header } = Layout;
 const { Text, Title } = Typography;
+
+const SHOWCASE_THEME: ThemeConfig = {
+  algorithm: antdTheme.compactAlgorithm,
+  token: {
+    borderRadius: 2,
+    colorBgBase: "#ffffff",
+    colorBgLayout: "#ffffff",
+    colorBorder: "#d9dce3",
+    colorBorderSecondary: "#e7e9ee",
+    colorError: "#b42318",
+    colorInfo: "#111827",
+    colorPrimary: "#111827",
+    colorSuccess: "#027a48",
+    colorTextBase: "#111827",
+    controlHeight: 30,
+    controlOutlineWidth: 1,
+    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
+    fontSize: 13,
+    lineWidth: 1,
+    sizeStep: 3,
+    wireframe: true,
+  },
+  components: {
+    Button: {
+      dangerShadow: "none",
+      defaultShadow: "none",
+      fontWeight: 500,
+      primaryShadow: "none",
+    },
+    Collapse: {
+      borderlessContentBg: "#ffffff",
+      contentBg: "#ffffff",
+      contentPadding: "12px",
+      headerBg: "#ffffff",
+      headerPadding: "9px 12px",
+    },
+    Input: {
+      activeShadow: "none",
+      errorActiveShadow: "none",
+      warningActiveShadow: "none",
+    },
+    Layout: {
+      bodyBg: "#ffffff",
+      headerBg: "#ffffff",
+      headerHeight: 48,
+      headerPadding: "0 12px",
+    },
+    Select: {
+      activeBorderColor: "#111827",
+      optionSelectedBg: "#f5f6f8",
+      optionSelectedFontWeight: 500,
+    },
+    Table: {
+      borderColor: "#e7e9ee",
+      cellPaddingBlockSM: 6,
+      cellPaddingInlineSM: 8,
+      headerBg: "#ffffff",
+      headerBorderRadius: 0,
+      rowHoverBg: "#f8f9fb",
+      rowSelectedBg: "#f5f6f8",
+      rowSelectedHoverBg: "#f1f3f5",
+    },
+    Tabs: {
+      horizontalItemGutter: 18,
+      horizontalItemPadding: "0 0 10px",
+      inkBarColor: "#111827",
+      itemActiveColor: "#111827",
+      itemHoverColor: "#111827",
+      titleFontSize: 13,
+    },
+    Tag: {
+      defaultBg: "#f8f9fb",
+      defaultColor: "#374151",
+    },
+  },
+};
 
 declare global {
   var zodCrudShowcaseRoot: Root | undefined;
@@ -372,15 +450,7 @@ function App() {
   }
 
   return (
-    <ConfigProvider
-      theme={{
-        token: {
-          borderRadius: 4,
-          colorPrimary: "#1f2937",
-          fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-        },
-      }}
-    >
+    <ConfigProvider theme={SHOWCASE_THEME}>
       <Layout className="app-shell">
         <Header className="app-header">
           <div className="brand">
@@ -904,6 +974,9 @@ function MobilePreview({
   selectedName: string;
   onSelectName: (name: string) => void;
 }) {
+  const orderTotal = order.lineItems.reduce((sum, item) => sum + item.quantity, 0);
+  const statusOptions: SalesOrder["status"][] = ["draft", "paid", "sent"];
+
   return (
     <div className="phone">
       <div className="phone-screen">
@@ -911,18 +984,19 @@ function MobilePreview({
           <Text strong>9:41</Text>
           <Text>LTE</Text>
         </div>
-        <SelectablePreview name="AppToolbar" selectedName={selectedName} onSelectName={onSelectName} className="mobile-toolbar">
+
+        <SelectablePreview name="AppToolbar" selectedName={selectedName} onSelectName={onSelectName} className="mobile-toolbar mobile-shell-row">
           <div>
-            <Text type="secondary">FieldOps</Text>
+            <Text className="mobile-eyebrow">FieldOps</Text>
             <Title level={3}>Order intake</Title>
           </div>
-          <Space>
-            <Button size="small">Search</Button>
-            <Button size="small">Alerts</Button>
+          <Space size={6}>
+            <Button size="small" shape="circle">S</Button>
+            <Button size="small" shape="circle">A</Button>
           </Space>
         </SelectablePreview>
 
-        <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName} className="hero-preview">
+        <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName} className="hero-preview mobile-hero">
           <img src={order.media.hero.src} alt={order.media.hero.alt} />
           <div className="hero-copy">
             <Text>{order.media.hero.alt}</Text>
@@ -930,28 +1004,45 @@ function MobilePreview({
           </div>
         </SelectablePreview>
 
-        <SelectablePreview name="SchemaStatusCard" selectedName={selectedName} onSelectName={onSelectName} className="schema-status">
-          <div>
-            <Text type="secondary">SalesOrderSchema</Text>
-            <Title level={5}>Valid snapshot</Title>
+        <nav className="mobile-tabs" aria-label="Order sections">
+          <button type="button" className="active">Overview</button>
+          <button type="button">Items</button>
+          <button type="button">Activity</button>
+        </nav>
+
+        <section className="mobile-content-block">
+          <div className="mobile-section-title">
+            <Text strong>Record</Text>
+            <Tag color="blue">{order.status}</Tag>
           </div>
-          <Tag color="green">safeParse</Tag>
-        </SelectablePreview>
 
-        <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName} className="preview-field">
-          <Text strong>Customer</Text>
-          <Input value={order.customer.name} readOnly />
-          <Text type="secondary">z.string().min(2)</Text>
-        </SelectablePreview>
+          <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName} className="mobile-field-row">
+            <span>
+              <Text type="secondary">Customer</Text>
+              <Text strong>{order.customer.name}</Text>
+            </span>
+            <Text type="secondary">customer.name</Text>
+          </SelectablePreview>
 
-        <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName} className="preview-field">
-          <Text strong>Status</Text>
-          <Select value={order.status} options={["draft", "paid", "sent"].map((value) => ({ label: value, value }))} />
-        </SelectablePreview>
+          <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName} className="mobile-field-row mobile-status-row">
+            <span>
+              <Text type="secondary">Status</Text>
+              <Text strong>Validated state</Text>
+            </span>
+            <div className="mobile-status-pills" aria-label="Order status">
+              {statusOptions.map((status) => (
+                <span className={order.status === status ? "active" : ""} key={status}>{status}</span>
+              ))}
+            </div>
+          </SelectablePreview>
+        </section>
 
-        <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName} className="preview-list">
+        <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName} className="preview-list mobile-list">
           <div className="list-heading">
-            <Text strong>Line items</Text>
+            <span>
+              <Text strong>Line items</Text>
+              <Text type="secondary">{order.lineItems.length} rows · {orderTotal} units</Text>
+            </span>
             <Button size="small">Add</Button>
           </div>
           {order.lineItems.map((item) => (
@@ -959,16 +1050,30 @@ function MobilePreview({
               <img src={item.image} alt={item.title} />
               <div>
                 <Text strong>{item.title}</Text>
-                <Text type="secondary">qty {item.quantity}</Text>
+                <Text type="secondary">qty {item.quantity} · lineItems[]</Text>
               </div>
               <Tag>{item.status}</Tag>
             </div>
           ))}
         </SelectablePreview>
 
-        <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName}>
-          <Button block type="primary">Save record</Button>
+        <SelectablePreview name="SchemaStatusCard" selectedName={selectedName} onSelectName={onSelectName} className="schema-status mobile-schema-status">
+          <div>
+            <Text type="secondary">SalesOrderSchema</Text>
+            <Title level={5}>Valid snapshot</Title>
+          </div>
+          <Tag color="green">safeParse</Tag>
         </SelectablePreview>
+
+        <div className="mobile-action-area">
+          <div>
+            <Text type="secondary">Commit boundary</Text>
+            <Text strong>Ready to serialize</Text>
+          </div>
+          <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName} className="mobile-save">
+            <Button block type="primary">Save record</Button>
+          </SelectablePreview>
+        </div>
       </div>
     </div>
   );
