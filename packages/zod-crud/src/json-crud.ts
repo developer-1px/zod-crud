@@ -10,13 +10,11 @@ import type {
   OperationResult,
   PasteOptions,
 } from "./types.js";
-import { firstJsonDifference, sameJson } from "./json-diff.js";
 import {
   cloneDoc,
   cloneJson,
   deserialize,
   findChildByKey,
-  formatPath,
   getNode,
   getPath,
   insertChild,
@@ -26,8 +24,8 @@ import {
   serialize,
 } from "./json-doc.js";
 import { buildPasteCandidates, type PasteCandidate } from "./json-paste.js";
+import { validateAtPath, validateDocument } from "./json-validation.js";
 import { successResult } from "./operation-result.js";
-import { schemaAtPath } from "./schema-path.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
@@ -68,7 +66,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
   let clipboard: { value: JsonValue; sourceId: NodeId | null } | null = null;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
 
-  const validation = validateDocument(doc);
+  const validation = validateDocument(schema, doc);
 
   if (!validation.ok) {
     throw new Error(validation.reason);
@@ -101,7 +99,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const parentPath = getPath(next, parentId);
 
       const nodeId = insertChild(next, parentId, key, value, allocateNodeId);
-      const validation = validateAtPath(parentPath, deserialize(next, parentId));
+      const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
@@ -116,7 +114,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
   function update(nodeId: NodeId, value: JsonValue): OperationResult {
     try {
       const path = getPath(doc, nodeId);
-      const validation = validateAtPath(path, value);
+      const validation = validateAtPath(schema, path, value);
 
       if (!validation.ok) {
         return validation;
@@ -148,7 +146,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const next = cloneDoc(doc);
 
       removeSubtree(next, nodeId);
-      const validation = validateAtPath(parentPath, deserialize(next, parentId));
+      const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
@@ -280,7 +278,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
       try {
         const { doc: next, pastedRootId } = candidate.apply();
-        const validation = validateDocument(next);
+        const validation = validateDocument(schema, next);
 
         if (validation.ok) {
           const before = cloneDoc(doc);
@@ -312,7 +310,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const candidateNodeIndex = nextNodeIndex;
 
       try {
-        const validation = validateDocument(candidate.apply().doc);
+        const validation = validateDocument(schema, candidate.apply().doc);
 
         if (validation.ok) {
           nextNodeIndex = initialNodeIndex;
@@ -331,57 +329,8 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
-  function validateAtPath(path: JsonPath, value: JsonValue): OperationResult {
-    const targetSchema = schemaAtPath(schema, path);
-
-    if (targetSchema === null) {
-      return {
-        ok: false,
-        reason: `No schema found for path ${formatPath(path)}.`,
-      };
-    }
-
-    const result = targetSchema.safeParse(value);
-
-    if (!result.success) {
-      return {
-        ok: false,
-        reason: `Value does not match schema at ${formatPath(path)}.`,
-        error: result.error,
-      };
-    }
-
-    return { ok: true };
-  }
-
-  function validateDocument(nextDoc: JsonDoc): OperationResult {
-    const value = deserialize(nextDoc);
-    const result = schema.safeParse(value);
-
-    if (!result.success) {
-      return {
-        ok: false,
-        reason: "Document does not match the root schema.",
-        error: result.error,
-      };
-    }
-
-    if (!sameJson(result.data, value)) {
-      const difference = firstJsonDifference(result.data, value);
-
-      return {
-        ok: false,
-        reason: difference === null
-          ? "Document does not match the root schema exactly."
-          : `Document does not match the root schema exactly: ${difference}.`,
-      };
-    }
-
-    return { ok: true };
-  }
-
   function commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
-    const validation = validateDocument(next);
+    const validation = validateDocument(schema, next);
 
     if (!validation.ok) {
       return validation;
