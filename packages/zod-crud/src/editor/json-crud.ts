@@ -44,6 +44,7 @@ type HistoryEntry = {
   changes: JsonChange[];
   nodeId?: NodeId;
   focusNodeId?: NodeId;
+  focusNodeIds?: NodeId[];
 };
 
 type Clipboard = {
@@ -337,6 +338,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       changes: previous.changes,
       ...(previous.nodeId === undefined ? {} : { nodeId: previous.nodeId }),
       ...(previous.focusNodeId === undefined ? {} : { focusNodeId: previous.focusNodeId }),
+      ...(previous.focusNodeIds === undefined ? {} : { focusNodeIds: previous.focusNodeIds }),
     });
     doc = previous.doc;
     return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId);
@@ -356,9 +358,10 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       changes: next.changes,
       ...(next.nodeId === undefined ? {} : { nodeId: next.nodeId }),
       ...(next.focusNodeId === undefined ? {} : { focusNodeId: next.focusNodeId }),
+      ...(next.focusNodeIds === undefined ? {} : { focusNodeIds: next.focusNodeIds }),
     });
     doc = next.doc;
-    return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId);
+    return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId, next.focusNodeIds);
   }
 
   function pasteCandidates(
@@ -409,11 +412,13 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
             ? changesForInsertedSubtrees(before, next, pastedRootIds)
             : changesForReplacedSubtree(before, next, pastedRootId);
 
-          commit(next, changes, pastedRootId);
+          const focusNodeIds = pastedRootIds.length > 1 ? pastedRootIds : undefined;
+
+          commit(next, changes, pastedRootId, pastedRootId, focusNodeIds);
           clipboard = clipboard === null
             ? null
             : { values: cloneJson(clipboard.values), sourceIds: pastedRootIds };
-          return successResult(before, next, changes, pastedRootId);
+          return successResult(before, next, changes, pastedRootId, pastedRootId, focusNodeIds);
         }
 
         lastFailure = validation;
@@ -460,6 +465,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     changes: JsonChange[],
     nodeId?: NodeId,
     focusNodeId?: NodeId,
+    focusNodeIds?: NodeId[],
   ): OperationResult {
     const validation = validateDocument(schema, next);
 
@@ -469,16 +475,23 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     const before = cloneDoc(doc);
 
-    commit(next, changes, nodeId, focusNodeId);
-    return successResult(before, next, changes, nodeId, focusNodeId);
+    commit(next, changes, nodeId, focusNodeId, focusNodeIds);
+    return successResult(before, next, changes, nodeId, focusNodeId, focusNodeIds);
   }
 
-  function commit(next: JsonDoc, changes: JsonChange[], nodeId?: NodeId, focusNodeId?: NodeId): void {
+  function commit(
+    next: JsonDoc,
+    changes: JsonChange[],
+    nodeId?: NodeId,
+    focusNodeId?: NodeId,
+    focusNodeIds?: NodeId[],
+  ): void {
     undoStack.push({
       doc: cloneDoc(doc),
       changes,
       ...(nodeId === undefined ? {} : { nodeId }),
       ...(focusNodeId === undefined ? {} : { focusNodeId }),
+      ...(focusNodeIds === undefined ? {} : { focusNodeIds }),
     });
     doc = next;
     redoStack = [];

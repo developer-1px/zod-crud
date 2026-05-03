@@ -69,6 +69,13 @@ export type OperationResult =
        */
       focusNodeId?: NodeId;
       /**
+       * Existing nodes that editor UIs should select after a batch mutation.
+       *
+       * This is used when a single committed operation creates or restores
+       * multiple peer roots, such as multi-value paste.
+       */
+      focusNodeIds?: NodeId[];
+      /**
        * Changed JsonDoc nodes for this successful mutation.
        *
        * This contains only inserted, updated, and deleted nodes, not a full

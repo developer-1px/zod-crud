@@ -12,11 +12,13 @@ export function successResult(
   changes: JsonChange[],
   nodeId?: NodeId,
   focusNodeId?: NodeId,
+  focusNodeIds?: NodeId[],
 ): OperationResult {
   return {
     ok: true,
     ...(nodeId === undefined ? {} : { nodeId }),
     focusNodeId: focusNodeId ?? focusFromMutation(before, after, changes, nodeId),
+    ...(focusNodeIds === undefined ? {} : { focusNodeIds }),
     changes,
   };
 }

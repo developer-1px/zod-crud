@@ -294,6 +294,7 @@ function App() {
     let result: OperationResult = { ok: true };
     let nextSelection = targetId;
     let collapseToSingleSelection = false;
+    let nextSelectionIds: NodeId[] | null = null;
 
     try {
       if (command === "copy") {
@@ -317,6 +318,7 @@ function App() {
 
         if (result.ok) {
           nextSelection = result.focusNodeId ?? result.nodeId ?? targetId;
+          nextSelectionIds = result.focusNodeIds ?? null;
           setActiveColumn(0);
           collapseToSingleSelection = true;
         }
@@ -337,6 +339,7 @@ function App() {
 
         if (result.ok) {
           nextSelection = result.focusNodeId ?? targetId;
+          nextSelectionIds = result.focusNodeIds ?? null;
           setActiveColumn(0);
           collapseToSingleSelection = true;
         }
@@ -347,6 +350,7 @@ function App() {
 
         if (result.ok) {
           nextSelection = result.focusNodeId ?? targetId;
+          nextSelectionIds = result.focusNodeIds ?? null;
           setActiveColumn(0);
           collapseToSingleSelection = true;
         }
@@ -362,7 +366,7 @@ function App() {
       const nextActiveId = after.nodes[nextSelection] === undefined ? after.rootId : nextSelection;
 
       return collapseToSingleSelection
-        ? singleSelection(nextActiveId)
+        ? focusSelection(after, nextSelectionIds, nextActiveId)
         : normalizeSelection(after, current, nextActiveId);
     });
     setLastCommand({ command, target: targetLabel, result });
@@ -832,6 +836,26 @@ function singleSelection(nodeId: NodeId): SelectionState {
     anchorId: nodeId,
     activeId: nodeId,
     selectedIds: new Set([nodeId]),
+  };
+}
+
+function focusSelection(doc: JsonDoc, nodeIds: NodeId[] | null, activeId: NodeId): SelectionState {
+  if (nodeIds === null || nodeIds.length === 0) {
+    return singleSelection(activeId);
+  }
+
+  const selectedIds = nodeIds.filter((nodeId) => doc.nodes[nodeId] !== undefined);
+
+  if (selectedIds.length === 0) {
+    return singleSelection(activeId);
+  }
+
+  const nextActiveId = doc.nodes[activeId] === undefined ? selectedIds[0]! : activeId;
+
+  return {
+    anchorId: selectedIds[0]!,
+    activeId: nextActiveId,
+    selectedIds: new Set(selectedIds),
   };
 }
 
