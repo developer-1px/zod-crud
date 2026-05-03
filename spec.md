@@ -46,6 +46,16 @@ The treegrid must keep one active cell.
 - `End`: move to the last column in the current row
 - `Space`: expand or collapse the active row when it has children
 
+## Focus Recovery
+
+After a successful paste, the active row must follow the pasted JSON node.
+
+- Child or sibling paste selects the newly inserted subtree root.
+- Overwrite paste selects the overwritten target node because its root id is
+  preserved by `zod-crud`.
+- Ancestors of the selected paste result are expanded so the focused row stays
+  visible.
+
 ## Mutation Rules
 
 All document mutations must go through `zod-crud`.
