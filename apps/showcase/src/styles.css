@@ -222,8 +222,8 @@ button:focus-visible,
   grid-template-columns: 58px minmax(224px, 274px) minmax(390px, 1fr) minmax(360px, 448px);
   min-width: 0;
   min-height: 0;
-  padding: 12px;
-  gap: 12px;
+  padding: 0;
+  gap: 0;
 }
 
 .tool-rail {
@@ -233,11 +233,8 @@ button:focus-visible,
   min-height: 0;
   gap: 7px;
   padding: 10px 8px;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: var(--glass);
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
-  backdrop-filter: blur(28px) saturate(1.35);
+  border-right: 1px solid var(--stroke);
+  background: transparent;
 }
 
 .tool-rail .icon-button,
@@ -268,15 +265,14 @@ button:focus-visible,
 .tool-rail .icon-button:hover,
 .rail-tool:hover,
 .rail-tool.active {
-  border-color: var(--stroke);
-  background: rgb(255 255 255 / 74%);
+  border-color: transparent;
+  background: rgb(50 62 82 / 6%);
   color: var(--accent-strong);
-  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 .rail-tool.active::before {
   position: absolute;
-  left: -8px;
+  left: -9px;
   width: 3px;
   height: 18px;
   border-radius: 999px;
@@ -299,11 +295,10 @@ button:focus-visible,
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: var(--glass);
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
-  backdrop-filter: blur(30px) saturate(1.35);
+  border: 0;
+  border-right: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
 }
 
 .panel-title {
@@ -316,8 +311,7 @@ button:focus-visible,
   gap: 8px;
   padding: 0 13px;
   border-bottom: 1px solid var(--stroke);
-  background: rgb(255 255 255 / 52%);
-  backdrop-filter: blur(24px) saturate(1.35);
+  background: #ffffff;
 }
 
 .panel-title svg {
@@ -341,7 +335,7 @@ button:focus-visible,
 
 .tree-list {
   margin: 0;
-  padding: 8px;
+  padding: 6px 8px;
   list-style: none;
 }
 
@@ -366,7 +360,7 @@ button:focus-visible,
   padding: 0 8px 0 calc(10px + (var(--depth, 0) * 14px));
   border: 1px solid transparent;
   border-bottom-color: rgb(50 62 82 / 5%);
-  border-radius: 6px;
+  border-radius: 0;
   background: transparent;
   color: #293247;
   text-align: left;
@@ -395,8 +389,8 @@ button:focus-visible,
   overflow: hidden;
   max-width: 64px;
   padding: 2px 6px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 30%);
+  border-radius: 0;
+  background: transparent;
   color: var(--faint);
   font-size: 10px;
   text-overflow: ellipsis;
@@ -405,15 +399,14 @@ button:focus-visible,
 
 .tree-item:hover {
   border-color: transparent;
-  background: rgb(255 255 255 / 28%);
+  background: rgb(50 62 82 / 4%);
 }
 
 .tree-item.selected {
-  border-color: var(--stroke);
-  background: rgb(255 255 255 / 48%);
+  border-color: transparent;
+  background: rgb(105 120 143 / 8%);
   color: var(--accent-strong);
   font-weight: 500;
-  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 .tree-item.selected::before {
@@ -437,11 +430,10 @@ button:focus-visible,
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(245 248 253 / 50%);
-  box-shadow: var(--shadow-md), inset 0 1px 0 var(--highlight);
-  backdrop-filter: blur(30px) saturate(1.35);
+  border: 0;
+  border-right: 1px solid var(--stroke);
+  border-radius: 0;
+  background: #f8f9fb;
 }
 
 .canvas-titlebar {
@@ -452,8 +444,7 @@ button:focus-visible,
   gap: 12px;
   padding: 0 12px;
   border-bottom: 1px solid var(--stroke);
-  background: rgb(255 255 255 / 48%);
-  backdrop-filter: blur(24px) saturate(1.35);
+  background: #ffffff;
 }
 
 .canvas-title {
@@ -486,7 +477,7 @@ button:focus-visible,
   min-width: 0;
   min-height: 0;
   overflow: auto;
-  background: linear-gradient(135deg, rgb(255 255 255 / 50%), rgb(238 244 250 / 32));
+  background: #f8f9fb;
 }
 
 .canvas-stage {
@@ -539,15 +530,12 @@ button:focus-visible,
 
 .preview-selectable.selected {
   border-color: color-mix(in srgb, var(--accent) 50%, white) !important;
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 72%),
-    0 0 0 5px rgb(105 120 143 / 16%),
-    0 22px 48px rgb(105 120 143 / 18%);
+  box-shadow: 0 0 0 3px rgb(105 120 143 / 13%);
 }
 
 .preview-selectable.focused:not(.selected) {
   border-color: color-mix(in srgb, var(--amber) 46%, white) !important;
-  box-shadow: 0 0 0 4px rgb(137 120 95 / 14%);
+  box-shadow: 0 0 0 3px rgb(137 120 95 / 12%);
 }
 
 .preview-selectable.selected::after {
@@ -557,9 +545,9 @@ button:focus-visible,
   z-index: 6;
   max-width: calc(100% - 24px);
   padding: 4px 8px;
-  border: 1px solid rgb(255 255 255 / 62%);
+  border: 1px solid var(--stroke);
   border-radius: 999px;
-  background: rgb(255 255 255 / 72%);
+  background: #ffffff;
   color: var(--accent-strong);
   content: attr(data-node-label);
   font-size: 10px;
@@ -568,8 +556,6 @@ button:focus-visible,
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
-  backdrop-filter: blur(18px) saturate(1.35);
 }
 
 .selection-cover-popover {
@@ -581,9 +567,9 @@ button:focus-visible,
   margin: 0;
   overflow: hidden;
   padding: 4px 8px;
-  border: 1px solid rgb(255 255 255 / 62%);
+  border: 1px solid var(--stroke);
   border-radius: 999px;
-  background: rgb(255 255 255 / 76%);
+  background: #ffffff;
   color: var(--accent-strong);
   font: inherit;
   font-size: 10px;
@@ -593,8 +579,6 @@ button:focus-visible,
   text-overflow: ellipsis;
   transform: translate(12px, -50%);
   white-space: nowrap;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
-  backdrop-filter: blur(18px) saturate(1.35);
   position-try-fallbacks: flip-block, flip-inline;
 }
 
@@ -617,14 +601,10 @@ button:focus-visible,
   position: relative;
   width: 100%;
   padding: 11px;
-  border: 1px solid rgb(255 255 255 / 60%);
+  border: 1px solid var(--stroke);
   border-radius: 28px;
-  background: rgb(255 255 255 / 40%);
-  box-shadow:
-    0 40px 90px rgb(27 38 61 / 22%),
-    inset 0 1px 0 var(--highlight),
-    inset 0 -1px 0 rgb(55 70 98 / 10%);
-  backdrop-filter: blur(28px) saturate(1.25);
+  background: #ffffff;
+  box-shadow: 0 18px 44px rgb(27 38 61 / 12%);
 }
 
 .phone-speaker {
@@ -645,17 +625,11 @@ button:focus-visible,
   gap: 11px;
   min-height: 780px;
   padding: 16px 14px 12px;
-  border: 1px solid rgb(255 255 255 / 72%);
+  border: 1px solid var(--stroke);
   border-radius: 22px;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgb(255 255 255 / 76%), rgb(246 249 255 / 68%)),
-    rgb(255 255 255 / 60%);
+  background: #ffffff;
   color: #182033;
-  box-shadow:
-    inset 0 1px 0 var(--highlight),
-    inset 0 -1px 0 rgb(55 70 98 / 10%);
-  backdrop-filter: blur(26px) saturate(1.25);
 }
 
 .mobile-statusbar {
@@ -746,12 +720,10 @@ button:focus-visible,
   justify-content: center;
   width: 32px;
   height: 32px;
-  border: 1px solid var(--stroke);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 62%);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgb(50 62 82 / 5%);
   color: #354157;
-  box-shadow: inset 0 1px 0 var(--highlight), 0 8px 20px rgb(27 38 61 / 8%);
-  backdrop-filter: blur(18px) saturate(1.2);
 }
 
 .visual-hero-card {
@@ -759,8 +731,7 @@ button:focus-visible,
   min-height: 122px;
   border-radius: 8px;
   overflow: hidden;
-  background: rgb(255 255 255 / 50%);
-  box-shadow: var(--shadow-sm);
+  background: transparent;
 }
 
 .visual-hero-image {
@@ -817,11 +788,11 @@ button:focus-visible,
   gap: 10px;
   min-height: 76px;
   padding: 10px;
-  border: 1px solid rgb(255 255 255 / 62%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 62%);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--shadow-sm);
-  backdrop-filter: blur(20px) saturate(1.2);
+  border: 0;
+  border-top: 1px solid var(--stroke);
+  border-bottom: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
 }
 
 .schema-copy-stack,
@@ -887,9 +858,8 @@ button:focus-visible,
   gap: 3px;
   padding: 3px;
   border: 1px solid var(--stroke);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 44%);
-  box-shadow: inset 0 1px 0 var(--highlight);
+  border-radius: 6px;
+  background: transparent;
 }
 
 .mobile-segmented span {
@@ -898,7 +868,7 @@ button:focus-visible,
   justify-content: center;
   min-width: 0;
   height: 30px;
-  border-radius: 999px;
+  border-radius: 4px;
   color: #596579;
   font-size: 11px;
   font-weight: 680;
@@ -906,21 +876,19 @@ button:focus-visible,
 }
 
 .mobile-segmented span.active {
-  background: rgb(255 255 255 / 84%);
+  background: rgb(105 120 143 / 10%);
   color: #192033;
-  box-shadow: 0 8px 20px rgb(27 38 61 / 9%), inset 0 1px 0 var(--highlight);
 }
 
 .field-card,
 .line-items-panel {
   display: grid;
   gap: 8px;
-  padding: 11px;
-  border: 1px solid rgb(255 255 255 / 62%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 62%);
-  box-shadow: inset 0 1px 0 var(--highlight), var(--shadow-sm);
-  backdrop-filter: blur(20px) saturate(1.2);
+  padding: 10px 0;
+  border: 0;
+  border-top: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
 }
 
 .field-heading,
@@ -960,10 +928,9 @@ button:focus-visible,
   gap: 8px;
   padding: 0 10px;
   border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 54%);
+  border-radius: 6px;
+  background: #ffffff;
   color: #1b2533;
-  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 .input-control strong,
@@ -999,9 +966,9 @@ button:focus-visible,
   justify-content: center;
   min-height: 30px;
   padding: 0 6px;
-  border: 1px solid var(--stroke);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 46%);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: rgb(50 62 82 / 5%);
   color: #596579;
   font-size: 10px;
   font-weight: 720;
@@ -1009,7 +976,7 @@ button:focus-visible,
 }
 
 .status-pills span.active {
-  border-color: rgb(137 120 95 / 20%);
+  border-color: transparent;
   background: rgb(137 120 95 / 12%);
   color: #8b5b11;
 }
@@ -1024,10 +991,11 @@ button:focus-visible,
   align-items: center;
   gap: 9px;
   min-height: 52px;
-  padding: 8px;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 48%);
+  padding: 8px 0;
+  border: 0;
+  border-top: 1px solid rgb(50 62 82 / 8%);
+  border-radius: 0;
+  background: transparent;
 }
 
 .line-item-thumb-frame {
@@ -1040,10 +1008,9 @@ button:focus-visible,
 .line-item-thumb {
   width: 34px;
   height: 34px;
-  border: 1px solid rgb(255 255 255 / 68%);
-  border-radius: 8px;
+  border: 1px solid var(--stroke);
+  border-radius: 6px;
   object-fit: cover;
-  box-shadow: 0 8px 18px rgb(27 38 61 / 12%);
 }
 
 .line-item-row strong,
@@ -1064,7 +1031,7 @@ button:focus-visible,
   justify-content: center;
   min-width: 34px;
   padding: 3px 7px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: rgb(105 120 143 / 10%);
   color: var(--accent-strong);
   font-size: 10px;
@@ -1080,7 +1047,7 @@ button:focus-visible,
   max-width: 80px;
   min-height: 24px;
   padding: 0 8px;
-  border-radius: 999px;
+  border-radius: 6px;
   background: rgb(26 169 129 / 10%);
   color: #13795f;
   font-size: 9px;
@@ -1098,8 +1065,8 @@ button:focus-visible,
   min-height: 34px;
   padding: 8px 10px;
   border: 1px solid rgb(105 120 143 / 14%);
-  border-radius: 8px;
-  background: rgb(105 120 143 / 10%);
+  border-radius: 6px;
+  background: transparent;
   color: var(--accent-strong);
   font-size: 10px;
   font-weight: 760;
@@ -1126,13 +1093,10 @@ button:focus-visible,
   min-height: 48px;
   gap: 8px;
   border-radius: 999px;
-  background: linear-gradient(180deg, #79879b, #647388);
+  background: #647388;
   color: #ffffff;
   font-size: 13px;
   font-weight: 760;
-  box-shadow:
-    0 14px 30px rgb(27 38 61 / 14%),
-    inset 0 1px 0 rgb(255 255 255 / 38%);
 }
 
 .input-icon,
@@ -1187,8 +1151,8 @@ button:focus-visible,
   min-width: 0;
   gap: 8px;
   padding: 8px;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 46%);
+  border-radius: 0;
+  background: transparent;
 }
 
 .preview-flex-row {
@@ -1221,7 +1185,7 @@ button:focus-visible,
   justify-content: center;
   min-height: 28px;
   padding: 6px 9px;
-  border-radius: 8px;
+  border-radius: 6px;
   color: #ffffff;
   font-size: 10px;
   font-weight: 760;
@@ -1233,13 +1197,13 @@ button:focus-visible,
   width: 32px;
   height: 32px;
   border: 1px solid var(--stroke);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 62%);
+  border-radius: 6px;
+  background: transparent;
 }
 
 .preview-image-frame {
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
 .preview-image-frame img {
@@ -1250,8 +1214,8 @@ button:focus-visible,
 
 .canvas-node {
   position: relative;
-  border: 1px solid rgb(66 84 120 / 20%);
-  border-radius: 8px;
+  border: 1px solid rgb(66 84 120 / 16%);
+  border-radius: 6px;
   outline: 0;
   transition:
     border-color 140ms ease,
@@ -1266,12 +1230,11 @@ button:focus-visible,
 .frame-node {
   min-height: 140px;
   padding: 12px;
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
 }
 
 .canvas-stage > .frame-node {
   min-height: 420px;
-  box-shadow: var(--shadow-lg), inset 0 1px 0 var(--highlight);
+  background: #ffffff !important;
 }
 
 .frame-header {
@@ -1314,7 +1277,7 @@ button:focus-visible,
   min-width: 0;
   min-height: 28px;
   padding: 6px;
-  background: rgb(255 255 255 / 48%);
+  background: transparent;
 }
 
 .flex-column {
@@ -1333,7 +1296,7 @@ button:focus-visible,
   max-width: 100%;
   min-height: 32px;
   padding: 7px 10px;
-  background: rgb(255 255 255 / 62%);
+  background: transparent;
   font-size: 12px;
   word-break: break-word;
 }
@@ -1396,7 +1359,6 @@ button:focus-visible,
   display: block;
   width: 100%;
   object-fit: cover;
-  box-shadow: var(--shadow-sm);
 }
 
 .image-wide {
@@ -1415,9 +1377,8 @@ button:focus-visible,
   width: 34px;
   height: 34px;
   border: 1px solid var(--stroke);
-  border-radius: 999px;
-  background: rgb(255 255 255 / 62%);
-  box-shadow: inset 0 1px 0 var(--highlight);
+  border-radius: 6px;
+  background: transparent;
 }
 
 .icon-node svg {
@@ -1431,29 +1392,24 @@ button:focus-visible,
   min-height: 27px;
   padding: 4px 8px;
   border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 62%);
+  border-radius: 6px;
+  background: transparent;
   color: #4d6178;
   font-size: 11px;
 }
 
 .focused {
   border-color: color-mix(in srgb, var(--amber) 42%, white) !important;
-  box-shadow: 0 0 0 3px rgb(137 120 95 / 14%);
+  box-shadow: 0 0 0 3px rgb(137 120 95 / 12%);
 }
 
 .selected {
   border-color: color-mix(in srgb, var(--accent) 44%, white) !important;
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 70%),
-    0 0 0 4px rgb(105 120 143 / 16%);
+  box-shadow: 0 0 0 3px rgb(105 120 143 / 13%);
 }
 
 .canvas-node.selected {
-  box-shadow:
-    0 0 0 1px rgb(255 255 255 / 72%),
-    0 0 0 5px rgb(105 120 143 / 16%),
-    0 18px 42px rgb(105 120 143 / 17%);
+  box-shadow: 0 0 0 3px rgb(105 120 143 / 13%);
 }
 
 .canvas-node.selected::after {
@@ -1466,20 +1422,18 @@ button:focus-visible,
   border: 2px solid rgb(255 255 255 / 85%);
   border-radius: 999px;
   background: var(--accent);
-  box-shadow: 0 6px 12px rgb(105 120 143 / 28%);
   content: "";
 }
 
 .text-node.selected,
 .leaf-node.selected {
-  background: rgb(255 255 255 / 76%);
+  background: rgb(105 120 143 / 8%);
 }
 
 .focused.selected {
   box-shadow:
-    0 0 0 1px rgb(255 255 255 / 70%),
-    0 0 0 4px rgb(105 120 143 / 16%),
-    0 0 0 7px rgb(137 120 95 / 12%);
+    0 0 0 3px rgb(105 120 143 / 13%),
+    0 0 0 6px rgb(137 120 95 / 10%);
 }
 
 .inspector {
@@ -1495,17 +1449,22 @@ button:focus-visible,
   display: grid;
   align-content: start;
   min-height: 0;
-  gap: 10px;
+  gap: 0;
   overflow: auto;
-  padding: 10px;
+  padding: 0;
 }
 
 .control-section {
   min-width: 0;
   overflow: hidden;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 34%);
+  border: 0;
+  border-top: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
+}
+
+.control-section:first-child {
+  border-top: 0;
 }
 
 .section-title {
@@ -1536,7 +1495,7 @@ button:focus-visible,
 
 .component-binding-card {
   display: grid;
-  gap: 10px;
+  gap: 9px;
   margin: 0;
   padding: 10px;
   border: 0;
@@ -1579,10 +1538,10 @@ button:focus-visible,
 .binding-heading code {
   max-width: 86px;
   padding: 3px 7px;
-  border: 1px solid rgb(105 120 143 / 18%);
-  border-radius: 999px;
+  border: 0;
+  border-radius: 0;
   overflow: hidden;
-  background: rgb(105 120 143 / 10%);
+  background: transparent;
   color: var(--accent-strong);
   font-size: 10px;
   text-overflow: ellipsis;
@@ -1611,15 +1570,15 @@ button:focus-visible,
   width: 100%;
   min-width: 0;
   height: 30px;
-  padding: 0 8px;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 48%);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
   color: #243041;
   font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
-  box-shadow: inset 0 1px 0 var(--highlight);
 }
 
 .binding-validation {
@@ -1627,10 +1586,11 @@ button:focus-visible,
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
   gap: 7px;
-  padding: 8px;
-  border: 1px solid rgb(26 169 129 / 14%);
-  border-radius: 8px;
-  background: rgb(26 169 129 / 8%);
+  padding: 8px 0 0;
+  border: 0;
+  border-top: 1px solid rgb(26 169 129 / 16%);
+  border-radius: 0;
+  background: transparent;
   color: #25624f;
   font-size: 11px;
   line-height: 1.35;
@@ -1644,7 +1604,7 @@ button:focus-visible,
 .property-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 0;
   margin: 0;
   padding: 10px;
   background: transparent;
@@ -1652,10 +1612,11 @@ button:focus-visible,
 
 .property-grid div {
   min-width: 0;
-  padding: 7px 8px;
-  border: 1px solid var(--stroke);
-  border-radius: 6px;
-  background: rgb(255 255 255 / 34%);
+  padding: 7px 8px 7px 0;
+  border: 0;
+  border-top: 1px solid rgb(50 62 82 / 8%);
+  border-radius: 0;
+  background: transparent;
 }
 
 .property-grid dt {
@@ -1776,7 +1737,7 @@ tr.focused.selected {
 
 .log-list {
   display: grid;
-  gap: 6px;
+  gap: 0;
   margin: 0;
   padding: 10px;
   list-style: none;
@@ -1788,11 +1749,12 @@ tr.focused.selected {
   align-items: center;
   min-height: 28px;
   gap: 8px;
-  padding: 5px 8px;
-  border: 1px solid var(--stroke);
-  border-left-width: 3px;
-  border-radius: 8px;
-  background: rgb(255 255 255 / 50%);
+  padding: 6px 0 6px 8px;
+  border: 0;
+  border-bottom: 1px solid rgb(50 62 82 / 8%);
+  border-left: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
   font-size: 12px;
 }
 
@@ -1846,7 +1808,7 @@ tr.focused.selected {
 
 .generated-form {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
 }
 
@@ -1863,15 +1825,16 @@ tr.focused.selected {
 .generated-section {
   display: grid;
   min-width: 0;
-  gap: 9px;
-  padding: 10px;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
+  gap: 8px;
+  padding: 10px 0 0 10px;
+  border: 0;
+  border-left: 1px solid var(--stroke);
+  border-radius: 0;
   background: rgb(248 250 252 / 58%);
 }
 
 .generated-section.hero {
-  background: linear-gradient(135deg, rgb(239 246 244 / 92%), rgb(247 248 252 / 88%));
+  background: transparent;
 }
 
 .generated-section.toolbar {
@@ -1916,10 +1879,11 @@ tr.focused.selected {
   width: 100%;
   min-width: 0;
   min-height: 34px;
-  padding: 0 9px;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 72%);
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
   color: #1b2533;
   font-size: 11px;
   font-weight: 650;
@@ -1949,14 +1913,13 @@ tr.focused.selected {
 .generated-image-field img {
   width: 54px;
   height: 42px;
-  border-radius: 8px;
+  border-radius: 6px;
   object-fit: cover;
-  box-shadow: inset 0 0 0 1px var(--stroke);
 }
 
 .generated-list {
   display: grid;
-  gap: 8px;
+  gap: 10px;
 }
 
 .generated-list-item {
@@ -1964,7 +1927,7 @@ tr.focused.selected {
 }
 
 .generated-list-item .generated-section {
-  background: rgb(255 255 255 / 58%);
+  background: transparent;
 }
 
 .generated-action {
@@ -1974,7 +1937,7 @@ tr.focused.selected {
   min-height: 36px;
   min-width: 0;
   padding: 0 14px;
-  border-radius: 8px;
+  border-radius: 6px;
   background: rgb(105 120 143 / 14%);
   color: #253041;
   font-size: 11px;
@@ -1985,7 +1948,6 @@ tr.focused.selected {
 .generated-action.primary {
   background: #20283a;
   color: white;
-  box-shadow: var(--shadow-sm);
 }
 
 .data-map {
@@ -1994,11 +1956,10 @@ tr.focused.selected {
   max-width: none;
   margin: 0;
   overflow: hidden;
-  border: 1px solid var(--stroke);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 48%);
-  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
-  backdrop-filter: blur(28px) saturate(1.35);
+  border-top: 1px solid var(--stroke);
+  border-bottom: 1px solid var(--stroke);
+  border-radius: 0;
+  background: transparent;
 }
 
 .data-section-card {
