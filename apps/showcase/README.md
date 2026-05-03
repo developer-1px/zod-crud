@@ -1,6 +1,6 @@
-# zod-crud command showcase
+# zod-crud JSON editor showcase
 
-Local keyboard-command harness for the `zod-crud` package.
+Local treegrid JSON editor harness for the `zod-crud` package.
 
 It exists to verify that user inputs map cleanly to library operations:
 
@@ -12,5 +12,11 @@ It exists to verify that user inputs map cleanly to library operations:
 - `Cmd+Shift+Z`: redo
 
 The app intentionally avoids design-system, data-binding, and SSOT-builder
-scope. It keeps only one recursive Zod schema, one JSON document, selection
-state, command logging, a flat node table, and JSON output.
+scope. It keeps only one recursive Zod schema, one JSON document, treegrid
+selection state, command logging, clipboard display, and JSON output.
+
+Treegrid navigation:
+
+- arrow keys move the active grid cell
+- `Space` expands or collapses the active row
+- `Home` and `End` move across the current row

@@ -31,13 +31,29 @@ type CommandLog = {
   result: OperationResult;
 };
 
-type DomainNode = {
-  id: NodeId;
-  title: string;
-  status: CommandNode["status"];
-  childCount: number;
-  path: string;
+type GridColumn = {
+  id: "path" | "key" | "type" | "value";
+  label: string;
 };
+
+type GridRow = {
+  id: NodeId;
+  depth: number;
+  keyLabel: string;
+  path: string;
+  type: JsonNode["type"];
+  value: string;
+  childCount: number;
+  expandable: boolean;
+  expanded: boolean;
+};
+
+const columns: GridColumn[] = [
+  { id: "path", label: "Path" },
+  { id: "key", label: "Key" },
+  { id: "type", label: "Type" },
+  { id: "value", label: "Value" },
+];
 
 const CommandNodeSchema: z.ZodType<CommandNode> = z.lazy(() =>
   z.object({
@@ -64,10 +80,10 @@ const initialDocument: CommandNode = {
 };
 
 const commands: Array<{ id: CommandId; keys: string; operation: string }> = [
-  { id: "copy", keys: "Cmd+C", operation: "copy(selectedId)" },
-  { id: "cut", keys: "Cmd+X", operation: "cut(selectedId)" },
-  { id: "paste", keys: "Cmd+V", operation: "paste(selectedId)" },
-  { id: "delete", keys: "Delete", operation: "delete(selectedId)" },
+  { id: "copy", keys: "Cmd+C", operation: "copy(row)" },
+  { id: "cut", keys: "Cmd+X", operation: "cut(row)" },
+  { id: "paste", keys: "Cmd+V", operation: "paste(row)" },
+  { id: "delete", keys: "Delete", operation: "delete(row)" },
   { id: "undo", keys: "Cmd+Z", operation: "undo()" },
   { id: "redo", keys: "Cmd+Shift+Z", operation: "redo()" },
 ];
@@ -81,30 +97,57 @@ function App() {
   const nextItemRef = useRef(1);
   const [version, setVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<NodeId>(() => editorRef.current.snapshot().rootId);
+  const [activeColumn, setActiveColumn] = useState(0);
+  const [expandedIds, setExpandedIds] = useState<Set<NodeId>>(() => expandedContainerIds(editorRef.current.snapshot()));
   const [clipboardValue, setClipboardValue] = useState<JsonValue | null>(null);
   const [lastCommand, setLastCommand] = useState<CommandLog>({
     command: "ready",
-    target: "Command document",
+    target: "/",
     result: { ok: true },
   });
 
   const doc = useMemo(() => editorRef.current.snapshot(), [version]);
   const safeSelectedId = doc.nodes[selectedId] === undefined ? doc.rootId : selectedId;
-  const selectedDomain = useMemo(() => domainNodeFromId(doc, safeSelectedId), [doc, safeSelectedId]);
-  const domainNodes = useMemo(() => toDomainNodes(doc), [doc]);
+  const selectedNode = doc.nodes[safeSelectedId];
+  const rows = useMemo(() => buildGridRows(doc, expandedIds), [doc, expandedIds]);
+  const selectedRow = rows.find((row) => row.id === safeSelectedId) ?? rows[0] ?? null;
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
-  const nodeRows = useMemo(() => Object.values(doc.nodes), [doc]);
   const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
   }, []);
 
+  const toggleExpanded = useCallback((nodeId: NodeId) => {
+    const node = editorRef.current.snapshot().nodes[nodeId];
+
+    if (node === undefined || node.children.length === 0) {
+      return;
+    }
+
+    setExpandedIds((current) => {
+      const next = new Set(current);
+
+      if (next.has(nodeId)) {
+        next.delete(nodeId);
+      } else {
+        next.add(nodeId);
+      }
+
+      return next;
+    });
+  }, []);
+
+  const selectGridCell = useCallback((nodeId: NodeId, columnIndex: number) => {
+    setSelectedId(nodeId);
+    setActiveColumn(clamp(columnIndex, 0, columns.length - 1));
+  }, []);
+
   const runCommand = useCallback((command: CommandId) => {
     const editor = editorRef.current;
     const before = editor.snapshot();
     const targetId = before.nodes[selectedId] === undefined ? before.rootId : selectedId;
-    const targetTitle = domainNodeFromId(before, targetId)?.title ?? targetId;
+    const targetLabel = nodeLabel(before, targetId);
     let result: OperationResult = { ok: true };
     let nextSelection = targetId;
 
@@ -155,8 +198,9 @@ function App() {
 
     const after = editor.snapshot();
 
+    setExpandedIds((current) => validExpandedIds(after, current));
     setSelectedId(after.nodes[nextSelection] === undefined ? after.rootId : nextSelection);
-    setLastCommand({ command, target: targetTitle, result });
+    setLastCommand({ command, target: targetLabel, result });
     refresh();
   }, [refresh, selectedId]);
 
@@ -193,13 +237,13 @@ function App() {
   function addChild() {
     const current = editorRef.current.snapshot();
     const targetId = current.nodes[safeSelectedId] === undefined ? current.rootId : safeSelectedId;
-    const childrenId = childrenArrayId(current, targetId);
+    const childrenId = insertionArrayId(current, targetId);
 
     if (childrenId === null) {
       setLastCommand({
         command: "create",
-        target: domainNodeFromId(current, targetId)?.title ?? targetId,
-        result: { ok: false, reason: "Selected node has no children array." },
+        target: nodeLabel(current, targetId),
+        result: { ok: false, reason: "Select an object with children or a children array." },
       });
       return;
     }
@@ -216,15 +260,29 @@ function App() {
     nextItemRef.current += 1;
 
     const after = editorRef.current.snapshot();
-    const createdId = domainNodesByTitle(after).get(title);
+    const createdId = nodeIdByTitle(after, title);
 
-    if (createdId !== undefined) {
+    setExpandedIds((currentExpanded) => {
+      const next = validExpandedIds(after, currentExpanded);
+      const parentId = after.nodes[childrenId]?.parentId;
+
+      next.add(childrenId);
+
+      if (parentId !== undefined && parentId !== null) {
+        next.add(parentId);
+      }
+
+      return next;
+    });
+
+    if (createdId !== null) {
       setSelectedId(createdId);
+      setActiveColumn(0);
     }
 
     setLastCommand({
       command: "create",
-      target: domainNodeFromId(current, targetId)?.title ?? targetId,
+      target: nodeLabel(current, targetId),
       result,
     });
     refresh();
@@ -235,12 +293,14 @@ function App() {
     nextItemRef.current = 1;
     setClipboardValue(null);
 
-    const rootId = editorRef.current.snapshot().rootId;
+    const nextDoc = editorRef.current.snapshot();
 
-    setSelectedId(rootId);
+    setSelectedId(nextDoc.rootId);
+    setActiveColumn(0);
+    setExpandedIds(expandedContainerIds(nextDoc));
     setLastCommand({
       command: "reset",
-      target: "Command document",
+      target: "/",
       result: { ok: true },
     });
     refresh();
@@ -251,7 +311,7 @@ function App() {
       <header className="app-header">
         <div>
           <p className="eyebrow">zod-crud</p>
-          <h1>Keyboard command showcase</h1>
+          <h1>JSON treegrid editor</h1>
         </div>
         <div className="header-actions">
           <button type="button" onClick={addChild}>Add child</button>
@@ -276,20 +336,39 @@ function App() {
         </section>
 
         <section className="workspace">
-          <aside className="panel tree-panel">
-            <PanelTitle title="Document" detail={`${domainNodes.length} domain nodes`} />
-            <TreeView doc={doc} nodeId={doc.rootId} selectedId={safeSelectedId} onSelect={setSelectedId} />
-          </aside>
-
-          <section className="panel preview-panel">
+          <section className="panel editor-panel">
             <PanelTitle
-              title={selectedDomain?.title ?? "No selection"}
-              detail={selectedDomain === null ? "/" : selectedDomain.path}
+              title="JsonDoc treegrid"
+              detail={selectedRow === null ? "/" : `${selectedRow.path} - ${columns[activeColumn]?.label ?? ""}`}
             />
-            <DocumentPreview doc={doc} selectedId={safeSelectedId} onSelect={setSelectedId} />
+            <JsonTreeGrid
+              columns={columns}
+              rows={rows}
+              activeColumn={activeColumn}
+              selectedId={safeSelectedId}
+              onSelect={selectGridCell}
+              onMove={(rowId, columnIndex) => selectGridCell(rowId, columnIndex)}
+              onToggle={toggleExpanded}
+            />
           </section>
 
           <aside className="panel detail-panel">
+            <PanelTitle title="Selected node" detail={safeSelectedId} />
+            <dl className="result-list">
+              <div>
+                <dt>Path</dt>
+                <dd>{selectedNode === undefined ? "/" : pathString(doc, safeSelectedId)}</dd>
+              </div>
+              <div>
+                <dt>Type</dt>
+                <dd>{selectedNode?.type ?? "none"}</dd>
+              </div>
+              <div>
+                <dt>Children</dt>
+                <dd>{selectedNode?.children.length ?? 0}</dd>
+              </div>
+            </dl>
+
             <PanelTitle title="Command state" detail={lastCommand.command} />
             <dl className="result-list">
               <div>
@@ -304,12 +383,9 @@ function App() {
               </div>
               <div>
                 <dt>Clipboard</dt>
-                <dd>{clipboardValue === null ? "empty" : titleFromValue(clipboardValue)}</dd>
+                <dd>{clipboardValue === null ? "empty" : valueLabel(clipboardValue)}</dd>
               </div>
             </dl>
-
-            <PanelTitle title="Flat nodes" detail={`${nodeRows.length} records`} />
-            <NodeTable doc={doc} nodes={nodeRows} selectedId={safeSelectedId} onSelect={setSelectedId} />
 
             <PanelTitle title="JSON output" />
             <pre className="json-output">{JSON.stringify(jsonValue, null, 2)}</pre>
@@ -329,147 +405,252 @@ function PanelTitle({ title, detail }: { title: string; detail?: string }) {
   );
 }
 
-function TreeView({
-  doc,
-  nodeId,
+function JsonTreeGrid({
+  columns,
+  rows,
+  activeColumn,
   selectedId,
   onSelect,
+  onMove,
+  onToggle,
 }: {
-  doc: JsonDoc;
-  nodeId: NodeId;
+  columns: GridColumn[];
+  rows: GridRow[];
+  activeColumn: number;
   selectedId: NodeId;
-  onSelect: (nodeId: NodeId) => void;
+  onSelect: (nodeId: NodeId, columnIndex: number) => void;
+  onMove: (nodeId: NodeId, columnIndex: number) => void;
+  onToggle: (nodeId: NodeId) => void;
 }) {
-  const node = domainNodeFromId(doc, nodeId);
-  const childIds = node === null ? [] : domainChildren(doc, nodeId);
+  const gridRef = useRef<HTMLDivElement>(null);
+  const selectedIndex = rows.findIndex((row) => row.id === selectedId);
+  const visibleIndex = selectedIndex < 0 ? 0 : selectedIndex;
+  const activeRowId = rows[visibleIndex]?.id ?? selectedId;
+  const activeCellId = cellId(activeRowId, activeColumn);
 
-  if (node === null) {
-    return null;
+  function move(deltaRow: number, deltaColumn: number) {
+    const nextRow = rows[clamp(visibleIndex + deltaRow, 0, rows.length - 1)];
+    const nextColumn = clamp(activeColumn + deltaColumn, 0, columns.length - 1);
+
+    if (nextRow !== undefined) {
+      onMove(nextRow.id, nextColumn);
+    }
+  }
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === " ") {
+      event.preventDefault();
+      onToggle(activeRowId);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      move(1, 0);
+      return;
+    }
+
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      move(-1, 0);
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      move(0, 1);
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      move(0, -1);
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      onMove(activeRowId, 0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      onMove(activeRowId, columns.length - 1);
+    }
   }
 
   return (
-    <ul className="tree-list">
-      <li>
-        <button
-          type="button"
-          className={selectedId === node.id ? "tree-node is-selected" : "tree-node"}
-          onClick={() => onSelect(node.id)}
-        >
-          <span>{node.title}</span>
-          <small>{node.status}</small>
-        </button>
-        {childIds.length === 0 ? null : (
-          <div className="tree-children">
-            {childIds.map((childId) => (
-              <TreeView key={childId} doc={doc} nodeId={childId} selectedId={selectedId} onSelect={onSelect} />
-            ))}
+    <div
+      ref={gridRef}
+      role="treegrid"
+      aria-colcount={columns.length}
+      aria-rowcount={rows.length + 1}
+      aria-activedescendant={activeCellId}
+      tabIndex={0}
+      className="treegrid"
+      onKeyDown={onKeyDown}
+    >
+      <div role="row" aria-rowindex={1} className="grid-row grid-head">
+        {columns.map((column, columnIndex) => (
+          <div key={column.id} role="columnheader" aria-colindex={columnIndex + 1}>
+            {column.label}
           </div>
-        )}
-      </li>
-    </ul>
-  );
-}
-
-function DocumentPreview({
-  doc,
-  selectedId,
-  onSelect,
-}: {
-  doc: JsonDoc;
-  selectedId: NodeId;
-  onSelect: (nodeId: NodeId) => void;
-}) {
-  return (
-    <div className="preview-stack">
-      {toDomainNodes(doc).map((node) => (
-        <button
-          key={node.id}
-          type="button"
-          className={selectedId === node.id ? "preview-row is-selected" : "preview-row"}
-          onClick={() => onSelect(node.id)}
-        >
-          <span>{node.title}</span>
-          <span>{node.childCount} children</span>
-          <strong>{node.status}</strong>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function NodeTable({
-  doc,
-  nodes,
-  selectedId,
-  onSelect,
-}: {
-  doc: JsonDoc;
-  nodes: JsonNode[];
-  selectedId: NodeId;
-  onSelect: (nodeId: NodeId) => void;
-}) {
-  return (
-    <div className="node-table" role="table" aria-label="Flat JsonDoc nodes">
-      <div className="node-row node-head" role="row">
-        <span>id</span>
-        <span>key</span>
-        <span>type</span>
+        ))}
       </div>
-      {nodes.map((node) => (
-        <button
-          key={node.id}
-          type="button"
-          className={selectedId === node.id ? "node-row is-selected" : "node-row"}
-          onClick={() => onSelect(nearestDomainNode(doc, node.id) ?? doc.rootId)}
+
+      {rows.map((row, rowIndex) => (
+        <div
+          key={row.id}
+          role="row"
+          aria-rowindex={rowIndex + 2}
+          aria-level={row.depth + 1}
+          aria-expanded={row.expandable ? row.expanded : undefined}
+          aria-selected={selectedId === row.id}
+          className={selectedId === row.id ? "grid-row is-selected" : "grid-row"}
         >
-          <span>{node.id}</span>
-          <span>{node.key === null ? "root" : String(node.key)}</span>
-          <span>{node.type}</span>
-        </button>
+          {columns.map((column, columnIndex) => (
+            <div
+              key={column.id}
+              id={cellId(row.id, columnIndex)}
+              role="gridcell"
+              aria-colindex={columnIndex + 1}
+              aria-selected={selectedId === row.id && activeColumn === columnIndex}
+              className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
+              onClick={() => {
+                onSelect(row.id, columnIndex);
+                gridRef.current?.focus();
+              }}
+              onDoubleClick={() => {
+                if (columnIndex === 0) {
+                  onToggle(row.id);
+                }
+              }}
+            >
+              {column.id === "path" ? (
+                <span className="path-cell" style={{ paddingLeft: `${row.depth * 18}px` }}>
+                  <span aria-hidden="true" className="twisty">
+                    {row.expandable ? row.expanded ? "v" : ">" : ""}
+                  </span>
+                  <span>{row.path}</span>
+                </span>
+              ) : column.id === "key" ? (
+                row.keyLabel
+              ) : column.id === "type" ? (
+                row.type
+              ) : (
+                row.value
+              )}
+            </div>
+          ))}
+        </div>
       ))}
     </div>
   );
 }
 
-function toDomainNodes(doc: JsonDoc): DomainNode[] {
-  return Object.values(doc.nodes)
-    .filter((node) => isDomainObject(doc, node))
-    .map((node) => domainNodeFromId(doc, node.id))
-    .filter((node): node is DomainNode => node !== null);
+function buildGridRows(doc: JsonDoc, expandedIds: Set<NodeId>): GridRow[] {
+  const rows: GridRow[] = [];
+
+  function visit(nodeId: NodeId, depth: number) {
+    const node = doc.nodes[nodeId];
+
+    if (node === undefined) {
+      return;
+    }
+
+    const expandable = node.children.length > 0;
+    const expanded = expandedIds.has(node.id);
+
+    rows.push({
+      id: node.id,
+      depth,
+      keyLabel: node.key === null ? "root" : String(node.key),
+      path: pathString(doc, node.id),
+      type: node.type,
+      value: nodeValueLabel(node),
+      childCount: node.children.length,
+      expandable,
+      expanded,
+    });
+
+    if (expandable && expanded) {
+      for (const childId of node.children) {
+        visit(childId, depth + 1);
+      }
+    }
+  }
+
+  visit(doc.rootId, 0);
+  return rows;
 }
 
-function domainNodeFromId(doc: JsonDoc, nodeId: NodeId): DomainNode | null {
+function expandedContainerIds(doc: JsonDoc): Set<NodeId> {
+  const ids = new Set<NodeId>();
+
+  for (const node of Object.values(doc.nodes)) {
+    if (node.children.length > 0) {
+      ids.add(node.id);
+    }
+  }
+
+  return ids;
+}
+
+function validExpandedIds(doc: JsonDoc, ids: Set<NodeId>): Set<NodeId> {
+  const next = new Set<NodeId>();
+
+  for (const id of ids) {
+    const node = doc.nodes[id];
+
+    if (node !== undefined && node.children.length > 0) {
+      next.add(id);
+    }
+  }
+
+  return next;
+}
+
+function insertionArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
   const node = doc.nodes[nodeId];
 
-  if (node === undefined || !isDomainObject(doc, node)) {
-    return null;
+  if (node?.type === "array") {
+    return node.id;
   }
 
-  const title = childByKey(doc, node.id, "title")?.value;
-  const status = childByKey(doc, node.id, "status")?.value;
-  const children = childByKey(doc, node.id, "children");
+  if (node?.type === "object") {
+    const children = childByKey(doc, node.id, "children");
 
-  if (typeof title !== "string" || !isStatus(status) || children?.type !== "array") {
-    return null;
+    if (children?.type === "array") {
+      return children.id;
+    }
   }
 
-  return {
-    id: node.id,
-    title,
-    status,
-    childCount: children.children.length,
-    path: pathString(doc, node.id),
-  };
+  const nearest = nearestDomainObject(doc, nodeId);
+
+  if (nearest !== null) {
+    const children = childByKey(doc, nearest, "children");
+
+    if (children?.type === "array") {
+      return children.id;
+    }
+  }
+
+  return null;
 }
 
-function domainChildren(doc: JsonDoc, nodeId: NodeId): NodeId[] {
-  const childrenId = childrenArrayId(doc, nodeId);
+function nearestDomainObject(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+  let current = doc.nodes[nodeId];
 
-  if (childrenId === null) {
-    return [];
+  while (current !== undefined) {
+    if (isDomainObject(doc, current)) {
+      return current.id;
+    }
+
+    current = current.parentId === null ? undefined : doc.nodes[current.parentId];
   }
 
-  return doc.nodes[childrenId]?.children.filter((childId) => isDomainObject(doc, doc.nodes[childId])) ?? [];
+  return null;
 }
 
 function isDomainObject(doc: JsonDoc, node: JsonNode | undefined): boolean {
@@ -477,12 +658,6 @@ function isDomainObject(doc: JsonDoc, node: JsonNode | undefined): boolean {
     childByKey(doc, node.id, "title")?.type === "string" &&
     childByKey(doc, node.id, "status")?.type === "string" &&
     childByKey(doc, node.id, "children")?.type === "array";
-}
-
-function childrenArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
-  const child = childByKey(doc, nodeId, "children");
-
-  return child?.type === "array" ? child.id : null;
 }
 
 function childByKey(doc: JsonDoc, nodeId: NodeId, key: string | number): JsonNode | undefined {
@@ -512,42 +687,36 @@ function recoverSelection(before: JsonDoc, after: JsonDoc, removedId: NodeId): N
   ].filter((id): id is NodeId => id !== undefined);
 
   for (const candidate of candidates) {
-    const next = nearestDomainNode(after, candidate);
+    if (after.nodes[candidate] !== undefined) {
+      return candidate;
+    }
 
-    if (next !== null) {
-      return next;
+    const parent = nearestExistingParent(before, after, candidate);
+
+    if (parent !== null) {
+      return parent;
     }
   }
 
   return after.rootId;
 }
 
-function nearestDomainNode(doc: JsonDoc, nodeId: NodeId): NodeId | null {
-  let current = doc.nodes[nodeId];
+function nearestExistingParent(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId | null {
+  let current = before.nodes[nodeId];
 
   while (current !== undefined) {
-    if (isDomainObject(doc, current)) {
+    if (after.nodes[current.id] !== undefined) {
       return current.id;
     }
 
-    current = current.parentId === null ? undefined : doc.nodes[current.parentId];
+    current = current.parentId === null ? undefined : before.nodes[current.parentId];
   }
 
   return null;
 }
 
 function keepSelectionOrRoot(doc: JsonDoc, nodeId: NodeId): NodeId {
-  return nearestDomainNode(doc, nodeId) ?? doc.rootId;
-}
-
-function domainNodesByTitle(doc: JsonDoc): Map<string, NodeId> {
-  const nodes = new Map<string, NodeId>();
-
-  for (const node of toDomainNodes(doc)) {
-    nodes.set(node.title, node.id);
-  }
-
-  return nodes;
+  return doc.nodes[nodeId] === undefined ? doc.rootId : nodeId;
 }
 
 function pathString(doc: JsonDoc, nodeId: NodeId): string {
@@ -565,20 +734,56 @@ function pathString(doc: JsonDoc, nodeId: NodeId): string {
   return `/${segments.map(String).join("/")}`;
 }
 
-function titleFromValue(value: JsonValue): string {
-  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
-    const title = value.title;
+function nodeLabel(doc: JsonDoc, nodeId: NodeId): string {
+  const node = doc.nodes[nodeId];
 
-    if (typeof title === "string") {
-      return title;
+  if (node === undefined) {
+    return nodeId;
+  }
+
+  return `${pathString(doc, nodeId)} (${node.type})`;
+}
+
+function nodeValueLabel(node: JsonNode): string {
+  if (node.type === "object") {
+    return `{${node.children.length}}`;
+  }
+
+  if (node.type === "array") {
+    return `[${node.children.length}]`;
+  }
+
+  return node.value === undefined ? "" : valueLabel(node.value);
+}
+
+function valueLabel(value: JsonValue): string {
+  if (typeof value === "string") {
+    return `"${value}"`;
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
+}
+
+function nodeIdByTitle(doc: JsonDoc, title: string): NodeId | null {
+  for (const node of Object.values(doc.nodes)) {
+    if (node.type === "object" && childByKey(doc, node.id, "title")?.value === title) {
+      return node.id;
     }
   }
 
-  return JSON.stringify(value);
+  return null;
 }
 
-function isStatus(value: JsonValue | undefined): value is CommandNode["status"] {
-  return value === "draft" || value === "active" || value === "done";
+function cellId(nodeId: NodeId, columnIndex: number): string {
+  return `grid-${nodeId}-${columnIndex}`;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
 }
 
 function failure(error: unknown): OperationResult {

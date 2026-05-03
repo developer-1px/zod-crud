@@ -1,13 +1,12 @@
 # zod-crud monorepo
 
-This repository is split into an npm library package and a small local command
-showcase.
+This repository is split into an npm library package and a small local JSON
+editor showcase.
 
 ## Workspaces
 
 - `packages/zod-crud`: publishable ESM library package.
-- `apps/showcase`: Vite/React keyboard-command harness that consumes
-  `zod-crud`.
+- `apps/showcase`: Vite/React treegrid editor harness that consumes `zod-crud`.
 
 ## Commands
 
@@ -20,4 +19,4 @@ npm run smoke:package
 npm run verify
 ```
 
-Use `npm run dev` to run the command showcase locally.
+Use `npm run dev` to run the JSON editor showcase locally.

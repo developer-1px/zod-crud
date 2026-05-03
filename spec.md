@@ -5,8 +5,8 @@ This document defines the local showcase scope. The library contract remains in
 
 ## Purpose
 
-The showcase is a small browser harness for user input commands that map to
-`zod-crud` operations.
+The showcase is a small browser JSON editor harness for user input commands
+that map to `zod-crud` operations.
 
 It is not a design-system demo, SSOT application framework, schema-bound UI
 builder, or product surface.
@@ -28,11 +28,23 @@ The same command handler may also accept `Ctrl` on non-macOS keyboards.
 
 The app must show:
 
-- the selected domain node
-- the flat `JsonDoc` node table
+- a `JsonDoc` treegrid
+- the selected JSON node
 - the current JSON output
 - the internal clipboard preview
 - the last command result
+
+## Treegrid Navigation
+
+The treegrid must keep one active cell.
+
+- `ArrowUp`: move to the previous visible row
+- `ArrowDown`: move to the next visible row
+- `ArrowLeft`: move to the previous column
+- `ArrowRight`: move to the next column
+- `Home`: move to the first column in the current row
+- `End`: move to the last column in the current row
+- `Space`: expand or collapse the active row when it has children
 
 ## Mutation Rules
 
@@ -47,7 +59,7 @@ Allowed:
 
 - one recursive Zod schema
 - one initial JSON document
-- a minimal tree/list UI
+- a minimal treegrid UI
 - reset and add-child controls to keep the harness usable
 
 Not allowed:
