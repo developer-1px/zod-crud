@@ -36,6 +36,7 @@ import {
   type ReactNode,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import * as z from "zod";
 
 import {
   createJsonCrud,
@@ -212,6 +213,245 @@ type DataSection = DataSectionSpec & {
   binding: SelectedComponentBinding;
   value: JsonValue;
 };
+
+const FormBindingSchema = z.object({
+  path: z.string().min(1),
+});
+
+const TextExprSchema = z.union([z.string().min(1), FormBindingSchema]);
+
+const FormViewNodeSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("view"),
+    title: TextExprSchema.optional(),
+    children: z.array(z.string().min(1)),
+  }),
+  z.object({
+    type: z.literal("section"),
+    title: TextExprSchema.optional(),
+    variant: z.enum(["plain", "hero", "toolbar"]).default("plain"),
+    children: z.array(z.string().min(1)),
+  }),
+  z.object({
+    type: z.literal("field"),
+    label: TextExprSchema,
+    value: FormBindingSchema,
+    control: z.enum(["text", "number", "select", "image"]),
+    options: z.array(z.string().min(1)).optional(),
+  }),
+  z.object({
+    type: z.literal("each"),
+    title: TextExprSchema.optional(),
+    items: FormBindingSchema,
+    item: z.string().min(1),
+    empty: z.string().min(1).optional(),
+  }),
+  z.object({
+    type: z.literal("action"),
+    label: TextExprSchema,
+    action: z.enum(["submit", "reset", "delete"]),
+    variant: z.enum(["primary", "secondary", "danger"]).default("secondary"),
+  }),
+]);
+
+const FormViewDocSchema = z.object({
+  rootId: z.string().min(1),
+  nodes: z.record(z.string().min(1), FormViewNodeSchema),
+}).superRefine((view, context) => {
+  if (view.nodes[view.rootId] === undefined) {
+    context.addIssue({
+      code: "custom",
+      message: `Root node ${view.rootId} is missing.`,
+      path: ["rootId"],
+    });
+  }
+
+  for (const [nodeId, node] of Object.entries(view.nodes)) {
+    const childIds =
+      node.type === "each" ? [node.item, node.empty].filter((childId): childId is string => childId !== undefined) :
+      "children" in node ? node.children :
+      [];
+
+    for (const childId of childIds) {
+      if (view.nodes[childId] === undefined) {
+        context.addIssue({
+          code: "custom",
+          message: `Node ${nodeId} references missing child ${childId}.`,
+          path: ["nodes", nodeId],
+        });
+      }
+    }
+  }
+});
+
+type FormBinding = z.infer<typeof FormBindingSchema>;
+type FormViewDoc = z.infer<typeof FormViewDocSchema>;
+type FormViewNode = z.infer<typeof FormViewNodeSchema>;
+
+const LineItemFormSchema = z.object({
+  title: z.string().min(1),
+  quantity: z.number().int().positive(),
+  image: z.string().url(),
+  status: z.enum(["ok", "new"]),
+});
+
+const SalesOrderFormSchema = z.object({
+  hero: z.object({
+    title: z.string().min(1),
+    imageUrl: z.string().url(),
+    imageAlt: z.string().min(1),
+  }),
+  customer: z.object({
+    name: z.string().min(2),
+    status: z.enum(["draft", "paid", "sent"]),
+  }),
+  lineItems: z.array(LineItemFormSchema).min(1),
+});
+
+const FORM_DATA: z.infer<typeof SalesOrderFormSchema> = {
+  hero: {
+    title: "Fresh produce order",
+    imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=720&q=80",
+    imageAlt: "Fresh produce crates for a wholesale order",
+  },
+  customer: {
+    name: "Acme Market",
+    status: "draft",
+  },
+  lineItems: [
+    {
+      title: "Organic bundle",
+      quantity: 4,
+      image: "https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=240&q=80",
+      status: "ok",
+    },
+    {
+      title: "Cold chain fee",
+      quantity: 1,
+      image: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=240&q=80",
+      status: "new",
+    },
+  ],
+};
+
+const FORM_VIEW: FormViewDoc = FormViewDocSchema.parse({
+  rootId: "orderForm",
+  nodes: {
+    orderForm: {
+      type: "view",
+      title: "Generated order form",
+      children: ["hero", "customer", "items", "actions"],
+    },
+    hero: {
+      type: "section",
+      title: "Hero",
+      variant: "hero",
+      children: ["heroImage", "heroTitle"],
+    },
+    heroImage: {
+      type: "field",
+      label: "Hero image",
+      value: { path: "/hero/imageUrl" },
+      control: "image",
+    },
+    heroTitle: {
+      type: "field",
+      label: "Title",
+      value: { path: "/hero/title" },
+      control: "text",
+    },
+    customer: {
+      type: "section",
+      title: "Customer",
+      children: ["customerName", "status"],
+    },
+    customerName: {
+      type: "field",
+      label: "Customer",
+      value: { path: "/customer/name" },
+      control: "text",
+    },
+    status: {
+      type: "field",
+      label: "Status",
+      value: { path: "/customer/status" },
+      control: "select",
+      options: ["draft", "paid", "sent"],
+    },
+    items: {
+      type: "each",
+      title: "Line items",
+      items: { path: "/lineItems" },
+      item: "lineItemFields",
+    },
+    lineItemFields: {
+      type: "section",
+      children: ["itemImage", "itemTitle", "itemQuantity", "itemStatus"],
+    },
+    itemImage: {
+      type: "field",
+      label: "Image",
+      value: { path: "image" },
+      control: "image",
+    },
+    itemTitle: {
+      type: "field",
+      label: "Item",
+      value: { path: "title" },
+      control: "text",
+    },
+    itemQuantity: {
+      type: "field",
+      label: "Qty",
+      value: { path: "quantity" },
+      control: "number",
+    },
+    itemStatus: {
+      type: "field",
+      label: "State",
+      value: { path: "status" },
+      control: "select",
+      options: ["ok", "new"],
+    },
+    actions: {
+      type: "section",
+      variant: "toolbar",
+      children: ["save"],
+    },
+    save: {
+      type: "action",
+      label: "Save record",
+      action: "submit",
+      variant: "primary",
+    },
+  },
+});
+
+const FORM_ENTITY_SCHEMA_CODE = `const SalesOrderFormSchema = z.object({
+  hero: z.object({
+    title: z.string().min(1),
+    imageUrl: z.string().url(),
+    imageAlt: z.string().min(1),
+  }),
+  customer: z.object({
+    name: z.string().min(2),
+    status: z.enum(["draft", "paid", "sent"]),
+  }),
+  lineItems: z.array(LineItemSchema).min(1),
+});`;
+
+const FORM_VIEW_SCHEMA_CODE = `const FormViewDocSchema = z.object({
+  rootId: z.string(),
+  nodes: z.record(z.string(), FormViewNodeSchema),
+});
+
+const FormViewNodeSchema = z.discriminatedUnion("type", [
+  ViewNodeSchema,
+  SectionNodeSchema,
+  FieldNodeSchema,
+  EachNodeSchema,
+  ActionNodeSchema,
+]);`;
 
 const DATA_SECTION_SPECS: DataSectionSpec[] = [
   {
@@ -867,6 +1107,8 @@ function DataWorkspace({
         </dl>
       </header>
 
+      <FormShowcase />
+
       <div className="data-map">
         {sections.map((section) => (
           <DataSectionCard
@@ -881,6 +1123,302 @@ function DataWorkspace({
       </div>
     </section>
   );
+}
+
+function FormShowcase() {
+  const entityResult = SalesOrderFormSchema.safeParse(FORM_DATA);
+  const viewResult = FormViewDocSchema.safeParse(FORM_VIEW);
+  const bindingIssues = validateFormBindings(FORM_VIEW, FORM_DATA, FORM_VIEW.rootId);
+  const bindingCount = countFormBindings(FORM_VIEW, FORM_VIEW.rootId);
+  const isReady = entityResult.success && viewResult.success && bindingIssues.length === 0;
+
+  return (
+    <article className="form-showcase" aria-label="Generated form showcase">
+      <div className="form-showcase-head">
+        <div>
+          <div className="data-eyebrow">
+            <Table2 />
+            <span>Form</span>
+          </div>
+          <h3>Entity-bound form showcase</h3>
+        </div>
+        <dl className="form-showcase-summary">
+          <div>
+            <dt>Entity</dt>
+            <dd>{entityResult.success ? "valid" : `${entityResult.error.issues.length} issues`}</dd>
+          </div>
+          <div>
+            <dt>ViewDoc</dt>
+            <dd>{viewResult.success ? "valid" : `${viewResult.error.issues.length} issues`}</dd>
+          </div>
+          <div>
+            <dt>Bindings</dt>
+            <dd>{isReady ? `${bindingCount} paths` : `${bindingIssues.length} missing`}</dd>
+          </div>
+        </dl>
+      </div>
+
+      <div className="form-showcase-grid">
+        <div className="generated-form-panel">
+          <GeneratedFormNode view={FORM_VIEW} nodeId={FORM_VIEW.rootId} rootData={FORM_DATA} />
+        </div>
+
+        <div className="data-code-panel form-code-panel">
+          <div className="data-column-title">
+            <span>ViewDoc</span>
+          </div>
+          <pre className="data-json">{JSON.stringify(FORM_VIEW, null, 2)}</pre>
+        </div>
+
+        <div className="data-code-panel form-code-panel">
+          <div className="data-column-title">
+            <span>Entity zod</span>
+          </div>
+          <pre className="data-schema">{FORM_ENTITY_SCHEMA_CODE}</pre>
+          <pre className="data-schema compact">{FORM_VIEW_SCHEMA_CODE}</pre>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function GeneratedFormNode({
+  view,
+  nodeId,
+  rootData,
+  scope,
+}: {
+  view: FormViewDoc;
+  nodeId: string;
+  rootData: JsonValue;
+  scope?: JsonValue | undefined;
+}) {
+  const node = view.nodes[nodeId];
+
+  if (node === undefined) {
+    return null;
+  }
+
+  if (node.type === "view") {
+    return (
+      <form className="generated-form" onSubmit={(event) => event.preventDefault()}>
+        {node.title === undefined ? null : <h4>{textExprValue(rootData, scope, node.title)}</h4>}
+        {node.children.map((childId) => (
+          <GeneratedFormNode key={childId} view={view} nodeId={childId} rootData={rootData} scope={scope} />
+        ))}
+      </form>
+    );
+  }
+
+  if (node.type === "section") {
+    return (
+      <section className={`generated-section ${node.variant}`}>
+        {node.title === undefined ? null : <h5>{textExprValue(rootData, scope, node.title)}</h5>}
+        <div className="generated-section-body">
+          {node.children.map((childId) => (
+            <GeneratedFormNode key={childId} view={view} nodeId={childId} rootData={rootData} scope={scope} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (node.type === "field") {
+    const value = valueForBinding(rootData, scope, node.value);
+
+    return (
+      <label className={`generated-field ${node.control}`}>
+        <span>{textExprValue(rootData, scope, node.label)}</span>
+        {generatedControl(node, value)}
+        <small>{node.value.path}</small>
+      </label>
+    );
+  }
+
+  if (node.type === "each") {
+    const items = valueForBinding(rootData, scope, node.items);
+    const rows = Array.isArray(items) ? items : [];
+
+    return (
+      <section className="generated-section list">
+        {node.title === undefined ? null : <h5>{textExprValue(rootData, scope, node.title)}</h5>}
+        <div className="generated-list">
+          {rows.length === 0 && node.empty !== undefined ? (
+            <GeneratedFormNode view={view} nodeId={node.empty} rootData={rootData} scope={scope} />
+          ) : (
+            rows.map((item, index) => (
+              <div key={index} className="generated-list-item">
+                <GeneratedFormNode view={view} nodeId={node.item} rootData={rootData} scope={item} />
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <button className={`generated-action ${node.variant}`} type="button">
+      {textExprValue(rootData, scope, node.label)}
+    </button>
+  );
+}
+
+function generatedControl(node: Extract<FormViewNode, { type: "field" }>, value: JsonValue | undefined) {
+  const displayValue = displayFormValue(value);
+
+  if (node.control === "image") {
+    return (
+      <div className="generated-image-field">
+        {typeof value === "string" ? <img src={value} alt="" /> : null}
+        <input value={displayValue} readOnly />
+      </div>
+    );
+  }
+
+  if (node.control === "select") {
+    return (
+      <select value={displayValue} disabled>
+        {(node.options ?? [displayValue]).map((option) => (
+          <option key={option} value={option}>{option}</option>
+        ))}
+      </select>
+    );
+  }
+
+  return <input type={node.control === "number" ? "number" : "text"} value={displayValue} readOnly />;
+}
+
+function validateFormBindings(
+  view: FormViewDoc,
+  rootData: JsonValue,
+  nodeId: string,
+  scope?: JsonValue,
+  visited = new Set<string>(),
+): string[] {
+  if (visited.has(nodeId)) {
+    return [];
+  }
+
+  const node = view.nodes[nodeId];
+
+  if (node === undefined) {
+    return [nodeId];
+  }
+
+  visited.add(nodeId);
+
+  if (node.type === "field") {
+    return valueForBinding(rootData, scope, node.value) === undefined ? [node.value.path] : [];
+  }
+
+  if (node.type === "each") {
+    const items = valueForBinding(rootData, scope, node.items);
+
+    if (!Array.isArray(items)) {
+      return [node.items.path];
+    }
+
+    return items[0] === undefined ? [] : validateFormBindings(view, rootData, node.item, items[0], new Set(visited));
+  }
+
+  if ("children" in node) {
+    return node.children.flatMap((childId) => validateFormBindings(view, rootData, childId, scope, new Set(visited)));
+  }
+
+  return [];
+}
+
+function countFormBindings(view: FormViewDoc, nodeId: string, visited = new Set<string>()): number {
+  if (visited.has(nodeId)) {
+    return 0;
+  }
+
+  const node = view.nodes[nodeId];
+
+  if (node === undefined) {
+    return 0;
+  }
+
+  visited.add(nodeId);
+
+  if (node.type === "field") {
+    return 1;
+  }
+
+  if (node.type === "each") {
+    return 1 + countFormBindings(view, node.item, new Set(visited));
+  }
+
+  if ("children" in node) {
+    return node.children.reduce((total, childId) => total + countFormBindings(view, childId, new Set(visited)), 0);
+  }
+
+  return 0;
+}
+
+function textExprValue(rootData: JsonValue, scope: JsonValue | undefined, value: z.infer<typeof TextExprSchema>) {
+  if (typeof value === "string") {
+    return value;
+  }
+
+  return displayFormValue(valueForBinding(rootData, scope, value));
+}
+
+function valueForBinding(rootData: JsonValue, scope: JsonValue | undefined, binding: FormBinding): JsonValue | undefined {
+  if (binding.path.startsWith("/")) {
+    return readJsonPointer(rootData, binding.path);
+  }
+
+  return readRelativePath(scope, binding.path);
+}
+
+function readJsonPointer(value: JsonValue, pointer: string): JsonValue | undefined {
+  if (pointer === "" || pointer === "/") {
+    return value;
+  }
+
+  return pointer
+    .slice(1)
+    .split("/")
+    .map((part) => part.replace(/~1/g, "/").replace(/~0/g, "~"))
+    .reduce<JsonValue | undefined>((current, part) => readPathSegment(current, part), value);
+}
+
+function readRelativePath(value: JsonValue | undefined, path: string): JsonValue | undefined {
+  return path
+    .split(".")
+    .filter(Boolean)
+    .reduce<JsonValue | undefined>((current, part) => readPathSegment(current, part), value);
+}
+
+function readPathSegment(value: JsonValue | undefined, part: string): JsonValue | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (Array.isArray(value)) {
+    const index = Number(part);
+    return Number.isInteger(index) ? value[index] : undefined;
+  }
+
+  if (isRecord(value)) {
+    return value[part];
+  }
+
+  return undefined;
+}
+
+function displayFormValue(value: JsonValue | undefined) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+
+  return JSON.stringify(value);
 }
 
 function DataSectionCard({
