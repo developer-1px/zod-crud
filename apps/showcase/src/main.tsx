@@ -28,6 +28,7 @@ import {
 import {
   StrictMode,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -287,6 +288,10 @@ const FormViewDocSchema = z.object({
 type FormBinding = z.infer<typeof FormBindingSchema>;
 type FormViewDoc = z.infer<typeof FormViewDocSchema>;
 type FormViewNode = z.infer<typeof FormViewNodeSchema>;
+type AnchorPositionStyle = CSSProperties & {
+  anchorName?: CSSProperties["anchorName"];
+  positionAnchor?: CSSProperties["positionAnchor"];
+};
 
 const LineItemFormSchema = z.object({
   title: z.string().min(1),
@@ -1160,22 +1165,32 @@ function FormShowcase() {
 
       <div className="form-showcase-grid">
         <div className="generated-form-panel">
+          <div className="data-column-title">
+            <span>Preview</span>
+          </div>
           <GeneratedFormNode view={FORM_VIEW} nodeId={FORM_VIEW.rootId} rootData={FORM_DATA} />
         </div>
 
         <div className="data-code-panel form-code-panel">
           <div className="data-column-title">
-            <span>ViewDoc</span>
+            <span>Zod</span>
           </div>
-          <pre className="data-json">{JSON.stringify(FORM_VIEW, null, 2)}</pre>
+          <pre className="data-schema">{FORM_ENTITY_SCHEMA_CODE}</pre>
+          <pre className="data-schema compact">{FORM_VIEW_SCHEMA_CODE}</pre>
         </div>
 
         <div className="data-code-panel form-code-panel">
           <div className="data-column-title">
-            <span>Entity zod</span>
+            <span>Data</span>
           </div>
-          <pre className="data-schema">{FORM_ENTITY_SCHEMA_CODE}</pre>
-          <pre className="data-schema compact">{FORM_VIEW_SCHEMA_CODE}</pre>
+          <pre className="data-json">{JSON.stringify(FORM_DATA, null, 2)}</pre>
+        </div>
+
+        <div className="data-code-panel form-code-panel">
+          <div className="data-column-title">
+            <span>Form</span>
+          </div>
+          <pre className="data-json">{JSON.stringify(FORM_VIEW, null, 2)}</pre>
         </div>
       </div>
     </article>
@@ -1459,6 +1474,13 @@ function DataSectionCard({
 
         <div className="data-code-panel">
           <div className="data-column-title">
+            <span>Zod SSOT</span>
+          </div>
+          <pre className="data-schema">{section.schemaCode}</pre>
+        </div>
+
+        <div className="data-code-panel">
+          <div className="data-column-title">
             <span>Data</span>
           </div>
           <dl className="data-binding-list">
@@ -1476,13 +1498,6 @@ function DataSectionCard({
             </div>
           </dl>
           <pre className="data-json">{JSON.stringify(section.value, null, 2)}</pre>
-        </div>
-
-        <div className="data-code-panel">
-          <div className="data-column-title">
-            <span>Zod SSOT</span>
-          </div>
-          <pre className="data-schema">{section.schemaCode}</pre>
         </div>
       </div>
     </article>
@@ -2137,6 +2152,9 @@ function SelectablePreview({
   children: ReactNode;
 }) {
   const classes = previewNodeClass(className, nodeId, selectedPreviewId, focusedSet);
+  const anchorName = selectionAnchorName(useId());
+  const isSelected = nodeId !== null && nodeId === selectedPreviewId;
+  const selectedStyle: AnchorPositionStyle | undefined = isSelected ? { ...style, anchorName } : style;
 
   return (
     <div
@@ -2148,7 +2166,7 @@ function SelectablePreview({
       aria-label={label}
       aria-pressed={nodeId === selectedPreviewId}
       tabIndex={nodeId === null ? -1 : 0}
-      style={style}
+      style={selectedStyle}
       onClick={(event) => {
         if (nodeId === null) {
           return;
@@ -2164,6 +2182,7 @@ function SelectablePreview({
       }}
     >
       {children}
+      {isSelected ? <SelectionCoverBadge anchorName={anchorName} label={label} /> : null}
     </div>
   );
 }
@@ -2186,6 +2205,9 @@ function SelectableInline({
   children: ReactNode;
 }) {
   const classes = previewNodeClass(className, nodeId, selectedPreviewId, focusedSet);
+  const anchorName = selectionAnchorName(useId());
+  const isSelected = nodeId !== null && nodeId === selectedPreviewId;
+  const selectedStyle: AnchorPositionStyle | undefined = isSelected ? { anchorName } : undefined;
 
   return (
     <span
@@ -2197,6 +2219,7 @@ function SelectableInline({
       aria-label={label}
       aria-pressed={nodeId === selectedPreviewId}
       tabIndex={nodeId === null ? -1 : 0}
+      style={selectedStyle}
       onClick={(event) => {
         if (nodeId === null) {
           return;
@@ -2212,7 +2235,61 @@ function SelectableInline({
       }}
     >
       {children}
+      {isSelected ? <SelectionCoverBadge anchorName={anchorName} label={label} /> : null}
     </span>
+  );
+}
+
+function SelectionCoverBadge({ anchorName, label }: { anchorName: string; label: string }) {
+  const popoverRef = useRef<HTMLSpanElement>(null);
+  const style: AnchorPositionStyle = { positionAnchor: anchorName };
+
+  useEffect(() => {
+    const popover = popoverRef.current;
+
+    if (popover === null || !supportsAnchoredPopover(popover)) {
+      return undefined;
+    }
+
+    try {
+      if (!popover.matches(":popover-open")) {
+        popover.showPopover();
+      }
+    } catch {
+      return undefined;
+    }
+
+    return () => {
+      try {
+        if (popover.matches(":popover-open")) {
+          popover.hidePopover();
+        }
+      } catch {
+        // The selected element may already be gone after a document mutation.
+      }
+    };
+  }, [anchorName, label]);
+
+  return (
+    <span ref={popoverRef} className="selection-cover-popover" popover="manual" style={style}>
+      {label}
+    </span>
+  );
+}
+
+function selectionAnchorName(id: string) {
+  return `--selection-${id.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+}
+
+function supportsAnchoredPopover(element: HTMLSpanElement): element is HTMLSpanElement & {
+  hidePopover: () => void;
+  showPopover: () => void;
+} {
+  return (
+    typeof CSS !== "undefined" &&
+    CSS.supports("top: anchor(top)") &&
+    "showPopover" in element &&
+    "hidePopover" in element
   );
 }
 

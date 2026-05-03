@@ -581,6 +581,42 @@ button:focus-visible,
   backdrop-filter: blur(18px) saturate(1.35);
 }
 
+.selection-cover-popover {
+  position: fixed;
+  top: anchor(top);
+  left: anchor(left);
+  z-index: 20;
+  max-width: min(240px, calc(100vw - 24px));
+  margin: 0;
+  overflow: hidden;
+  padding: 4px 8px;
+  border: 1px solid rgb(255 255 255 / 62%);
+  border-radius: 999px;
+  background: rgb(255 255 255 / 76%);
+  color: var(--accent-strong);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 760;
+  line-height: 1.2;
+  pointer-events: none;
+  text-overflow: ellipsis;
+  transform: translate(12px, -50%);
+  white-space: nowrap;
+  box-shadow: var(--shadow-sm), inset 0 1px 0 var(--highlight);
+  backdrop-filter: blur(18px) saturate(1.35);
+  position-try-fallbacks: flip-block, flip-inline;
+}
+
+.selection-cover-popover::backdrop {
+  display: none;
+}
+
+@supports (top: anchor(top)) {
+  .preview-selectable.selected::after {
+    display: none;
+  }
+}
+
 .phone-device {
   width: min(100%, 388px);
   border-radius: 28px;
@@ -1928,11 +1964,14 @@ tr.focused.selected {
 
 .form-showcase-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.78fr) minmax(280px, 1fr) minmax(280px, 1fr);
+  grid-template-columns: minmax(260px, 0.86fr) minmax(240px, 0.9fr) minmax(240px, 0.9fr) minmax(260px, 1fr);
   min-width: 0;
 }
 
 .generated-form-panel {
+  display: grid;
+  align-content: start;
+  gap: 8px;
   min-width: 0;
   padding: 14px;
 }
