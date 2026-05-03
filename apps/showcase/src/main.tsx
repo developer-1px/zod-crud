@@ -910,9 +910,6 @@ function DataSectionCard({
 
       <div className="data-section-grid">
         <div className="data-component-preview">
-          <div className="data-column-title">
-            <span>{section.binding.component}</span>
-          </div>
           <DesignPreviewNode
             doc={doc}
             nodeId={section.nodeId}

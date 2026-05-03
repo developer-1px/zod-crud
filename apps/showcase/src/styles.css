@@ -1963,6 +1963,7 @@ tr.focused.selected {
 
 .data-component-preview {
   border-left: 0;
+  padding-top: 10px;
 }
 
 .data-component-preview .phone-device {
