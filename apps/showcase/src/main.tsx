@@ -27,7 +27,6 @@ import {
   Badge,
   Button,
   Checkbox,
-  Code,
   Flex,
   Heading,
   IconButton as RadixIconButton,
