@@ -784,110 +784,150 @@ type UiFieldSpec = {
   options?: string[];
 };
 
+type UiActionSpec = {
+  id: string;
+  label: string;
+  action: string;
+  variant: "primary" | "secondary" | "danger";
+};
+
 type UiSectionSpec = {
   id: string;
   title: string;
+  component: string;
+  role?: string;
   variant?: "plain" | "hero" | "toolbar";
   repeat?: {
     path: string;
   };
   fields: UiFieldSpec[];
+  actions: UiActionSpec[];
 };
 
 type OrderUiData = {
   title: string;
   sections: UiSectionSpec[];
-  actions: Array<{
-    id: string;
-    label: string;
-    action: string;
-    variant: "primary" | "secondary" | "danger";
-  }>;
 };
 
-const ORDER_UI_DATA: OrderUiData = {
-  title: "Order intake",
-  sections: [
-    {
-      id: "media",
-      title: "Media",
-      variant: "hero",
-      fields: [
-        {
-          id: "heroImage",
-          label: "Hero image",
-          path: "/media/hero/src",
-          control: "image",
-          help: "Validated by z.string().url() on the entity schema.",
-        },
-        {
-          id: "heroTitle",
-          label: "Title",
-          path: "/title",
-          control: "text",
-        },
-      ],
-    },
-    {
-      id: "fields",
-      title: "Record fields",
-      fields: [
-        {
-          id: "customerName",
-          label: "Customer",
-          path: "/customer/name",
-          control: "text",
-        },
-        {
-          id: "status",
-          label: "Status",
-          path: "/status",
-          control: "select",
-          options: ["draft", "paid", "sent"],
-        },
-      ],
-    },
-    {
-      id: "items",
-      title: "Line items",
-      repeat: { path: "/lineItems" },
-      fields: [
-        {
-          id: "itemImage",
-          label: "Image",
-          path: "image",
-          control: "image",
-        },
-        {
-          id: "itemTitle",
-          label: "Title",
-          path: "title",
-          control: "text",
-        },
-        {
-          id: "itemQuantity",
-          label: "Quantity",
-          path: "quantity",
-          control: "number",
-        },
-      ],
-    },
-  ],
-  actions: [
-    {
-      id: "save",
-      label: "Save record",
-      action: "submit",
-      variant: "primary",
-    },
-  ],
+type DesignBlockDescriptor = {
+  title?: string;
+  variant?: UiSectionSpec["variant"];
+  repeat?: UiSectionSpec["repeat"];
+  fields?: UiFieldSpec[];
+  actions?: UiActionSpec[];
 };
+
+const DESIGN_BLOCK_DESCRIPTORS: Record<string, DesignBlockDescriptor> = {
+  AppToolbar: {
+    title: "Toolbar",
+    variant: "toolbar",
+  },
+  HeroCard: {
+    title: "Hero",
+    variant: "hero",
+    fields: [
+      {
+        id: "heroImage",
+        label: "Hero image",
+        path: "/media/hero/src",
+        control: "image",
+        help: "Validated by z.string().url() on the entity schema.",
+      },
+      {
+        id: "heroTitle",
+        label: "Title",
+        path: "/title",
+        control: "text",
+      },
+    ],
+  },
+  SchemaStatusCard: {
+    title: "Schema status",
+  },
+  CrudModeTabs: {
+    title: "CRUD mode",
+  },
+  CustomerNameField: {
+    title: "Customer field",
+    fields: [
+      {
+        id: "customerName",
+        label: "Customer",
+        path: "/customer/name",
+        control: "text",
+      },
+    ],
+  },
+  OrderStatusField: {
+    title: "Status field",
+    fields: [
+      {
+        id: "status",
+        label: "Status",
+        path: "/status",
+        control: "select",
+        options: ["draft", "paid", "sent"],
+      },
+    ],
+  },
+  LineItemsList: {
+    title: "Line items",
+    repeat: { path: "/lineItems" },
+    fields: [
+      {
+        id: "itemImage",
+        label: "Image",
+        path: "image",
+        control: "image",
+      },
+      {
+        id: "itemTitle",
+        label: "Title",
+        path: "title",
+        control: "text",
+      },
+      {
+        id: "itemQuantity",
+        label: "Quantity",
+        path: "quantity",
+        control: "number",
+      },
+      {
+        id: "itemStatus",
+        label: "Status",
+        path: "status",
+        control: "select",
+        options: ["ok", "new"],
+      },
+    ],
+  },
+  SaveButton: {
+    title: "Primary action",
+    variant: "toolbar",
+    actions: [
+      {
+        id: "save",
+        label: "Save record",
+        action: "submit",
+        variant: "primary",
+      },
+    ],
+  },
+  BottomNavFlex: {
+    title: "Bottom navigation",
+    variant: "toolbar",
+  },
+};
+
+const ORDER_UI_DATA = createOrderUiData(DesignNodeSchema.parse(initialDesignJson));
 
 const UI_DATA_SCHEMA_CODE = `type UiData = {
   title: string;
   sections: Array<{
     id: string;
     title: string;
+    component: string;
+    role?: string;
     variant?: "plain" | "hero" | "toolbar";
     repeat?: { path: string };
     fields: Array<{
@@ -897,15 +937,101 @@ const UI_DATA_SCHEMA_CODE = `type UiData = {
       control: "text" | "number" | "textarea" | "select" | "checkbox" | "image" | "date";
       options?: string[];
     }>;
+    actions: Action[];
   }>;
-  actions: Action[];
 };`;
+
+function createOrderUiData(root: UiNode): OrderUiData {
+  const mobileScreen = findDesignBlock(root, (node) => node.name === "MobileRecordScreen" || (isUiGroup(node) && node.role === "mobileScreen"));
+  const blocks = mobileScreen === undefined ? [] : designBlockChildren(mobileScreen);
+
+  return {
+    title: findDesignText(root, "ToolbarTitleText") ?? "Order intake",
+    sections: blocks.map(createUiSectionFromDesignBlock),
+  };
+}
+
+function createUiSectionFromDesignBlock(block: UiNode): UiSectionSpec {
+  const descriptor = designBlockDescriptor(block);
+  const role = isUiGroup(block) ? block.role : undefined;
+
+  return {
+    id: block.name,
+    title: descriptor?.title ?? humanizeName(block.name),
+    component: block.name,
+    variant: descriptor?.variant ?? "plain",
+    fields: descriptor?.fields ?? [],
+    actions: descriptor?.actions ?? [],
+    ...(role === undefined ? {} : { role }),
+    ...(descriptor?.repeat === undefined ? {} : { repeat: descriptor.repeat }),
+  };
+}
+
+function designBlockDescriptor(block: UiNode) {
+  return DESIGN_BLOCK_DESCRIPTORS[block.name] ?? (isUiGroup(block) ? DESIGN_BLOCK_DESCRIPTORS[block.role] : undefined);
+}
+
+function findDesignBlock(root: UiNode, predicate: (node: UiNode) => boolean): UiNode | undefined {
+  if (predicate(root)) {
+    return root;
+  }
+
+  for (const child of designBlockChildren(root)) {
+    const match = findDesignBlock(child, predicate);
+
+    if (match !== undefined) {
+      return match;
+    }
+  }
+
+  return undefined;
+}
+
+function findDesignText(root: UiNode, name: string): string | undefined {
+  if (isUiText(root) && root.name === name) {
+    return root.text;
+  }
+
+  for (const child of designBlockChildren(root)) {
+    const text = findDesignText(child, name);
+
+    if (text !== undefined) {
+      return text;
+    }
+  }
+
+  return undefined;
+}
+
+function designBlockChildren(block: UiNode): UiNode[] {
+  if (isUiGroup(block)) {
+    return [
+      ...Object.values(block.slots),
+      ...Object.values(block.collections).flat(),
+    ];
+  }
+
+  if (isUiFrame(block) || isUiFlex(block)) {
+    return block.children;
+  }
+
+  return [];
+}
+
+function humanizeName(name: string) {
+  return name
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[-_]+/g, " ")
+    .trim();
+}
 
 function DataWorkspaceCompact() {
   const entityEditorRef = useRef(makeSalesOrderEditor());
   const [version, setVersion] = useState(0);
   const [lastResult, setLastResult] = useState<OperationResult | null>(null);
 
+  const previewDoc = useMemo(() => makeEditor().snapshot(), []);
+  const previewFocusSet = useMemo(() => new Set<NodeId>(), []);
   const entityDoc = useMemo(() => entityEditorRef.current.snapshot(), [version]);
   const data = useMemo(() => entityEditorRef.current.toJson(), [version]);
   const entityValidation = SalesOrderSchema.safeParse(data);
@@ -953,7 +1079,12 @@ function DataWorkspaceCompact() {
             <div className="data-column-title">
               <span>Preview inline edit</span>
             </div>
-            <InlinePreview uiData={ORDER_UI_DATA} data={data} onChange={updateBinding} />
+            <MobileBuilderCanvas
+              doc={previewDoc}
+              selectedPreviewId={"__data_preview_none__" as NodeId}
+              focusedSet={previewFocusSet}
+              onSelect={() => undefined}
+            />
             {lastResult === null || lastResult.ok ? null : (
               <p className="view-error">{lastResult.reason}</p>
             )}
@@ -1001,78 +1132,6 @@ function DataWorkspaceCompact() {
   );
 }
 
-function InlinePreview({
-  uiData,
-  data,
-  onChange,
-}: {
-  uiData: OrderUiData;
-  data: JsonValue;
-  onChange: (path: string, value: JsonValue) => void;
-}) {
-  const heroSection = uiData.sections.find((section) => section.variant === "hero");
-  const fieldSection = uiData.sections.find((section) => section.id === "fields");
-  const itemsSection = uiData.sections.find((section) => section.repeat !== undefined);
-
-  return (
-    <div className="inline-preview">
-      {heroSection === undefined ? null : (
-        <section className="inline-preview-hero">
-          {heroSection.fields.map((field) => (
-            <UiFieldControl
-              key={field.id}
-              field={field}
-              path={field.path}
-              value={valueAtBindingPath(data, field.path)}
-              mode="preview"
-              onChange={onChange}
-            />
-          ))}
-        </section>
-      )}
-
-      {fieldSection === undefined ? null : (
-        <section className="inline-preview-fields">
-          {fieldSection.fields.map((field) => (
-            <UiFieldControl
-              key={field.id}
-              field={field}
-              path={field.path}
-              value={valueAtBindingPath(data, field.path)}
-              mode="preview"
-              onChange={onChange}
-            />
-          ))}
-        </section>
-      )}
-
-      {itemsSection?.repeat === undefined ? null : (
-        <section className="inline-preview-items">
-          <Text as="p" size="2" weight="medium">{itemsSection.title}</Text>
-          {arrayAtBindingPath(data, itemsSection.repeat.path).map((_item, index) => (
-            <div key={index} className="inline-preview-row">
-              {itemsSection.fields.map((field) => {
-                const path = resolveBindingPath(field.path, joinBindingPath(itemsSection.repeat!.path, String(index)));
-
-                return (
-                  <UiFieldControl
-                    key={field.id}
-                    field={field}
-                    path={path}
-                    value={valueAtBindingPath(data, path)}
-                    mode="preview"
-                    onChange={onChange}
-                  />
-                );
-              })}
-            </div>
-          ))}
-        </section>
-      )}
-    </div>
-  );
-}
-
 function UiDataFormRenderer({
   uiData,
   data,
@@ -1082,55 +1141,120 @@ function UiDataFormRenderer({
   data: JsonValue;
   onChange: (path: string, value: JsonValue) => void;
 }) {
+  const sections = Array.isArray(uiData.sections) ? uiData.sections : [];
+
   return (
     <form className="generated-form view-schema-form" onSubmit={(event) => event.preventDefault()}>
       <Heading as="h4" size="3">{uiData.title}</Heading>
-      {uiData.sections.map((section) => (
-        <section key={section.id} className={`generated-section ${section.variant ?? "plain"}`}>
-          <Text as="p" size="2" weight="medium">{section.title}</Text>
-          <div className="generated-section-body">
-            {section.repeat === undefined ? (
-              section.fields.map((field) => (
-                <UiFieldControl
-                  key={field.id}
-                  field={field}
-                  path={field.path}
-                  value={valueAtBindingPath(data, field.path)}
-                  mode="form"
-                  onChange={onChange}
-                />
-              ))
-            ) : (
-              <div className="generated-list">
-                {arrayAtBindingPath(data, section.repeat.path).map((_item, index) => (
-                  <div key={index} className="generated-list-item">
-                    {section.fields.map((field) => {
-                      const path = resolveBindingPath(field.path, joinBindingPath(section.repeat!.path, String(index)));
-
-                      return (
-                        <UiFieldControl
-                          key={field.id}
-                          field={field}
-                          path={path}
-                          value={valueAtBindingPath(data, path)}
-                          mode="form"
-                          onChange={onChange}
-                        />
-                      );
-                    })}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </section>
+      {sections.map((section) => (
+        <DesignBlockFormSection
+          key={section.id}
+          section={section}
+          data={data}
+          onChange={onChange}
+        />
       ))}
-      {uiData.actions.map((action) => (
+    </form>
+  );
+}
+
+function DesignBlockFormSection({
+  section,
+  data,
+  onChange,
+}: {
+  section: UiSectionSpec;
+  data: JsonValue;
+  onChange: (path: string, value: JsonValue) => void;
+}) {
+  const fields = Array.isArray(section.fields) ? section.fields : [];
+  const actions = Array.isArray(section.actions) ? section.actions : [];
+  const hasBindings = fields.length > 0;
+  const hasActions = actions.length > 0;
+
+  return (
+    <section className={`generated-section ${section.variant ?? "plain"}`}>
+      <Flex align="center" justify="between" gap="2">
+        <div className="form-section-title">
+          <Text as="p" size="2" weight="medium">{section.title}</Text>
+          <Text as="p" size="1" color="gray">{section.component}</Text>
+        </div>
+        {section.role === undefined ? null : <Badge variant="soft" color="gray">{section.role}</Badge>}
+      </Flex>
+      <div className="generated-section-body">
+        {hasBindings ? (
+          <DesignBlockFieldList section={section} fields={fields} data={data} onChange={onChange} />
+        ) : null}
+        {hasActions ? <DesignBlockActions actions={actions} /> : null}
+        {hasBindings || hasActions ? null : (
+          <Text as="p" size="1" color="gray">No entity bindings</Text>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function DesignBlockFieldList({
+  section,
+  fields,
+  data,
+  onChange,
+}: {
+  section: UiSectionSpec;
+  fields: UiFieldSpec[];
+  data: JsonValue;
+  onChange: (path: string, value: JsonValue) => void;
+}) {
+  if (section.repeat === undefined) {
+    return (
+      <>
+        {fields.map((field) => (
+          <UiFieldControl
+            key={field.id}
+            field={field}
+            path={field.path}
+            value={valueAtBindingPath(data, field.path)}
+            mode="form"
+            onChange={onChange}
+          />
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div className="generated-list">
+      {arrayAtBindingPath(data, section.repeat.path).map((_item, index) => (
+        <div key={index} className="generated-list-item">
+          {fields.map((field) => {
+            const path = resolveBindingPath(field.path, joinBindingPath(section.repeat!.path, String(index)));
+
+            return (
+              <UiFieldControl
+                key={field.id}
+                field={field}
+                path={path}
+                value={valueAtBindingPath(data, path)}
+                mode="form"
+                onChange={onChange}
+              />
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function DesignBlockActions({ actions }: { actions: UiActionSpec[] }) {
+  return (
+    <Flex gap="2" wrap="wrap">
+      {actions.map((action) => (
         <Button key={action.id} className={`generated-action ${action.variant}`} type="button" variant={action.variant === "primary" ? "solid" : "soft"}>
           {action.label}
         </Button>
       ))}
-    </form>
+    </Flex>
   );
 }
 
