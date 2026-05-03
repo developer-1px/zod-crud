@@ -72,6 +72,8 @@ type SelectedComponentBinding = ComponentBinding & {
   nodeId: NodeId | "none";
 };
 
+type WorkspaceMode = "design" | "data" | "history";
+
 const CRUD_BINDINGS: Record<string, ComponentBinding> = {
   ZodCrudBuilder: {
     component: "Builder document",
@@ -105,6 +107,14 @@ const CRUD_BINDINGS: Record<string, ComponentBinding> = {
     state: "valid",
     validation: "Displays parser output and CRUD availability.",
   },
+  HeroCard: {
+    component: "Hero section",
+    field: "media.hero",
+    schema: "HeroMediaSchema",
+    operation: "read + update",
+    state: "bound",
+    validation: "The visual hero and media URL are read from the same zod-crud subtree.",
+  },
   MarketHeroImage: {
     component: "Hero image",
     field: "media.hero.src",
@@ -136,6 +146,14 @@ const CRUD_BINDINGS: Record<string, ComponentBinding> = {
     operation: "create + delete",
     state: "2 rows",
     validation: "Each list row is a child node in the zod-crud document.",
+  },
+  CrudModeTabs: {
+    component: "CRUD mode control",
+    field: "$operation",
+    schema: "z.enum(['create', 'read', 'update'])",
+    operation: "read + update",
+    state: "create",
+    validation: "The active mode is constrained by the operation enum used by the document.",
   },
   OrganicBundleImage: {
     component: "Line item image",
@@ -169,6 +187,14 @@ const CRUD_BINDINGS: Record<string, ComponentBinding> = {
     state: "selected",
     validation: "Selection metadata comes from the zod-crud node graph.",
   },
+  BottomNavFlex: {
+    component: "Mobile navigation",
+    field: "$view",
+    schema: "z.enum(['design', 'data', 'history'])",
+    operation: "read",
+    state: "design",
+    validation: "The app navigation exposes the same workspace modes as the zod-crud document.",
+  },
 };
 
 type LogEntry = {
@@ -177,6 +203,113 @@ type LogEntry = {
   ok: boolean;
   reason?: string;
 };
+
+type DataSectionSpec = {
+  title: string;
+  nodeName: string;
+  path: string;
+  schemaCode: string;
+};
+
+type DataSection = DataSectionSpec & {
+  nodeId: NodeId;
+  binding: SelectedComponentBinding;
+  value: JsonValue;
+};
+
+const DATA_SECTION_SPECS: DataSectionSpec[] = [
+  {
+    title: "Toolbar",
+    nodeName: "AppToolbar",
+    path: "slots.screen.slots.toolbar",
+    schemaCode: `const AppToolbarSchema = z.object({
+  title: ToolbarTitleSchema,
+  actions: ToolbarActionsSchema,
+  syncStatus: RectNodeSchema,
+});`,
+  },
+  {
+    title: "Hero",
+    nodeName: "HeroCard",
+    path: "slots.screen.slots.hero",
+    schemaCode: `const HeroMediaSchema = z.object({
+  image: ImageNodeSchema.extend({
+    src: z.string().url(),
+    aspect: z.literal("wide"),
+  }),
+  overlay: HeroOverlaySchema,
+});`,
+  },
+  {
+    title: "Schema status",
+    nodeName: "SchemaStatusCard",
+    path: "slots.screen.slots.schemaStatus",
+    schemaCode: `const SchemaStatusCardSchema = z.object({
+  schema: z.literal("SalesOrderSchema"),
+  status: z.literal("Valid snapshot"),
+  detail: z.string().min(1),
+});`,
+  },
+  {
+    title: "CRUD mode",
+    nodeName: "CrudModeTabs",
+    path: "slots.screen.slots.crudMode",
+    schemaCode: `const CrudModeSchema = z.object({
+  operation: z.enum(["create", "read", "update"]),
+  options: z.array(TextNodeSchema).length(3),
+});`,
+  },
+  {
+    title: "Customer field",
+    nodeName: "CustomerNameField",
+    path: "slots.screen.slots.customerField",
+    schemaCode: `const CustomerNameFieldSchema = z.object({
+  field: z.literal("customer.name"),
+  value: z.string().min(2),
+  schema: z.literal("z.string().min(2)"),
+});`,
+  },
+  {
+    title: "Status field",
+    nodeName: "OrderStatusField",
+    path: "slots.screen.slots.statusField",
+    schemaCode: `const OrderStatusFieldSchema = z.object({
+  field: z.literal("status"),
+  value: z.enum(["draft", "paid", "sent"]),
+  control: z.literal("segmentedControl"),
+});`,
+  },
+  {
+    title: "Line items",
+    nodeName: "LineItemsList",
+    path: "slots.screen.slots.lineItems",
+    schemaCode: `const LineItemsSchema = z.array(
+  z.object({
+    title: z.string().min(1),
+    quantity: z.number().int().positive(),
+    image: z.string().url(),
+  }),
+).min(1);`,
+  },
+  {
+    title: "Save action",
+    nodeName: "SaveButton",
+    path: "slots.screen.slots.saveButton",
+    schemaCode: `const SaveActionSchema = z.object({
+  label: z.literal("Save record"),
+  enabled: SalesOrderSchema.safeParse(snapshot).success,
+});`,
+  },
+  {
+    title: "Inspector",
+    nodeName: "PropertyPanel",
+    path: "slots.propertyPanel",
+    schemaCode: `const PropertyPanelSchema = z.object({
+  selectedNodeId: z.string().min(1),
+  binding: DesignBindingSchema,
+});`,
+  },
+];
 
 function makeEditor() {
   return createJsonCrud(DesignNodeSchema, initialDesignJson);
@@ -191,6 +324,7 @@ function App() {
   const [focusedIds, setFocusedIds] = useState<NodeId[]>([initialRootId]);
   const [clipboardJson, setClipboardJson] = useState<string>("");
   const [clipboardValue, setClipboardValue] = useState<JsonValue | null>(null);
+  const [mode, setMode] = useState<WorkspaceMode>("design");
   const [logs, setLogs] = useState<LogEntry[]>([
     { id: 1, label: "load initial JSON", ok: true },
   ]);
@@ -505,9 +639,30 @@ function App() {
         </div>
 
         <div className="mode-switch" aria-label="Workspace mode">
-          <button className="mode-tab active" type="button">Design</button>
-          <button className="mode-tab" type="button">Data</button>
-          <button className="mode-tab" type="button">History</button>
+          <button
+            className={modeTabClass(mode, "design")}
+            type="button"
+            aria-pressed={mode === "design"}
+            onClick={() => setMode("design")}
+          >
+            Design
+          </button>
+          <button
+            className={modeTabClass(mode, "data")}
+            type="button"
+            aria-pressed={mode === "data"}
+            onClick={() => setMode("data")}
+          >
+            Data
+          </button>
+          <button
+            className={modeTabClass(mode, "history")}
+            type="button"
+            aria-pressed={mode === "history"}
+            onClick={() => setMode("history")}
+          >
+            History
+          </button>
         </div>
 
         <div className="toolbar top-actions" aria-label="History controls">
@@ -517,6 +672,7 @@ function App() {
         </div>
       </header>
 
+      {mode === "design" ? (
       <section className="workspace">
         <nav className="tool-rail" aria-label="Editing tools">
           <button
@@ -650,6 +806,17 @@ function App() {
           </div>
         </aside>
       </section>
+      ) : mode === "data" ? (
+        <DataWorkspace
+          doc={doc}
+          json={json}
+          selectedPreviewId={selectionBridge.selectedPreviewId}
+          focusedSet={selectionBridge.focusedPreviewIds}
+          onSelect={selectNode}
+        />
+      ) : (
+        <HistoryWorkspace logs={logs} selectedNode={selectedNode} focusedSet={focusedSet} doc={doc} />
+      )}
 
       <footer className="statusbar">
         <span>selected <strong>{selectedNode?.id ?? "none"}</strong></span>
@@ -706,6 +873,210 @@ function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
       {icon}
       <h3>{title}</h3>
     </div>
+  );
+}
+
+function modeTabClass(currentMode: WorkspaceMode, mode: WorkspaceMode) {
+  return currentMode === mode ? "mode-tab active" : "mode-tab";
+}
+
+function DataWorkspace({
+  doc,
+  json,
+  selectedPreviewId,
+  focusedSet,
+  onSelect,
+}: {
+  doc: JsonDoc;
+  json: JsonValue;
+  selectedPreviewId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+}) {
+  const sections = resolveDataSections(doc);
+  const parseResult = DesignNodeSchema.safeParse(json);
+
+  return (
+    <section className="data-workspace" aria-label="Data and component bindings">
+      <header className="data-page-head">
+        <div>
+          <div className="data-eyebrow">
+            <Database />
+            <span>Data</span>
+          </div>
+          <h2>Component schema map</h2>
+        </div>
+        <dl className="data-summary">
+          <div>
+            <dt>Root schema</dt>
+            <dd>DesignNodeSchema</dd>
+          </div>
+          <div>
+            <dt>Parse</dt>
+            <dd>{parseResult.success ? "valid" : `${parseResult.error.issues.length} issues`}</dd>
+          </div>
+          <div>
+            <dt>Sections</dt>
+            <dd>{sections.length}</dd>
+          </div>
+          <div>
+            <dt>Nodes</dt>
+            <dd>{Object.keys(doc.nodes).length}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <div className="data-map">
+        {sections.map((section) => (
+          <DataSectionCard
+            key={section.nodeId}
+            doc={doc}
+            section={section}
+            selectedPreviewId={selectedPreviewId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function DataSectionCard({
+  doc,
+  section,
+  selectedPreviewId,
+  focusedSet,
+  onSelect,
+}: {
+  doc: JsonDoc;
+  section: DataSection;
+  selectedPreviewId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+}) {
+  const isActive = section.nodeId === selectedPreviewId || focusedSet.has(section.nodeId);
+
+  return (
+    <article className={isActive ? "data-section-card selected" : "data-section-card"}>
+      <div className="data-section-head">
+        <button type="button" onClick={() => onSelect(section.nodeId)}>
+          <span>{section.title}</span>
+          <code>{section.path}</code>
+        </button>
+        <small>{section.binding.operation}</small>
+      </div>
+
+      <div className="data-section-grid">
+        <div className="data-component-preview">
+          <div className="data-column-title">
+            <LayoutTemplate />
+            <span>{section.binding.component}</span>
+          </div>
+          <div className="data-preview-surface">
+            <DesignPreviewNode
+              doc={doc}
+              nodeId={section.nodeId}
+              selectedPreviewId={selectedPreviewId}
+              focusedSet={focusedSet}
+              onSelect={onSelect}
+            />
+          </div>
+        </div>
+
+        <div className="data-code-panel">
+          <div className="data-column-title">
+            <Braces />
+            <span>Data</span>
+          </div>
+          <dl className="data-binding-list">
+            <div>
+              <dt>Field</dt>
+              <dd>{section.binding.field}</dd>
+            </div>
+            <div>
+              <dt>Schema</dt>
+              <dd>{section.binding.schema}</dd>
+            </div>
+            <div>
+              <dt>State</dt>
+              <dd>{section.binding.state}</dd>
+            </div>
+          </dl>
+          <pre className="data-json">{JSON.stringify(section.value, null, 2)}</pre>
+        </div>
+
+        <div className="data-code-panel">
+          <div className="data-column-title">
+            <FileCode2 />
+            <span>Zod SSOT</span>
+          </div>
+          <pre className="data-schema">{section.schemaCode}</pre>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function HistoryWorkspace({
+  logs,
+  selectedNode,
+  focusedSet,
+  doc,
+}: {
+  logs: LogEntry[];
+  selectedNode: JsonNode | undefined;
+  focusedSet: Set<NodeId>;
+  doc: JsonDoc;
+}) {
+  return (
+    <section className="history-workspace" aria-label="Operation history">
+      <header className="data-page-head">
+        <div>
+          <div className="data-eyebrow">
+            <History />
+            <span>History</span>
+          </div>
+          <h2>Operation log</h2>
+        </div>
+        <dl className="data-summary">
+          <div>
+            <dt>Selected</dt>
+            <dd>{selectedNode?.id ?? "none"}</dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd>{selectedNode?.type ?? "none"}</dd>
+          </div>
+          <div>
+            <dt>Focus</dt>
+            <dd>{focusedSet.size}</dd>
+          </div>
+          <div>
+            <dt>Nodes</dt>
+            <dd>{Object.keys(doc.nodes).length}</dd>
+          </div>
+        </dl>
+      </header>
+
+      <div className="history-grid">
+        <section className="control-section">
+          <SectionTitle icon={<History />} title="Timeline" />
+          <ul className="log-list">
+            {logs.map((entry) => (
+              <li key={entry.id} className={entry.ok ? "ok" : "fail"}>
+                <span>{entry.label}</span>
+                <small>{entry.ok ? "ok" : entry.reason}</small>
+              </li>
+            ))}
+          </ul>
+        </section>
+        <section className="control-section">
+          <SectionTitle icon={<Table2 />} title="Selected node" />
+          <pre className="data-json">{selectedNode === undefined ? "none" : JSON.stringify(selectedNode, null, 2)}</pre>
+        </section>
+      </div>
+    </section>
   );
 }
 
@@ -874,6 +1245,32 @@ function treeDisplayMeta(doc: JsonDoc, node: JsonNode) {
   }
 
   return node.type;
+}
+
+function resolveDataSections(doc: JsonDoc): DataSection[] {
+  return DATA_SECTION_SPECS.flatMap((spec) => {
+    const nodeId = findDesignNodeIdByName(doc, spec.nodeName);
+
+    if (nodeId === null) {
+      return [];
+    }
+
+    return [{
+      ...spec,
+      nodeId,
+      binding: selectedComponentBinding(doc, nodeId),
+      value: deserialize(doc, nodeId),
+    }];
+  });
+}
+
+function findDesignNodeIdByName(doc: JsonDoc, name: string): NodeId | null {
+  const match = Object.values(doc.nodes).find((node) => (
+    node.type === "object" &&
+    primitiveField(doc, node.id, "name") === name
+  ));
+
+  return match?.id ?? null;
 }
 
 function MobileBuilderCanvas({
