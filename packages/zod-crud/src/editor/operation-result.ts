@@ -11,11 +11,12 @@ export function successResult(
   after: JsonDoc,
   changes: JsonChange[],
   nodeId?: NodeId,
+  focusNodeId?: NodeId,
 ): OperationResult {
   return {
     ok: true,
     ...(nodeId === undefined ? {} : { nodeId }),
-    focusNodeId: focusFromMutation(before, after, changes, nodeId),
+    focusNodeId: focusNodeId ?? focusFromMutation(before, after, changes, nodeId),
     changes,
   };
 }
@@ -93,14 +94,29 @@ export function changesForDeletedSubtree(
   after: JsonDoc,
   deletedNodeId: NodeId,
 ): JsonChange[] {
+  return changesForDeletedSubtrees(before, after, [deletedNodeId]);
+}
+
+export function changesForDeletedSubtrees(
+  before: JsonDoc,
+  after: JsonDoc,
+  deletedNodeIds: NodeId[],
+): JsonChange[] {
   const changes: JsonChange[] = [];
   const pushedUpdates = new Set<NodeId>();
-  const deleted = before.nodes[deletedNodeId];
+  const deletedRoots = [...new Set(deletedNodeIds)]
+    .map((nodeId) => before.nodes[nodeId])
+    .filter((node): node is JsonNode => node !== undefined);
+  const parentIds = new Set(
+    deletedRoots
+      .map((node) => node.parentId)
+      .filter((parentId): parentId is NodeId => parentId !== null),
+  );
 
-  if (deleted?.parentId !== null && deleted?.parentId !== undefined) {
-    pushExistingUpdate(changes, pushedUpdates, before, after, deleted.parentId);
+  for (const parentId of parentIds) {
+    pushExistingUpdate(changes, pushedUpdates, before, after, parentId);
 
-    const parent = after.nodes[deleted.parentId];
+    const parent = after.nodes[parentId];
 
     if (parent?.type === "array") {
       for (const childId of parent.children) {
@@ -109,12 +125,21 @@ export function changesForDeletedSubtree(
     }
   }
 
-  for (const node of collectSubtree(before, deletedNodeId)) {
-    changes.push({
-      type: "delete",
-      nodeId: node.id,
-      before: cloneNode(node),
-    });
+  const pushedDeletes = new Set<NodeId>();
+
+  for (const deletedRoot of deletedRoots) {
+    for (const node of collectSubtree(before, deletedRoot.id)) {
+      if (pushedDeletes.has(node.id)) {
+        continue;
+      }
+
+      pushedDeletes.add(node.id);
+      changes.push({
+        type: "delete",
+        nodeId: node.id,
+        before: cloneNode(node),
+      });
+    }
   }
 
   return changes;

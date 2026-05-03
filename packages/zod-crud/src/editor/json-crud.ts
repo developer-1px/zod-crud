@@ -5,6 +5,7 @@ import type {
   JsonCrudOptions,
   JsonDoc,
   JsonKey,
+  JsonNode,
   JsonPath,
   JsonValue,
   NodeId,
@@ -28,6 +29,7 @@ import { buildPasteCandidates, type PasteCandidate } from "./json-paste.js";
 import { validateAtPath, validateDocument } from "../schema/json-validation.js";
 import {
   changesForDeletedSubtree,
+  changesForDeletedSubtrees,
   changesForInsertedSubtree,
   changesForReplacedSubtree,
   invertChanges,
@@ -40,6 +42,7 @@ type HistoryEntry = {
   doc: JsonDoc;
   changes: JsonChange[];
   nodeId?: NodeId;
+  focusNodeId?: NodeId;
 };
 
 export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
@@ -51,6 +54,7 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   create: (parentId: NodeId, key: string | number, value: JsonValue) => OperationResult;
   update: (nodeId: NodeId, value: JsonValue) => OperationResult;
   delete: (nodeId: NodeId) => OperationResult;
+  deleteMany: (nodeIds: NodeId[]) => OperationResult;
   copy: (nodeId: NodeId) => JsonValue;
   cut: (nodeId: NodeId) => OperationResult;
   paste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
@@ -171,6 +175,52 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     }
   }
 
+  function deleteMany(nodeIds: NodeId[]): OperationResult {
+    try {
+      const nodes = uniqueNodes(doc, nodeIds);
+
+      if (nodes.length === 0) {
+        return { ok: false, reason: "No nodes to delete." };
+      }
+
+      if (nodes.some((node) => node.id === doc.rootId || node.parentId === null)) {
+        return { ok: false, reason: "Cannot delete the root node." };
+      }
+
+      const parentId = nodes[0]?.parentId;
+
+      if (parentId === null || parentId === undefined) {
+        return { ok: false, reason: "Cannot delete a node without a parent." };
+      }
+
+      if (nodes.some((node) => node.parentId !== parentId)) {
+        return { ok: false, reason: "deleteMany only accepts sibling nodes." };
+      }
+
+      const parentPath = getPath(doc, parentId);
+      const next = cloneDoc(doc);
+      const sortedNodes = sortBySiblingIndexDescending(doc, parentId, nodes);
+
+      for (const node of sortedNodes) {
+        removeSubtree(next, node.id);
+      }
+
+      const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
+
+      if (!validation.ok) {
+        return validation;
+      }
+
+      const changes = changesForDeletedSubtrees(doc, next, sortedNodes.map((node) => node.id));
+      const focusNodeId = focusAfterSiblingBatchRemoval(doc, next, parentId, sortedNodes.map((node) => node.id));
+      const nodeId = sortedNodes[0]?.id;
+
+      return commitIfValid(next, changes, nodeId, focusNodeId);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
   function copy(nodeId: NodeId): JsonValue {
     const value = read(nodeId);
     clipboard = { value, sourceId: nodeId };
@@ -249,6 +299,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       doc: current,
       changes: previous.changes,
       ...(previous.nodeId === undefined ? {} : { nodeId: previous.nodeId }),
+      ...(previous.focusNodeId === undefined ? {} : { focusNodeId: previous.focusNodeId }),
     });
     doc = previous.doc;
     return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId);
@@ -267,9 +318,10 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       doc: current,
       changes: next.changes,
       ...(next.nodeId === undefined ? {} : { nodeId: next.nodeId }),
+      ...(next.focusNodeId === undefined ? {} : { focusNodeId: next.focusNodeId }),
     });
     doc = next.doc;
-    return successResult(current, next.doc, next.changes, next.nodeId);
+    return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId);
   }
 
   function pasteCandidates(
@@ -353,7 +405,12 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
-  function commitIfValid(next: JsonDoc, changes: JsonChange[], nodeId?: NodeId): OperationResult {
+  function commitIfValid(
+    next: JsonDoc,
+    changes: JsonChange[],
+    nodeId?: NodeId,
+    focusNodeId?: NodeId,
+  ): OperationResult {
     const validation = validateDocument(schema, next);
 
     if (!validation.ok) {
@@ -362,15 +419,16 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     const before = cloneDoc(doc);
 
-    commit(next, changes, nodeId);
-    return successResult(before, next, changes, nodeId);
+    commit(next, changes, nodeId, focusNodeId);
+    return successResult(before, next, changes, nodeId, focusNodeId);
   }
 
-  function commit(next: JsonDoc, changes: JsonChange[], nodeId?: NodeId): void {
+  function commit(next: JsonDoc, changes: JsonChange[], nodeId?: NodeId, focusNodeId?: NodeId): void {
     undoStack.push({
       doc: cloneDoc(doc),
       changes,
       ...(nodeId === undefined ? {} : { nodeId }),
+      ...(focusNodeId === undefined ? {} : { focusNodeId }),
     });
     doc = next;
     redoStack = [];
@@ -397,6 +455,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     create,
     update,
     delete: deleteNode,
+    deleteMany,
     copy,
     cut,
     paste,
@@ -413,4 +472,56 @@ function failure(error: unknown): OperationResult {
     ok: false,
     reason: error instanceof Error ? error.message : String(error),
   };
+}
+
+function uniqueNodes(doc: JsonDoc, nodeIds: NodeId[]): JsonNode[] {
+  const seen = new Set<NodeId>();
+  const nodes: JsonNode[] = [];
+
+  for (const nodeId of nodeIds) {
+    if (seen.has(nodeId)) {
+      continue;
+    }
+
+    seen.add(nodeId);
+    nodes.push(getNode(doc, nodeId));
+  }
+
+  return nodes;
+}
+
+function sortBySiblingIndexDescending(doc: JsonDoc, parentId: NodeId, nodes: JsonNode[]): JsonNode[] {
+  const parent = getNode(doc, parentId);
+  const siblingIndex = new Map(parent.children.map((childId, index) => [childId, index]));
+
+  return [...nodes].sort((left, right) =>
+    (siblingIndex.get(right.id) ?? -1) - (siblingIndex.get(left.id) ?? -1),
+  );
+}
+
+function focusAfterSiblingBatchRemoval(
+  before: JsonDoc,
+  after: JsonDoc,
+  parentId: NodeId,
+  deletedNodeIds: NodeId[],
+): NodeId {
+  const parent = before.nodes[parentId];
+  const deleted = new Set(deletedNodeIds);
+  const deletedIndexes = parent?.children
+    .map((childId, index) => deleted.has(childId) ? index : -1)
+    .filter((index) => index >= 0) ?? [];
+
+  if (deletedIndexes.length === 0) {
+    return after.nodes[parentId] === undefined ? after.rootId : parentId;
+  }
+
+  const minIndex = Math.min(...deletedIndexes);
+  const maxIndex = Math.max(...deletedIndexes);
+  const nextId = parent?.children.slice(maxIndex + 1).find((childId) => !deleted.has(childId));
+  const previousId = parent?.children.slice(0, minIndex).reverse().find((childId) => !deleted.has(childId));
+  const candidates = [nextId, previousId, parentId, after.rootId];
+
+  return candidates.find((id): id is NodeId =>
+    id !== undefined && after.nodes[id] !== undefined
+  ) ?? after.rootId;
 }

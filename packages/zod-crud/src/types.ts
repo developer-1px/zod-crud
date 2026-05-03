@@ -58,6 +58,8 @@ export type OperationResult =
        * For create and insert paste this is the inserted subtree root.
        * For overwrite paste and update this is the target root.
        * For delete and cut this is the removed root.
+       * For deleteMany this is the removed sibling used as the history focus
+       * anchor.
        */
       nodeId?: NodeId;
       /**

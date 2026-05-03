@@ -205,6 +205,32 @@ commit and return { ok: true, nodeId, focusNodeId, changes } where nodeId is
 the removed root, or return failure
 ```
 
+### deleteMany(nodeIds)
+
+`deleteMany` is a batch mutation for sibling selections. It is intentionally
+narrower than arbitrary tree selection so the first multi-node operation keeps
+one parent validation path, one commit, one undo entry, and one focus result.
+
+```txt
+nodeIds empty -> fail
+any nodeId is root -> fail
+any node missing -> fail gracefully
+dedupe node ids
+all nodes must have the same live parent
+find parent path
+clone current doc
+remove selected sibling subtrees from highest sibling index to lowest
+normalize array parent keys if needed
+validate parent path subtree
+validate full document exactness
+compute one delete delta containing all removed subtrees
+compute batch delete focus as next sibling after the removed range, previous
+  sibling before the removed range, live parent, or root
+commit once and return { ok: true, nodeId, focusNodeId, changes } where nodeId
+is the highest-index removed sibling used as the history focus anchor
+or return failure
+```
+
 ### copy(nodeId)
 
 ```txt
@@ -355,6 +381,7 @@ Add or update tests when behavior changes in any of these areas:
 - Zod path traversal support.
 - Clipboard/source id semantics.
 - Undo/redo state transitions.
+- Batch mutation atomicity.
 - OperationResult failure atomicity.
 - OperationResult focus and changed-node metadata.
 - Package import/type surface.

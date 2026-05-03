@@ -104,7 +104,7 @@ const json = editor.toJson();
 
 - `serialize()` / `deserialize()`
 - flat JSON node table
-- `create`, `update`, `delete`
+- `create`, `update`, `delete`, `deleteMany`
 - `copy`, `cut`, `paste`
 - `undo`, `redo`
 - `OperationResult.changes` for changed `JsonDoc` nodes from the operation delta
