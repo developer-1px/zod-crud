@@ -178,12 +178,17 @@ body {
 
 .data-block-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.8fr) minmax(340px, 1fr) minmax(320px, 0.9fr);
+  grid-template-columns:
+    minmax(240px, 0.78fr)
+    minmax(280px, 0.9fr)
+    minmax(280px, 0.9fr)
+    minmax(320px, 1fr);
   gap: 16px;
   min-width: 0;
 }
 
 .block-preview,
+.block-entities,
 .block-controls,
 .block-bindings {
   display: grid;

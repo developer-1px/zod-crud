@@ -615,11 +615,42 @@ function DataSectionPanel({
   return (
     <div className="data-block-grid">
       <section className="block-preview">
-        <Text type="secondary">Preview block</Text>
+        <Text type="secondary">Preview</Text>
         <DataBlockPreview block={block} order={order} selectedName={selectedName} onSelectName={onSelectName} />
       </section>
+      <section className="block-entities">
+        <Text type="secondary">Entities(zod)</Text>
+        <Table
+          size="small"
+          pagination={false}
+          rowKey="id"
+          childrenColumnName="nestedChildren"
+          columns={[
+            { title: "entity path", dataIndex: "path" },
+            { title: "zod", dataIndex: "schema" },
+            { title: "value", dataIndex: "value", ellipsis: true },
+          ]}
+          dataSource={entityRowsForBlock(block, order)}
+        />
+      </section>
+      <section className="block-bindings">
+        <Text type="secondary">UI Data</Text>
+        <Table
+          size="small"
+          pagination={false}
+          rowKey="id"
+          childrenColumnName="nestedChildren"
+          columns={[
+            { title: "field", dataIndex: "label" },
+            { title: "path", dataIndex: "path" },
+            { title: "control", dataIndex: "control" },
+            { title: "value", dataIndex: "value", ellipsis: true },
+          ]}
+          dataSource={bindingRowsForBlock(block, order)}
+        />
+      </section>
       <section className="block-controls">
-        <Text type="secondary">Form controls</Text>
+        <Text type="secondary">Form gen</Text>
         {block.kind === "each" ? (
           <RepeatBlockControls block={block} order={order} onUpdate={onUpdate} />
         ) : block.kind === "action" ? (
@@ -637,22 +668,6 @@ function DataSectionPanel({
             ))}
           </Form>
         )}
-      </section>
-      <section className="block-bindings">
-        <Text type="secondary">UI data bindings</Text>
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="id"
-          childrenColumnName="nestedChildren"
-          columns={[
-            { title: "field", dataIndex: "label" },
-            { title: "path", dataIndex: "path" },
-            { title: "control", dataIndex: "control" },
-            { title: "value", dataIndex: "value", ellipsis: true },
-          ]}
-          dataSource={bindingRowsForBlock(block, order)}
-        />
       </section>
     </div>
   );
@@ -1192,6 +1207,51 @@ function bindingRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
     control: field.control,
     value: displayJsonValue(valueAtPointer(order, field.path)),
   }));
+}
+
+function entityRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
+  if (block.kind === "action") {
+    return [
+      {
+        id: "commit",
+        path: "$commit",
+        schema: "safeParse",
+        value: "valid commit",
+      },
+    ];
+  }
+
+  if (block.kind === "each") {
+    return block.fields.map((field) => ({
+      id: field.id,
+      path: `${block.repeatPath ?? ""}[].${field.path}`,
+      schema: schemaForField(field),
+      value: `${order.lineItems.length} rows`,
+    }));
+  }
+
+  return block.fields.map((field) => ({
+    id: field.id,
+    path: field.path,
+    schema: schemaForField(field),
+    value: displayJsonValue(valueAtPointer(order, field.path)),
+  }));
+}
+
+function schemaForField(field: DataField) {
+  if (field.control === "number") {
+    return "z.number().int().positive()";
+  }
+
+  if (field.control === "select") {
+    return `z.enum(${JSON.stringify(field.options ?? [])})`;
+  }
+
+  if (field.control === "image") {
+    return "z.string().url()";
+  }
+
+  return "z.string().min(1)";
 }
 
 function valueAtPointer(value: JsonValue, path: string): JsonValue | undefined {
