@@ -55,6 +55,8 @@ After a successful create, update, delete, cut, paste, undo, or redo, the active
 row must follow the `focusNodeId` returned by the `zod-crud` result.
 
 - If the operation's primary node is still live, focus that node.
+- If the operation's primary node was removed, focus next sibling, previous
+  sibling, live parent, or root.
 - If replay inserts a subtree with no primary node, focus the inserted subtree
   root.
 - If the operation changes an existing live node, focus the changed node.

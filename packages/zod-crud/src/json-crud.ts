@@ -638,6 +638,10 @@ function focusFromMutation(
     return primaryNodeId;
   }
 
+  if (primaryNodeId !== undefined && before.nodes[primaryNodeId] !== undefined) {
+    return focusAfterPrimaryRemoval(before, after, primaryNodeId);
+  }
+
   const insertedRoot = changes.find((change) =>
     change.type === "insert" &&
     change.after.parentId !== null &&
@@ -657,6 +661,24 @@ function focusFromMutation(
   }
 
   return after.rootId;
+}
+
+function focusAfterPrimaryRemoval(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
+  const removed = before.nodes[removedId];
+  const siblings = removed?.parentId === null || removed?.parentId === undefined
+    ? []
+    : before.nodes[removed.parentId]?.children ?? [];
+  const index = siblings.indexOf(removedId);
+  const candidates = [
+    siblings[index + 1],
+    siblings[index - 1],
+    removed?.parentId,
+    after.rootId,
+  ];
+
+  return candidates.find((id): id is NodeId =>
+    id !== undefined && id !== null && after.nodes[id] !== undefined
+  ) ?? after.rootId;
 }
 
 function sameNode(left: JsonNode, right: JsonNode): boolean {

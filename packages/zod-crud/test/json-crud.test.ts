@@ -186,6 +186,53 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("recovers direct delete focus through next, previous, parent, then root", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const firstId = editor.find(childrenId!, 0);
+    const secondId = editor.find(childrenId!, 1);
+    const thirdId = editor.find(childrenId!, 2);
+
+    const deleteMiddle = editor.delete(secondId!);
+
+    expect(deleteMiddle.ok).toBe(true);
+
+    if (deleteMiddle.ok) {
+      expect(deleteMiddle.focusNodeId).toBe(thirdId);
+    }
+
+    const deleteLast = editor.delete(thirdId!);
+
+    expect(deleteLast.ok).toBe(true);
+
+    if (deleteLast.ok) {
+      expect(deleteLast.focusNodeId).toBe(firstId);
+    }
+
+    const deleteOnlyChild = editor.delete(firstId!);
+
+    expect(deleteOnlyChild.ok).toBe(true);
+
+    if (deleteOnlyChild.ok) {
+      expect(deleteOnlyChild.focusNodeId).toBe(childrenId);
+    }
+
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [],
+    });
+  });
+
   it("pastes a copied node onto itself as an array sibling before trying child arrays", () => {
     const editor = createJsonCrud(UiNodeSchema, {
       kind: "frame",

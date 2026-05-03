@@ -310,14 +310,16 @@ Mutation focus priority:
 
 ```txt
 if primary nodeId is still live after commit -> focus primary nodeId
+else if primary nodeId was removed -> focus next sibling, previous sibling,
+  live parent, or root
 else if diff inserts a live subtree -> focus inserted subtree root
 else if diff updates an existing live node -> focus that updated node
 else -> focus root
 ```
 
-CRUD, paste, undo, and redo all use this same focus strategy. Delete is not a
-separate sibling-recovery policy; deleting a node updates a live parent or
-container, so focus follows that changed live node.
+CRUD, paste, undo, and redo all use this same focus strategy. Direct delete is
+handled as a removed primary-node mutation, so it recovers by adjacency before
+falling back to parent or root.
 
 ## Package Contract
 
