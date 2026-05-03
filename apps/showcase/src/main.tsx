@@ -908,7 +908,12 @@ function UiSchemaForm({
     return (
       <form className="generated-form" onSubmit={(event) => event.preventDefault()}>
         <h4>Unsupported value</h4>
-        <UiFormField label="Schema" path="$" value="DesignNodeSchema parse failed" />
+        <UiFormField
+          label="Schema"
+          path={[]}
+          value="DesignNodeSchema parse failed"
+          onChange={() => undefined}
+        />
       </form>
     );
   }
@@ -1133,12 +1138,14 @@ function DataSectionCard({
   selectedPreviewId,
   focusedSet,
   onSelect,
+  onFormChange,
 }: {
   doc: JsonDoc;
   section: DataSection;
   selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
+  onFormChange: (sectionNodeId: NodeId, path: UiFormPath, value: JsonValue) => void;
 }) {
   const isActive = section.nodeId === selectedPreviewId || focusedSet.has(section.nodeId);
 
@@ -1195,7 +1202,10 @@ function DataSectionCard({
           <div className="data-column-title">
             <span>Form</span>
           </div>
-          <UiSchemaForm value={section.value} />
+          <UiSchemaForm
+            value={section.value}
+            onChange={(path, value) => onFormChange(section.nodeId, path, value)}
+          />
         </div>
       </div>
     </article>
@@ -2452,6 +2462,38 @@ function childIdByKey(doc: JsonDoc, parentId: NodeId, key: string | number) {
   }
 
   return parent.children.find((childId) => doc.nodes[childId]?.key === key) ?? null;
+}
+
+function updateUiFormPath(
+  editor: ReturnType<typeof makeEditor>,
+  doc: JsonDoc,
+  sectionNodeId: NodeId,
+  path: UiFormPath,
+  value: JsonValue,
+): OperationResult {
+  const targetId = nodeIdAtPath(doc, sectionNodeId, path);
+
+  if (targetId === null) {
+    return { ok: false, reason: `Form path ${uiFormPathLabel(path)} is missing.` };
+  }
+
+  const target = doc.nodes[targetId];
+
+  if (target === undefined || target.children.length > 0) {
+    return { ok: false, reason: `Form path ${uiFormPathLabel(path)} is not editable.` };
+  }
+
+  return editor.update(targetId, value);
+}
+
+function nodeIdAtPath(doc: JsonDoc, rootId: NodeId, path: UiFormPath): NodeId | null {
+  return path.reduce<NodeId | null>((currentId, key) => {
+    if (currentId === null) {
+      return null;
+    }
+
+    return childIdByKey(doc, currentId, key);
+  }, rootId);
 }
 
 function findInsertionArray(doc: JsonDoc, nodeId: NodeId): NodeId | null {
