@@ -68,16 +68,14 @@ body {
 }
 
 .side-panel,
-.right-panel,
-.schema-panel {
+.right-panel {
   min-width: 0;
   overflow: auto;
   border-right: 1px solid #e5e7eb;
   background: #fff;
 }
 
-.right-panel,
-.schema-panel {
+.right-panel {
   border-right: 0;
   border-left: 1px solid #e5e7eb;
 }
@@ -146,7 +144,7 @@ body {
 
 .data-layout {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr) 430px;
+  grid-template-columns: minmax(0, 1fr);
   height: calc(100vh - 56px);
   min-height: 0;
 }
@@ -217,28 +215,6 @@ body {
 
 .entity-section {
   border-right: 0;
-}
-
-.schema-panel {
-  padding-bottom: 16px;
-}
-
-.code-title {
-  margin: 12px 12px 4px;
-}
-
-.code-block {
-  margin: 0 12px 12px;
-  padding: 12px;
-  overflow: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #f8fafc;
-  color: #253041;
-  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
-  line-height: 1.45;
-  white-space: pre-wrap;
 }
 
 .phone {
@@ -423,7 +399,6 @@ body {
 
   .side-panel,
   .right-panel,
-  .schema-panel,
   .mobile-section,
   .entity-section {
     min-width: 0 !important;

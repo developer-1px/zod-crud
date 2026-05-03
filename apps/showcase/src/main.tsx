@@ -35,7 +35,6 @@ import {
 
 import {
   DesignNodeSchema,
-  SALES_ORDER_SCHEMA_CODE,
   SalesOrderSchema,
   initialDesignJson,
   initialSalesOrderData,
@@ -555,24 +554,6 @@ function DataMode({
           />
         </section>
       </section>
-      <aside className="schema-panel">
-        <PanelHeader title="Schema / UI Data" detail="source of truth" />
-        <Typography.Paragraph className="code-title">SalesOrderSchema</Typography.Paragraph>
-        <pre className="code-block">{SALES_ORDER_SCHEMA_CODE}</pre>
-        <Typography.Paragraph className="code-title">UI bindings</Typography.Paragraph>
-        <Table
-          size="small"
-          pagination={false}
-          childrenColumnName="nestedChildren"
-          rowKey="id"
-          columns={[
-            { title: "block", dataIndex: "id" },
-            { title: "type", dataIndex: "type" },
-            { title: "path", dataIndex: "path" },
-          ]}
-          dataSource={viewBindingRows()}
-        />
-      </aside>
     </main>
   );
 }
@@ -1140,14 +1121,6 @@ function nodeAtPointer(doc: JsonDoc, path: string): NodeId | null {
   return currentId;
 }
 
-function viewBindingRows() {
-  return Object.entries(orderViewDoc.nodes).map(([id, node]) => ({
-    id,
-    type: node.type,
-    path: node.type === "field" ? node.value.path : node.type === "each" ? node.items.path : "-",
-  }));
-}
-
 function bindingRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
   if (block.kind === "action") {
     return [
@@ -1156,7 +1129,7 @@ function bindingRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
         label: "Save record",
         path: "$commit",
         control: "action",
-        value: "SalesOrderSchema.safeParse",
+        value: "valid commit",
       },
     ];
   }
