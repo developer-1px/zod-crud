@@ -40,6 +40,9 @@ input JSON
   must restore document state, history state, and id allocation before returning.
 - Public mutation methods that return `OperationResult` should return
   `{ ok: false, reason }` for expected invalid input rather than throwing.
+- Successful committed operations should include `changes` on `OperationResult`.
+  `changes` contains only inserted, updated, and deleted `JsonDoc` nodes from
+  the committed before/after diff, not a full document snapshot.
 - Read-only methods such as `read`, `snapshot`, `pathOf`, `find`, `toJson`, and
   standalone `deserialize` may throw for malformed docs or invalid ids.
 
@@ -171,7 +174,7 @@ insert child
   primitive parent -> fail
 validate parent path subtree
 validate full document exactness
-commit and return { ok: true, nodeId: createdRootId, focusNodeId: createdRootId }
+commit and return { ok: true, nodeId: createdRootId, focusNodeId: createdRootId, changes }
 or return failure
 ```
 
@@ -183,7 +186,7 @@ validate value at path
 clone current doc
 replace subtree at nodeId
 validate full document exactness
-commit and return { ok: true, nodeId, focusNodeId: nodeId } or return failure
+commit and return { ok: true, nodeId, focusNodeId: nodeId, changes } or return failure
 ```
 
 ### delete(nodeId)
@@ -196,8 +199,8 @@ remove node and descendants
 normalize array parent keys if needed
 validate parent path subtree
 validate full document exactness
-commit and return { ok: true, nodeId, focusNodeId } where nodeId is the removed
-root and focusNodeId is a live recovery node, or return failure
+commit and return { ok: true, nodeId, focusNodeId, changes } where nodeId is
+the removed root and focusNodeId is a live recovery node, or return failure
 ```
 
 ### copy(nodeId)
@@ -239,7 +242,7 @@ try candidates in order
   candidate throws -> remember failure
   full document exact validation fails -> remember failure
   validation succeeds -> commit exactly one candidate and return
-    { ok: true, nodeId: pastedRootId, focusNodeId: pastedRootId }
+    { ok: true, nodeId: pastedRootId, focusNodeId: pastedRootId, changes }
 all candidates fail -> return last useful failure
 ```
 
@@ -290,7 +293,7 @@ undo stack empty -> { ok: false, reason }
 push current doc to redo
 restore previous doc
 compute focusNodeId from before/after JsonDoc diff
-return { ok: true, focusNodeId }
+return { ok: true, focusNodeId, changes }
 ```
 
 ### redo()
@@ -300,7 +303,7 @@ redo stack empty -> { ok: false, reason }
 push current doc to undo
 restore next doc
 compute focusNodeId from before/after JsonDoc diff
-return { ok: true, focusNodeId }
+return { ok: true, focusNodeId, changes }
 ```
 
 ## Package Contract
@@ -330,6 +333,7 @@ Add or update tests when behavior changes in any of these areas:
 - Clipboard/source id semantics.
 - Undo/redo state transitions.
 - OperationResult failure atomicity.
+- OperationResult focus and changed-node metadata.
 - Package import/type surface.
 
 Regression tests should encode de-facto editor expectations, not only current

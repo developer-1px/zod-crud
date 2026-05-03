@@ -2,6 +2,7 @@ import * as z from "zod";
 
 import type {
   JsonCrudOptions,
+  JsonChange,
   JsonDoc,
   JsonKey,
   JsonNode,
@@ -244,7 +245,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
 
     this.redoStack.push(current);
     this.doc = previous;
-    return { ok: true, focusNodeId: focusFromDiff(current, previous) };
+    return successResult(current, previous, undefined, focusFromDiff(current, previous));
   }
 
   redo(): OperationResult {
@@ -258,7 +259,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
 
     this.undoStack.push(current);
     this.doc = next;
-    return { ok: true, focusNodeId: focusFromDiff(current, next) };
+    return successResult(current, next, undefined, focusFromDiff(current, next));
   }
 
   private buildPasteCandidates(
@@ -303,11 +304,13 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         const validation = this.validateDocument(next);
 
         if (validation.ok) {
+          const before = cloneDoc(this.doc);
+
           this.commit(next);
           this.clipboard = this.clipboard === null
             ? null
             : { value: cloneJson(this.clipboard.value), sourceId: pastedRootId };
-          return { ok: true, nodeId: pastedRootId, focusNodeId: pastedRootId };
+          return successResult(before, next, pastedRootId, pastedRootId);
         }
 
         lastFailure = validation;
@@ -537,12 +540,10 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       return validation;
     }
 
+    const before = cloneDoc(this.doc);
+
     this.commit(next);
-    return {
-      ok: true,
-      ...(nodeId === undefined ? {} : { nodeId }),
-      ...(focusNodeId === undefined ? {} : { focusNodeId }),
-    };
+    return successResult(before, next, nodeId, focusNodeId);
   }
 
   private commit(next: JsonDoc): void {
@@ -568,6 +569,62 @@ function failure(error: unknown): OperationResult {
   return {
     ok: false,
     reason: error instanceof Error ? error.message : String(error),
+  };
+}
+
+function successResult(
+  before: JsonDoc,
+  after: JsonDoc,
+  nodeId?: NodeId,
+  focusNodeId?: NodeId,
+): OperationResult {
+  return {
+    ok: true,
+    ...(nodeId === undefined ? {} : { nodeId }),
+    ...(focusNodeId === undefined ? {} : { focusNodeId }),
+    changes: changesFromDiff(before, after),
+  };
+}
+
+function changesFromDiff(before: JsonDoc, after: JsonDoc): JsonChange[] {
+  const changes: JsonChange[] = [];
+
+  for (const beforeNode of Object.values(before.nodes)) {
+    const afterNode = after.nodes[beforeNode.id];
+
+    if (afterNode === undefined) {
+      changes.push({
+        type: "delete",
+        nodeId: beforeNode.id,
+        before: cloneNode(beforeNode),
+      });
+    } else if (!sameNode(beforeNode, afterNode)) {
+      changes.push({
+        type: "update",
+        nodeId: afterNode.id,
+        before: cloneNode(beforeNode),
+        after: cloneNode(afterNode),
+      });
+    }
+  }
+
+  for (const afterNode of Object.values(after.nodes)) {
+    if (before.nodes[afterNode.id] === undefined) {
+      changes.push({
+        type: "insert",
+        nodeId: afterNode.id,
+        after: cloneNode(afterNode),
+      });
+    }
+  }
+
+  return changes;
+}
+
+function cloneNode(node: JsonNode): JsonNode {
+  return {
+    ...node,
+    children: [...node.children],
   };
 }
 

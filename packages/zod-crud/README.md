@@ -86,6 +86,7 @@ const pasteResult = editor.paste(rootId); // inserts into root.children if the i
 
 if (pasteResult.ok) {
   console.log(pasteResult.focusNodeId); // root id of the pasted subtree
+  console.log(pasteResult.changes); // changed JsonDoc nodes only
 }
 
 editor.undo();
@@ -93,6 +94,7 @@ const redoResult = editor.redo();
 
 if (redoResult.ok) {
   console.log(redoResult.focusNodeId); // node an editor should focus
+  console.log(redoResult.changes); // inserts, updates, and deletes from core
 }
 
 const json = editor.toJson();
@@ -105,5 +107,6 @@ const json = editor.toJson();
 - `create`, `update`, `delete`
 - `copy`, `cut`, `paste`
 - `undo`, `redo`
+- `OperationResult.changes` for changed `JsonDoc` nodes only
 - recursive Zod object/array/union path validation
 - `children` convention for child paste, configurable via `childKeys`

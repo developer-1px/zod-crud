@@ -31,6 +31,24 @@ export type JsonDoc = {
 
 export type JsonPath = Array<string | number>;
 
+export type JsonChange =
+  | {
+      type: "insert";
+      nodeId: NodeId;
+      after: JsonNode;
+    }
+  | {
+      type: "update";
+      nodeId: NodeId;
+      before: JsonNode;
+      after: JsonNode;
+    }
+  | {
+      type: "delete";
+      nodeId: NodeId;
+      before: JsonNode;
+    };
+
 export type OperationResult =
   | {
       ok: true;
@@ -48,6 +66,13 @@ export type OperationResult =
        * This is always a live node in the committed document.
        */
       focusNodeId?: NodeId;
+      /**
+       * Changed JsonDoc nodes for this successful mutation.
+       *
+       * This contains only inserted, updated, and deleted nodes, not a full
+       * document snapshot.
+       */
+      changes?: JsonChange[];
     }
   | {
       ok: false;

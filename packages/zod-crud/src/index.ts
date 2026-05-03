@@ -11,6 +11,7 @@ export {
 
 export type {
   JsonArray,
+  JsonChange,
   JsonCrudOptions,
   JsonDoc,
   JsonKey,

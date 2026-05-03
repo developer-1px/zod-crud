@@ -14,7 +14,8 @@ It exists to verify that user inputs map cleanly to library operations:
 The app intentionally avoids design-system, data-binding, and SSOT-builder
 scope. It keeps a small Zod entity registry, one `JsonCrud` editor per
 registered entity, treegrid selection state, command logging, clipboard display,
-schema display, and JSON output.
+schema display, changed-node display from `OperationResult.changes`, and JSON
+output.
 
 Registered entities are plain objects in the showcase source:
 
@@ -37,3 +38,6 @@ overwrites a node, the target stays selected because that root id is preserved.
 
 After redo, focus follows the `focusNodeId` returned by `zod-crud`; the
 showcase does not compute the `JsonDoc` diff itself.
+
+The changed-node panel also reads core-provided `OperationResult.changes`
+instead of diffing snapshots in the showcase.

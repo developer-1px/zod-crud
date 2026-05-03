@@ -4,6 +4,7 @@ import * as z from "zod";
 
 import {
   createJsonCrud,
+  type JsonChange,
   type JsonDoc,
   type JsonNode,
   type JsonValue,
@@ -242,6 +243,7 @@ function App() {
     id: entity.id,
     nodes: Object.keys((editorsRef.current[entity.id] ?? makeEditor(entity)).snapshot().nodes).length,
   })), [version]);
+  const lastChanges = lastCommand.result.ok ? lastCommand.result.changes ?? [] : [];
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
@@ -570,6 +572,21 @@ function App() {
                 <dd>{clipboardValue === null ? "empty" : valueLabel(clipboardValue)}</dd>
               </div>
             </dl>
+
+            <PanelTitle title="Changed nodes" detail={`${lastChanges.length}`} />
+            {lastChanges.length === 0 ? (
+              <p className="empty-state">none</p>
+            ) : (
+              <ol className="change-list">
+                {lastChanges.map((change) => (
+                  <li key={`${change.type}-${change.nodeId}`} className="change-row">
+                    <span className={`change-type ${change.type}`}>{change.type}</span>
+                    <span>{change.nodeId}</span>
+                    <small>{changeLabel(change)}</small>
+                  </li>
+                ))}
+              </ol>
+            )}
 
             <PanelTitle title="JSON output" />
             <pre className="json-output">{JSON.stringify(jsonValue, null, 2)}</pre>
@@ -915,6 +932,25 @@ function nodeValueLabel(node: JsonNode): string {
   }
 
   return node.value === undefined ? "" : valueLabel(node.value);
+}
+
+function changeLabel(change: JsonChange): string {
+  if (change.type === "insert") {
+    return nodeChangeLabel(change.after);
+  }
+
+  if (change.type === "delete") {
+    return nodeChangeLabel(change.before);
+  }
+
+  return `${nodeChangeLabel(change.before)} -> ${nodeChangeLabel(change.after)}`;
+}
+
+function nodeChangeLabel(node: JsonNode): string {
+  const key = node.key === null ? "root" : String(node.key);
+  const value = node.children.length > 0 ? `${node.children.length} children` : nodeValueLabel(node);
+
+  return `${key} - ${node.type}${value === "" ? "" : ` - ${value}`}`;
 }
 
 function valueLabel(value: JsonValue): string {

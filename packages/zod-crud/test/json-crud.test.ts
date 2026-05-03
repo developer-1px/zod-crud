@@ -104,7 +104,21 @@ describe("JsonCrud", () => {
     expect(textValueId).not.toBeNull();
 
     expect(editor.update(textValueId!, 123).ok).toBe(false);
-    expect(editor.update(textValueId!, "changed").ok).toBe(true);
+    const result = editor.update(textValueId!, "changed");
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.changes).toEqual([
+        expect.objectContaining({
+          type: "update",
+          nodeId: textValueId,
+          before: expect.objectContaining({ value: "hello" }),
+          after: expect.objectContaining({ value: "changed" }),
+        }),
+      ]);
+    }
+
     expect(editor.toJson()).toEqual({
       kind: "frame",
       name: "root",
@@ -128,6 +142,10 @@ describe("JsonCrud", () => {
 
     if (result.ok) {
       expect(result.nodeId).toBe(pastedTextNodeId);
+      expect(result.changes).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: "update", nodeId: childrenId }),
+        expect.objectContaining({ type: "insert", nodeId: pastedTextNodeId }),
+      ]));
     }
 
     expect(editor.toJson()).toEqual({
@@ -360,7 +378,14 @@ describe("JsonCrud", () => {
     const textNodeId = editor.find(childrenId!, 0);
 
     editor.copy(textNodeId!);
-    expect(editor.paste(rootId).ok).toBe(true);
+    const pasteResult = editor.paste(rootId);
+
+    expect(pasteResult.ok).toBe(true);
+
+    if (pasteResult.ok) {
+      expect(pasteResult.changes?.some((change) => change.type === "insert")).toBe(true);
+    }
+
     expect(editor.toJson().kind).toBe("frame");
 
     const undoResult = editor.undo();
@@ -369,6 +394,7 @@ describe("JsonCrud", () => {
 
     if (undoResult.ok) {
       expect(undoResult.focusNodeId).toBe(textNodeId);
+      expect(undoResult.changes?.some((change) => change.type === "delete")).toBe(true);
     }
 
     expect(editor.toJson()).toEqual({
@@ -385,6 +411,9 @@ describe("JsonCrud", () => {
 
     if (redoResult.ok) {
       expect(redoResult.focusNodeId).toBe(redoneTextNodeId);
+      expect(redoResult.changes).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: "insert", nodeId: redoneTextNodeId }),
+      ]));
     }
 
     expect(editor.toJson()).toEqual({

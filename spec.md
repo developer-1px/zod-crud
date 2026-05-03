@@ -35,6 +35,7 @@ The app must show:
 - the current JSON output
 - the internal clipboard preview
 - the last command result
+- the changed nodes returned by `zod-crud` for the last committed command
 
 ## Treegrid Navigation
 
@@ -66,6 +67,10 @@ by the `zod-crud` redo result.
 - If redo changes an existing node, focus the changed node.
 - If redo removes the active node, recover to the next sibling, previous
   sibling, visible parent, or root.
+
+The showcase must not compute command diffs itself. For create, update, delete,
+cut, paste, undo, and redo result displays, it reads the changed-node list from
+`OperationResult.changes`.
 
 ## Mutation Rules
 
