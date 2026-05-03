@@ -105,7 +105,7 @@ const json = editor.toJson();
 - `serialize()` / `deserialize()`
 - flat JSON node table
 - `create`, `update`, `delete`, `deleteMany`
-- `copy`, `cut`, `paste`
+- `copy`, `copyMany`, `cut`, `cutMany`, `paste`
 - `undo`, `redo`
 - `OperationResult.changes` for changed `JsonDoc` nodes from the operation delta
 - recursive Zod object/array/union path validation

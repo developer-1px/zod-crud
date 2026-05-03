@@ -26,25 +26,45 @@ export function changesForInsertedSubtree(
   after: JsonDoc,
   insertedNodeId: NodeId,
 ): JsonChange[] {
-  const insertedRootId = highestInsertedAncestor(before, after, insertedNodeId);
+  return changesForInsertedSubtrees(before, after, [insertedNodeId]);
+}
+
+export function changesForInsertedSubtrees(
+  before: JsonDoc,
+  after: JsonDoc,
+  insertedNodeIds: NodeId[],
+): JsonChange[] {
+  const insertedRootIds = [...new Set(
+    insertedNodeIds.map((nodeId) => highestInsertedAncestor(before, after, nodeId)),
+  )];
   const changes: JsonChange[] = [];
   const pushedUpdates = new Set<NodeId>();
-  const insertedRoot = after.nodes[insertedRootId];
 
-  if (insertedRoot?.parentId !== null && insertedRoot?.parentId !== undefined) {
-    pushExistingUpdate(changes, pushedUpdates, before, after, insertedRoot.parentId);
+  for (const insertedRootId of insertedRootIds) {
+    const insertedRoot = after.nodes[insertedRootId];
 
-    const parent = after.nodes[insertedRoot.parentId];
+    if (insertedRoot?.parentId !== null && insertedRoot?.parentId !== undefined) {
+      pushExistingUpdate(changes, pushedUpdates, before, after, insertedRoot.parentId);
 
-    if (parent?.type === "array") {
-      for (const childId of parent.children) {
-        pushExistingUpdate(changes, pushedUpdates, before, after, childId);
+      const parent = after.nodes[insertedRoot.parentId];
+
+      if (parent?.type === "array") {
+        for (const childId of parent.children) {
+          pushExistingUpdate(changes, pushedUpdates, before, after, childId);
+        }
       }
     }
   }
 
-  for (const node of collectSubtree(after, insertedRootId)) {
-    if (before.nodes[node.id] === undefined) {
+  const pushedInserts = new Set<NodeId>();
+
+  for (const insertedRootId of insertedRootIds) {
+    for (const node of collectSubtree(after, insertedRootId)) {
+      if (before.nodes[node.id] !== undefined || pushedInserts.has(node.id)) {
+        continue;
+      }
+
+      pushedInserts.add(node.id);
       changes.push({
         type: "insert",
         nodeId: node.id,

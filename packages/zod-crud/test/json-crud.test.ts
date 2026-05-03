@@ -381,6 +381,95 @@ describe("JsonCrud", () => {
     expect(editor.canUndo()).toBe(false);
   });
 
+  it("copies multiple nodes and pastes them into an array target in order", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const firstId = editor.find(childrenId!, 0);
+    const secondId = editor.find(childrenId!, 1);
+
+    const copied = editor.copyMany([firstId!, secondId!]);
+    const result = editor.paste(childrenId!);
+    const firstPastedId = editor.find(childrenId!, 3);
+    const secondPastedId = editor.find(childrenId!, 4);
+
+    expect(copied).toEqual([
+      { kind: "text", text: "first" },
+      { kind: "text", text: "second" },
+    ]);
+    expect(result.ok).toBe(true);
+    expect(firstPastedId).not.toBeNull();
+    expect(secondPastedId).not.toBeNull();
+
+    if (result.ok) {
+      expect(result.focusNodeId).toBe(firstPastedId);
+      expect(result.changes).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: "insert", nodeId: firstPastedId }),
+        expect.objectContaining({ type: "insert", nodeId: secondPastedId }),
+      ]));
+    }
+
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+      ],
+    });
+  });
+
+  it("cuts multiple sibling nodes and keeps them pasteable as a batch", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const firstId = editor.find(childrenId!, 0);
+    const secondId = editor.find(childrenId!, 1);
+
+    const cutResult = editor.cutMany([firstId!, secondId!]);
+
+    expect(cutResult.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "third" },
+      ],
+    });
+
+    const pasteResult = editor.paste(childrenId!);
+
+    expect(pasteResult.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "third" },
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+      ],
+    });
+  });
+
   it("pastes a copied node onto itself as an array sibling before trying child arrays", () => {
     const editor = createJsonCrud(UiNodeSchema, {
       kind: "frame",

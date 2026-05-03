@@ -189,8 +189,8 @@ const entityDefinitions = [
 const defaultEntityId = entityDefinitions[0]?.id ?? "";
 
 const commands: Array<{ id: CommandId; keys: string; operation: string }> = [
-  { id: "copy", keys: "Cmd+C", operation: "copy(row)" },
-  { id: "cut", keys: "Cmd+X", operation: "cut(row)" },
+  { id: "copy", keys: "Cmd+C", operation: "copy(selection)" },
+  { id: "cut", keys: "Cmd+X", operation: "cut(selection)" },
   { id: "paste", keys: "Cmd+V", operation: "paste(row)" },
   { id: "delete", keys: "Delete", operation: "delete(selection)" },
   { id: "undo", keys: "Cmd+Z", operation: "undo()" },
@@ -288,7 +288,7 @@ function App() {
     const before = editor.snapshot();
     const targetId = before.nodes[selection.activeId] === undefined ? before.rootId : selection.activeId;
     const targetIds = liveSelectedIds(before, selection, targetId);
-    const targetLabel = command === "delete" && targetIds.size > 1
+    const targetLabel = ["copy", "cut", "delete"].includes(command) && targetIds.size > 1
       ? `${targetIds.size} selected nodes`
       : nodeLabel(before, targetId);
     let result: OperationResult = { ok: true };
@@ -297,13 +297,13 @@ function App() {
 
     try {
       if (command === "copy") {
-        setClipboardValue(editor.copy(targetId));
+        setClipboardValue(targetIds.size > 1 ? editor.copyMany([...targetIds]) : editor.copy(targetId));
       }
 
       if (command === "cut") {
-        const copied = editor.read(targetId);
+        const copied = targetIds.size > 1 ? [...targetIds].map((nodeId) => editor.read(nodeId)) : editor.read(targetId);
 
-        result = editor.cut(targetId);
+        result = targetIds.size > 1 ? editor.cutMany([...targetIds]) : editor.cut(targetId);
 
         if (result.ok) {
           setClipboardValue(copied);

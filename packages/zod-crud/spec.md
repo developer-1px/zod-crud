@@ -242,6 +242,17 @@ return cloned JSON value
 Copy may throw if `nodeId` is invalid because it returns a JSON value, not an
 `OperationResult`.
 
+### copyMany(nodeIds)
+
+```txt
+dedupe node ids in input order
+any node missing -> throw
+nodeIds empty -> throw
+read each node value in input order
+store clipboard = { values, sourceIds: nodeIds }
+return cloned JSON values
+```
+
 ### cut(nodeId)
 
 ```txt
@@ -251,6 +262,16 @@ delete node
   fail -> leave clipboard unchanged
   success -> clipboard = { value, sourceId: null }
 return delete result
+```
+
+### cutMany(nodeIds)
+
+```txt
+read selected values in input order
+deleteMany(nodeIds)
+  fail -> leave clipboard unchanged
+  success -> clipboard = { values, sourceIds: null }
+return deleteMany result
 ```
 
 ### paste(targetId, options)
@@ -276,6 +297,11 @@ all candidates fail -> return last useful failure
 For insert paste, `nodeId` is the newly inserted subtree root. For overwrite
 paste, `nodeId` is the overwritten target root because replacement preserves
 that root id.
+
+When the clipboard contains multiple values, paste is insert-only. It inserts
+all clipboard values in order into a target array, after a target array item, or
+into one object child-array candidate. Multi-value paste does not overwrite a
+single object or leaf target. `focusNodeId` is the first inserted root.
 
 Auto paste candidate order:
 

@@ -25,12 +25,13 @@ import {
   replaceSubtree,
   serialize,
 } from "../document/json-doc.js";
-import { buildPasteCandidates, type PasteCandidate } from "./json-paste.js";
+import { buildPasteCandidates, buildPasteManyCandidates, type PasteCandidate } from "./json-paste.js";
 import { validateAtPath, validateDocument } from "../schema/json-validation.js";
 import {
   changesForDeletedSubtree,
   changesForDeletedSubtrees,
   changesForInsertedSubtree,
+  changesForInsertedSubtrees,
   changesForReplacedSubtree,
   invertChanges,
   successResult,
@@ -45,6 +46,11 @@ type HistoryEntry = {
   focusNodeId?: NodeId;
 };
 
+type Clipboard = {
+  values: JsonValue[];
+  sourceIds: NodeId[] | null;
+};
+
 export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   snapshot: () => JsonDoc;
   toJson: () => T;
@@ -56,7 +62,9 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   delete: (nodeId: NodeId) => OperationResult;
   deleteMany: (nodeIds: NodeId[]) => OperationResult;
   copy: (nodeId: NodeId) => JsonValue;
+  copyMany: (nodeIds: NodeId[]) => JsonValue[];
   cut: (nodeId: NodeId) => OperationResult;
+  cutMany: (nodeIds: NodeId[]) => OperationResult;
   paste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
   canPaste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
   canUndo: () => boolean;
@@ -80,7 +88,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
   const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
   let undoStack: HistoryEntry[] = [];
   let redoStack: HistoryEntry[] = [];
-  let clipboard: { value: JsonValue; sourceId: NodeId | null } | null = null;
+  let clipboard: Clipboard | null = null;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
 
   const validation = validateDocument(schema, doc);
@@ -223,8 +231,21 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   function copy(nodeId: NodeId): JsonValue {
     const value = read(nodeId);
-    clipboard = { value, sourceId: nodeId };
+    clipboard = { values: [value], sourceIds: [nodeId] };
     return cloneJson(value);
+  }
+
+  function copyMany(nodeIds: NodeId[]): JsonValue[] {
+    const nodes = uniqueNodes(doc, nodeIds);
+
+    if (nodes.length === 0) {
+      throw new Error("No nodes to copy.");
+    }
+
+    const values = nodes.map((node) => read(node.id));
+
+    clipboard = { values, sourceIds: nodes.map((node) => node.id) };
+    return cloneJson(values);
   }
 
   function cut(nodeId: NodeId): OperationResult {
@@ -237,7 +258,23 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const result = deleteNode(nodeId);
 
       if (result.ok) {
-        clipboard = { value, sourceId: null };
+        clipboard = { values: [value], sourceIds: null };
+      }
+
+      return result;
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  function cutMany(nodeIds: NodeId[]): OperationResult {
+    try {
+      const nodes = uniqueNodes(doc, nodeIds);
+      const values = nodes.map((node) => read(node.id));
+      const result = deleteMany(nodes.map((node) => node.id));
+
+      if (result.ok) {
+        clipboard = { values, sourceIds: null };
       }
 
       return result;
@@ -252,7 +289,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
         return { ok: false, reason: "Clipboard is empty." };
       }
 
-      const candidates = pasteCandidates(targetId, cloneJson(clipboard.value), options);
+      const candidates = pasteCandidates(targetId, cloneJson(clipboard.values), options);
       return commitFirstValidPaste(candidates);
     } catch (error) {
       return failure(error);
@@ -267,7 +304,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     const initialNodeIndex = nextNodeIndex;
 
     try {
-      const candidates = pasteCandidates(targetId, cloneJson(clipboard.value), options);
+      const candidates = pasteCandidates(targetId, cloneJson(clipboard.values), options);
       const result = firstValidPasteResult(candidates);
 
       return result.ok ? { ok: true } : result;
@@ -326,17 +363,30 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   function pasteCandidates(
     targetId: NodeId,
-    payload: JsonValue,
+    payloads: JsonValue[],
     pasteOptions: PasteOptions,
   ): PasteCandidate[] {
+    if (payloads.length !== 1) {
+      return buildPasteManyCandidates({
+        doc,
+        schema,
+        targetId,
+        payloads,
+        mode: pasteOptions.mode ?? "auto",
+        childKeys: pasteOptions.childKeys ?? childKeys,
+        index: pasteOptions.index,
+        allocateNodeId,
+      });
+    }
+
     return buildPasteCandidates({
       doc,
       schema,
       targetId,
-      payload,
+      payload: payloads[0]!,
       mode: pasteOptions.mode ?? "auto",
       childKeys: pasteOptions.childKeys ?? childKeys,
-      clipboardSourceId: clipboard?.sourceId ?? null,
+      clipboardSourceId: clipboard?.sourceIds?.[0] ?? null,
       index: pasteOptions.index,
       allocateNodeId,
     });
@@ -350,19 +400,19 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const candidateNodeIndex = nextNodeIndex;
 
       try {
-        const { doc: next, pastedRootId } = candidate.apply();
+        const { doc: next, pastedRootId, pastedRootIds } = candidate.apply();
         const validation = validateDocument(schema, next);
 
         if (validation.ok) {
           const before = cloneDoc(doc);
-          const changes = before.nodes[pastedRootId] === undefined
-            ? changesForInsertedSubtree(before, next, pastedRootId)
+          const changes = pastedRootIds.some((nodeId) => before.nodes[nodeId] === undefined)
+            ? changesForInsertedSubtrees(before, next, pastedRootIds)
             : changesForReplacedSubtree(before, next, pastedRootId);
 
           commit(next, changes, pastedRootId);
           clipboard = clipboard === null
             ? null
-            : { value: cloneJson(clipboard.value), sourceId: pastedRootId };
+            : { values: cloneJson(clipboard.values), sourceIds: pastedRootIds };
           return successResult(before, next, changes, pastedRootId);
         }
 
@@ -457,7 +507,9 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     delete: deleteNode,
     deleteMany,
     copy,
+    copyMany,
     cut,
+    cutMany,
     paste,
     canPaste,
     canUndo,
