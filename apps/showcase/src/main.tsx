@@ -50,8 +50,16 @@ import {
 
 import {
   DesignNodeSchema,
+  OrderViewDocSchema,
+  SALES_ORDER_SCHEMA_CODE,
+  SalesOrderSchema,
+  VIEW_DOC_SCHEMA_CODE,
+  initialSalesOrderData,
   initialDesignJson,
+  orderViewDoc,
   type DesignIconName,
+  type OrderViewDoc,
+  type ViewNode,
   type UiNode,
 } from "./design-schema.js";
 import "./styles.css";
@@ -201,120 +209,32 @@ type LogEntry = {
   reason?: string;
 };
 
-type DataSectionSpec = {
-  title: string;
-  nodeName: string;
-  path: string;
-  schemaCode: string;
-};
-
-type DataSection = DataSectionSpec & {
-  nodeId: NodeId;
-  binding: SelectedComponentBinding;
-  value: JsonValue;
-};
-
 type UiFormPath = Array<string | number>;
+
+type CompiledBinding = {
+  nodeId: string;
+  label: string;
+  path: string;
+  control: string;
+  value: JsonValue | undefined;
+};
+
+type ViewCompileResult = {
+  bindings: CompiledBinding[];
+  issues: string[];
+};
 
 type AnchorPositionStyle = CSSProperties & {
   anchorName?: CSSProperties["anchorName"];
   positionAnchor?: CSSProperties["positionAnchor"];
 };
 
-const UI_TONE_OPTIONS = ["ink", "accent", "danger", "muted", "inverse"] as const;
-const UI_FILL_OPTIONS = ["teal", "amber", "violet", "blue", "surface"] as const;
-const UI_ASPECT_OPTIONS = ["wide", "thumb"] as const;
-const UI_DIRECTION_OPTIONS = ["row", "column"] as const;
-const UI_ICON_OPTIONS = [
-  "search",
-  "bell",
-  "check-circle",
-  "chevron-down",
-  "plus",
-  "send",
-  "layout-template",
-  "database",
-  "history",
-] as const;
-
-const DATA_SECTION_SPECS: DataSectionSpec[] = [
-  {
-    title: "Toolbar",
-    nodeName: "AppToolbar",
-    path: "slots.screen.slots.toolbar",
-    schemaCode: `const AppToolbarSchema = z.object({
-  title: ToolbarTitleSchema,
-  actions: ToolbarActionsSchema,
-  syncStatus: RectNodeSchema,
-});`,
-  },
-  {
-    title: "Hero",
-    nodeName: "HeroCard",
-    path: "slots.screen.slots.hero",
-    schemaCode: `const HeroMediaSchema = z.object({
-  image: ImageNodeSchema.extend({
-    src: z.string().url(),
-    aspect: z.literal("wide"),
-  }),
-  overlay: HeroOverlaySchema,
-});`,
-  },
-  {
-    title: "Schema status",
-    nodeName: "SchemaStatusCard",
-    path: "slots.screen.slots.schemaStatus",
-    schemaCode: `const SchemaStatusCardSchema = z.object({
-  schema: z.literal("SalesOrderSchema"),
-  status: z.literal("Valid snapshot"),
-  detail: z.string().min(1),
-});`,
-  },
-  {
-    title: "CRUD mode",
-    nodeName: "CrudModeTabs",
-    path: "slots.screen.slots.crudMode",
-    schemaCode: `const CrudModeSchema = z.object({
-  operation: z.enum(["create", "read", "update"]),
-  options: z.array(TextNodeSchema).length(3),
-});`,
-  },
-  {
-    title: "Customer field",
-    nodeName: "CustomerNameField",
-    path: "slots.screen.slots.customerField",
-    schemaCode: `const CustomerNameFieldSchema = z.object({
-  field: z.literal("customer.name"),
-  value: z.string().min(2),
-  schema: z.literal("z.string().min(2)"),
-});`,
-  },
-  {
-    title: "Status field",
-    nodeName: "OrderStatusField",
-    path: "slots.screen.slots.statusField",
-    schemaCode: `const OrderStatusFieldSchema = z.object({
-  field: z.literal("status"),
-  value: z.enum(["draft", "paid", "sent"]),
-  control: z.literal("segmentedControl"),
-});`,
-  },
-  {
-    title: "Line items",
-    nodeName: "LineItemsList",
-    path: "slots.screen.slots.lineItems",
-    schemaCode: `const LineItemsSchema = z.array(
-  z.object({
-    title: z.string().min(1),
-    quantity: z.number().int().positive(),
-    image: z.string().url(),
-  }),
-).min(1);`,
-  },
-];
-
 function makeEditor() {
   return createJsonCrud(DesignNodeSchema, initialDesignJson);
+}
+
+function makeSalesOrderEditor() {
+  return createJsonCrud(SalesOrderSchema, initialSalesOrderData);
 }
 
 function App() {
@@ -538,14 +458,6 @@ function App() {
 
       return editorRef.current.update(targetId, `Edited ${new Date().toLocaleTimeString()}`);
     });
-  }
-
-  function updateDataFormField(sectionNodeId: NodeId, path: UiFormPath, value: JsonValue) {
-    run(
-      `form update ${sectionNodeId}`,
-      () => updateUiFormPath(editorRef.current, doc, sectionNodeId, path, value),
-      (_before, after) => [focusableUiNodeId(after, sectionNodeId)],
-    );
   }
 
   function reset() {
@@ -797,13 +709,7 @@ function App() {
         </aside>
       </section>
       ) : (
-        <DataWorkspace
-          doc={doc}
-          selectedPreviewId={selectionBridge.selectedPreviewId}
-          focusedSet={selectionBridge.focusedPreviewIds}
-          onSelect={selectNode}
-          onFormChange={updateDataFormField}
-        />
+        <DataWorkspace />
       )}
     </main>
   );

@@ -487,3 +487,273 @@ export const initialDesignJson = {
   },
   collections: {},
 };
+
+export const SalesOrderStatusSchema = z.union([
+  z.literal("draft"),
+  z.literal("paid"),
+  z.literal("sent"),
+]);
+
+export const LineItemSchema = z.object({
+  title: z.string().min(1),
+  quantity: z.number().int().positive(),
+  image: z.string().url(),
+  status: z.union([z.literal("ok"), z.literal("new")]),
+});
+
+export const SalesOrderSchema = z.object({
+  title: z.string().min(1),
+  status: SalesOrderStatusSchema,
+  customer: z.object({
+    name: z.string().min(2),
+  }),
+  media: z.object({
+    hero: z.object({
+      src: z.string().url(),
+      alt: z.string().min(1),
+    }),
+  }),
+  lineItems: z.array(LineItemSchema).min(1),
+});
+
+export type SalesOrder = z.infer<typeof SalesOrderSchema>;
+
+export const BindingExprSchema = z.object({
+  path: z.string().min(1),
+});
+
+export const FieldControlSchema = z.union([
+  z.literal("text"),
+  z.literal("number"),
+  z.literal("textarea"),
+  z.literal("select"),
+  z.literal("checkbox"),
+  z.literal("image"),
+  z.literal("date"),
+]);
+
+export const ViewNodeSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("view"),
+    title: z.string().min(1).optional(),
+    children: z.array(z.string().min(1)),
+  }),
+  z.object({
+    type: z.literal("section"),
+    title: z.string().min(1).optional(),
+    variant: z.union([
+      z.literal("plain"),
+      z.literal("hero"),
+      z.literal("toolbar"),
+    ]).default("plain"),
+    children: z.array(z.string().min(1)),
+  }),
+  z.object({
+    type: z.literal("field"),
+    label: z.string().min(1),
+    value: BindingExprSchema,
+    control: FieldControlSchema.default("text"),
+    help: z.string().min(1).optional(),
+    options: z.array(z.string().min(1)).optional(),
+  }),
+  z.object({
+    type: z.literal("action"),
+    label: z.string().min(1),
+    action: z.string().min(1),
+    variant: z.union([
+      z.literal("primary"),
+      z.literal("secondary"),
+      z.literal("danger"),
+    ]).default("secondary"),
+  }),
+  z.object({
+    type: z.literal("show"),
+    when: BindingExprSchema,
+    child: z.string().min(1),
+  }),
+  z.object({
+    type: z.literal("each"),
+    label: z.string().min(1).optional(),
+    items: BindingExprSchema,
+    item: z.string().min(1),
+    empty: z.string().min(1).optional(),
+  }),
+]);
+
+export const OrderViewDocSchema = z.object({
+  rootId: z.string().min(1),
+  nodes: z.record(z.string(), ViewNodeSchema),
+}).superRefine((doc, ctx) => {
+  if (doc.nodes[doc.rootId] === undefined) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["rootId"],
+      message: `Missing root node "${doc.rootId}".`,
+    });
+  }
+
+  for (const [nodeId, node] of Object.entries(doc.nodes)) {
+    const childIds =
+      "children" in node ? node.children :
+      node.type === "show" ? [node.child] :
+      node.type === "each" ? [node.item, node.empty].filter((id): id is string => id !== undefined) :
+      [];
+
+    for (const childId of childIds) {
+      if (doc.nodes[childId] === undefined) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["nodes", nodeId],
+          message: `Node "${nodeId}" references missing child "${childId}".`,
+        });
+      }
+    }
+  }
+});
+
+export type BindingExpr = z.infer<typeof BindingExprSchema>;
+export type ViewNode = z.infer<typeof ViewNodeSchema>;
+export type OrderViewDoc = z.infer<typeof OrderViewDocSchema>;
+
+export const initialSalesOrderData: SalesOrder = {
+  title: "Fresh produce order",
+  status: "draft",
+  customer: {
+    name: "Acme Market",
+  },
+  media: {
+    hero: {
+      src: CONTENT_IMAGES.marketHero,
+      alt: "Fresh produce crates for a wholesale order",
+    },
+  },
+  lineItems: [
+    {
+      title: "Organic bundle",
+      quantity: 4,
+      image: CONTENT_IMAGES.organicBundle,
+      status: "ok",
+    },
+    {
+      title: "Cold chain fee",
+      quantity: 1,
+      image: CONTENT_IMAGES.coldChain,
+      status: "new",
+    },
+  ],
+};
+
+export const orderViewDoc: OrderViewDoc = {
+  rootId: "orderView",
+  nodes: {
+    orderView: {
+      type: "view",
+      title: "Order intake",
+      children: ["hero", "fields", "items", "actions"],
+    },
+    hero: {
+      type: "section",
+      title: "Media",
+      variant: "hero",
+      children: ["heroImage", "heroTitle"],
+    },
+    heroImage: {
+      type: "field",
+      label: "Hero image",
+      value: { path: "/media/hero/src" },
+      control: "image",
+      help: "Validated by z.string().url() on the entity schema.",
+    },
+    heroTitle: {
+      type: "field",
+      label: "Title",
+      value: { path: "/title" },
+      control: "text",
+    },
+    fields: {
+      type: "section",
+      title: "Record fields",
+      children: ["customerName", "status"],
+    },
+    customerName: {
+      type: "field",
+      label: "Customer",
+      value: { path: "/customer/name" },
+      control: "text",
+    },
+    status: {
+      type: "field",
+      label: "Status",
+      value: { path: "/status" },
+      control: "select",
+      options: ["draft", "paid", "sent"],
+    },
+    items: {
+      type: "each",
+      label: "Line items",
+      items: { path: "/lineItems" },
+      item: "lineItemFields",
+    },
+    lineItemFields: {
+      type: "section",
+      children: ["itemImage", "itemTitle", "itemQuantity"],
+    },
+    itemImage: {
+      type: "field",
+      label: "Image",
+      value: { path: "image" },
+      control: "image",
+    },
+    itemTitle: {
+      type: "field",
+      label: "Title",
+      value: { path: "title" },
+      control: "text",
+    },
+    itemQuantity: {
+      type: "field",
+      label: "Quantity",
+      value: { path: "quantity" },
+      control: "number",
+    },
+    actions: {
+      type: "section",
+      variant: "toolbar",
+      children: ["save"],
+    },
+    save: {
+      type: "action",
+      label: "Save record",
+      action: "submit",
+      variant: "primary",
+    },
+  },
+};
+
+export const SALES_ORDER_SCHEMA_CODE = `const SalesOrderSchema = z.object({
+  title: z.string().min(1),
+  status: z.enum(["draft", "paid", "sent"]),
+  customer: z.object({
+    name: z.string().min(2),
+  }),
+  media: z.object({
+    hero: z.object({
+      src: z.string().url(),
+      alt: z.string().min(1),
+    }),
+  }),
+  lineItems: z.array(LineItemSchema).min(1),
+});`;
+
+export const VIEW_DOC_SCHEMA_CODE = `type ViewDoc = {
+  rootId: string;
+  nodes: Record<string, ViewNode>;
+};
+
+type ViewNode =
+  | View
+  | Section
+  | Field
+  | Action
+  | Show
+  | Each;`;
