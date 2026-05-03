@@ -393,7 +393,10 @@ describe("JsonCrud", () => {
     expect(undoResult.ok).toBe(true);
 
     if (undoResult.ok) {
-      expect(undoResult.focusNodeId).toBe(textNodeId);
+      expect(undoResult.focusNodeId).toBe(childrenId);
+      expect(undoResult.changes).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: "update", nodeId: childrenId }),
+      ]));
       expect(undoResult.changes?.some((change) => change.type === "delete")).toBe(true);
     }
 

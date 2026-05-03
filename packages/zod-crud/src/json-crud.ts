@@ -629,30 +629,31 @@ function cloneNode(node: JsonNode): JsonNode {
 }
 
 function focusFromDiff(before: JsonDoc, after: JsonDoc): NodeId {
-  const insertedRoot = Object.values(after.nodes)
-    .filter((node) => before.nodes[node.id] === undefined)
+  const changes = changesFromDiff(before, after);
+  const insertedRoot = changes
+    .filter((change) => change.type === "insert")
+    .map((change) => change.after)
     .find((node) => node.parentId !== null && before.nodes[node.parentId] !== undefined);
 
   if (insertedRoot !== undefined) {
     return insertedRoot.id;
   }
 
-  const removedRoot = Object.values(before.nodes)
-    .filter((node) => after.nodes[node.id] === undefined)
+  const changedExisting = changes.find((change) =>
+    change.type === "update" && after.nodes[change.nodeId] !== undefined
+  );
+
+  if (changedExisting !== undefined) {
+    return changedExisting.nodeId;
+  }
+
+  const removedRoot = changes
+    .filter((change) => change.type === "delete")
+    .map((change) => change.before)
     .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
 
   if (removedRoot !== undefined) {
     return focusAfterRemoval(before, after, removedRoot.id);
-  }
-
-  const changedExisting = Object.values(after.nodes).find((node) => {
-    const previous = before.nodes[node.id];
-
-    return previous !== undefined && !sameNode(previous, node);
-  });
-
-  if (changedExisting !== undefined) {
-    return changedExisting.id;
   }
 
   return after.rootId;

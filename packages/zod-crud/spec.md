@@ -306,6 +306,15 @@ compute focusNodeId from before/after JsonDoc diff
 return { ok: true, focusNodeId, changes }
 ```
 
+Undo/redo diff focus priority:
+
+```txt
+if diff inserts a live subtree -> focus inserted subtree root
+else if diff updates an existing live node -> focus that updated node
+else if diff only deletes nodes -> recover to next sibling, previous sibling,
+  live parent, or root
+```
+
 ## Package Contract
 
 - Package is ESM-only.

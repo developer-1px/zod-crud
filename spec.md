@@ -60,12 +60,12 @@ by the `zod-crud` paste result.
 - Ancestors of the selected paste result are expanded so the focused row stays
   visible.
 
-After a successful redo, the active row must follow the `focusNodeId` returned
-by the `zod-crud` redo result.
+After a successful undo or redo, the active row must follow the `focusNodeId`
+returned by the `zod-crud` result.
 
-- If redo inserts a subtree, focus the inserted subtree root.
-- If redo changes an existing node, focus the changed node.
-- If redo removes the active node, recover to the next sibling, previous
+- If history replay inserts a subtree, focus the inserted subtree root.
+- If history replay changes an existing live node, focus the changed node.
+- If history replay only removes nodes, recover to the next sibling, previous
   sibling, visible parent, or root.
 
 The showcase must not compute command diffs itself. For create, update, delete,
