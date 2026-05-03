@@ -2,8 +2,8 @@ import {
   formatPath,
   hasOwn,
   isJsonObject,
-} from "./json-doc.js";
-import type { JsonPath, JsonValue } from "./types.js";
+} from "../document/json-doc.js";
+import type { JsonPath, JsonValue } from "../types.js";
 
 export function sameJson(left: JsonValue, right: JsonValue): boolean {
   if (Array.isArray(left) || Array.isArray(right)) {

@@ -4,7 +4,7 @@ import type {
   JsonNode,
   NodeId,
   OperationResult,
-} from "./types.js";
+} from "../types.js";
 
 export function successResult(
   before: JsonDoc,

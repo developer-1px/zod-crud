@@ -6,7 +6,7 @@ import type {
   JsonValue,
   NodeId,
   PasteOptions,
-} from "./types.js";
+} from "../types.js";
 import {
   cloneDoc,
   ensureObjectArrayField,
@@ -14,8 +14,8 @@ import {
   getPath,
   insertChild,
   replaceSubtree,
-} from "./json-doc.js";
-import { objectArrayFieldKeys, schemaAtPath } from "./schema-path.js";
+} from "../document/json-doc.js";
+import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
 
 export type PasteCandidate = {
   apply: () => {

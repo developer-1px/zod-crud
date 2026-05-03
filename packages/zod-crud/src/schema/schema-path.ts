@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-import type { JsonPath } from "./types.js";
+import type { JsonPath } from "../types.js";
 
 type AnySchema = z.ZodType<unknown>;
 

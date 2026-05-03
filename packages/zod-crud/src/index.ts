@@ -1,16 +1,16 @@
 export {
   createJsonCrud,
-} from "./json-crud.js";
+} from "./editor/json-crud.js";
 
 export {
   deserialize,
   getPath,
   serialize,
-} from "./json-doc.js";
+} from "./document/json-doc.js";
 
 export type {
   JsonCrud,
-} from "./json-crud.js";
+} from "./editor/json-crud.js";
 
 export type {
   JsonArray,

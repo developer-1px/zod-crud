@@ -9,7 +9,7 @@ import type {
   NodeId,
   OperationResult,
   PasteOptions,
-} from "./types.js";
+} from "../types.js";
 import {
   cloneDoc,
   cloneJson,
@@ -22,9 +22,9 @@ import {
   removeSubtree,
   replaceSubtree,
   serialize,
-} from "./json-doc.js";
+} from "../document/json-doc.js";
 import { buildPasteCandidates, type PasteCandidate } from "./json-paste.js";
-import { validateAtPath, validateDocument } from "./json-validation.js";
+import { validateAtPath, validateDocument } from "../schema/json-validation.js";
 import { successResult } from "./operation-result.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];

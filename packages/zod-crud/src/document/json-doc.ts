@@ -5,7 +5,7 @@ import type {
   JsonPath,
   JsonValue,
   NodeId,
-} from "./types.js";
+} from "../types.js";
 
 export function serialize(value: JsonValue): JsonDoc {
   const doc: JsonDoc = { rootId: "n1", nodes: {} };

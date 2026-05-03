@@ -5,12 +5,12 @@ import type {
   JsonPath,
   JsonValue,
   OperationResult,
-} from "./types.js";
+} from "../types.js";
 import { firstJsonDifference, sameJson } from "./json-diff.js";
 import {
   deserialize,
   formatPath,
-} from "./json-doc.js";
+} from "../document/json-doc.js";
 import { schemaAtPath } from "./schema-path.js";
 
 export function validateAtPath(
