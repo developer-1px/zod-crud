@@ -620,34 +620,11 @@ function DataSectionPanel({
       </section>
       <section className="block-entities">
         <Text type="secondary">Entities(zod)</Text>
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="id"
-          childrenColumnName="nestedChildren"
-          columns={[
-            { title: "entity path", dataIndex: "path" },
-            { title: "zod", dataIndex: "schema" },
-            { title: "value", dataIndex: "value", ellipsis: true },
-          ]}
-          dataSource={entityRowsForBlock(block, order)}
-        />
+        <pre className="source-block">{entitySourceForBlock(block)}</pre>
       </section>
       <section className="block-bindings">
         <Text type="secondary">UI Data</Text>
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="id"
-          childrenColumnName="nestedChildren"
-          columns={[
-            { title: "field", dataIndex: "label" },
-            { title: "path", dataIndex: "path" },
-            { title: "control", dataIndex: "control" },
-            { title: "value", dataIndex: "value", ellipsis: true },
-          ]}
-          dataSource={bindingRowsForBlock(block, order)}
-        />
+        <pre className="source-block">{uiDataSourceForBlock(block)}</pre>
       </section>
       <section className="block-controls">
         <Text type="secondary">Form gen</Text>
@@ -1177,81 +1154,78 @@ function nodeAtPointer(doc: JsonDoc, path: string): NodeId | null {
   return currentId;
 }
 
-function bindingRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
+function uiDataSourceForBlock(block: DataSectionBlock) {
   if (block.kind === "action") {
-    return [
-      {
-        id: "save",
-        label: "Save record",
-        path: "$commit",
-        control: "action",
-        value: "valid commit",
-      },
-    ];
+    return `{
+  type: "section",
+  variant: "toolbar",
+  children: [
+    { type: "action", label: "Save record", action: "submit" }
+  ]
+}`;
   }
 
   if (block.kind === "each") {
-    return block.fields.map((field) => ({
-      id: field.id,
-      label: field.label,
-      path: `${block.repeatPath ?? ""}[].${field.path}`,
-      control: field.control,
-      value: `${order.lineItems.length} rows`,
-    }));
+    return `{
+  type: "each",
+  label: "${block.title}",
+  items: { path: "${block.repeatPath}" },
+  item: {
+    type: "section",
+    children: [
+${block.fields.map((field) => `      { type: "field", label: "${field.label}", value: { path: "${field.path}" }, control: "${field.control}" }`).join(",\n")}
+    ]
+  }
+}`;
   }
 
-  return block.fields.map((field) => ({
-    id: field.id,
-    label: field.label,
-    path: field.path,
-    control: field.control,
-    value: displayJsonValue(valueAtPointer(order, field.path)),
-  }));
+  return `{
+  type: "section",
+  title: "${block.title}",
+  children: [
+${block.fields.map((field) => `    { type: "field", label: "${field.label}", value: { path: "${field.path}" }, control: "${field.control}" }`).join(",\n")}
+  ]
+}`;
 }
 
-function entityRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
-  if (block.kind === "action") {
-    return [
-      {
-        id: "commit",
-        path: "$commit",
-        schema: "safeParse",
-        value: "valid commit",
-      },
-    ];
+function entitySourceForBlock(block: DataSectionBlock) {
+  if (block.id === "hero") {
+    return `const SalesOrderSchema = z.object({
+  title: z.string().min(1),
+  media: z.object({
+    hero: z.object({
+      src: z.string().url(),
+      alt: z.string().min(1),
+    }),
+  }),
+});`;
   }
 
-  if (block.kind === "each") {
-    return block.fields.map((field) => ({
-      id: field.id,
-      path: `${block.repeatPath ?? ""}[].${field.path}`,
-      schema: schemaForField(field),
-      value: `${order.lineItems.length} rows`,
-    }));
+  if (block.id === "fields") {
+    return `const SalesOrderSchema = z.object({
+  customer: z.object({
+    name: z.string().min(2),
+  }),
+  status: z.enum(["draft", "paid", "sent"]),
+});`;
   }
 
-  return block.fields.map((field) => ({
-    id: field.id,
-    path: field.path,
-    schema: schemaForField(field),
-    value: displayJsonValue(valueAtPointer(order, field.path)),
-  }));
-}
+  if (block.id === "items") {
+    return `const LineItemSchema = z.object({
+  title: z.string().min(1),
+  quantity: z.number().int().positive(),
+  image: z.string().url(),
+  status: z.enum(["ok", "new"]),
+});
 
-function schemaForField(field: DataField) {
-  if (field.control === "number") {
-    return "z.number().int().positive()";
+const SalesOrderSchema = z.object({
+  lineItems: z.array(LineItemSchema).min(1),
+});`;
   }
 
-  if (field.control === "select") {
-    return `z.enum(${JSON.stringify(field.options ?? [])})`;
-  }
+  return `const SubmitSchema = SalesOrderSchema;
 
-  if (field.control === "image") {
-    return "z.string().url()";
-  }
-
-  return "z.string().min(1)";
+SubmitSchema.safeParse(currentEntity);`;
 }
 
 function valueAtPointer(value: JsonValue, path: string): JsonValue | undefined {
