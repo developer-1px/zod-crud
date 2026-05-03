@@ -1013,7 +1013,7 @@ function MobilePreview({
         <section className="mobile-content-block">
           <div className="mobile-section-title">
             <Text strong>Record</Text>
-            <Tag color="blue">{order.status}</Tag>
+            <Tag>{order.status}</Tag>
           </div>
 
           <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName} className="mobile-field-row">
@@ -1062,7 +1062,7 @@ function MobilePreview({
             <Text type="secondary">SalesOrderSchema</Text>
             <Title level={5}>Valid snapshot</Title>
           </div>
-          <Tag color="green">safeParse</Tag>
+          <Tag>safeParse</Tag>
         </SelectablePreview>
 
         <div className="mobile-action-area">
