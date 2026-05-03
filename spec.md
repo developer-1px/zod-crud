@@ -59,6 +59,14 @@ the `zod-crud` paste result.
 - Ancestors of the selected paste result are expanded so the focused row stays
   visible.
 
+After a successful redo, the active row must be chosen from the `JsonDoc`
+before/after diff.
+
+- If redo inserts a subtree, focus the inserted subtree root.
+- If redo changes an existing node, focus the changed node.
+- If redo removes the active node, recover to the next sibling, previous
+  sibling, visible parent, or root.
+
 ## Mutation Rules
 
 All document mutations must go through `zod-crud`.

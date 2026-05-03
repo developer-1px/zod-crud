@@ -34,3 +34,7 @@ Treegrid navigation:
 After paste, focus follows the `nodeId` returned by `zod-crud`. If paste inserts
 a child or sibling, the new subtree root is selected. If paste overwrites a
 node, the target stays selected because that root id is preserved.
+
+After redo, focus is computed from the `JsonDoc` diff. Insert redo selects the
+inserted root, update redo selects the changed node, and delete redo recovers to
+the nearest remaining row.

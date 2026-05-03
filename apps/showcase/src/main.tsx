@@ -324,7 +324,11 @@ function App() {
         result = editor.redo()
           ? { ok: true }
           : { ok: false, reason: "Redo stack is empty." };
-        nextSelection = keepSelectionOrRoot(editor.snapshot(), targetId);
+
+        if (result.ok) {
+          nextSelection = focusFromDiff(before, editor.snapshot(), targetId);
+          setActiveColumn(0);
+        }
       }
     } catch (error) {
       result = failure(error);
@@ -904,6 +908,49 @@ function recoverSelection(before: JsonDoc, after: JsonDoc, removedId: NodeId): N
   }
 
   return after.rootId;
+}
+
+function focusFromDiff(before: JsonDoc, after: JsonDoc, fallbackId: NodeId): NodeId {
+  const insertedRoot = Object.values(after.nodes)
+    .filter((node) => before.nodes[node.id] === undefined)
+    .find((node) => node.parentId !== null && before.nodes[node.parentId] !== undefined);
+
+  if (insertedRoot !== undefined) {
+    return insertedRoot.id;
+  }
+
+  if (after.nodes[fallbackId] === undefined && before.nodes[fallbackId] !== undefined) {
+    return recoverSelection(before, after, fallbackId);
+  }
+
+  const changedExisting = Object.values(after.nodes).find((node) => {
+    const previous = before.nodes[node.id];
+
+    return previous !== undefined && !sameNode(previous, node);
+  });
+
+  if (changedExisting !== undefined) {
+    return changedExisting.id;
+  }
+
+  const removedRoot = Object.values(before.nodes)
+    .filter((node) => after.nodes[node.id] === undefined)
+    .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
+
+  if (removedRoot !== undefined) {
+    return recoverSelection(before, after, removedRoot.id);
+  }
+
+  return keepSelectionOrRoot(after, fallbackId);
+}
+
+function sameNode(left: JsonNode, right: JsonNode): boolean {
+  return left.type === right.type &&
+    left.parentId === right.parentId &&
+    left.key === right.key &&
+    left.value === right.value &&
+    left.children.length === right.children.length &&
+    left.children.every((childId, index) => childId === right.children[index]);
 }
 
 function nearestExistingParent(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId | null {
