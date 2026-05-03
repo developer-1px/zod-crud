@@ -312,13 +312,12 @@ Mutation focus priority:
 if primary nodeId is still live after commit -> focus primary nodeId
 else if diff inserts a live subtree -> focus inserted subtree root
 else if diff updates an existing live node -> focus that updated node
-else if diff only deletes nodes -> recover to next sibling, previous sibling,
-  live parent, or root
+else -> focus root
 ```
 
 CRUD, paste, undo, and redo all use this same focus strategy. Delete is not a
-separate sibling-recovery policy; if deleting a node updates a live parent or
-container, focus follows that changed live node first.
+separate sibling-recovery policy; deleting a node updates a live parent or
+container, so focus follows that changed live node.
 
 ## Package Contract
 

@@ -58,8 +58,7 @@ row must follow the `focusNodeId` returned by the `zod-crud` result.
 - If replay inserts a subtree with no primary node, focus the inserted subtree
   root.
 - If the operation changes an existing live node, focus the changed node.
-- If the operation only removes nodes, recover to the next sibling, previous
-  sibling, visible parent, or root.
+- If none of those exist, focus the root.
 - Ancestors of the selected result are expanded so the focused row stays
   visible.
 

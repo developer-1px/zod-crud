@@ -638,13 +638,14 @@ function focusFromMutation(
     return primaryNodeId;
   }
 
-  const insertedRoot = changes
-    .filter((change) => change.type === "insert")
-    .map((change) => change.after)
-    .find((node) => node.parentId !== null && before.nodes[node.parentId] !== undefined);
+  const insertedRoot = changes.find((change) =>
+    change.type === "insert" &&
+    change.after.parentId !== null &&
+    before.nodes[change.after.parentId] !== undefined
+  );
 
   if (insertedRoot !== undefined) {
-    return insertedRoot.id;
+    return insertedRoot.nodeId;
   }
 
   const changedExisting = changes.find((change) =>
@@ -655,60 +656,7 @@ function focusFromMutation(
     return changedExisting.nodeId;
   }
 
-  const removedRoot = changes
-    .filter((change) => change.type === "delete")
-    .map((change) => change.before)
-    .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
-
-  if (removedRoot !== undefined) {
-    return focusAfterRemoval(before, after, removedRoot.id);
-  }
-
   return after.rootId;
-}
-
-function focusAfterRemoval(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
-  const oldNode = before.nodes[removedId];
-
-  if (oldNode === undefined) {
-    return after.rootId;
-  }
-
-  const siblings = oldNode.parentId === null ? [] : before.nodes[oldNode.parentId]?.children ?? [];
-  const oldIndex = siblings.indexOf(removedId);
-  const candidates = [
-    siblings[oldIndex + 1],
-    siblings[oldIndex - 1],
-    oldNode.parentId,
-  ].filter((id): id is NodeId => id !== undefined);
-
-  for (const candidate of candidates) {
-    if (after.nodes[candidate] !== undefined) {
-      return candidate;
-    }
-
-    const parent = nearestExistingParent(before, after, candidate);
-
-    if (parent !== null) {
-      return parent;
-    }
-  }
-
-  return after.rootId;
-}
-
-function nearestExistingParent(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId | null {
-  let current = before.nodes[nodeId];
-
-  while (current !== undefined) {
-    if (after.nodes[current.id] !== undefined) {
-      return current.id;
-    }
-
-    current = current.parentId === null ? undefined : before.nodes[current.parentId];
-  }
-
-  return null;
 }
 
 function sameNode(left: JsonNode, right: JsonNode): boolean {
