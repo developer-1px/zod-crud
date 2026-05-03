@@ -580,6 +580,14 @@ function focusFromDiff(before: JsonDoc, after: JsonDoc): NodeId {
     return insertedRoot.id;
   }
 
+  const removedRoot = Object.values(before.nodes)
+    .filter((node) => after.nodes[node.id] === undefined)
+    .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
+
+  if (removedRoot !== undefined) {
+    return focusAfterRemoval(before, after, removedRoot.id);
+  }
+
   const changedExisting = Object.values(after.nodes).find((node) => {
     const previous = before.nodes[node.id];
 
@@ -588,14 +596,6 @@ function focusFromDiff(before: JsonDoc, after: JsonDoc): NodeId {
 
   if (changedExisting !== undefined) {
     return changedExisting.id;
-  }
-
-  const removedRoot = Object.values(before.nodes)
-    .filter((node) => after.nodes[node.id] === undefined)
-    .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
-
-  if (removedRoot !== undefined) {
-    return focusAfterRemoval(before, after, removedRoot.id);
   }
 
   return after.rootId;
