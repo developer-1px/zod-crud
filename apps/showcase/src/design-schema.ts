@@ -673,6 +673,7 @@ export const orderViewDoc: OrderViewDoc = {
     fields: {
       type: "section",
       title: "Record fields",
+      variant: "plain",
       children: ["customerName", "status"],
     },
     customerName: {
@@ -696,6 +697,7 @@ export const orderViewDoc: OrderViewDoc = {
     },
     lineItemFields: {
       type: "section",
+      variant: "plain",
       children: ["itemImage", "itemTitle", "itemQuantity"],
     },
     itemImage: {

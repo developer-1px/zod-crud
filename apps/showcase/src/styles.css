@@ -1878,6 +1878,7 @@ tr.focused.selected {
 }
 
 .generated-field input,
+.generated-field textarea,
 .generated-field select {
   width: 100%;
   min-width: 0;
@@ -1890,6 +1891,12 @@ tr.focused.selected {
   font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
+}
+
+.generated-field textarea {
+  min-height: 76px;
+  padding: 8px 9px;
+  resize: vertical;
 }
 
 .generated-field select:disabled {
@@ -1962,6 +1969,91 @@ tr.focused.selected {
   border-bottom: 1px solid var(--stroke);
   border-radius: 0;
   background: transparent;
+}
+
+.view-showcase {
+  overflow: visible;
+}
+
+.view-showcase-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, auto);
+  align-items: end;
+  gap: 18px;
+  padding: 16px;
+  border-bottom: 1px solid var(--stroke);
+}
+
+.view-showcase-head span {
+  display: block;
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.view-showcase-head h2 {
+  margin: 0;
+  color: #171a21;
+  font-size: 20px;
+  font-weight: 680;
+  line-height: 1.1;
+}
+
+.view-status-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.view-status-list div {
+  min-width: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--stroke);
+}
+
+.view-status-list dt {
+  margin: 0 0 4px;
+  color: var(--faint);
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.view-status-list dd {
+  margin: 0;
+  color: #20283a;
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.view-showcase-grid {
+  display: grid;
+  grid-template-columns: minmax(300px, 0.78fr) repeat(2, minmax(260px, 1fr));
+  align-items: start;
+  gap: 0;
+  min-width: 0;
+  padding: 0 16px 16px;
+}
+
+.view-form-surface {
+  grid-row: span 2;
+  border-left: 0;
+}
+
+.view-schema-form {
+  max-height: none;
+}
+
+.view-binding-list {
+  margin-bottom: 10px;
+}
+
+.view-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 11px;
+  line-height: 1.4;
 }
 
 .data-section-card {
@@ -2149,6 +2241,7 @@ input,
 .generated-section h5,
 .generated-field span,
 .generated-field input,
+.generated-field textarea,
 .generated-field select,
 .generated-field small,
 .generated-action,
@@ -2245,6 +2338,11 @@ td,
   }
 
   .data-section-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .view-showcase-head,
+  .view-showcase-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 

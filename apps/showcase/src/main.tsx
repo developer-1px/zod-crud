@@ -767,266 +767,487 @@ function modeTabClass(currentMode: WorkspaceMode, mode: WorkspaceMode) {
   return currentMode === mode ? "mode-tab active" : "mode-tab";
 }
 
-function DataWorkspace({
-  doc,
-  selectedPreviewId,
-  focusedSet,
-  onSelect,
-  onFormChange,
-}: {
-  doc: JsonDoc;
-  selectedPreviewId: NodeId;
-  focusedSet: Set<NodeId>;
-  onSelect: (nodeId: NodeId) => void;
-  onFormChange: (sectionNodeId: NodeId, path: UiFormPath, value: JsonValue) => void;
-}) {
-  const sections = resolveDataSections(doc);
+function DataWorkspace() {
+  const entityEditorRef = useRef(makeSalesOrderEditor());
+  const [version, setVersion] = useState(0);
+  const [lastResult, setLastResult] = useState<OperationResult | null>(null);
+
+  const entityDoc = useMemo(() => entityEditorRef.current.snapshot(), [version]);
+  const data = useMemo(() => entityEditorRef.current.toJson(), [version]);
+  const entityValidation = SalesOrderSchema.safeParse(data);
+  const viewValidation = OrderViewDocSchema.safeParse(orderViewDoc);
+  const viewPlan = useMemo(() => compileViewDoc(orderViewDoc, data), [data]);
+  const statusItems = [
+    { label: "EntitySchema", ok: entityValidation.success },
+    { label: "ViewDoc", ok: viewValidation.success },
+    { label: "Bindings", ok: viewPlan.issues.length === 0 },
+  ];
+
+  function updateBinding(path: string, value: JsonValue) {
+    const result = updateEntityBinding(entityEditorRef.current, entityDoc, path, value);
+
+    setLastResult(result);
+
+    if (result.ok) {
+      setVersion((current) => current + 1);
+    }
+  }
 
   return (
-    <section className="data-workspace" aria-label="Data and component bindings">
-      <div className="data-map">
-        {sections.map((section) => (
-          <DataSectionCard
-            key={section.nodeId}
-            doc={doc}
-            section={section}
-            selectedPreviewId={selectedPreviewId}
-            focusedSet={focusedSet}
-            onSelect={onSelect}
-            onFormChange={onFormChange}
-          />
-        ))}
+    <section className="data-workspace" aria-label="Entity schema and form showcase">
+      <div className="data-map view-showcase">
+        <div className="view-showcase-head">
+          <div>
+            <span>Entity Zod + ViewDoc</span>
+            <h2>Form showcase</h2>
+          </div>
+          <dl className="view-status-list">
+            {statusItems.map((item) => (
+              <div key={item.label}>
+                <dt>{item.label}</dt>
+                <dd>{item.ok ? "valid" : "failed"}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+
+        <div className="view-showcase-grid">
+          <section className="data-form-panel view-form-surface">
+            <div className="data-column-title">
+              <span>Generated Form</span>
+            </div>
+            <ViewFormRenderer
+              viewDoc={orderViewDoc}
+              data={data}
+              onChange={updateBinding}
+            />
+            {lastResult === null || lastResult.ok ? null : (
+              <p className="view-error">{lastResult.reason}</p>
+            )}
+          </section>
+
+          <section className="data-code-panel">
+            <div className="data-column-title">
+              <span>EntitySchema</span>
+            </div>
+            <pre className="data-schema">{SALES_ORDER_SCHEMA_CODE}</pre>
+          </section>
+
+          <section className="data-code-panel">
+            <div className="data-column-title">
+              <span>ViewSchema</span>
+            </div>
+            <pre className="data-schema">{VIEW_DOC_SCHEMA_CODE}</pre>
+          </section>
+
+          <section className="data-code-panel">
+            <div className="data-column-title">
+              <span>ViewDoc</span>
+            </div>
+            <pre className="data-json">{JSON.stringify(orderViewDoc, null, 2)}</pre>
+          </section>
+
+          <section className="data-code-panel">
+            <div className="data-column-title">
+              <span>Binding compiler</span>
+            </div>
+            <dl className="data-binding-list view-binding-list">
+              <div>
+                <dt>Fields</dt>
+                <dd>{viewPlan.bindings.length}</dd>
+              </div>
+              <div>
+                <dt>Issues</dt>
+                <dd>{viewPlan.issues.length}</dd>
+              </div>
+              <div>
+                <dt>Updates</dt>
+                <dd>zod-crud</dd>
+              </div>
+            </dl>
+            <pre className="data-json">{JSON.stringify(viewPlan, null, 2)}</pre>
+          </section>
+
+          <section className="data-code-panel">
+            <div className="data-column-title">
+              <span>Entity data</span>
+            </div>
+            <pre className="data-json">{JSON.stringify(data, null, 2)}</pre>
+          </section>
+        </div>
       </div>
     </section>
   );
 }
 
-function UiSchemaForm({
-  value,
+function ViewFormRenderer({
+  viewDoc,
+  data,
   onChange,
 }: {
-  value: JsonValue;
-  onChange: (path: UiFormPath, value: JsonValue) => void;
+  viewDoc: OrderViewDoc;
+  data: JsonValue;
+  onChange: (path: string, value: JsonValue) => void;
 }) {
-  const result = DesignNodeSchema.safeParse(value);
+  const root = viewDoc.nodes[viewDoc.rootId];
 
-  if (!result.success) {
+  if (root === undefined) {
     return (
       <form className="generated-form" onSubmit={(event) => event.preventDefault()}>
-        <h4>Unsupported value</h4>
-        <UiFormField
-          label="Schema"
-          path={[]}
-          value="DesignNodeSchema parse failed"
-          onChange={() => undefined}
-        />
+        <h4>Missing root view</h4>
       </form>
     );
   }
 
   return (
-    <form className="generated-form ui-schema-form" onSubmit={(event) => event.preventDefault()}>
-      <h4>{result.data.name}</h4>
-      <UiSchemaFormNode node={result.data} path={[]} onChange={onChange} />
+    <form className="generated-form view-schema-form" onSubmit={(event) => event.preventDefault()}>
+      <ViewNodeRenderer
+        viewDoc={viewDoc}
+        nodeId={viewDoc.rootId}
+        data={data}
+        scopePath=""
+        onChange={onChange}
+      />
     </form>
   );
 }
 
-function UiSchemaFormNode({
+function ViewNodeRenderer({
+  viewDoc,
+  nodeId,
+  data,
+  scopePath,
+  onChange,
+}: {
+  viewDoc: OrderViewDoc;
+  nodeId: string;
+  data: JsonValue;
+  scopePath: string;
+  onChange: (path: string, value: JsonValue) => void;
+}) {
+  const node = viewDoc.nodes[nodeId];
+
+  if (node === undefined) {
+    return null;
+  }
+
+  if (node.type === "view") {
+    return (
+      <>
+        <h4>{node.title ?? "View"}</h4>
+        {node.children.map((childId) => (
+          <ViewNodeRenderer
+            key={childId}
+            viewDoc={viewDoc}
+            nodeId={childId}
+            data={data}
+            scopePath={scopePath}
+            onChange={onChange}
+          />
+        ))}
+      </>
+    );
+  }
+
+  if (node.type === "section") {
+    return (
+      <section className={`generated-section ${node.variant}`}>
+        {node.title === undefined ? null : <h5>{node.title}</h5>}
+        <div className="generated-section-body">
+          {node.children.map((childId) => (
+            <ViewNodeRenderer
+              key={childId}
+              viewDoc={viewDoc}
+              nodeId={childId}
+              data={data}
+              scopePath={scopePath}
+              onChange={onChange}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (node.type === "field") {
+    const path = resolveBindingPath(node.value.path, scopePath);
+    const value = valueAtBindingPath(data, path);
+
+    return (
+      <ViewFormField
+        node={node}
+        path={path}
+        value={value}
+        onChange={onChange}
+      />
+    );
+  }
+
+  if (node.type === "each") {
+    const itemsPath = resolveBindingPath(node.items.path, scopePath);
+    const items = valueAtBindingPath(data, itemsPath);
+
+    if (!Array.isArray(items)) {
+      return (
+        <section className="generated-section">
+          <h5>{node.label ?? "Items"}</h5>
+          <p className="view-error">{itemsPath} is not an array.</p>
+        </section>
+      );
+    }
+
+    return (
+      <section className="generated-section">
+        <h5>{node.label ?? "Items"}</h5>
+        <div className="generated-list">
+          {items.map((item, index) => (
+            <div key={index} className="generated-list-item">
+              <ViewNodeRenderer
+                viewDoc={viewDoc}
+                nodeId={node.item}
+                data={data}
+                scopePath={joinBindingPath(itemsPath, String(index))}
+                onChange={onChange}
+              />
+            </div>
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (node.type === "show") {
+    const conditionPath = resolveBindingPath(node.when.path, scopePath);
+    return valueAtBindingPath(data, conditionPath) ? (
+      <ViewNodeRenderer
+        viewDoc={viewDoc}
+        nodeId={node.child}
+        data={data}
+        scopePath={scopePath}
+        onChange={onChange}
+      />
+    ) : null;
+  }
+
+  return (
+    <button className={`generated-action ${node.variant}`} type="button">
+      {node.label}
+    </button>
+  );
+}
+
+function ViewFormField({
   node,
   path,
-  onChange,
-}: {
-  node: UiNode;
-  path: UiFormPath;
-  onChange: (path: UiFormPath, value: JsonValue) => void;
-}) {
-  if (node.kind === "group") {
-    const slots = Object.entries(node.slots);
-    const collections = Object.entries(node.collections);
-
-    return (
-      <section className="generated-section">
-        <h5>{node.role}</h5>
-        <div className="generated-section-body">
-          <UiFormField label="Role" path={[...path, "role"]} value={node.role} onChange={onChange} />
-          {slots.map(([slotName, slotNode]) => (
-            <UiSchemaNestedSection key={slotName} title={`slot.${slotName}`}>
-              <UiSchemaFormNode node={slotNode} path={[...path, "slots", slotName]} onChange={onChange} />
-            </UiSchemaNestedSection>
-          ))}
-          {collections.map(([collectionName, items]) => (
-            <UiSchemaNestedSection key={collectionName} title={`collection.${collectionName}`}>
-              <div className="generated-list">
-                {items.map((item, index) => (
-                  <div key={`${item.name}-${index}`} className="generated-list-item">
-                    <UiSchemaFormNode
-                      node={item}
-                      path={[...path, "collections", collectionName, index]}
-                      onChange={onChange}
-                    />
-                  </div>
-                ))}
-              </div>
-            </UiSchemaNestedSection>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (node.kind === "frame") {
-    return (
-      <section className="generated-section">
-        <h5>{node.name}</h5>
-        <div className="generated-section-body">
-          <UiFormField label="Fill" path={[...path, "fill"]} value={node.fill} onChange={onChange} />
-          {node.children.map((child, index) => (
-            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={[...path, "children", index]} onChange={onChange} />
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (node.kind === "flex") {
-    return (
-      <section className="generated-section">
-        <h5>{node.name}</h5>
-        <div className="generated-section-body">
-          <UiFormField label="Direction" path={[...path, "direction"]} value={node.direction} options={UI_DIRECTION_OPTIONS} onChange={onChange} />
-          <UiFormField label="Gap" path={[...path, "gap"]} value={node.gap} control="number" onChange={onChange} />
-          {node.children.map((child, index) => (
-            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={[...path, "children", index]} onChange={onChange} />
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (node.kind === "text") {
-    return (
-      <section className="generated-section">
-        <h5>{node.name}</h5>
-        <div className="generated-section-body">
-          <UiFormField label="Text" path={[...path, "text"]} value={node.text} onChange={onChange} />
-          <UiFormField label="Tone" path={[...path, "tone"]} value={node.tone} options={UI_TONE_OPTIONS} onChange={onChange} />
-        </div>
-      </section>
-    );
-  }
-
-  if (node.kind === "image") {
-    return (
-      <section className="generated-section hero">
-        <h5>{node.name}</h5>
-        <div className="generated-section-body">
-          <UiFormField label="Label" path={[...path, "label"]} value={node.label} onChange={onChange} />
-          <UiFormField label="Source" path={[...path, "src"]} value={node.src} control="image" onChange={onChange} />
-          <UiFormField label="Alt" path={[...path, "alt"]} value={node.alt} onChange={onChange} />
-          <UiFormField label="Aspect" path={[...path, "aspect"]} value={node.aspect} options={UI_ASPECT_OPTIONS} onChange={onChange} />
-        </div>
-      </section>
-    );
-  }
-
-  if (node.kind === "icon") {
-    return (
-      <section className="generated-section">
-        <h5>{node.name}</h5>
-        <div className="generated-section-body">
-          <UiFormField label="Label" path={[...path, "label"]} value={node.label} onChange={onChange} />
-          <UiFormField label="Icon" path={[...path, "icon"]} value={node.icon} options={UI_ICON_OPTIONS} onChange={onChange} />
-          <UiFormField label="Tone" path={[...path, "tone"]} value={node.tone} options={UI_TONE_OPTIONS} onChange={onChange} />
-        </div>
-      </section>
-    );
-  }
-
-  return (
-    <section className="generated-section">
-      <h5>{node.name}</h5>
-      <div className="generated-section-body">
-        <UiFormField label="Label" path={[...path, "label"]} value={node.label} onChange={onChange} />
-        <UiFormField label="Fill" path={[...path, "fill"]} value={node.fill} options={UI_FILL_OPTIONS} onChange={onChange} />
-        <UiFormField label="Width" path={[...path, "width"]} value={node.width} control="number" onChange={onChange} />
-        <UiFormField label="Height" path={[...path, "height"]} value={node.height} control="number" onChange={onChange} />
-      </div>
-    </section>
-  );
-}
-
-function UiSchemaNestedSection({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className="generated-section nested">
-      <h5>{title}</h5>
-      <div className="generated-section-body">{children}</div>
-    </section>
-  );
-}
-
-function UiFormField({
-  label,
-  path,
   value,
-  control = "text",
-  options,
   onChange,
 }: {
-  label: string;
-  path: UiFormPath;
+  node: Extract<ViewNode, { type: "field" }>;
+  path: string;
   value: JsonValue | undefined;
-  control?: "text" | "number" | "image";
-  options?: readonly string[];
-  onChange: (path: UiFormPath, value: JsonValue) => void;
+  onChange: (path: string, value: JsonValue) => void;
 }) {
-  const displayValue = displayFormValue(value);
-  const pathLabel = uiFormPathLabel(path);
+  const displayValue = displayJsonValue(value);
 
-  function handleInputChange(nextValue: string) {
-    if (control !== "number") {
-      onChange(path, nextValue);
+  function updateFromText(nextValue: string) {
+    if (node.control === "number") {
+      const numberValue = Number(nextValue);
+
+      if (Number.isFinite(numberValue)) {
+        onChange(path, numberValue);
+      }
+
       return;
     }
 
-    const numberValue = Number(nextValue);
-
-    if (Number.isFinite(numberValue)) {
-      onChange(path, numberValue);
-    }
+    onChange(path, nextValue);
   }
 
   return (
-    <label className={`generated-field ${control}`}>
-      <span>{label}</span>
-      {control === "image" ? (
+    <label className={`generated-field ${node.control}`}>
+      <span>{node.label}</span>
+      {node.control === "image" ? (
         <div className="generated-image-field">
           {typeof value === "string" ? <img src={value} alt="" /> : null}
-          <input value={displayValue} onChange={(event) => handleInputChange(event.currentTarget.value)} />
+          <input value={displayValue} onChange={(event) => updateFromText(event.currentTarget.value)} />
         </div>
-      ) : options === undefined ? (
-        <input
-          type={control === "number" ? "number" : "text"}
-          value={displayValue}
-          onChange={(event) => handleInputChange(event.currentTarget.value)}
-        />
-      ) : (
+      ) : node.control === "select" ? (
         <select value={displayValue} onChange={(event) => onChange(path, event.currentTarget.value)}>
-          {options.map((option) => (
+          {(node.options ?? []).map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </select>
+      ) : node.control === "checkbox" ? (
+        <input
+          type="checkbox"
+          checked={value === true}
+          onChange={(event) => onChange(path, event.currentTarget.checked)}
+        />
+      ) : node.control === "textarea" ? (
+        <textarea value={displayValue} onChange={(event) => updateFromText(event.currentTarget.value)} />
+      ) : (
+        <input
+          type={node.control === "number" ? "number" : node.control === "date" ? "date" : "text"}
+          value={displayValue}
+          onChange={(event) => updateFromText(event.currentTarget.value)}
+        />
       )}
-      <small>{pathLabel}</small>
+      <small>{path}</small>
+      {node.help === undefined ? null : <small>{node.help}</small>}
     </label>
   );
 }
 
-function uiFormPathLabel(path: UiFormPath) {
-  return path.length === 0 ? "$" : `$.${path.join(".")}`;
+function compileViewDoc(viewDoc: OrderViewDoc, data: JsonValue): ViewCompileResult {
+  const bindings: CompiledBinding[] = [];
+  const issues: string[] = [];
+  const visited = new Set<string>();
+
+  function visit(nodeId: string, scopePath: string) {
+    const node = viewDoc.nodes[nodeId];
+
+    if (node === undefined) {
+      issues.push(`Missing node ${nodeId}.`);
+      return;
+    }
+
+    const visitKey = `${scopePath}:${nodeId}`;
+    if (visited.has(visitKey)) {
+      return;
+    }
+
+    visited.add(visitKey);
+
+    if (node.type === "view" || node.type === "section") {
+      node.children.forEach((childId) => visit(childId, scopePath));
+      return;
+    }
+
+    if (node.type === "field") {
+      const path = resolveBindingPath(node.value.path, scopePath);
+      const value = valueAtBindingPath(data, path);
+
+      bindings.push({
+        nodeId,
+        label: node.label,
+        path,
+        control: node.control,
+        value,
+      });
+
+      validateFieldBinding(node, path, value, issues);
+      return;
+    }
+
+    if (node.type === "each") {
+      const itemsPath = resolveBindingPath(node.items.path, scopePath);
+      const items = valueAtBindingPath(data, itemsPath);
+
+      if (!Array.isArray(items)) {
+        issues.push(`${nodeId} expects ${itemsPath} to be an array.`);
+        return;
+      }
+
+      items.forEach((_item, index) => visit(node.item, joinBindingPath(itemsPath, String(index))));
+      return;
+    }
+
+    if (node.type === "show") {
+      const value = valueAtBindingPath(data, resolveBindingPath(node.when.path, scopePath));
+
+      if (typeof value !== "boolean") {
+        issues.push(`${nodeId} expects a boolean condition.`);
+      }
+
+      visit(node.child, scopePath);
+    }
+  }
+
+  visit(viewDoc.rootId, "");
+  return { bindings, issues };
 }
 
-function displayFormValue(value: JsonValue | undefined) {
+function validateFieldBinding(
+  node: Extract<ViewNode, { type: "field" }>,
+  path: string,
+  value: JsonValue | undefined,
+  issues: string[],
+) {
+  if (value === undefined) {
+    issues.push(`${node.label} points at missing path ${path}.`);
+    return;
+  }
+
+  if (node.control === "number" && typeof value !== "number") {
+    issues.push(`${node.label} expects a number at ${path}.`);
+  }
+
+  if (node.control === "checkbox" && typeof value !== "boolean") {
+    issues.push(`${node.label} expects a boolean at ${path}.`);
+  }
+
+  if (
+    (node.control === "text" || node.control === "textarea" || node.control === "select" || node.control === "image" || node.control === "date") &&
+    typeof value !== "string"
+  ) {
+    issues.push(`${node.label} expects a string at ${path}.`);
+  }
+}
+
+function updateEntityBinding(
+  editor: ReturnType<typeof makeSalesOrderEditor>,
+  doc: JsonDoc,
+  path: string,
+  value: JsonValue,
+): OperationResult {
+  const targetId = nodeIdAtPath(doc, doc.rootId, bindingPathSegments(path));
+
+  if (targetId === null) {
+    return { ok: false, reason: `Binding path ${path} is missing.` };
+  }
+
+  return editor.update(targetId, value);
+}
+
+function valueAtBindingPath(value: JsonValue, path: string): JsonValue | undefined {
+  return bindingPathSegments(path).reduce<JsonValue | undefined>((current, key) => {
+    if (current === undefined) {
+      return undefined;
+    }
+
+    if (Array.isArray(current) && typeof key === "number") {
+      return current[key];
+    }
+
+    if (isRecord(current) && typeof key === "string") {
+      return current[key];
+    }
+
+    return undefined;
+  }, value);
+}
+
+function resolveBindingPath(path: string, scopePath: string) {
+  if (path.startsWith("/")) {
+    return path;
+  }
+
+  return joinBindingPath(scopePath, path);
+}
+
+function joinBindingPath(basePath: string, childPath: string) {
+  const base = basePath === "" || basePath === "/" ? "" : basePath;
+  return `${base}/${childPath}`.replace(/\/+/g, "/");
+}
+
+function bindingPathSegments(path: string): UiFormPath {
+  return path
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => (/^\d+$/.test(segment) ? Number(segment) : segment));
+}
+
+function displayJsonValue(value: JsonValue | undefined) {
   if (value === undefined || value === null) {
     return "";
   }
@@ -1036,86 +1257,6 @@ function displayFormValue(value: JsonValue | undefined) {
   }
 
   return JSON.stringify(value);
-}
-
-function DataSectionCard({
-  doc,
-  section,
-  selectedPreviewId,
-  focusedSet,
-  onSelect,
-  onFormChange,
-}: {
-  doc: JsonDoc;
-  section: DataSection;
-  selectedPreviewId: NodeId;
-  focusedSet: Set<NodeId>;
-  onSelect: (nodeId: NodeId) => void;
-  onFormChange: (sectionNodeId: NodeId, path: UiFormPath, value: JsonValue) => void;
-}) {
-  const isActive = section.nodeId === selectedPreviewId || focusedSet.has(section.nodeId);
-
-  return (
-    <article className={isActive ? "data-section-card selected" : "data-section-card"}>
-      <div className="data-section-head">
-        <button type="button" onClick={() => onSelect(section.nodeId)}>
-          <span>{section.title}</span>
-          <code>{section.path}</code>
-        </button>
-        <small>{section.binding.operation}</small>
-      </div>
-
-      <div className="data-section-grid">
-        <div className="data-component-preview">
-          <DesignPreviewNode
-            doc={doc}
-            nodeId={section.nodeId}
-            selectedPreviewId={selectedPreviewId}
-            focusedSet={focusedSet}
-            onSelect={onSelect}
-          />
-        </div>
-
-        <div className="data-code-panel">
-          <div className="data-column-title">
-            <span>Zod SSOT</span>
-          </div>
-          <pre className="data-schema">{section.schemaCode}</pre>
-        </div>
-
-        <div className="data-code-panel">
-          <div className="data-column-title">
-            <span>Data</span>
-          </div>
-          <dl className="data-binding-list">
-            <div>
-              <dt>Field</dt>
-              <dd>{section.binding.field}</dd>
-            </div>
-            <div>
-              <dt>Schema</dt>
-              <dd>{section.binding.schema}</dd>
-            </div>
-            <div>
-              <dt>State</dt>
-              <dd>{section.binding.state}</dd>
-            </div>
-          </dl>
-          <pre className="data-json">{JSON.stringify(section.value, null, 2)}</pre>
-        </div>
-
-        <div className="data-form-panel">
-          <div className="data-column-title">
-            <span>Form</span>
-          </div>
-          <UiSchemaForm
-            value={section.value}
-            onChange={(path, value) => onFormChange(section.nodeId, path, value)}
-          />
-        </div>
-      </div>
-    </article>
-  );
 }
 
 function TreeView({
@@ -1283,32 +1424,6 @@ function treeDisplayMeta(doc: JsonDoc, node: JsonNode) {
   }
 
   return node.type;
-}
-
-function resolveDataSections(doc: JsonDoc): DataSection[] {
-  return DATA_SECTION_SPECS.flatMap((spec) => {
-    const nodeId = findDesignNodeIdByName(doc, spec.nodeName);
-
-    if (nodeId === null) {
-      return [];
-    }
-
-    return [{
-      ...spec,
-      nodeId,
-      binding: selectedComponentBinding(doc, nodeId),
-      value: deserialize(doc, nodeId),
-    }];
-  });
-}
-
-function findDesignNodeIdByName(doc: JsonDoc, name: string): NodeId | null {
-  const match = Object.values(doc.nodes).find((node) => (
-    node.type === "object" &&
-    primitiveField(doc, node.id, "name") === name
-  ));
-
-  return match?.id ?? null;
 }
 
 function MobileBuilderCanvas({
@@ -2368,28 +2483,6 @@ function childIdByKey(doc: JsonDoc, parentId: NodeId, key: string | number) {
   }
 
   return parent.children.find((childId) => doc.nodes[childId]?.key === key) ?? null;
-}
-
-function updateUiFormPath(
-  editor: ReturnType<typeof makeEditor>,
-  doc: JsonDoc,
-  sectionNodeId: NodeId,
-  path: UiFormPath,
-  value: JsonValue,
-): OperationResult {
-  const targetId = nodeIdAtPath(doc, sectionNodeId, path);
-
-  if (targetId === null) {
-    return { ok: false, reason: `Form path ${uiFormPathLabel(path)} is missing.` };
-  }
-
-  const target = doc.nodes[targetId];
-
-  if (target === undefined || target.children.length > 0) {
-    return { ok: false, reason: `Form path ${uiFormPathLabel(path)} is not editable.` };
-  }
-
-  return editor.update(targetId, value);
 }
 
 function nodeIdAtPath(doc: JsonDoc, rootId: NodeId, path: UiFormPath): NodeId | null {
