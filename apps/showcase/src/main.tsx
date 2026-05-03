@@ -1,6 +1,5 @@
 import {
   Bell,
-  Braces,
   CheckCircle2,
   ChevronDown,
   Clipboard,
@@ -20,7 +19,6 @@ import {
   SendHorizontal,
   SlidersHorizontal,
   Square,
-  Table2,
   Trash2,
   Type,
   Undo2,
@@ -215,13 +213,6 @@ const CRUD_BINDINGS: Record<string, ComponentBinding> = {
   },
 };
 
-type LogEntry = {
-  id: number;
-  label: string;
-  ok: boolean;
-  reason?: string;
-};
-
 type UiFormPath = Array<string | number>;
 
 type CompiledBinding = {
@@ -252,20 +243,14 @@ function makeSalesOrderEditor() {
 
 function App() {
   const editorRef = useRef(makeEditor());
-  const nextLogIdRef = useRef(2);
   const initialRootId = editorRef.current.snapshot().rootId;
   const [version, setVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<NodeId>(initialRootId);
   const [focusedIds, setFocusedIds] = useState<NodeId[]>([initialRootId]);
-  const [clipboardJson, setClipboardJson] = useState<string>("");
   const [clipboardValue, setClipboardValue] = useState<JsonValue | null>(null);
   const [mode, setMode] = useState<WorkspaceMode>("design");
-  const [logs, setLogs] = useState<LogEntry[]>([
-    { id: 1, label: "load initial JSON", ok: true },
-  ]);
 
   const doc = useMemo(() => editorRef.current.snapshot(), [version]);
-  const json = useMemo(() => editorRef.current.toJson(), [version]);
   const selectedNode = doc.nodes[selectedId] ?? doc.nodes[doc.rootId];
   const selectedBinding = useMemo(() => selectedComponentBinding(doc, selectedId), [doc, selectedId]);
   const focusedSet = useMemo(() => new Set(focusedIds.filter((id) => doc.nodes[id] !== undefined)), [doc, focusedIds]);
@@ -311,22 +296,6 @@ function App() {
     setVersion((current) => current + 1);
   }
 
-  function pushLog(label: string, result: OperationResult | boolean | "ok") {
-    const ok = result === true || result === "ok" || (typeof result === "object" && result.ok);
-    const reason = typeof result === "object" && !result.ok ? result.reason : undefined;
-    const entry: LogEntry = { id: nextLogIdRef.current, label, ok };
-    nextLogIdRef.current += 1;
-
-    if (reason !== undefined) {
-      entry.reason = reason;
-    }
-
-    setLogs((current) => [
-      entry,
-      ...current.slice(0, 8),
-    ]);
-  }
-
   function selectNode(nodeId: NodeId) {
     setSelectedId(nodeId);
     setFocusedIds([nodeId]);
@@ -340,7 +309,6 @@ function App() {
   }
 
   function run(
-    label: string,
     operation: () => OperationResult | boolean | "ok",
     focusResolver?: (before: JsonDoc, after: JsonDoc) => NodeId[],
   ) {
@@ -352,15 +320,12 @@ function App() {
       focusFromChange(before, after, focusResolver?.(before, after));
     }
 
-    pushLog(label, result);
     refresh();
   }
 
   function copySelected() {
     const value = editorRef.current.copy(selectedId);
     setClipboardValue(value);
-    setClipboardJson(JSON.stringify(value, null, 2));
-    pushLog(`copy ${selectedId}`, "ok");
   }
 
   function cutSelected() {
@@ -368,13 +333,11 @@ function App() {
     const targetId = selectedId;
 
     run(
-      `cut ${targetId}`,
       () => {
         const result = editorRef.current.cut(targetId);
 
         if (result.ok) {
           setClipboardValue(value);
-          setClipboardJson(JSON.stringify(value, null, 2));
         }
 
         return result;
@@ -387,7 +350,6 @@ function App() {
     const pastePlan = clipboardValue === null ? null : resolvePastePlan(doc, selectedId, clipboardValue);
 
     run(
-      `paste into ${selectedId}`,
       () => {
         if (clipboardValue !== null && pastePlan !== null) {
           const plannedResult = pasteWithPlan(editorRef.current, doc, selectedId, clipboardValue, pastePlan);
@@ -407,14 +369,13 @@ function App() {
     const targetId = selectedId;
 
     run(
-      `delete ${targetId}`,
       () => editorRef.current.delete(targetId),
       (before, after) => deletionFocusIds(before, after, targetId),
     );
   }
 
   function appendText() {
-    run("create text child", () => {
+    run(() => {
       const targetArrayId = findInsertionArray(doc, selectedId);
 
       if (targetArrayId === null) {
@@ -437,7 +398,7 @@ function App() {
   }
 
   function appendRect() {
-    run("create rect child", () => {
+    run(() => {
       const targetArrayId = findInsertionArray(doc, selectedId);
 
       if (targetArrayId === null) {
@@ -462,7 +423,7 @@ function App() {
   }
 
   function editSelected() {
-    run(`update ${selectedId}`, () => {
+    run(() => {
       const targetId = editableStringNodeId(doc, selectedId);
 
       if (targetId === null) {
@@ -478,8 +439,6 @@ function App() {
     setSelectedId(editorRef.current.snapshot().rootId);
     setFocusedIds([editorRef.current.snapshot().rootId]);
     setClipboardValue(null);
-    setClipboardJson("");
-    pushLog("reset document", "ok");
     refresh();
   }
 
@@ -544,11 +503,11 @@ function App() {
 
         if (event.shiftKey) {
           if (canRedo) {
-            run("redo shortcut", () => editorRef.current.redo());
+            run(() => editorRef.current.redo());
           }
         } else {
           if (canUndo) {
-            run("undo shortcut", () => editorRef.current.undo());
+            run(() => editorRef.current.undo());
           }
         }
       }
@@ -579,8 +538,8 @@ function App() {
         </Tabs.Root>
 
         <Flex className="toolbar top-actions" align="center" gap="2" aria-label="Edit controls">
-          <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} disabled={!canUndo} />
-          <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} disabled={!canRedo} />
+          <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run(() => editorRef.current.undo())} icon={<Undo2 />} disabled={!canUndo} />
+          <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run(() => editorRef.current.redo())} icon={<Redo2 />} disabled={!canRedo} />
           <IconButton label="Reset" onClick={reset} icon={<RefreshCcw />} />
         </Flex>
       </header>
@@ -617,9 +576,8 @@ function App() {
 
         <aside className="panel tree-panel">
           <PanelTitle icon={<Layers />} title="Layers" />
-          <TreeView
+          <LayerTree
             doc={doc}
-            nodeId={doc.rootId}
             selectedId={selectionBridge.selectedLayerId}
             focusedSet={selectionBridge.focusedLayerIds}
             onSelect={selectNode}
@@ -647,72 +605,15 @@ function App() {
           </div>
         </section>
 
-        <aside className="panel inspector control-panel">
+        <aside className="panel inspector">
           <PanelTitle icon={<SlidersHorizontal />} title="Inspector" />
-          <div className="control-panel-body">
-            <section className="control-section selection-panel">
-              <ComponentBindingPanel binding={selectedBinding} />
-              <dl className="property-grid">
-                <div>
-                  <dt>Selection</dt>
-                  <dd>{selectedNode === undefined ? "none" : nodeLabel(doc, selectedNode)}</dd>
-                </div>
-                <div>
-                  <dt>ID</dt>
-                  <dd>{selectedNode?.id ?? "none"}</dd>
-                </div>
-                <div>
-                  <dt>Type</dt>
-                  <dd>{selectedNode?.type ?? "none"}</dd>
-                </div>
-                <div>
-                  <dt>Parent</dt>
-                  <dd>{selectedNode?.parentId ?? "root"}</dd>
-                </div>
-                <div>
-                  <dt>Children</dt>
-                  <dd>{selectedNode?.children.length ?? 0}</dd>
-                </div>
-                <div>
-                  <dt>Focus</dt>
-                  <dd>{focusedSet.size}</dd>
-                </div>
-              </dl>
-            </section>
-
-            <section className="control-section">
-              <SectionTitle icon={<Table2 />} title="Nodes" />
-              <NodeTable
-                doc={doc}
-                selectedId={selectedId}
-                focusedSet={focusedSet}
-                onSelect={selectNode}
-              />
-            </section>
-
-            <section className="control-section split-section">
-              <div>
-                <SectionTitle icon={<Braces />} title="JSON" />
-                <pre className="json-view">{JSON.stringify(json, null, 2)}</pre>
-              </div>
-              <div>
-                <SectionTitle icon={<Clipboard />} title="Clipboard" />
-                <pre className="json-view clipboard-view">{clipboardJson || "empty"}</pre>
-              </div>
-            </section>
-
-            <section className="control-section">
-              <SectionTitle icon={<History />} title="Timeline" />
-              <ul className="log-list">
-                {logs.map((entry) => (
-                  <li key={entry.id} className={entry.ok ? "ok" : "fail"}>
-                    <span>{entry.label}</span>
-                    <small>{entry.ok ? "ok" : entry.reason}</small>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          </div>
+          <InspectorForm binding={selectedBinding} node={selectedNode} focusedCount={focusedSet.size} />
+          <NodeTable
+            doc={doc}
+            selectedId={selectedId}
+            focusedSet={focusedSet}
+            onSelect={selectNode}
+          />
         </aside>
       </section>
       ) : (
@@ -760,15 +661,6 @@ function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
     <Flex className="panel-title" align="center" gap="2">
       {icon}
       <Heading as="h2" size="2" weight="medium">{title}</Heading>
-    </Flex>
-  );
-}
-
-function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
-  return (
-    <Flex className="section-title" align="center" gap="2">
-      {icon}
-      <Text as="p" size="1" weight="medium">{title}</Text>
     </Flex>
   );
 }
@@ -921,6 +813,16 @@ const DESIGN_BLOCK_DESCRIPTORS: Record<string, DesignBlockDescriptor> = {
 
 const ORDER_UI_DATA = createOrderUiData(DesignNodeSchema.parse(initialDesignJson));
 
+const DATA_ROUTES = [
+  {
+    id: "order",
+    title: "Order",
+    uiData: ORDER_UI_DATA,
+  },
+] as const;
+
+type DataRoute = (typeof DATA_ROUTES)[number];
+
 const UI_DATA_SCHEMA_CODE = `type UiData = {
   title: string;
   sections: Array<{
@@ -1032,10 +934,12 @@ function DataWorkspaceCompact() {
 
   const previewDoc = useMemo(() => makeEditor().snapshot(), []);
   const previewFocusSet = useMemo(() => new Set<NodeId>(), []);
+  const previewBlockIdByName = useMemo(() => designRouteBlockIdByName(previewDoc), [previewDoc]);
   const entityDoc = useMemo(() => entityEditorRef.current.snapshot(), [version]);
   const data = useMemo(() => entityEditorRef.current.toJson(), [version]);
   const entityValidation = SalesOrderSchema.safeParse(data);
   const uiPlan = useMemo(() => compileUiData(ORDER_UI_DATA, data), [data]);
+  const route = DATA_ROUTES[0];
   const statusItems = [
     { label: "Entity", ok: entityValidation.success },
     { label: "UI data", ok: uiPlan.issues.length === 0 },
@@ -1058,7 +962,7 @@ function DataWorkspaceCompact() {
         <div className="view-showcase-head">
           <div>
             <Text as="p" size="1" color="gray">Preview / Entity / UI Data / Form</Text>
-            <Heading as="h2" size="5">{ORDER_UI_DATA.title}</Heading>
+            <Heading as="h2" size="5">{route.uiData.title}</Heading>
           </div>
           <dl className="view-status-list">
             {statusItems.map((item) => (
@@ -1074,88 +978,200 @@ function DataWorkspaceCompact() {
           </dl>
         </div>
 
-        <div className="view-showcase-grid">
-          <section className="data-preview-panel view-form-surface">
-            <div className="data-column-title">
-              <span>Preview inline edit</span>
-            </div>
-            <MobileBuilderCanvas
-              doc={previewDoc}
-              selectedPreviewId={"__data_preview_none__" as NodeId}
-              focusedSet={previewFocusSet}
-              onSelect={() => undefined}
-            />
-            {lastResult === null || lastResult.ok ? null : (
-              <p className="view-error">{lastResult.reason}</p>
-            )}
-          </section>
-
-          <section className="data-code-panel entity-schema-panel">
-            <div className="data-column-title">
-              <span>Entity</span>
-            </div>
-            <pre className="data-schema">{SALES_ORDER_SCHEMA_CODE}</pre>
-            <pre className="data-json">{JSON.stringify(data, null, 2)}</pre>
-          </section>
-
-          <section className="data-code-panel view-schema-panel">
-            <div className="data-column-title">
-              <span>UI Data</span>
-            </div>
-            <pre className="data-schema">{UI_DATA_SCHEMA_CODE}</pre>
-            <pre className="data-json">{JSON.stringify(ORDER_UI_DATA, null, 2)}</pre>
-          </section>
-
-          <section className="data-form-panel compiler-panel">
-            <div className="data-column-title">
-              <span>Form</span>
-            </div>
-            <UiDataFormRenderer uiData={ORDER_UI_DATA} data={data} onChange={updateBinding} />
-            <dl className="data-binding-list view-binding-list">
-              <div>
-                <dt>Fields</dt>
-                <dd>{uiPlan.bindings.length}</dd>
-              </div>
-              <div>
-                <dt>Issues</dt>
-                <dd>{uiPlan.issues.length}</dd>
-              </div>
-              <div>
-                <dt>Updates</dt>
-                <dd>zod-crud</dd>
-              </div>
-            </dl>
-          </section>
-        </div>
+        {lastResult === null || lastResult.ok ? null : (
+          <p className="view-error data-route-error">{lastResult.reason}</p>
+        )}
+        <DataRouter
+          route={route}
+          previewDoc={previewDoc}
+          previewBlockIdByName={previewBlockIdByName}
+          previewFocusSet={previewFocusSet}
+          data={data}
+          uiPlan={uiPlan}
+          onChange={updateBinding}
+        />
       </div>
     </section>
   );
 }
 
-function UiDataFormRenderer({
-  uiData,
+function DataRouter({
+  route,
+  previewDoc,
+  previewBlockIdByName,
+  previewFocusSet,
   data,
+  uiPlan,
   onChange,
 }: {
-  uiData: OrderUiData;
+  route: DataRoute;
+  previewDoc: JsonDoc;
+  previewBlockIdByName: Map<string, NodeId>;
+  previewFocusSet: Set<NodeId>;
   data: JsonValue;
+  uiPlan: UiCompileResult;
   onChange: (path: string, value: JsonValue) => void;
 }) {
-  const sections = Array.isArray(uiData.sections) ? uiData.sections : [];
+  const sections = route.uiData.sections;
 
   return (
-    <form className="generated-form view-schema-form" onSubmit={(event) => event.preventDefault()}>
-      <Heading as="h4" size="3">{uiData.title}</Heading>
+    <section className="data-route" aria-label={`${route.title} data route`}>
+      <div className="route-schema-strip">
+        <div>
+          <div className="data-column-title">Route</div>
+          <pre className="data-json">{JSON.stringify({ id: route.id, title: route.title }, null, 2)}</pre>
+        </div>
+        <div>
+          <div className="data-column-title">Entity schema</div>
+          <pre className="data-schema">{SALES_ORDER_SCHEMA_CODE}</pre>
+        </div>
+        <div>
+          <div className="data-column-title">UI schema</div>
+          <pre className="data-schema">{UI_DATA_SCHEMA_CODE}</pre>
+        </div>
+        <dl className="data-binding-list view-binding-list">
+          <div>
+            <dt>Fields</dt>
+            <dd>{uiPlan.bindings.length}</dd>
+          </div>
+          <div>
+            <dt>Issues</dt>
+            <dd>{uiPlan.issues.length}</dd>
+          </div>
+          <div>
+            <dt>Blocks</dt>
+            <dd>{sections.length}</dd>
+          </div>
+        </dl>
+      </div>
+      <div className="data-route-blocks">
       {sections.map((section) => (
-        <DesignBlockFormSection
+        <DesignBlockDataSection
           key={section.id}
           section={section}
+          previewDoc={previewDoc}
+          previewNodeId={previewBlockIdByName.get(section.component) ?? null}
+          previewFocusSet={previewFocusSet}
           data={data}
           onChange={onChange}
         />
       ))}
-    </form>
+      </div>
+    </section>
   );
+}
+
+function DesignBlockDataSection({
+  section,
+  previewDoc,
+  previewNodeId,
+  previewFocusSet,
+  data,
+  onChange,
+}: {
+  section: UiSectionSpec;
+  previewDoc: JsonDoc;
+  previewNodeId: NodeId | null;
+  previewFocusSet: Set<NodeId>;
+  data: JsonValue;
+  onChange: (path: string, value: JsonValue) => void;
+}) {
+  return (
+    <section className="design-block-section">
+      <div className="design-block-head">
+        <div>
+          <Text as="p" size="1" color="gray">{section.component}</Text>
+          <Heading as="h3" size="3">{section.title}</Heading>
+        </div>
+        <Flex gap="2" wrap="wrap" justify="end">
+          {section.role === undefined ? null : <Badge variant="soft" color="gray">{section.role}</Badge>}
+          <Badge variant="soft" color={section.fields.length > 0 || section.actions.length > 0 ? "green" : "gray"}>
+            {section.fields.length + section.actions.length} bindings
+          </Badge>
+        </Flex>
+      </div>
+      <div className="design-block-grid">
+        <section className="data-preview-panel view-form-surface">
+          <div className="data-column-title">Preview</div>
+          <div className="block-preview-surface">
+            {previewNodeId === null ? (
+              <Text as="p" size="1" color="gray">Preview block not found</Text>
+            ) : (
+              <DesignPreviewNode
+                doc={previewDoc}
+                nodeId={previewNodeId}
+                selectedPreviewId={"__data_preview_none__" as NodeId}
+                focusedSet={previewFocusSet}
+                onSelect={() => undefined}
+              />
+            )}
+          </div>
+        </section>
+        <section className="data-code-panel">
+          <div className="data-column-title">Entity</div>
+          <pre className="data-json">{JSON.stringify(designBlockEntitySnapshot(section, data), null, 2)}</pre>
+        </section>
+        <section className="data-code-panel">
+          <div className="data-column-title">UI Data</div>
+          <pre className="data-json">{JSON.stringify(section, null, 2)}</pre>
+        </section>
+        <section className="data-form-panel">
+          <div className="data-column-title">Form</div>
+          <DesignBlockFormSection section={section} data={data} onChange={onChange} />
+        </section>
+      </div>
+    </section>
+  );
+}
+
+function designRouteBlockIdByName(doc: JsonDoc) {
+  return new Map(
+    designRouteBlockIds(doc).flatMap((nodeId) => {
+      const name = primitiveField(doc, nodeId, "name");
+      return name === null ? [] : [[name, nodeId] as const];
+    }),
+  );
+}
+
+function designRouteBlockIds(doc: JsonDoc) {
+  const rootSlotIds = designSlotIds(doc, doc.rootId);
+  const mobileScreenId =
+    designSlotId(doc, doc.rootId, "screen") ??
+    rootSlotIds.find((childId) => primitiveField(doc, childId, "name") === "MobileRecordScreen") ??
+    null;
+
+  return mobileScreenId === null ? [] : designEntityChildIds(doc, mobileScreenId);
+}
+
+function designBlockEntitySnapshot(section: UiSectionSpec, data: JsonValue): JsonValue {
+  const fields = Array.isArray(section.fields) ? section.fields : [];
+  const actions = Array.isArray(section.actions) ? section.actions : [];
+
+  if (section.repeat !== undefined) {
+    return {
+      [section.repeat.path]: jsonValueOrNull(valueAtBindingPath(data, section.repeat.path)),
+    };
+  }
+
+  const snapshot: Record<string, JsonValue> = {};
+
+  fields.forEach((field) => {
+    snapshot[field.path] = jsonValueOrNull(valueAtBindingPath(data, field.path));
+  });
+
+  if (actions.length > 0) {
+    snapshot.actions = actions.map((action) => ({
+      id: action.id,
+      action: action.action,
+      variant: action.variant,
+    }));
+  }
+
+  return Object.keys(snapshot).length === 0 ? { bindings: [] } : snapshot;
+}
+
+function jsonValueOrNull(value: JsonValue | undefined): JsonValue {
+  return value === undefined ? null : value;
 }
 
 function DesignBlockFormSection({
@@ -1470,20 +1486,45 @@ function displayJsonValue(value: JsonValue | undefined) {
   return JSON.stringify(value);
 }
 
-function TreeView({
+function LayerTree({
+  doc,
+  selectedId,
+  focusedSet,
+  onSelect,
+}: {
+  doc: JsonDoc;
+  selectedId: NodeId;
+  focusedSet: Set<NodeId>;
+  onSelect: (nodeId: NodeId) => void;
+}) {
+  return (
+    <div className="layer-tree" role="tree" aria-label="Layers">
+      <LayerTreeItem
+        doc={doc}
+        nodeId={doc.rootId}
+        selectedId={selectedId}
+        focusedSet={focusedSet}
+        onSelect={onSelect}
+        depth={0}
+      />
+    </div>
+  );
+}
+
+function LayerTreeItem({
   doc,
   nodeId,
   selectedId,
   focusedSet,
   onSelect,
-  depth = 0,
+  depth,
 }: {
   doc: JsonDoc;
   nodeId: NodeId;
   selectedId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
-  depth?: number;
+  depth: number;
 }) {
   const node = doc.nodes[nodeId];
 
@@ -1494,38 +1535,43 @@ function TreeView({
   const childIds = visibleTreeChildIds(doc, nodeId);
 
   return (
-    <ul className="tree-list">
-      <li>
-        <button
-          type="button"
-          className={nodeClass("tree-item", nodeId, selectedId, focusedSet)}
-          data-node-id={nodeId}
-          data-selected={nodeId === selectedId ? "true" : undefined}
-          aria-selected={nodeId === selectedId}
-          style={{ "--depth": depth } as CSSProperties}
-          onClick={() => onSelect(nodeId)}
-          title={`${nodeLabel(doc, node)} · ${node.id}`}
+    <div role="treeitem" aria-selected={nodeId === selectedId} aria-expanded={childIds.length > 0 ? true : undefined}>
+      <Button
+        type="button"
+        className={nodeClass("layer-tree-row", nodeId, selectedId, focusedSet)}
+        data-node-id={nodeId}
+        data-selected={nodeId === selectedId ? "true" : undefined}
+        variant={nodeId === selectedId ? "soft" : "ghost"}
+        color="gray"
+        size="1"
+        onClick={() => onSelect(nodeId)}
+        title={`${nodeLabel(doc, node)} · ${node.id}`}
+      >
+        <span
+          className="layer-tree-main"
+          style={{ paddingInlineStart: `${depth * 12}px` }}
         >
-          <span>{treeDisplayLabel(doc, node)}</span>
-          <small>{treeDisplayMeta(doc, node)}</small>
-        </button>
-        {childIds.length > 0 ? (
-          <div className="tree-children">
-            {childIds.map((childId) => (
-              <TreeView
-                key={childId}
-                doc={doc}
-                nodeId={childId}
-                selectedId={selectedId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-                depth={depth + 1}
-              />
-            ))}
-          </div>
-        ) : null}
-      </li>
-    </ul>
+          <ChevronDown className={childIds.length === 0 ? "layer-tree-empty-icon" : undefined} />
+          <Text as="span" size="1" truncate>{treeDisplayLabel(doc, node)}</Text>
+        </span>
+        <Badge size="1" variant="soft" color="gray">{treeDisplayMeta(doc, node)}</Badge>
+      </Button>
+      {childIds.length > 0 ? (
+        <div role="group">
+          {childIds.map((childId) => (
+            <LayerTreeItem
+              key={childId}
+              doc={doc}
+              nodeId={childId}
+              selectedId={selectedId}
+              focusedSet={focusedSet}
+              onSelect={onSelect}
+              depth={depth + 1}
+            />
+          ))}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -2233,40 +2279,62 @@ function supportsAnchoredPopover(element: HTMLSpanElement): element is HTMLSpanE
   );
 }
 
-function ComponentBindingPanel({ binding }: { binding: SelectedComponentBinding }) {
+function InspectorForm({
+  binding,
+  node,
+  focusedCount,
+}: {
+  binding: SelectedComponentBinding;
+  node: JsonNode | undefined;
+  focusedCount: number;
+}) {
   return (
-    <div className="component-binding-card">
-      <Flex className="binding-eyebrow" align="center" gap="2">
-        <LayoutTemplate />
-        <Text size="1" color="gray" weight="medium">Selected component</Text>
-      </Flex>
-      <div className="binding-heading">
-        <Heading as="h3" size="3">{binding.component}</Heading>
-        <Code>{binding.nodeId}</Code>
-      </div>
-      <div className="binding-form">
-        <label>
-          <span>CRUD field</span>
-          <TextField.Root value={binding.field} readOnly />
-        </label>
-        <label>
-          <span>Zod schema</span>
-          <TextField.Root value={binding.schema} readOnly />
-        </label>
-        <label>
-          <span>Operation</span>
-          <TextField.Root value={binding.operation} readOnly />
-        </label>
-        <label>
-          <span>State</span>
-          <TextField.Root value={binding.state} readOnly />
-        </label>
-      </div>
-      <Flex className="binding-validation" align="start" gap="2">
-        <CheckCircle2 />
-        <Text size="1">{binding.validation}</Text>
-      </Flex>
-    </div>
+    <form className="inspector-form" onSubmit={(event) => event.preventDefault()}>
+      <label>
+        <Text as="span" size="1" color="gray">Component</Text>
+        <TextField.Root value={binding.component} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Node id</Text>
+        <TextField.Root value={binding.nodeId} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Type</Text>
+        <TextField.Root value={node?.type ?? "none"} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Parent</Text>
+        <TextField.Root value={node?.parentId ?? "root"} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Children</Text>
+        <TextField.Root value={String(node?.children.length ?? 0)} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Focus</Text>
+        <TextField.Root value={String(focusedCount)} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">CRUD field</Text>
+        <TextField.Root value={binding.field} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Operation</Text>
+        <TextField.Root value={binding.operation} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">Zod schema</Text>
+        <TextField.Root value={binding.schema} readOnly />
+      </label>
+      <label>
+        <Text as="span" size="1" color="gray">State</Text>
+        <TextField.Root value={binding.state} readOnly />
+      </label>
+      <label className="span-all">
+        <Text as="span" size="1" color="gray">Validation</Text>
+        <TextArea value={binding.validation} readOnly />
+      </label>
+    </form>
   );
 }
 
