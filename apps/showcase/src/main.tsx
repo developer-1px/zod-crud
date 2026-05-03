@@ -58,6 +58,14 @@ type GridRow = {
   expanded: boolean;
 };
 
+type SelectionMode = "single" | "range" | "toggle";
+
+type SelectionState = {
+  anchorId: NodeId;
+  activeId: NodeId;
+  selectedIds: Set<NodeId>;
+};
+
 type EntityDefinition = {
   id: string;
   label: string;
@@ -184,7 +192,7 @@ const commands: Array<{ id: CommandId; keys: string; operation: string }> = [
   { id: "copy", keys: "Cmd+C", operation: "copy(row)" },
   { id: "cut", keys: "Cmd+X", operation: "cut(row)" },
   { id: "paste", keys: "Cmd+V", operation: "paste(row)" },
-  { id: "delete", keys: "Delete", operation: "delete(row)" },
+  { id: "delete", keys: "Delete", operation: "delete(selection)" },
   { id: "undo", keys: "Cmd+Z", operation: "undo()" },
   { id: "redo", keys: "Cmd+Shift+Z", operation: "redo()" },
 ];
@@ -222,7 +230,7 @@ function App() {
   const editorRef = useRef(editorsRef.current[activeEntity.id] ?? makeEditor(activeEntity));
   const nextItemRef = useRef(1);
   const [version, setVersion] = useState(0);
-  const [selectedId, setSelectedId] = useState<NodeId>(() => editorRef.current.snapshot().rootId);
+  const [selection, setSelection] = useState<SelectionState>(() => singleSelection(editorRef.current.snapshot().rootId));
   const [activeColumn, setActiveColumn] = useState(0);
   const [expandedIds, setExpandedIds] = useState<Set<NodeId>>(() => expandedContainerIds(editorRef.current.snapshot()));
   const [clipboardValue, setClipboardValue] = useState<JsonValue | null>(null);
@@ -233,9 +241,10 @@ function App() {
   });
 
   const doc = useMemo(() => editorRef.current.snapshot(), [version]);
-  const safeSelectedId = doc.nodes[selectedId] === undefined ? doc.rootId : selectedId;
+  const safeSelectedId = doc.nodes[selection.activeId] === undefined ? doc.rootId : selection.activeId;
   const selectedNode = doc.nodes[safeSelectedId];
   const rows = useMemo(() => buildGridRows(doc, expandedIds), [doc, expandedIds]);
+  const selectedIds = useMemo(() => liveSelectedIds(doc, selection, safeSelectedId), [doc, safeSelectedId, selection]);
   const selectedRow = rows.find((row) => row.id === safeSelectedId) ?? rows[0] ?? null;
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
   const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
@@ -269,18 +278,22 @@ function App() {
     });
   }, []);
 
-  const selectGridCell = useCallback((nodeId: NodeId, columnIndex: number) => {
-    setSelectedId(nodeId);
+  const selectGridCell = useCallback((nodeId: NodeId, columnIndex: number, mode: SelectionMode = "single") => {
+    setSelection((current) => applySelection(rows, current, nodeId, mode));
     setActiveColumn(clamp(columnIndex, 0, columns.length - 1));
-  }, []);
+  }, [rows]);
 
   const runCommand = useCallback((command: CommandId) => {
     const editor = editorRef.current;
     const before = editor.snapshot();
-    const targetId = before.nodes[selectedId] === undefined ? before.rootId : selectedId;
-    const targetLabel = nodeLabel(before, targetId);
+    const targetId = before.nodes[selection.activeId] === undefined ? before.rootId : selection.activeId;
+    const targetIds = liveSelectedIds(before, selection, targetId);
+    const targetLabel = command === "delete" && targetIds.size > 1
+      ? `${targetIds.size} selected nodes`
+      : nodeLabel(before, targetId);
     let result: OperationResult = { ok: true };
     let nextSelection = targetId;
+    let collapseToSingleSelection = false;
 
     try {
       if (command === "copy") {
@@ -295,6 +308,7 @@ function App() {
         if (result.ok) {
           setClipboardValue(copied);
           nextSelection = result.focusNodeId ?? targetId;
+          collapseToSingleSelection = true;
         }
       }
 
@@ -304,14 +318,17 @@ function App() {
         if (result.ok) {
           nextSelection = result.focusNodeId ?? result.nodeId ?? targetId;
           setActiveColumn(0);
+          collapseToSingleSelection = true;
         }
       }
 
       if (command === "delete") {
-        result = editor.delete(targetId);
+        const deleteIds = [...targetIds];
+        result = deleteIds.length > 1 ? editor.deleteMany(deleteIds) : editor.delete(targetId);
 
         if (result.ok) {
           nextSelection = result.focusNodeId ?? targetId;
+          collapseToSingleSelection = true;
         }
       }
 
@@ -321,6 +338,7 @@ function App() {
         if (result.ok) {
           nextSelection = result.focusNodeId ?? targetId;
           setActiveColumn(0);
+          collapseToSingleSelection = true;
         }
       }
 
@@ -330,6 +348,7 @@ function App() {
         if (result.ok) {
           nextSelection = result.focusNodeId ?? targetId;
           setActiveColumn(0);
+          collapseToSingleSelection = true;
         }
       }
     } catch (error) {
@@ -339,10 +358,16 @@ function App() {
     const after = editor.snapshot();
 
     setExpandedIds((current) => expandedForSelection(after, validExpandedIds(after, current), nextSelection));
-    setSelectedId(after.nodes[nextSelection] === undefined ? after.rootId : nextSelection);
+    setSelection((current) => {
+      const nextActiveId = after.nodes[nextSelection] === undefined ? after.rootId : nextSelection;
+
+      return collapseToSingleSelection
+        ? singleSelection(nextActiveId)
+        : normalizeSelection(after, current, nextActiveId);
+    });
     setLastCommand({ command, target: targetLabel, result });
     refresh();
-  }, [refresh, selectedId]);
+  }, [refresh, selection]);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
@@ -412,7 +437,7 @@ function App() {
     });
 
     if (result.ok && result.focusNodeId !== undefined) {
-      setSelectedId(result.focusNodeId);
+      setSelection(singleSelection(result.focusNodeId));
       setActiveColumn(0);
     }
 
@@ -432,7 +457,7 @@ function App() {
 
     const nextDoc = editorRef.current.snapshot();
 
-    setSelectedId(nextDoc.rootId);
+    setSelection(singleSelection(nextDoc.rootId));
     setActiveColumn(0);
     setExpandedIds(expandedContainerIds(nextDoc));
     setLastCommand({
@@ -453,7 +478,7 @@ function App() {
     const nextDoc = nextEditor.snapshot();
 
     setActiveEntityId(nextEntity.id);
-    setSelectedId(nextDoc.rootId);
+    setSelection(singleSelection(nextDoc.rootId));
     setActiveColumn(0);
     setExpandedIds(expandedContainerIds(nextDoc));
     setClipboardValue(null);
@@ -508,15 +533,16 @@ function App() {
           <section className="panel editor-panel">
             <PanelTitle
               title={`${activeEntity.label} JsonDoc`}
-              detail={selectedRow === null ? "/" : `${selectedRow.path} - ${columns[activeColumn]?.label ?? ""}`}
+              detail={selectedRow === null ? "/" : `${selectedRow.path} - ${columns[activeColumn]?.label ?? ""} - ${selectedIds.size} selected`}
             />
             <JsonTreeGrid
               columns={columns}
               rows={rows}
               activeColumn={activeColumn}
               selectedId={safeSelectedId}
+              selectedIds={selectedIds}
               onSelect={selectGridCell}
-              onMove={(rowId, columnIndex) => selectGridCell(rowId, columnIndex)}
+              onMove={selectGridCell}
               onToggle={toggleExpanded}
             />
           </section>
@@ -541,6 +567,10 @@ function App() {
 
             <PanelTitle title="Selected node" detail={safeSelectedId} />
             <dl className="result-list">
+              <div>
+                <dt>Selection</dt>
+                <dd>{selectedIds.size} node{selectedIds.size === 1 ? "" : "s"}</dd>
+              </div>
               <div>
                 <dt>Path</dt>
                 <dd>{selectedNode === undefined ? "/" : pathString(doc, safeSelectedId)}</dd>
@@ -644,6 +674,7 @@ function JsonTreeGrid({
   rows,
   activeColumn,
   selectedId,
+  selectedIds,
   onSelect,
   onMove,
   onToggle,
@@ -652,8 +683,9 @@ function JsonTreeGrid({
   rows: GridRow[];
   activeColumn: number;
   selectedId: NodeId;
-  onSelect: (nodeId: NodeId, columnIndex: number) => void;
-  onMove: (nodeId: NodeId, columnIndex: number) => void;
+  selectedIds: Set<NodeId>;
+  onSelect: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
+  onMove: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
   onToggle: (nodeId: NodeId) => void;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);
@@ -662,16 +694,24 @@ function JsonTreeGrid({
   const activeRowId = rows[visibleIndex]?.id ?? selectedId;
   const activeCellId = cellId(activeRowId, activeColumn);
 
-  function move(deltaRow: number, deltaColumn: number) {
+  function move(deltaRow: number, deltaColumn: number, mode: SelectionMode = "single") {
     const nextRow = rows[clamp(visibleIndex + deltaRow, 0, rows.length - 1)];
     const nextColumn = clamp(activeColumn + deltaColumn, 0, columns.length - 1);
 
     if (nextRow !== undefined) {
-      onMove(nextRow.id, nextColumn);
+      onMove(nextRow.id, nextColumn, mode);
     }
   }
 
   function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+    const commandKey = event.metaKey || event.ctrlKey;
+
+    if (commandKey && event.key === " ") {
+      event.preventDefault();
+      onSelect(activeRowId, activeColumn, "toggle");
+      return;
+    }
+
     if (event.key === " ") {
       event.preventDefault();
       onToggle(activeRowId);
@@ -680,25 +720,25 @@ function JsonTreeGrid({
 
     if (event.key === "ArrowDown") {
       event.preventDefault();
-      move(1, 0);
+      move(1, 0, event.shiftKey ? "range" : "single");
       return;
     }
 
     if (event.key === "ArrowUp") {
       event.preventDefault();
-      move(-1, 0);
+      move(-1, 0, event.shiftKey ? "range" : "single");
       return;
     }
 
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      move(0, 1);
+      move(0, 1, event.shiftKey ? "range" : "single");
       return;
     }
 
     if (event.key === "ArrowLeft") {
       event.preventDefault();
-      move(0, -1);
+      move(0, -1, event.shiftKey ? "range" : "single");
       return;
     }
 
@@ -740,8 +780,12 @@ function JsonTreeGrid({
           aria-rowindex={rowIndex + 2}
           aria-level={row.depth + 1}
           aria-expanded={row.expandable ? row.expanded : undefined}
-          aria-selected={selectedId === row.id}
-          className={selectedId === row.id ? "grid-row is-selected" : "grid-row"}
+          aria-selected={selectedIds.has(row.id)}
+          className={[
+            "grid-row",
+            selectedIds.has(row.id) ? "is-selected" : "",
+            selectedId === row.id ? "is-active-row" : "",
+          ].filter(Boolean).join(" ")}
         >
           {columns.map((column, columnIndex) => (
             <div
@@ -749,10 +793,10 @@ function JsonTreeGrid({
               id={cellId(row.id, columnIndex)}
               role="gridcell"
               aria-colindex={columnIndex + 1}
-              aria-selected={selectedId === row.id && activeColumn === columnIndex}
+              aria-selected={selectedIds.has(row.id)}
               className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
-              onClick={() => {
-                onSelect(row.id, columnIndex);
+              onClick={(event) => {
+                onSelect(row.id, columnIndex, eventSelectionMode(event));
                 gridRef.current?.focus();
               }}
               onDoubleClick={() => {
@@ -781,6 +825,105 @@ function JsonTreeGrid({
       ))}
     </div>
   );
+}
+
+function singleSelection(nodeId: NodeId): SelectionState {
+  return {
+    anchorId: nodeId,
+    activeId: nodeId,
+    selectedIds: new Set([nodeId]),
+  };
+}
+
+function liveSelectedIds(doc: JsonDoc, selection: SelectionState, fallbackId: NodeId): Set<NodeId> {
+  const ids = new Set<NodeId>();
+
+  for (const nodeId of selection.selectedIds) {
+    if (doc.nodes[nodeId] !== undefined) {
+      ids.add(nodeId);
+    }
+  }
+
+  if (ids.size === 0) {
+    ids.add(doc.nodes[fallbackId] === undefined ? doc.rootId : fallbackId);
+  }
+
+  return ids;
+}
+
+function normalizeSelection(doc: JsonDoc, selection: SelectionState, fallbackId: NodeId): SelectionState {
+  const activeId = doc.nodes[selection.activeId] === undefined
+    ? doc.nodes[fallbackId] === undefined ? doc.rootId : fallbackId
+    : selection.activeId;
+  const selectedIds = liveSelectedIds(doc, selection, activeId);
+  const anchorId = doc.nodes[selection.anchorId] === undefined ? activeId : selection.anchorId;
+
+  return {
+    anchorId,
+    activeId,
+    selectedIds,
+  };
+}
+
+function applySelection(
+  rows: GridRow[],
+  current: SelectionState,
+  nodeId: NodeId,
+  mode: SelectionMode,
+): SelectionState {
+  if (mode === "range") {
+    const rangeIds = visibleRangeIds(rows, current.anchorId, nodeId);
+
+    return {
+      anchorId: current.anchorId,
+      activeId: nodeId,
+      selectedIds: new Set(rangeIds.length === 0 ? [nodeId] : rangeIds),
+    };
+  }
+
+  if (mode === "toggle") {
+    const selectedIds = new Set(current.selectedIds);
+
+    if (selectedIds.has(nodeId) && selectedIds.size > 1) {
+      selectedIds.delete(nodeId);
+    } else {
+      selectedIds.add(nodeId);
+    }
+
+    return {
+      anchorId: nodeId,
+      activeId: nodeId,
+      selectedIds,
+    };
+  }
+
+  return singleSelection(nodeId);
+}
+
+function visibleRangeIds(rows: GridRow[], anchorId: NodeId, activeId: NodeId): NodeId[] {
+  const anchorIndex = rows.findIndex((row) => row.id === anchorId);
+  const activeIndex = rows.findIndex((row) => row.id === activeId);
+
+  if (anchorIndex < 0 || activeIndex < 0) {
+    return [];
+  }
+
+  const start = Math.min(anchorIndex, activeIndex);
+  const end = Math.max(anchorIndex, activeIndex);
+
+  return rows.slice(start, end + 1).map((row) => row.id);
+}
+
+function eventSelectionMode(event: { shiftKey: boolean; metaKey: boolean; ctrlKey: boolean }): SelectionMode {
+  if (event.shiftKey) {
+    return "range";
+  }
+
+  if (event.metaKey || event.ctrlKey) {
+    return "toggle";
+  }
+
+  return "single";
 }
 
 function buildGridRows(doc: JsonDoc, expandedIds: Set<NodeId>): GridRow[] {

@@ -251,6 +251,10 @@ kbd {
   background: #eef7f3;
 }
 
+.grid-row.is-active-row .grid-cell:first-child {
+  box-shadow: inset 3px 0 0 #2e7d68;
+}
+
 .grid-cell.is-active {
   background: #dff0e9;
   box-shadow: inset 0 0 0 2px #2e7d68;
