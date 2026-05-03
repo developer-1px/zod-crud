@@ -37,7 +37,6 @@ import {
   type ReactNode,
 } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import * as z from "zod";
 
 import {
   createJsonCrud,
@@ -215,222 +214,26 @@ type DataSection = DataSectionSpec & {
   value: JsonValue;
 };
 
-const FormBindingSchema = z.object({
-  path: z.string().min(1),
-});
-
-const TextExprSchema = z.union([z.string().min(1), FormBindingSchema]);
-
-const FormViewNodeSchema = z.discriminatedUnion("type", [
-  z.object({
-    type: z.literal("view"),
-    title: TextExprSchema.optional(),
-    children: z.array(z.string().min(1)),
-  }),
-  z.object({
-    type: z.literal("section"),
-    title: TextExprSchema.optional(),
-    variant: z.enum(["plain", "hero", "toolbar"]).default("plain"),
-    children: z.array(z.string().min(1)),
-  }),
-  z.object({
-    type: z.literal("field"),
-    label: TextExprSchema,
-    value: FormBindingSchema,
-    control: z.enum(["text", "number", "select", "image"]),
-    options: z.array(z.string().min(1)).optional(),
-  }),
-  z.object({
-    type: z.literal("each"),
-    title: TextExprSchema.optional(),
-    items: FormBindingSchema,
-    item: z.string().min(1),
-    empty: z.string().min(1).optional(),
-  }),
-  z.object({
-    type: z.literal("action"),
-    label: TextExprSchema,
-    action: z.enum(["submit", "reset", "delete"]),
-    variant: z.enum(["primary", "secondary", "danger"]).default("secondary"),
-  }),
-]);
-
-const FormViewDocSchema = z.object({
-  rootId: z.string().min(1),
-  nodes: z.record(z.string().min(1), FormViewNodeSchema),
-}).superRefine((view, context) => {
-  if (view.nodes[view.rootId] === undefined) {
-    context.addIssue({
-      code: "custom",
-      message: `Root node ${view.rootId} is missing.`,
-      path: ["rootId"],
-    });
-  }
-
-  for (const [nodeId, node] of Object.entries(view.nodes)) {
-    const childIds =
-      node.type === "each" ? [node.item, node.empty].filter((childId): childId is string => childId !== undefined) :
-      "children" in node ? node.children :
-      [];
-
-    for (const childId of childIds) {
-      if (view.nodes[childId] === undefined) {
-        context.addIssue({
-          code: "custom",
-          message: `Node ${nodeId} references missing child ${childId}.`,
-          path: ["nodes", nodeId],
-        });
-      }
-    }
-  }
-});
-
-type FormBinding = z.infer<typeof FormBindingSchema>;
-type FormViewDoc = z.infer<typeof FormViewDocSchema>;
-type FormViewNode = z.infer<typeof FormViewNodeSchema>;
 type AnchorPositionStyle = CSSProperties & {
   anchorName?: CSSProperties["anchorName"];
   positionAnchor?: CSSProperties["positionAnchor"];
 };
 
-const LineItemFormSchema = z.object({
-  title: z.string().min(1),
-  quantity: z.number().int().positive(),
-  image: z.string().url(),
-  status: z.enum(["ok", "new"]),
-});
-
-const SalesOrderFormSchema = z.object({
-  hero: z.object({
-    title: z.string().min(1),
-    imageUrl: z.string().url(),
-    imageAlt: z.string().min(1),
-  }),
-  customer: z.object({
-    name: z.string().min(2),
-    status: z.enum(["draft", "paid", "sent"]),
-  }),
-  lineItems: z.array(LineItemFormSchema).min(1),
-});
-
-const FORM_DATA: z.infer<typeof SalesOrderFormSchema> = {
-  hero: {
-    title: "Fresh produce order",
-    imageUrl: "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=720&q=80",
-    imageAlt: "Fresh produce crates for a wholesale order",
-  },
-  customer: {
-    name: "Acme Market",
-    status: "draft",
-  },
-  lineItems: [
-    {
-      title: "Organic bundle",
-      quantity: 4,
-      image: "https://images.unsplash.com/photo-1518843875459-f738682238a6?auto=format&fit=crop&w=240&q=80",
-      status: "ok",
-    },
-    {
-      title: "Cold chain fee",
-      quantity: 1,
-      image: "https://images.unsplash.com/photo-1606787366850-de6330128bfc?auto=format&fit=crop&w=240&q=80",
-      status: "new",
-    },
-  ],
-};
-
-const FORM_VIEW: FormViewDoc = FormViewDocSchema.parse({
-  rootId: "orderForm",
-  nodes: {
-    orderForm: {
-      type: "view",
-      title: "Generated order form",
-      children: ["hero", "customer", "items", "actions"],
-    },
-    hero: {
-      type: "section",
-      title: "Hero",
-      variant: "hero",
-      children: ["heroImage", "heroTitle"],
-    },
-    heroImage: {
-      type: "field",
-      label: "Hero image",
-      value: { path: "/hero/imageUrl" },
-      control: "image",
-    },
-    heroTitle: {
-      type: "field",
-      label: "Title",
-      value: { path: "/hero/title" },
-      control: "text",
-    },
-    customer: {
-      type: "section",
-      title: "Customer",
-      children: ["customerName", "status"],
-    },
-    customerName: {
-      type: "field",
-      label: "Customer",
-      value: { path: "/customer/name" },
-      control: "text",
-    },
-    status: {
-      type: "field",
-      label: "Status",
-      value: { path: "/customer/status" },
-      control: "select",
-      options: ["draft", "paid", "sent"],
-    },
-    items: {
-      type: "each",
-      title: "Line items",
-      items: { path: "/lineItems" },
-      item: "lineItemFields",
-    },
-    lineItemFields: {
-      type: "section",
-      children: ["itemImage", "itemTitle", "itemQuantity", "itemStatus"],
-    },
-    itemImage: {
-      type: "field",
-      label: "Image",
-      value: { path: "image" },
-      control: "image",
-    },
-    itemTitle: {
-      type: "field",
-      label: "Item",
-      value: { path: "title" },
-      control: "text",
-    },
-    itemQuantity: {
-      type: "field",
-      label: "Qty",
-      value: { path: "quantity" },
-      control: "number",
-    },
-    itemStatus: {
-      type: "field",
-      label: "State",
-      value: { path: "status" },
-      control: "select",
-      options: ["ok", "new"],
-    },
-    actions: {
-      type: "section",
-      variant: "toolbar",
-      children: ["save"],
-    },
-    save: {
-      type: "action",
-      label: "Save record",
-      action: "submit",
-      variant: "primary",
-    },
-  },
-});
+const UI_TONE_OPTIONS = ["ink", "accent", "danger", "muted", "inverse"] as const;
+const UI_FILL_OPTIONS = ["teal", "amber", "violet", "blue", "surface"] as const;
+const UI_ASPECT_OPTIONS = ["wide", "thumb"] as const;
+const UI_DIRECTION_OPTIONS = ["row", "column"] as const;
+const UI_ICON_OPTIONS = [
+  "search",
+  "bell",
+  "check-circle",
+  "chevron-down",
+  "plus",
+  "send",
+  "layout-template",
+  "database",
+  "history",
+] as const;
 
 const DATA_SECTION_SPECS: DataSectionSpec[] = [
   {
@@ -1078,163 +881,182 @@ function DataWorkspace({
   );
 }
 
-function GeneratedFormNode({
-  view,
-  nodeId,
-  rootData,
-  scope,
-}: {
-  view: FormViewDoc;
-  nodeId: string;
-  rootData: JsonValue;
-  scope?: JsonValue | undefined;
-}) {
-  const node = view.nodes[nodeId];
+function UiSchemaForm({ value }: { value: JsonValue }) {
+  const result = DesignNodeSchema.safeParse(value);
 
-  if (node === undefined) {
-    return null;
-  }
-
-  if (node.type === "view") {
+  if (!result.success) {
     return (
       <form className="generated-form" onSubmit={(event) => event.preventDefault()}>
-        {node.title === undefined ? null : <h4>{textExprValue(rootData, scope, node.title)}</h4>}
-        {node.children.map((childId) => (
-          <GeneratedFormNode key={childId} view={view} nodeId={childId} rootData={rootData} scope={scope} />
-        ))}
+        <h4>Unsupported value</h4>
+        <UiFormField label="Schema" path="$" value="DesignNodeSchema parse failed" />
       </form>
     );
   }
 
-  if (node.type === "section") {
+  return (
+    <form className="generated-form ui-schema-form" onSubmit={(event) => event.preventDefault()}>
+      <h4>{result.data.name}</h4>
+      <UiSchemaFormNode node={result.data} path="$" />
+    </form>
+  );
+}
+
+function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
+  if (node.kind === "group") {
+    const slots = Object.entries(node.slots);
+    const collections = Object.entries(node.collections);
+
     return (
-      <section className={`generated-section ${node.variant}`}>
-        {node.title === undefined ? null : <h5>{textExprValue(rootData, scope, node.title)}</h5>}
+      <section className="generated-section">
+        <h5>{node.role}</h5>
         <div className="generated-section-body">
-          {node.children.map((childId) => (
-            <GeneratedFormNode key={childId} view={view} nodeId={childId} rootData={rootData} scope={scope} />
+          <UiFormField label="Role" path={`${path}.role`} value={node.role} />
+          {slots.map(([slotName, slotNode]) => (
+            <UiSchemaNestedSection key={slotName} title={`slot.${slotName}`}>
+              <UiSchemaFormNode node={slotNode} path={`${path}.slots.${slotName}`} />
+            </UiSchemaNestedSection>
+          ))}
+          {collections.map(([collectionName, items]) => (
+            <UiSchemaNestedSection key={collectionName} title={`collection.${collectionName}`}>
+              <div className="generated-list">
+                {items.map((item, index) => (
+                  <div key={`${item.name}-${index}`} className="generated-list-item">
+                    <UiSchemaFormNode node={item} path={`${path}.collections.${collectionName}.${index}`} />
+                  </div>
+                ))}
+              </div>
+            </UiSchemaNestedSection>
           ))}
         </div>
       </section>
     );
   }
 
-  if (node.type === "field") {
-    const value = valueForBinding(rootData, scope, node.value);
-
+  if (node.kind === "frame") {
     return (
-      <label className={`generated-field ${node.control}`}>
-        <span>{textExprValue(rootData, scope, node.label)}</span>
-        {generatedControl(node, value)}
-        <small>{node.value.path}</small>
-      </label>
+      <section className="generated-section">
+        <h5>{node.name}</h5>
+        <div className="generated-section-body">
+          <UiFormField label="Fill" path={`${path}.fill`} value={node.fill} />
+          {node.children.map((child, index) => (
+            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={`${path}.children.${index}`} />
+          ))}
+        </div>
+      </section>
     );
   }
 
-  if (node.type === "each") {
-    const items = valueForBinding(rootData, scope, node.items);
-    const rows = Array.isArray(items) ? items : [];
-
+  if (node.kind === "flex") {
     return (
-      <section className="generated-section list">
-        {node.title === undefined ? null : <h5>{textExprValue(rootData, scope, node.title)}</h5>}
-        <div className="generated-list">
-          {rows.length === 0 && node.empty !== undefined ? (
-            <GeneratedFormNode view={view} nodeId={node.empty} rootData={rootData} scope={scope} />
-          ) : (
-            rows.map((item, index) => (
-              <div key={index} className="generated-list-item">
-                <GeneratedFormNode view={view} nodeId={node.item} rootData={rootData} scope={item} />
-              </div>
-            ))
-          )}
+      <section className="generated-section">
+        <h5>{node.name}</h5>
+        <div className="generated-section-body">
+          <UiFormField label="Direction" path={`${path}.direction`} value={node.direction} options={UI_DIRECTION_OPTIONS} />
+          <UiFormField label="Gap" path={`${path}.gap`} value={node.gap} control="number" />
+          {node.children.map((child, index) => (
+            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={`${path}.children.${index}`} />
+          ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (node.kind === "text") {
+    return (
+      <section className="generated-section">
+        <h5>{node.name}</h5>
+        <div className="generated-section-body">
+          <UiFormField label="Text" path={`${path}.text`} value={node.text} />
+          <UiFormField label="Tone" path={`${path}.tone`} value={node.tone} options={UI_TONE_OPTIONS} />
+        </div>
+      </section>
+    );
+  }
+
+  if (node.kind === "image") {
+    return (
+      <section className="generated-section hero">
+        <h5>{node.name}</h5>
+        <div className="generated-section-body">
+          <UiFormField label="Label" path={`${path}.label`} value={node.label} />
+          <UiFormField label="Source" path={`${path}.src`} value={node.src} control="image" />
+          <UiFormField label="Alt" path={`${path}.alt`} value={node.alt} />
+          <UiFormField label="Aspect" path={`${path}.aspect`} value={node.aspect} options={UI_ASPECT_OPTIONS} />
+        </div>
+      </section>
+    );
+  }
+
+  if (node.kind === "icon") {
+    return (
+      <section className="generated-section">
+        <h5>{node.name}</h5>
+        <div className="generated-section-body">
+          <UiFormField label="Label" path={`${path}.label`} value={node.label} />
+          <UiFormField label="Icon" path={`${path}.icon`} value={node.icon} options={UI_ICON_OPTIONS} />
+          <UiFormField label="Tone" path={`${path}.tone`} value={node.tone} options={UI_TONE_OPTIONS} />
         </div>
       </section>
     );
   }
 
   return (
-    <button className={`generated-action ${node.variant}`} type="button">
-      {textExprValue(rootData, scope, node.label)}
-    </button>
+    <section className="generated-section">
+      <h5>{node.name}</h5>
+      <div className="generated-section-body">
+        <UiFormField label="Label" path={`${path}.label`} value={node.label} />
+        <UiFormField label="Fill" path={`${path}.fill`} value={node.fill} options={UI_FILL_OPTIONS} />
+        <UiFormField label="Width" path={`${path}.width`} value={node.width} control="number" />
+        <UiFormField label="Height" path={`${path}.height`} value={node.height} control="number" />
+      </div>
+    </section>
   );
 }
 
-function generatedControl(node: Extract<FormViewNode, { type: "field" }>, value: JsonValue | undefined) {
+function UiSchemaNestedSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="generated-section nested">
+      <h5>{title}</h5>
+      <div className="generated-section-body">{children}</div>
+    </section>
+  );
+}
+
+function UiFormField({
+  label,
+  path,
+  value,
+  control = "text",
+  options,
+}: {
+  label: string;
+  path: string;
+  value: JsonValue | undefined;
+  control?: "text" | "number" | "image";
+  options?: readonly string[];
+}) {
   const displayValue = displayFormValue(value);
 
-  if (node.control === "image") {
-    return (
-      <div className="generated-image-field">
-        {typeof value === "string" ? <img src={value} alt="" /> : null}
-        <input value={displayValue} readOnly />
-      </div>
-    );
-  }
-
-  if (node.control === "select") {
-    return (
-      <select value={displayValue} disabled>
-        {(node.options ?? [displayValue]).map((option) => (
-          <option key={option} value={option}>{option}</option>
-        ))}
-      </select>
-    );
-  }
-
-  return <input type={node.control === "number" ? "number" : "text"} value={displayValue} readOnly />;
-}
-
-function textExprValue(rootData: JsonValue, scope: JsonValue | undefined, value: z.infer<typeof TextExprSchema>) {
-  if (typeof value === "string") {
-    return value;
-  }
-
-  return displayFormValue(valueForBinding(rootData, scope, value));
-}
-
-function valueForBinding(rootData: JsonValue, scope: JsonValue | undefined, binding: FormBinding): JsonValue | undefined {
-  if (binding.path.startsWith("/")) {
-    return readJsonPointer(rootData, binding.path);
-  }
-
-  return readRelativePath(scope, binding.path);
-}
-
-function readJsonPointer(value: JsonValue, pointer: string): JsonValue | undefined {
-  if (pointer === "" || pointer === "/") {
-    return value;
-  }
-
-  return pointer
-    .slice(1)
-    .split("/")
-    .map((part) => part.replace(/~1/g, "/").replace(/~0/g, "~"))
-    .reduce<JsonValue | undefined>((current, part) => readPathSegment(current, part), value);
-}
-
-function readRelativePath(value: JsonValue | undefined, path: string): JsonValue | undefined {
-  return path
-    .split(".")
-    .filter(Boolean)
-    .reduce<JsonValue | undefined>((current, part) => readPathSegment(current, part), value);
-}
-
-function readPathSegment(value: JsonValue | undefined, part: string): JsonValue | undefined {
-  if (value === undefined) {
-    return undefined;
-  }
-
-  if (Array.isArray(value)) {
-    const index = Number(part);
-    return Number.isInteger(index) ? value[index] : undefined;
-  }
-
-  if (isRecord(value)) {
-    return value[part];
-  }
-
-  return undefined;
+  return (
+    <label className={`generated-field ${control}`}>
+      <span>{label}</span>
+      {control === "image" ? (
+        <div className="generated-image-field">
+          {typeof value === "string" ? <img src={value} alt="" /> : null}
+          <input value={displayValue} readOnly />
+        </div>
+      ) : options === undefined ? (
+        <input type={control === "number" ? "number" : "text"} value={displayValue} readOnly />
+      ) : (
+        <select value={displayValue} disabled>
+          {options.map((option) => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+      )}
+      <small>{path}</small>
+    </label>
+  );
 }
 
 function displayFormValue(value: JsonValue | undefined) {
@@ -1317,7 +1139,7 @@ function DataSectionCard({
           <div className="data-column-title">
             <span>Form</span>
           </div>
-          <GeneratedFormNode view={FORM_VIEW} nodeId={FORM_VIEW.rootId} rootData={FORM_DATA} />
+          <UiSchemaForm value={section.value} />
         </div>
       </div>
     </article>
