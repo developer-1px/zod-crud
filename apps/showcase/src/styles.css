@@ -1868,7 +1868,7 @@ tr.focused.selected {
   gap: 5px;
 }
 
-.generated-field span {
+.generated-field > span {
   overflow: hidden;
   color: #4a5669;
   font-size: 10px;
@@ -1891,6 +1891,14 @@ tr.focused.selected {
   font-size: 11px;
   font-weight: 650;
   text-overflow: ellipsis;
+}
+
+.generated-field :where(.rt-TextFieldRoot, .rt-SelectTrigger, .rt-TextArea) {
+  width: 100%;
+}
+
+.generated-field :where(.rt-TextArea) {
+  min-height: 76px;
 }
 
 .generated-field textarea {
@@ -2029,16 +2037,69 @@ tr.focused.selected {
 
 .view-showcase-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 0.78fr) repeat(2, minmax(260px, 1fr));
+  grid-template-columns: minmax(280px, 0.9fr) repeat(3, minmax(240px, 1fr));
   align-items: start;
   gap: 0;
   min-width: 0;
   padding: 0 16px 16px;
 }
 
+.data-preview-panel,
+.data-code-panel,
+.data-form-panel {
+  display: grid;
+  align-content: start;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px 10px 0;
+  border-left: 1px solid var(--stroke);
+}
+
 .view-form-surface {
-  grid-row: span 2;
   border-left: 0;
+}
+
+.inline-preview {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.inline-preview-hero,
+.inline-preview-fields,
+.inline-preview-items {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 0 0;
+  border-top: 1px solid var(--stroke);
+}
+
+.inline-preview-hero {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.inline-preview-row {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 8px 0;
+  border-top: 1px solid rgb(50 62 82 / 8%);
+}
+
+.generated-field.preview small {
+  display: none;
+}
+
+.generated-field.preview span {
+  font-size: 9px;
+}
+
+.generated-field.preview.image .generated-image-field {
+  grid-template-columns: 54px minmax(0, 1fr);
 }
 
 .view-schema-form {
@@ -2346,6 +2407,7 @@ td,
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .data-preview-panel,
   .data-code-panel,
   .data-form-panel {
     border-top: 1px solid var(--stroke);

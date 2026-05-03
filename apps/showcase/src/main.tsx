@@ -26,6 +26,23 @@ import {
   Undo2,
 } from "lucide-react";
 import {
+  Badge,
+  Button,
+  Checkbox,
+  Code,
+  Flex,
+  Heading,
+  IconButton as RadixIconButton,
+  Kbd,
+  Select,
+  Table,
+  Tabs,
+  Text,
+  TextArea,
+  TextField,
+  Theme,
+} from "@radix-ui/themes";
+import {
   StrictMode,
   useEffect,
   useId,
@@ -50,18 +67,14 @@ import {
 
 import {
   DesignNodeSchema,
-  OrderViewDocSchema,
   SALES_ORDER_SCHEMA_CODE,
   SalesOrderSchema,
-  VIEW_DOC_SCHEMA_CODE,
   initialSalesOrderData,
   initialDesignJson,
-  orderViewDoc,
   type DesignIconName,
-  type OrderViewDoc,
-  type ViewNode,
   type UiNode,
 } from "./design-schema.js";
+import "@radix-ui/themes/styles.css";
 import "./styles.css";
 
 type ComponentBinding = {
@@ -219,7 +232,7 @@ type CompiledBinding = {
   value: JsonValue | undefined;
 };
 
-type ViewCompileResult = {
+type UiCompileResult = {
   bindings: CompiledBinding[];
   issues: string[];
 };
@@ -554,44 +567,38 @@ function App() {
           </div>
         </div>
 
-        <div className="mode-switch" aria-label="Workspace mode">
-          <button
-            className={modeTabClass(mode, "design")}
-            type="button"
-            aria-pressed={mode === "design"}
-            onClick={() => setMode("design")}
-          >
-            Design
-          </button>
-          <button
-            className={modeTabClass(mode, "data")}
-            type="button"
-            aria-pressed={mode === "data"}
-            onClick={() => setMode("data")}
-          >
-            Data
-          </button>
-        </div>
+        <Tabs.Root
+          className="mode-switch"
+          value={mode}
+          onValueChange={(value) => setMode(value as WorkspaceMode)}
+        >
+          <Tabs.List aria-label="Workspace mode">
+            <Tabs.Trigger value="design">Design</Tabs.Trigger>
+            <Tabs.Trigger value="data">Data</Tabs.Trigger>
+          </Tabs.List>
+        </Tabs.Root>
 
-        <div className="toolbar top-actions" aria-label="Edit controls">
+        <Flex className="toolbar top-actions" align="center" gap="2" aria-label="Edit controls">
           <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} disabled={!canUndo} />
           <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} disabled={!canRedo} />
           <IconButton label="Reset" onClick={reset} icon={<RefreshCcw />} />
-        </div>
+        </Flex>
       </header>
 
       {mode === "design" ? (
       <section className="workspace">
         <nav className="tool-rail" aria-label="Editing tools">
-          <button
+          <RadixIconButton
             className="rail-tool active"
             type="button"
+            variant="ghost"
+            size="2"
             title="Select"
             aria-label="Select"
             onClick={() => selectNode(selectedId)}
           >
             <MousePointer2 />
-          </button>
+          </RadixIconButton>
           <IconButton label="Create text" onClick={appendText} icon={<Type />} disabled={!canCreateChild} />
           <IconButton label="Create rect" onClick={appendRect} icon={<Square />} disabled={!canCreateChild} />
           <IconButton label="Update" onClick={editSelected} icon={<Pencil />} disabled={!canUpdateSelected} />
@@ -709,7 +716,7 @@ function App() {
         </aside>
       </section>
       ) : (
-        <DataWorkspace />
+        <DataWorkspaceCompact />
       )}
     </main>
   );
@@ -731,43 +738,170 @@ function IconButton({
   disabled?: boolean;
 }) {
   return (
-    <button
+    <Button
       className={`icon-button ${tone}`}
       type="button"
+      variant="ghost"
+      size="2"
+      color={tone === "danger" ? "red" : "gray"}
       onClick={onClick}
       disabled={disabled}
       title={shortcut === undefined ? label : `${label} (${shortcut})`}
     >
       {icon}
       <span>{label}</span>
-      {shortcut === undefined ? null : <kbd>{shortcut}</kbd>}
-    </button>
+      {shortcut === undefined ? null : <Kbd>{shortcut}</Kbd>}
+    </Button>
   );
 }
 
 function PanelTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
-    <div className="panel-title">
+    <Flex className="panel-title" align="center" gap="2">
       {icon}
-      <h2>{title}</h2>
-    </div>
+      <Heading as="h2" size="2" weight="medium">{title}</Heading>
+    </Flex>
   );
 }
 
 function SectionTitle({ icon, title }: { icon: ReactNode; title: string }) {
   return (
-    <div className="section-title">
+    <Flex className="section-title" align="center" gap="2">
       {icon}
-      <h3>{title}</h3>
-    </div>
+      <Text as="p" size="1" weight="medium">{title}</Text>
+    </Flex>
   );
 }
 
-function modeTabClass(currentMode: WorkspaceMode, mode: WorkspaceMode) {
-  return currentMode === mode ? "mode-tab active" : "mode-tab";
-}
+type UiFieldControl = "text" | "number" | "textarea" | "select" | "checkbox" | "image" | "date";
 
-function DataWorkspace() {
+type UiFieldSpec = {
+  id: string;
+  label: string;
+  path: string;
+  control: UiFieldControl;
+  help?: string;
+  options?: string[];
+};
+
+type UiSectionSpec = {
+  id: string;
+  title: string;
+  variant?: "plain" | "hero" | "toolbar";
+  repeat?: {
+    path: string;
+  };
+  fields: UiFieldSpec[];
+};
+
+type OrderUiData = {
+  title: string;
+  sections: UiSectionSpec[];
+  actions: Array<{
+    id: string;
+    label: string;
+    action: string;
+    variant: "primary" | "secondary" | "danger";
+  }>;
+};
+
+const ORDER_UI_DATA: OrderUiData = {
+  title: "Order intake",
+  sections: [
+    {
+      id: "media",
+      title: "Media",
+      variant: "hero",
+      fields: [
+        {
+          id: "heroImage",
+          label: "Hero image",
+          path: "/media/hero/src",
+          control: "image",
+          help: "Validated by z.string().url() on the entity schema.",
+        },
+        {
+          id: "heroTitle",
+          label: "Title",
+          path: "/title",
+          control: "text",
+        },
+      ],
+    },
+    {
+      id: "fields",
+      title: "Record fields",
+      fields: [
+        {
+          id: "customerName",
+          label: "Customer",
+          path: "/customer/name",
+          control: "text",
+        },
+        {
+          id: "status",
+          label: "Status",
+          path: "/status",
+          control: "select",
+          options: ["draft", "paid", "sent"],
+        },
+      ],
+    },
+    {
+      id: "items",
+      title: "Line items",
+      repeat: { path: "/lineItems" },
+      fields: [
+        {
+          id: "itemImage",
+          label: "Image",
+          path: "image",
+          control: "image",
+        },
+        {
+          id: "itemTitle",
+          label: "Title",
+          path: "title",
+          control: "text",
+        },
+        {
+          id: "itemQuantity",
+          label: "Quantity",
+          path: "quantity",
+          control: "number",
+        },
+      ],
+    },
+  ],
+  actions: [
+    {
+      id: "save",
+      label: "Save record",
+      action: "submit",
+      variant: "primary",
+    },
+  ],
+};
+
+const UI_DATA_SCHEMA_CODE = `type UiData = {
+  title: string;
+  sections: Array<{
+    id: string;
+    title: string;
+    variant?: "plain" | "hero" | "toolbar";
+    repeat?: { path: string };
+    fields: Array<{
+      id: string;
+      label: string;
+      path: string;
+      control: "text" | "number" | "textarea" | "select" | "checkbox" | "image" | "date";
+      options?: string[];
+    }>;
+  }>;
+  actions: Action[];
+};`;
+
+function DataWorkspaceCompact() {
   const entityEditorRef = useRef(makeSalesOrderEditor());
   const [version, setVersion] = useState(0);
   const [lastResult, setLastResult] = useState<OperationResult | null>(null);
@@ -775,12 +909,11 @@ function DataWorkspace() {
   const entityDoc = useMemo(() => entityEditorRef.current.snapshot(), [version]);
   const data = useMemo(() => entityEditorRef.current.toJson(), [version]);
   const entityValidation = SalesOrderSchema.safeParse(data);
-  const viewValidation = OrderViewDocSchema.safeParse(orderViewDoc);
-  const viewPlan = useMemo(() => compileViewDoc(orderViewDoc, data), [data]);
+  const uiPlan = useMemo(() => compileUiData(ORDER_UI_DATA, data), [data]);
   const statusItems = [
-    { label: "EntitySchema", ok: entityValidation.success },
-    { label: "ViewDoc", ok: viewValidation.success },
-    { label: "Bindings", ok: viewPlan.issues.length === 0 },
+    { label: "Entity", ok: entityValidation.success },
+    { label: "UI data", ok: uiPlan.issues.length === 0 },
+    { label: "Bindings", ok: uiPlan.bindings.length > 0 && uiPlan.issues.length === 0 },
   ];
 
   function updateBinding(path: string, value: JsonValue) {
@@ -794,85 +927,73 @@ function DataWorkspace() {
   }
 
   return (
-    <section className="data-workspace" aria-label="Entity schema and form showcase">
+    <section className="data-workspace" aria-label="Preview entity UI data and form">
       <div className="data-map view-showcase">
         <div className="view-showcase-head">
           <div>
-            <span>Entity Zod + ViewDoc</span>
-            <h2>Form showcase</h2>
+            <Text as="p" size="1" color="gray">Preview / Entity / UI Data / Form</Text>
+            <Heading as="h2" size="5">{ORDER_UI_DATA.title}</Heading>
           </div>
           <dl className="view-status-list">
             {statusItems.map((item) => (
               <div key={item.label}>
                 <dt>{item.label}</dt>
-                <dd>{item.ok ? "valid" : "failed"}</dd>
+                <dd>
+                  <Badge color={item.ok ? "green" : "red"} variant="soft">
+                    {item.ok ? "valid" : "failed"}
+                  </Badge>
+                </dd>
               </div>
             ))}
           </dl>
         </div>
 
         <div className="view-showcase-grid">
-          <section className="data-form-panel view-form-surface">
+          <section className="data-preview-panel view-form-surface">
             <div className="data-column-title">
-              <span>Generated Form</span>
+              <span>Preview inline edit</span>
             </div>
-            <ViewFormRenderer
-              viewDoc={orderViewDoc}
-              data={data}
-              onChange={updateBinding}
-            />
+            <InlinePreview uiData={ORDER_UI_DATA} data={data} onChange={updateBinding} />
             {lastResult === null || lastResult.ok ? null : (
               <p className="view-error">{lastResult.reason}</p>
             )}
           </section>
 
-          <section className="data-code-panel">
+          <section className="data-code-panel entity-schema-panel">
             <div className="data-column-title">
-              <span>EntitySchema</span>
+              <span>Entity</span>
             </div>
             <pre className="data-schema">{SALES_ORDER_SCHEMA_CODE}</pre>
+            <pre className="data-json">{JSON.stringify(data, null, 2)}</pre>
           </section>
 
-          <section className="data-code-panel">
+          <section className="data-code-panel view-schema-panel">
             <div className="data-column-title">
-              <span>ViewSchema</span>
+              <span>UI Data</span>
             </div>
-            <pre className="data-schema">{VIEW_DOC_SCHEMA_CODE}</pre>
+            <pre className="data-schema">{UI_DATA_SCHEMA_CODE}</pre>
+            <pre className="data-json">{JSON.stringify(ORDER_UI_DATA, null, 2)}</pre>
           </section>
 
-          <section className="data-code-panel">
+          <section className="data-form-panel compiler-panel">
             <div className="data-column-title">
-              <span>ViewDoc</span>
+              <span>Form</span>
             </div>
-            <pre className="data-json">{JSON.stringify(orderViewDoc, null, 2)}</pre>
-          </section>
-
-          <section className="data-code-panel">
-            <div className="data-column-title">
-              <span>Binding compiler</span>
-            </div>
+            <UiDataFormRenderer uiData={ORDER_UI_DATA} data={data} onChange={updateBinding} />
             <dl className="data-binding-list view-binding-list">
               <div>
                 <dt>Fields</dt>
-                <dd>{viewPlan.bindings.length}</dd>
+                <dd>{uiPlan.bindings.length}</dd>
               </div>
               <div>
                 <dt>Issues</dt>
-                <dd>{viewPlan.issues.length}</dd>
+                <dd>{uiPlan.issues.length}</dd>
               </div>
               <div>
                 <dt>Updates</dt>
                 <dd>zod-crud</dd>
               </div>
             </dl>
-            <pre className="data-json">{JSON.stringify(viewPlan, null, 2)}</pre>
-          </section>
-
-          <section className="data-code-panel">
-            <div className="data-column-title">
-              <span>Entity data</span>
-            </div>
-            <pre className="data-json">{JSON.stringify(data, null, 2)}</pre>
           </section>
         </div>
       </div>
@@ -880,177 +1001,156 @@ function DataWorkspace() {
   );
 }
 
-function ViewFormRenderer({
-  viewDoc,
+function InlinePreview({
+  uiData,
   data,
   onChange,
 }: {
-  viewDoc: OrderViewDoc;
+  uiData: OrderUiData;
   data: JsonValue;
   onChange: (path: string, value: JsonValue) => void;
 }) {
-  const root = viewDoc.nodes[viewDoc.rootId];
-
-  if (root === undefined) {
-    return (
-      <form className="generated-form" onSubmit={(event) => event.preventDefault()}>
-        <h4>Missing root view</h4>
-      </form>
-    );
-  }
+  const heroSection = uiData.sections.find((section) => section.variant === "hero");
+  const fieldSection = uiData.sections.find((section) => section.id === "fields");
+  const itemsSection = uiData.sections.find((section) => section.repeat !== undefined);
 
   return (
+    <div className="inline-preview">
+      {heroSection === undefined ? null : (
+        <section className="inline-preview-hero">
+          {heroSection.fields.map((field) => (
+            <UiFieldControl
+              key={field.id}
+              field={field}
+              path={field.path}
+              value={valueAtBindingPath(data, field.path)}
+              mode="preview"
+              onChange={onChange}
+            />
+          ))}
+        </section>
+      )}
+
+      {fieldSection === undefined ? null : (
+        <section className="inline-preview-fields">
+          {fieldSection.fields.map((field) => (
+            <UiFieldControl
+              key={field.id}
+              field={field}
+              path={field.path}
+              value={valueAtBindingPath(data, field.path)}
+              mode="preview"
+              onChange={onChange}
+            />
+          ))}
+        </section>
+      )}
+
+      {itemsSection?.repeat === undefined ? null : (
+        <section className="inline-preview-items">
+          <Text as="p" size="2" weight="medium">{itemsSection.title}</Text>
+          {arrayAtBindingPath(data, itemsSection.repeat.path).map((_item, index) => (
+            <div key={index} className="inline-preview-row">
+              {itemsSection.fields.map((field) => {
+                const path = resolveBindingPath(field.path, joinBindingPath(itemsSection.repeat!.path, String(index)));
+
+                return (
+                  <UiFieldControl
+                    key={field.id}
+                    field={field}
+                    path={path}
+                    value={valueAtBindingPath(data, path)}
+                    mode="preview"
+                    onChange={onChange}
+                  />
+                );
+              })}
+            </div>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
+
+function UiDataFormRenderer({
+  uiData,
+  data,
+  onChange,
+}: {
+  uiData: OrderUiData;
+  data: JsonValue;
+  onChange: (path: string, value: JsonValue) => void;
+}) {
+  return (
     <form className="generated-form view-schema-form" onSubmit={(event) => event.preventDefault()}>
-      <ViewNodeRenderer
-        viewDoc={viewDoc}
-        nodeId={viewDoc.rootId}
-        data={data}
-        scopePath=""
-        onChange={onChange}
-      />
+      <Heading as="h4" size="3">{uiData.title}</Heading>
+      {uiData.sections.map((section) => (
+        <section key={section.id} className={`generated-section ${section.variant ?? "plain"}`}>
+          <Text as="p" size="2" weight="medium">{section.title}</Text>
+          <div className="generated-section-body">
+            {section.repeat === undefined ? (
+              section.fields.map((field) => (
+                <UiFieldControl
+                  key={field.id}
+                  field={field}
+                  path={field.path}
+                  value={valueAtBindingPath(data, field.path)}
+                  mode="form"
+                  onChange={onChange}
+                />
+              ))
+            ) : (
+              <div className="generated-list">
+                {arrayAtBindingPath(data, section.repeat.path).map((_item, index) => (
+                  <div key={index} className="generated-list-item">
+                    {section.fields.map((field) => {
+                      const path = resolveBindingPath(field.path, joinBindingPath(section.repeat!.path, String(index)));
+
+                      return (
+                        <UiFieldControl
+                          key={field.id}
+                          field={field}
+                          path={path}
+                          value={valueAtBindingPath(data, path)}
+                          mode="form"
+                          onChange={onChange}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      ))}
+      {uiData.actions.map((action) => (
+        <Button key={action.id} className={`generated-action ${action.variant}`} type="button" variant={action.variant === "primary" ? "solid" : "soft"}>
+          {action.label}
+        </Button>
+      ))}
     </form>
   );
 }
 
-function ViewNodeRenderer({
-  viewDoc,
-  nodeId,
-  data,
-  scopePath,
-  onChange,
-}: {
-  viewDoc: OrderViewDoc;
-  nodeId: string;
-  data: JsonValue;
-  scopePath: string;
-  onChange: (path: string, value: JsonValue) => void;
-}) {
-  const node = viewDoc.nodes[nodeId];
-
-  if (node === undefined) {
-    return null;
-  }
-
-  if (node.type === "view") {
-    return (
-      <>
-        <h4>{node.title ?? "View"}</h4>
-        {node.children.map((childId) => (
-          <ViewNodeRenderer
-            key={childId}
-            viewDoc={viewDoc}
-            nodeId={childId}
-            data={data}
-            scopePath={scopePath}
-            onChange={onChange}
-          />
-        ))}
-      </>
-    );
-  }
-
-  if (node.type === "section") {
-    return (
-      <section className={`generated-section ${node.variant}`}>
-        {node.title === undefined ? null : <h5>{node.title}</h5>}
-        <div className="generated-section-body">
-          {node.children.map((childId) => (
-            <ViewNodeRenderer
-              key={childId}
-              viewDoc={viewDoc}
-              nodeId={childId}
-              data={data}
-              scopePath={scopePath}
-              onChange={onChange}
-            />
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (node.type === "field") {
-    const path = resolveBindingPath(node.value.path, scopePath);
-    const value = valueAtBindingPath(data, path);
-
-    return (
-      <ViewFormField
-        node={node}
-        path={path}
-        value={value}
-        onChange={onChange}
-      />
-    );
-  }
-
-  if (node.type === "each") {
-    const itemsPath = resolveBindingPath(node.items.path, scopePath);
-    const items = valueAtBindingPath(data, itemsPath);
-
-    if (!Array.isArray(items)) {
-      return (
-        <section className="generated-section">
-          <h5>{node.label ?? "Items"}</h5>
-          <p className="view-error">{itemsPath} is not an array.</p>
-        </section>
-      );
-    }
-
-    return (
-      <section className="generated-section">
-        <h5>{node.label ?? "Items"}</h5>
-        <div className="generated-list">
-          {items.map((item, index) => (
-            <div key={index} className="generated-list-item">
-              <ViewNodeRenderer
-                viewDoc={viewDoc}
-                nodeId={node.item}
-                data={data}
-                scopePath={joinBindingPath(itemsPath, String(index))}
-                onChange={onChange}
-              />
-            </div>
-          ))}
-        </div>
-      </section>
-    );
-  }
-
-  if (node.type === "show") {
-    const conditionPath = resolveBindingPath(node.when.path, scopePath);
-    return valueAtBindingPath(data, conditionPath) ? (
-      <ViewNodeRenderer
-        viewDoc={viewDoc}
-        nodeId={node.child}
-        data={data}
-        scopePath={scopePath}
-        onChange={onChange}
-      />
-    ) : null;
-  }
-
-  return (
-    <button className={`generated-action ${node.variant}`} type="button">
-      {node.label}
-    </button>
-  );
-}
-
-function ViewFormField({
-  node,
+function UiFieldControl({
+  field,
   path,
   value,
+  mode,
   onChange,
 }: {
-  node: Extract<ViewNode, { type: "field" }>;
+  field: UiFieldSpec;
   path: string;
   value: JsonValue | undefined;
+  mode: "preview" | "form";
   onChange: (path: string, value: JsonValue) => void;
 }) {
   const displayValue = displayJsonValue(value);
 
   function updateFromText(nextValue: string) {
-    if (node.control === "number") {
+    if (field.control === "number") {
       const numberValue = Number(nextValue);
 
       if (Number.isFinite(numberValue)) {
@@ -1064,133 +1164,115 @@ function ViewFormField({
   }
 
   return (
-    <label className={`generated-field ${node.control}`}>
-      <span>{node.label}</span>
-      {node.control === "image" ? (
+    <label className={`generated-field ${field.control} ${mode}`}>
+      <span>{field.label}</span>
+      {field.control === "image" ? (
         <div className="generated-image-field">
           {typeof value === "string" ? <img src={value} alt="" /> : null}
-          <input value={displayValue} onChange={(event) => updateFromText(event.currentTarget.value)} />
+          <TextField.Root value={displayValue} onChange={(event) => updateFromText(event.currentTarget.value)} />
         </div>
-      ) : node.control === "select" ? (
-        <select value={displayValue} onChange={(event) => onChange(path, event.currentTarget.value)}>
-          {(node.options ?? []).map((option) => (
-            <option key={option} value={option}>{option}</option>
-          ))}
-        </select>
-      ) : node.control === "checkbox" ? (
-        <input
-          type="checkbox"
+      ) : field.control === "select" ? (
+        <Select.Root value={displayValue} onValueChange={(nextValue) => onChange(path, nextValue)}>
+          <Select.Trigger />
+          <Select.Content>
+            {(field.options ?? []).map((option) => (
+              <Select.Item key={option} value={option}>{option}</Select.Item>
+            ))}
+          </Select.Content>
+        </Select.Root>
+      ) : field.control === "checkbox" ? (
+        <Checkbox
           checked={value === true}
-          onChange={(event) => onChange(path, event.currentTarget.checked)}
+          onCheckedChange={(checked) => onChange(path, checked === true)}
         />
-      ) : node.control === "textarea" ? (
-        <textarea value={displayValue} onChange={(event) => updateFromText(event.currentTarget.value)} />
+      ) : field.control === "textarea" ? (
+        <TextArea value={displayValue} onChange={(event) => updateFromText(event.currentTarget.value)} />
       ) : (
-        <input
-          type={node.control === "number" ? "number" : node.control === "date" ? "date" : "text"}
+        <TextField.Root
+          type={field.control === "number" ? "number" : field.control === "date" ? "date" : "text"}
           value={displayValue}
           onChange={(event) => updateFromText(event.currentTarget.value)}
         />
       )}
       <small>{path}</small>
-      {node.help === undefined ? null : <small>{node.help}</small>}
+      {field.help === undefined || mode === "preview" ? null : <small>{field.help}</small>}
     </label>
   );
 }
 
-function compileViewDoc(viewDoc: OrderViewDoc, data: JsonValue): ViewCompileResult {
+function compileUiData(uiData: OrderUiData, data: JsonValue): UiCompileResult {
   const bindings: CompiledBinding[] = [];
   const issues: string[] = [];
-  const visited = new Set<string>();
 
-  function visit(nodeId: string, scopePath: string) {
-    const node = viewDoc.nodes[nodeId];
-
-    if (node === undefined) {
-      issues.push(`Missing node ${nodeId}.`);
-      return;
+  for (const section of uiData.sections) {
+    if (section.repeat === undefined) {
+      section.fields.forEach((field) => collectUiFieldBinding(field, field.path, data, bindings, issues));
+      continue;
     }
 
-    const visitKey = `${scopePath}:${nodeId}`;
-    if (visited.has(visitKey)) {
-      return;
+    const items = valueAtBindingPath(data, section.repeat.path);
+
+    if (!Array.isArray(items)) {
+      issues.push(`${section.id} expects ${section.repeat.path} to be an array.`);
+      continue;
     }
 
-    visited.add(visitKey);
+    items.forEach((_item, index) => {
+      const scopePath = joinBindingPath(section.repeat!.path, String(index));
 
-    if (node.type === "view" || node.type === "section") {
-      node.children.forEach((childId) => visit(childId, scopePath));
-      return;
-    }
-
-    if (node.type === "field") {
-      const path = resolveBindingPath(node.value.path, scopePath);
-      const value = valueAtBindingPath(data, path);
-
-      bindings.push({
-        nodeId,
-        label: node.label,
-        path,
-        control: node.control,
-        value,
+      section.fields.forEach((field) => {
+        collectUiFieldBinding(field, resolveBindingPath(field.path, scopePath), data, bindings, issues);
       });
-
-      validateFieldBinding(node, path, value, issues);
-      return;
-    }
-
-    if (node.type === "each") {
-      const itemsPath = resolveBindingPath(node.items.path, scopePath);
-      const items = valueAtBindingPath(data, itemsPath);
-
-      if (!Array.isArray(items)) {
-        issues.push(`${nodeId} expects ${itemsPath} to be an array.`);
-        return;
-      }
-
-      items.forEach((_item, index) => visit(node.item, joinBindingPath(itemsPath, String(index))));
-      return;
-    }
-
-    if (node.type === "show") {
-      const value = valueAtBindingPath(data, resolveBindingPath(node.when.path, scopePath));
-
-      if (typeof value !== "boolean") {
-        issues.push(`${nodeId} expects a boolean condition.`);
-      }
-
-      visit(node.child, scopePath);
-    }
+    });
   }
 
-  visit(viewDoc.rootId, "");
   return { bindings, issues };
 }
 
-function validateFieldBinding(
-  node: Extract<ViewNode, { type: "field" }>,
+function collectUiFieldBinding(
+  field: UiFieldSpec,
+  path: string,
+  data: JsonValue,
+  bindings: CompiledBinding[],
+  issues: string[],
+) {
+  const value = valueAtBindingPath(data, path);
+
+  bindings.push({
+    nodeId: field.id,
+    label: field.label,
+    path,
+    control: field.control,
+    value,
+  });
+
+  validateUiFieldBinding(field, path, value, issues);
+}
+
+function validateUiFieldBinding(
+  field: UiFieldSpec,
   path: string,
   value: JsonValue | undefined,
   issues: string[],
 ) {
   if (value === undefined) {
-    issues.push(`${node.label} points at missing path ${path}.`);
+    issues.push(`${field.label} points at missing path ${path}.`);
     return;
   }
 
-  if (node.control === "number" && typeof value !== "number") {
-    issues.push(`${node.label} expects a number at ${path}.`);
+  if (field.control === "number" && typeof value !== "number") {
+    issues.push(`${field.label} expects a number at ${path}.`);
   }
 
-  if (node.control === "checkbox" && typeof value !== "boolean") {
-    issues.push(`${node.label} expects a boolean at ${path}.`);
+  if (field.control === "checkbox" && typeof value !== "boolean") {
+    issues.push(`${field.label} expects a boolean at ${path}.`);
   }
 
   if (
-    (node.control === "text" || node.control === "textarea" || node.control === "select" || node.control === "image" || node.control === "date") &&
+    (field.control === "text" || field.control === "textarea" || field.control === "select" || field.control === "image" || field.control === "date") &&
     typeof value !== "string"
   ) {
-    issues.push(`${node.label} expects a string at ${path}.`);
+    issues.push(`${field.label} expects a string at ${path}.`);
   }
 }
 
@@ -1225,6 +1307,11 @@ function valueAtBindingPath(value: JsonValue, path: string): JsonValue | undefin
 
     return undefined;
   }, value);
+}
+
+function arrayAtBindingPath(value: JsonValue, path: string): JsonValue[] {
+  const result = valueAtBindingPath(value, path);
+  return Array.isArray(result) ? result : [];
 }
 
 function resolveBindingPath(path: string, scopePath: string) {
@@ -2025,36 +2112,36 @@ function supportsAnchoredPopover(element: HTMLSpanElement): element is HTMLSpanE
 function ComponentBindingPanel({ binding }: { binding: SelectedComponentBinding }) {
   return (
     <div className="component-binding-card">
-      <div className="binding-eyebrow">
+      <Flex className="binding-eyebrow" align="center" gap="2">
         <LayoutTemplate />
-        <span>Selected component</span>
-      </div>
+        <Text size="1" color="gray" weight="medium">Selected component</Text>
+      </Flex>
       <div className="binding-heading">
-        <strong>{binding.component}</strong>
-        <code>{binding.nodeId}</code>
+        <Heading as="h3" size="3">{binding.component}</Heading>
+        <Code>{binding.nodeId}</Code>
       </div>
       <div className="binding-form">
         <label>
           <span>CRUD field</span>
-          <input value={binding.field} readOnly />
+          <TextField.Root value={binding.field} readOnly />
         </label>
         <label>
           <span>Zod schema</span>
-          <input value={binding.schema} readOnly />
+          <TextField.Root value={binding.schema} readOnly />
         </label>
         <label>
           <span>Operation</span>
-          <input value={binding.operation} readOnly />
+          <TextField.Root value={binding.operation} readOnly />
         </label>
         <label>
           <span>State</span>
-          <input value={binding.state} readOnly />
+          <TextField.Root value={binding.state} readOnly />
         </label>
       </div>
-      <div className="binding-validation">
+      <Flex className="binding-validation" align="start" gap="2">
         <CheckCircle2 />
-        <span>{binding.validation}</span>
-      </div>
+        <Text size="1">{binding.validation}</Text>
+      </Flex>
     </div>
   );
 }
@@ -2276,34 +2363,34 @@ function NodeTable({
 
   return (
     <div className="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>id</th>
-            <th>type</th>
-            <th>parent</th>
-            <th>key</th>
-            <th>children</th>
-            <th>value</th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table.Root size="1" variant="surface">
+        <Table.Header>
+          <Table.Row>
+            <Table.ColumnHeaderCell>id</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>type</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>parent</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>key</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>children</Table.ColumnHeaderCell>
+            <Table.ColumnHeaderCell>value</Table.ColumnHeaderCell>
+          </Table.Row>
+        </Table.Header>
+        <Table.Body>
           {rows.map((node) => (
-            <tr
+            <Table.Row
               key={node.id}
               className={nodeClass("", node.id, selectedId, focusedSet)}
               onClick={() => onSelect(node.id)}
             >
-              <td>{node.id}</td>
-              <td>{node.type}</td>
-              <td>{node.parentId ?? "null"}</td>
-              <td>{node.key ?? "null"}</td>
-              <td>{node.children.join(", ") || "-"}</td>
-              <td>{node.value === undefined ? "-" : String(node.value)}</td>
-            </tr>
+              <Table.Cell>{node.id}</Table.Cell>
+              <Table.Cell>{node.type}</Table.Cell>
+              <Table.Cell>{node.parentId ?? "null"}</Table.Cell>
+              <Table.Cell>{node.key ?? "null"}</Table.Cell>
+              <Table.Cell>{node.children.join(", ") || "-"}</Table.Cell>
+              <Table.Cell>{node.value === undefined ? "-" : String(node.value)}</Table.Cell>
+            </Table.Row>
           ))}
-        </tbody>
-      </table>
+        </Table.Body>
+      </Table.Root>
     </div>
   );
 }
@@ -3101,6 +3188,8 @@ rootElement.__zodCrudRoot = root;
 
 root.render(
   <StrictMode>
-    <App />
+    <Theme appearance="light" accentColor="gray" grayColor="slate" radius="small" scaling="95%">
+      <App />
+    </Theme>
   </StrictMode>,
 );
