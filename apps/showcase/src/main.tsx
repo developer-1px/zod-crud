@@ -214,6 +214,8 @@ type DataSection = DataSectionSpec & {
   value: JsonValue;
 };
 
+type UiFormPath = Array<string | number>;
+
 type AnchorPositionStyle = CSSProperties & {
   anchorName?: CSSProperties["anchorName"];
   positionAnchor?: CSSProperties["positionAnchor"];
@@ -538,6 +540,14 @@ function App() {
     });
   }
 
+  function updateDataFormField(sectionNodeId: NodeId, path: UiFormPath, value: JsonValue) {
+    run(
+      `form update ${sectionNodeId}`,
+      () => updateUiFormPath(editorRef.current, doc, sectionNodeId, path, value),
+      (_before, after) => [focusableUiNodeId(after, sectionNodeId)],
+    );
+  }
+
   function reset() {
     editorRef.current = makeEditor();
     setSelectedId(editorRef.current.snapshot().rootId);
@@ -792,6 +802,7 @@ function App() {
           selectedPreviewId={selectionBridge.selectedPreviewId}
           focusedSet={selectionBridge.focusedPreviewIds}
           onSelect={selectNode}
+          onFormChange={updateDataFormField}
         />
       )}
     </main>
@@ -855,11 +866,13 @@ function DataWorkspace({
   selectedPreviewId,
   focusedSet,
   onSelect,
+  onFormChange,
 }: {
   doc: JsonDoc;
   selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
+  onFormChange: (sectionNodeId: NodeId, path: UiFormPath, value: JsonValue) => void;
 }) {
   const sections = resolveDataSections(doc);
 
@@ -874,6 +887,7 @@ function DataWorkspace({
             selectedPreviewId={selectedPreviewId}
             focusedSet={focusedSet}
             onSelect={onSelect}
+            onFormChange={onFormChange}
           />
         ))}
       </div>
@@ -881,7 +895,13 @@ function DataWorkspace({
   );
 }
 
-function UiSchemaForm({ value }: { value: JsonValue }) {
+function UiSchemaForm({
+  value,
+  onChange,
+}: {
+  value: JsonValue;
+  onChange: (path: UiFormPath, value: JsonValue) => void;
+}) {
   const result = DesignNodeSchema.safeParse(value);
 
   if (!result.success) {
@@ -896,12 +916,20 @@ function UiSchemaForm({ value }: { value: JsonValue }) {
   return (
     <form className="generated-form ui-schema-form" onSubmit={(event) => event.preventDefault()}>
       <h4>{result.data.name}</h4>
-      <UiSchemaFormNode node={result.data} path="$" />
+      <UiSchemaFormNode node={result.data} path={[]} onChange={onChange} />
     </form>
   );
 }
 
-function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
+function UiSchemaFormNode({
+  node,
+  path,
+  onChange,
+}: {
+  node: UiNode;
+  path: UiFormPath;
+  onChange: (path: UiFormPath, value: JsonValue) => void;
+}) {
   if (node.kind === "group") {
     const slots = Object.entries(node.slots);
     const collections = Object.entries(node.collections);
@@ -910,10 +938,10 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
       <section className="generated-section">
         <h5>{node.role}</h5>
         <div className="generated-section-body">
-          <UiFormField label="Role" path={`${path}.role`} value={node.role} />
+          <UiFormField label="Role" path={[...path, "role"]} value={node.role} onChange={onChange} />
           {slots.map(([slotName, slotNode]) => (
             <UiSchemaNestedSection key={slotName} title={`slot.${slotName}`}>
-              <UiSchemaFormNode node={slotNode} path={`${path}.slots.${slotName}`} />
+              <UiSchemaFormNode node={slotNode} path={[...path, "slots", slotName]} onChange={onChange} />
             </UiSchemaNestedSection>
           ))}
           {collections.map(([collectionName, items]) => (
@@ -921,7 +949,11 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
               <div className="generated-list">
                 {items.map((item, index) => (
                   <div key={`${item.name}-${index}`} className="generated-list-item">
-                    <UiSchemaFormNode node={item} path={`${path}.collections.${collectionName}.${index}`} />
+                    <UiSchemaFormNode
+                      node={item}
+                      path={[...path, "collections", collectionName, index]}
+                      onChange={onChange}
+                    />
                   </div>
                 ))}
               </div>
@@ -937,9 +969,9 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
       <section className="generated-section">
         <h5>{node.name}</h5>
         <div className="generated-section-body">
-          <UiFormField label="Fill" path={`${path}.fill`} value={node.fill} />
+          <UiFormField label="Fill" path={[...path, "fill"]} value={node.fill} onChange={onChange} />
           {node.children.map((child, index) => (
-            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={`${path}.children.${index}`} />
+            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={[...path, "children", index]} onChange={onChange} />
           ))}
         </div>
       </section>
@@ -951,10 +983,10 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
       <section className="generated-section">
         <h5>{node.name}</h5>
         <div className="generated-section-body">
-          <UiFormField label="Direction" path={`${path}.direction`} value={node.direction} options={UI_DIRECTION_OPTIONS} />
-          <UiFormField label="Gap" path={`${path}.gap`} value={node.gap} control="number" />
+          <UiFormField label="Direction" path={[...path, "direction"]} value={node.direction} options={UI_DIRECTION_OPTIONS} onChange={onChange} />
+          <UiFormField label="Gap" path={[...path, "gap"]} value={node.gap} control="number" onChange={onChange} />
           {node.children.map((child, index) => (
-            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={`${path}.children.${index}`} />
+            <UiSchemaFormNode key={`${child.name}-${index}`} node={child} path={[...path, "children", index]} onChange={onChange} />
           ))}
         </div>
       </section>
@@ -966,8 +998,8 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
       <section className="generated-section">
         <h5>{node.name}</h5>
         <div className="generated-section-body">
-          <UiFormField label="Text" path={`${path}.text`} value={node.text} />
-          <UiFormField label="Tone" path={`${path}.tone`} value={node.tone} options={UI_TONE_OPTIONS} />
+          <UiFormField label="Text" path={[...path, "text"]} value={node.text} onChange={onChange} />
+          <UiFormField label="Tone" path={[...path, "tone"]} value={node.tone} options={UI_TONE_OPTIONS} onChange={onChange} />
         </div>
       </section>
     );
@@ -978,10 +1010,10 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
       <section className="generated-section hero">
         <h5>{node.name}</h5>
         <div className="generated-section-body">
-          <UiFormField label="Label" path={`${path}.label`} value={node.label} />
-          <UiFormField label="Source" path={`${path}.src`} value={node.src} control="image" />
-          <UiFormField label="Alt" path={`${path}.alt`} value={node.alt} />
-          <UiFormField label="Aspect" path={`${path}.aspect`} value={node.aspect} options={UI_ASPECT_OPTIONS} />
+          <UiFormField label="Label" path={[...path, "label"]} value={node.label} onChange={onChange} />
+          <UiFormField label="Source" path={[...path, "src"]} value={node.src} control="image" onChange={onChange} />
+          <UiFormField label="Alt" path={[...path, "alt"]} value={node.alt} onChange={onChange} />
+          <UiFormField label="Aspect" path={[...path, "aspect"]} value={node.aspect} options={UI_ASPECT_OPTIONS} onChange={onChange} />
         </div>
       </section>
     );
@@ -992,9 +1024,9 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
       <section className="generated-section">
         <h5>{node.name}</h5>
         <div className="generated-section-body">
-          <UiFormField label="Label" path={`${path}.label`} value={node.label} />
-          <UiFormField label="Icon" path={`${path}.icon`} value={node.icon} options={UI_ICON_OPTIONS} />
-          <UiFormField label="Tone" path={`${path}.tone`} value={node.tone} options={UI_TONE_OPTIONS} />
+          <UiFormField label="Label" path={[...path, "label"]} value={node.label} onChange={onChange} />
+          <UiFormField label="Icon" path={[...path, "icon"]} value={node.icon} options={UI_ICON_OPTIONS} onChange={onChange} />
+          <UiFormField label="Tone" path={[...path, "tone"]} value={node.tone} options={UI_TONE_OPTIONS} onChange={onChange} />
         </div>
       </section>
     );
@@ -1004,10 +1036,10 @@ function UiSchemaFormNode({ node, path }: { node: UiNode; path: string }) {
     <section className="generated-section">
       <h5>{node.name}</h5>
       <div className="generated-section-body">
-        <UiFormField label="Label" path={`${path}.label`} value={node.label} />
-        <UiFormField label="Fill" path={`${path}.fill`} value={node.fill} options={UI_FILL_OPTIONS} />
-        <UiFormField label="Width" path={`${path}.width`} value={node.width} control="number" />
-        <UiFormField label="Height" path={`${path}.height`} value={node.height} control="number" />
+        <UiFormField label="Label" path={[...path, "label"]} value={node.label} onChange={onChange} />
+        <UiFormField label="Fill" path={[...path, "fill"]} value={node.fill} options={UI_FILL_OPTIONS} onChange={onChange} />
+        <UiFormField label="Width" path={[...path, "width"]} value={node.width} control="number" onChange={onChange} />
+        <UiFormField label="Height" path={[...path, "height"]} value={node.height} control="number" onChange={onChange} />
       </div>
     </section>
   );
@@ -1028,14 +1060,30 @@ function UiFormField({
   value,
   control = "text",
   options,
+  onChange,
 }: {
   label: string;
-  path: string;
+  path: UiFormPath;
   value: JsonValue | undefined;
   control?: "text" | "number" | "image";
   options?: readonly string[];
+  onChange: (path: UiFormPath, value: JsonValue) => void;
 }) {
   const displayValue = displayFormValue(value);
+  const pathLabel = uiFormPathLabel(path);
+
+  function handleInputChange(nextValue: string) {
+    if (control !== "number") {
+      onChange(path, nextValue);
+      return;
+    }
+
+    const numberValue = Number(nextValue);
+
+    if (Number.isFinite(numberValue)) {
+      onChange(path, numberValue);
+    }
+  }
 
   return (
     <label className={`generated-field ${control}`}>
@@ -1043,20 +1091,28 @@ function UiFormField({
       {control === "image" ? (
         <div className="generated-image-field">
           {typeof value === "string" ? <img src={value} alt="" /> : null}
-          <input value={displayValue} readOnly />
+          <input value={displayValue} onChange={(event) => handleInputChange(event.currentTarget.value)} />
         </div>
       ) : options === undefined ? (
-        <input type={control === "number" ? "number" : "text"} value={displayValue} readOnly />
+        <input
+          type={control === "number" ? "number" : "text"}
+          value={displayValue}
+          onChange={(event) => handleInputChange(event.currentTarget.value)}
+        />
       ) : (
-        <select value={displayValue} disabled>
+        <select value={displayValue} onChange={(event) => onChange(path, event.currentTarget.value)}>
           {options.map((option) => (
             <option key={option} value={option}>{option}</option>
           ))}
         </select>
       )}
-      <small>{path}</small>
+      <small>{pathLabel}</small>
     </label>
   );
+}
+
+function uiFormPathLabel(path: UiFormPath) {
+  return path.length === 0 ? "$" : `$.${path.join(".")}`;
 }
 
 function displayFormValue(value: JsonValue | undefined) {
