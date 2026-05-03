@@ -2,10 +2,8 @@ import * as z from "zod";
 
 import type {
   JsonCrudOptions,
-  JsonChange,
   JsonDoc,
   JsonKey,
-  JsonNode,
   JsonPath,
   JsonValue,
   NodeId,
@@ -17,7 +15,6 @@ import {
   cloneDoc,
   cloneJson,
   deserialize,
-  ensureObjectArrayField,
   findChildByKey,
   formatPath,
   getNode,
@@ -28,16 +25,11 @@ import {
   replaceSubtree,
   serialize,
 } from "./json-doc.js";
-import { objectArrayFieldKeys, schemaAtPath } from "./schema-path.js";
+import { buildPasteCandidates, type PasteCandidate } from "./json-paste.js";
+import { successResult } from "./operation-result.js";
+import { schemaAtPath } from "./schema-path.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
-
-type PasteCandidate = {
-  apply: () => {
-    doc: JsonDoc;
-    pastedRootId: NodeId;
-  };
-};
 
 export function createJsonCrud<T extends JsonValue, I = unknown>(
   schema: z.ZodType<T, I>,
@@ -195,7 +187,17 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const payload = cloneJson(this.clipboard.value);
       const mode = options.mode ?? "auto";
       const childKeys = options.childKeys ?? this.childKeys;
-      const candidates = this.buildPasteCandidates(targetId, payload, mode, childKeys, options.index);
+      const candidates = buildPasteCandidates({
+        doc: this.doc,
+        schema: this.schema,
+        targetId,
+        payload,
+        mode,
+        childKeys,
+        clipboardSourceId: this.clipboard.sourceId,
+        index: options.index,
+        allocateNodeId: () => this.allocateNodeId(),
+      });
 
       return this.commitFirstValidPaste(candidates);
     } catch (error) {
@@ -214,7 +216,17 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const payload = cloneJson(this.clipboard.value);
       const mode = options.mode ?? "auto";
       const childKeys = options.childKeys ?? this.childKeys;
-      const candidates = this.buildPasteCandidates(targetId, payload, mode, childKeys, options.index);
+      const candidates = buildPasteCandidates({
+        doc: this.doc,
+        schema: this.schema,
+        targetId,
+        payload,
+        mode,
+        childKeys,
+        clipboardSourceId: this.clipboard.sourceId,
+        index: options.index,
+        allocateNodeId: () => this.allocateNodeId(),
+      });
       const result = this.firstValidPasteResult(candidates);
 
       return result.ok ? { ok: true } : result;
@@ -259,45 +271,6 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     this.undoStack.push(current);
     this.doc = next;
     return successResult(current, next);
-  }
-
-  private buildPasteCandidates(
-    targetId: NodeId,
-    payload: JsonValue,
-    mode: PasteOptions["mode"],
-    childKeys: string[],
-    index?: number,
-  ): PasteCandidate[] {
-    const target = getNode(this.doc, targetId);
-
-    if (mode === "overwrite") {
-      return [this.overwritePasteCandidate(targetId, payload)];
-    }
-
-    if (mode === "child") {
-      return this.childPasteCandidates(targetId, payload, childKeys, index);
-    }
-
-    const selfSiblingCandidates = this.selfSiblingPasteCandidates(targetId, payload, index);
-    const childCandidates = this.childPasteCandidates(targetId, payload, childKeys, index);
-
-    if (selfSiblingCandidates.length > 0) {
-      return [...selfSiblingCandidates, ...childCandidates];
-    }
-
-    if (target.type === "array") {
-      return childCandidates;
-    }
-
-    if (target.type === "object") {
-      return [this.overwritePasteCandidate(targetId, payload)];
-    }
-
-    if (target.type === jsonNodeTypeOf(payload)) {
-      return [this.overwritePasteCandidate(targetId, payload)];
-    }
-
-    return [];
   }
 
   private commitFirstValidPaste(candidates: PasteCandidate[]): OperationResult {
@@ -358,138 +331,6 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
 
     this.nextNodeIndex = initialNodeIndex;
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
-  }
-
-  private overwritePasteCandidate(targetId: NodeId, payload: JsonValue): PasteCandidate {
-    return {
-      apply: () => {
-        const next = cloneDoc(this.doc);
-
-        replaceSubtree(next, targetId, payload, () => this.allocateNodeId());
-        return { doc: next, pastedRootId: targetId };
-      },
-    };
-  }
-
-  private selfSiblingPasteCandidates(
-    targetId: NodeId,
-    payload: JsonValue,
-    index?: number,
-  ): PasteCandidate[] {
-    if (this.clipboard?.sourceId !== targetId) {
-      return [];
-    }
-
-    const target = getNode(this.doc, targetId);
-
-    if (target.parentId === null) {
-      return [];
-    }
-
-    const parent = getNode(this.doc, target.parentId);
-
-    if (parent.type !== "array") {
-      return [];
-    }
-
-    const targetIndex = parent.children.indexOf(targetId);
-
-    if (targetIndex === -1) {
-      return [];
-    }
-
-    return [this.arrayInsertPasteCandidate(parent.id, payload, index ?? targetIndex + 1)];
-  }
-
-  private childPasteCandidates(
-    targetId: NodeId,
-    payload: JsonValue,
-    childKeys: string[],
-    index?: number,
-  ): PasteCandidate[] {
-    const target = getNode(this.doc, targetId);
-
-    if (target.type === "array") {
-      return [this.arrayInsertPasteCandidate(targetId, payload, index)];
-    }
-
-    if (target.type !== "object") {
-      return [];
-    }
-
-    return this.objectChildArrayKeys(targetId, childKeys).map((childKey) =>
-      this.objectChildArrayPasteCandidate(targetId, childKey, payload, index),
-    );
-  }
-
-  private objectChildArrayPasteCandidate(
-    targetId: NodeId,
-    childKey: string,
-    payload: JsonValue,
-    index?: number,
-  ): PasteCandidate {
-    return {
-      apply: () => {
-        const next = cloneDoc(this.doc);
-        const childArrayId = ensureObjectArrayField(next, targetId, childKey, () => this.allocateNodeId());
-
-        const pastedRootId = insertChild(
-          next,
-          childArrayId,
-          index ?? getNode(next, childArrayId).children.length,
-          payload,
-          () => this.allocateNodeId(),
-        );
-        return { doc: next, pastedRootId };
-      },
-    };
-  }
-
-  private arrayInsertPasteCandidate(
-    arrayId: NodeId,
-    payload: JsonValue,
-    index?: number,
-  ): PasteCandidate {
-    return {
-      apply: () => {
-        const next = cloneDoc(this.doc);
-
-        const pastedRootId = insertChild(
-          next,
-          arrayId,
-          index ?? getNode(next, arrayId).children.length,
-          payload,
-          () => this.allocateNodeId(),
-        );
-        return { doc: next, pastedRootId };
-      },
-    };
-  }
-
-  private objectChildArrayKeys(targetId: NodeId, childKeys: string[]): string[] {
-    const target = getNode(this.doc, targetId);
-    const keys = new Set<string>();
-    const targetSchema = schemaAtPath(this.schema, getPath(this.doc, targetId));
-
-    if (targetSchema !== null) {
-      for (const childKey of objectArrayFieldKeys(targetSchema)) {
-        keys.add(childKey);
-      }
-    }
-
-    for (const childId of target.children) {
-      const child = getNode(this.doc, childId);
-
-      if (child.type === "array" && typeof child.key === "string") {
-        keys.add(child.key);
-      }
-    }
-
-    for (const childKey of childKeys) {
-      keys.add(childKey);
-    }
-
-    return [...keys];
   }
 
   private validateAtPath(path: JsonPath, value: JsonValue): OperationResult {
@@ -578,147 +419,4 @@ function failure(error: unknown): OperationResult {
     ok: false,
     reason: error instanceof Error ? error.message : String(error),
   };
-}
-
-function successResult(
-  before: JsonDoc,
-  after: JsonDoc,
-  nodeId?: NodeId,
-): OperationResult {
-  const changes = changesFromDiff(before, after);
-
-  return {
-    ok: true,
-    ...(nodeId === undefined ? {} : { nodeId }),
-    focusNodeId: focusFromMutation(before, after, changes, nodeId),
-    changes,
-  };
-}
-
-function changesFromDiff(before: JsonDoc, after: JsonDoc): JsonChange[] {
-  const changes: JsonChange[] = [];
-
-  for (const beforeNode of Object.values(before.nodes)) {
-    const afterNode = after.nodes[beforeNode.id];
-
-    if (afterNode === undefined) {
-      changes.push({
-        type: "delete",
-        nodeId: beforeNode.id,
-        before: cloneNode(beforeNode),
-      });
-    } else if (!sameNode(beforeNode, afterNode)) {
-      changes.push({
-        type: "update",
-        nodeId: afterNode.id,
-        before: cloneNode(beforeNode),
-        after: cloneNode(afterNode),
-      });
-    }
-  }
-
-  for (const afterNode of Object.values(after.nodes)) {
-    if (before.nodes[afterNode.id] === undefined) {
-      changes.push({
-        type: "insert",
-        nodeId: afterNode.id,
-        after: cloneNode(afterNode),
-      });
-    }
-  }
-
-  return changes;
-}
-
-function cloneNode(node: JsonNode): JsonNode {
-  return {
-    ...node,
-    children: [...node.children],
-  };
-}
-
-function jsonNodeTypeOf(value: JsonValue): JsonNode["type"] {
-  if (Array.isArray(value)) {
-    return "array";
-  }
-
-  if (value === null) {
-    return "null";
-  }
-
-  if (typeof value === "object") {
-    return "object";
-  }
-
-  if (typeof value === "string") {
-    return "string";
-  }
-
-  if (typeof value === "number") {
-    return "number";
-  }
-
-  return "boolean";
-}
-
-function focusFromMutation(
-  before: JsonDoc,
-  after: JsonDoc,
-  changes: JsonChange[],
-  primaryNodeId?: NodeId,
-): NodeId {
-  if (primaryNodeId !== undefined && after.nodes[primaryNodeId] !== undefined) {
-    return primaryNodeId;
-  }
-
-  if (primaryNodeId !== undefined && before.nodes[primaryNodeId] !== undefined) {
-    return focusAfterPrimaryRemoval(before, after, primaryNodeId);
-  }
-
-  const insertedRoot = changes.find((change) =>
-    change.type === "insert" &&
-    change.after.parentId !== null &&
-    before.nodes[change.after.parentId] !== undefined
-  );
-
-  if (insertedRoot !== undefined) {
-    return insertedRoot.nodeId;
-  }
-
-  const changedExisting = changes.find((change) =>
-    change.type === "update" && after.nodes[change.nodeId] !== undefined
-  );
-
-  if (changedExisting !== undefined) {
-    return changedExisting.nodeId;
-  }
-
-  return after.rootId;
-}
-
-function focusAfterPrimaryRemoval(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
-  const removed = before.nodes[removedId];
-  const siblings = removed?.parentId === null || removed?.parentId === undefined
-    ? []
-    : before.nodes[removed.parentId]?.children ?? [];
-  const index = siblings.indexOf(removedId);
-  const candidates = [
-    siblings[index + 1],
-    siblings[index - 1],
-    removed?.parentId,
-    after.rootId,
-  ];
-
-  return candidates.find((id): id is NodeId =>
-    id !== undefined && id !== null && after.nodes[id] !== undefined
-  ) ?? after.rootId;
-}
-
-function sameNode(left: JsonNode, right: JsonNode): boolean {
-  return left.type === right.type &&
-    left.parentId === right.parentId &&
-    left.key === right.key &&
-    left.value === right.value &&
-    left.children.length === right.children.length &&
-    left.children.every((childId, index) => childId === right.children[index]);
 }
