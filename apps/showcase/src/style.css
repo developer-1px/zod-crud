@@ -123,6 +123,7 @@ kbd {
 }
 
 .workspace {
+  align-items: start;
   display: grid;
   gap: 16px;
   grid-template-columns: minmax(520px, 1.45fr) minmax(320px, 0.75fr);
@@ -156,8 +157,7 @@ kbd {
   border: 1px solid #d9ded8;
   border-radius: 7px;
   display: grid;
-  max-height: calc(100vh - 220px);
-  min-height: 420px;
+  max-height: min(640px, calc(100vh - 220px));
   overflow: auto;
   outline: none;
 }
