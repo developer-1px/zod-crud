@@ -1,26 +1,21 @@
 import "antd/dist/reset.css";
-import "./styles.css";
 
 import {
   Alert,
   Button,
   Collapse,
-  ConfigProvider,
   Descriptions,
   Form,
   Input,
   InputNumber,
-  Layout,
   Select,
   Space,
   Table,
   Tabs,
   Tag,
-  theme as antdTheme,
   Tree,
   Typography,
   type TableColumnsType,
-  type ThemeConfig,
   type TreeDataNode,
 } from "antd";
 import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
@@ -44,84 +39,7 @@ import {
   type SalesOrder,
 } from "./design-schema.js";
 
-const { Header } = Layout;
 const { Text, Title } = Typography;
-
-const SHOWCASE_THEME: ThemeConfig = {
-  algorithm: antdTheme.compactAlgorithm,
-  token: {
-    borderRadius: 2,
-    colorBgBase: "#ffffff",
-    colorBgLayout: "#ffffff",
-    colorBorder: "#d9dce3",
-    colorBorderSecondary: "#e7e9ee",
-    colorError: "#b42318",
-    colorInfo: "#111827",
-    colorPrimary: "#111827",
-    colorSuccess: "#027a48",
-    colorTextBase: "#111827",
-    controlHeight: 30,
-    controlOutlineWidth: 1,
-    fontFamily: "Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif",
-    fontSize: 13,
-    lineWidth: 1,
-    sizeStep: 3,
-    wireframe: true,
-  },
-  components: {
-    Button: {
-      dangerShadow: "none",
-      defaultShadow: "none",
-      fontWeight: 500,
-      primaryShadow: "none",
-    },
-    Collapse: {
-      borderlessContentBg: "#ffffff",
-      contentBg: "#ffffff",
-      contentPadding: "12px",
-      headerBg: "#ffffff",
-      headerPadding: "9px 12px",
-    },
-    Input: {
-      activeShadow: "none",
-      errorActiveShadow: "none",
-      warningActiveShadow: "none",
-    },
-    Layout: {
-      bodyBg: "#ffffff",
-      headerBg: "#ffffff",
-      headerHeight: 48,
-      headerPadding: "0 12px",
-    },
-    Select: {
-      activeBorderColor: "#111827",
-      optionSelectedBg: "#f5f6f8",
-      optionSelectedFontWeight: 500,
-    },
-    Table: {
-      borderColor: "#e7e9ee",
-      cellPaddingBlockSM: 6,
-      cellPaddingInlineSM: 8,
-      headerBg: "#ffffff",
-      headerBorderRadius: 0,
-      rowHoverBg: "#f8f9fb",
-      rowSelectedBg: "#f5f6f8",
-      rowSelectedHoverBg: "#f1f3f5",
-    },
-    Tabs: {
-      horizontalItemGutter: 18,
-      horizontalItemPadding: "0 0 10px",
-      inkBarColor: "#111827",
-      itemActiveColor: "#111827",
-      itemHoverColor: "#111827",
-      titleFontSize: 13,
-    },
-    Tag: {
-      defaultBg: "#f8f9fb",
-      defaultColor: "#374151",
-    },
-  },
-};
 
 declare global {
   var zodCrudShowcaseRoot: Root | undefined;
@@ -450,66 +368,64 @@ function App() {
   }
 
   return (
-    <ConfigProvider theme={SHOWCASE_THEME}>
-      <Layout className="app-shell">
-        <Header className="app-header">
-          <div className="brand">
-            <Text strong>zod-crud</Text>
-            <Text type="secondary">validated JSON CRUD</Text>
-          </div>
-          <Tabs
-            activeKey={mode}
-            onChange={(value) => navigateMode(value as Mode)}
-            items={[
-              { key: "design", label: "Design" },
-              { key: "data", label: "Data" },
-            ]}
-          />
-          <Space wrap>
-            <Button size="small" disabled={!canUndo} onClick={() => commitDesign(() => designEditorRef.current.undo())}>Undo</Button>
-            <Button size="small" disabled={!canRedo} onClick={() => commitDesign(() => designEditorRef.current.redo())}>Redo</Button>
-            <Button size="small" onClick={resetDesign}>Reset</Button>
-          </Space>
-        </Header>
+    <>
+      <header>
+        <Space wrap>
+          <Text strong>zod-crud</Text>
+          <Text type="secondary">validated JSON CRUD</Text>
+        </Space>
+        <Tabs
+          activeKey={mode}
+          onChange={(value) => navigateMode(value as Mode)}
+          items={[
+            { key: "design", label: "Design" },
+            { key: "data", label: "Data" },
+          ]}
+        />
+        <Space wrap>
+          <Button size="small" disabled={!canUndo} onClick={() => commitDesign(() => designEditorRef.current.undo())}>Undo</Button>
+          <Button size="small" disabled={!canRedo} onClick={() => commitDesign(() => designEditorRef.current.redo())}>Redo</Button>
+          <Button size="small" onClick={resetDesign}>Reset</Button>
+        </Space>
+      </header>
 
-        {mode === "design" ? (
-          <DesignMode
-            doc={designDoc}
-            treeData={treeData}
-            tableRows={tableRows}
-            selectedId={selectedId}
-            selectedNode={selectedNode}
-            selectedName={selectedName}
-            selectedBinding={selectedBinding}
-            expandedKeys={expandedKeys}
-            lastResult={lastResult}
-            order={order}
-            canCreate={canCreate}
-            canUpdate={canUpdate}
-            canDelete={canDelete}
-            canPaste={canPaste}
-            onExpand={setExpandedKeys}
-            onSelect={selectDesignNode}
-            onSelectName={selectByName}
-            onCreate={createNode}
-            onUpdate={updateSelectedString}
-            onCopy={copySelected}
-            onCut={() => commitDesign(() => designEditorRef.current.cut(selectedId))}
-            onPaste={() => commitDesign(() => designEditorRef.current.paste(selectedId))}
-            onDelete={() => commitDesign(() => designEditorRef.current.delete(selectedId))}
-          />
-        ) : (
-          <DataMode
-            order={order}
-            orderDoc={orderDoc}
-            lastResult={lastResult}
-            selectedName={selectedName}
-            onSelectName={selectByName}
-            onUpdateOrder={updateOrder}
-          />
-        )}
-      </Layout>
-    </ConfigProvider>
+      {mode === "design" ? (
+        <DesignMode
+          doc={designDoc}
+          treeData={treeData}
+          tableRows={tableRows}
+          selectedId={selectedId}
+          selectedNode={selectedNode}
+          selectedName={selectedName}
+          selectedBinding={selectedBinding}
+          expandedKeys={expandedKeys}
+          lastResult={lastResult}
+          order={order}
+          canCreate={canCreate}
+          canUpdate={canUpdate}
+          canDelete={canDelete}
+          canPaste={canPaste}
+          onExpand={setExpandedKeys}
+          onSelect={selectDesignNode}
+          onSelectName={selectByName}
+          onCreate={createNode}
+          onUpdate={updateSelectedString}
+          onCopy={copySelected}
+          onCut={() => commitDesign(() => designEditorRef.current.cut(selectedId))}
+          onPaste={() => commitDesign(() => designEditorRef.current.paste(selectedId))}
+          onDelete={() => commitDesign(() => designEditorRef.current.delete(selectedId))}
+        />
+      ) : (
+        <DataMode
+          order={order}
+          orderDoc={orderDoc}
+          lastResult={lastResult}
+          selectedName={selectedName}
+          onSelectName={selectByName}
+          onUpdateOrder={updateOrder}
+        />
+      )}
+    </>
   );
 }
 
@@ -563,8 +479,8 @@ function DesignMode({
   onDelete: () => void;
 }) {
   return (
-    <main className="workbench">
-      <aside className="side-panel">
+    <main>
+      <aside>
         <PanelHeader title="Layers" detail={`${Object.keys(doc.nodes).length} nodes`} />
         <Tree
           blockNode
@@ -583,8 +499,8 @@ function DesignMode({
         />
       </aside>
 
-      <section className="preview-column">
-        <div className="command-bar">
+      <section>
+        <div>
           <Space wrap>
             <Select
               size="small"
@@ -605,14 +521,14 @@ function DesignMode({
         <MobilePreview order={order} selectedName={selectedName} onSelectName={onSelectName} />
       </section>
 
-      <aside className="right-panel">
+      <aside>
         <PanelHeader title="Inspector" detail={selectedId} />
         <InspectorForm
           node={selectedNode}
           binding={selectedBinding}
           path={selectedNode === undefined ? "/" : pathString(doc, selectedNode.id)}
         />
-        <NodeTable rows={tableRows} selectedId={selectedId} onSelect={onSelect} />
+        <NodeTable rows={tableRows} onSelect={onSelect} />
       </aside>
     </main>
   );
@@ -634,9 +550,9 @@ function DataMode({
   onUpdateOrder: (path: string, value: JsonValue) => void;
 }) {
   return (
-    <main className="data-layout">
-      <section className="data-main">
-        <div className="data-summary">
+    <main>
+      <section>
+        <div>
           <Descriptions
             size="small"
             column={3}
@@ -648,7 +564,7 @@ function DataMode({
           />
           <ResultTag result={lastResult} />
         </div>
-        <section className="section-blocks">
+        <section>
           <PanelHeader title="Section Blocks" detail="preview + bindings + form controls stay together" />
           <Collapse
             defaultActiveKey={DATA_SECTION_BLOCKS.map((block) => block.id)}
@@ -692,27 +608,27 @@ function DataSectionPanel({
   onUpdate: (path: string, value: JsonValue) => void;
 }) {
   return (
-    <div className="data-block-grid">
-      <section className="block-preview">
+    <div>
+      <section>
         <Text type="secondary">Preview</Text>
         <DataBlockPreview block={block} order={order} selectedName={selectedName} onSelectName={onSelectName} />
       </section>
-      <section className="block-entities">
+      <section>
         <Text type="secondary">Entities(zod)</Text>
-        <pre className="source-block">{entitySourceForBlock(block)}</pre>
+        <pre>{entitySourceForBlock(block)}</pre>
       </section>
-      <section className="block-bindings">
+      <section>
         <Text type="secondary">UI Data</Text>
-        <pre className="source-block">{uiDataSourceForBlock(block)}</pre>
+        <pre>{uiDataSourceForBlock(block)}</pre>
       </section>
-      <section className="block-controls">
+      <section>
         <Text type="secondary">Form gen</Text>
         {block.kind === "each" ? (
           <RepeatBlockControls block={block} order={order} onUpdate={onUpdate} />
         ) : block.kind === "action" ? (
           <Alert type="success" showIcon title="Submit is a schema-valid commit boundary." />
         ) : (
-          <Form className="block-form" layout="vertical" size="middle">
+          <Form layout="vertical" size="middle">
             {block.fields.map((field) => (
               <Form.Item key={field.id} label={field.label}>
                 <GeneratedFormControl
@@ -742,9 +658,9 @@ function DataBlockPreview({
 }) {
   if (block.id === "hero") {
     return (
-      <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName} className="hero-preview block-hero">
+      <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName}>
         <img src={order.media.hero.src} alt={order.media.hero.alt} />
-        <div className="hero-copy">
+        <div>
           <Text>{order.media.hero.alt}</Text>
           <Title level={4}>{order.title}</Title>
         </div>
@@ -754,13 +670,13 @@ function DataBlockPreview({
 
   if (block.id === "fields") {
     return (
-      <div className="block-preview-stack">
-        <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName} className="preview-field">
+      <div>
+        <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName}>
           <Text strong>Customer</Text>
           <Input value={order.customer.name} readOnly />
           <Text type="secondary">/customer/name</Text>
         </SelectablePreview>
-        <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName} className="preview-field">
+        <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName}>
           <Text strong>Status</Text>
           <Select value={order.status} options={["draft", "paid", "sent"].map((value) => ({ label: value, value }))} />
         </SelectablePreview>
@@ -770,13 +686,13 @@ function DataBlockPreview({
 
   if (block.id === "items") {
     return (
-      <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName} className="preview-list">
-        <div className="list-heading">
+      <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName}>
+        <div>
           <Text strong>Line items</Text>
           <Button size="small">Add</Button>
         </div>
         {order.lineItems.map((item) => (
-          <div className="preview-line-item" key={item.title}>
+          <div key={item.title}>
             <img src={item.image} alt={item.title} />
             <div>
               <Text strong>{item.title}</Text>
@@ -868,7 +784,7 @@ function GeneratedFormControl({
 
 function PanelHeader({ title, detail }: { title: string; detail?: string }) {
   return (
-    <div className="panel-header">
+    <div>
       <Text strong>{title}</Text>
       {detail === undefined ? null : <Text type="secondary">{detail}</Text>}
     </div>
@@ -897,7 +813,7 @@ function InspectorForm({
   path: string;
 }) {
   return (
-    <Form className="inspector-form" layout="vertical" size="small">
+    <Form layout="vertical" size="small">
       <Form.Item label="Component">
         <Input value={binding.component} readOnly />
       </Form.Item>
@@ -922,7 +838,7 @@ function InspectorForm({
       <Form.Item label="State">
         <Input value={binding.state} readOnly />
       </Form.Item>
-      <Form.Item className="span-all" label="Validation">
+      <Form.Item label="Validation">
         <Input.TextArea value={binding.validation} readOnly autoSize />
       </Form.Item>
     </Form>
@@ -931,11 +847,9 @@ function InspectorForm({
 
 function NodeTable({
   rows,
-  selectedId,
   onSelect,
 }: {
   rows: NodeRow[];
-  selectedId: NodeId;
   onSelect: (nodeId: NodeId) => void;
 }) {
   const columns: TableColumnsType<NodeRow> = [
@@ -949,7 +863,6 @@ function NodeTable({
 
   return (
     <Table
-      className="node-table"
       size="small"
       rowKey="id"
       columns={columns}
@@ -957,7 +870,6 @@ function NodeTable({
       childrenColumnName="nestedChildren"
       pagination={false}
       scroll={{ x: 720, y: 420 }}
-      rowClassName={(row) => row.id === selectedId ? "selected-row" : ""}
       onRow={(row) => ({
         onClick: () => onSelect(row.id),
       })}
@@ -978,16 +890,16 @@ function MobilePreview({
   const statusOptions: SalesOrder["status"][] = ["draft", "paid", "sent"];
 
   return (
-    <div className="phone">
-      <div className="phone-screen">
-        <div className="statusbar">
+    <div>
+      <div>
+        <div>
           <Text strong>9:41</Text>
           <Text>LTE</Text>
         </div>
 
-        <SelectablePreview name="AppToolbar" selectedName={selectedName} onSelectName={onSelectName} className="mobile-toolbar mobile-shell-row">
+        <SelectablePreview name="AppToolbar" selectedName={selectedName} onSelectName={onSelectName}>
           <div>
-            <Text className="mobile-eyebrow">FieldOps</Text>
+            <Text>FieldOps</Text>
             <Title level={3}>Order intake</Title>
           </div>
           <Space size={6}>
@@ -996,27 +908,27 @@ function MobilePreview({
           </Space>
         </SelectablePreview>
 
-        <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName} className="hero-preview mobile-hero">
+        <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName}>
           <img src={order.media.hero.src} alt={order.media.hero.alt} />
-          <div className="hero-copy">
+          <div>
             <Text>{order.media.hero.alt}</Text>
             <Title level={4}>{order.title}</Title>
           </div>
         </SelectablePreview>
 
-        <nav className="mobile-tabs" aria-label="Order sections">
-          <button type="button" className="active">Overview</button>
+        <nav aria-label="Order sections">
+          <button type="button">Overview</button>
           <button type="button">Items</button>
           <button type="button">Activity</button>
         </nav>
 
-        <section className="mobile-content-block">
-          <div className="mobile-section-title">
+        <section>
+          <div>
             <Text strong>Record</Text>
             <Tag>{order.status}</Tag>
           </div>
 
-          <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName} className="mobile-field-row">
+          <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName}>
             <span>
               <Text type="secondary">Customer</Text>
               <Text strong>{order.customer.name}</Text>
@@ -1024,21 +936,21 @@ function MobilePreview({
             <Text type="secondary">customer.name</Text>
           </SelectablePreview>
 
-          <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName} className="mobile-field-row mobile-status-row">
+          <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName}>
             <span>
               <Text type="secondary">Status</Text>
               <Text strong>Validated state</Text>
             </span>
-            <div className="mobile-status-pills" aria-label="Order status">
+            <div aria-label="Order status">
               {statusOptions.map((status) => (
-                <span className={order.status === status ? "active" : ""} key={status}>{status}</span>
+                <span key={status}>{status}</span>
               ))}
             </div>
           </SelectablePreview>
         </section>
 
-        <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName} className="preview-list mobile-list">
-          <div className="list-heading">
+        <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName}>
+          <div>
             <span>
               <Text strong>Line items</Text>
               <Text type="secondary">{order.lineItems.length} rows · {orderTotal} units</Text>
@@ -1046,7 +958,7 @@ function MobilePreview({
             <Button size="small">Add</Button>
           </div>
           {order.lineItems.map((item) => (
-            <div className="preview-line-item" key={item.title}>
+            <div key={item.title}>
               <img src={item.image} alt={item.title} />
               <div>
                 <Text strong>{item.title}</Text>
@@ -1057,7 +969,7 @@ function MobilePreview({
           ))}
         </SelectablePreview>
 
-        <SelectablePreview name="SchemaStatusCard" selectedName={selectedName} onSelectName={onSelectName} className="schema-status mobile-schema-status">
+        <SelectablePreview name="SchemaStatusCard" selectedName={selectedName} onSelectName={onSelectName}>
           <div>
             <Text type="secondary">SalesOrderSchema</Text>
             <Title level={5}>Valid snapshot</Title>
@@ -1065,12 +977,12 @@ function MobilePreview({
           <Tag>safeParse</Tag>
         </SelectablePreview>
 
-        <div className="mobile-action-area">
+        <div>
           <div>
             <Text type="secondary">Commit boundary</Text>
             <Text strong>Ready to serialize</Text>
           </div>
-          <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName} className="mobile-save">
+          <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName}>
             <Button block type="primary">Save record</Button>
           </SelectablePreview>
         </div>
@@ -1083,20 +995,18 @@ function SelectablePreview({
   name,
   selectedName,
   onSelectName,
-  className,
   children,
 }: {
   name: string;
   selectedName: string;
   onSelectName: (name: string) => void;
-  className?: string;
   children: React.ReactNode;
 }) {
   return (
     <div
       role="button"
       tabIndex={0}
-      className={`preview-hit ${className ?? ""} ${selectedName === name ? "selected" : ""}`}
+      aria-pressed={selectedName === name}
       onClick={() => onSelectName(name)}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
