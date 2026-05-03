@@ -42,7 +42,7 @@ input JSON
   `{ ok: false, reason }` for expected invalid input rather than throwing.
 - Successful committed operations should include `changes` on `OperationResult`.
   `changes` contains only inserted, updated, and deleted `JsonDoc` nodes from
-  the committed before/after diff, not a full document snapshot.
+  the committed operation delta, not a full document snapshot.
 - Read-only methods such as `read`, `snapshot`, `pathOf`, `find`, `toJson`, and
   standalone `deserialize` may throw for malformed docs or invalid ids.
 
@@ -173,6 +173,7 @@ insert child
   primitive parent -> fail
 validate parent path subtree
 validate full document exactness
+compute the create delta
 commit and return { ok: true, nodeId: createdRootId, focusNodeId, changes }
 or return failure
 ```
@@ -185,6 +186,7 @@ validate value at path
 clone current doc
 replace subtree at nodeId
 validate full document exactness
+compute the replacement delta
 commit and return { ok: true, nodeId, focusNodeId, changes } or return failure
 ```
 
@@ -198,6 +200,7 @@ remove node and descendants
 normalize array parent keys if needed
 validate parent path subtree
 validate full document exactness
+compute the delete delta
 commit and return { ok: true, nodeId, focusNodeId, changes } where nodeId is
 the removed root, or return failure
 ```
@@ -239,7 +242,7 @@ build candidates
 try candidates in order
   candidate throws -> remember failure
   full document exact validation fails -> remember failure
-  validation succeeds -> commit exactly one candidate and return
+  validation succeeds -> compute the paste delta, commit exactly one candidate, and return
     { ok: true, nodeId: pastedRootId, focusNodeId, changes }
 all candidates fail -> return last useful failure
 ```
@@ -295,6 +298,7 @@ return ok/failure from dry run
 undo stack empty -> { ok: false, reason }
 push current doc to redo
 restore previous doc
+return the inverse delta of the original committed mutation
 compute focusNodeId through the unified mutation focus strategy
 return { ok: true, focusNodeId, changes }
 ```
@@ -305,6 +309,7 @@ return { ok: true, focusNodeId, changes }
 redo stack empty -> { ok: false, reason }
 push current doc to undo
 restore next doc
+return the original forward delta of the redone mutation
 compute focusNodeId through the unified mutation focus strategy
 return { ok: true, focusNodeId, changes }
 ```
@@ -315,8 +320,8 @@ Mutation focus priority:
 if primary nodeId is still live after commit -> focus primary nodeId
 else if primary nodeId was removed -> focus next sibling, previous sibling,
   live parent, or root
-else if diff inserts a live subtree -> focus inserted subtree root
-else if diff updates an existing live node -> focus that updated node
+else if delta inserts a live subtree -> focus inserted subtree root
+else if delta updates an existing live node -> focus that updated node
 else -> focus root
 ```
 

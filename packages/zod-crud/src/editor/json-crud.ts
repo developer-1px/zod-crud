@@ -1,6 +1,7 @@
 import * as z from "zod";
 
 import type {
+  JsonChange,
   JsonCrudOptions,
   JsonDoc,
   JsonKey,
@@ -25,9 +26,21 @@ import {
 } from "../document/json-doc.js";
 import { buildPasteCandidates, type PasteCandidate } from "./json-paste.js";
 import { validateAtPath, validateDocument } from "../schema/json-validation.js";
-import { successResult } from "./operation-result.js";
+import {
+  changesForDeletedSubtree,
+  changesForInsertedSubtree,
+  changesForReplacedSubtree,
+  invertChanges,
+  successResult,
+} from "./operation-result.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
+
+type HistoryEntry = {
+  doc: JsonDoc;
+  changes: JsonChange[];
+  nodeId?: NodeId;
+};
 
 export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   snapshot: () => JsonDoc;
@@ -61,8 +74,8 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   let doc = serialize(parsed.data);
   const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
-  let undoStack: JsonDoc[] = [];
-  let redoStack: JsonDoc[] = [];
+  let undoStack: HistoryEntry[] = [];
+  let redoStack: HistoryEntry[] = [];
   let clipboard: { value: JsonValue; sourceId: NodeId | null } | null = null;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
 
@@ -105,7 +118,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
         return validation;
       }
 
-      return commitIfValid(next, nodeId);
+      return commitIfValid(next, changesForInsertedSubtree(doc, next, nodeId), nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -123,7 +136,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const next = cloneDoc(doc);
 
       replaceSubtree(next, nodeId, value, allocateNodeId);
-      return commitIfValid(next, nodeId);
+      return commitIfValid(next, changesForReplacedSubtree(doc, next, nodeId), nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -152,7 +165,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
         return validation;
       }
 
-      return commitIfValid(next, nodeId);
+      return commitIfValid(next, changesForDeletedSubtree(doc, next, nodeId), nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -232,9 +245,13 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     const current = cloneDoc(doc);
 
-    redoStack.push(current);
-    doc = previous;
-    return successResult(current, previous);
+    redoStack.push({
+      doc: current,
+      changes: previous.changes,
+      ...(previous.nodeId === undefined ? {} : { nodeId: previous.nodeId }),
+    });
+    doc = previous.doc;
+    return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId);
   }
 
   function redo(): OperationResult {
@@ -246,9 +263,13 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     const current = cloneDoc(doc);
 
-    undoStack.push(current);
-    doc = next;
-    return successResult(current, next);
+    undoStack.push({
+      doc: current,
+      changes: next.changes,
+      ...(next.nodeId === undefined ? {} : { nodeId: next.nodeId }),
+    });
+    doc = next.doc;
+    return successResult(current, next.doc, next.changes, next.nodeId);
   }
 
   function pasteCandidates(
@@ -282,12 +303,15 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
         if (validation.ok) {
           const before = cloneDoc(doc);
+          const changes = before.nodes[pastedRootId] === undefined
+            ? changesForInsertedSubtree(before, next, pastedRootId)
+            : changesForReplacedSubtree(before, next, pastedRootId);
 
-          commit(next);
+          commit(next, changes, pastedRootId);
           clipboard = clipboard === null
             ? null
             : { value: cloneJson(clipboard.value), sourceId: pastedRootId };
-          return successResult(before, next, pastedRootId);
+          return successResult(before, next, changes, pastedRootId);
         }
 
         lastFailure = validation;
@@ -329,7 +353,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
-  function commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
+  function commitIfValid(next: JsonDoc, changes: JsonChange[], nodeId?: NodeId): OperationResult {
     const validation = validateDocument(schema, next);
 
     if (!validation.ok) {
@@ -338,12 +362,16 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     const before = cloneDoc(doc);
 
-    commit(next);
-    return successResult(before, next, nodeId);
+    commit(next, changes, nodeId);
+    return successResult(before, next, changes, nodeId);
   }
 
-  function commit(next: JsonDoc): void {
-    undoStack.push(cloneDoc(doc));
+  function commit(next: JsonDoc, changes: JsonChange[], nodeId?: NodeId): void {
+    undoStack.push({
+      doc: cloneDoc(doc),
+      changes,
+      ...(nodeId === undefined ? {} : { nodeId }),
+    });
     doc = next;
     redoStack = [];
   }

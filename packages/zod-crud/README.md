@@ -107,6 +107,6 @@ const json = editor.toJson();
 - `create`, `update`, `delete`
 - `copy`, `cut`, `paste`
 - `undo`, `redo`
-- `OperationResult.changes` for changed `JsonDoc` nodes only
+- `OperationResult.changes` for changed `JsonDoc` nodes from the operation delta
 - recursive Zod object/array/union path validation
 - `children` convention for child paste, configurable via `childKeys`
