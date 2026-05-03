@@ -20,14 +20,11 @@ import {
   Scissors,
   SendHorizontal,
   SlidersHorizontal,
-  Smartphone,
   Square,
   Table2,
   Trash2,
   Type,
   Undo2,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import {
   StrictMode,
@@ -72,7 +69,7 @@ type SelectedComponentBinding = ComponentBinding & {
   nodeId: NodeId | "none";
 };
 
-type WorkspaceMode = "design" | "data" | "history";
+type WorkspaceMode = "design" | "data";
 
 const CRUD_BINDINGS: Record<string, ComponentBinding> = {
   ZodCrudBuilder: {
@@ -290,24 +287,6 @@ const DATA_SECTION_SPECS: DataSectionSpec[] = [
     image: z.string().url(),
   }),
 ).min(1);`,
-  },
-  {
-    title: "Save action",
-    nodeName: "SaveButton",
-    path: "slots.screen.slots.saveButton",
-    schemaCode: `const SaveActionSchema = z.object({
-  label: z.literal("Save record"),
-  enabled: SalesOrderSchema.safeParse(snapshot).success,
-});`,
-  },
-  {
-    title: "Inspector",
-    nodeName: "PropertyPanel",
-    path: "slots.propertyPanel",
-    schemaCode: `const PropertyPanelSchema = z.object({
-  selectedNodeId: z.string().min(1),
-  binding: DesignBindingSchema,
-});`,
   },
 ];
 
@@ -627,14 +606,8 @@ function App() {
     <main className="app">
       <header className="topbar">
         <div className="topbar-left">
-          <div className="window-controls" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
           <div className="brand-lockup">
             <h1>zod-crud</h1>
-            <p>Spatial schema editor</p>
           </div>
         </div>
 
@@ -655,17 +628,9 @@ function App() {
           >
             Data
           </button>
-          <button
-            className={modeTabClass(mode, "history")}
-            type="button"
-            aria-pressed={mode === "history"}
-            onClick={() => setMode("history")}
-          >
-            History
-          </button>
         </div>
 
-        <div className="toolbar top-actions" aria-label="History controls">
+        <div className="toolbar top-actions" aria-label="Edit controls">
           <IconButton label="Undo" shortcut="Cmd+Z" onClick={() => run("undo", () => editorRef.current.undo())} icon={<Undo2 />} disabled={!canUndo} />
           <IconButton label="Redo" shortcut="Shift+Cmd+Z" onClick={() => run("redo", () => editorRef.current.redo())} icon={<Redo2 />} disabled={!canRedo} />
           <IconButton label="Reset" onClick={reset} icon={<RefreshCcw />} />
@@ -718,18 +683,12 @@ function App() {
               <h2>Canvas</h2>
               <span>{Object.keys(doc.nodes).length} nodes</span>
             </div>
-            <div className="canvas-controls" aria-label="Canvas view controls">
-              <button type="button" title="Zoom out" aria-label="Zoom out"><ZoomOut /></button>
-              <span>100%</span>
-              <button type="button" title="Zoom in" aria-label="Zoom in"><ZoomIn /></button>
-            </div>
           </div>
 
           <div className="canvas-viewport">
             <div className="canvas-stage">
               <MobileBuilderCanvas
                 doc={doc}
-                selectedId={selectedId}
                 selectedPreviewId={selectionBridge.selectedPreviewId}
                 focusedSet={selectionBridge.focusedPreviewIds}
                 onSelect={selectNode}
@@ -806,7 +765,7 @@ function App() {
           </div>
         </aside>
       </section>
-      ) : mode === "data" ? (
+      ) : (
         <DataWorkspace
           doc={doc}
           json={json}
@@ -814,16 +773,7 @@ function App() {
           focusedSet={selectionBridge.focusedPreviewIds}
           onSelect={selectNode}
         />
-      ) : (
-        <HistoryWorkspace logs={logs} selectedNode={selectedNode} focusedSet={focusedSet} doc={doc} />
       )}
-
-      <footer className="statusbar">
-        <span>selected <strong>{selectedNode?.id ?? "none"}</strong></span>
-        <span>focus <strong>{focusedSet.size > 0 ? [...focusedSet].join(", ") : "none"}</strong></span>
-        <span>type <strong>{selectedNode?.type ?? "none"}</strong></span>
-        <span>nodes <strong>{Object.keys(doc.nodes).length}</strong></span>
-      </footer>
     </main>
   );
 }
@@ -914,14 +864,6 @@ function DataWorkspace({
           <div>
             <dt>Parse</dt>
             <dd>{parseResult.success ? "valid" : `${parseResult.error.issues.length} issues`}</dd>
-          </div>
-          <div>
-            <dt>Sections</dt>
-            <dd>{sections.length}</dd>
-          </div>
-          <div>
-            <dt>Nodes</dt>
-            <dd>{Object.keys(doc.nodes).length}</dd>
           </div>
         </dl>
       </header>
@@ -1015,68 +957,6 @@ function DataSectionCard({
         </div>
       </div>
     </article>
-  );
-}
-
-function HistoryWorkspace({
-  logs,
-  selectedNode,
-  focusedSet,
-  doc,
-}: {
-  logs: LogEntry[];
-  selectedNode: JsonNode | undefined;
-  focusedSet: Set<NodeId>;
-  doc: JsonDoc;
-}) {
-  return (
-    <section className="history-workspace" aria-label="Operation history">
-      <header className="data-page-head">
-        <div>
-          <div className="data-eyebrow">
-            <History />
-            <span>History</span>
-          </div>
-          <h2>Operation log</h2>
-        </div>
-        <dl className="data-summary">
-          <div>
-            <dt>Selected</dt>
-            <dd>{selectedNode?.id ?? "none"}</dd>
-          </div>
-          <div>
-            <dt>Type</dt>
-            <dd>{selectedNode?.type ?? "none"}</dd>
-          </div>
-          <div>
-            <dt>Focus</dt>
-            <dd>{focusedSet.size}</dd>
-          </div>
-          <div>
-            <dt>Nodes</dt>
-            <dd>{Object.keys(doc.nodes).length}</dd>
-          </div>
-        </dl>
-      </header>
-
-      <div className="history-grid">
-        <section className="control-section">
-          <SectionTitle icon={<History />} title="Timeline" />
-          <ul className="log-list">
-            {logs.map((entry) => (
-              <li key={entry.id} className={entry.ok ? "ok" : "fail"}>
-                <span>{entry.label}</span>
-                <small>{entry.ok ? "ok" : entry.reason}</small>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section className="control-section">
-          <SectionTitle icon={<Table2 />} title="Selected node" />
-          <pre className="data-json">{selectedNode === undefined ? "none" : JSON.stringify(selectedNode, null, 2)}</pre>
-        </section>
-      </div>
-    </section>
   );
 }
 
@@ -1275,24 +1155,20 @@ function findDesignNodeIdByName(doc: JsonDoc, name: string): NodeId | null {
 
 function MobileBuilderCanvas({
   doc,
-  selectedId,
   selectedPreviewId,
   focusedSet,
   onSelect,
 }: {
   doc: JsonDoc;
-  selectedId: NodeId;
   selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
 }) {
-  const binding = selectedComponentBinding(doc, selectedId);
   const rootSlotIds = designSlotIds(doc, doc.rootId);
   const mobileScreenId =
     designSlotId(doc, doc.rootId, "screen") ??
     rootSlotIds.find((childId) => primitiveField(doc, childId, "name") === "MobileRecordScreen") ??
     null;
-  const sideChildIds = rootSlotIds.filter((childId) => childId !== mobileScreenId);
 
   return (
     <SelectablePreview
@@ -1304,10 +1180,6 @@ function MobileBuilderCanvas({
       label="ZodCrudBuilder"
     >
       <section className="device-workbench" aria-label="Mobile application screen mockup">
-        <div className="device-caption">
-          <Smartphone />
-          <span>record surface</span>
-        </div>
         {mobileScreenId === null ? null : (
           <DesignPreviewNode
             doc={doc}
@@ -1318,48 +1190,6 @@ function MobileBuilderCanvas({
           />
         )}
       </section>
-
-      <aside className="canvas-binding-panel" aria-label="Selected binding summary">
-        <div className="binding-panel-header">
-          <FileCode2 />
-          <div>
-            <span>Selected binding</span>
-            <strong>{binding.component}</strong>
-          </div>
-        </div>
-        <dl>
-          <div>
-            <dt>CRUD field</dt>
-            <dd>{binding.field}</dd>
-          </div>
-          <div>
-            <dt>Zod schema</dt>
-            <dd>{binding.schema}</dd>
-          </div>
-          <div>
-            <dt>Operation</dt>
-            <dd>{binding.operation}</dd>
-          </div>
-          <div>
-            <dt>State</dt>
-            <dd>{binding.state}</dd>
-          </div>
-        </dl>
-        {sideChildIds.length === 0 ? null : (
-          <div className="root-side-nodes">
-            {sideChildIds.map((childId) => (
-              <DesignPreviewNode
-                key={childId}
-                doc={doc}
-                nodeId={childId}
-                selectedPreviewId={selectedPreviewId}
-                focusedSet={focusedSet}
-                onSelect={onSelect}
-              />
-            ))}
-          </div>
-        )}
-      </aside>
     </SelectablePreview>
   );
 }
