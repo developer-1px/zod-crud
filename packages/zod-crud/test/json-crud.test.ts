@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import * as z from "zod";
 
 import {
-  JsonCrud,
   createJsonCrud,
   deserialize,
   serialize,
   type JsonDoc,
+  type JsonCrud,
   type JsonValue,
 } from "../src/index.js";
 
@@ -709,13 +709,13 @@ describe("JsonCrud", () => {
     expect(editor.toJson()).toEqual({ name: "untitled" });
   });
 
-  it("types the public JsonCrud constructor with the schema input", () => {
+  it("types createJsonCrud with the schema input", () => {
     if (false) {
       // @ts-expect-error count must be a number for this schema input.
-      new JsonCrud(z.object({ count: z.number() }), { count: "bad" });
+      createJsonCrud(z.object({ count: z.number() }), { count: "bad" });
     }
 
-    const editor = new JsonCrud(z.object({ count: z.number() }), { count: 1 });
+    const editor = createJsonCrud(z.object({ count: z.number() }), { count: 1 });
     expect(editor.toJson()).toEqual({ count: 1 });
   });
 

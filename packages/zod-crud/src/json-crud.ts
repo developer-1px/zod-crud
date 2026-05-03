@@ -31,145 +31,152 @@ import { schemaAtPath } from "./schema-path.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
+export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
+  snapshot: () => JsonDoc;
+  toJson: () => T;
+  read: (nodeId?: NodeId) => JsonValue;
+  pathOf: (nodeId: NodeId) => JsonPath;
+  find: (parentId: NodeId, key: JsonKey) => NodeId | null;
+  create: (parentId: NodeId, key: string | number, value: JsonValue) => OperationResult;
+  update: (nodeId: NodeId, value: JsonValue) => OperationResult;
+  delete: (nodeId: NodeId) => OperationResult;
+  copy: (nodeId: NodeId) => JsonValue;
+  cut: (nodeId: NodeId) => OperationResult;
+  paste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
+  canPaste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  undo: () => OperationResult;
+  redo: () => OperationResult;
+};
+
 export function createJsonCrud<T extends JsonValue, I = unknown>(
   schema: z.ZodType<T, I>,
   initialValue: I,
   options: JsonCrudOptions = {},
 ): JsonCrud<T, I> {
-  return new JsonCrud(schema, initialValue, options);
-}
+  const parsed = schema.safeParse(initialValue);
 
-export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
-  private doc: JsonDoc;
-  private readonly schema: z.ZodType<T, I>;
-  private readonly childKeys: string[];
-  private undoStack: JsonDoc[] = [];
-  private redoStack: JsonDoc[] = [];
-  private clipboard: { value: JsonValue; sourceId: NodeId | null } | null = null;
-  private nextNodeIndex: number;
-
-  constructor(schema: z.ZodType<T, I>, initialValue: I, options: JsonCrudOptions = {}) {
-    const parsed = schema.safeParse(initialValue);
-
-    if (!parsed.success) {
-      throw parsed.error;
-    }
-
-    this.schema = schema;
-    this.doc = serialize(parsed.data);
-    this.childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
-    this.nextNodeIndex = maxNodeIndex(this.doc) + 1;
-
-    const validation = this.validateDocument(this.doc);
-
-    if (!validation.ok) {
-      throw new Error(validation.reason);
-    }
+  if (!parsed.success) {
+    throw parsed.error;
   }
 
-  snapshot(): JsonDoc {
-    return cloneDoc(this.doc);
+  let doc = serialize(parsed.data);
+  const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
+  let undoStack: JsonDoc[] = [];
+  let redoStack: JsonDoc[] = [];
+  let clipboard: { value: JsonValue; sourceId: NodeId | null } | null = null;
+  let nextNodeIndex = maxNodeIndex(doc) + 1;
+
+  const validation = validateDocument(doc);
+
+  if (!validation.ok) {
+    throw new Error(validation.reason);
   }
 
-  toJson(): T {
-    return this.schema.parse(deserialize(this.doc));
+  function snapshot(): JsonDoc {
+    return cloneDoc(doc);
   }
 
-  read(nodeId: NodeId = this.doc.rootId): JsonValue {
-    return cloneJson(deserialize(this.doc, nodeId));
+  function toJson(): T {
+    return schema.parse(deserialize(doc));
   }
 
-  pathOf(nodeId: NodeId): JsonPath {
-    return getPath(this.doc, nodeId);
+  function read(nodeId: NodeId = doc.rootId): JsonValue {
+    return cloneJson(deserialize(doc, nodeId));
   }
 
-  find(parentId: NodeId, key: JsonKey): NodeId | null {
-    const child = findChildByKey(this.doc, parentId, key);
+  function pathOf(nodeId: NodeId): JsonPath {
+    return getPath(doc, nodeId);
+  }
+
+  function find(parentId: NodeId, key: JsonKey): NodeId | null {
+    const child = findChildByKey(doc, parentId, key);
     return child?.id ?? null;
   }
 
-  create(parentId: NodeId, key: string | number, value: JsonValue): OperationResult {
+  function create(parentId: NodeId, key: string | number, value: JsonValue): OperationResult {
     try {
-      const next = cloneDoc(this.doc);
+      const next = cloneDoc(doc);
       const parentPath = getPath(next, parentId);
 
-      const nodeId = insertChild(next, parentId, key, value, () => this.allocateNodeId());
-      const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
+      const nodeId = insertChild(next, parentId, key, value, allocateNodeId);
+      const validation = validateAtPath(parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
       }
 
-      return this.commitIfValid(next, nodeId);
+      return commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
   }
 
-  update(nodeId: NodeId, value: JsonValue): OperationResult {
+  function update(nodeId: NodeId, value: JsonValue): OperationResult {
     try {
-      const path = getPath(this.doc, nodeId);
-      const validation = this.validateAtPath(path, value);
+      const path = getPath(doc, nodeId);
+      const validation = validateAtPath(path, value);
 
       if (!validation.ok) {
         return validation;
       }
 
-      const next = cloneDoc(this.doc);
+      const next = cloneDoc(doc);
 
-      replaceSubtree(next, nodeId, value, () => this.allocateNodeId());
-      return this.commitIfValid(next, nodeId);
+      replaceSubtree(next, nodeId, value, allocateNodeId);
+      return commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
   }
 
-  delete(nodeId: NodeId): OperationResult {
-    if (nodeId === this.doc.rootId) {
+  function deleteNode(nodeId: NodeId): OperationResult {
+    if (nodeId === doc.rootId) {
       return { ok: false, reason: "Cannot delete the root node." };
     }
 
     try {
-      const node = getNode(this.doc, nodeId);
+      const node = getNode(doc, nodeId);
       const parentId = node.parentId;
 
       if (parentId === null) {
         return { ok: false, reason: "Cannot delete a node without a parent." };
       }
 
-      const parentPath = getPath(this.doc, parentId);
-      const next = cloneDoc(this.doc);
+      const parentPath = getPath(doc, parentId);
+      const next = cloneDoc(doc);
 
       removeSubtree(next, nodeId);
-      const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
+      const validation = validateAtPath(parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
       }
 
-      return this.commitIfValid(next, nodeId);
+      return commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
   }
 
-  copy(nodeId: NodeId): JsonValue {
-    const value = this.read(nodeId);
-    this.clipboard = { value, sourceId: nodeId };
+  function copy(nodeId: NodeId): JsonValue {
+    const value = read(nodeId);
+    clipboard = { value, sourceId: nodeId };
     return cloneJson(value);
   }
 
-  cut(nodeId: NodeId): OperationResult {
-    if (nodeId === this.doc.rootId) {
+  function cut(nodeId: NodeId): OperationResult {
+    if (nodeId === doc.rootId) {
       return { ok: false, reason: "Cannot cut the root node." };
     }
 
     try {
-      const value = this.read(nodeId);
-      const result = this.delete(nodeId);
+      const value = read(nodeId);
+      const result = deleteNode(nodeId);
 
       if (result.ok) {
-        this.clipboard = { value, sourceId: null };
+        clipboard = { value, sourceId: null };
       }
 
       return result;
@@ -178,119 +185,110 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     }
   }
 
-  paste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
+  function paste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
     try {
-      if (this.clipboard === null) {
+      if (clipboard === null) {
         return { ok: false, reason: "Clipboard is empty." };
       }
 
-      const payload = cloneJson(this.clipboard.value);
-      const mode = options.mode ?? "auto";
-      const childKeys = options.childKeys ?? this.childKeys;
-      const candidates = buildPasteCandidates({
-        doc: this.doc,
-        schema: this.schema,
-        targetId,
-        payload,
-        mode,
-        childKeys,
-        clipboardSourceId: this.clipboard.sourceId,
-        index: options.index,
-        allocateNodeId: () => this.allocateNodeId(),
-      });
-
-      return this.commitFirstValidPaste(candidates);
+      const candidates = pasteCandidates(targetId, cloneJson(clipboard.value), options);
+      return commitFirstValidPaste(candidates);
     } catch (error) {
       return failure(error);
     }
   }
 
-  canPaste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
-    if (this.clipboard === null) {
+  function canPaste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
+    if (clipboard === null) {
       return { ok: false, reason: "Clipboard is empty." };
     }
 
-    const nextNodeIndex = this.nextNodeIndex;
+    const initialNodeIndex = nextNodeIndex;
 
     try {
-      const payload = cloneJson(this.clipboard.value);
-      const mode = options.mode ?? "auto";
-      const childKeys = options.childKeys ?? this.childKeys;
-      const candidates = buildPasteCandidates({
-        doc: this.doc,
-        schema: this.schema,
-        targetId,
-        payload,
-        mode,
-        childKeys,
-        clipboardSourceId: this.clipboard.sourceId,
-        index: options.index,
-        allocateNodeId: () => this.allocateNodeId(),
-      });
-      const result = this.firstValidPasteResult(candidates);
+      const candidates = pasteCandidates(targetId, cloneJson(clipboard.value), options);
+      const result = firstValidPasteResult(candidates);
 
       return result.ok ? { ok: true } : result;
     } catch (error) {
       return failure(error);
     } finally {
-      this.nextNodeIndex = nextNodeIndex;
+      nextNodeIndex = initialNodeIndex;
     }
   }
 
-  canUndo(): boolean {
-    return this.undoStack.length > 0;
+  function canUndo(): boolean {
+    return undoStack.length > 0;
   }
 
-  canRedo(): boolean {
-    return this.redoStack.length > 0;
+  function canRedo(): boolean {
+    return redoStack.length > 0;
   }
 
-  undo(): OperationResult {
-    const previous = this.undoStack.pop();
+  function undo(): OperationResult {
+    const previous = undoStack.pop();
 
     if (previous === undefined) {
       return { ok: false, reason: "Undo stack is empty." };
     }
 
-    const current = cloneDoc(this.doc);
+    const current = cloneDoc(doc);
 
-    this.redoStack.push(current);
-    this.doc = previous;
+    redoStack.push(current);
+    doc = previous;
     return successResult(current, previous);
   }
 
-  redo(): OperationResult {
-    const next = this.redoStack.pop();
+  function redo(): OperationResult {
+    const next = redoStack.pop();
 
     if (next === undefined) {
       return { ok: false, reason: "Redo stack is empty." };
     }
 
-    const current = cloneDoc(this.doc);
+    const current = cloneDoc(doc);
 
-    this.undoStack.push(current);
-    this.doc = next;
+    undoStack.push(current);
+    doc = next;
     return successResult(current, next);
   }
 
-  private commitFirstValidPaste(candidates: PasteCandidate[]): OperationResult {
+  function pasteCandidates(
+    targetId: NodeId,
+    payload: JsonValue,
+    pasteOptions: PasteOptions,
+  ): PasteCandidate[] {
+    return buildPasteCandidates({
+      doc,
+      schema,
+      targetId,
+      payload,
+      mode: pasteOptions.mode ?? "auto",
+      childKeys: pasteOptions.childKeys ?? childKeys,
+      clipboardSourceId: clipboard?.sourceId ?? null,
+      index: pasteOptions.index,
+      allocateNodeId,
+    });
+  }
+
+  function commitFirstValidPaste(candidates: PasteCandidate[]): OperationResult {
     let lastFailure: OperationResult | null = null;
-    const initialNodeIndex = this.nextNodeIndex;
+    const initialNodeIndex = nextNodeIndex;
 
     for (const candidate of candidates) {
-      const candidateNodeIndex = this.nextNodeIndex;
+      const candidateNodeIndex = nextNodeIndex;
 
       try {
         const { doc: next, pastedRootId } = candidate.apply();
-        const validation = this.validateDocument(next);
+        const validation = validateDocument(next);
 
         if (validation.ok) {
-          const before = cloneDoc(this.doc);
+          const before = cloneDoc(doc);
 
-          this.commit(next);
-          this.clipboard = this.clipboard === null
+          commit(next);
+          clipboard = clipboard === null
             ? null
-            : { value: cloneJson(this.clipboard.value), sourceId: pastedRootId };
+            : { value: cloneJson(clipboard.value), sourceId: pastedRootId };
           return successResult(before, next, pastedRootId);
         }
 
@@ -299,25 +297,25 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         lastFailure = failure(error);
       }
 
-      this.nextNodeIndex = candidateNodeIndex;
+      nextNodeIndex = candidateNodeIndex;
     }
 
-    this.nextNodeIndex = initialNodeIndex;
+    nextNodeIndex = initialNodeIndex;
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
-  private firstValidPasteResult(candidates: PasteCandidate[]): OperationResult {
+  function firstValidPasteResult(candidates: PasteCandidate[]): OperationResult {
     let lastFailure: OperationResult | null = null;
-    const initialNodeIndex = this.nextNodeIndex;
+    const initialNodeIndex = nextNodeIndex;
 
     for (const candidate of candidates) {
-      const candidateNodeIndex = this.nextNodeIndex;
+      const candidateNodeIndex = nextNodeIndex;
 
       try {
-        const validation = this.validateDocument(candidate.apply().doc);
+        const validation = validateDocument(candidate.apply().doc);
 
         if (validation.ok) {
-          this.nextNodeIndex = initialNodeIndex;
+          nextNodeIndex = initialNodeIndex;
           return { ok: true };
         }
 
@@ -326,15 +324,15 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         lastFailure = failure(error);
       }
 
-      this.nextNodeIndex = candidateNodeIndex;
+      nextNodeIndex = candidateNodeIndex;
     }
 
-    this.nextNodeIndex = initialNodeIndex;
+    nextNodeIndex = initialNodeIndex;
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
-  private validateAtPath(path: JsonPath, value: JsonValue): OperationResult {
-    const targetSchema = schemaAtPath(this.schema, path);
+  function validateAtPath(path: JsonPath, value: JsonValue): OperationResult {
+    const targetSchema = schemaAtPath(schema, path);
 
     if (targetSchema === null) {
       return {
@@ -356,9 +354,9 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     return { ok: true };
   }
 
-  private validateDocument(doc: JsonDoc): OperationResult {
-    const value = deserialize(doc);
-    const result = this.schema.safeParse(value);
+  function validateDocument(nextDoc: JsonDoc): OperationResult {
+    const value = deserialize(nextDoc);
+    const result = schema.safeParse(value);
 
     if (!result.success) {
       return {
@@ -382,36 +380,55 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     return { ok: true };
   }
 
-  private commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
-    const validation = this.validateDocument(next);
+  function commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
+    const validation = validateDocument(next);
 
     if (!validation.ok) {
       return validation;
     }
 
-    const before = cloneDoc(this.doc);
+    const before = cloneDoc(doc);
 
-    this.commit(next);
+    commit(next);
     return successResult(before, next, nodeId);
   }
 
-  private commit(next: JsonDoc): void {
-    this.undoStack.push(cloneDoc(this.doc));
-    this.doc = next;
-    this.redoStack = [];
+  function commit(next: JsonDoc): void {
+    undoStack.push(cloneDoc(doc));
+    doc = next;
+    redoStack = [];
   }
 
-  private allocateNodeId(): NodeId {
-    let id = `n${this.nextNodeIndex}`;
-    this.nextNodeIndex += 1;
+  function allocateNodeId(): NodeId {
+    let id = `n${nextNodeIndex}`;
+    nextNodeIndex += 1;
 
-    while (this.doc.nodes[id] !== undefined) {
-      id = `n${this.nextNodeIndex}`;
-      this.nextNodeIndex += 1;
+    while (doc.nodes[id] !== undefined) {
+      id = `n${nextNodeIndex}`;
+      nextNodeIndex += 1;
     }
 
     return id;
   }
+
+  return {
+    snapshot,
+    toJson,
+    read,
+    pathOf,
+    find,
+    create,
+    update,
+    delete: deleteNode,
+    copy,
+    cut,
+    paste,
+    canPaste,
+    canUndo,
+    canRedo,
+    undo,
+    redo,
+  };
 }
 
 function failure(error: unknown): OperationResult {

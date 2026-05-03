@@ -119,7 +119,7 @@ or value change.
 
 ## Operation Logic Trees
 
-### Constructor
+### createJsonCrud()
 
 ```txt
 createJsonCrud(schema, initialValue)
@@ -131,9 +131,8 @@ createJsonCrud(schema, initialValue)
     success -> initialize doc, childKeys, empty history, empty clipboard
 ```
 
-Constructor typing must preserve schema input type. `createJsonCrud` and
-`new JsonCrud` should reject invalid schema inputs at compile time where
-TypeScript can infer them.
+Factory typing must preserve schema input type. `createJsonCrud` should reject
+invalid schema inputs at compile time where TypeScript can infer them.
 
 ### serialize(value)
 

@@ -1,5 +1,4 @@
 export {
-  JsonCrud,
   createJsonCrud,
 } from "./json-crud.js";
 
@@ -8,6 +7,10 @@ export {
   getPath,
   serialize,
 } from "./json-doc.js";
+
+export type {
+  JsonCrud,
+} from "./json-crud.js";
 
 export type {
   JsonArray,
