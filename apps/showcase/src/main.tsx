@@ -4,6 +4,7 @@ import "./styles.css";
 import {
   Alert,
   Button,
+  Collapse,
   ConfigProvider,
   Descriptions,
   Form,
@@ -66,6 +67,23 @@ type NodeRow = {
   value: string;
 };
 
+type DataField = {
+  id: string;
+  label: string;
+  path: string;
+  control: "text" | "number" | "select" | "image";
+  options?: string[];
+};
+
+type DataSectionBlock = {
+  id: string;
+  title: string;
+  kind: "section" | "each" | "action";
+  previewName: string;
+  fields: DataField[];
+  repeatPath?: string;
+};
+
 const BINDINGS: Record<string, ComponentBinding> = {
   ZodCrudBuilder: {
     component: "Builder document",
@@ -124,6 +142,48 @@ const BINDINGS: Record<string, ComponentBinding> = {
     validation: "The button represents committing the current valid snapshot.",
   },
 };
+
+const DATA_SECTION_BLOCKS: DataSectionBlock[] = [
+  {
+    id: "hero",
+    title: "Media",
+    kind: "section",
+    previewName: "HeroCard",
+    fields: [
+      { id: "heroImage", label: "Hero image", path: "/media/hero/src", control: "image" },
+      { id: "heroTitle", label: "Title", path: "/title", control: "text" },
+    ],
+  },
+  {
+    id: "fields",
+    title: "Record fields",
+    kind: "section",
+    previewName: "CustomerNameField",
+    fields: [
+      { id: "customerName", label: "Customer", path: "/customer/name", control: "text" },
+      { id: "status", label: "Status", path: "/status", control: "select", options: ["draft", "paid", "sent"] },
+    ],
+  },
+  {
+    id: "items",
+    title: "Line items",
+    kind: "each",
+    previewName: "LineItemsList",
+    repeatPath: "/lineItems",
+    fields: [
+      { id: "itemImage", label: "Image", path: "image", control: "image" },
+      { id: "itemTitle", label: "Title", path: "title", control: "text" },
+      { id: "itemQuantity", label: "Quantity", path: "quantity", control: "number" },
+    ],
+  },
+  {
+    id: "actions",
+    title: "Actions",
+    kind: "action",
+    previewName: "SaveButton",
+    fields: [],
+  },
+];
 
 const NODE_KIND_OPTIONS = [
   { label: "Text node", value: "text" },
@@ -469,16 +529,31 @@ function DataMode({
           />
           <ResultTag result={lastResult} />
         </div>
-        <div className="data-grid">
-          <section className="mobile-section">
-            <PanelHeader title="Preview" detail="same entity document" />
-            <MobilePreview order={order} selectedName={selectedName} onSelectName={onSelectName} />
-          </section>
-          <section className="entity-section">
-            <PanelHeader title="Entity Form" detail="zod-crud update()" />
-            <OrderForm order={order} onUpdate={onUpdateOrder} />
-          </section>
-        </div>
+        <section className="section-blocks">
+          <PanelHeader title="Section Blocks" detail="preview + bindings + form controls stay together" />
+          <Collapse
+            defaultActiveKey={DATA_SECTION_BLOCKS.map((block) => block.id)}
+            items={DATA_SECTION_BLOCKS.map((block) => ({
+              key: block.id,
+              label: (
+                <Space size="small">
+                  <Text strong>{block.title}</Text>
+                  <Tag>{block.kind}</Tag>
+                  <Text type="secondary">{block.fields.length} bindings</Text>
+                </Space>
+              ),
+              children: (
+                <DataSectionPanel
+                  block={block}
+                  order={order}
+                  selectedName={selectedName}
+                  onSelectName={onSelectName}
+                  onUpdate={onUpdateOrder}
+                />
+              ),
+            }))}
+          />
+        </section>
       </section>
       <aside className="schema-panel">
         <PanelHeader title="Schema / UI Data" detail="source of truth" />
@@ -500,6 +575,192 @@ function DataMode({
       </aside>
     </main>
   );
+}
+
+function DataSectionPanel({
+  block,
+  order,
+  selectedName,
+  onSelectName,
+  onUpdate,
+}: {
+  block: DataSectionBlock;
+  order: SalesOrder;
+  selectedName: string;
+  onSelectName: (name: string) => void;
+  onUpdate: (path: string, value: JsonValue) => void;
+}) {
+  return (
+    <div className="data-block-grid">
+      <section className="block-preview">
+        <Text type="secondary">Preview block</Text>
+        <DataBlockPreview block={block} order={order} selectedName={selectedName} onSelectName={onSelectName} />
+      </section>
+      <section className="block-controls">
+        <Text type="secondary">Form controls</Text>
+        {block.kind === "each" ? (
+          <RepeatBlockControls block={block} order={order} onUpdate={onUpdate} />
+        ) : block.kind === "action" ? (
+          <Alert type="success" showIcon title="Submit is a schema-valid commit boundary." />
+        ) : (
+          <Form className="block-form" layout="vertical" size="middle">
+            {block.fields.map((field) => (
+              <Form.Item key={field.id} label={field.label}>
+                <FieldControl
+                  field={field}
+                  value={valueAtPointer(order, field.path)}
+                  onChange={(value) => onUpdate(field.path, value)}
+                />
+              </Form.Item>
+            ))}
+          </Form>
+        )}
+      </section>
+      <section className="block-bindings">
+        <Text type="secondary">UI data bindings</Text>
+        <Table
+          size="small"
+          pagination={false}
+          rowKey="id"
+          childrenColumnName="nestedChildren"
+          columns={[
+            { title: "field", dataIndex: "label" },
+            { title: "path", dataIndex: "path" },
+            { title: "control", dataIndex: "control" },
+            { title: "value", dataIndex: "value", ellipsis: true },
+          ]}
+          dataSource={bindingRowsForBlock(block, order)}
+        />
+      </section>
+    </div>
+  );
+}
+
+function DataBlockPreview({
+  block,
+  order,
+  selectedName,
+  onSelectName,
+}: {
+  block: DataSectionBlock;
+  order: SalesOrder;
+  selectedName: string;
+  onSelectName: (name: string) => void;
+}) {
+  if (block.id === "hero") {
+    return (
+      <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName} className="hero-preview block-hero">
+        <img src={order.media.hero.src} alt={order.media.hero.alt} />
+        <div className="hero-copy">
+          <Text>{order.media.hero.alt}</Text>
+          <Title level={4}>{order.title}</Title>
+        </div>
+      </SelectablePreview>
+    );
+  }
+
+  if (block.id === "fields") {
+    return (
+      <div className="block-preview-stack">
+        <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName} className="preview-field">
+          <Text strong>Customer</Text>
+          <Input value={order.customer.name} readOnly />
+          <Text type="secondary">/customer/name</Text>
+        </SelectablePreview>
+        <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName} className="preview-field">
+          <Text strong>Status</Text>
+          <Select value={order.status} options={["draft", "paid", "sent"].map((value) => ({ label: value, value }))} />
+        </SelectablePreview>
+      </div>
+    );
+  }
+
+  if (block.id === "items") {
+    return (
+      <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName} className="preview-list">
+        <div className="list-heading">
+          <Text strong>Line items</Text>
+          <Button size="small">Add</Button>
+        </div>
+        {order.lineItems.map((item) => (
+          <div className="preview-line-item" key={item.title}>
+            <img src={item.image} alt={item.title} />
+            <div>
+              <Text strong>{item.title}</Text>
+              <Text type="secondary">qty {item.quantity}</Text>
+            </div>
+            <Tag>{item.status}</Tag>
+          </div>
+        ))}
+      </SelectablePreview>
+    );
+  }
+
+  return (
+    <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName}>
+      <Button block type="primary">Save record</Button>
+    </SelectablePreview>
+  );
+}
+
+function RepeatBlockControls({
+  block,
+  order,
+  onUpdate,
+}: {
+  block: DataSectionBlock;
+  order: SalesOrder;
+  onUpdate: (path: string, value: JsonValue) => void;
+}) {
+  const columns: TableColumnsType<SalesOrder["lineItems"][number] & { index: number }> = block.fields.map((field) => ({
+    title: field.label,
+    dataIndex: field.path,
+    render: (_value, item) => (
+      <FieldControl
+        field={field}
+        value={valueAtPointer(item, `/${field.path}`)}
+        onChange={(value) => onUpdate(`${block.repeatPath}/${item.index}/${field.path}`, value)}
+      />
+    ),
+  }));
+
+  return (
+    <Table
+      size="small"
+      pagination={false}
+      rowKey="index"
+      childrenColumnName="nestedChildren"
+      columns={columns}
+      dataSource={order.lineItems.map((item, index) => ({ ...item, index }))}
+      scroll={{ x: 720 }}
+    />
+  );
+}
+
+function FieldControl({
+  field,
+  value,
+  onChange,
+}: {
+  field: DataField;
+  value: JsonValue | undefined;
+  onChange: (value: JsonValue) => void;
+}) {
+  if (field.control === "number") {
+    return <InputNumber min={1} value={typeof value === "number" ? value : 1} onChange={(next) => onChange(Number(next ?? 1))} />;
+  }
+
+  if (field.control === "select") {
+    return (
+      <Select
+        value={typeof value === "string" ? value : ""}
+        options={(field.options ?? []).map((option) => ({ label: option, value: option }))}
+        onChange={onChange}
+      />
+    );
+  }
+
+  return <Input value={value === undefined || value === null ? "" : String(value)} onChange={(event) => onChange(event.target.value)} />;
 }
 
 function PanelHeader({ title, detail }: { title: string; detail?: string }) {
@@ -598,88 +859,6 @@ function NodeTable({
         onClick: () => onSelect(row.id),
       })}
     />
-  );
-}
-
-function OrderForm({
-  order,
-  onUpdate,
-}: {
-  order: SalesOrder;
-  onUpdate: (path: string, value: JsonValue) => void;
-}) {
-  const lineItemColumns: TableColumnsType<SalesOrder["lineItems"][number] & { index: number }> = [
-    {
-      title: "Title",
-      dataIndex: "title",
-      render: (_value, item) => (
-        <Input value={item.title} onChange={(event) => onUpdate(`/lineItems/${item.index}/title`, event.target.value)} />
-      ),
-    },
-    {
-      title: "Quantity",
-      dataIndex: "quantity",
-      width: 120,
-      render: (_value, item) => (
-        <InputNumber min={1} value={item.quantity} onChange={(value) => onUpdate(`/lineItems/${item.index}/quantity`, Number(value ?? 1))} />
-      ),
-    },
-    {
-      title: "Status",
-      dataIndex: "status",
-      width: 130,
-      render: (_value, item) => (
-        <Select
-          value={item.status}
-          options={["ok", "new"].map((value) => ({ label: value, value }))}
-          onChange={(value) => onUpdate(`/lineItems/${item.index}/status`, value)}
-        />
-      ),
-    },
-    {
-      title: "Image URL",
-      dataIndex: "image",
-      render: (_value, item) => (
-        <Input value={item.image} onChange={(event) => onUpdate(`/lineItems/${item.index}/image`, event.target.value)} />
-      ),
-    },
-  ];
-
-  return (
-    <Form className="order-form" layout="vertical" size="middle">
-      <Form.Item label="Title">
-        <Input value={order.title} onChange={(event) => onUpdate("/title", event.target.value)} />
-      </Form.Item>
-      <Form.Item label="Customer">
-        <Input value={order.customer.name} onChange={(event) => onUpdate("/customer/name", event.target.value)} />
-      </Form.Item>
-      <Form.Item label="Status">
-        <Select
-          value={order.status}
-          options={["draft", "paid", "sent"].map((value) => ({ label: value, value }))}
-          onChange={(value) => onUpdate("/status", value)}
-        />
-      </Form.Item>
-      <Form.Item label="Hero image URL">
-        <Input value={order.media.hero.src} onChange={(event) => onUpdate("/media/hero/src", event.target.value)} />
-      </Form.Item>
-      <Form.Item label="Hero alt">
-        <Input value={order.media.hero.alt} onChange={(event) => onUpdate("/media/hero/alt", event.target.value)} />
-      </Form.Item>
-
-      <Title className="span-all" level={5}>Line items</Title>
-      <div className="span-all">
-        <Table
-          size="small"
-          pagination={false}
-          rowKey="index"
-          childrenColumnName="nestedChildren"
-          columns={lineItemColumns}
-          dataSource={order.lineItems.map((item, index) => ({ ...item, index }))}
-          scroll={{ x: 780 }}
-        />
-      </div>
-    </Form>
   );
 }
 
@@ -967,6 +1146,72 @@ function viewBindingRows() {
     type: node.type,
     path: node.type === "field" ? node.value.path : node.type === "each" ? node.items.path : "-",
   }));
+}
+
+function bindingRowsForBlock(block: DataSectionBlock, order: SalesOrder) {
+  if (block.kind === "action") {
+    return [
+      {
+        id: "save",
+        label: "Save record",
+        path: "$commit",
+        control: "action",
+        value: "SalesOrderSchema.safeParse",
+      },
+    ];
+  }
+
+  if (block.kind === "each") {
+    return block.fields.map((field) => ({
+      id: field.id,
+      label: field.label,
+      path: `${block.repeatPath ?? ""}[].${field.path}`,
+      control: field.control,
+      value: `${order.lineItems.length} rows`,
+    }));
+  }
+
+  return block.fields.map((field) => ({
+    id: field.id,
+    label: field.label,
+    path: field.path,
+    control: field.control,
+    value: displayJsonValue(valueAtPointer(order, field.path)),
+  }));
+}
+
+function valueAtPointer(value: JsonValue, path: string): JsonValue | undefined {
+  return path.split("/").filter(Boolean).reduce<JsonValue | undefined>((current, segment) => {
+    if (current === undefined) {
+      return undefined;
+    }
+
+    if (Array.isArray(current)) {
+      return current[Number(segment)];
+    }
+
+    if (isRecord(current)) {
+      return current[segment];
+    }
+
+    return undefined;
+  }, value);
+}
+
+function isRecord(value: JsonValue): value is Record<string, JsonValue> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function displayJsonValue(value: JsonValue | undefined) {
+  if (value === undefined || value === null) {
+    return "";
+  }
+
+  if (typeof value === "object") {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
 }
 
 createRoot(document.getElementById("root")!).render(
