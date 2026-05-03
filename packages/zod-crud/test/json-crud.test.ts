@@ -127,7 +127,7 @@ describe("JsonCrud", () => {
     });
   });
 
-  it("pastes into children when the children item schema accepts the clipboard payload", () => {
+  it("pastes into arrays before trying overwrite", () => {
     const editor = createEditor();
     const rootId = editor.snapshot().rootId;
     const childrenId = editor.find(rootId, "children");
@@ -135,7 +135,7 @@ describe("JsonCrud", () => {
 
     editor.copy(textNodeId!);
 
-    const result = editor.paste(rootId);
+    const result = editor.paste(childrenId!);
     const pastedTextNodeId = editor.find(childrenId!, 1);
 
     expect(result.ok).toBe(true);
@@ -157,6 +157,62 @@ describe("JsonCrud", () => {
         { kind: "text", text: "hello" },
         { kind: "text", text: "hello" },
       ],
+    });
+  });
+
+  it("pastes onto objects by overwriting the target object", () => {
+    const editor = createEditor();
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const textNodeId = editor.find(childrenId!, 0);
+
+    editor.copy(textNodeId!);
+
+    const result = editor.paste(rootId);
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.nodeId).toBe(rootId);
+      expect(result.focusNodeId).toBe(rootId);
+    }
+
+    expect(editor.toJson()).toEqual({ kind: "text", text: "hello" });
+  });
+
+  it("pastes onto leaf nodes only when the JSON node type matches", () => {
+    const Schema = z.object({
+      source: z.number(),
+      target: z.union([z.string(), z.number()]),
+      text: z.string(),
+    });
+    const editor = createJsonCrud(Schema, {
+      source: 1,
+      target: "old",
+      text: "new",
+    });
+    const rootId = editor.snapshot().rootId;
+    const sourceId = editor.find(rootId, "source");
+    const targetId = editor.find(rootId, "target");
+    const textId = editor.find(rootId, "text");
+
+    editor.copy(sourceId!);
+    expect(editor.paste(targetId!).ok).toBe(false);
+
+    editor.copy(textId!);
+    const result = editor.paste(targetId!);
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.nodeId).toBe(targetId);
+      expect(result.focusNodeId).toBe(targetId);
+    }
+
+    expect(editor.toJson()).toEqual({
+      source: 1,
+      target: "new",
+      text: "new",
     });
   });
 
@@ -363,7 +419,7 @@ describe("JsonCrud", () => {
     });
   });
 
-  it("discovers paste child arrays from the Zod schema instead of child key conventions only", () => {
+  it("discovers explicit child paste arrays from the Zod schema instead of child key conventions only", () => {
     const Schema = z.object({
       items: z.array(z.string()),
       selected: z.string(),
@@ -377,7 +433,7 @@ describe("JsonCrud", () => {
 
     editor.copy(selectedId!);
 
-    expect(editor.paste(rootId).ok).toBe(true);
+    expect(editor.paste(rootId, { mode: "child" }).ok).toBe(true);
     expect(editor.toJson()).toEqual({
       items: ["hello"],
       selected: "hello",
@@ -400,7 +456,7 @@ describe("JsonCrud", () => {
 
     editor.copy(selectedId!);
 
-    expect(editor.paste(rootId).ok).toBe(true);
+    expect(editor.paste(rootId, { mode: "child" }).ok).toBe(true);
     expect(editor.toJson()).toEqual({
       numbers: [],
       strings: ["hello"],
@@ -422,7 +478,7 @@ describe("JsonCrud", () => {
 
     editor.copy(selectedId!);
 
-    expect(editor.paste(rootId).ok).toBe(true);
+    expect(editor.paste(rootId, { mode: "child" }).ok).toBe(true);
     expect(editor.toJson()).toEqual({
       items: ["hello"],
       selected: "hello",
@@ -453,7 +509,7 @@ describe("JsonCrud", () => {
     const textNodeId = editor.find(childrenId!, 0);
 
     editor.copy(textNodeId!);
-    const pasteResult = editor.paste(rootId);
+    const pasteResult = editor.paste(childrenId!);
 
     expect(pasteResult.ok).toBe(true);
 
@@ -708,7 +764,7 @@ describe("JsonCrud", () => {
 
     const newId = editor.find(childrenId!, 0);
     expect(newId).not.toBe(oldId);
-    expect(editor.paste(newId!).ok).toBe(true);
+    expect(editor.paste(newId!, { mode: "child" }).ok).toBe(true);
     expect(editor.toJson()).toEqual({
       children: [{ label: "new", children: [{ label: "old" }] }],
     });

@@ -231,8 +231,7 @@ Paste modes:
 
 - `overwrite`: only try replacing target subtree.
 - `child`: only try child insertion candidates.
-- `auto`: try self-sibling if applicable, otherwise child candidates, then
-  overwrite.
+- `auto`: choose candidates from the selected target node type.
 
 ```txt
 clipboard empty -> fail
@@ -256,9 +255,14 @@ Auto paste candidate order:
 if targetId === clipboard.sourceId and target parent is array
   only try inserting as next sibling
   do not fall through to child/overwrite after self-sibling failure
+else if target is array
+  try inserting into the target array
+else if target is object
+  try overwriting the target object
+else if target leaf JSON type matches clipboard JSON type
+  try overwriting the target leaf value
 else
-  try child insertion candidates
-  try overwrite candidate
+  no paste candidate
 ```
 
 Child insertion candidates:

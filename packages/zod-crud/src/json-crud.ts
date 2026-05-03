@@ -268,7 +268,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     childKeys: string[],
     index?: number,
   ): PasteCandidate[] {
-    getNode(this.doc, targetId);
+    const target = getNode(this.doc, targetId);
 
     if (mode === "overwrite") {
       return [this.overwritePasteCandidate(targetId, payload)];
@@ -285,10 +285,19 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       return [...selfSiblingCandidates, ...childCandidates];
     }
 
-    return [
-      ...childCandidates,
-      this.overwritePasteCandidate(targetId, payload),
-    ];
+    if (target.type === "array") {
+      return childCandidates;
+    }
+
+    if (target.type === "object") {
+      return [this.overwritePasteCandidate(targetId, payload)];
+    }
+
+    if (target.type === jsonNodeTypeOf(payload)) {
+      return [this.overwritePasteCandidate(targetId, payload)];
+    }
+
+    return [];
   }
 
   private commitFirstValidPaste(candidates: PasteCandidate[]): OperationResult {
@@ -626,6 +635,30 @@ function cloneNode(node: JsonNode): JsonNode {
     ...node,
     children: [...node.children],
   };
+}
+
+function jsonNodeTypeOf(value: JsonValue): JsonNode["type"] {
+  if (Array.isArray(value)) {
+    return "array";
+  }
+
+  if (value === null) {
+    return "null";
+  }
+
+  if (typeof value === "object") {
+    return "object";
+  }
+
+  if (typeof value === "string") {
+    return "string";
+  }
+
+  if (typeof value === "number") {
+    return "number";
+  }
+
+  return "boolean";
 }
 
 function focusFromMutation(
