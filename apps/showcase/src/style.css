@@ -126,7 +126,7 @@ kbd {
   align-items: start;
   display: grid;
   gap: 16px;
-  grid-template-columns: minmax(520px, 1.45fr) minmax(320px, 0.75fr);
+  grid-template-columns: minmax(220px, 0.55fr) minmax(520px, 1.35fr) minmax(320px, 0.75fr);
 }
 
 .panel {
@@ -164,6 +164,45 @@ kbd {
 
 .treegrid:focus {
   box-shadow: 0 0 0 3px #b9ded1;
+}
+
+.entity-list {
+  display: grid;
+  gap: 8px;
+}
+
+.entity-card {
+  background: #ffffff;
+  border: 1px solid #d9ded8;
+  border-radius: 7px;
+  color: #172026;
+  cursor: pointer;
+  display: grid;
+  gap: 5px;
+  min-height: 78px;
+  padding: 10px;
+  text-align: left;
+}
+
+.entity-card.is-active {
+  background: #e2f1eb;
+  border-color: #2e7d68;
+  box-shadow: inset 0 0 0 1px #2e7d68;
+}
+
+.entity-card span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.entity-card small,
+.entity-card em {
+  color: #65736d;
+  font-size: 12px;
+  font-style: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .grid-row {
@@ -269,7 +308,8 @@ kbd {
   color: #a33131;
 }
 
-.json-output {
+.json-output,
+.schema-output {
   background: #172026;
   border-radius: 7px;
   color: #edf7f2;
@@ -279,6 +319,11 @@ kbd {
   max-height: 320px;
   overflow: auto;
   padding: 12px;
+}
+
+.schema-output {
+  background: #23312c;
+  margin-bottom: 18px;
 }
 
 @media (max-width: 980px) {

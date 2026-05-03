@@ -12,8 +12,18 @@ It exists to verify that user inputs map cleanly to library operations:
 - `Cmd+Shift+Z`: redo
 
 The app intentionally avoids design-system, data-binding, and SSOT-builder
-scope. It keeps only one recursive Zod schema, one JSON document, treegrid
-selection state, command logging, clipboard display, and JSON output.
+scope. It keeps a small Zod entity registry, one `JsonCrud` editor per
+registered entity, treegrid selection state, command logging, clipboard display,
+schema display, and JSON output.
+
+Registered entities are plain objects in the showcase source:
+
+- `id`
+- label and schema name
+- Zod schema
+- initial JSON value
+- child insertion keys
+- sample value factory for Add child
 
 Treegrid navigation:
 

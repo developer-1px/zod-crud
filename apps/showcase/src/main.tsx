@@ -23,6 +23,15 @@ type CommandNode = {
   children: CommandNode[];
 };
 
+type CustomerDirectory = {
+  team: string;
+  contacts: Array<{
+    name: string;
+    email: string;
+    tags: string[];
+  }>;
+};
+
 type CommandId = "copy" | "cut" | "paste" | "delete" | "undo" | "redo";
 
 type CommandLog = {
@@ -48,6 +57,18 @@ type GridRow = {
   expanded: boolean;
 };
 
+type EntityDefinition = {
+  id: string;
+  label: string;
+  schemaName: string;
+  description: string;
+  schema: z.ZodType<JsonValue, unknown>;
+  initialValue: JsonValue;
+  childKeys: string[];
+  schemaSource: string;
+  createValue: (parent: JsonNode, index: number) => JsonValue;
+};
+
 const columns: GridColumn[] = [
   { id: "path", label: "Path" },
   { id: "key", label: "Key" },
@@ -63,7 +84,16 @@ const CommandNodeSchema: z.ZodType<CommandNode> = z.lazy(() =>
   }),
 );
 
-const initialDocument: CommandNode = {
+const CustomerDirectorySchema = z.object({
+  team: z.string().min(1),
+  contacts: z.array(z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    tags: z.array(z.string().min(1)),
+  })),
+});
+
+const initialCommandDocument: CommandNode = {
   title: "Command document",
   status: "active",
   children: [
@@ -79,6 +109,76 @@ const initialDocument: CommandNode = {
   ],
 };
 
+const initialCustomerDirectory: CustomerDirectory = {
+  team: "Field operations",
+  contacts: [
+    {
+      name: "Ari Kim",
+      email: "ari@example.com",
+      tags: ["buyer", "priority"],
+    },
+    {
+      name: "Bea Park",
+      email: "bea@example.com",
+      tags: ["ops"],
+    },
+  ],
+};
+
+const entityDefinitions = [
+  registerEntity({
+    id: "command-tree",
+    label: "Command tree",
+    schemaName: "CommandNodeSchema",
+    description: "Recursive tree entity used for copy, cut, paste, delete, undo, and redo.",
+    schema: CommandNodeSchema,
+    initialValue: initialCommandDocument,
+    childKeys: ["children"],
+    schemaSource: `const CommandNodeSchema = z.lazy(() =>
+  z.object({
+    title: z.string().min(1),
+    status: z.union([
+      z.literal("draft"),
+      z.literal("active"),
+      z.literal("done"),
+    ]),
+    children: z.array(CommandNodeSchema),
+  }),
+);`,
+    createValue: (_parent, index) => ({
+      title: `New child ${index}`,
+      status: "draft",
+      children: [],
+    }),
+  }),
+  registerEntity({
+    id: "customer-directory",
+    label: "Customer directory",
+    schemaName: "CustomerDirectorySchema",
+    description: "Zod object entity with contacts and nested tag arrays.",
+    schema: CustomerDirectorySchema,
+    initialValue: initialCustomerDirectory,
+    childKeys: ["contacts", "tags"],
+    schemaSource: `const CustomerDirectorySchema = z.object({
+  team: z.string().min(1),
+  contacts: z.array(z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    tags: z.array(z.string().min(1)),
+  })),
+});`,
+    createValue: (parent, index) => parent.key === "tags"
+      ? `tag-${index}`
+      : {
+          name: `New contact ${index}`,
+          email: `contact${index}@example.com`,
+          tags: [],
+        },
+  }),
+] satisfies EntityDefinition[];
+
+const defaultEntityId = entityDefinitions[0]?.id ?? "";
+
 const commands: Array<{ id: CommandId; keys: string; operation: string }> = [
   { id: "copy", keys: "Cmd+C", operation: "copy(row)" },
   { id: "cut", keys: "Cmd+X", operation: "cut(row)" },
@@ -88,12 +188,37 @@ const commands: Array<{ id: CommandId; keys: string; operation: string }> = [
   { id: "redo", keys: "Cmd+Shift+Z", operation: "redo()" },
 ];
 
-function makeEditor() {
-  return createJsonCrud(CommandNodeSchema, initialDocument, { childKeys: ["children"] });
+function registerEntity<T extends JsonValue>(definition: {
+  id: string;
+  label: string;
+  schemaName: string;
+  description: string;
+  schema: z.ZodType<T, unknown>;
+  initialValue: T;
+  childKeys: string[];
+  schemaSource: string;
+  createValue: (parent: JsonNode, index: number) => JsonValue;
+}): EntityDefinition {
+  return definition as unknown as EntityDefinition;
+}
+
+function makeEditor(entity: EntityDefinition) {
+  return createJsonCrud(entity.schema, entity.initialValue, { childKeys: entity.childKeys });
+}
+
+function makeEditors() {
+  return Object.fromEntries(entityDefinitions.map((entity) => [entity.id, makeEditor(entity)]));
+}
+
+function entityById(entityId: string): EntityDefinition {
+  return entityDefinitions.find((entity) => entity.id === entityId) ?? entityDefinitions[0]!;
 }
 
 function App() {
-  const editorRef = useRef(makeEditor());
+  const editorsRef = useRef(makeEditors());
+  const [activeEntityId, setActiveEntityId] = useState(defaultEntityId);
+  const activeEntity = entityById(activeEntityId);
+  const editorRef = useRef(editorsRef.current[activeEntity.id] ?? makeEditor(activeEntity));
   const nextItemRef = useRef(1);
   const [version, setVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<NodeId>(() => editorRef.current.snapshot().rootId);
@@ -113,6 +238,10 @@ function App() {
   const selectedRow = rows.find((row) => row.id === safeSelectedId) ?? rows[0] ?? null;
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
   const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
+  const entityStats = useMemo(() => entityDefinitions.map((entity) => ({
+    id: entity.id,
+    nodes: Object.keys((editorsRef.current[entity.id] ?? makeEditor(entity)).snapshot().nodes).length,
+  })), [version]);
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
@@ -242,7 +371,7 @@ function App() {
   function addChild() {
     const current = editorRef.current.snapshot();
     const targetId = current.nodes[safeSelectedId] === undefined ? current.rootId : safeSelectedId;
-    const childrenId = insertionArrayId(current, targetId);
+    const childrenId = insertionArrayId(current, targetId, activeEntity.childKeys);
 
     if (childrenId === null) {
       setLastCommand({
@@ -255,17 +384,13 @@ function App() {
 
     const parent = current.nodes[childrenId];
     const index = parent?.children.length ?? 0;
-    const title = `New child ${nextItemRef.current}`;
-    const result = editorRef.current.create(childrenId, index, {
-      title,
-      status: "draft",
-      children: [],
-    });
+    const result: OperationResult = parent === undefined
+      ? { ok: false, reason: "Selected insertion target is missing." }
+      : editorRef.current.create(childrenId, index, activeEntity.createValue(parent, nextItemRef.current));
 
     nextItemRef.current += 1;
 
     const after = editorRef.current.snapshot();
-    const createdId = nodeIdByTitle(after, title);
 
     setExpandedIds((currentExpanded) => {
       const next = validExpandedIds(after, currentExpanded);
@@ -280,8 +405,8 @@ function App() {
       return next;
     });
 
-    if (createdId !== null) {
-      setSelectedId(createdId);
+    if (result.ok && result.nodeId !== undefined) {
+      setSelectedId(result.nodeId);
       setActiveColumn(0);
     }
 
@@ -294,7 +419,8 @@ function App() {
   }
 
   function reset() {
-    editorRef.current = makeEditor();
+    editorRef.current = makeEditor(activeEntity);
+    editorsRef.current[activeEntity.id] = editorRef.current;
     nextItemRef.current = 1;
     setClipboardValue(null);
 
@@ -306,6 +432,28 @@ function App() {
     setLastCommand({
       command: "reset",
       target: "/",
+      result: { ok: true },
+    });
+    refresh();
+  }
+
+  function selectEntity(entityId: string) {
+    const nextEntity = entityById(entityId);
+    const nextEditor = editorsRef.current[nextEntity.id] ?? makeEditor(nextEntity);
+
+    editorsRef.current[nextEntity.id] = nextEditor;
+    editorRef.current = nextEditor;
+
+    const nextDoc = nextEditor.snapshot();
+
+    setActiveEntityId(nextEntity.id);
+    setSelectedId(nextDoc.rootId);
+    setActiveColumn(0);
+    setExpandedIds(expandedContainerIds(nextDoc));
+    setClipboardValue(null);
+    setLastCommand({
+      command: "select entity",
+      target: nextEntity.label,
       result: { ok: true },
     });
     refresh();
@@ -341,9 +489,19 @@ function App() {
         </section>
 
         <section className="workspace">
+          <aside className="panel entity-panel">
+            <PanelTitle title="Registered entities" detail={`${entityDefinitions.length} Zod schemas`} />
+            <EntityRegistry
+              entities={entityDefinitions}
+              activeEntityId={activeEntity.id}
+              stats={entityStats}
+              onSelect={selectEntity}
+            />
+          </aside>
+
           <section className="panel editor-panel">
             <PanelTitle
-              title="JsonDoc treegrid"
+              title={`${activeEntity.label} JsonDoc`}
               detail={selectedRow === null ? "/" : `${selectedRow.path} - ${columns[activeColumn]?.label ?? ""}`}
             />
             <JsonTreeGrid
@@ -358,6 +516,23 @@ function App() {
           </section>
 
           <aside className="panel detail-panel">
+            <PanelTitle title="Zod entity" detail={activeEntity.schemaName} />
+            <dl className="result-list">
+              <div>
+                <dt>Entity</dt>
+                <dd>{activeEntity.label}</dd>
+              </div>
+              <div>
+                <dt>Child keys</dt>
+                <dd>{activeEntity.childKeys.join(", ")}</dd>
+              </div>
+              <div>
+                <dt>Description</dt>
+                <dd>{activeEntity.description}</dd>
+              </div>
+            </dl>
+            <pre className="schema-output">{activeEntity.schemaSource}</pre>
+
             <PanelTitle title="Selected node" detail={safeSelectedId} />
             <dl className="result-list">
               <div>
@@ -406,6 +581,39 @@ function PanelTitle({ title, detail }: { title: string; detail?: string }) {
     <div className="panel-title">
       <h2>{title}</h2>
       {detail === undefined ? null : <span>{detail}</span>}
+    </div>
+  );
+}
+
+function EntityRegistry({
+  entities,
+  activeEntityId,
+  stats,
+  onSelect,
+}: {
+  entities: EntityDefinition[];
+  activeEntityId: string;
+  stats: Array<{ id: string; nodes: number }>;
+  onSelect: (entityId: string) => void;
+}) {
+  return (
+    <div className="entity-list">
+      {entities.map((entity) => {
+        const nodeCount = stats.find((stat) => stat.id === entity.id)?.nodes ?? 0;
+
+        return (
+          <button
+            key={entity.id}
+            type="button"
+            className={activeEntityId === entity.id ? "entity-card is-active" : "entity-card"}
+            onClick={() => onSelect(entity.id)}
+          >
+            <span>{entity.label}</span>
+            <small>{entity.schemaName}</small>
+            <em>{nodeCount} nodes</em>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -633,53 +841,28 @@ function expandedForSelection(doc: JsonDoc, ids: Set<NodeId>, nodeId: NodeId): S
   return next;
 }
 
-function insertionArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
-  const node = doc.nodes[nodeId];
-
-  if (node?.type === "array") {
-    return node.id;
-  }
-
-  if (node?.type === "object") {
-    const children = childByKey(doc, node.id, "children");
-
-    if (children?.type === "array") {
-      return children.id;
-    }
-  }
-
-  const nearest = nearestDomainObject(doc, nodeId);
-
-  if (nearest !== null) {
-    const children = childByKey(doc, nearest, "children");
-
-    if (children?.type === "array") {
-      return children.id;
-    }
-  }
-
-  return null;
-}
-
-function nearestDomainObject(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+function insertionArrayId(doc: JsonDoc, nodeId: NodeId, childKeys: string[]): NodeId | null {
   let current = doc.nodes[nodeId];
 
   while (current !== undefined) {
-    if (isDomainObject(doc, current)) {
+    if (current.type === "array") {
       return current.id;
+    }
+
+    if (current.type === "object") {
+      for (const childKey of childKeys) {
+        const child = childByKey(doc, current.id, childKey);
+
+        if (child?.type === "array") {
+          return child.id;
+        }
+      }
     }
 
     current = current.parentId === null ? undefined : doc.nodes[current.parentId];
   }
 
   return null;
-}
-
-function isDomainObject(doc: JsonDoc, node: JsonNode | undefined): boolean {
-  return node?.type === "object" &&
-    childByKey(doc, node.id, "title")?.type === "string" &&
-    childByKey(doc, node.id, "status")?.type === "string" &&
-    childByKey(doc, node.id, "children")?.type === "array";
 }
 
 function childByKey(doc: JsonDoc, nodeId: NodeId, key: string | number): JsonNode | undefined {
@@ -788,16 +971,6 @@ function valueLabel(value: JsonValue): string {
   }
 
   return String(value);
-}
-
-function nodeIdByTitle(doc: JsonDoc, title: string): NodeId | null {
-  for (const node of Object.values(doc.nodes)) {
-    if (node.type === "object" && childByKey(doc, node.id, "title")?.value === title) {
-      return node.id;
-    }
-  }
-
-  return null;
 }
 
 function cellId(nodeId: NodeId, columnIndex: number): string {

@@ -28,6 +28,8 @@ The same command handler may also accept `Ctrl` on non-macOS keyboards.
 
 The app must show:
 
+- the registered Zod entities
+- the active entity schema source
 - a `JsonDoc` treegrid
 - the selected JSON node
 - the current JSON output
@@ -64,12 +66,28 @@ All document mutations must go through `zod-crud`.
 The showcase may keep local React state for selection, command log, render
 version, and display-only clipboard preview. It must not mutate JSON directly.
 
+## Entity Registration
+
+The showcase registers entities with:
+
+- `id`
+- display label
+- Zod schema
+- initial JSON value
+- child insertion keys such as `children`, `contacts`, or `tags`
+- sample value factory for the add-child command
+- schema source string for display
+
+Switching entities changes the active `JsonCrud` instance and resets visible
+selection to that entity root. Each registered entity owns its own editor
+instance.
+
 ## Scope Boundaries
 
 Allowed:
 
-- one recursive Zod schema
-- one initial JSON document
+- a small set of registered Zod entities
+- one initial JSON document per entity
 - a minimal treegrid UI
 - reset and add-child controls to keep the harness usable
 
