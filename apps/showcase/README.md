@@ -21,6 +21,6 @@ Treegrid navigation:
 - `Space` expands or collapses the active row
 - `Home` and `End` move across the current row
 
-After paste, focus follows the pasted JSON node. If paste inserts a child or
-sibling, the new subtree root is selected. If paste overwrites a node, the
-target stays selected because that root id is preserved.
+After paste, focus follows the `nodeId` returned by `zod-crud`. If paste inserts
+a child or sibling, the new subtree root is selected. If paste overwrites a
+node, the target stays selected because that root id is preserved.

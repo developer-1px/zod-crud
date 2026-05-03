@@ -171,7 +171,7 @@ insert child
   primitive parent -> fail
 validate parent path subtree
 validate full document exactness
-commit or return failure
+commit and return { ok: true, nodeId: createdRootId } or return failure
 ```
 
 ### update(nodeId, value)
@@ -182,7 +182,7 @@ validate value at path
 clone current doc
 replace subtree at nodeId
 validate full document exactness
-commit or return failure
+commit and return { ok: true, nodeId } or return failure
 ```
 
 ### delete(nodeId)
@@ -195,7 +195,8 @@ remove node and descendants
 normalize array parent keys if needed
 validate parent path subtree
 validate full document exactness
-commit or return failure
+commit and return { ok: true, nodeId } where nodeId is the removed root, or
+return failure
 ```
 
 ### copy(nodeId)
@@ -236,9 +237,14 @@ build candidates
 try candidates in order
   candidate throws -> remember failure
   full document exact validation fails -> remember failure
-  validation succeeds -> commit exactly one candidate
+  validation succeeds -> commit exactly one candidate and return
+    { ok: true, nodeId: pastedRootId }
 all candidates fail -> return last useful failure
 ```
+
+For insert paste, `nodeId` is the newly inserted subtree root. For overwrite
+paste, `nodeId` is the overwritten target root because replacement preserves
+that root id.
 
 Auto paste candidate order:
 

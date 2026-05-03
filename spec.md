@@ -48,7 +48,8 @@ The treegrid must keep one active cell.
 
 ## Focus Recovery
 
-After a successful paste, the active row must follow the pasted JSON node.
+After a successful paste, the active row must follow the `nodeId` returned by
+the `zod-crud` paste result.
 
 - Child or sibling paste selects the newly inserted subtree root.
 - Overwrite paste selects the overwritten target node because its root id is

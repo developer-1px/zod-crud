@@ -171,7 +171,7 @@ function App() {
         result = editor.paste(targetId);
 
         if (result.ok) {
-          nextSelection = pastedSelection(before, editor.snapshot(), targetId);
+          nextSelection = result.nodeId ?? targetId;
           setActiveColumn(0);
         }
       }
@@ -723,30 +723,6 @@ function recoverSelection(before: JsonDoc, after: JsonDoc, removedId: NodeId): N
   return after.rootId;
 }
 
-function pastedSelection(before: JsonDoc, after: JsonDoc, targetId: NodeId): NodeId {
-  if (after.nodes[targetId] === undefined) {
-    return after.rootId;
-  }
-
-  const newRoots = Object.values(after.nodes)
-    .filter((node) => before.nodes[node.id] === undefined)
-    .filter((node) => node.parentId !== null && before.nodes[node.parentId] !== undefined)
-    .sort((left, right) => nodeIndex(left.id) - nodeIndex(right.id));
-
-  if (newRoots.length === 0) {
-    return targetId;
-  }
-
-  const beforeTarget = before.nodes[targetId];
-  const directNewChild = newRoots.some((node) => node.parentId === targetId);
-
-  if (beforeTarget?.type === "object" && directNewChild) {
-    return targetId;
-  }
-
-  return newRoots[0]?.id ?? targetId;
-}
-
 function nearestExistingParent(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId | null {
   let current = before.nodes[nodeId];
 
@@ -826,12 +802,6 @@ function nodeIdByTitle(doc: JsonDoc, title: string): NodeId | null {
 
 function cellId(nodeId: NodeId, columnIndex: number): string {
   return `grid-${nodeId}-${columnIndex}`;
-}
-
-function nodeIndex(nodeId: NodeId): number {
-  const index = Number(nodeId.replace(/^\D+/, ""));
-
-  return Number.isFinite(index) ? index : Number.MAX_SAFE_INTEGER;
 }
 
 function clamp(value: number, min: number, max: number): number {

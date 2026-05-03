@@ -82,7 +82,11 @@ const childrenId = editor.find(rootId, "children");
 const textNodeId = editor.find(childrenId!, 0);
 
 editor.copy(textNodeId!);
-editor.paste(rootId); // inserts into root.children if the item schema accepts it
+const pasteResult = editor.paste(rootId); // inserts into root.children if the item schema accepts it
+
+if (pasteResult.ok) {
+  console.log(pasteResult.nodeId); // root id of the pasted subtree
+}
 
 editor.undo();
 editor.redo();

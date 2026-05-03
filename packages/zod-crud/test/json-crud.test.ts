@@ -120,7 +120,16 @@ describe("JsonCrud", () => {
 
     editor.copy(textNodeId!);
 
-    expect(editor.paste(rootId).ok).toBe(true);
+    const result = editor.paste(rootId);
+    const pastedTextNodeId = editor.find(childrenId!, 1);
+
+    expect(result.ok).toBe(true);
+    expect(pastedTextNodeId).not.toBeNull();
+
+    if (result.ok) {
+      expect(result.nodeId).toBe(pastedTextNodeId);
+    }
+
     expect(editor.toJson()).toEqual({
       kind: "frame",
       name: "root",
@@ -149,7 +158,16 @@ describe("JsonCrud", () => {
 
     editor.copy(sectionId!);
 
-    expect(editor.paste(sectionId!).ok).toBe(true);
+    const result = editor.paste(sectionId!);
+    const pastedSectionId = editor.find(childrenId!, 1);
+
+    expect(result.ok).toBe(true);
+    expect(pastedSectionId).not.toBeNull();
+
+    if (result.ok) {
+      expect(result.nodeId).toBe(pastedSectionId);
+    }
+
     expect(editor.toJson()).toEqual({
       kind: "frame",
       name: "root",
@@ -607,7 +625,14 @@ describe("JsonCrud", () => {
 
     expect(editor.cut(itemId!).ok).toBe(false);
     expect(editor.update(slotId!, "target").ok).toBe(true);
-    expect(editor.paste(slotId!, { mode: "overwrite" }).ok).toBe(true);
+    const pasteResult = editor.paste(slotId!, { mode: "overwrite" });
+
+    expect(pasteResult.ok).toBe(true);
+
+    if (pasteResult.ok) {
+      expect(pasteResult.nodeId).toBe(slotId);
+    }
+
     expect(editor.toJson()).toEqual({ items: ["a"], slot: "old" });
   });
 });

@@ -99,14 +99,14 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const next = cloneDoc(this.doc);
       const parentPath = getPath(next, parentId);
 
-      insertChild(next, parentId, key, value, () => this.allocateNodeId());
+      const nodeId = insertChild(next, parentId, key, value, () => this.allocateNodeId());
       const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
       }
 
-      return this.commitIfValid(next);
+      return this.commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -124,7 +124,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const next = cloneDoc(this.doc);
 
       replaceSubtree(next, nodeId, value, () => this.allocateNodeId());
-      return this.commitIfValid(next);
+      return this.commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -153,7 +153,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         return validation;
       }
 
-      return this.commitIfValid(next);
+      return this.commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -301,7 +301,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
           this.clipboard = this.clipboard === null
             ? null
             : { value: cloneJson(this.clipboard.value), sourceId: pastedRootId };
-          return { ok: true };
+          return { ok: true, nodeId: pastedRootId };
         }
 
         lastFailure = validation;
@@ -524,7 +524,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     return { ok: true };
   }
 
-  private commitIfValid(next: JsonDoc): OperationResult {
+  private commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
     const validation = this.validateDocument(next);
 
     if (!validation.ok) {
@@ -532,7 +532,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     }
 
     this.commit(next);
-    return { ok: true };
+    return nodeId === undefined ? { ok: true } : { ok: true, nodeId };
   }
 
   private commit(next: JsonDoc): void {

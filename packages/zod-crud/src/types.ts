@@ -32,7 +32,17 @@ export type JsonDoc = {
 export type JsonPath = Array<string | number>;
 
 export type OperationResult =
-  | { ok: true }
+  | {
+      ok: true;
+      /**
+       * Primary node affected by a successful mutation.
+       *
+       * For create and insert paste this is the inserted subtree root.
+       * For overwrite paste and update this is the target root.
+       * For delete and cut this is the removed root.
+       */
+      nodeId?: NodeId;
+    }
   | {
       ok: false;
       reason: string;
