@@ -6,7 +6,6 @@ import {
   Clipboard,
   Copy,
   Database,
-  FileCode2,
   History,
   LayoutTemplate,
   Layers,
@@ -912,23 +911,19 @@ function DataSectionCard({
       <div className="data-section-grid">
         <div className="data-component-preview">
           <div className="data-column-title">
-            <LayoutTemplate />
             <span>{section.binding.component}</span>
           </div>
-          <div className="data-preview-surface">
-            <DesignPreviewNode
-              doc={doc}
-              nodeId={section.nodeId}
-              selectedPreviewId={selectedPreviewId}
-              focusedSet={focusedSet}
-              onSelect={onSelect}
-            />
-          </div>
+          <DesignPreviewNode
+            doc={doc}
+            nodeId={section.nodeId}
+            selectedPreviewId={selectedPreviewId}
+            focusedSet={focusedSet}
+            onSelect={onSelect}
+          />
         </div>
 
         <div className="data-code-panel">
           <div className="data-column-title">
-            <Braces />
             <span>Data</span>
           </div>
           <dl className="data-binding-list">
@@ -950,7 +945,6 @@ function DataSectionCard({
 
         <div className="data-code-panel">
           <div className="data-column-title">
-            <FileCode2 />
             <span>Zod SSOT</span>
           </div>
           <pre className="data-schema">{section.schemaCode}</pre>
