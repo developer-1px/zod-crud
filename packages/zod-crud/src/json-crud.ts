@@ -108,7 +108,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         return validation;
       }
 
-      return this.commitIfValid(next, nodeId, nodeId);
+      return this.commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -126,7 +126,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const next = cloneDoc(this.doc);
 
       replaceSubtree(next, nodeId, value, () => this.allocateNodeId());
-      return this.commitIfValid(next, nodeId, nodeId);
+      return this.commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -149,14 +149,13 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const next = cloneDoc(this.doc);
 
       removeSubtree(next, nodeId);
-      const focusNodeId = focusAfterRemoval(this.doc, next, nodeId);
       const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
       }
 
-      return this.commitIfValid(next, nodeId, focusNodeId);
+      return this.commitIfValid(next, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -245,7 +244,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
 
     this.redoStack.push(current);
     this.doc = previous;
-    return successResult(current, previous, undefined, focusFromDiff(current, previous));
+    return successResult(current, previous);
   }
 
   redo(): OperationResult {
@@ -259,7 +258,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
 
     this.undoStack.push(current);
     this.doc = next;
-    return successResult(current, next, undefined, focusFromDiff(current, next));
+    return successResult(current, next);
   }
 
   private buildPasteCandidates(
@@ -310,7 +309,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
           this.clipboard = this.clipboard === null
             ? null
             : { value: cloneJson(this.clipboard.value), sourceId: pastedRootId };
-          return successResult(before, next, pastedRootId, pastedRootId);
+          return successResult(before, next, pastedRootId);
         }
 
         lastFailure = validation;
@@ -533,7 +532,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     return { ok: true };
   }
 
-  private commitIfValid(next: JsonDoc, nodeId?: NodeId, focusNodeId?: NodeId): OperationResult {
+  private commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
     const validation = this.validateDocument(next);
 
     if (!validation.ok) {
@@ -543,7 +542,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     const before = cloneDoc(this.doc);
 
     this.commit(next);
-    return successResult(before, next, nodeId, focusNodeId);
+    return successResult(before, next, nodeId);
   }
 
   private commit(next: JsonDoc): void {
@@ -576,13 +575,14 @@ function successResult(
   before: JsonDoc,
   after: JsonDoc,
   nodeId?: NodeId,
-  focusNodeId?: NodeId,
 ): OperationResult {
+  const changes = changesFromDiff(before, after);
+
   return {
     ok: true,
     ...(nodeId === undefined ? {} : { nodeId }),
-    ...(focusNodeId === undefined ? {} : { focusNodeId }),
-    changes: changesFromDiff(before, after),
+    focusNodeId: focusFromMutation(before, after, changes, nodeId),
+    changes,
   };
 }
 
@@ -628,8 +628,16 @@ function cloneNode(node: JsonNode): JsonNode {
   };
 }
 
-function focusFromDiff(before: JsonDoc, after: JsonDoc): NodeId {
-  const changes = changesFromDiff(before, after);
+function focusFromMutation(
+  before: JsonDoc,
+  after: JsonDoc,
+  changes: JsonChange[],
+  primaryNodeId?: NodeId,
+): NodeId {
+  if (primaryNodeId !== undefined && after.nodes[primaryNodeId] !== undefined) {
+    return primaryNodeId;
+  }
+
   const insertedRoot = changes
     .filter((change) => change.type === "insert")
     .map((change) => change.after)

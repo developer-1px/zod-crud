@@ -109,6 +109,7 @@ describe("JsonCrud", () => {
     expect(result.ok).toBe(true);
 
     if (result.ok) {
+      expect(result.focusNodeId).toBe(textValueId);
       expect(result.changes).toEqual([
         expect.objectContaining({
           type: "update",
@@ -142,6 +143,7 @@ describe("JsonCrud", () => {
 
     if (result.ok) {
       expect(result.nodeId).toBe(pastedTextNodeId);
+      expect(result.focusNodeId).toBe(pastedTextNodeId);
       expect(result.changes).toEqual(expect.arrayContaining([
         expect.objectContaining({ type: "update", nodeId: childrenId }),
         expect.objectContaining({ type: "insert", nodeId: pastedTextNodeId }),
@@ -155,6 +157,32 @@ describe("JsonCrud", () => {
         { kind: "text", text: "hello" },
         { kind: "text", text: "hello" },
       ],
+    });
+  });
+
+  it("uses the same mutation focus strategy when deleting a node", () => {
+    const editor = createEditor();
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const textNodeId = editor.find(childrenId!, 0);
+
+    const result = editor.delete(textNodeId!);
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.nodeId).toBe(textNodeId);
+      expect(result.focusNodeId).toBe(childrenId);
+      expect(result.changes).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: "update", nodeId: childrenId }),
+        expect.objectContaining({ type: "delete", nodeId: textNodeId }),
+      ]));
+    }
+
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [],
     });
   });
 

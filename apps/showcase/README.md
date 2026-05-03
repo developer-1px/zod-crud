@@ -32,12 +32,9 @@ Treegrid navigation:
 - `Space` expands or collapses the active row
 - `Home` and `End` move across the current row
 
-After paste, focus follows the `focusNodeId` returned by `zod-crud`. If paste
-inserts a child or sibling, the new subtree root is selected. If paste
-overwrites a node, the target stays selected because that root id is preserved.
-
-After undo or redo, focus follows the `focusNodeId` returned by `zod-crud`; the
-showcase does not compute the `JsonDoc` diff itself.
+After create, update, delete, cut, paste, undo, or redo, focus follows the
+`focusNodeId` returned by `zod-crud`; the showcase does not compute the
+`JsonDoc` diff itself.
 
 The changed-node panel also reads core-provided `OperationResult.changes`
 instead of diffing snapshots in the showcase.

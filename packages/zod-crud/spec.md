@@ -174,7 +174,7 @@ insert child
   primitive parent -> fail
 validate parent path subtree
 validate full document exactness
-commit and return { ok: true, nodeId: createdRootId, focusNodeId: createdRootId, changes }
+commit and return { ok: true, nodeId: createdRootId, focusNodeId, changes }
 or return failure
 ```
 
@@ -186,7 +186,7 @@ validate value at path
 clone current doc
 replace subtree at nodeId
 validate full document exactness
-commit and return { ok: true, nodeId, focusNodeId: nodeId, changes } or return failure
+commit and return { ok: true, nodeId, focusNodeId, changes } or return failure
 ```
 
 ### delete(nodeId)
@@ -200,7 +200,7 @@ normalize array parent keys if needed
 validate parent path subtree
 validate full document exactness
 commit and return { ok: true, nodeId, focusNodeId, changes } where nodeId is
-the removed root and focusNodeId is a live recovery node, or return failure
+the removed root, or return failure
 ```
 
 ### copy(nodeId)
@@ -242,7 +242,7 @@ try candidates in order
   candidate throws -> remember failure
   full document exact validation fails -> remember failure
   validation succeeds -> commit exactly one candidate and return
-    { ok: true, nodeId: pastedRootId, focusNodeId: pastedRootId, changes }
+    { ok: true, nodeId: pastedRootId, focusNodeId, changes }
 all candidates fail -> return last useful failure
 ```
 
@@ -292,7 +292,7 @@ return ok/failure from dry run
 undo stack empty -> { ok: false, reason }
 push current doc to redo
 restore previous doc
-compute focusNodeId from before/after JsonDoc diff
+compute focusNodeId through the unified mutation focus strategy
 return { ok: true, focusNodeId, changes }
 ```
 
@@ -302,18 +302,23 @@ return { ok: true, focusNodeId, changes }
 redo stack empty -> { ok: false, reason }
 push current doc to undo
 restore next doc
-compute focusNodeId from before/after JsonDoc diff
+compute focusNodeId through the unified mutation focus strategy
 return { ok: true, focusNodeId, changes }
 ```
 
-Undo/redo diff focus priority:
+Mutation focus priority:
 
 ```txt
-if diff inserts a live subtree -> focus inserted subtree root
+if primary nodeId is still live after commit -> focus primary nodeId
+else if diff inserts a live subtree -> focus inserted subtree root
 else if diff updates an existing live node -> focus that updated node
 else if diff only deletes nodes -> recover to next sibling, previous sibling,
   live parent, or root
 ```
+
+CRUD, paste, undo, and redo all use this same focus strategy. Delete is not a
+separate sibling-recovery policy; if deleting a node updates a live parent or
+container, focus follows that changed live node first.
 
 ## Package Contract
 

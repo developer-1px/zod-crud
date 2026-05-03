@@ -51,22 +51,17 @@ The treegrid must keep one active cell.
 
 ## Focus Recovery
 
-After a successful paste, the active row must follow the `focusNodeId` returned
-by the `zod-crud` paste result.
+After a successful create, update, delete, cut, paste, undo, or redo, the active
+row must follow the `focusNodeId` returned by the `zod-crud` result.
 
-- Child or sibling paste selects the newly inserted subtree root.
-- Overwrite paste selects the overwritten target node because its root id is
-  preserved by `zod-crud`.
-- Ancestors of the selected paste result are expanded so the focused row stays
-  visible.
-
-After a successful undo or redo, the active row must follow the `focusNodeId`
-returned by the `zod-crud` result.
-
-- If history replay inserts a subtree, focus the inserted subtree root.
-- If history replay changes an existing live node, focus the changed node.
-- If history replay only removes nodes, recover to the next sibling, previous
+- If the operation's primary node is still live, focus that node.
+- If replay inserts a subtree with no primary node, focus the inserted subtree
+  root.
+- If the operation changes an existing live node, focus the changed node.
+- If the operation only removes nodes, recover to the next sibling, previous
   sibling, visible parent, or root.
+- Ancestors of the selected result are expanded so the focused row stays
+  visible.
 
 The showcase must not compute command diffs itself. For create, update, delete,
 cut, paste, undo, and redo result displays, it reads the changed-node list from
