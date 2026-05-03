@@ -432,32 +432,6 @@ const FORM_VIEW: FormViewDoc = FormViewDocSchema.parse({
   },
 });
 
-const FORM_ENTITY_SCHEMA_CODE = `const SalesOrderFormSchema = z.object({
-  hero: z.object({
-    title: z.string().min(1),
-    imageUrl: z.string().url(),
-    imageAlt: z.string().min(1),
-  }),
-  customer: z.object({
-    name: z.string().min(2),
-    status: z.enum(["draft", "paid", "sent"]),
-  }),
-  lineItems: z.array(LineItemSchema).min(1),
-});`;
-
-const FORM_VIEW_SCHEMA_CODE = `const FormViewDocSchema = z.object({
-  rootId: z.string(),
-  nodes: z.record(z.string(), FormViewNodeSchema),
-});
-
-const FormViewNodeSchema = z.discriminatedUnion("type", [
-  ViewNodeSchema,
-  SectionNodeSchema,
-  FieldNodeSchema,
-  EachNodeSchema,
-  ActionNodeSchema,
-]);`;
-
 const DATA_SECTION_SPECS: DataSectionSpec[] = [
   {
     title: "Toolbar",
@@ -1012,7 +986,6 @@ function App() {
       ) : (
         <DataWorkspace
           doc={doc}
-          json={json}
           selectedPreviewId={selectionBridge.selectedPreviewId}
           focusedSet={selectionBridge.focusedPreviewIds}
           onSelect={selectNode}
@@ -1076,44 +1049,19 @@ function modeTabClass(currentMode: WorkspaceMode, mode: WorkspaceMode) {
 
 function DataWorkspace({
   doc,
-  json,
   selectedPreviewId,
   focusedSet,
   onSelect,
 }: {
   doc: JsonDoc;
-  json: JsonValue;
   selectedPreviewId: NodeId;
   focusedSet: Set<NodeId>;
   onSelect: (nodeId: NodeId) => void;
 }) {
   const sections = resolveDataSections(doc);
-  const parseResult = DesignNodeSchema.safeParse(json);
 
   return (
     <section className="data-workspace" aria-label="Data and component bindings">
-      <header className="data-page-head">
-        <div>
-          <div className="data-eyebrow">
-            <Database />
-            <span>Data</span>
-          </div>
-          <h2>Component schema map</h2>
-        </div>
-        <dl className="data-summary">
-          <div>
-            <dt>Root schema</dt>
-            <dd>DesignNodeSchema</dd>
-          </div>
-          <div>
-            <dt>Parse</dt>
-            <dd>{parseResult.success ? "valid" : `${parseResult.error.issues.length} issues`}</dd>
-          </div>
-        </dl>
-      </header>
-
-      <FormShowcase />
-
       <div className="data-map">
         {sections.map((section) => (
           <DataSectionCard
@@ -1127,73 +1075,6 @@ function DataWorkspace({
         ))}
       </div>
     </section>
-  );
-}
-
-function FormShowcase() {
-  const entityResult = SalesOrderFormSchema.safeParse(FORM_DATA);
-  const viewResult = FormViewDocSchema.safeParse(FORM_VIEW);
-  const bindingIssues = validateFormBindings(FORM_VIEW, FORM_DATA, FORM_VIEW.rootId);
-  const bindingCount = countFormBindings(FORM_VIEW, FORM_VIEW.rootId);
-  const isReady = entityResult.success && viewResult.success && bindingIssues.length === 0;
-
-  return (
-    <article className="form-showcase" aria-label="Generated form showcase">
-      <div className="form-showcase-head">
-        <div>
-          <div className="data-eyebrow">
-            <Table2 />
-            <span>Form</span>
-          </div>
-          <h3>Entity-bound form showcase</h3>
-        </div>
-        <dl className="form-showcase-summary">
-          <div>
-            <dt>Entity</dt>
-            <dd>{entityResult.success ? "valid" : `${entityResult.error.issues.length} issues`}</dd>
-          </div>
-          <div>
-            <dt>ViewDoc</dt>
-            <dd>{viewResult.success ? "valid" : `${viewResult.error.issues.length} issues`}</dd>
-          </div>
-          <div>
-            <dt>Bindings</dt>
-            <dd>{isReady ? `${bindingCount} paths` : `${bindingIssues.length} missing`}</dd>
-          </div>
-        </dl>
-      </div>
-
-      <div className="form-showcase-grid">
-        <div className="generated-form-panel">
-          <div className="data-column-title">
-            <span>Preview</span>
-          </div>
-          <GeneratedFormNode view={FORM_VIEW} nodeId={FORM_VIEW.rootId} rootData={FORM_DATA} />
-        </div>
-
-        <div className="data-code-panel form-code-panel">
-          <div className="data-column-title">
-            <span>Zod</span>
-          </div>
-          <pre className="data-schema">{FORM_ENTITY_SCHEMA_CODE}</pre>
-          <pre className="data-schema compact">{FORM_VIEW_SCHEMA_CODE}</pre>
-        </div>
-
-        <div className="data-code-panel form-code-panel">
-          <div className="data-column-title">
-            <span>Data</span>
-          </div>
-          <pre className="data-json">{JSON.stringify(FORM_DATA, null, 2)}</pre>
-        </div>
-
-        <div className="data-code-panel form-code-panel">
-          <div className="data-column-title">
-            <span>Form</span>
-          </div>
-          <pre className="data-json">{JSON.stringify(FORM_VIEW, null, 2)}</pre>
-        </div>
-      </div>
-    </article>
   );
 }
 
@@ -1302,74 +1183,6 @@ function generatedControl(node: Extract<FormViewNode, { type: "field" }>, value:
   }
 
   return <input type={node.control === "number" ? "number" : "text"} value={displayValue} readOnly />;
-}
-
-function validateFormBindings(
-  view: FormViewDoc,
-  rootData: JsonValue,
-  nodeId: string,
-  scope?: JsonValue,
-  visited = new Set<string>(),
-): string[] {
-  if (visited.has(nodeId)) {
-    return [];
-  }
-
-  const node = view.nodes[nodeId];
-
-  if (node === undefined) {
-    return [nodeId];
-  }
-
-  visited.add(nodeId);
-
-  if (node.type === "field") {
-    return valueForBinding(rootData, scope, node.value) === undefined ? [node.value.path] : [];
-  }
-
-  if (node.type === "each") {
-    const items = valueForBinding(rootData, scope, node.items);
-
-    if (!Array.isArray(items)) {
-      return [node.items.path];
-    }
-
-    return items[0] === undefined ? [] : validateFormBindings(view, rootData, node.item, items[0], new Set(visited));
-  }
-
-  if ("children" in node) {
-    return node.children.flatMap((childId) => validateFormBindings(view, rootData, childId, scope, new Set(visited)));
-  }
-
-  return [];
-}
-
-function countFormBindings(view: FormViewDoc, nodeId: string, visited = new Set<string>()): number {
-  if (visited.has(nodeId)) {
-    return 0;
-  }
-
-  const node = view.nodes[nodeId];
-
-  if (node === undefined) {
-    return 0;
-  }
-
-  visited.add(nodeId);
-
-  if (node.type === "field") {
-    return 1;
-  }
-
-  if (node.type === "each") {
-    return 1 + countFormBindings(view, node.item, new Set(visited));
-  }
-
-  if ("children" in node) {
-    return node.children.reduce((total, childId) => total + countFormBindings(view, childId, new Set(visited)), 0);
-  }
-
-  return 0;
 }
 
 function textExprValue(rootData: JsonValue, scope: JsonValue | undefined, value: z.infer<typeof TextExprSchema>) {
@@ -1498,6 +1311,13 @@ function DataSectionCard({
             </div>
           </dl>
           <pre className="data-json">{JSON.stringify(section.value, null, 2)}</pre>
+        </div>
+
+        <div className="data-form-panel">
+          <div className="data-column-title">
+            <span>Form</span>
+          </div>
+          <GeneratedFormNode view={FORM_VIEW} nodeId={FORM_VIEW.rootId} rootData={FORM_DATA} />
         </div>
       </div>
     </article>
