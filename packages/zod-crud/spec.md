@@ -301,8 +301,9 @@ that root id.
 When the clipboard contains multiple values, paste is insert-only. It inserts
 all clipboard values in order into a target array, after a target array item, or
 into one object child-array candidate. Multi-value paste does not overwrite a
-single object or leaf target. `focusNodeId` is the first inserted root, and
-`focusNodeIds` contains all inserted roots in paste order.
+single object or leaf target. `focusNodeId` is the last inserted root so
+repeated paste appends after the active pasted node, and `focusNodeIds` contains
+all inserted roots in paste order.
 
 Auto paste candidate order:
 

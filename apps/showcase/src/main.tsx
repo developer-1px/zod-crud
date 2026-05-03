@@ -850,7 +850,9 @@ function focusSelection(doc: JsonDoc, nodeIds: NodeId[] | null, activeId: NodeId
     return singleSelection(activeId);
   }
 
-  const nextActiveId = selectedIds[selectedIds.length - 1] ?? activeId;
+  const nextActiveId = selectedIds.includes(activeId)
+    ? activeId
+    : selectedIds[selectedIds.length - 1] ?? activeId;
 
   return {
     anchorId: selectedIds[0]!,

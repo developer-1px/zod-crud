@@ -410,7 +410,7 @@ describe("JsonCrud", () => {
     expect(secondPastedId).not.toBeNull();
 
     if (result.ok) {
-      expect(result.focusNodeId).toBe(firstPastedId);
+      expect(result.focusNodeId).toBe(secondPastedId);
       expect(result.focusNodeIds).toEqual([firstPastedId, secondPastedId]);
       expect(result.changes).toEqual(expect.arrayContaining([
         expect.objectContaining({ type: "insert", nodeId: firstPastedId }),

@@ -66,6 +66,8 @@ export type OperationResult =
        * Existing node that editor UIs should focus after the mutation.
        *
        * This is always a live node in the committed document.
+       * For multi-value paste this is the last inserted root, while
+       * `focusNodeIds` contains the whole pasted selection.
        */
       focusNodeId?: NodeId;
       /**

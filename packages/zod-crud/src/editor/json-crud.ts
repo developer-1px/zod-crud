@@ -413,12 +413,13 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
             : changesForReplacedSubtree(before, next, pastedRootId);
 
           const focusNodeIds = pastedRootIds.length > 1 ? pastedRootIds : undefined;
+          const focusNodeId = pastedRootIds[pastedRootIds.length - 1] ?? pastedRootId;
 
-          commit(next, changes, pastedRootId, pastedRootId, focusNodeIds);
+          commit(next, changes, pastedRootId, focusNodeId, focusNodeIds);
           clipboard = clipboard === null
             ? null
             : { values: cloneJson(clipboard.values), sourceIds: pastedRootIds };
-          return successResult(before, next, changes, pastedRootId, pastedRootId, focusNodeIds);
+          return successResult(before, next, changes, pastedRootId, focusNodeId, focusNodeIds);
         }
 
         lastFailure = validation;
