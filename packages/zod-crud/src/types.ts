@@ -42,6 +42,12 @@ export type OperationResult =
        * For delete and cut this is the removed root.
        */
       nodeId?: NodeId;
+      /**
+       * Existing node that editor UIs should focus after the mutation.
+       *
+       * This is always a live node in the committed document.
+       */
+      focusNodeId?: NodeId;
     }
   | {
       ok: false;

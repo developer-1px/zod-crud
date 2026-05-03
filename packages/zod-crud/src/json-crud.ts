@@ -4,6 +4,7 @@ import type {
   JsonCrudOptions,
   JsonDoc,
   JsonKey,
+  JsonNode,
   JsonPath,
   JsonValue,
   NodeId,
@@ -106,7 +107,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
         return validation;
       }
 
-      return this.commitIfValid(next, nodeId);
+      return this.commitIfValid(next, nodeId, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -124,7 +125,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const next = cloneDoc(this.doc);
 
       replaceSubtree(next, nodeId, value, () => this.allocateNodeId());
-      return this.commitIfValid(next, nodeId);
+      return this.commitIfValid(next, nodeId, nodeId);
     } catch (error) {
       return failure(error);
     }
@@ -147,13 +148,14 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
       const next = cloneDoc(this.doc);
 
       removeSubtree(next, nodeId);
+      const focusNodeId = focusAfterRemoval(this.doc, next, nodeId);
       const validation = this.validateAtPath(parentPath, deserialize(next, parentId));
 
       if (!validation.ok) {
         return validation;
       }
 
-      return this.commitIfValid(next, nodeId);
+      return this.commitIfValid(next, nodeId, focusNodeId);
     } catch (error) {
       return failure(error);
     }
@@ -231,28 +233,32 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     return this.redoStack.length > 0;
   }
 
-  undo(): boolean {
+  undo(): OperationResult {
     const previous = this.undoStack.pop();
 
     if (previous === undefined) {
-      return false;
+      return { ok: false, reason: "Undo stack is empty." };
     }
 
-    this.redoStack.push(cloneDoc(this.doc));
+    const current = cloneDoc(this.doc);
+
+    this.redoStack.push(current);
     this.doc = previous;
-    return true;
+    return { ok: true, focusNodeId: focusFromDiff(current, previous) };
   }
 
-  redo(): boolean {
+  redo(): OperationResult {
     const next = this.redoStack.pop();
 
     if (next === undefined) {
-      return false;
+      return { ok: false, reason: "Redo stack is empty." };
     }
 
-    this.undoStack.push(cloneDoc(this.doc));
+    const current = cloneDoc(this.doc);
+
+    this.undoStack.push(current);
     this.doc = next;
-    return true;
+    return { ok: true, focusNodeId: focusFromDiff(current, next) };
   }
 
   private buildPasteCandidates(
@@ -301,7 +307,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
           this.clipboard = this.clipboard === null
             ? null
             : { value: cloneJson(this.clipboard.value), sourceId: pastedRootId };
-          return { ok: true, nodeId: pastedRootId };
+          return { ok: true, nodeId: pastedRootId, focusNodeId: pastedRootId };
         }
 
         lastFailure = validation;
@@ -524,7 +530,7 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     return { ok: true };
   }
 
-  private commitIfValid(next: JsonDoc, nodeId?: NodeId): OperationResult {
+  private commitIfValid(next: JsonDoc, nodeId?: NodeId, focusNodeId?: NodeId): OperationResult {
     const validation = this.validateDocument(next);
 
     if (!validation.ok) {
@@ -532,7 +538,11 @@ export class JsonCrud<T extends JsonValue = JsonValue, I = unknown> {
     }
 
     this.commit(next);
-    return nodeId === undefined ? { ok: true } : { ok: true, nodeId };
+    return {
+      ok: true,
+      ...(nodeId === undefined ? {} : { nodeId }),
+      ...(focusNodeId === undefined ? {} : { focusNodeId }),
+    };
   }
 
   private commit(next: JsonDoc): void {
@@ -559,4 +569,87 @@ function failure(error: unknown): OperationResult {
     ok: false,
     reason: error instanceof Error ? error.message : String(error),
   };
+}
+
+function focusFromDiff(before: JsonDoc, after: JsonDoc): NodeId {
+  const insertedRoot = Object.values(after.nodes)
+    .filter((node) => before.nodes[node.id] === undefined)
+    .find((node) => node.parentId !== null && before.nodes[node.parentId] !== undefined);
+
+  if (insertedRoot !== undefined) {
+    return insertedRoot.id;
+  }
+
+  const changedExisting = Object.values(after.nodes).find((node) => {
+    const previous = before.nodes[node.id];
+
+    return previous !== undefined && !sameNode(previous, node);
+  });
+
+  if (changedExisting !== undefined) {
+    return changedExisting.id;
+  }
+
+  const removedRoot = Object.values(before.nodes)
+    .filter((node) => after.nodes[node.id] === undefined)
+    .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
+
+  if (removedRoot !== undefined) {
+    return focusAfterRemoval(before, after, removedRoot.id);
+  }
+
+  return after.rootId;
+}
+
+function focusAfterRemoval(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
+  const oldNode = before.nodes[removedId];
+
+  if (oldNode === undefined) {
+    return after.rootId;
+  }
+
+  const siblings = oldNode.parentId === null ? [] : before.nodes[oldNode.parentId]?.children ?? [];
+  const oldIndex = siblings.indexOf(removedId);
+  const candidates = [
+    siblings[oldIndex + 1],
+    siblings[oldIndex - 1],
+    oldNode.parentId,
+  ].filter((id): id is NodeId => id !== undefined);
+
+  for (const candidate of candidates) {
+    if (after.nodes[candidate] !== undefined) {
+      return candidate;
+    }
+
+    const parent = nearestExistingParent(before, after, candidate);
+
+    if (parent !== null) {
+      return parent;
+    }
+  }
+
+  return after.rootId;
+}
+
+function nearestExistingParent(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId | null {
+  let current = before.nodes[nodeId];
+
+  while (current !== undefined) {
+    if (after.nodes[current.id] !== undefined) {
+      return current.id;
+    }
+
+    current = current.parentId === null ? undefined : before.nodes[current.parentId];
+  }
+
+  return null;
+}
+
+function sameNode(left: JsonNode, right: JsonNode): boolean {
+  return left.type === right.type &&
+    left.parentId === right.parentId &&
+    left.key === right.key &&
+    left.value === right.value &&
+    left.children.length === right.children.length &&
+    left.children.every((childId, index) => childId === right.children[index]);
 }

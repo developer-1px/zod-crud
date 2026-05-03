@@ -171,7 +171,8 @@ insert child
   primitive parent -> fail
 validate parent path subtree
 validate full document exactness
-commit and return { ok: true, nodeId: createdRootId } or return failure
+commit and return { ok: true, nodeId: createdRootId, focusNodeId: createdRootId }
+or return failure
 ```
 
 ### update(nodeId, value)
@@ -182,7 +183,7 @@ validate value at path
 clone current doc
 replace subtree at nodeId
 validate full document exactness
-commit and return { ok: true, nodeId } or return failure
+commit and return { ok: true, nodeId, focusNodeId: nodeId } or return failure
 ```
 
 ### delete(nodeId)
@@ -195,8 +196,8 @@ remove node and descendants
 normalize array parent keys if needed
 validate parent path subtree
 validate full document exactness
-commit and return { ok: true, nodeId } where nodeId is the removed root, or
-return failure
+commit and return { ok: true, nodeId, focusNodeId } where nodeId is the removed
+root and focusNodeId is a live recovery node, or return failure
 ```
 
 ### copy(nodeId)
@@ -238,7 +239,7 @@ try candidates in order
   candidate throws -> remember failure
   full document exact validation fails -> remember failure
   validation succeeds -> commit exactly one candidate and return
-    { ok: true, nodeId: pastedRootId }
+    { ok: true, nodeId: pastedRootId, focusNodeId: pastedRootId }
 all candidates fail -> return last useful failure
 ```
 
@@ -285,19 +286,21 @@ return ok/failure from dry run
 ### undo()
 
 ```txt
-undo stack empty -> false
+undo stack empty -> { ok: false, reason }
 push current doc to redo
 restore previous doc
-return true
+compute focusNodeId from before/after JsonDoc diff
+return { ok: true, focusNodeId }
 ```
 
 ### redo()
 
 ```txt
-redo stack empty -> false
+redo stack empty -> { ok: false, reason }
 push current doc to undo
 restore next doc
-return true
+compute focusNodeId from before/after JsonDoc diff
+return { ok: true, focusNodeId }
 ```
 
 ## Package Contract

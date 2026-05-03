@@ -85,11 +85,15 @@ editor.copy(textNodeId!);
 const pasteResult = editor.paste(rootId); // inserts into root.children if the item schema accepts it
 
 if (pasteResult.ok) {
-  console.log(pasteResult.nodeId); // root id of the pasted subtree
+  console.log(pasteResult.focusNodeId); // root id of the pasted subtree
 }
 
 editor.undo();
-editor.redo();
+const redoResult = editor.redo();
+
+if (redoResult.ok) {
+  console.log(redoResult.focusNodeId); // node an editor should focus
+}
 
 const json = editor.toJson();
 ```

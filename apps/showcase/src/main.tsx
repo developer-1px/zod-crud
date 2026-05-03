@@ -292,7 +292,7 @@ function App() {
 
         if (result.ok) {
           setClipboardValue(copied);
-          nextSelection = recoverSelection(before, editor.snapshot(), targetId);
+          nextSelection = result.focusNodeId ?? targetId;
         }
       }
 
@@ -300,7 +300,7 @@ function App() {
         result = editor.paste(targetId);
 
         if (result.ok) {
-          nextSelection = result.nodeId ?? targetId;
+          nextSelection = result.focusNodeId ?? result.nodeId ?? targetId;
           setActiveColumn(0);
         }
       }
@@ -309,24 +309,24 @@ function App() {
         result = editor.delete(targetId);
 
         if (result.ok) {
-          nextSelection = recoverSelection(before, editor.snapshot(), targetId);
+          nextSelection = result.focusNodeId ?? targetId;
         }
       }
 
       if (command === "undo") {
-        result = editor.undo()
-          ? { ok: true }
-          : { ok: false, reason: "Undo stack is empty." };
-        nextSelection = keepSelectionOrRoot(editor.snapshot(), targetId);
+        result = editor.undo();
+
+        if (result.ok) {
+          nextSelection = result.focusNodeId ?? targetId;
+          setActiveColumn(0);
+        }
       }
 
       if (command === "redo") {
-        result = editor.redo()
-          ? { ok: true }
-          : { ok: false, reason: "Redo stack is empty." };
+        result = editor.redo();
 
         if (result.ok) {
-          nextSelection = focusFromDiff(before, editor.snapshot(), targetId);
+          nextSelection = result.focusNodeId ?? targetId;
           setActiveColumn(0);
         }
       }
@@ -409,8 +409,8 @@ function App() {
       return next;
     });
 
-    if (result.ok && result.nodeId !== undefined) {
-      setSelectedId(result.nodeId);
+    if (result.ok && result.focusNodeId !== undefined) {
+      setSelectedId(result.focusNodeId);
       setActiveColumn(0);
     }
 
@@ -878,97 +878,6 @@ function childByKey(doc: JsonDoc, nodeId: NodeId, key: string | number): JsonNod
 
   const childId = node.children.find((id) => doc.nodes[id]?.key === key);
   return childId === undefined ? undefined : doc.nodes[childId];
-}
-
-function recoverSelection(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
-  const oldNode = before.nodes[removedId];
-
-  if (oldNode === undefined) {
-    return after.rootId;
-  }
-
-  const siblings = oldNode.parentId === null ? [] : before.nodes[oldNode.parentId]?.children ?? [];
-  const oldIndex = siblings.indexOf(removedId);
-  const candidates = [
-    siblings[oldIndex + 1],
-    siblings[oldIndex - 1],
-    oldNode.parentId,
-  ].filter((id): id is NodeId => id !== undefined);
-
-  for (const candidate of candidates) {
-    if (after.nodes[candidate] !== undefined) {
-      return candidate;
-    }
-
-    const parent = nearestExistingParent(before, after, candidate);
-
-    if (parent !== null) {
-      return parent;
-    }
-  }
-
-  return after.rootId;
-}
-
-function focusFromDiff(before: JsonDoc, after: JsonDoc, fallbackId: NodeId): NodeId {
-  const insertedRoot = Object.values(after.nodes)
-    .filter((node) => before.nodes[node.id] === undefined)
-    .find((node) => node.parentId !== null && before.nodes[node.parentId] !== undefined);
-
-  if (insertedRoot !== undefined) {
-    return insertedRoot.id;
-  }
-
-  if (after.nodes[fallbackId] === undefined && before.nodes[fallbackId] !== undefined) {
-    return recoverSelection(before, after, fallbackId);
-  }
-
-  const changedExisting = Object.values(after.nodes).find((node) => {
-    const previous = before.nodes[node.id];
-
-    return previous !== undefined && !sameNode(previous, node);
-  });
-
-  if (changedExisting !== undefined) {
-    return changedExisting.id;
-  }
-
-  const removedRoot = Object.values(before.nodes)
-    .filter((node) => after.nodes[node.id] === undefined)
-    .find((node) => node.parentId !== null && after.nodes[node.parentId] !== undefined);
-
-  if (removedRoot !== undefined) {
-    return recoverSelection(before, after, removedRoot.id);
-  }
-
-  return keepSelectionOrRoot(after, fallbackId);
-}
-
-function sameNode(left: JsonNode, right: JsonNode): boolean {
-  return left.type === right.type &&
-    left.parentId === right.parentId &&
-    left.key === right.key &&
-    left.value === right.value &&
-    left.children.length === right.children.length &&
-    left.children.every((childId, index) => childId === right.children[index]);
-}
-
-function nearestExistingParent(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId | null {
-  let current = before.nodes[nodeId];
-
-  while (current !== undefined) {
-    if (after.nodes[current.id] !== undefined) {
-      return current.id;
-    }
-
-    current = current.parentId === null ? undefined : before.nodes[current.parentId];
-  }
-
-  return null;
-}
-
-function keepSelectionOrRoot(doc: JsonDoc, nodeId: NodeId): NodeId {
-  return doc.nodes[nodeId] === undefined ? doc.rootId : nodeId;
 }
 
 function pathString(doc: JsonDoc, nodeId: NodeId): string {

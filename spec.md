@@ -50,8 +50,8 @@ The treegrid must keep one active cell.
 
 ## Focus Recovery
 
-After a successful paste, the active row must follow the `nodeId` returned by
-the `zod-crud` paste result.
+After a successful paste, the active row must follow the `focusNodeId` returned
+by the `zod-crud` paste result.
 
 - Child or sibling paste selects the newly inserted subtree root.
 - Overwrite paste selects the overwritten target node because its root id is
@@ -59,8 +59,8 @@ the `zod-crud` paste result.
 - Ancestors of the selected paste result are expanded so the focused row stays
   visible.
 
-After a successful redo, the active row must be chosen from the `JsonDoc`
-before/after diff.
+After a successful redo, the active row must follow the `focusNodeId` returned
+by the `zod-crud` redo result.
 
 - If redo inserts a subtree, focus the inserted subtree root.
 - If redo changes an existing node, focus the changed node.

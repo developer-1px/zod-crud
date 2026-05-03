@@ -363,14 +363,30 @@ describe("JsonCrud", () => {
     expect(editor.paste(rootId).ok).toBe(true);
     expect(editor.toJson().kind).toBe("frame");
 
-    expect(editor.undo()).toBe(true);
+    const undoResult = editor.undo();
+
+    expect(undoResult.ok).toBe(true);
+
+    if (undoResult.ok) {
+      expect(undoResult.focusNodeId).toBe(childrenId);
+    }
+
     expect(editor.toJson()).toEqual({
       kind: "frame",
       name: "root",
       children: [{ kind: "text", text: "hello" }],
     });
 
-    expect(editor.redo()).toBe(true);
+    const redoResult = editor.redo();
+    const redoneTextNodeId = editor.find(childrenId!, 1);
+
+    expect(redoResult.ok).toBe(true);
+    expect(redoneTextNodeId).not.toBeNull();
+
+    if (redoResult.ok) {
+      expect(redoResult.focusNodeId).toBe(redoneTextNodeId);
+    }
+
     expect(editor.toJson()).toEqual({
       kind: "frame",
       name: "root",
@@ -562,7 +578,7 @@ describe("JsonCrud", () => {
     editor.copy(itemId!);
 
     expect(editor.paste(itemId!).ok).toBe(false);
-    expect(editor.undo()).toBe(false);
+    expect(editor.undo().ok).toBe(false);
     expect(editor.toJson()).toEqual(["a"]);
   });
 
