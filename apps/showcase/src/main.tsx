@@ -22,7 +22,7 @@ import {
   type TreeDataNode,
 } from "antd";
 import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 
 import {
   createJsonCrud,
@@ -44,6 +44,10 @@ import {
 
 const { Header } = Layout;
 const { Text, Title } = Typography;
+
+declare global {
+  var zodCrudShowcaseRoot: Root | undefined;
+}
 
 type Mode = "design" | "data";
 
@@ -88,8 +92,13 @@ type DataField = {
   id: string;
   label: string;
   path: string;
-  control: "text" | "number" | "select" | "image";
-  options?: string[];
+  meta: {
+    form: {
+      component: "Input" | "InputNumber" | "Select";
+      min?: number;
+      options?: string[];
+    };
+  };
 };
 
 type DataSectionBlock = {
@@ -167,8 +176,8 @@ const DATA_SECTION_BLOCKS: DataSectionBlock[] = [
     kind: "section",
     previewName: "HeroCard",
     fields: [
-      { id: "heroImage", label: "Hero image", path: "/media/hero/src", control: "image" },
-      { id: "heroTitle", label: "Title", path: "/title", control: "text" },
+      { id: "heroImage", label: "Hero image", path: "/media/hero/src", meta: { form: { component: "Input" } } },
+      { id: "heroTitle", label: "Title", path: "/title", meta: { form: { component: "Input" } } },
     ],
   },
   {
@@ -177,8 +186,8 @@ const DATA_SECTION_BLOCKS: DataSectionBlock[] = [
     kind: "section",
     previewName: "CustomerNameField",
     fields: [
-      { id: "customerName", label: "Customer", path: "/customer/name", control: "text" },
-      { id: "status", label: "Status", path: "/status", control: "select", options: ["draft", "paid", "sent"] },
+      { id: "customerName", label: "Customer", path: "/customer/name", meta: { form: { component: "Input" } } },
+      { id: "status", label: "Status", path: "/status", meta: { form: { component: "Select", options: ["draft", "paid", "sent"] } } },
     ],
   },
   {
@@ -188,9 +197,9 @@ const DATA_SECTION_BLOCKS: DataSectionBlock[] = [
     previewName: "LineItemsList",
     repeatPath: "/lineItems",
     fields: [
-      { id: "itemImage", label: "Image", path: "image", control: "image" },
-      { id: "itemTitle", label: "Title", path: "title", control: "text" },
-      { id: "itemQuantity", label: "Quantity", path: "quantity", control: "number" },
+      { id: "itemImage", label: "Image", path: "image", meta: { form: { component: "Input" } } },
+      { id: "itemTitle", label: "Title", path: "title", meta: { form: { component: "Input" } } },
+      { id: "itemQuantity", label: "Quantity", path: "quantity", meta: { form: { component: "InputNumber", min: 1 } } },
     ],
   },
   {
@@ -636,7 +645,7 @@ function DataSectionPanel({
           <Form className="block-form" layout="vertical" size="middle">
             {block.fields.map((field) => (
               <Form.Item key={field.id} label={field.label}>
-                <FieldControl
+                <GeneratedFormControl
                   field={field}
                   value={valueAtPointer(order, field.path)}
                   onChange={(value) => onUpdate(field.path, value)}
@@ -730,7 +739,7 @@ function RepeatBlockControls({
     title: field.label,
     dataIndex: field.path,
     render: (_value, item) => (
-      <FieldControl
+      <GeneratedFormControl
         field={field}
         value={valueAtPointer(item, `/${field.path}`)}
         onChange={(value) => onUpdate(`${block.repeatPath}/${item.index}/${field.path}`, value)}
@@ -751,7 +760,7 @@ function RepeatBlockControls({
   );
 }
 
-function FieldControl({
+function GeneratedFormControl({
   field,
   value,
   onChange,
@@ -760,15 +769,25 @@ function FieldControl({
   value: JsonValue | undefined;
   onChange: (value: JsonValue) => void;
 }) {
-  if (field.control === "number") {
-    return <InputNumber min={1} value={typeof value === "number" ? value : 1} onChange={(next) => onChange(Number(next ?? 1))} />;
+  const formMeta = field.meta.form;
+
+  if (formMeta.component === "InputNumber") {
+    const fallbackValue = formMeta.min ?? 0;
+
+    return (
+      <InputNumber
+        {...(formMeta.min === undefined ? {} : { min: formMeta.min })}
+        value={typeof value === "number" ? value : fallbackValue}
+        onChange={(next) => onChange(Number(next ?? fallbackValue))}
+      />
+    );
   }
 
-  if (field.control === "select") {
+  if (formMeta.component === "Select") {
     return (
       <Select
         value={typeof value === "string" ? value : ""}
-        options={(field.options ?? []).map((option) => ({ label: option, value: option }))}
+        options={(formMeta.options ?? []).map((option) => ({ label: option, value: option }))}
         onChange={onChange}
       />
     );
@@ -1160,7 +1179,7 @@ function uiDataSourceForBlock(block: DataSectionBlock) {
   type: "section",
   variant: "toolbar",
   children: [
-    { type: "action", label: "Save record", action: "submit" }
+    { type: "action", label: "Save record", action: "submit", meta: { form: { component: "Button", type: "primary" } } }
   ]
 }`;
   }
@@ -1173,7 +1192,7 @@ function uiDataSourceForBlock(block: DataSectionBlock) {
   item: {
     type: "section",
     children: [
-${block.fields.map((field) => `      { type: "field", label: "${field.label}", value: { path: "${field.path}" }, control: "${field.control}" }`).join(",\n")}
+${block.fields.map((field) => uiFieldSource(field, 6)).join(",\n")}
     ]
   }
 }`;
@@ -1183,9 +1202,28 @@ ${block.fields.map((field) => `      { type: "field", label: "${field.label}", v
   type: "section",
   title: "${block.title}",
   children: [
-${block.fields.map((field) => `    { type: "field", label: "${field.label}", value: { path: "${field.path}" }, control: "${field.control}" }`).join(",\n")}
+${block.fields.map((field) => uiFieldSource(field, 4)).join(",\n")}
   ]
 }`;
+}
+
+function uiFieldSource(field: DataField, indent: number) {
+  return `${" ".repeat(indent)}{ type: "field", label: "${field.label}", value: { path: "${field.path}" }, meta: ${formMetaSource(field)} }`;
+}
+
+function formMetaSource(field: DataField) {
+  const form = field.meta.form;
+  const properties = [`component: "${form.component}"`];
+
+  if (form.min !== undefined) {
+    properties.push(`min: ${form.min}`);
+  }
+
+  if (form.options !== undefined) {
+    properties.push(`options: [${form.options.map((option) => `"${option}"`).join(", ")}]`);
+  }
+
+  return `{ form: { ${properties.join(", ")} } }`;
 }
 
 function entitySourceForBlock(block: DataSectionBlock) {
@@ -1262,7 +1300,14 @@ function displayJsonValue(value: JsonValue | undefined) {
   return String(value);
 }
 
-createRoot(document.getElementById("root")!).render(
+const rootElement = document.getElementById("root");
+
+if (rootElement === null) {
+  throw new Error("Missing root element.");
+}
+
+globalThis.zodCrudShowcaseRoot ??= createRoot(rootElement);
+globalThis.zodCrudShowcaseRoot.render(
   <StrictMode>
     <App />
   </StrictMode>,
