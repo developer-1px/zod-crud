@@ -247,6 +247,10 @@ function App() {
   const selectedIds = useMemo(() => liveSelectedIds(doc, selection, safeSelectedId), [doc, safeSelectedId, selection]);
   const selectedRow = rows.find((row) => row.id === safeSelectedId) ?? rows[0] ?? null;
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
+  const selectedIdList = useMemo(() => [...selectedIds], [selectedIds]);
+  const canCopy = editorRef.current.canCopyMany(selectedIdList).ok;
+  const canCut = editorRef.current.canCutMany(selectedIdList).ok;
+  const canDelete = editorRef.current.canDeleteMany(selectedIdList).ok;
   const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
   const entityStats = useMemo(() => entityDefinitions.map((entity) => ({
     id: entity.id,
@@ -515,7 +519,12 @@ function App() {
               type="button"
               className={lastCommand.command === command.id ? "command-card is-active" : "command-card"}
               onClick={() => runCommand(command.id)}
-              disabled={command.id === "paste" && !canPaste}
+              disabled={
+                (command.id === "copy" && !canCopy) ||
+                (command.id === "cut" && !canCut) ||
+                (command.id === "delete" && !canDelete) ||
+                (command.id === "paste" && !canPaste)
+              }
             >
               <kbd>{command.keys}</kbd>
               <span>{command.operation}</span>

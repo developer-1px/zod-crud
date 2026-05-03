@@ -52,6 +52,16 @@ type Clipboard = {
   sourceIds: NodeId[] | null;
 };
 
+type OperationFailure = Extract<OperationResult, { ok: false }>;
+
+type DeleteManyPlan = {
+  ok: true;
+  next: JsonDoc;
+  changes: JsonChange[];
+  focusNodeId: NodeId;
+  nodeId?: NodeId;
+};
+
 export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   snapshot: () => JsonDoc;
   toJson: () => T;
@@ -64,9 +74,12 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   deleteMany: (nodeIds: NodeId[]) => OperationResult;
   copy: (nodeId: NodeId) => JsonValue;
   copyMany: (nodeIds: NodeId[]) => JsonValue[];
+  canCopyMany: (nodeIds: NodeId[]) => OperationResult;
   cut: (nodeId: NodeId) => OperationResult;
   cutMany: (nodeIds: NodeId[]) => OperationResult;
+  canCutMany: (nodeIds: NodeId[]) => OperationResult;
   paste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
+  canDeleteMany: (nodeIds: NodeId[]) => OperationResult;
   canPaste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
   canUndo: () => boolean;
   canRedo: () => boolean;
@@ -186,45 +199,13 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   function deleteMany(nodeIds: NodeId[]): OperationResult {
     try {
-      const nodes = uniqueNodes(doc, nodeIds);
+      const plan = planDeleteMany(nodeIds);
 
-      if (nodes.length === 0) {
-        return { ok: false, reason: "No nodes to delete." };
+      if (!plan.ok) {
+        return plan;
       }
 
-      if (nodes.some((node) => node.id === doc.rootId || node.parentId === null)) {
-        return { ok: false, reason: "Cannot delete the root node." };
-      }
-
-      const parentId = nodes[0]?.parentId;
-
-      if (parentId === null || parentId === undefined) {
-        return { ok: false, reason: "Cannot delete a node without a parent." };
-      }
-
-      if (nodes.some((node) => node.parentId !== parentId)) {
-        return { ok: false, reason: "deleteMany only accepts sibling nodes." };
-      }
-
-      const parentPath = getPath(doc, parentId);
-      const next = cloneDoc(doc);
-      const sortedNodes = sortBySiblingIndexDescending(doc, parentId, nodes);
-
-      for (const node of sortedNodes) {
-        removeSubtree(next, node.id);
-      }
-
-      const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
-
-      if (!validation.ok) {
-        return validation;
-      }
-
-      const changes = changesForDeletedSubtrees(doc, next, sortedNodes.map((node) => node.id));
-      const focusNodeId = focusAfterSiblingBatchRemoval(doc, next, parentId, sortedNodes.map((node) => node.id));
-      const nodeId = sortedNodes[0]?.id;
-
-      return commitIfValid(next, changes, nodeId, focusNodeId);
+      return commitIfValid(plan.next, plan.changes, plan.nodeId, plan.focusNodeId);
     } catch (error) {
       return failure(error);
     }
@@ -247,6 +228,16 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     clipboard = { values, sourceIds: nodes.map((node) => node.id) };
     return cloneJson(values);
+  }
+
+  function canCopyMany(nodeIds: NodeId[]): OperationResult {
+    try {
+      const nodes = uniqueNodes(doc, nodeIds);
+
+      return nodes.length === 0 ? { ok: false, reason: "No nodes to copy." } : { ok: true };
+    } catch (error) {
+      return failure(error);
+    }
   }
 
   function cut(nodeId: NodeId): OperationResult {
@@ -284,6 +275,10 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     }
   }
 
+  function canCutMany(nodeIds: NodeId[]): OperationResult {
+    return canDeleteMany(nodeIds);
+  }
+
   function paste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
     try {
       if (clipboard === null) {
@@ -313,6 +308,22 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       return failure(error);
     } finally {
       nextNodeIndex = initialNodeIndex;
+    }
+  }
+
+  function canDeleteMany(nodeIds: NodeId[]): OperationResult {
+    try {
+      const plan = planDeleteMany(nodeIds);
+
+      if (!plan.ok) {
+        return plan;
+      }
+
+      const validation = validateDocument(schema, plan.next);
+
+      return validation.ok ? { ok: true } : validation;
+    } catch (error) {
+      return failure(error);
     }
   }
 
@@ -461,6 +472,54 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
+  function planDeleteMany(nodeIds: NodeId[]): DeleteManyPlan | OperationFailure {
+    const nodes = uniqueNodes(doc, nodeIds);
+
+    if (nodes.length === 0) {
+      return { ok: false, reason: "No nodes to delete." };
+    }
+
+    if (nodes.some((node) => node.id === doc.rootId || node.parentId === null)) {
+      return { ok: false, reason: "Cannot delete the root node." };
+    }
+
+    const parentId = nodes[0]?.parentId;
+
+    if (parentId === null || parentId === undefined) {
+      return { ok: false, reason: "Cannot delete a node without a parent." };
+    }
+
+    if (nodes.some((node) => node.parentId !== parentId)) {
+      return { ok: false, reason: "deleteMany only accepts sibling nodes." };
+    }
+
+    const parentPath = getPath(doc, parentId);
+    const next = cloneDoc(doc);
+    const sortedNodes = sortBySiblingIndexDescending(doc, parentId, nodes);
+
+    for (const node of sortedNodes) {
+      removeSubtree(next, node.id);
+    }
+
+    const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
+
+    if (!validation.ok) {
+      return validation;
+    }
+
+    const changes = changesForDeletedSubtrees(doc, next, sortedNodes.map((node) => node.id));
+    const focusNodeId = focusAfterSiblingBatchRemoval(doc, next, parentId, sortedNodes.map((node) => node.id));
+    const nodeId = sortedNodes[0]?.id;
+
+    return {
+      ok: true,
+      next,
+      changes,
+      focusNodeId,
+      ...(nodeId === undefined ? {} : { nodeId }),
+    };
+  }
+
   function commitIfValid(
     next: JsonDoc,
     changes: JsonChange[],
@@ -522,9 +581,12 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     deleteMany,
     copy,
     copyMany,
+    canCopyMany,
     cut,
     cutMany,
+    canCutMany,
     paste,
+    canDeleteMany,
     canPaste,
     canUndo,
     canRedo,

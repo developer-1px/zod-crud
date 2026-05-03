@@ -106,6 +106,7 @@ const json = editor.toJson();
 - flat JSON node table
 - `create`, `update`, `delete`, `deleteMany`
 - `copy`, `copyMany`, `cut`, `cutMany`, `paste`
+- `canCopyMany`, `canCutMany`, `canDeleteMany`, `canPaste`
 - `undo`, `redo`
 - `OperationResult.changes` for changed `JsonDoc` nodes from the operation delta
 - `OperationResult.focusNodeIds` for batch-created focus targets

@@ -381,6 +381,28 @@ describe("JsonCrud", () => {
     expect(editor.canUndo()).toBe(false);
   });
 
+  it("reports multi-node command capability without mutating state", () => {
+    const editor = createEditor();
+    const rootId = editor.snapshot().rootId;
+    const nameId = editor.find(rootId, "name");
+    const childrenId = editor.find(rootId, "children");
+    const textNodeId = editor.find(childrenId!, 0);
+
+    expect(editor.canCopyMany([]).ok).toBe(false);
+    expect(editor.canCopyMany([rootId]).ok).toBe(true);
+    expect(editor.canCutMany([rootId]).ok).toBe(false);
+    expect(editor.canDeleteMany([rootId]).ok).toBe(false);
+    expect(editor.canDeleteMany([nameId!, textNodeId!]).ok).toBe(false);
+    expect(editor.canCutMany([textNodeId!]).ok).toBe(true);
+
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [{ kind: "text", text: "hello" }],
+    });
+    expect(editor.canUndo()).toBe(false);
+  });
+
   it("copies multiple nodes and pastes them into an array target in order", () => {
     const editor = createJsonCrud(UiNodeSchema, {
       kind: "frame",

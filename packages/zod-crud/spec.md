@@ -346,6 +346,32 @@ restore snapshots
 return ok/failure from dry run
 ```
 
+### canCopyMany(nodeIds)
+
+```txt
+dedupe node ids in input order
+nodeIds empty -> fail
+any node missing -> fail gracefully
+otherwise -> { ok: true }
+do not mutate document, history, clipboard, or id allocation
+```
+
+### canCutMany(nodeIds)
+
+```txt
+return canDeleteMany(nodeIds)
+```
+
+### canDeleteMany(nodeIds)
+
+```txt
+build the same deleteMany plan without committing
+validate parent path subtree
+validate full document exactness
+return ok/failure from dry run
+do not mutate document, history, clipboard, or id allocation
+```
+
 ### undo()
 
 ```txt
