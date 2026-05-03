@@ -21,7 +21,7 @@ import {
   type TableColumnsType,
   type TreeDataNode,
 } from "antd";
-import { StrictMode, useMemo, useRef, useState } from "react";
+import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import {
@@ -46,6 +46,24 @@ const { Header } = Layout;
 const { Text, Title } = Typography;
 
 type Mode = "design" | "data";
+
+const MODE_PATHS: Record<Mode, string> = {
+  design: "/design",
+  data: "/data",
+};
+
+function modeFromPathname(pathname: string): Mode {
+  return pathname.replace(/\/+$/, "") === MODE_PATHS.data ? "data" : "design";
+}
+
+function isModePath(pathname: string) {
+  const normalized = pathname.replace(/\/+$/, "") || "/";
+  return normalized === MODE_PATHS.design || normalized === MODE_PATHS.data;
+}
+
+function pathForMode(mode: Mode) {
+  return MODE_PATHS[mode];
+}
 
 type ComponentBinding = {
   component: string;
@@ -200,7 +218,7 @@ function makeOrderEditor() {
 function App() {
   const designEditorRef = useRef(makeDesignEditor());
   const orderEditorRef = useRef(makeOrderEditor());
-  const [mode, setMode] = useState<Mode>("design");
+  const [mode, setMode] = useState<Mode>(() => modeFromPathname(window.location.pathname));
   const [designVersion, setDesignVersion] = useState(0);
   const [orderVersion, setOrderVersion] = useState(0);
   const [selectedId, setSelectedId] = useState<NodeId>(designEditorRef.current.snapshot().rootId);
@@ -225,6 +243,19 @@ function App() {
   const canUpdate = selectedNode?.type === "string";
   const canPaste = designEditorRef.current.canPaste(selectedId).ok;
 
+  useEffect(() => {
+    if (!isModePath(window.location.pathname)) {
+      window.history.replaceState({ mode }, "", pathForMode(mode));
+    }
+
+    function onPopState() {
+      setMode(modeFromPathname(window.location.pathname));
+    }
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, []);
+
   function refreshDesign() {
     const nextDoc = designEditorRef.current.snapshot();
 
@@ -234,6 +265,16 @@ function App() {
 
   function refreshOrder() {
     setOrderVersion((current) => current + 1);
+  }
+
+  function navigateMode(nextMode: Mode) {
+    setMode(nextMode);
+
+    const nextPath = pathForMode(nextMode);
+
+    if (window.location.pathname !== nextPath) {
+      window.history.pushState({ mode: nextMode }, "", nextPath);
+    }
   }
 
   function selectDesignNode(nodeId: NodeId) {
@@ -339,7 +380,7 @@ function App() {
           </div>
           <Tabs
             activeKey={mode}
-            onChange={(value) => setMode(value as Mode)}
+            onChange={(value) => navigateMode(value as Mode)}
             items={[
               { key: "design", label: "Design" },
               { key: "data", label: "Data" },
