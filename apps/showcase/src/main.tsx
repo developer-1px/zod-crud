@@ -1,25 +1,6 @@
-import "antd/dist/reset.css";
-
-import {
-  Alert,
-  Button,
-  Collapse,
-  Descriptions,
-  Form,
-  Input,
-  InputNumber,
-  Select,
-  Space,
-  Table,
-  Tabs,
-  Tag,
-  Tree,
-  Typography,
-  type TableColumnsType,
-  type TreeDataNode,
-} from "antd";
-import { StrictMode, useEffect, useMemo, useRef, useState } from "react";
+import { StrictMode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
+import * as z from "zod";
 
 import {
   createJsonCrud,
@@ -30,1059 +11,478 @@ import {
   type OperationResult,
 } from "zod-crud";
 
-import {
-  DesignNodeSchema,
-  SalesOrderSchema,
-  initialDesignJson,
-  initialSalesOrderData,
-  orderViewDoc,
-  type SalesOrder,
-} from "./design-schema.js";
-
-const { Text, Title } = Typography;
+import "./style.css";
 
 declare global {
   var zodCrudShowcaseRoot: Root | undefined;
 }
 
-type Mode = "design" | "data";
-
-const MODE_PATHS: Record<Mode, string> = {
-  design: "/design",
-  data: "/data",
-};
-
-function modeFromPathname(pathname: string): Mode {
-  return pathname.replace(/\/+$/, "") === MODE_PATHS.data ? "data" : "design";
-}
-
-function isModePath(pathname: string) {
-  const normalized = pathname.replace(/\/+$/, "") || "/";
-  return normalized === MODE_PATHS.design || normalized === MODE_PATHS.data;
-}
-
-function pathForMode(mode: Mode) {
-  return MODE_PATHS[mode];
-}
-
-type ComponentBinding = {
-  component: string;
-  field: string;
-  schema: string;
-  operation: string;
-  state: string;
-  validation: string;
-};
-
-type NodeRow = {
-  id: NodeId;
-  label: string;
-  type: JsonNode["type"];
-  key: string;
-  parent: string;
-  childrenCount: number;
-  value: string;
-};
-
-type DataField = {
-  id: string;
-  label: string;
-  path: string;
-  meta: {
-    form: {
-      component: "Input" | "InputNumber" | "Select";
-      min?: number;
-      options?: string[];
-    };
-  };
-};
-
-type DataSectionBlock = {
-  id: string;
+type CommandNode = {
   title: string;
-  kind: "section" | "each" | "action";
-  previewName: string;
-  fields: DataField[];
-  repeatPath?: string;
+  status: "draft" | "active" | "done";
+  children: CommandNode[];
 };
 
-const BINDINGS: Record<string, ComponentBinding> = {
-  ZodCrudBuilder: {
-    component: "Builder document",
-    field: "$root",
-    schema: "DesignNodeSchema",
-    operation: "snapshot / deserialize",
-    state: "valid",
-    validation: "The whole document is committed only after the Zod schema accepts it.",
-  },
-  MobileRecordScreen: {
-    component: "Mobile preview",
-    field: "salesOrder",
-    schema: "SalesOrderSchema",
-    operation: "read / update",
-    state: "bound",
-    validation: "The preview reads from the same validated order document as the form.",
-  },
-  HeroCard: {
-    component: "Hero",
-    field: "media.hero",
-    schema: "z.object({ src: z.string().url(), alt: z.string() })",
-    operation: "read / update",
-    state: "bound",
-    validation: "Media fields stay URL-safe through zod-crud updates.",
-  },
-  CustomerNameField: {
-    component: "Customer field",
-    field: "customer.name",
-    schema: "z.string().min(2)",
-    operation: "update",
-    state: "editable",
-    validation: "Invalid customer names are rejected before commit.",
-  },
-  OrderStatusField: {
-    component: "Status field",
-    field: "status",
-    schema: 'z.enum(["draft", "paid", "sent"])',
-    operation: "update",
-    state: "editable",
-    validation: "Only schema-defined status values can be committed.",
-  },
-  LineItemsList: {
-    component: "Line items",
-    field: "lineItems[]",
-    schema: "z.array(LineItemSchema).min(1)",
-    operation: "create / update / delete",
-    state: "editable",
-    validation: "Each line item is validated as part of the full order document.",
-  },
-  SaveButton: {
-    component: "Submit",
-    field: "$commit",
-    schema: "SalesOrderSchema.safeParse",
-    operation: "serialize",
-    state: "ready",
-    validation: "The button represents committing the current valid snapshot.",
-  },
+type CommandId = "copy" | "cut" | "paste" | "delete" | "undo" | "redo";
+
+type CommandLog = {
+  command: string;
+  target: string;
+  result: OperationResult;
 };
 
-const DATA_SECTION_BLOCKS: DataSectionBlock[] = [
-  {
-    id: "hero",
-    title: "Media",
-    kind: "section",
-    previewName: "HeroCard",
-    fields: [
-      { id: "heroImage", label: "Hero image", path: "/media/hero/src", meta: { form: { component: "Input" } } },
-      { id: "heroTitle", label: "Title", path: "/title", meta: { form: { component: "Input" } } },
-    ],
-  },
-  {
-    id: "fields",
-    title: "Record fields",
-    kind: "section",
-    previewName: "CustomerNameField",
-    fields: [
-      { id: "customerName", label: "Customer", path: "/customer/name", meta: { form: { component: "Input" } } },
-      { id: "status", label: "Status", path: "/status", meta: { form: { component: "Select", options: ["draft", "paid", "sent"] } } },
-    ],
-  },
-  {
-    id: "items",
-    title: "Line items",
-    kind: "each",
-    previewName: "LineItemsList",
-    repeatPath: "/lineItems",
-    fields: [
-      { id: "itemImage", label: "Image", path: "image", meta: { form: { component: "Input" } } },
-      { id: "itemTitle", label: "Title", path: "title", meta: { form: { component: "Input" } } },
-      { id: "itemQuantity", label: "Quantity", path: "quantity", meta: { form: { component: "InputNumber", min: 1 } } },
-    ],
-  },
-  {
-    id: "actions",
-    title: "Actions",
-    kind: "action",
-    previewName: "SaveButton",
-    fields: [],
-  },
+type DomainNode = {
+  id: NodeId;
+  title: string;
+  status: CommandNode["status"];
+  childCount: number;
+  path: string;
+};
+
+const CommandNodeSchema: z.ZodType<CommandNode> = z.lazy(() =>
+  z.object({
+    title: z.string().min(1),
+    status: z.union([z.literal("draft"), z.literal("active"), z.literal("done")]),
+    children: z.array(CommandNodeSchema),
+  }),
+);
+
+const initialDocument: CommandNode = {
+  title: "Command document",
+  status: "active",
+  children: [
+    {
+      title: "Copy source",
+      status: "draft",
+      children: [
+        { title: "Nested child", status: "done", children: [] },
+      ],
+    },
+    { title: "Paste target", status: "active", children: [] },
+    { title: "Delete candidate", status: "draft", children: [] },
+  ],
+};
+
+const commands: Array<{ id: CommandId; keys: string; operation: string }> = [
+  { id: "copy", keys: "Cmd+C", operation: "copy(selectedId)" },
+  { id: "cut", keys: "Cmd+X", operation: "cut(selectedId)" },
+  { id: "paste", keys: "Cmd+V", operation: "paste(selectedId)" },
+  { id: "delete", keys: "Delete", operation: "delete(selectedId)" },
+  { id: "undo", keys: "Cmd+Z", operation: "undo()" },
+  { id: "redo", keys: "Cmd+Shift+Z", operation: "redo()" },
 ];
 
-const NODE_KIND_OPTIONS = [
-  { label: "Text node", value: "text" },
-  { label: "Rect node", value: "rect" },
-];
-
-function makeDesignEditor() {
-  return createJsonCrud(DesignNodeSchema, initialDesignJson);
-}
-
-function makeOrderEditor() {
-  return createJsonCrud(SalesOrderSchema, initialSalesOrderData);
+function makeEditor() {
+  return createJsonCrud(CommandNodeSchema, initialDocument, { childKeys: ["children"] });
 }
 
 function App() {
-  const designEditorRef = useRef(makeDesignEditor());
-  const orderEditorRef = useRef(makeOrderEditor());
-  const [mode, setMode] = useState<Mode>(() => modeFromPathname(window.location.pathname));
-  const [designVersion, setDesignVersion] = useState(0);
-  const [orderVersion, setOrderVersion] = useState(0);
-  const [selectedId, setSelectedId] = useState<NodeId>(designEditorRef.current.snapshot().rootId);
-  const [expandedKeys, setExpandedKeys] = useState<React.Key[]>([
-    designEditorRef.current.snapshot().rootId,
-  ]);
-  const [lastResult, setLastResult] = useState<OperationResult | null>({ ok: true });
+  const editorRef = useRef(makeEditor());
+  const nextItemRef = useRef(1);
+  const [version, setVersion] = useState(0);
+  const [selectedId, setSelectedId] = useState<NodeId>(() => editorRef.current.snapshot().rootId);
+  const [clipboardValue, setClipboardValue] = useState<JsonValue | null>(null);
+  const [lastCommand, setLastCommand] = useState<CommandLog>({
+    command: "ready",
+    target: "Command document",
+    result: { ok: true },
+  });
 
-  const designDoc = useMemo(() => designEditorRef.current.snapshot(), [designVersion]);
-  const selectedNode = designDoc.nodes[selectedId] ?? designDoc.nodes[designDoc.rootId];
-  const selectedName = selectedNode === undefined ? "" : primitiveField(designDoc, selectedNode.id, "name") ?? "";
-  const selectedBinding = bindingFor(designDoc, selectedNode);
-  const treeData = useMemo(() => [toTreeNode(designDoc, designDoc.rootId)], [designDoc]);
-  const tableRows = useMemo(() => toNodeRows(designDoc), [designDoc]);
-  const order = useMemo(() => orderEditorRef.current.toJson(), [orderVersion]);
-  const orderDoc = useMemo(() => orderEditorRef.current.snapshot(), [orderVersion]);
+  const doc = useMemo(() => editorRef.current.snapshot(), [version]);
+  const safeSelectedId = doc.nodes[selectedId] === undefined ? doc.rootId : selectedId;
+  const selectedDomain = useMemo(() => domainNodeFromId(doc, safeSelectedId), [doc, safeSelectedId]);
+  const domainNodes = useMemo(() => toDomainNodes(doc), [doc]);
+  const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
+  const nodeRows = useMemo(() => Object.values(doc.nodes), [doc]);
+  const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
 
-  const canUndo = designEditorRef.current.canUndo();
-  const canRedo = designEditorRef.current.canRedo();
-  const canDelete = selectedId !== designDoc.rootId;
-  const canCreate = findInsertionArray(designDoc, selectedId) !== null;
-  const canUpdate = selectedNode?.type === "string";
-  const canPaste = designEditorRef.current.canPaste(selectedId).ok;
-
-  useEffect(() => {
-    if (!isModePath(window.location.pathname)) {
-      window.history.replaceState({ mode }, "", pathForMode(mode));
-    }
-
-    function onPopState() {
-      setMode(modeFromPathname(window.location.pathname));
-    }
-
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
+  const refresh = useCallback(() => {
+    setVersion((current) => current + 1);
   }, []);
 
-  function refreshDesign() {
-    const nextDoc = designEditorRef.current.snapshot();
+  const runCommand = useCallback((command: CommandId) => {
+    const editor = editorRef.current;
+    const before = editor.snapshot();
+    const targetId = before.nodes[selectedId] === undefined ? before.rootId : selectedId;
+    const targetTitle = domainNodeFromId(before, targetId)?.title ?? targetId;
+    let result: OperationResult = { ok: true };
+    let nextSelection = targetId;
 
-    setDesignVersion((current) => current + 1);
-    setSelectedId((current) => nextDoc.nodes[current] === undefined ? nextDoc.rootId : current);
-  }
+    try {
+      if (command === "copy") {
+        setClipboardValue(editor.copy(targetId));
+      }
 
-  function refreshOrder() {
-    setOrderVersion((current) => current + 1);
-  }
+      if (command === "cut") {
+        const copied = editor.read(targetId);
 
-  function navigateMode(nextMode: Mode) {
-    setMode(nextMode);
+        result = editor.cut(targetId);
 
-    const nextPath = pathForMode(nextMode);
+        if (result.ok) {
+          setClipboardValue(copied);
+          nextSelection = recoverSelection(before, editor.snapshot(), targetId);
+        }
+      }
 
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState({ mode: nextMode }, "", nextPath);
+      if (command === "paste") {
+        result = editor.paste(targetId);
+      }
+
+      if (command === "delete") {
+        result = editor.delete(targetId);
+
+        if (result.ok) {
+          nextSelection = recoverSelection(before, editor.snapshot(), targetId);
+        }
+      }
+
+      if (command === "undo") {
+        result = editor.undo()
+          ? { ok: true }
+          : { ok: false, reason: "Undo stack is empty." };
+        nextSelection = keepSelectionOrRoot(editor.snapshot(), targetId);
+      }
+
+      if (command === "redo") {
+        result = editor.redo()
+          ? { ok: true }
+          : { ok: false, reason: "Redo stack is empty." };
+        nextSelection = keepSelectionOrRoot(editor.snapshot(), targetId);
+      }
+    } catch (error) {
+      result = failure(error);
     }
-  }
 
-  function selectDesignNode(nodeId: NodeId) {
-    if (designDoc.nodes[nodeId] === undefined) {
+    const after = editor.snapshot();
+
+    setSelectedId(after.nodes[nextSelection] === undefined ? after.rootId : nextSelection);
+    setLastCommand({ command, target: targetTitle, result });
+    refresh();
+  }, [refresh, selectedId]);
+
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const commandKey = event.metaKey || event.ctrlKey;
+      const key = event.key.toLowerCase();
+
+      if (commandKey && !event.altKey) {
+        const command =
+          key === "c" ? "copy" :
+          key === "x" ? "cut" :
+          key === "v" ? "paste" :
+          key === "z" && event.shiftKey ? "redo" :
+          key === "z" ? "undo" :
+          null;
+
+        if (command !== null) {
+          event.preventDefault();
+          runCommand(command);
+        }
+      }
+
+      if (!commandKey && !isEditableTarget(event.target) && (event.key === "Delete" || event.key === "Backspace")) {
+        event.preventDefault();
+        runCommand("delete");
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [runCommand]);
+
+  function addChild() {
+    const current = editorRef.current.snapshot();
+    const targetId = current.nodes[safeSelectedId] === undefined ? current.rootId : safeSelectedId;
+    const childrenId = childrenArrayId(current, targetId);
+
+    if (childrenId === null) {
+      setLastCommand({
+        command: "create",
+        target: domainNodeFromId(current, targetId)?.title ?? targetId,
+        result: { ok: false, reason: "Selected node has no children array." },
+      });
       return;
     }
 
-    setSelectedId(nodeId);
-    setExpandedKeys((current) => uniqueKeys([...current, ...ancestorIds(designDoc, nodeId)]));
-  }
-
-  function selectByName(name: string) {
-    const nodeId = findNodeByName(designDoc, name);
-
-    if (nodeId !== null) {
-      selectDesignNode(nodeId);
-    }
-  }
-
-  function commitDesign(operation: () => OperationResult | boolean) {
-    const result = operation();
-    const normalized: OperationResult = typeof result === "boolean"
-      ? result ? { ok: true } : { ok: false, reason: "Operation did not change the document." }
-      : result;
-
-    setLastResult(normalized);
-    refreshDesign();
-  }
-
-  function createNode(kind: "text" | "rect") {
-    const parentId = findInsertionArray(designDoc, selectedId);
-
-    if (parentId === null) {
-      setLastResult({ ok: false, reason: "Select a collection array before creating a child." });
-      return;
-    }
-
-    const parent = designDoc.nodes[parentId];
+    const parent = current.nodes[childrenId];
     const index = parent?.children.length ?? 0;
-    const value: JsonValue = kind === "text"
-      ? { kind: "text", name: `Text${index + 1}`, text: `Text ${index + 1}`, tone: "ink" }
-      : { kind: "rect", name: `Box${index + 1}`, label: `Box ${index + 1}`, fill: "surface", width: 120, height: 44 };
+    const title = `New child ${nextItemRef.current}`;
+    const result = editorRef.current.create(childrenId, index, {
+      title,
+      status: "draft",
+      children: [],
+    });
 
-    commitDesign(() => designEditorRef.current.create(parentId, index, value));
-  }
+    nextItemRef.current += 1;
 
-  function updateSelectedString(value = `Edited ${new Date().toLocaleTimeString()}`) {
-    if (selectedNode?.type !== "string") {
-      setLastResult({ ok: false, reason: "Select a string node to update it." });
-      return;
+    const after = editorRef.current.snapshot();
+    const createdId = domainNodesByTitle(after).get(title);
+
+    if (createdId !== undefined) {
+      setSelectedId(createdId);
     }
 
-    commitDesign(() => designEditorRef.current.update(selectedNode.id, value));
+    setLastCommand({
+      command: "create",
+      target: domainNodeFromId(current, targetId)?.title ?? targetId,
+      result,
+    });
+    refresh();
   }
 
-  function copySelected() {
-    designEditorRef.current.copy(selectedId);
-    setLastResult({ ok: true });
-  }
+  function reset() {
+    editorRef.current = makeEditor();
+    nextItemRef.current = 1;
+    setClipboardValue(null);
 
-  function resetDesign() {
-    designEditorRef.current = makeDesignEditor();
-    const rootId = designEditorRef.current.snapshot().rootId;
+    const rootId = editorRef.current.snapshot().rootId;
 
     setSelectedId(rootId);
-    setExpandedKeys([rootId]);
-    setLastResult({ ok: true });
-    refreshDesign();
-  }
-
-  function updateOrder(path: string, value: JsonValue) {
-    const nodeId = nodeAtPointer(orderDoc, path);
-
-    if (nodeId === null) {
-      setLastResult({ ok: false, reason: `No order node exists at ${path}.` });
-      return;
-    }
-
-    const result = orderEditorRef.current.update(nodeId, value);
-
-    setLastResult(result);
-
-    if (result.ok) {
-      refreshOrder();
-    }
+    setLastCommand({
+      command: "reset",
+      target: "Command document",
+      result: { ok: true },
+    });
+    refresh();
   }
 
   return (
     <>
-      <header>
-        <Space wrap>
-          <Text strong>zod-crud</Text>
-          <Text type="secondary">validated JSON CRUD</Text>
-        </Space>
-        <Tabs
-          activeKey={mode}
-          onChange={(value) => navigateMode(value as Mode)}
-          items={[
-            { key: "design", label: "Design" },
-            { key: "data", label: "Data" },
-          ]}
-        />
-        <Space wrap>
-          <Button size="small" disabled={!canUndo} onClick={() => commitDesign(() => designEditorRef.current.undo())}>Undo</Button>
-          <Button size="small" disabled={!canRedo} onClick={() => commitDesign(() => designEditorRef.current.redo())}>Redo</Button>
-          <Button size="small" onClick={resetDesign}>Reset</Button>
-        </Space>
+      <header className="app-header">
+        <div>
+          <p className="eyebrow">zod-crud</p>
+          <h1>Keyboard command showcase</h1>
+        </div>
+        <div className="header-actions">
+          <button type="button" onClick={addChild}>Add child</button>
+          <button type="button" onClick={reset}>Reset</button>
+        </div>
       </header>
 
-      {mode === "design" ? (
-        <DesignMode
-          doc={designDoc}
-          treeData={treeData}
-          tableRows={tableRows}
-          selectedId={selectedId}
-          selectedNode={selectedNode}
-          selectedName={selectedName}
-          selectedBinding={selectedBinding}
-          expandedKeys={expandedKeys}
-          lastResult={lastResult}
-          order={order}
-          canCreate={canCreate}
-          canUpdate={canUpdate}
-          canDelete={canDelete}
-          canPaste={canPaste}
-          onExpand={setExpandedKeys}
-          onSelect={selectDesignNode}
-          onSelectName={selectByName}
-          onCreate={createNode}
-          onUpdate={updateSelectedString}
-          onCopy={copySelected}
-          onCut={() => commitDesign(() => designEditorRef.current.cut(selectedId))}
-          onPaste={() => commitDesign(() => designEditorRef.current.paste(selectedId))}
-          onDelete={() => commitDesign(() => designEditorRef.current.delete(selectedId))}
-        />
-      ) : (
-        <DataMode
-          order={order}
-          orderDoc={orderDoc}
-          lastResult={lastResult}
-          selectedName={selectedName}
-          onSelectName={selectByName}
-          onUpdateOrder={updateOrder}
-        />
-      )}
+      <main className="app-shell">
+        <section className="command-strip" aria-label="Keyboard command results">
+          {commands.map((command) => (
+            <button
+              key={command.id}
+              type="button"
+              className={lastCommand.command === command.id ? "command-card is-active" : "command-card"}
+              onClick={() => runCommand(command.id)}
+              disabled={command.id === "paste" && !canPaste}
+            >
+              <kbd>{command.keys}</kbd>
+              <span>{command.operation}</span>
+            </button>
+          ))}
+        </section>
+
+        <section className="workspace">
+          <aside className="panel tree-panel">
+            <PanelTitle title="Document" detail={`${domainNodes.length} domain nodes`} />
+            <TreeView doc={doc} nodeId={doc.rootId} selectedId={safeSelectedId} onSelect={setSelectedId} />
+          </aside>
+
+          <section className="panel preview-panel">
+            <PanelTitle
+              title={selectedDomain?.title ?? "No selection"}
+              detail={selectedDomain === null ? "/" : selectedDomain.path}
+            />
+            <DocumentPreview doc={doc} selectedId={safeSelectedId} onSelect={setSelectedId} />
+          </section>
+
+          <aside className="panel detail-panel">
+            <PanelTitle title="Command state" detail={lastCommand.command} />
+            <dl className="result-list">
+              <div>
+                <dt>Target</dt>
+                <dd>{lastCommand.target}</dd>
+              </div>
+              <div>
+                <dt>Result</dt>
+                <dd className={lastCommand.result.ok ? "ok" : "error"}>
+                  {lastCommand.result.ok ? "ok" : lastCommand.result.reason}
+                </dd>
+              </div>
+              <div>
+                <dt>Clipboard</dt>
+                <dd>{clipboardValue === null ? "empty" : titleFromValue(clipboardValue)}</dd>
+              </div>
+            </dl>
+
+            <PanelTitle title="Flat nodes" detail={`${nodeRows.length} records`} />
+            <NodeTable doc={doc} nodes={nodeRows} selectedId={safeSelectedId} onSelect={setSelectedId} />
+
+            <PanelTitle title="JSON output" />
+            <pre className="json-output">{JSON.stringify(jsonValue, null, 2)}</pre>
+          </aside>
+        </section>
+      </main>
     </>
   );
 }
 
-function DesignMode({
+function PanelTitle({ title, detail }: { title: string; detail?: string }) {
+  return (
+    <div className="panel-title">
+      <h2>{title}</h2>
+      {detail === undefined ? null : <span>{detail}</span>}
+    </div>
+  );
+}
+
+function TreeView({
   doc,
-  treeData,
-  tableRows,
+  nodeId,
   selectedId,
-  selectedNode,
-  selectedName,
-  selectedBinding,
-  expandedKeys,
-  lastResult,
-  order,
-  canCreate,
-  canUpdate,
-  canDelete,
-  canPaste,
-  onExpand,
   onSelect,
-  onSelectName,
-  onCreate,
-  onUpdate,
-  onCopy,
-  onCut,
-  onPaste,
-  onDelete,
 }: {
   doc: JsonDoc;
-  treeData: TreeDataNode[];
-  tableRows: NodeRow[];
+  nodeId: NodeId;
   selectedId: NodeId;
-  selectedNode: JsonNode | undefined;
-  selectedName: string;
-  selectedBinding: ComponentBinding;
-  expandedKeys: React.Key[];
-  lastResult: OperationResult | null;
-  order: SalesOrder;
-  canCreate: boolean;
-  canUpdate: boolean;
-  canDelete: boolean;
-  canPaste: boolean;
-  onExpand: (keys: React.Key[]) => void;
   onSelect: (nodeId: NodeId) => void;
-  onSelectName: (name: string) => void;
-  onCreate: (kind: "text" | "rect") => void;
-  onUpdate: () => void;
-  onCopy: () => void;
-  onCut: () => void;
-  onPaste: () => void;
-  onDelete: () => void;
 }) {
-  return (
-    <main>
-      <aside>
-        <PanelHeader title="Layers" detail={`${Object.keys(doc.nodes).length} nodes`} />
-        <Tree
-          blockNode
-          showLine
-          treeData={treeData}
-          selectedKeys={[selectedId]}
-          expandedKeys={expandedKeys}
-          onExpand={(keys) => onExpand(keys)}
-          onSelect={(keys) => {
-            const [key] = keys;
+  const node = domainNodeFromId(doc, nodeId);
+  const childIds = node === null ? [] : domainChildren(doc, nodeId);
 
-            if (typeof key === "string") {
-              onSelect(key);
-            }
-          }}
-        />
-      </aside>
-
-      <section>
-        <div>
-          <Space wrap>
-            <Select
-              size="small"
-              defaultValue="text"
-              options={NODE_KIND_OPTIONS}
-              popupMatchSelectWidth={false}
-              onSelect={(value) => onCreate(value as "text" | "rect")}
-              disabled={!canCreate}
-            />
-            <Button size="small" disabled={!canUpdate} onClick={onUpdate}>Update</Button>
-            <Button size="small" onClick={onCopy}>Copy</Button>
-            <Button size="small" disabled={!canDelete} onClick={onCut}>Cut</Button>
-            <Button size="small" disabled={!canPaste} onClick={onPaste}>Paste</Button>
-            <Button size="small" danger disabled={!canDelete} onClick={onDelete}>Delete</Button>
-          </Space>
-          <ResultTag result={lastResult} />
-        </div>
-        <MobilePreview order={order} selectedName={selectedName} onSelectName={onSelectName} />
-      </section>
-
-      <aside>
-        <PanelHeader title="Inspector" detail={selectedId} />
-        <InspectorForm
-          node={selectedNode}
-          binding={selectedBinding}
-          path={selectedNode === undefined ? "/" : pathString(doc, selectedNode.id)}
-        />
-        <NodeTable rows={tableRows} onSelect={onSelect} />
-      </aside>
-    </main>
-  );
-}
-
-function DataMode({
-  order,
-  orderDoc,
-  selectedName,
-  lastResult,
-  onSelectName,
-  onUpdateOrder,
-}: {
-  order: SalesOrder;
-  orderDoc: JsonDoc;
-  selectedName: string;
-  lastResult: OperationResult | null;
-  onSelectName: (name: string) => void;
-  onUpdateOrder: (path: string, value: JsonValue) => void;
-}) {
-  return (
-    <main>
-      <section>
-        <div>
-          <Descriptions
-            size="small"
-            column={3}
-            items={[
-              { key: "entity", label: "Entity", children: <Tag color="green">valid</Tag> },
-              { key: "nodes", label: "Order nodes", children: Object.keys(orderDoc.nodes).length },
-              { key: "view", label: "UI blocks", children: Object.keys(orderViewDoc.nodes).length },
-            ]}
-          />
-          <ResultTag result={lastResult} />
-        </div>
-        <section>
-          <PanelHeader title="Section Blocks" detail="preview + bindings + form controls stay together" />
-          <Collapse
-            defaultActiveKey={DATA_SECTION_BLOCKS.map((block) => block.id)}
-            items={DATA_SECTION_BLOCKS.map((block) => ({
-              key: block.id,
-              label: (
-                <Space size="small">
-                  <Text strong>{block.title}</Text>
-                  <Tag>{block.kind}</Tag>
-                  <Text type="secondary">{block.fields.length} bindings</Text>
-                </Space>
-              ),
-              children: (
-                <DataSectionPanel
-                  block={block}
-                  order={order}
-                  selectedName={selectedName}
-                  onSelectName={onSelectName}
-                  onUpdate={onUpdateOrder}
-                />
-              ),
-            }))}
-          />
-        </section>
-      </section>
-    </main>
-  );
-}
-
-function DataSectionPanel({
-  block,
-  order,
-  selectedName,
-  onSelectName,
-  onUpdate,
-}: {
-  block: DataSectionBlock;
-  order: SalesOrder;
-  selectedName: string;
-  onSelectName: (name: string) => void;
-  onUpdate: (path: string, value: JsonValue) => void;
-}) {
-  return (
-    <div>
-      <section>
-        <Text type="secondary">Preview</Text>
-        <DataBlockPreview block={block} order={order} selectedName={selectedName} onSelectName={onSelectName} />
-      </section>
-      <section>
-        <Text type="secondary">Entities(zod)</Text>
-        <pre>{entitySourceForBlock(block)}</pre>
-      </section>
-      <section>
-        <Text type="secondary">UI Data</Text>
-        <pre>{uiDataSourceForBlock(block)}</pre>
-      </section>
-      <section>
-        <Text type="secondary">Form gen</Text>
-        {block.kind === "each" ? (
-          <RepeatBlockControls block={block} order={order} onUpdate={onUpdate} />
-        ) : block.kind === "action" ? (
-          <Alert type="success" showIcon title="Submit is a schema-valid commit boundary." />
-        ) : (
-          <Form layout="vertical" size="middle">
-            {block.fields.map((field) => (
-              <Form.Item key={field.id} label={field.label}>
-                <GeneratedFormControl
-                  field={field}
-                  value={valueAtPointer(order, field.path)}
-                  onChange={(value) => onUpdate(field.path, value)}
-                />
-              </Form.Item>
-            ))}
-          </Form>
-        )}
-      </section>
-    </div>
-  );
-}
-
-function DataBlockPreview({
-  block,
-  order,
-  selectedName,
-  onSelectName,
-}: {
-  block: DataSectionBlock;
-  order: SalesOrder;
-  selectedName: string;
-  onSelectName: (name: string) => void;
-}) {
-  if (block.id === "hero") {
-    return (
-      <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName}>
-        <img src={order.media.hero.src} alt={order.media.hero.alt} />
-        <div>
-          <Text>{order.media.hero.alt}</Text>
-          <Title level={4}>{order.title}</Title>
-        </div>
-      </SelectablePreview>
-    );
-  }
-
-  if (block.id === "fields") {
-    return (
-      <div>
-        <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName}>
-          <Text strong>Customer</Text>
-          <Input value={order.customer.name} readOnly />
-          <Text type="secondary">/customer/name</Text>
-        </SelectablePreview>
-        <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName}>
-          <Text strong>Status</Text>
-          <Select value={order.status} options={["draft", "paid", "sent"].map((value) => ({ label: value, value }))} />
-        </SelectablePreview>
-      </div>
-    );
-  }
-
-  if (block.id === "items") {
-    return (
-      <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName}>
-        <div>
-          <Text strong>Line items</Text>
-          <Button size="small">Add</Button>
-        </div>
-        {order.lineItems.map((item) => (
-          <div key={item.title}>
-            <img src={item.image} alt={item.title} />
-            <div>
-              <Text strong>{item.title}</Text>
-              <Text type="secondary">qty {item.quantity}</Text>
-            </div>
-            <Tag>{item.status}</Tag>
-          </div>
-        ))}
-      </SelectablePreview>
-    );
-  }
-
-  return (
-    <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName}>
-      <Button block type="primary">Save record</Button>
-    </SelectablePreview>
-  );
-}
-
-function RepeatBlockControls({
-  block,
-  order,
-  onUpdate,
-}: {
-  block: DataSectionBlock;
-  order: SalesOrder;
-  onUpdate: (path: string, value: JsonValue) => void;
-}) {
-  const columns: TableColumnsType<SalesOrder["lineItems"][number] & { index: number }> = block.fields.map((field) => ({
-    title: field.label,
-    dataIndex: field.path,
-    render: (_value, item) => (
-      <GeneratedFormControl
-        field={field}
-        value={valueAtPointer(item, `/${field.path}`)}
-        onChange={(value) => onUpdate(`${block.repeatPath}/${item.index}/${field.path}`, value)}
-      />
-    ),
-  }));
-
-  return (
-    <Table
-      size="small"
-      pagination={false}
-      rowKey="index"
-      childrenColumnName="nestedChildren"
-      columns={columns}
-      dataSource={order.lineItems.map((item, index) => ({ ...item, index }))}
-      scroll={{ x: 720 }}
-    />
-  );
-}
-
-function GeneratedFormControl({
-  field,
-  value,
-  onChange,
-}: {
-  field: DataField;
-  value: JsonValue | undefined;
-  onChange: (value: JsonValue) => void;
-}) {
-  const formMeta = field.meta.form;
-
-  if (formMeta.component === "InputNumber") {
-    const fallbackValue = formMeta.min ?? 0;
-
-    return (
-      <InputNumber
-        {...(formMeta.min === undefined ? {} : { min: formMeta.min })}
-        value={typeof value === "number" ? value : fallbackValue}
-        onChange={(next) => onChange(Number(next ?? fallbackValue))}
-      />
-    );
-  }
-
-  if (formMeta.component === "Select") {
-    return (
-      <Select
-        value={typeof value === "string" ? value : ""}
-        options={(formMeta.options ?? []).map((option) => ({ label: option, value: option }))}
-        onChange={onChange}
-      />
-    );
-  }
-
-  return <Input value={value === undefined || value === null ? "" : String(value)} onChange={(event) => onChange(event.target.value)} />;
-}
-
-function PanelHeader({ title, detail }: { title: string; detail?: string }) {
-  return (
-    <div>
-      <Text strong>{title}</Text>
-      {detail === undefined ? null : <Text type="secondary">{detail}</Text>}
-    </div>
-  );
-}
-
-function ResultTag({ result }: { result: OperationResult | null }) {
-  if (result === null) {
+  if (node === null) {
     return null;
   }
 
-  return result.ok ? (
-    <Tag color="green">valid commit</Tag>
-  ) : (
-    <Tag color="red">{result.reason}</Tag>
+  return (
+    <ul className="tree-list">
+      <li>
+        <button
+          type="button"
+          className={selectedId === node.id ? "tree-node is-selected" : "tree-node"}
+          onClick={() => onSelect(node.id)}
+        >
+          <span>{node.title}</span>
+          <small>{node.status}</small>
+        </button>
+        {childIds.length === 0 ? null : (
+          <div className="tree-children">
+            {childIds.map((childId) => (
+              <TreeView key={childId} doc={doc} nodeId={childId} selectedId={selectedId} onSelect={onSelect} />
+            ))}
+          </div>
+        )}
+      </li>
+    </ul>
   );
 }
 
-function InspectorForm({
-  node,
-  binding,
-  path,
+function DocumentPreview({
+  doc,
+  selectedId,
+  onSelect,
 }: {
-  node: JsonNode | undefined;
-  binding: ComponentBinding;
-  path: string;
+  doc: JsonDoc;
+  selectedId: NodeId;
+  onSelect: (nodeId: NodeId) => void;
 }) {
   return (
-    <Form layout="vertical" size="small">
-      <Form.Item label="Component">
-        <Input value={binding.component} readOnly />
-      </Form.Item>
-      <Form.Item label="Node id">
-        <Input value={node?.id ?? "none"} readOnly />
-      </Form.Item>
-      <Form.Item label="Node type">
-        <Input value={node?.type ?? "none"} readOnly />
-      </Form.Item>
-      <Form.Item label="Path">
-        <Input value={path} readOnly />
-      </Form.Item>
-      <Form.Item label="CRUD field">
-        <Input value={binding.field} readOnly />
-      </Form.Item>
-      <Form.Item label="Operation">
-        <Input value={binding.operation} readOnly />
-      </Form.Item>
-      <Form.Item label="Zod schema">
-        <Input value={binding.schema} readOnly />
-      </Form.Item>
-      <Form.Item label="State">
-        <Input value={binding.state} readOnly />
-      </Form.Item>
-      <Form.Item label="Validation">
-        <Input.TextArea value={binding.validation} readOnly autoSize />
-      </Form.Item>
-    </Form>
+    <div className="preview-stack">
+      {toDomainNodes(doc).map((node) => (
+        <button
+          key={node.id}
+          type="button"
+          className={selectedId === node.id ? "preview-row is-selected" : "preview-row"}
+          onClick={() => onSelect(node.id)}
+        >
+          <span>{node.title}</span>
+          <span>{node.childCount} children</span>
+          <strong>{node.status}</strong>
+        </button>
+      ))}
+    </div>
   );
 }
 
 function NodeTable({
-  rows,
+  doc,
+  nodes,
+  selectedId,
   onSelect,
 }: {
-  rows: NodeRow[];
+  doc: JsonDoc;
+  nodes: JsonNode[];
+  selectedId: NodeId;
   onSelect: (nodeId: NodeId) => void;
 }) {
-  const columns: TableColumnsType<NodeRow> = [
-    { title: "id", dataIndex: "id", width: 74, fixed: "left" },
-    { title: "label", dataIndex: "label", ellipsis: true },
-    { title: "type", dataIndex: "type", width: 92 },
-    { title: "key", dataIndex: "key", ellipsis: true },
-    { title: "children", dataIndex: "childrenCount", width: 86 },
-    { title: "value", dataIndex: "value", ellipsis: true },
-  ];
-
   return (
-    <Table
-      size="small"
-      rowKey="id"
-      columns={columns}
-      dataSource={rows}
-      childrenColumnName="nestedChildren"
-      pagination={false}
-      scroll={{ x: 720, y: 420 }}
-      onRow={(row) => ({
-        onClick: () => onSelect(row.id),
-      })}
-    />
-  );
-}
-
-function MobilePreview({
-  order,
-  selectedName,
-  onSelectName,
-}: {
-  order: SalesOrder;
-  selectedName: string;
-  onSelectName: (name: string) => void;
-}) {
-  const orderTotal = order.lineItems.reduce((sum, item) => sum + item.quantity, 0);
-  const statusOptions: SalesOrder["status"][] = ["draft", "paid", "sent"];
-
-  return (
-    <div>
-      <div>
-        <div>
-          <Text strong>9:41</Text>
-          <Text>LTE</Text>
-        </div>
-
-        <SelectablePreview name="AppToolbar" selectedName={selectedName} onSelectName={onSelectName}>
-          <div>
-            <Text>FieldOps</Text>
-            <Title level={3}>Order intake</Title>
-          </div>
-          <Space size={6}>
-            <Button size="small" shape="circle">S</Button>
-            <Button size="small" shape="circle">A</Button>
-          </Space>
-        </SelectablePreview>
-
-        <SelectablePreview name="HeroCard" selectedName={selectedName} onSelectName={onSelectName}>
-          <img src={order.media.hero.src} alt={order.media.hero.alt} />
-          <div>
-            <Text>{order.media.hero.alt}</Text>
-            <Title level={4}>{order.title}</Title>
-          </div>
-        </SelectablePreview>
-
-        <nav aria-label="Order sections">
-          <button type="button">Overview</button>
-          <button type="button">Items</button>
-          <button type="button">Activity</button>
-        </nav>
-
-        <section>
-          <div>
-            <Text strong>Record</Text>
-            <Tag>{order.status}</Tag>
-          </div>
-
-          <SelectablePreview name="CustomerNameField" selectedName={selectedName} onSelectName={onSelectName}>
-            <span>
-              <Text type="secondary">Customer</Text>
-              <Text strong>{order.customer.name}</Text>
-            </span>
-            <Text type="secondary">customer.name</Text>
-          </SelectablePreview>
-
-          <SelectablePreview name="OrderStatusField" selectedName={selectedName} onSelectName={onSelectName}>
-            <span>
-              <Text type="secondary">Status</Text>
-              <Text strong>Validated state</Text>
-            </span>
-            <div aria-label="Order status">
-              {statusOptions.map((status) => (
-                <span key={status}>{status}</span>
-              ))}
-            </div>
-          </SelectablePreview>
-        </section>
-
-        <SelectablePreview name="LineItemsList" selectedName={selectedName} onSelectName={onSelectName}>
-          <div>
-            <span>
-              <Text strong>Line items</Text>
-              <Text type="secondary">{order.lineItems.length} rows · {orderTotal} units</Text>
-            </span>
-            <Button size="small">Add</Button>
-          </div>
-          {order.lineItems.map((item) => (
-            <div key={item.title}>
-              <img src={item.image} alt={item.title} />
-              <div>
-                <Text strong>{item.title}</Text>
-                <Text type="secondary">qty {item.quantity} · lineItems[]</Text>
-              </div>
-              <Tag>{item.status}</Tag>
-            </div>
-          ))}
-        </SelectablePreview>
-
-        <SelectablePreview name="SchemaStatusCard" selectedName={selectedName} onSelectName={onSelectName}>
-          <div>
-            <Text type="secondary">SalesOrderSchema</Text>
-            <Title level={5}>Valid snapshot</Title>
-          </div>
-          <Tag>safeParse</Tag>
-        </SelectablePreview>
-
-        <div>
-          <div>
-            <Text type="secondary">Commit boundary</Text>
-            <Text strong>Ready to serialize</Text>
-          </div>
-          <SelectablePreview name="SaveButton" selectedName={selectedName} onSelectName={onSelectName}>
-            <Button block type="primary">Save record</Button>
-          </SelectablePreview>
-        </div>
+    <div className="node-table" role="table" aria-label="Flat JsonDoc nodes">
+      <div className="node-row node-head" role="row">
+        <span>id</span>
+        <span>key</span>
+        <span>type</span>
       </div>
+      {nodes.map((node) => (
+        <button
+          key={node.id}
+          type="button"
+          className={selectedId === node.id ? "node-row is-selected" : "node-row"}
+          onClick={() => onSelect(nearestDomainNode(doc, node.id) ?? doc.rootId)}
+        >
+          <span>{node.id}</span>
+          <span>{node.key === null ? "root" : String(node.key)}</span>
+          <span>{node.type}</span>
+        </button>
+      ))}
     </div>
   );
 }
 
-function SelectablePreview({
-  name,
-  selectedName,
-  onSelectName,
-  children,
-}: {
-  name: string;
-  selectedName: string;
-  onSelectName: (name: string) => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={selectedName === name}
-      onClick={() => onSelectName(name)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onSelectName(name);
-        }
-      }}
-    >
-      {children}
-    </div>
-  );
+function toDomainNodes(doc: JsonDoc): DomainNode[] {
+  return Object.values(doc.nodes)
+    .filter((node) => isDomainObject(doc, node))
+    .map((node) => domainNodeFromId(doc, node.id))
+    .filter((node): node is DomainNode => node !== null);
 }
 
-function bindingFor(doc: JsonDoc, node: JsonNode | undefined): ComponentBinding {
-  const name = node === undefined ? undefined : primitiveField(doc, node.id, "name");
-
-  if (name !== undefined && BINDINGS[name] !== undefined) {
-    return BINDINGS[name];
-  }
-
-  return {
-    component: name ?? "Node",
-    field: node === undefined ? "none" : pathString(doc, node.id),
-    schema: node?.type ?? "unknown",
-    operation: "read",
-    state: "selected",
-    validation: "This node is part of the current schema-valid zod-crud document.",
-  };
-}
-
-function toTreeNode(doc: JsonDoc, nodeId: NodeId): TreeDataNode {
+function domainNodeFromId(doc: JsonDoc, nodeId: NodeId): DomainNode | null {
   const node = doc.nodes[nodeId];
 
-  if (node === undefined) {
-    return { key: nodeId, title: nodeId };
+  if (node === undefined || !isDomainObject(doc, node)) {
+    return null;
+  }
+
+  const title = childByKey(doc, node.id, "title")?.value;
+  const status = childByKey(doc, node.id, "status")?.value;
+  const children = childByKey(doc, node.id, "children");
+
+  if (typeof title !== "string" || !isStatus(status) || children?.type !== "array") {
+    return null;
   }
 
   return {
-    key: node.id,
-    title: `${nodeLabel(doc, node)} · ${node.type}`,
-    children: node.children.map((childId) => toTreeNode(doc, childId)),
+    id: node.id,
+    title,
+    status,
+    childCount: children.children.length,
+    path: pathString(doc, node.id),
   };
 }
 
-function toNodeRows(doc: JsonDoc): NodeRow[] {
-  return Object.values(doc.nodes).map((node) => ({
-    id: node.id,
-    label: nodeLabel(doc, node),
-    type: node.type,
-    key: node.key === null ? "root" : String(node.key),
-    parent: node.parentId ?? "-",
-    childrenCount: node.children.length,
-    value: node.value === undefined ? "" : String(node.value),
-  }));
+function domainChildren(doc: JsonDoc, nodeId: NodeId): NodeId[] {
+  const childrenId = childrenArrayId(doc, nodeId);
+
+  if (childrenId === null) {
+    return [];
+  }
+
+  return doc.nodes[childrenId]?.children.filter((childId) => isDomainObject(doc, doc.nodes[childId])) ?? [];
 }
 
-function nodeLabel(doc: JsonDoc, node: JsonNode) {
-  if (node.type === "object") {
-    return primitiveField(doc, node.id, "name") ?? primitiveField(doc, node.id, "role") ?? String(node.key ?? node.id);
-  }
-
-  if (node.type === "array") {
-    return `${String(node.key ?? "array")}[]`;
-  }
-
-  return `${String(node.key ?? "value")}: ${String(node.value)}`;
+function isDomainObject(doc: JsonDoc, node: JsonNode | undefined): boolean {
+  return node?.type === "object" &&
+    childByKey(doc, node.id, "title")?.type === "string" &&
+    childByKey(doc, node.id, "status")?.type === "string" &&
+    childByKey(doc, node.id, "children")?.type === "array";
 }
 
-function primitiveField(doc: JsonDoc, nodeId: NodeId, key: string): string | undefined {
-  const child = childByKey(doc, nodeId, key);
+function childrenArrayId(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+  const child = childByKey(doc, nodeId, "children");
 
-  if (child?.type === "string" && typeof child.value === "string") {
-    return child.value;
-  }
-
-  return undefined;
+  return child?.type === "array" ? child.id : null;
 }
 
 function childByKey(doc: JsonDoc, nodeId: NodeId, key: string | number): JsonNode | undefined {
@@ -1096,7 +496,61 @@ function childByKey(doc: JsonDoc, nodeId: NodeId, key: string | number): JsonNod
   return childId === undefined ? undefined : doc.nodes[childId];
 }
 
-function pathString(doc: JsonDoc, nodeId: NodeId) {
+function recoverSelection(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
+  const oldNode = before.nodes[removedId];
+
+  if (oldNode === undefined) {
+    return after.rootId;
+  }
+
+  const siblings = oldNode.parentId === null ? [] : before.nodes[oldNode.parentId]?.children ?? [];
+  const oldIndex = siblings.indexOf(removedId);
+  const candidates = [
+    siblings[oldIndex + 1],
+    siblings[oldIndex - 1],
+    oldNode.parentId,
+  ].filter((id): id is NodeId => id !== undefined);
+
+  for (const candidate of candidates) {
+    const next = nearestDomainNode(after, candidate);
+
+    if (next !== null) {
+      return next;
+    }
+  }
+
+  return after.rootId;
+}
+
+function nearestDomainNode(doc: JsonDoc, nodeId: NodeId): NodeId | null {
+  let current = doc.nodes[nodeId];
+
+  while (current !== undefined) {
+    if (isDomainObject(doc, current)) {
+      return current.id;
+    }
+
+    current = current.parentId === null ? undefined : doc.nodes[current.parentId];
+  }
+
+  return null;
+}
+
+function keepSelectionOrRoot(doc: JsonDoc, nodeId: NodeId): NodeId {
+  return nearestDomainNode(doc, nodeId) ?? doc.rootId;
+}
+
+function domainNodesByTitle(doc: JsonDoc): Map<string, NodeId> {
+  const nodes = new Map<string, NodeId>();
+
+  for (const node of toDomainNodes(doc)) {
+    nodes.set(node.title, node.id);
+  }
+
+  return nodes;
+}
+
+function pathString(doc: JsonDoc, nodeId: NodeId): string {
   const segments: Array<string | number> = [];
   let current = doc.nodes[nodeId];
 
@@ -1111,208 +565,32 @@ function pathString(doc: JsonDoc, nodeId: NodeId) {
   return `/${segments.map(String).join("/")}`;
 }
 
-function ancestorIds(doc: JsonDoc, nodeId: NodeId): NodeId[] {
-  const ids: NodeId[] = [];
-  let current = doc.nodes[nodeId];
+function titleFromValue(value: JsonValue): string {
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    const title = value.title;
 
-  while (current?.parentId !== null && current?.parentId !== undefined) {
-    ids.push(current.parentId);
-    current = doc.nodes[current.parentId];
-  }
-
-  return ids;
-}
-
-function uniqueKeys(keys: React.Key[]) {
-  return Array.from(new Set(keys));
-}
-
-function findNodeByName(doc: JsonDoc, name: string): NodeId | null {
-  for (const node of Object.values(doc.nodes)) {
-    if (node.type === "object" && primitiveField(doc, node.id, "name") === name) {
-      return node.id;
+    if (typeof title === "string") {
+      return title;
     }
   }
 
-  return null;
+  return JSON.stringify(value);
 }
 
-function findInsertionArray(doc: JsonDoc, nodeId: NodeId): NodeId | null {
-  const node = doc.nodes[nodeId];
-
-  if (node === undefined) {
-    return null;
-  }
-
-  if (node.type === "array") {
-    return node.id;
-  }
-
-  for (const childId of node.children) {
-    const child = doc.nodes[childId];
-
-    if (child?.type === "array") {
-      return child.id;
-    }
-
-    if (child?.type === "object" && child.key === "collections") {
-      for (const collectionId of child.children) {
-        const collection = doc.nodes[collectionId];
-
-        if (collection?.type === "array") {
-          return collection.id;
-        }
-      }
-    }
-  }
-
-  return null;
+function isStatus(value: JsonValue | undefined): value is CommandNode["status"] {
+  return value === "draft" || value === "active" || value === "done";
 }
 
-function nodeAtPointer(doc: JsonDoc, path: string): NodeId | null {
-  const segments = path.split("/").filter(Boolean);
-  let currentId = doc.rootId;
-
-  for (const rawSegment of segments) {
-    const current = doc.nodes[currentId];
-    const key = current?.type === "array" ? Number(rawSegment) : rawSegment;
-    const child = childByKey(doc, currentId, key);
-
-    if (child === undefined) {
-      return null;
-    }
-
-    currentId = child.id;
-  }
-
-  return currentId;
+function failure(error: unknown): OperationResult {
+  return {
+    ok: false,
+    reason: error instanceof Error ? error.message : String(error),
+  };
 }
 
-function uiDataSourceForBlock(block: DataSectionBlock) {
-  if (block.kind === "action") {
-    return `{
-  type: "section",
-  variant: "toolbar",
-  children: [
-    { type: "action", label: "Save record", action: "submit", meta: { form: { component: "Button", type: "primary" } } }
-  ]
-}`;
-  }
-
-  if (block.kind === "each") {
-    return `{
-  type: "each",
-  label: "${block.title}",
-  items: { path: "${block.repeatPath}" },
-  item: {
-    type: "section",
-    children: [
-${block.fields.map((field) => uiFieldSource(field, 6)).join(",\n")}
-    ]
-  }
-}`;
-  }
-
-  return `{
-  type: "section",
-  title: "${block.title}",
-  children: [
-${block.fields.map((field) => uiFieldSource(field, 4)).join(",\n")}
-  ]
-}`;
-}
-
-function uiFieldSource(field: DataField, indent: number) {
-  return `${" ".repeat(indent)}{ type: "field", label: "${field.label}", value: { path: "${field.path}" }, meta: ${formMetaSource(field)} }`;
-}
-
-function formMetaSource(field: DataField) {
-  const form = field.meta.form;
-  const properties = [`component: "${form.component}"`];
-
-  if (form.min !== undefined) {
-    properties.push(`min: ${form.min}`);
-  }
-
-  if (form.options !== undefined) {
-    properties.push(`options: [${form.options.map((option) => `"${option}"`).join(", ")}]`);
-  }
-
-  return `{ form: { ${properties.join(", ")} } }`;
-}
-
-function entitySourceForBlock(block: DataSectionBlock) {
-  if (block.id === "hero") {
-    return `const SalesOrderSchema = z.object({
-  title: z.string().min(1),
-  media: z.object({
-    hero: z.object({
-      src: z.string().url(),
-      alt: z.string().min(1),
-    }),
-  }),
-});`;
-  }
-
-  if (block.id === "fields") {
-    return `const SalesOrderSchema = z.object({
-  customer: z.object({
-    name: z.string().min(2),
-  }),
-  status: z.enum(["draft", "paid", "sent"]),
-});`;
-  }
-
-  if (block.id === "items") {
-    return `const LineItemSchema = z.object({
-  title: z.string().min(1),
-  quantity: z.number().int().positive(),
-  image: z.string().url(),
-  status: z.enum(["ok", "new"]),
-});
-
-const SalesOrderSchema = z.object({
-  lineItems: z.array(LineItemSchema).min(1),
-});`;
-  }
-
-  return `const SubmitSchema = SalesOrderSchema;
-
-SubmitSchema.safeParse(currentEntity);`;
-}
-
-function valueAtPointer(value: JsonValue, path: string): JsonValue | undefined {
-  return path.split("/").filter(Boolean).reduce<JsonValue | undefined>((current, segment) => {
-    if (current === undefined) {
-      return undefined;
-    }
-
-    if (Array.isArray(current)) {
-      return current[Number(segment)];
-    }
-
-    if (isRecord(current)) {
-      return current[segment];
-    }
-
-    return undefined;
-  }, value);
-}
-
-function isRecord(value: JsonValue): value is Record<string, JsonValue> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function displayJsonValue(value: JsonValue | undefined) {
-  if (value === undefined || value === null) {
-    return "";
-  }
-
-  if (typeof value === "object") {
-    return JSON.stringify(value);
-  }
-
-  return String(value);
+function isEditableTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement &&
+    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 }
 
 const rootElement = document.getElementById("root");
