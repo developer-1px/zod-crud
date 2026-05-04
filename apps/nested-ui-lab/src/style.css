@@ -1,0 +1,421 @@
+:root {
+  color: #1b2329;
+  background: #f7f8f5;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled,
+input:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+h2 {
+  font-size: 14px;
+}
+
+.app-header {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #d9ded8;
+  display: flex;
+  gap: 20px;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 16px 22px;
+}
+
+.app-header span,
+.panel-title span {
+  color: #64716b;
+  font-size: 12px;
+}
+
+.view-switcher,
+.command-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.view-switcher button,
+.command-bar button,
+.inspector button {
+  background: #ffffff;
+  border: 1px solid #bac5be;
+  border-radius: 7px;
+  color: #1b2329;
+  min-height: 34px;
+  padding: 0 11px;
+}
+
+.view-switcher button.is-active {
+  background: #e4f1eb;
+  border-color: #2e7d68;
+  box-shadow: inset 0 0 0 1px #2e7d68;
+}
+
+.app-shell {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.workspace {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(520px, 1fr) minmax(320px, 0.42fr);
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d9ded8;
+  border-radius: 8px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.projection-panel {
+  min-height: calc(100vh - 150px);
+}
+
+.panel-title {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.treegrid {
+  border: 1px solid #d9ded8;
+  border-radius: 7px;
+  display: grid;
+  max-height: calc(100vh - 204px);
+  overflow: auto;
+}
+
+.grid-row {
+  background: #ffffff;
+  border: 0;
+  border-bottom: 1px solid #e7ebe6;
+  border-left: 4px solid transparent;
+  color: #1b2329;
+  display: grid;
+  grid-template-columns: minmax(250px, 1.5fr) minmax(120px, 0.7fr) 96px minmax(150px, 0.9fr);
+  min-width: 740px;
+  padding: 0;
+  text-align: left;
+}
+
+.grid-head {
+  background: #f1f4f1;
+  color: #52605a;
+  font-size: 12px;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.grid-head div,
+.grid-cell {
+  align-items: center;
+  display: flex;
+  min-height: 34px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 7px 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.grid-cell {
+  border-right: 1px solid #edf0ec;
+  font-size: 12px;
+}
+
+.path-cell {
+  gap: 4px;
+}
+
+.twisty {
+  color: #2e7d68;
+  display: inline-block;
+  flex: 0 0 14px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.outline-root,
+.outline-list {
+  display: grid;
+  gap: 6px;
+  list-style: none;
+  margin: 0;
+  padding-left: 0;
+}
+
+.outline-list {
+  margin-top: 6px;
+  padding-left: 22px;
+}
+
+.outline-item {
+  align-items: center;
+  border-left: 4px solid transparent;
+  display: flex;
+  gap: 6px;
+}
+
+.icon-button {
+  background: transparent;
+  border: 0;
+  color: #2e7d68;
+  flex: 0 0 24px;
+  font-weight: 700;
+  min-height: 28px;
+  padding: 0;
+}
+
+.node-button {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d9ded8;
+  border-radius: 7px;
+  color: #1b2329;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+  min-height: 34px;
+  min-width: 0;
+  padding: 6px 9px;
+  text-align: left;
+  width: 100%;
+}
+
+.node-button span,
+.node-card header span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-button small,
+.node-card small {
+  color: #64716b;
+  font-size: 12px;
+}
+
+.node-card {
+  background: #ffffff;
+  border: 1px solid #d9ded8;
+  border-left: 4px solid transparent;
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.node-card + .node-card {
+  margin-top: 8px;
+}
+
+.node-card header {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.node-card p {
+  color: #52605a;
+  font-size: 13px;
+}
+
+.card-children {
+  display: grid;
+  gap: 8px;
+  padding-left: 10px;
+}
+
+.is-selected.grid-row,
+.outline-item.is-selected .node-button,
+.node-card.is-selected {
+  background: #e4f1eb;
+  border-color: #2e7d68;
+  box-shadow: inset 0 0 0 1px #2e7d68;
+}
+
+.change-insert {
+  border-left-color: #177245;
+}
+
+.change-update {
+  border-left-color: #88651c;
+}
+
+.change-delete {
+  border-left-color: #a33131;
+}
+
+.inspector {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.node-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.node-facts div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 74px minmax(0, 1fr);
+}
+
+.node-facts dt {
+  color: #64716b;
+  font-size: 12px;
+}
+
+.node-facts dd {
+  font-size: 12px;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector label {
+  display: grid;
+  gap: 5px;
+}
+
+.inspector label span {
+  color: #64716b;
+  font-size: 12px;
+}
+
+.inspector input {
+  border: 1px solid #bac5be;
+  border-radius: 7px;
+  color: #1b2329;
+  min-height: 34px;
+  padding: 0 9px;
+}
+
+.result {
+  border-radius: 7px;
+  display: grid;
+  gap: 4px;
+  padding: 9px;
+}
+
+.result strong {
+  font-size: 13px;
+}
+
+.result span {
+  font-size: 12px;
+}
+
+.result.is-ok {
+  background: #edf6f1;
+  color: #1c6b55;
+}
+
+.result.is-fail {
+  background: #f8eceb;
+  color: #9d3029;
+}
+
+.changes {
+  display: grid;
+  gap: 5px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.changes li {
+  align-items: center;
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+}
+
+.changes span {
+  background: #f1f4f1;
+  border-radius: 5px;
+  padding: 3px 6px;
+}
+
+.changes code {
+  color: #52605a;
+}
+
+.json-output {
+  background: #1b2329;
+  border-radius: 7px;
+  color: #edf7f2;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  max-height: 340px;
+  overflow: auto;
+  padding: 12px;
+}
+
+@media (max-width: 980px) {
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .workspace {
+    grid-template-columns: 1fr;
+  }
+}
