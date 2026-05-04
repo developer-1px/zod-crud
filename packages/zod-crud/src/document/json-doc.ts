@@ -191,6 +191,28 @@ export function replaceSubtree(
   createSubtree(doc, value, parentId, key, nodeId, allocateNodeId);
 }
 
+export function renameObjectKey(doc: JsonDoc, nodeId: NodeId, key: string): void {
+  const node = getNode(doc, nodeId);
+
+  if (node.parentId === null) {
+    throw new Error("Cannot rename the root node.");
+  }
+
+  const parent = getNode(doc, node.parentId);
+
+  if (parent.type !== "object") {
+    throw new Error("Only object child keys can be renamed.");
+  }
+
+  const existing = findChildByKey(doc, parent.id, key);
+
+  if (existing !== null && existing.id !== nodeId) {
+    throw new Error(`Object key already exists: ${key}.`);
+  }
+
+  node.key = key;
+}
+
 export function removeSubtree(doc: JsonDoc, nodeId: NodeId): void {
   const node = getNode(doc, nodeId);
 

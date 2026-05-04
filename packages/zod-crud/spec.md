@@ -73,6 +73,8 @@ Node key rules:
 - Array child key is its current integer index.
 - Array keys are normalized after insert/delete.
 - Object children must not contain duplicate keys.
+- Object child keys can be renamed with `rename(nodeId, key)` when the parent
+  remains a valid object under the root schema.
 - `__proto__` is treated as an own JSON key during deserialize, not as prototype
   mutation.
 - JSON numbers must be finite.
@@ -187,6 +189,20 @@ clone current doc
 replace subtree at nodeId
 validate full document exactness
 compute the replacement delta
+commit and return { ok: true, nodeId, focusNodeId, changes } or return failure
+```
+
+### rename(nodeId, key)
+
+```txt
+nodeId is root -> fail
+node parent is not object -> fail
+key already exists under the same object parent -> fail, unless it is the same node
+clone current doc
+change only the target node key
+validate parent path subtree
+validate full document exactness
+compute the renamed node update delta
 commit and return { ok: true, nodeId, focusNodeId, changes } or return failure
 ```
 

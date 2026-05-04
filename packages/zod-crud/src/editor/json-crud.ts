@@ -22,6 +22,7 @@ import {
   insertChild,
   maxNodeIndex,
   removeSubtree,
+  renameObjectKey,
   replaceSubtree,
   serialize,
 } from "../document/json-doc.js";
@@ -70,6 +71,7 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   find: (parentId: NodeId, key: JsonKey) => NodeId | null;
   create: (parentId: NodeId, key: string | number, value: JsonValue) => OperationResult;
   update: (nodeId: NodeId, value: JsonValue) => OperationResult;
+  rename: (nodeId: NodeId, key: string) => OperationResult;
   delete: (nodeId: NodeId) => OperationResult;
   deleteMany: (nodeIds: NodeId[]) => OperationResult;
   copy: (nodeId: NodeId) => JsonValue;
@@ -162,6 +164,36 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       const next = cloneDoc(doc);
 
       replaceSubtree(next, nodeId, value, allocateNodeId);
+      return commitIfValid(next, changesForReplacedSubtree(doc, next, nodeId), nodeId);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  function rename(nodeId: NodeId, key: string): OperationResult {
+    try {
+      const node = getNode(doc, nodeId);
+
+      if (node.parentId === null) {
+        return { ok: false, reason: "Cannot rename the root node." };
+      }
+
+      const parent = getNode(doc, node.parentId);
+
+      if (parent.type !== "object") {
+        return { ok: false, reason: "Only object child keys can be renamed." };
+      }
+
+      const parentPath = getPath(doc, parent.id);
+      const next = cloneDoc(doc);
+
+      renameObjectKey(next, nodeId, key);
+      const validation = validateAtPath(schema, parentPath, deserialize(next, parent.id));
+
+      if (!validation.ok) {
+        return validation;
+      }
+
       return commitIfValid(next, changesForReplacedSubtree(doc, next, nodeId), nodeId);
     } catch (error) {
       return failure(error);
@@ -577,6 +609,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     find,
     create,
     update,
+    rename,
     delete: deleteNode,
     deleteMany,
     copy,

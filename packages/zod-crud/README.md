@@ -104,7 +104,7 @@ const json = editor.toJson();
 
 - `serialize()` / `deserialize()`
 - flat JSON node table
-- `create`, `update`, `delete`, `deleteMany`
+- `create`, `update`, `rename`, `delete`, `deleteMany`
 - `copy`, `copyMany`, `cut`, `cutMany`, `paste`
 - `canCopyMany`, `canCutMany`, `canDeleteMany`, `canPaste`
 - `undo`, `redo`

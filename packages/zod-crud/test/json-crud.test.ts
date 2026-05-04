@@ -127,6 +127,91 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("renames an object child key without replacing the subtree", () => {
+    const editor = createJsonCrud(JsonValueSchema, {
+      name: "Ada",
+      profile: { active: true },
+    });
+    const rootId = editor.snapshot().rootId;
+    const nameId = editor.find(rootId, "name");
+
+    expect(nameId).not.toBeNull();
+    const result = editor.rename(nameId!, "title");
+
+    expect(result.ok).toBe(true);
+    expect(editor.find(rootId, "name")).toBeNull();
+    expect(editor.find(rootId, "title")).toBe(nameId);
+    expect(editor.toJson()).toEqual({
+      title: "Ada",
+      profile: { active: true },
+    });
+
+    if (result.ok) {
+      expect(result.nodeId).toBe(nameId);
+      expect(result.focusNodeId).toBe(nameId);
+      expect(result.changes).toEqual([
+        expect.objectContaining({
+          type: "update",
+          nodeId: nameId,
+          before: expect.objectContaining({ key: "name", value: "Ada" }),
+          after: expect.objectContaining({ key: "title", value: "Ada" }),
+        }),
+      ]);
+    }
+
+    expect(editor.undo().ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      name: "Ada",
+      profile: { active: true },
+    });
+
+    expect(editor.redo().ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      title: "Ada",
+      profile: { active: true },
+    });
+  });
+
+  it("rejects invalid object key renames", () => {
+    const editor = createJsonCrud(JsonValueSchema, {
+      name: "Ada",
+      title: "Engineer",
+      items: ["first"],
+    });
+    const rootId = editor.snapshot().rootId;
+    const nameId = editor.find(rootId, "name");
+    const itemsId = editor.find(rootId, "items");
+    const itemId = editor.find(itemsId!, 0);
+
+    expect(editor.rename(rootId, "document").ok).toBe(false);
+    expect(editor.rename(nameId!, "title")).toEqual({
+      ok: false,
+      reason: "Object key already exists: title.",
+    });
+    expect(editor.rename(itemId!, "label")).toEqual({
+      ok: false,
+      reason: "Only object child keys can be renamed.",
+    });
+    expect(editor.toJson()).toEqual({
+      name: "Ada",
+      title: "Engineer",
+      items: ["first"],
+    });
+  });
+
+  it("rejects object key renames that violate the Zod schema", () => {
+    const editor = createJsonCrud(z.object({
+      name: z.string(),
+    }), {
+      name: "Ada",
+    });
+    const nameId = editor.find(editor.snapshot().rootId, "name");
+    const result = editor.rename(nameId!, "title");
+
+    expect(result.ok).toBe(false);
+    expect(editor.toJson()).toEqual({ name: "Ada" });
+  });
+
   it("pastes into arrays before trying overwrite", () => {
     const editor = createEditor();
     const rootId = editor.snapshot().rootId;
