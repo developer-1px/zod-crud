@@ -17,7 +17,6 @@ import { PanelTitle } from "./PanelTitle.js";
 
 export type CommandLog = {
   command: string;
-  input: string;
   target: string;
   result: OperationResult;
 };
@@ -46,12 +45,7 @@ export function InspectorPanel({
   return (
     <aside className="panel detail-panel">
       <PanelTitle title="Command result" detail={lastCommand.command} />
-      <pre className="core-flow">{commandFlow(lastCommand, selectedIds, safeSelectedId)}</pre>
       <dl className="result-list">
-        <div>
-          <dt>input</dt>
-          <dd><code>{lastCommand.input}</code></dd>
-        </div>
         <div>
           <dt>target</dt>
           <dd>{lastCommand.target}</dd>
@@ -146,22 +140,6 @@ export function InspectorPanel({
       <pre className="schema-output">{activeEntity.schemaSource}</pre>
     </aside>
   );
-}
-
-function commandFlow(command: CommandLog, selectedIds: Set<NodeId>, activeId: NodeId): string {
-  const selection = selectedIds.size > 1 ? nodeIdList([...selectedIds]) : activeId;
-
-  if (!command.result.ok) {
-    return `${command.input} -> fail -> reason ${command.result.reason} -> selection ${selection}`;
-  }
-
-  const focus = command.result.focusNodeIds !== undefined
-    ? `focusNodeIds ${nodeIdList(command.result.focusNodeIds)}`
-    : command.result.focusNodeId !== undefined
-      ? `focusNodeId ${command.result.focusNodeId}`
-      : "focus none";
-
-  return `${command.input} -> ok -> ${focus} -> selection ${selection}`;
 }
 
 function nodeIdList(nodeIds: NodeId[] | undefined): string {

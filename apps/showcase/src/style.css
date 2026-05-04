@@ -122,14 +122,6 @@ kbd {
   font-size: 12px;
 }
 
-.command-card small {
-  font-size: 11px;
-  line-height: 1.3;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .workspace {
   align-items: start;
   display: grid;
@@ -346,24 +338,6 @@ kbd {
 .result-list dd {
   margin: 0;
   overflow-wrap: anywhere;
-}
-
-.result-list code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
-}
-
-.core-flow {
-  background: #f1f4f1;
-  border: 1px solid #d9ded8;
-  border-radius: 7px;
-  color: #172026;
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  margin: 0 0 14px;
-  overflow: auto;
-  padding: 10px;
 }
 
 .empty-state {
