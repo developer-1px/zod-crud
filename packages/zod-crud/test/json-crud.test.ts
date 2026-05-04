@@ -623,6 +623,43 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("does not consume node ids during canPaste dry runs", () => {
+    function pasteAfterCopy({ dryRun }: { dryRun: boolean }) {
+      const editor = createEditor();
+      const rootId = editor.snapshot().rootId;
+      const childrenId = editor.find(rootId, "children");
+      const textNodeId = editor.find(childrenId!, 0);
+
+      editor.copy(textNodeId!);
+
+      if (dryRun) {
+        expect(editor.canPaste(childrenId!).ok).toBe(true);
+        expect(editor.canPaste(childrenId!).ok).toBe(true);
+      }
+
+      const result = editor.paste(childrenId!);
+
+      return {
+        doc: editor.snapshot(),
+        json: editor.toJson(),
+        result,
+      };
+    }
+
+    const probed = pasteAfterCopy({ dryRun: true });
+    const direct = pasteAfterCopy({ dryRun: false });
+
+    expect(probed.result.ok).toBe(true);
+    expect(direct.result.ok).toBe(true);
+
+    if (probed.result.ok && direct.result.ok) {
+      expect(probed.result.nodeId).toBe(direct.result.nodeId);
+    }
+
+    expect(probed.json).toEqual(direct.json);
+    expect(probed.doc).toEqual(direct.doc);
+  });
+
   it("discovers explicit child paste arrays from the Zod schema instead of child key conventions only", () => {
     const Schema = z.object({
       items: z.array(z.string()),
@@ -762,6 +799,21 @@ describe("JsonCrud", () => {
         { kind: "text", text: "hello" },
       ],
     });
+  });
+
+  it("keeps redo history after a failed mutation", () => {
+    const editor = createJsonCrud(z.object({ count: z.number() }), { count: 0 });
+    const countId = editor.find(editor.snapshot().rootId, "count");
+
+    expect(editor.update(countId!, 1).ok).toBe(true);
+    expect(editor.undo().ok).toBe(true);
+    expect(editor.canRedo()).toBe(true);
+
+    expect(editor.update(countId!, "bad").ok).toBe(false);
+    expect(editor.toJson()).toEqual({ count: 0 });
+    expect(editor.canRedo()).toBe(true);
+    expect(editor.redo().ok).toBe(true);
+    expect(editor.toJson()).toEqual({ count: 1 });
   });
 
   it("keeps successful mutations valid against the full root schema", () => {
@@ -1017,5 +1069,36 @@ describe("JsonCrud", () => {
     }
 
     expect(editor.toJson()).toEqual({ items: ["a"], slot: "old" });
+  });
+
+  it("does not replace the clipboard when paste fails", () => {
+    const Schema = z.object({
+      source: z.string(),
+      slot: z.string(),
+      count: z.number(),
+    });
+    const editor = createJsonCrud(Schema, {
+      source: "copied",
+      slot: "target",
+      count: 1,
+    });
+    const rootId = editor.snapshot().rootId;
+    const sourceId = editor.find(rootId, "source");
+    const slotId = editor.find(rootId, "slot");
+    const countId = editor.find(rootId, "count");
+
+    editor.copy(sourceId!);
+
+    expect(editor.paste(countId!, { mode: "overwrite" }).ok).toBe(false);
+    expect(editor.canUndo()).toBe(false);
+
+    const pasteResult = editor.paste(slotId!, { mode: "overwrite" });
+
+    expect(pasteResult.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      source: "copied",
+      slot: "copied",
+      count: 1,
+    });
   });
 });

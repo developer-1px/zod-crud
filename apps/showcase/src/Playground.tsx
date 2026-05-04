@@ -6,7 +6,6 @@ import {
   useState,
 } from "react";
 import type {
-  JsonValue,
   NodeId,
   OperationResult,
 } from "zod-crud";
@@ -52,7 +51,6 @@ export function Playground() {
   const [selection, setSelection] = useState<SelectionState>(() => singleSelection(editorRef.current.snapshot().rootId));
   const [activeColumn, setActiveColumn] = useState(0);
   const [expandedIds, setExpandedIds] = useState<Set<NodeId>>(() => expandedContainerIds(editorRef.current.snapshot()));
-  const [clipboardValue, setClipboardValue] = useState<JsonValue | JsonValue[] | null>(null);
   const [lastCommand, setLastCommand] = useState<CommandLog>({
     command: "ready",
     result: { ok: true },
@@ -113,16 +111,13 @@ export function Playground() {
 
     try {
       if (command === "copy") {
-        setClipboardValue(targetIds.size > 1 ? editor.copyMany(targetIdList) : editor.copy(targetId));
+        targetIds.size > 1 ? editor.copyMany(targetIdList) : editor.copy(targetId);
       }
 
       if (command === "cut") {
-        const copied = targetIds.size > 1 ? targetIdList.map((nodeId) => editor.read(nodeId)) : editor.read(targetId);
-
         result = targetIds.size > 1 ? editor.cutMany(targetIdList) : editor.cut(targetId);
 
         if (result.ok) {
-          setClipboardValue(copied);
           nextSelection = result.focusNodeId ?? targetId;
           collapseToSingleSelection = true;
         }
@@ -272,7 +267,6 @@ export function Playground() {
   function reset() {
     editorRef.current = makeEditor(activeEntity);
     nextItemRef.current = 1;
-    setClipboardValue(null);
 
     const nextDoc = editorRef.current.snapshot();
 
@@ -298,7 +292,6 @@ export function Playground() {
     setSelection(singleSelection(nextDoc.rootId));
     setActiveColumn(0);
     setExpandedIds(expandedContainerIds(nextDoc));
-    setClipboardValue(null);
     setLastCommand({
       command: "select entity",
       result: { ok: true },
