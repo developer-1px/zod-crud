@@ -4,9 +4,6 @@ import {
 } from "react";
 import { useTreeGridPattern } from "@p/headless/patterns";
 import {
-  EXPANDED,
-  FOCUS,
-  ROOT,
   type NormalizedData,
   type UiEvent,
 } from "@p/headless";
@@ -57,28 +54,29 @@ export function JsonTreeGrid({
 
     for (const node of Object.values(doc.nodes)) {
       entities[node.id] = {
-        id: node.id,
-        data: {
-          label: rowById.get(node.id)?.path ?? String(node.key ?? node.id),
-          selected: selectedIds.has(node.id),
-        },
+        label: rowById.get(node.id)?.path ?? String(node.key ?? node.id),
+        selected: selectedIds.has(node.id),
       };
       relationships[node.id] = [...node.children];
     }
-    entities[FOCUS] = { id: FOCUS, data: { id: selectedId } };
-    entities[EXPANDED] = { id: EXPANDED, data: { ids: [...expandedIds] } };
-    relationships[ROOT] = [doc.rootId];
 
     return {
       entities,
       relationships,
+      meta: {
+        root: [doc.rootId],
+        expanded: [...expandedIds],
+        focus: selectedId,
+      },
     };
   }, [doc, expandedIds, rowById, selectedId, selectedIds]);
   const selectedIndex = rows.findIndex((row) => row.id === selectedId);
   const visibleIndex = selectedIndex < 0 ? 0 : selectedIndex;
   const activeRowId = rows[visibleIndex]?.id ?? selectedId;
   const treegrid = useTreeGridPattern(headlessData, onTreeGridEvent, {
-    selectionMode: "single",
+    colCount: columns.length,
+    label: "JSON document treegrid",
+    selectionFollowsFocus: false,
   });
 
   function move(deltaRow: number, deltaColumn: number, mode: SelectionMode = "single") {
@@ -143,21 +141,14 @@ export function JsonTreeGrid({
 
   return (
     <div
-      {...treegrid.rootProps}
+      {...treegrid.treegridProps}
       aria-multiselectable={true}
-      aria-colcount={columns.length}
-      aria-label="JSON document treegrid"
-      aria-rowcount={treegrid.items.length + 1}
       className="treegrid"
       onKeyDownCapture={onKeyDownCapture}
     >
-      <div role="row" aria-rowindex={1} className="grid-row grid-head">
+      <div {...treegrid.headerRowProps} className="grid-row grid-head">
         {columns.map((column, columnIndex) => (
-          <div
-            key={column.id}
-            role="columnheader"
-            aria-colindex={columnIndex + 1}
-          >
+          <div key={column.id} {...treegrid.columnheaderProps(columnIndex)}>
             {column.label}
           </div>
         ))}
@@ -187,7 +178,9 @@ export function JsonTreeGrid({
             {columns.map((column, columnIndex) => (
               <div
                 key={column.id}
-                {...treegrid.cellProps(row.id, columnIndex)}
+                {...(columnIndex === 0
+                  ? treegrid.rowheaderProps(row.id)
+                  : treegrid.gridcellProps(row.id, columnIndex))}
                 id={cellId(row.id, columnIndex)}
                 aria-selected={selectedIds.has(row.id)}
                 className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
