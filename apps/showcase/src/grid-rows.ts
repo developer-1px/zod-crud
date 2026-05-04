@@ -1,5 +1,4 @@
 import type {
-  JsonChange,
   JsonDoc,
   JsonNode,
   JsonValue,
@@ -146,18 +145,6 @@ export function pathString(doc: JsonDoc, nodeId: NodeId): string {
   return `/${segments.map(String).join("/")}`;
 }
 
-export function changeLabel(change: JsonChange): string {
-  if (change.type === "insert") {
-    return nodeChangeLabel(change.after);
-  }
-
-  if (change.type === "delete") {
-    return nodeChangeLabel(change.before);
-  }
-
-  return `${nodeChangeLabel(change.before)} -> ${nodeChangeLabel(change.after)}`;
-}
-
 export function valueLabel(value: JsonValue): string {
   if (typeof value === "string") {
     return `"${value}"`;
@@ -191,11 +178,4 @@ function nodeValueLabel(node: JsonNode): string {
   }
 
   return node.value === undefined ? "" : valueLabel(node.value);
-}
-
-function nodeChangeLabel(node: JsonNode): string {
-  const key = node.key === null ? "root" : String(node.key);
-  const value = node.children.length > 0 ? `${node.children.length} children` : nodeValueLabel(node);
-
-  return `${key} - ${node.type}${value === "" ? "" : ` - ${value}`}`;
 }

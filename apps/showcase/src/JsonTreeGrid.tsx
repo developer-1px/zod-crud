@@ -1,8 +1,5 @@
 import { useRef } from "react";
-import type {
-  JsonChange,
-  NodeId,
-} from "zod-crud";
+import type { NodeId } from "zod-crud";
 
 import type {
   GridColumn,
@@ -27,7 +24,7 @@ export function JsonTreeGrid({
   columns: GridColumn[];
   rows: GridRow[];
   activeColumn: number;
-  changedRows: Map<NodeId, JsonChange["type"]>;
+  changedRows: Map<NodeId, "insert" | "update" | "delete">;
   selectedId: NodeId;
   selectedIds: Set<NodeId>;
   onSelect: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;

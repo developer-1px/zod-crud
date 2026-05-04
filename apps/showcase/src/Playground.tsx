@@ -24,7 +24,6 @@ import {
   entityById,
   entityDefinitions,
   makeEditor,
-  makeEditors,
 } from "./entities.js";
 import {
   buildGridRows,
@@ -45,10 +44,9 @@ import {
 } from "./selection.js";
 
 export function Playground() {
-  const editorsRef = useRef(makeEditors());
   const [activeEntityId, setActiveEntityId] = useState(defaultEntityId);
   const activeEntity = entityById(activeEntityId);
-  const editorRef = useRef(editorsRef.current[activeEntity.id] ?? makeEditor(activeEntity));
+  const editorRef = useRef(makeEditor(activeEntity));
   const nextItemRef = useRef(1);
   const [version, setVersion] = useState(0);
   const [selection, setSelection] = useState<SelectionState>(() => singleSelection(editorRef.current.snapshot().rootId));
@@ -62,7 +60,6 @@ export function Playground() {
 
   const doc = useMemo(() => editorRef.current.snapshot(), [version]);
   const safeSelectedId = doc.nodes[selection.activeId] === undefined ? doc.rootId : selection.activeId;
-  const selectedNode = doc.nodes[safeSelectedId];
   const rows = useMemo(() => buildGridRows(doc, expandedIds), [doc, expandedIds]);
   const selectedIds = useMemo(() => liveSelectedIds(doc, selection, safeSelectedId), [doc, safeSelectedId, selection]);
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
@@ -274,7 +271,6 @@ export function Playground() {
 
   function reset() {
     editorRef.current = makeEditor(activeEntity);
-    editorsRef.current[activeEntity.id] = editorRef.current;
     nextItemRef.current = 1;
     setClipboardValue(null);
 
@@ -292,9 +288,8 @@ export function Playground() {
 
   function selectEntity(entityId: string) {
     const nextEntity = entityById(entityId);
-    const nextEditor = editorsRef.current[nextEntity.id] ?? makeEditor(nextEntity);
+    const nextEditor = makeEditor(nextEntity);
 
-    editorsRef.current[nextEntity.id] = nextEditor;
     editorRef.current = nextEditor;
 
     const nextDoc = nextEditor.snapshot();
@@ -362,14 +357,11 @@ export function Playground() {
           </section>
 
           <InspectorPanel
-            activeEntity={activeEntity}
             doc={doc}
             jsonValue={jsonValue}
-            lastChanges={lastChanges}
             lastCommand={lastCommand}
             safeSelectedId={safeSelectedId}
             selectedIds={selectedIds}
-            selectedNode={selectedNode}
           />
         </section>
       </main>

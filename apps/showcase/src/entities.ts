@@ -28,7 +28,6 @@ export type EntityDefinition = {
   schema: z.ZodType<JsonValue, unknown>;
   initialValue: JsonValue;
   childKeys: string[];
-  schemaSource: string;
   createValue: (parent: JsonNode, index: number) => JsonValue;
 };
 
@@ -89,17 +88,6 @@ export const entityDefinitions = [
     schema: CommandNodeSchema,
     initialValue: initialCommandDocument,
     childKeys: ["children"],
-    schemaSource: `const CommandNodeSchema = z.lazy(() =>
-  z.object({
-    title: z.string().min(1),
-    status: z.union([
-      z.literal("draft"),
-      z.literal("active"),
-      z.literal("done"),
-    ]),
-    children: z.array(CommandNodeSchema),
-  }),
-);`,
     createValue: (_parent, index) => ({
       title: `New child ${index}`,
       status: "draft",
@@ -113,14 +101,6 @@ export const entityDefinitions = [
     schema: CustomerDirectorySchema,
     initialValue: initialCustomerDirectory,
     childKeys: ["contacts", "tags"],
-    schemaSource: `const CustomerDirectorySchema = z.object({
-  team: z.string().min(1),
-  contacts: z.array(z.object({
-    name: z.string().min(1),
-    email: z.string().email(),
-    tags: z.array(z.string().min(1)),
-  })),
-});`,
     createValue: (parent, index) => parent.key === "tags"
       ? `tag-${index}`
       : {
@@ -137,10 +117,6 @@ export function makeEditor(entity: EntityDefinition) {
   return createJsonCrud(entity.schema, entity.initialValue, { childKeys: entity.childKeys });
 }
 
-export function makeEditors() {
-  return Object.fromEntries(entityDefinitions.map((entity) => [entity.id, makeEditor(entity)]));
-}
-
 export function entityById(entityId: string): EntityDefinition {
   return entityDefinitions.find((entity) => entity.id === entityId) ?? entityDefinitions[0]!;
 }
@@ -152,7 +128,6 @@ function registerEntity<T extends JsonValue>(definition: {
   schema: z.ZodType<T, unknown>;
   initialValue: T;
   childKeys: string[];
-  schemaSource: string;
   createValue: (parent: JsonNode, index: number) => JsonValue;
 }): EntityDefinition {
   return definition as unknown as EntityDefinition;
