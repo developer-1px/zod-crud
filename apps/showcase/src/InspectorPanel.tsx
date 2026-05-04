@@ -11,19 +11,16 @@ import type { EntityDefinition } from "./entities.js";
 import {
   changeLabel,
   pathString,
-  valueLabel,
 } from "./grid-rows.js";
 import { PanelTitle } from "./PanelTitle.js";
 
 export type CommandLog = {
   command: string;
-  target: string;
   result: OperationResult;
 };
 
 export function InspectorPanel({
   activeEntity,
-  clipboardValue,
   doc,
   jsonValue,
   lastChanges,
@@ -33,7 +30,6 @@ export function InspectorPanel({
   selectedNode,
 }: {
   activeEntity: EntityDefinition;
-  clipboardValue: JsonValue | JsonValue[] | null;
   doc: JsonDoc;
   jsonValue: JsonValue;
   lastChanges: JsonChange[];
@@ -43,42 +39,9 @@ export function InspectorPanel({
   selectedNode: JsonNode | undefined;
 }) {
   return (
-    <aside className="panel detail-panel">
+    <aside className="panel">
       <PanelTitle title="Command result" detail={lastCommand.command} />
-      <dl className="result-list">
-        <div>
-          <dt>target</dt>
-          <dd>{lastCommand.target}</dd>
-        </div>
-        <div>
-          <dt>ok</dt>
-          <dd className={lastCommand.result.ok ? "ok" : "error"}>{String(lastCommand.result.ok)}</dd>
-        </div>
-        <div>
-          <dt>reason</dt>
-          <dd>{lastCommand.result.ok ? "none" : lastCommand.result.reason}</dd>
-        </div>
-        <div>
-          <dt>nodeId</dt>
-          <dd>{lastCommand.result.ok ? lastCommand.result.nodeId ?? "none" : "none"}</dd>
-        </div>
-        <div>
-          <dt>focusNodeId</dt>
-          <dd>{lastCommand.result.ok ? lastCommand.result.focusNodeId ?? "none" : "none"}</dd>
-        </div>
-        <div>
-          <dt>focusNodeIds</dt>
-          <dd>{lastCommand.result.ok ? nodeIdList(lastCommand.result.focusNodeIds) : "none"}</dd>
-        </div>
-        <div>
-          <dt>changes</dt>
-          <dd>{lastChanges.length}</dd>
-        </div>
-        <div>
-          <dt>clipboard</dt>
-          <dd>{clipboardValue === null ? "empty" : valueLabel(clipboardValue)}</dd>
-        </div>
-      </dl>
+      <pre className="json-output">{JSON.stringify(lastCommand.result, null, 2)}</pre>
 
       <PanelTitle title="Changed nodes" detail={`${lastChanges.length}`} />
       {lastChanges.length === 0 ? (
@@ -103,7 +66,7 @@ export function InspectorPanel({
         </div>
         <div>
           <dt>selectedIds</dt>
-          <dd>{nodeIdList([...selectedIds])}</dd>
+          <dd>{[...selectedIds].join(", ") || "none"}</dd>
         </div>
         <div>
           <dt>Path</dt>
@@ -132,20 +95,8 @@ export function InspectorPanel({
           <dt>Child keys</dt>
           <dd>{activeEntity.childKeys.join(", ")}</dd>
         </div>
-        <div>
-          <dt>Description</dt>
-          <dd>{activeEntity.description}</dd>
-        </div>
       </dl>
       <pre className="schema-output">{activeEntity.schemaSource}</pre>
     </aside>
   );
-}
-
-function nodeIdList(nodeIds: NodeId[] | undefined): string {
-  if (nodeIds === undefined || nodeIds.length === 0) {
-    return "none";
-  }
-
-  return `[${nodeIds.join(", ")}]`;
 }

@@ -33,15 +33,6 @@ button {
   padding: 16px 24px;
 }
 
-.eyebrow {
-  color: #58706b;
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0;
-  margin: 0 0 4px;
-  text-transform: uppercase;
-}
-
 h1,
 h2 {
   letter-spacing: 0;
@@ -195,11 +186,9 @@ kbd {
   font-weight: 700;
 }
 
-.entity-card small,
-.entity-card em {
+.entity-card small {
   color: #65736d;
   font-size: 12px;
-  font-style: normal;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -280,30 +269,7 @@ kbd {
   min-width: 0;
 }
 
-.row-change-label {
-  border-radius: 4px;
-  color: #ffffff;
-  flex: 0 0 auto;
-  font-size: 10px;
-  font-weight: 700;
-  line-height: 1;
-  padding: 3px 5px;
-  text-transform: uppercase;
-}
-
-.row-change-label.insert {
-  background: #177245;
-}
-
-.row-change-label.update {
-  background: #88651c;
-}
-
-.row-change-label.delete {
-  background: #a33131;
-}
-
-.path-label,
+.path-cell span:last-child,
 .grid-cell {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -398,14 +364,6 @@ kbd {
 
 .change-type.delete {
   background: #a33131;
-}
-
-.ok {
-  color: #177245;
-}
-
-.error {
-  color: #a33131;
 }
 
 .json-output,

@@ -18,7 +18,6 @@ export type GridRow = {
   path: string;
   type: JsonNode["type"];
   value: string;
-  childCount: number;
   expandable: boolean;
   expanded: boolean;
 };
@@ -50,7 +49,6 @@ export function buildGridRows(doc: JsonDoc, expandedIds: Set<NodeId>): GridRow[]
       path: pathString(doc, node.id),
       type: node.type,
       value: nodeValueLabel(node),
-      childCount: node.children.length,
       expandable,
       expanded,
     });
@@ -146,16 +144,6 @@ export function pathString(doc: JsonDoc, nodeId: NodeId): string {
   }
 
   return `/${segments.map(String).join("/")}`;
-}
-
-export function nodeLabel(doc: JsonDoc, nodeId: NodeId): string {
-  const node = doc.nodes[nodeId];
-
-  if (node === undefined) {
-    return nodeId;
-  }
-
-  return `${pathString(doc, nodeId)} (${node.type})`;
 }
 
 export function changeLabel(change: JsonChange): string {

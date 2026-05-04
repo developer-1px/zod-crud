@@ -25,7 +25,6 @@ export type EntityDefinition = {
   id: string;
   label: string;
   schemaName: string;
-  description: string;
   schema: z.ZodType<JsonValue, unknown>;
   initialValue: JsonValue;
   childKeys: string[];
@@ -87,7 +86,6 @@ export const entityDefinitions = [
     id: "command-tree",
     label: "Command tree",
     schemaName: "CommandNodeSchema",
-    description: "Recursive tree entity used for copy, cut, paste, delete, undo, and redo.",
     schema: CommandNodeSchema,
     initialValue: initialCommandDocument,
     childKeys: ["children"],
@@ -112,7 +110,6 @@ export const entityDefinitions = [
     id: "customer-directory",
     label: "Customer directory",
     schemaName: "CustomerDirectorySchema",
-    description: "Zod object entity with contacts and nested tag arrays.",
     schema: CustomerDirectorySchema,
     initialValue: initialCustomerDirectory,
     childKeys: ["contacts", "tags"],
@@ -152,7 +149,6 @@ function registerEntity<T extends JsonValue>(definition: {
   id: string;
   label: string;
   schemaName: string;
-  description: string;
   schema: z.ZodType<T, unknown>;
   initialValue: T;
   childKeys: string[];

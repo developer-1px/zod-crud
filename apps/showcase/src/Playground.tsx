@@ -32,7 +32,6 @@ import {
   expandedContainerIds,
   expandedForSelection,
   insertionArrayId,
-  nodeLabel,
   validExpandedIds,
 } from "./grid-rows.js";
 import {
@@ -58,7 +57,6 @@ export function Playground() {
   const [clipboardValue, setClipboardValue] = useState<JsonValue | JsonValue[] | null>(null);
   const [lastCommand, setLastCommand] = useState<CommandLog>({
     command: "ready",
-    target: "/",
     result: { ok: true },
   });
 
@@ -67,27 +65,14 @@ export function Playground() {
   const selectedNode = doc.nodes[safeSelectedId];
   const rows = useMemo(() => buildGridRows(doc, expandedIds), [doc, expandedIds]);
   const selectedIds = useMemo(() => liveSelectedIds(doc, selection, safeSelectedId), [doc, safeSelectedId, selection]);
-  const selectedRow = rows.find((row) => row.id === safeSelectedId) ?? rows[0] ?? null;
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
   const selectedIdList = useMemo(() => [...selectedIds], [selectedIds]);
   const canCopy = editorRef.current.canCopyMany(selectedIdList).ok;
   const canCut = editorRef.current.canCutMany(selectedIdList).ok;
   const canDelete = editorRef.current.canDeleteMany(selectedIdList).ok;
   const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
-  const entityStats = useMemo(() => entityDefinitions.map((entity) => ({
-    id: entity.id,
-    nodes: Object.keys((editorsRef.current[entity.id] ?? makeEditor(entity)).snapshot().nodes).length,
-  })), [version]);
   const lastChanges = lastCommand.result.ok ? lastCommand.result.changes ?? [] : [];
-  const changedRows = useMemo(() => {
-    const next = new Map<NodeId, "insert" | "update" | "delete">();
-
-    for (const change of lastChanges) {
-      next.set(change.nodeId, change.type);
-    }
-
-    return next;
-  }, [lastChanges]);
+  const changedRows = useMemo(() => new Map(lastChanges.map((change) => [change.nodeId, change.type])), [lastChanges]);
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
@@ -124,9 +109,6 @@ export function Playground() {
     const targetId = before.nodes[selection.activeId] === undefined ? before.rootId : selection.activeId;
     const targetIds = liveSelectedIds(before, selection, targetId);
     const targetIdList = [...targetIds];
-    const targetLabel = ["copy", "cut", "delete"].includes(command) && targetIds.size > 1
-      ? `${targetIds.size} selected nodes`
-      : nodeLabel(before, targetId);
     let result: OperationResult = { ok: true };
     let nextSelection = targetId;
     let collapseToSingleSelection = false;
@@ -207,7 +189,6 @@ export function Playground() {
     });
     setLastCommand({
       command,
-      target: targetLabel,
       result,
     });
     refresh();
@@ -251,7 +232,6 @@ export function Playground() {
     if (childrenId === null) {
       setLastCommand({
         command: "create",
-        target: nodeLabel(current, targetId),
         result: { ok: false, reason: "Select an object with children or a children array." },
       });
       return;
@@ -287,7 +267,6 @@ export function Playground() {
 
     setLastCommand({
       command: "create",
-      target: nodeLabel(current, targetId),
       result,
     });
     refresh();
@@ -306,7 +285,6 @@ export function Playground() {
     setExpandedIds(expandedContainerIds(nextDoc));
     setLastCommand({
       command: "reset",
-      target: "/",
       result: { ok: true },
     });
     refresh();
@@ -328,7 +306,6 @@ export function Playground() {
     setClipboardValue(null);
     setLastCommand({
       command: "select entity",
-      target: nextEntity.label,
       result: { ok: true },
     });
     refresh();
@@ -338,7 +315,6 @@ export function Playground() {
     <>
       <header className="app-header">
         <div>
-          <p className="eyebrow">zod-crud</p>
           <h1>JSON treegrid playground</h1>
         </div>
         <div className="header-actions">
@@ -358,20 +334,19 @@ export function Playground() {
         />
 
         <section className="workspace">
-          <aside className="panel entity-panel">
+          <aside className="panel">
             <PanelTitle title="Registered entities" detail={`${entityDefinitions.length} Zod schemas`} />
             <EntityRegistry
               entities={entityDefinitions}
               activeEntityId={activeEntity.id}
-              stats={entityStats}
               onSelect={selectEntity}
             />
           </aside>
 
-          <section className="panel editor-panel">
+          <section className="panel">
             <PanelTitle
               title={`${activeEntity.label} JsonDoc`}
-              detail={selectedRow === null ? "/" : `${selectedRow.path} - ${columns[activeColumn]?.label ?? ""} - ${selectedIds.size} selected`}
+              detail={`${selectedIds.size} selected`}
             />
             <JsonTreeGrid
               columns={columns}
@@ -388,7 +363,6 @@ export function Playground() {
 
           <InspectorPanel
             activeEntity={activeEntity}
-            clipboardValue={clipboardValue}
             doc={doc}
             jsonValue={jsonValue}
             lastChanges={lastChanges}

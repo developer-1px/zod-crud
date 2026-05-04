@@ -134,7 +134,7 @@ export function JsonTreeGrid({
               "grid-row",
               selectedIds.has(row.id) ? "is-selected" : "",
               selectedId === row.id ? "is-active-row" : "",
-              changeType === undefined ? "" : `is-changed change-${changeType}`,
+              changeType === undefined ? "" : `change-${changeType}`,
             ].filter(Boolean).join(" ")}
           >
             {columns.map((column, columnIndex) => (
@@ -160,10 +160,7 @@ export function JsonTreeGrid({
                     <span aria-hidden="true" className="twisty">
                       {row.expandable ? row.expanded ? "v" : ">" : ""}
                     </span>
-                    <span className="path-label">{row.path}</span>
-                    {changeType === undefined ? null : (
-                      <span className={`row-change-label ${changeType}`}>{changeType}</span>
-                    )}
+                    <span>{row.path}</span>
                   </span>
                 ) : column.id === "key" ? (
                   row.keyLabel
