@@ -17,6 +17,7 @@ import { PanelTitle } from "./PanelTitle.js";
 
 export type CommandLog = {
   command: string;
+  input: string;
   target: string;
   result: OperationResult;
 };
@@ -44,57 +45,43 @@ export function InspectorPanel({
 }) {
   return (
     <aside className="panel detail-panel">
-      <PanelTitle title="Zod entity" detail={activeEntity.schemaName} />
+      <PanelTitle title="Command result" detail={lastCommand.command} />
+      <pre className="core-flow">{commandFlow(lastCommand, selectedIds, safeSelectedId)}</pre>
       <dl className="result-list">
         <div>
-          <dt>Entity</dt>
-          <dd>{activeEntity.label}</dd>
+          <dt>input</dt>
+          <dd><code>{lastCommand.input}</code></dd>
         </div>
         <div>
-          <dt>Child keys</dt>
-          <dd>{activeEntity.childKeys.join(", ")}</dd>
-        </div>
-        <div>
-          <dt>Description</dt>
-          <dd>{activeEntity.description}</dd>
-        </div>
-      </dl>
-      <pre className="schema-output">{activeEntity.schemaSource}</pre>
-
-      <PanelTitle title="Selected node" detail={safeSelectedId} />
-      <dl className="result-list">
-        <div>
-          <dt>Selection</dt>
-          <dd>{selectedIds.size} node{selectedIds.size === 1 ? "" : "s"}</dd>
-        </div>
-        <div>
-          <dt>Path</dt>
-          <dd>{selectedNode === undefined ? "/" : pathString(doc, safeSelectedId)}</dd>
-        </div>
-        <div>
-          <dt>Type</dt>
-          <dd>{selectedNode?.type ?? "none"}</dd>
-        </div>
-        <div>
-          <dt>Children</dt>
-          <dd>{selectedNode?.children.length ?? 0}</dd>
-        </div>
-      </dl>
-
-      <PanelTitle title="Command state" detail={lastCommand.command} />
-      <dl className="result-list">
-        <div>
-          <dt>Target</dt>
+          <dt>target</dt>
           <dd>{lastCommand.target}</dd>
         </div>
         <div>
-          <dt>Result</dt>
-          <dd className={lastCommand.result.ok ? "ok" : "error"}>
-            {lastCommand.result.ok ? "ok" : lastCommand.result.reason}
-          </dd>
+          <dt>ok</dt>
+          <dd className={lastCommand.result.ok ? "ok" : "error"}>{String(lastCommand.result.ok)}</dd>
         </div>
         <div>
-          <dt>Clipboard</dt>
+          <dt>reason</dt>
+          <dd>{lastCommand.result.ok ? "none" : lastCommand.result.reason}</dd>
+        </div>
+        <div>
+          <dt>nodeId</dt>
+          <dd>{lastCommand.result.ok ? lastCommand.result.nodeId ?? "none" : "none"}</dd>
+        </div>
+        <div>
+          <dt>focusNodeId</dt>
+          <dd>{lastCommand.result.ok ? lastCommand.result.focusNodeId ?? "none" : "none"}</dd>
+        </div>
+        <div>
+          <dt>focusNodeIds</dt>
+          <dd>{lastCommand.result.ok ? nodeIdList(lastCommand.result.focusNodeIds) : "none"}</dd>
+        </div>
+        <div>
+          <dt>changes</dt>
+          <dd>{lastChanges.length}</dd>
+        </div>
+        <div>
+          <dt>clipboard</dt>
           <dd>{clipboardValue === null ? "empty" : valueLabel(clipboardValue)}</dd>
         </div>
       </dl>
@@ -114,8 +101,73 @@ export function InspectorPanel({
         </ol>
       )}
 
+      <PanelTitle title="Selected node" detail={safeSelectedId} />
+      <dl className="result-list">
+        <div>
+          <dt>activeId</dt>
+          <dd>{safeSelectedId}</dd>
+        </div>
+        <div>
+          <dt>selectedIds</dt>
+          <dd>{nodeIdList([...selectedIds])}</dd>
+        </div>
+        <div>
+          <dt>Path</dt>
+          <dd>{selectedNode === undefined ? "/" : pathString(doc, safeSelectedId)}</dd>
+        </div>
+        <div>
+          <dt>Type</dt>
+          <dd>{selectedNode?.type ?? "none"}</dd>
+        </div>
+        <div>
+          <dt>Children</dt>
+          <dd>{selectedNode?.children.length ?? 0}</dd>
+        </div>
+      </dl>
+
       <PanelTitle title="JSON output" />
       <pre className="json-output">{JSON.stringify(jsonValue, null, 2)}</pre>
+
+      <PanelTitle title="Zod entity" detail={activeEntity.schemaName} />
+      <dl className="result-list">
+        <div>
+          <dt>Entity</dt>
+          <dd>{activeEntity.label}</dd>
+        </div>
+        <div>
+          <dt>Child keys</dt>
+          <dd>{activeEntity.childKeys.join(", ")}</dd>
+        </div>
+        <div>
+          <dt>Description</dt>
+          <dd>{activeEntity.description}</dd>
+        </div>
+      </dl>
+      <pre className="schema-output">{activeEntity.schemaSource}</pre>
     </aside>
   );
+}
+
+function commandFlow(command: CommandLog, selectedIds: Set<NodeId>, activeId: NodeId): string {
+  const selection = selectedIds.size > 1 ? nodeIdList([...selectedIds]) : activeId;
+
+  if (!command.result.ok) {
+    return `${command.input} -> fail -> reason ${command.result.reason} -> selection ${selection}`;
+  }
+
+  const focus = command.result.focusNodeIds !== undefined
+    ? `focusNodeIds ${nodeIdList(command.result.focusNodeIds)}`
+    : command.result.focusNodeId !== undefined
+      ? `focusNodeId ${command.result.focusNodeId}`
+      : "focus none";
+
+  return `${command.input} -> ok -> ${focus} -> selection ${selection}`;
+}
+
+function nodeIdList(nodeIds: NodeId[] | undefined): string {
+  if (nodeIds === undefined || nodeIds.length === 0) {
+    return "none";
+  }
+
+  return `[${nodeIds.join(", ")}]`;
 }

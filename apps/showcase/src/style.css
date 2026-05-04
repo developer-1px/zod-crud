@@ -122,6 +122,14 @@ kbd {
   font-size: 12px;
 }
 
+.command-card small {
+  font-size: 11px;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .workspace {
   align-items: start;
   display: grid;
@@ -206,6 +214,7 @@ kbd {
 }
 
 .grid-row {
+  border-left: 4px solid transparent;
   border-bottom: 1px solid #e7ebe6;
   display: grid;
   grid-template-columns: minmax(240px, 1.4fr) minmax(110px, 0.65fr) 96px minmax(160px, 1fr);
@@ -248,7 +257,7 @@ kbd {
 }
 
 .grid-row.is-selected .grid-cell {
-  background: #eef7f3;
+  background: #f2f4f1;
 }
 
 .grid-row.is-active-row .grid-cell:first-child {
@@ -256,8 +265,20 @@ kbd {
 }
 
 .grid-cell.is-active {
-  background: #dff0e9;
+  background: #ffffff;
   box-shadow: inset 0 0 0 2px #2e7d68;
+}
+
+.grid-row.change-insert {
+  border-left-color: #177245;
+}
+
+.grid-row.change-update {
+  border-left-color: #88651c;
+}
+
+.grid-row.change-delete {
+  border-left-color: #a33131;
 }
 
 .path-cell {
@@ -267,7 +288,30 @@ kbd {
   min-width: 0;
 }
 
-.path-cell span:last-child,
+.row-change-label {
+  border-radius: 4px;
+  color: #ffffff;
+  flex: 0 0 auto;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 3px 5px;
+  text-transform: uppercase;
+}
+
+.row-change-label.insert {
+  background: #177245;
+}
+
+.row-change-label.update {
+  background: #88651c;
+}
+
+.row-change-label.delete {
+  background: #a33131;
+}
+
+.path-label,
 .grid-cell {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -302,6 +346,24 @@ kbd {
 .result-list dd {
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.result-list code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+}
+
+.core-flow {
+  background: #f1f4f1;
+  border: 1px solid #d9ded8;
+  border-radius: 7px;
+  color: #172026;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0 0 14px;
+  overflow: auto;
+  padding: 10px;
 }
 
 .empty-state {

@@ -1,5 +1,8 @@
 import { useRef } from "react";
-import type { NodeId } from "zod-crud";
+import type {
+  JsonChange,
+  NodeId,
+} from "zod-crud";
 
 import type {
   GridColumn,
@@ -14,6 +17,7 @@ export function JsonTreeGrid({
   columns,
   rows,
   activeColumn,
+  changedRows,
   selectedId,
   selectedIds,
   onSelect,
@@ -23,6 +27,7 @@ export function JsonTreeGrid({
   columns: GridColumn[];
   rows: GridRow[];
   activeColumn: number;
+  changedRows: Map<NodeId, JsonChange["type"]>;
   selectedId: NodeId;
   selectedIds: Set<NodeId>;
   onSelect: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
@@ -114,56 +119,64 @@ export function JsonTreeGrid({
         ))}
       </div>
 
-      {rows.map((row, rowIndex) => (
-        <div
-          key={row.id}
-          role="row"
-          aria-rowindex={rowIndex + 2}
-          aria-level={row.depth + 1}
-          aria-expanded={row.expandable ? row.expanded : undefined}
-          aria-selected={selectedIds.has(row.id)}
-          className={[
-            "grid-row",
-            selectedIds.has(row.id) ? "is-selected" : "",
-            selectedId === row.id ? "is-active-row" : "",
-          ].filter(Boolean).join(" ")}
-        >
-          {columns.map((column, columnIndex) => (
-            <div
-              key={column.id}
-              id={cellId(row.id, columnIndex)}
-              role="gridcell"
-              aria-colindex={columnIndex + 1}
-              aria-selected={selectedIds.has(row.id)}
-              className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
-              onClick={(event) => {
-                onSelect(row.id, columnIndex, eventSelectionMode(event));
-                gridRef.current?.focus();
-              }}
-              onDoubleClick={() => {
-                if (columnIndex === 0) {
-                  onToggle(row.id);
-                }
-              }}
-            >
-              {column.id === "path" ? (
-                <span className="path-cell" style={{ paddingLeft: `${row.depth * 18}px` }}>
-                  <span aria-hidden="true" className="twisty">
-                    {row.expandable ? row.expanded ? "v" : ">" : ""}
+      {rows.map((row, rowIndex) => {
+        const changeType = changedRows.get(row.id);
+
+        return (
+          <div
+            key={row.id}
+            role="row"
+            aria-rowindex={rowIndex + 2}
+            aria-level={row.depth + 1}
+            aria-expanded={row.expandable ? row.expanded : undefined}
+            aria-selected={selectedIds.has(row.id)}
+            className={[
+              "grid-row",
+              selectedIds.has(row.id) ? "is-selected" : "",
+              selectedId === row.id ? "is-active-row" : "",
+              changeType === undefined ? "" : `is-changed change-${changeType}`,
+            ].filter(Boolean).join(" ")}
+          >
+            {columns.map((column, columnIndex) => (
+              <div
+                key={column.id}
+                id={cellId(row.id, columnIndex)}
+                role="gridcell"
+                aria-colindex={columnIndex + 1}
+                aria-selected={selectedIds.has(row.id)}
+                className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
+                onClick={(event) => {
+                  onSelect(row.id, columnIndex, eventSelectionMode(event));
+                  gridRef.current?.focus();
+                }}
+                onDoubleClick={() => {
+                  if (columnIndex === 0) {
+                    onToggle(row.id);
+                  }
+                }}
+              >
+                {column.id === "path" ? (
+                  <span className="path-cell" style={{ paddingLeft: `${row.depth * 18}px` }}>
+                    <span aria-hidden="true" className="twisty">
+                      {row.expandable ? row.expanded ? "v" : ">" : ""}
+                    </span>
+                    <span className="path-label">{row.path}</span>
+                    {changeType === undefined ? null : (
+                      <span className={`row-change-label ${changeType}`}>{changeType}</span>
+                    )}
                   </span>
-                  <span>{row.path}</span>
-                </span>
-              ) : column.id === "key" ? (
-                row.keyLabel
-              ) : column.id === "type" ? (
-                row.type
-              ) : (
-                row.value
-              )}
-            </div>
-          ))}
-        </div>
-      ))}
+                ) : column.id === "key" ? (
+                  row.keyLabel
+                ) : column.id === "type" ? (
+                  row.type
+                ) : (
+                  row.value
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

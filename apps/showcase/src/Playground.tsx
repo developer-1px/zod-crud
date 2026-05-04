@@ -58,6 +58,7 @@ export function Playground() {
   const [clipboardValue, setClipboardValue] = useState<JsonValue | JsonValue[] | null>(null);
   const [lastCommand, setLastCommand] = useState<CommandLog>({
     command: "ready",
+    input: "ready",
     target: "/",
     result: { ok: true },
   });
@@ -70,15 +71,24 @@ export function Playground() {
   const selectedRow = rows.find((row) => row.id === safeSelectedId) ?? rows[0] ?? null;
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
   const selectedIdList = useMemo(() => [...selectedIds], [selectedIds]);
-  const canCopy = editorRef.current.canCopyMany(selectedIdList).ok;
-  const canCut = editorRef.current.canCutMany(selectedIdList).ok;
-  const canDelete = editorRef.current.canDeleteMany(selectedIdList).ok;
-  const canPaste = editorRef.current.canPaste(safeSelectedId).ok;
+  const canCopy = editorRef.current.canCopyMany(selectedIdList);
+  const canCut = editorRef.current.canCutMany(selectedIdList);
+  const canDelete = editorRef.current.canDeleteMany(selectedIdList);
+  const canPaste = editorRef.current.canPaste(safeSelectedId);
   const entityStats = useMemo(() => entityDefinitions.map((entity) => ({
     id: entity.id,
     nodes: Object.keys((editorsRef.current[entity.id] ?? makeEditor(entity)).snapshot().nodes).length,
   })), [version]);
   const lastChanges = lastCommand.result.ok ? lastCommand.result.changes ?? [] : [];
+  const changedRows = useMemo(() => {
+    const next = new Map<NodeId, "insert" | "update" | "delete">();
+
+    for (const change of lastChanges) {
+      next.set(change.nodeId, change.type);
+    }
+
+    return next;
+  }, [lastChanges]);
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
@@ -114,9 +124,11 @@ export function Playground() {
     const before = editor.snapshot();
     const targetId = before.nodes[selection.activeId] === undefined ? before.rootId : selection.activeId;
     const targetIds = liveSelectedIds(before, selection, targetId);
+    const targetIdList = [...targetIds];
     const targetLabel = ["copy", "cut", "delete"].includes(command) && targetIds.size > 1
       ? `${targetIds.size} selected nodes`
       : nodeLabel(before, targetId);
+    const input = commandInput(command, targetId, targetIdList);
     let result: OperationResult = { ok: true };
     let nextSelection = targetId;
     let collapseToSingleSelection = false;
@@ -124,13 +136,13 @@ export function Playground() {
 
     try {
       if (command === "copy") {
-        setClipboardValue(targetIds.size > 1 ? editor.copyMany([...targetIds]) : editor.copy(targetId));
+        setClipboardValue(targetIds.size > 1 ? editor.copyMany(targetIdList) : editor.copy(targetId));
       }
 
       if (command === "cut") {
-        const copied = targetIds.size > 1 ? [...targetIds].map((nodeId) => editor.read(nodeId)) : editor.read(targetId);
+        const copied = targetIds.size > 1 ? targetIdList.map((nodeId) => editor.read(nodeId)) : editor.read(targetId);
 
-        result = targetIds.size > 1 ? editor.cutMany([...targetIds]) : editor.cut(targetId);
+        result = targetIds.size > 1 ? editor.cutMany(targetIdList) : editor.cut(targetId);
 
         if (result.ok) {
           setClipboardValue(copied);
@@ -195,7 +207,12 @@ export function Playground() {
         ? focusSelection(after, nextSelectionIds, nextActiveId)
         : normalizeSelection(after, current, nextActiveId);
     });
-    setLastCommand({ command, target: targetLabel, result });
+    setLastCommand({
+      command,
+      input,
+      target: targetLabel,
+      result,
+    });
     refresh();
   }, [refresh, selection]);
 
@@ -237,6 +254,7 @@ export function Playground() {
     if (childrenId === null) {
       setLastCommand({
         command: "create",
+        input: `create(${childrenId ?? targetId})`,
         target: nodeLabel(current, targetId),
         result: { ok: false, reason: "Select an object with children or a children array." },
       });
@@ -273,6 +291,7 @@ export function Playground() {
 
     setLastCommand({
       command: "create",
+      input: `create(${childrenId}, ${index})`,
       target: nodeLabel(current, targetId),
       result,
     });
@@ -292,6 +311,7 @@ export function Playground() {
     setExpandedIds(expandedContainerIds(nextDoc));
     setLastCommand({
       command: "reset",
+      input: "reset()",
       target: "/",
       result: { ok: true },
     });
@@ -314,6 +334,7 @@ export function Playground() {
     setClipboardValue(null);
     setLastCommand({
       command: "select entity",
+      input: `selectEntity(${nextEntity.id})`,
       target: nextEntity.label,
       result: { ok: true },
     });
@@ -363,6 +384,7 @@ export function Playground() {
               columns={columns}
               rows={rows}
               activeColumn={activeColumn}
+              changedRows={changedRows}
               selectedId={safeSelectedId}
               selectedIds={selectedIds}
               onSelect={selectGridCell}
@@ -397,6 +419,30 @@ function failure(error: unknown): OperationResult {
     ok: false,
     reason: error instanceof Error ? error.message : String(error),
   };
+}
+
+function commandInput(command: CommandId, targetId: NodeId, targetIds: NodeId[]): string {
+  if (command === "copy") {
+    return targetIds.length > 1 ? `copyMany(${idList(targetIds)})` : `copy(${targetId})`;
+  }
+
+  if (command === "cut") {
+    return targetIds.length > 1 ? `cutMany(${idList(targetIds)})` : `cut(${targetId})`;
+  }
+
+  if (command === "delete") {
+    return targetIds.length > 1 ? `deleteMany(${idList(targetIds)})` : `delete(${targetId})`;
+  }
+
+  if (command === "paste") {
+    return `paste(${targetId})`;
+  }
+
+  return `${command}()`;
+}
+
+function idList(nodeIds: NodeId[]): string {
+  return `[${nodeIds.join(", ")}]`;
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
