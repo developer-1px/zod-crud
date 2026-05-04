@@ -73,7 +73,7 @@ export function Playground() {
     setVersion((current) => current + 1);
   }, []);
 
-  const toggleExpanded = useCallback((nodeId: NodeId) => {
+  const setExpanded = useCallback((nodeId: NodeId, open: boolean) => {
     const node = editorRef.current.snapshot().nodes[nodeId];
 
     if (node === undefined || node.children.length === 0) {
@@ -83,10 +83,10 @@ export function Playground() {
     setExpandedIds((current) => {
       const next = new Set(current);
 
-      if (next.has(nodeId)) {
-        next.delete(nodeId);
-      } else {
+      if (open) {
         next.add(nodeId);
+      } else {
+        next.delete(nodeId);
       }
 
       return next;
@@ -337,6 +337,8 @@ export function Playground() {
               detail={`${selectedIds.size} selected`}
             />
             <JsonTreeGrid
+              doc={doc}
+              expandedIds={expandedIds}
               columns={columns}
               rows={rows}
               activeColumn={activeColumn}
@@ -345,7 +347,7 @@ export function Playground() {
               selectedIds={selectedIds}
               onSelect={selectGridCell}
               onMove={selectGridCell}
-              onToggle={toggleExpanded}
+              onExpand={setExpanded}
             />
           </section>
 

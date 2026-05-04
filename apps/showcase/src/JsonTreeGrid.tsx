@@ -1,5 +1,19 @@
-import { useRef } from "react";
-import type { NodeId } from "zod-crud";
+import {
+  useMemo,
+  useRef,
+} from "react";
+import { useTreeGridPattern } from "@p/headless/patterns";
+import {
+  EXPANDED,
+  FOCUS,
+  ROOT,
+  type NormalizedData,
+  type UiEvent,
+} from "@p/headless";
+import type {
+  JsonDoc,
+  NodeId,
+} from "zod-crud";
 
 import type {
   GridColumn,
@@ -11,6 +25,8 @@ import {
 } from "./selection.js";
 
 export function JsonTreeGrid({
+  doc,
+  expandedIds,
   columns,
   rows,
   activeColumn,
@@ -19,8 +35,10 @@ export function JsonTreeGrid({
   selectedIds,
   onSelect,
   onMove,
-  onToggle,
+  onExpand,
 }: {
+  doc: JsonDoc;
+  expandedIds: Set<NodeId>;
   columns: GridColumn[];
   rows: GridRow[];
   activeColumn: number;
@@ -29,13 +47,39 @@ export function JsonTreeGrid({
   selectedIds: Set<NodeId>;
   onSelect: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
   onMove: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
-  onToggle: (nodeId: NodeId) => void;
+  onExpand: (nodeId: NodeId, open: boolean) => void;
 }) {
-  const gridRef = useRef<HTMLDivElement>(null);
+  const pointerTargetRef = useRef<{ columnIndex: number; mode: SelectionMode } | null>(null);
+  const rowById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
+  const headlessData = useMemo<NormalizedData>(() => {
+    const entities: NormalizedData["entities"] = {};
+    const relationships: NormalizedData["relationships"] = {};
+
+    for (const node of Object.values(doc.nodes)) {
+      entities[node.id] = {
+        id: node.id,
+        data: {
+          label: rowById.get(node.id)?.path ?? String(node.key ?? node.id),
+          selected: selectedIds.has(node.id),
+        },
+      };
+      relationships[node.id] = [...node.children];
+    }
+    entities[FOCUS] = { id: FOCUS, data: { id: selectedId } };
+    entities[EXPANDED] = { id: EXPANDED, data: { ids: [...expandedIds] } };
+    relationships[ROOT] = [doc.rootId];
+
+    return {
+      entities,
+      relationships,
+    };
+  }, [doc, expandedIds, rowById, selectedId, selectedIds]);
   const selectedIndex = rows.findIndex((row) => row.id === selectedId);
   const visibleIndex = selectedIndex < 0 ? 0 : selectedIndex;
   const activeRowId = rows[visibleIndex]?.id ?? selectedId;
-  const activeCellId = cellId(activeRowId, activeColumn);
+  const treegrid = useTreeGridPattern(headlessData, onTreeGridEvent, {
+    selectionMode: "single",
+  });
 
   function move(deltaRow: number, deltaColumn: number, mode: SelectionMode = "single") {
     const nextRow = rows[clamp(visibleIndex + deltaRow, 0, rows.length - 1)];
@@ -46,87 +90,93 @@ export function JsonTreeGrid({
     }
   }
 
-  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
+  function onTreeGridEvent(event: UiEvent) {
+    if (event.type === "navigate") {
+      pointerTargetRef.current = null;
+      onMove(event.id, activeColumn);
+      return;
+    }
+
+    if (event.type === "expand") {
+      pointerTargetRef.current = null;
+      onExpand(event.id, event.open);
+      return;
+    }
+
+    if (event.type === "activate") {
+      const pointerTarget = pointerTargetRef.current;
+
+      pointerTargetRef.current = null;
+      onSelect(event.id, pointerTarget?.columnIndex ?? activeColumn, pointerTarget?.mode ?? "single");
+    }
+  }
+
+  function onKeyDownCapture(event: React.KeyboardEvent<HTMLDivElement>) {
     const commandKey = event.metaKey || event.ctrlKey;
 
     if (commandKey && event.key === " ") {
       event.preventDefault();
+      event.stopPropagation();
+      pointerTargetRef.current = null;
       onSelect(activeRowId, activeColumn, "toggle");
       return;
     }
 
-    if (event.key === " ") {
+    if (event.shiftKey && event.key === "ArrowDown") {
       event.preventDefault();
-      onToggle(activeRowId);
-      return;
-    }
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
+      event.stopPropagation();
+      pointerTargetRef.current = null;
       move(1, 0, event.shiftKey ? "range" : "single");
       return;
     }
 
-    if (event.key === "ArrowUp") {
+    if (event.shiftKey && event.key === "ArrowUp") {
       event.preventDefault();
+      event.stopPropagation();
+      pointerTargetRef.current = null;
       move(-1, 0, event.shiftKey ? "range" : "single");
       return;
     }
 
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-      move(0, 1, event.shiftKey ? "range" : "single");
-      return;
-    }
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-      move(0, -1, event.shiftKey ? "range" : "single");
-      return;
-    }
-
-    if (event.key === "Home") {
-      event.preventDefault();
-      onMove(activeRowId, 0);
-      return;
-    }
-
-    if (event.key === "End") {
-      event.preventDefault();
-      onMove(activeRowId, columns.length - 1);
-    }
+    pointerTargetRef.current = null;
   }
 
   return (
     <div
-      ref={gridRef}
-      role="treegrid"
+      {...treegrid.rootProps}
+      aria-multiselectable={true}
       aria-colcount={columns.length}
-      aria-rowcount={rows.length + 1}
-      aria-activedescendant={activeCellId}
-      tabIndex={0}
+      aria-label="JSON document treegrid"
+      aria-rowcount={treegrid.items.length + 1}
       className="treegrid"
-      onKeyDown={onKeyDown}
+      onKeyDownCapture={onKeyDownCapture}
     >
       <div role="row" aria-rowindex={1} className="grid-row grid-head">
         {columns.map((column, columnIndex) => (
-          <div key={column.id} role="columnheader" aria-colindex={columnIndex + 1}>
+          <div
+            key={column.id}
+            role="columnheader"
+            aria-colindex={columnIndex + 1}
+          >
             {column.label}
           </div>
         ))}
       </div>
 
-      {rows.map((row, rowIndex) => {
+      {treegrid.items.map((item, rowIndex) => {
+        const row = rowById.get(item.id);
+
+        if (row === undefined) {
+          return null;
+        }
+
         const changeType = changedRows.get(row.id);
 
         return (
           <div
+            {...treegrid.rowProps(row.id)}
             key={row.id}
-            role="row"
             aria-rowindex={rowIndex + 2}
-            aria-level={row.depth + 1}
-            aria-expanded={row.expandable ? row.expanded : undefined}
-            aria-selected={selectedIds.has(row.id)}
             className={[
               "grid-row",
               selectedIds.has(row.id) ? "is-selected" : "",
@@ -137,18 +187,19 @@ export function JsonTreeGrid({
             {columns.map((column, columnIndex) => (
               <div
                 key={column.id}
+                {...treegrid.cellProps(row.id, columnIndex)}
                 id={cellId(row.id, columnIndex)}
-                role="gridcell"
-                aria-colindex={columnIndex + 1}
                 aria-selected={selectedIds.has(row.id)}
                 className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
-                onClick={(event) => {
-                  onSelect(row.id, columnIndex, eventSelectionMode(event));
-                  gridRef.current?.focus();
+                onMouseDown={(event) => {
+                  pointerTargetRef.current = {
+                    columnIndex,
+                    mode: eventSelectionMode(event),
+                  };
                 }}
                 onDoubleClick={() => {
                   if (columnIndex === 0) {
-                    onToggle(row.id);
+                    onExpand(row.id, !row.expanded);
                   }
                 }}
               >

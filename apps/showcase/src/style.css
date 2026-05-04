@@ -202,6 +202,15 @@ kbd {
   min-width: 720px;
 }
 
+.grid-row:focus {
+  outline: none;
+}
+
+.grid-row:focus-visible {
+  outline: 2px solid #2e7d68;
+  outline-offset: -2px;
+}
+
 .grid-head {
   background: #f1f4f1;
   color: #52605a;
