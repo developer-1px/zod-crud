@@ -16,6 +16,7 @@ import {
   cloneDoc,
   cloneJson,
   deserialize,
+  ensureObjectArrayField,
   findChildByKey,
   getNode,
   getPath,
@@ -28,6 +29,7 @@ import {
 } from "../document/json-doc.js";
 import { buildPasteCandidates, buildPasteManyCandidates, type PasteCandidate } from "./json-paste.js";
 import { validateAtPath, validateDocument } from "../schema/json-validation.js";
+import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
 import {
   changesForDeletedSubtree,
   changesForDeletedSubtrees,
@@ -69,7 +71,10 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   read: (nodeId?: NodeId) => JsonValue;
   pathOf: (nodeId: NodeId) => JsonPath;
   find: (parentId: NodeId, key: JsonKey) => NodeId | null;
-  create: (parentId: NodeId, key: string | number, value: JsonValue) => OperationResult;
+  create: (parentId: NodeId, key: string | number, value?: JsonValue) => OperationResult;
+  insertAfter: (siblingId: NodeId, value?: JsonValue) => OperationResult;
+  insertBefore: (siblingId: NodeId, value?: JsonValue) => OperationResult;
+  appendChild: (parentId: NodeId, value?: JsonValue) => OperationResult;
   update: (nodeId: NodeId, value: JsonValue) => OperationResult;
   rename: (nodeId: NodeId, key: string) => OperationResult;
   delete: (nodeId: NodeId) => OperationResult;
@@ -85,6 +90,7 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   canPaste: (targetId: NodeId, options?: PasteOptions) => OperationResult;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  subscribe: (notify: () => void) => () => void;
   undo: () => OperationResult;
   redo: () => OperationResult;
 };
@@ -106,6 +112,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
   let redoStack: HistoryEntry[] = [];
   let clipboard: Clipboard | null = null;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
+  const listeners = new Set<() => void>();
 
   const validation = validateDocument(schema, doc);
 
@@ -134,13 +141,100 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return child?.id ?? null;
   }
 
-  function create(parentId: NodeId, key: string | number, value: JsonValue): OperationResult {
+  function create(parentId: NodeId, key: string | number, value?: JsonValue): OperationResult {
     try {
       const next = cloneDoc(doc);
       const parentPath = getPath(next, parentId);
+      const childValue = resolveCreateValue(parentPath, key, value);
 
-      const nodeId = insertChild(next, parentId, key, value, allocateNodeId);
+      if (!childValue.ok) {
+        return childValue;
+      }
+
+      const nodeId = insertChild(next, parentId, key, childValue.value, allocateNodeId);
       const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
+
+      if (!validation.ok) {
+        return validation;
+      }
+
+      return commitIfValid(next, changesForInsertedSubtree(doc, next, nodeId), nodeId);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  function insertAfter(siblingId: NodeId, value?: JsonValue): OperationResult {
+    try {
+      const sibling = getNode(doc, siblingId);
+
+      if (sibling.parentId === null) {
+        return { ok: false, reason: "Cannot insert next to the root node." };
+      }
+
+      const parent = getNode(doc, sibling.parentId);
+
+      if (parent.type !== "array") {
+        return { ok: false, reason: "insertAfter requires a sibling whose parent is an array." };
+      }
+
+      const index = parent.children.indexOf(siblingId);
+
+      if (index < 0) {
+        return { ok: false, reason: "Sibling is not present in its parent." };
+      }
+
+      return create(parent.id, index + 1, value);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  function insertBefore(siblingId: NodeId, value?: JsonValue): OperationResult {
+    try {
+      const sibling = getNode(doc, siblingId);
+
+      if (sibling.parentId === null) {
+        return { ok: false, reason: "Cannot insert next to the root node." };
+      }
+
+      const parent = getNode(doc, sibling.parentId);
+
+      if (parent.type !== "array") {
+        return { ok: false, reason: "insertBefore requires a sibling whose parent is an array." };
+      }
+
+      const index = parent.children.indexOf(siblingId);
+
+      if (index < 0) {
+        return { ok: false, reason: "Sibling is not present in its parent." };
+      }
+
+      return create(parent.id, index, value);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  function appendChild(parentId: NodeId, value?: JsonValue): OperationResult {
+    try {
+      const parent = getNode(doc, parentId);
+      const next = cloneDoc(doc);
+      const childArrayId = parent.type === "array"
+        ? parent.id
+        : childArrayIdForObjectAppend(next, parent.id);
+      const childArray = getNode(next, childArrayId);
+      const childArrayPath = getPath(next, childArrayId);
+      const childValue = resolveCreateValue(childArrayPath, childArray.children.length, value);
+
+      if (!childValue.ok) {
+        return childValue;
+      }
+
+      const nodeId = insertChild(next, childArrayId, childArray.children.length, childValue.value, allocateNodeId);
+      const validationPath = parent.type === "array" ? childArrayPath : getPath(next, parent.id);
+      const validationId = parent.type === "array" ? childArrayId : parent.id;
+      const validation = validateAtPath(schema, validationPath, deserialize(next, validationId));
 
       if (!validation.ok) {
         return validation;
@@ -384,7 +478,8 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       ...(previous.focusNodeIds === undefined ? {} : { focusNodeIds: previous.focusNodeIds }),
     });
     doc = previous.doc;
-    return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId);
+    notifyListeners();
+    return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId, undefined, undefined, options.focusFilter);
   }
 
   function redo(): OperationResult {
@@ -404,7 +499,8 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
       ...(next.focusNodeIds === undefined ? {} : { focusNodeIds: next.focusNodeIds }),
     });
     doc = next.doc;
-    return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId, next.focusNodeIds);
+    notifyListeners();
+    return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId, next.focusNodeIds, options.focusFilter);
   }
 
   function pasteCandidates(
@@ -462,7 +558,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
           clipboard = clipboard === null
             ? null
             : { values: cloneJson(clipboard.values), sourceIds: pastedRootIds };
-          return successResult(before, next, changes, pastedRootId, focusNodeId, focusNodeIds);
+          return successResult(before, next, changes, pastedRootId, focusNodeId, focusNodeIds, options.focusFilter);
         }
 
         lastFailure = validation;
@@ -540,7 +636,13 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     }
 
     const changes = changesForDeletedSubtrees(doc, next, sortedNodes.map((node) => node.id));
-    const focusNodeId = focusAfterSiblingBatchRemoval(doc, next, parentId, sortedNodes.map((node) => node.id));
+    const focusNodeId = focusAfterSiblingBatchRemoval(
+      doc,
+      next,
+      parentId,
+      sortedNodes.map((node) => node.id),
+      options.focusFilter,
+    );
     const nodeId = sortedNodes[0]?.id;
 
     return {
@@ -567,8 +669,10 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     const before = cloneDoc(doc);
 
-    commit(next, changes, nodeId, focusNodeId, focusNodeIds);
-    return successResult(before, next, changes, nodeId, focusNodeId, focusNodeIds);
+    const result = successResult(before, next, changes, nodeId, focusNodeId, focusNodeIds, options.focusFilter);
+
+    commit(next, changes, nodeId, result.ok ? result.focusNodeId : focusNodeId, focusNodeIds);
+    return result;
   }
 
   function commit(
@@ -587,6 +691,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     });
     doc = next;
     redoStack = [];
+    notifyListeners();
   }
 
   function allocateNodeId(): NodeId {
@@ -601,6 +706,81 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return id;
   }
 
+  function subscribe(notify: () => void): () => void {
+    listeners.add(notify);
+    return () => {
+      listeners.delete(notify);
+    };
+  }
+
+  function notifyListeners(): void {
+    for (const listener of listeners) {
+      listener();
+    }
+  }
+
+  function resolveCreateValue(
+    parentPath: JsonPath,
+    key: string | number,
+    value: JsonValue | undefined,
+  ): OperationFailure | { ok: true; value: JsonValue } {
+    if (value !== undefined) {
+      return { ok: true, value };
+    }
+
+    if (options.defaultFor !== undefined) {
+      return { ok: true, value: cloneJson(options.defaultFor(parentPath)) };
+    }
+
+    const childSchema = schemaAtPath(schema, [...parentPath, key]);
+    const parsed = childSchema?.safeParse(undefined);
+
+    if (parsed?.success) {
+      return { ok: true, value: cloneJson(parsed.data as JsonValue) };
+    }
+
+    return { ok: false, reason: "No default value is configured for create." };
+  }
+
+  function childArrayIdForObjectAppend(next: JsonDoc, objectId: NodeId): NodeId {
+    const target = getNode(next, objectId);
+
+    if (target.type !== "object") {
+      throw new Error(`Cannot append a child to ${target.type} node.`);
+    }
+
+    for (const childKey of objectChildArrayKeys(next, target)) {
+      return ensureObjectArrayField(next, objectId, childKey, allocateNodeId);
+    }
+
+    throw new Error("No child array field is available for appendChild.");
+  }
+
+  function objectChildArrayKeys(currentDoc: JsonDoc, target: JsonNode): string[] {
+    const keys = new Set<string>();
+    const targetSchema = schemaAtPath(schema, getPath(currentDoc, target.id));
+
+    if (targetSchema !== null) {
+      for (const childKey of objectArrayFieldKeys(targetSchema)) {
+        keys.add(childKey);
+      }
+    }
+
+    for (const childId of target.children) {
+      const child = getNode(currentDoc, childId);
+
+      if (child.type === "array" && typeof child.key === "string") {
+        keys.add(child.key);
+      }
+    }
+
+    for (const childKey of childKeys) {
+      keys.add(childKey);
+    }
+
+    return [...keys];
+  }
+
   return {
     snapshot,
     toJson,
@@ -608,6 +788,9 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     pathOf,
     find,
     create,
+    insertAfter,
+    insertBefore,
+    appendChild,
     update,
     rename,
     delete: deleteNode,
@@ -623,6 +806,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     canPaste,
     canUndo,
     canRedo,
+    subscribe,
     undo,
     redo,
   };
@@ -665,6 +849,7 @@ function focusAfterSiblingBatchRemoval(
   after: JsonDoc,
   parentId: NodeId,
   deletedNodeIds: NodeId[],
+  focusFilter?: (doc: JsonDoc, candidateId: NodeId) => boolean,
 ): NodeId {
   const parent = before.nodes[parentId];
   const deleted = new Set(deletedNodeIds);
@@ -683,6 +868,8 @@ function focusAfterSiblingBatchRemoval(
   const candidates = [nextId, previousId, parentId, after.rootId];
 
   return candidates.find((id): id is NodeId =>
-    id !== undefined && after.nodes[id] !== undefined
+    id !== undefined &&
+    after.nodes[id] !== undefined &&
+    (focusFilter?.(after, id) ?? true)
   ) ?? after.rootId;
 }

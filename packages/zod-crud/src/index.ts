@@ -17,6 +17,8 @@ export type {
   JsonChange,
   JsonCrudOptions,
   JsonDoc,
+  DefaultValueFactory,
+  FocusFilter,
   JsonKey,
   JsonNode,
   JsonNodeType,

@@ -120,6 +120,66 @@ kbd {
   grid-template-columns: minmax(220px, 0.55fr) minmax(520px, 1.35fr) minmax(320px, 0.75fr);
 }
 
+.api-reference {
+  background: #ffffff;
+  border: 1px solid #d9ded8;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+}
+
+.api-reference-header {
+  align-items: end;
+  display: flex;
+  justify-content: space-between;
+}
+
+.api-reference-header p {
+  color: #65736d;
+  font-size: 13px;
+  margin: 6px 0 0;
+}
+
+.api-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.api-card {
+  border: 1px solid #e2e6e1;
+  border-radius: 7px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+}
+
+.api-card h3 {
+  font-size: 13px;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.api-card p {
+  color: #52605a;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.api-card pre {
+  background: #172026;
+  border-radius: 6px;
+  color: #edf7f2;
+  font-size: 11px;
+  line-height: 1.45;
+  margin: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
 .panel {
   background: #ffffff;
   border: 1px solid #d9ded8;
@@ -311,6 +371,10 @@ kbd {
     grid-template-columns: 1fr;
   }
 
+  .api-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .treegrid {
     max-height: none;
   }
@@ -330,5 +394,9 @@ kbd {
 
   .command-card {
     min-width: calc(50% - 4px);
+  }
+
+  .api-grid {
+    grid-template-columns: 1fr;
   }
 }

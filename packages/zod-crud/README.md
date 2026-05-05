@@ -75,11 +75,21 @@ const editor = createJsonCrud(UiNodeSchema, {
   kind: "frame",
   name: "root",
   children: [{ kind: "text", text: "hello" }],
+}, {
+  focusFilter: (doc, nodeId) => doc.nodes[nodeId]?.type === "object",
+  defaultFor: () => ({ kind: "text", text: "" }),
 });
 
 const rootId = editor.snapshot().rootId;
 const childrenId = editor.find(rootId, "children");
 const textNodeId = editor.find(childrenId!, 0);
+
+const unsubscribe = editor.subscribe(() => {
+  console.log(editor.snapshot());
+});
+
+editor.insertAfter(textNodeId!, { kind: "text", text: "next" });
+editor.appendChild(rootId, { kind: "text", text: "child" });
 
 editor.copy(textNodeId!);
 const pasteResult = editor.paste(rootId); // inserts into root.children if the item schema accepts it
@@ -98,17 +108,55 @@ if (redoResult.ok) {
 }
 
 const json = editor.toJson();
+unsubscribe();
 ```
+
+## API Reference
+
+### `createJsonCrud(schema, initialValue, options?)`
+
+Options:
+
+- `childKeys?: string[]` controls object fields treated as child arrays for paste and append helpers. The default is `["children"]`.
+- `focusFilter?: (doc, candidateId) => boolean` filters core focus candidates before `OperationResult.focusNodeId` is returned.
+- `defaultFor?: (parentPath) => JsonValue` supplies a value when `create`, `insertBefore`, `insertAfter`, or `appendChild` is called without an explicit value.
+
+### `crud.subscribe(notify)`
+
+Registers a listener called after committed document mutations, including
+`create`, `update`, `rename`, `delete`, `cut`, `paste`, `undo`, and `redo`.
+Clipboard-only `copy` operations do not notify because the document is unchanged.
+The return value unsubscribes the listener.
+
+### `crud.insertAfter(siblingId, value?)`
+
+Inserts into the sibling's array parent immediately after `siblingId`.
+When `value` is omitted, `defaultFor(parentPath)` is used first; if absent,
+the child schema is asked to parse `undefined`, which supports Zod defaults.
+
+### `crud.insertBefore(siblingId, value?)`
+
+Same as `insertAfter`, but inserts immediately before `siblingId`.
+
+### `crud.appendChild(parentId, value?)`
+
+Appends to an array node, or to an object node's child array field. Object child
+array fields are discovered from schema array fields, existing array children,
+and `childKeys`.
 
 ## Current Scope
 
 - `serialize()` / `deserialize()`
 - flat JSON node table
 - `create`, `update`, `rename`, `delete`, `deleteMany`
+- `insertBefore`, `insertAfter`, `appendChild`
 - `copy`, `copyMany`, `cut`, `cutMany`, `paste`
 - `canCopyMany`, `canCutMany`, `canDeleteMany`, `canPaste`
 - `undo`, `redo`
+- `subscribe`
 - `OperationResult.changes` for changed `JsonDoc` nodes from the operation delta
 - `OperationResult.focusNodeIds` for batch-created focus targets
+- `focusFilter` for domain-visible focus candidates
+- `defaultFor` and Zod defaults for omitted create values
 - recursive Zod object/array/union path validation
 - `children` convention for child paste, configurable via `childKeys`

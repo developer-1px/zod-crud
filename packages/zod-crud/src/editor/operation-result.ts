@@ -2,6 +2,7 @@ import type {
   JsonChange,
   JsonDoc,
   JsonNode,
+  FocusFilter,
   NodeId,
   OperationResult,
 } from "../types.js";
@@ -13,11 +14,12 @@ export function successResult(
   nodeId?: NodeId,
   focusNodeId?: NodeId,
   focusNodeIds?: NodeId[],
+  focusFilter?: FocusFilter,
 ): OperationResult {
   return {
     ok: true,
     ...(nodeId === undefined ? {} : { nodeId }),
-    focusNodeId: focusNodeId ?? focusFromMutation(before, after, changes, nodeId),
+    focusNodeId: focusNodeId ?? focusFromMutation(before, after, changes, nodeId, focusFilter),
     ...(focusNodeIds === undefined ? {} : { focusNodeIds }),
     changes,
   };
@@ -206,13 +208,14 @@ function focusFromMutation(
   after: JsonDoc,
   changes: JsonChange[],
   primaryNodeId?: NodeId,
+  focusFilter?: FocusFilter,
 ): NodeId {
-  if (primaryNodeId !== undefined && after.nodes[primaryNodeId] !== undefined) {
+  if (isFocusCandidate(after, primaryNodeId, focusFilter)) {
     return primaryNodeId;
   }
 
   if (primaryNodeId !== undefined && before.nodes[primaryNodeId] !== undefined) {
-    return focusAfterPrimaryRemoval(before, after, primaryNodeId);
+    return focusAfterPrimaryRemoval(before, after, primaryNodeId, focusFilter);
   }
 
   const insertedRoot = changes.find((change) =>
@@ -221,7 +224,7 @@ function focusFromMutation(
     before.nodes[change.after.parentId] !== undefined
   );
 
-  if (insertedRoot !== undefined) {
+  if (isFocusCandidate(after, insertedRoot?.nodeId, focusFilter)) {
     return insertedRoot.nodeId;
   }
 
@@ -229,14 +232,23 @@ function focusFromMutation(
     change.type === "update" && after.nodes[change.nodeId] !== undefined
   );
 
-  if (changedExisting !== undefined) {
+  if (isFocusCandidate(after, changedExisting?.nodeId, focusFilter)) {
     return changedExisting.nodeId;
+  }
+
+  if (isFocusCandidate(after, after.rootId, focusFilter)) {
+    return after.rootId;
   }
 
   return after.rootId;
 }
 
-function focusAfterPrimaryRemoval(before: JsonDoc, after: JsonDoc, removedId: NodeId): NodeId {
+function focusAfterPrimaryRemoval(
+  before: JsonDoc,
+  after: JsonDoc,
+  removedId: NodeId,
+  focusFilter?: FocusFilter,
+): NodeId {
   const removed = before.nodes[removedId];
   const siblings = removed?.parentId === null || removed?.parentId === undefined
     ? []
@@ -249,9 +261,14 @@ function focusAfterPrimaryRemoval(before: JsonDoc, after: JsonDoc, removedId: No
     after.rootId,
   ];
 
-  return candidates.find((id): id is NodeId =>
-    id !== undefined && id !== null && after.nodes[id] !== undefined
-  ) ?? after.rootId;
+  return candidates.find((id): id is NodeId => isFocusCandidate(after, id, focusFilter)) ?? after.rootId;
+}
+
+function isFocusCandidate(doc: JsonDoc, nodeId: NodeId | null | undefined, focusFilter?: FocusFilter): nodeId is NodeId {
+  return nodeId !== undefined &&
+    nodeId !== null &&
+    doc.nodes[nodeId] !== undefined &&
+    (focusFilter?.(doc, nodeId) ?? true);
 }
 
 function highestInsertedAncestor(before: JsonDoc, after: JsonDoc, nodeId: NodeId): NodeId {

@@ -31,6 +31,10 @@ export type JsonDoc = {
 
 export type JsonPath = Array<string | number>;
 
+export type FocusFilter = (doc: JsonDoc, candidateId: NodeId) => boolean;
+
+export type DefaultValueFactory = (parentPath: JsonPath) => JsonValue;
+
 export type JsonChange =
   | {
       type: "insert";
@@ -101,4 +105,6 @@ export type PasteOptions = {
 
 export type JsonCrudOptions = {
   childKeys?: string[];
+  focusFilter?: FocusFilter;
+  defaultFor?: DefaultValueFactory;
 };

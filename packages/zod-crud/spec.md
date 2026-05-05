@@ -130,7 +130,7 @@ createJsonCrud(schema, initialValue)
     success -> serialize(parsed.data)
   validate full document exactness
     fail -> throw Error(reason)
-    success -> initialize doc, childKeys, empty history, empty clipboard
+    success -> initialize doc, childKeys, focusFilter, defaultFor, empty history, empty clipboard, subscribers
 ```
 
 Factory typing must preserve schema input type. `createJsonCrud` should reject
@@ -180,6 +180,45 @@ commit and return { ok: true, nodeId: createdRootId, focusNodeId, changes }
 or return failure
 ```
 
+If `value` is omitted, `create` must resolve a default value before mutation:
+
+```txt
+defaultFor option exists -> use clone(defaultFor(parentPath))
+else schema at child path parses undefined -> use parsed data
+else fail with "No default value is configured for create."
+```
+
+### insertAfter(siblingId, value)
+
+```txt
+sibling missing -> fail
+sibling is root -> fail
+sibling parent is not array -> fail
+compute sibling index in parent array
+delegate to create(parentId, index + 1, value)
+```
+
+### insertBefore(siblingId, value)
+
+```txt
+sibling missing -> fail
+sibling is root -> fail
+sibling parent is not array -> fail
+compute sibling index in parent array
+delegate to create(parentId, index, value)
+```
+
+### appendChild(parentId, value)
+
+```txt
+parent is array -> append at array length
+parent is object -> find or create a child array field from schema array fields,
+existing array children, or childKeys
+parent is primitive -> fail
+validate affected parent subtree and full document
+commit and return { ok: true, nodeId: createdRootId, focusNodeId, changes }
+```
+
 ### update(nodeId, value)
 
 ```txt
@@ -219,6 +258,30 @@ validate full document exactness
 compute the delete delta
 commit and return { ok: true, nodeId, focusNodeId, changes } where nodeId is
 the removed root, or return failure
+```
+
+### subscribe(notify)
+
+```txt
+add notify to subscriber set
+return unsubscribe function
+successful committed document mutations call all current subscribers after doc changes
+copy-only operations do not notify because JsonDoc is unchanged
+```
+
+`subscribe` is intended to match React `useSyncExternalStore` and external store
+resource APIs.
+
+### focusFilter
+
+When `createJsonCrud` receives `focusFilter`, core focus computation must skip
+candidate ids for which `focusFilter(afterDoc, candidateId)` returns false.
+
+```txt
+focus candidate order is unchanged
+candidate missing in after doc -> skip
+focusFilter returns false -> skip
+no candidate accepted -> after.rootId
 ```
 
 ### deleteMany(nodeIds)

@@ -1130,6 +1130,112 @@ describe("JsonCrud", () => {
     });
   });
 
+  it("notifies subscribers after committed document mutations", () => {
+    const editor = createJsonCrud(z.object({ items: z.array(z.string()) }), { items: [] });
+    const rootId = editor.snapshot().rootId;
+    const itemsId = editor.find(rootId, "items");
+    let calls = 0;
+    const unsubscribe = editor.subscribe(() => {
+      calls += 1;
+    });
+
+    expect(editor.create(itemsId!, 0, "a").ok).toBe(true);
+    editor.copy(itemsId!);
+    expect(calls).toBe(1);
+
+    expect(editor.undo().ok).toBe(true);
+    expect(calls).toBe(2);
+
+    unsubscribe();
+    expect(editor.redo().ok).toBe(true);
+    expect(calls).toBe(2);
+  });
+
+  it("filters focus candidates after deletion", () => {
+    const Schema: z.ZodType<JsonValue> = z.object({
+      children: z.array(z.object({
+        text: z.string(),
+        children: z.array(z.object({ text: z.string(), children: z.array(z.never()) })),
+      })),
+    });
+    const editor = createJsonCrud(Schema, {
+      children: [
+        { text: "only", children: [] },
+      ],
+    }, {
+      focusFilter: (doc, candidateId) => doc.nodes[candidateId]?.type === "object",
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const itemId = editor.find(childrenId!, 0);
+    const result = editor.delete(itemId!);
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.focusNodeId).toBe(rootId);
+    }
+  });
+
+  it("inserts before and after array siblings", () => {
+    const editor = createJsonCrud(z.object({ items: z.array(z.string()) }), {
+      items: ["b"],
+    });
+    const itemsId = editor.find(editor.snapshot().rootId, "items");
+    const bId = editor.find(itemsId!, 0);
+
+    const before = editor.insertBefore(bId!, "a");
+    expect(before.ok).toBe(true);
+
+    const currentBId = editor.find(itemsId!, 1);
+    const after = editor.insertAfter(currentBId!, "c");
+    expect(after.ok).toBe(true);
+    expect(editor.toJson()).toEqual({ items: ["a", "b", "c"] });
+  });
+
+  it("appends to configured child arrays and creates missing child arrays", () => {
+    const ItemSchema = z.object({
+      label: z.string(),
+      children: z.array(z.object({ label: z.string() })).optional(),
+    });
+    const Schema = z.object({ items: z.array(ItemSchema) }) as z.ZodType<JsonValue>;
+    const editor = createJsonCrud(Schema, {
+      items: [{ label: "parent" }],
+    }, {
+      childKeys: ["children"],
+    });
+    const itemsId = editor.find(editor.snapshot().rootId, "items");
+    const parentId = editor.find(itemsId!, 0);
+    const result = editor.appendChild(parentId!, { label: "child" });
+
+    expect(result.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      items: [{ label: "parent", children: [{ label: "child" }] }],
+    });
+  });
+
+  it("creates values from defaultFor or schema defaults when value is omitted", () => {
+    const editor = createJsonCrud(z.object({ items: z.array(z.string()) }), {
+      items: [],
+    }, {
+      defaultFor: () => "from-option",
+    });
+    const itemsId = editor.find(editor.snapshot().rootId, "items");
+
+    expect(editor.create(itemsId!, 0).ok).toBe(true);
+    expect(editor.toJson()).toEqual({ items: ["from-option"] });
+
+    const schemaDefaultEditor = createJsonCrud(z.object({
+      items: z.array(z.string().default("from-schema")),
+    }), {
+      items: [],
+    });
+    const schemaItemsId = schemaDefaultEditor.find(schemaDefaultEditor.snapshot().rootId, "items");
+
+    expect(schemaDefaultEditor.create(schemaItemsId!, 0).ok).toBe(true);
+    expect(schemaDefaultEditor.toJson()).toEqual({ items: ["from-schema"] });
+  });
+
   it("does not replace the clipboard when cut fails", () => {
     const Schema = z.object({
       items: z.array(z.string()).min(1),

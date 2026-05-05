@@ -14,6 +14,7 @@ import {
   CommandStrip,
   type CommandId,
 } from "./CommandStrip.js";
+import { ApiReference } from "./ApiReference.js";
 import { EntityRegistry } from "./EntityRegistry.js";
 import { InspectorPanel, type CommandLog } from "./InspectorPanel.js";
 import { JsonTreeGrid } from "./JsonTreeGrid.js";
@@ -359,6 +360,8 @@ export function Playground() {
             selectedIds={selectedIds}
           />
         </section>
+
+        <ApiReference />
       </main>
     </>
   );
