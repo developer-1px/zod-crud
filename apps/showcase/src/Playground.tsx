@@ -6,10 +6,6 @@ import {
   useState,
 } from "react";
 import {
-  deserialize,
-  getPath,
-  serialize,
-  type JsonKey,
   type JsonNode,
   type JsonValue,
   type NodeId,
@@ -21,10 +17,25 @@ import {
   apiCallLabel,
   type ApiId,
 } from "./api-catalog.js";
-import { ApiSidebar } from "./ApiSidebar.js";
+import {
+  CommandMatrix,
+} from "./CommandMatrix.js";
+import {
+  commandByApi,
+  commandInputLabel,
+  resolveKeyboardApi,
+} from "./command-matrix.js";
+import {
+  parsePrimitiveDraft,
+  prepareUserCommand,
+  type UpdatePreview,
+} from "./command-inputs.js";
 import { EntityRegistry } from "./EntityRegistry.js";
 import { JsonTreeGrid } from "./JsonTreeGrid.js";
 import { PanelTitle } from "./PanelTitle.js";
+import {
+  executePublicCall,
+} from "./public-call-adapter.js";
 import {
   defaultEntityId,
   entityById,
@@ -63,11 +74,6 @@ type ApiRun = {
   call: string;
   output: unknown;
 };
-
-type UpdatePreview =
-  | { state: "idle"; message: string }
-  | { state: "valid"; value: JsonValue; result: OperationResult }
-  | { state: "invalid"; message: string; result?: OperationResult };
 
 type InlineEdit = {
   nodeId: NodeId;
@@ -251,27 +257,12 @@ export function Playground() {
         return;
       }
 
-      if (commandKey && !event.altKey) {
-        const shortcutApi =
-          key === "c" ? selectedIdList.length > 1 ? "copyMany" : "copy" :
-          key === "x" ? selectedIdList.length > 1 ? "cutMany" : "cut" :
-          key === "v" ? "paste" :
-          key === "z" && event.shiftKey ? "redo" :
-          key === "z" ? "undo" :
-          key === "y" ? "redo" :
-          null;
+      const shortcutApi = resolveKeyboardApi(event, selectedIdList.length);
 
-        if (shortcutApi !== null) {
-          event.preventDefault();
-          runApi(shortcutApi);
-        }
-
-        return;
-      }
-
-      if (event.key === "Delete" || event.key === "Backspace") {
+      if (shortcutApi !== null) {
         event.preventDefault();
-        runApi(selectedIdList.length > 1 ? "deleteMany" : "delete");
+        runApi(shortcutApi);
+        return;
       }
     }
 
@@ -307,12 +298,55 @@ export function Playground() {
     const before = editorRef.current.snapshot();
     const targetId = before.nodes[safeSelectedId] === undefined ? before.rootId : safeSelectedId;
     const targetIds = [...liveSelectedIds(before, selection, targetId)];
+    const prepared = prepareUserCommand(api, {
+      findKeyDraft,
+      jsonValueDraft,
+      keyDraft,
+      pasteIndexDraft,
+      pasteMode,
+      updatePreview,
+    });
     let output: unknown;
 
-    try {
-      output = executeApi(api, targetId, targetIds);
-    } catch (error) {
-      output = failure(error);
+    if (prepared.ok) {
+      try {
+        output = executePublicCall(prepared.command, {
+          createEditor: () => {
+            const nextEditor = makeEditor(activeEntity);
+
+            unsubscribeRef.current?.();
+            unsubscribeRef.current = null;
+            editorRef.current = nextEditor;
+            setSubscriptionEvents(0);
+
+            return {
+              entity: activeEntity.schemaName,
+              snapshot: nextEditor.snapshot(),
+            };
+          },
+          editor: editorRef.current,
+          jsonValue,
+          targetId,
+          targetIds,
+          toggleSubscribe: () => {
+            if (unsubscribeRef.current !== null) {
+              unsubscribeRef.current();
+              unsubscribeRef.current = null;
+              return { ok: true, subscribed: false, events: subscriptionEvents };
+            }
+
+            unsubscribeRef.current = editorRef.current.subscribe(() => {
+              setSubscriptionEvents((current) => current + 1);
+            });
+
+            return { ok: true, subscribed: true, events: subscriptionEvents };
+          },
+        });
+      } catch (error) {
+        output = failure(error);
+      }
+    } else {
+      output = prepared.output;
     }
 
     setLastRun({
@@ -409,169 +443,6 @@ export function Playground() {
     afterApiRun(result, inlineEdit.nodeId);
   }
 
-  function executeApi(api: ApiId, targetId: NodeId, targetIds: NodeId[]): unknown {
-    const editor = editorRef.current;
-
-    if (api === "createJsonCrud") {
-      const nextEditor = makeEditor(activeEntity);
-      unsubscribeRef.current?.();
-      unsubscribeRef.current = null;
-      editorRef.current = nextEditor;
-      setSubscriptionEvents(0);
-      return { ok: true, entity: activeEntity.schemaName, snapshot: nextEditor.snapshot() };
-    }
-
-    if (api === "serialize") {
-      return serialize(jsonValue);
-    }
-
-    if (api === "deserialize") {
-      return deserialize(editor.snapshot(), targetId);
-    }
-
-    if (api === "getPath") {
-      return getPath(editor.snapshot(), targetId);
-    }
-
-    if (api === "snapshot") {
-      return editor.snapshot();
-    }
-
-    if (api === "toJson") {
-      return editor.toJson();
-    }
-
-    if (api === "read") {
-      return editor.read(targetId);
-    }
-
-    if (api === "pathOf") {
-      return editor.pathOf(targetId);
-    }
-
-    if (api === "find") {
-      return {
-        parentId: targetId,
-        key: parseKey(findKeyDraft),
-        nodeId: editor.find(targetId, parseKey(findKeyDraft)),
-      };
-    }
-
-    if (api === "create") {
-      const value = parseOptionalJson(jsonValueDraft);
-      return value.omitted
-        ? editor.create(targetId, parseCreateKey(keyDraft))
-        : editor.create(targetId, parseCreateKey(keyDraft), value.value);
-    }
-
-    if (api === "insertAfter") {
-      const value = parseOptionalJson(jsonValueDraft);
-      return value.omitted ? editor.insertAfter(targetId) : editor.insertAfter(targetId, value.value);
-    }
-
-    if (api === "insertBefore") {
-      const value = parseOptionalJson(jsonValueDraft);
-      return value.omitted ? editor.insertBefore(targetId) : editor.insertBefore(targetId, value.value);
-    }
-
-    if (api === "appendChild") {
-      const value = parseOptionalJson(jsonValueDraft);
-      return value.omitted ? editor.appendChild(targetId) : editor.appendChild(targetId, value.value);
-    }
-
-    if (api === "update") {
-      if (updatePreview.state !== "valid") {
-        return { ok: false, reason: updatePreview.message };
-      }
-
-      return editor.update(targetId, updatePreview.value);
-    }
-
-    if (api === "rename") {
-      return editor.rename(targetId, keyDraft);
-    }
-
-    if (api === "delete") {
-      return editor.delete(targetId);
-    }
-
-    if (api === "deleteMany") {
-      return editor.deleteMany(targetIds);
-    }
-
-    if (api === "copy") {
-      return editor.copy(targetId);
-    }
-
-    if (api === "copyMany") {
-      return editor.copyMany(targetIds);
-    }
-
-    if (api === "canCopyMany") {
-      return editor.canCopyMany(targetIds);
-    }
-
-    if (api === "cut") {
-      return editor.cut(targetId);
-    }
-
-    if (api === "cutMany") {
-      return editor.cutMany(targetIds);
-    }
-
-    if (api === "canCutMany") {
-      return editor.canCutMany(targetIds);
-    }
-
-    if (api === "paste") {
-      return editor.paste(targetId, pasteOptions());
-    }
-
-    if (api === "canDeleteMany") {
-      return editor.canDeleteMany(targetIds);
-    }
-
-    if (api === "canPaste") {
-      return editor.canPaste(targetId, pasteOptions());
-    }
-
-    if (api === "canUndo") {
-      return editor.canUndo();
-    }
-
-    if (api === "canRedo") {
-      return editor.canRedo();
-    }
-
-    if (api === "subscribe") {
-      if (unsubscribeRef.current !== null) {
-        unsubscribeRef.current();
-        unsubscribeRef.current = null;
-        return { ok: true, subscribed: false, events: subscriptionEvents };
-      }
-
-      unsubscribeRef.current = editor.subscribe(() => {
-        setSubscriptionEvents((current) => current + 1);
-      });
-      return { ok: true, subscribed: true, events: subscriptionEvents };
-    }
-
-    if (api === "undo") {
-      return editor.undo();
-    }
-
-    return editor.redo();
-  }
-
-  function pasteOptions() {
-    const index = pasteIndexDraft.trim() === "" ? undefined : Number(pasteIndexDraft);
-
-    return {
-      mode: pasteMode,
-      ...(index === undefined || !Number.isInteger(index) ? {} : { index }),
-    };
-  }
-
   function afterApiRun(output: unknown, fallbackId: NodeId) {
     const after = editorRef.current.snapshot();
     let nextSelection = fallbackId;
@@ -603,13 +474,12 @@ export function Playground() {
             <button type="button" onClick={() => runApi("createJsonCrud")}>Recreate editor</button>
           </div>
         </div>
-        <ShortcutStrip />
       </header>
 
       <main className="playground-shell">
         <aside className="panel api-panel">
-          <PanelTitle title="Callable APIs" detail="runtime only" />
-          <ApiSidebar activeApi={activeApi} onSelect={setActiveApi} />
+          <PanelTitle title="Command matrix" detail="keymap -> public call" />
+          <CommandMatrix activeApi={activeApi} onRun={runApi} onSelect={setActiveApi} />
         </aside>
 
         <section className="panel tree-panel">
@@ -649,7 +519,7 @@ export function Playground() {
         </section>
 
         <aside className="panel workbench-panel">
-          <PanelTitle title={activeApi} detail={apiCallLabel(activeApi)} />
+          <PanelTitle title="Runner" detail={apiCallLabel(activeApi)} />
           <ApiWorkbench
             activeApi={activeApi}
             activeEntityId={activeEntity.id}
@@ -679,30 +549,6 @@ export function Playground() {
         </aside>
       </main>
     </>
-  );
-}
-
-function ShortcutStrip() {
-  const shortcuts = [
-    ["Cmd/Ctrl+C", "copy / copyMany"],
-    ["Cmd/Ctrl+X", "cut / cutMany"],
-    ["Cmd/Ctrl+V", "paste"],
-    ["Delete", "delete / deleteMany"],
-    ["Cmd/Ctrl+Z", "undo"],
-    ["Cmd/Ctrl+Shift+Z", "redo"],
-    ["Enter", "edit value inline"],
-    ["Cmd/Ctrl+Enter", "run selected API"],
-  ];
-
-  return (
-    <div className="shortcut-strip" aria-label="Keyboard shortcuts">
-      {shortcuts.map(([keys, label]) => (
-        <span key={keys}>
-          <kbd>{keys}</kbd>
-          {label}
-        </span>
-      ))}
-    </div>
   );
 }
 
@@ -805,11 +651,6 @@ function ApiWorkbench({
       </section>
 
       <section className="workbench-section">
-        <h3>Subscribe events</h3>
-        <pre className="mini-json">{stringify({ events: subscriptionEvents })}</pre>
-      </section>
-
-      <section className="workbench-section">
         <h3>Last result</h3>
         <pre className="json-output">{stringify({
           api: lastRun.api,
@@ -817,6 +658,8 @@ function ApiWorkbench({
           output: lastRun.output,
         })}</pre>
       </section>
+
+      <CommandDocs activeApi={activeApi} subscriptionEvents={subscriptionEvents} />
 
       <section className="workbench-section">
         <h3>toJson()</h3>
@@ -935,8 +778,6 @@ function ApiInputs({
           </label>
         </div>
       ) : null}
-
-      <ApiHint activeApi={activeApi} />
     </div>
   );
 }
@@ -963,21 +804,39 @@ function ValidationPreview({ preview }: { preview: UpdatePreview }) {
   );
 }
 
-function ApiHint({ activeApi }: { activeApi: ApiId }) {
-  const hints: Partial<Record<ApiId, string>> = {
-    copyMany: "Uses current multi-selection. Cmd/Ctrl-click toggles rows; Shift extends a range.",
-    cutMany: "Batch cut succeeds only when selected nodes can be deleted as one sibling batch.",
-    deleteMany: "Batch delete is one commit, one undo entry, and one focus result.",
-    canDeleteMany: "Dry run for deleteMany. It must not mutate document, clipboard, or history.",
-    canCutMany: "Facade over canDeleteMany in core.",
-    paste: "Paste uses clipboard from copy/copyMany/cut/cutMany.",
-    subscribe: "Runs subscribe on first click and unsubscribe on second click.",
-    update: "Only primitive JsonNode values are edited here; object/array subtree replacement is intentionally omitted.",
-  };
+function CommandDocs({
+  activeApi,
+  subscriptionEvents,
+}: {
+  activeApi: ApiId;
+  subscriptionEvents: number;
+}) {
+  const command = commandByApi(activeApi);
 
-  const hint = hints[activeApi];
-
-  return hint === undefined ? null : <p className="api-hint">{hint}</p>;
+  return (
+    <section className="workbench-section docs-section">
+      <h3>Docs</h3>
+      <dl className="command-docs">
+        <div>
+          <dt>User input</dt>
+          <dd>{commandInputLabel(command.input)}</dd>
+        </div>
+        <div>
+          <dt>Keymap</dt>
+          <dd>{command.keys === "" ? "manual only" : command.keys}</dd>
+        </div>
+        <div>
+          <dt>Public call</dt>
+          <dd><code>{command.call}</code></dd>
+        </div>
+        <div>
+          <dt>Subscription events</dt>
+          <dd>{subscriptionEvents}</dd>
+        </div>
+      </dl>
+      {command.notes === "" ? null : <p className="api-hint">{command.notes}</p>}
+    </section>
+  );
 }
 
 function previewPrimitiveUpdate(
@@ -1041,69 +900,6 @@ function nodeIdAtPath(editor: ReturnType<typeof makeEditorFromValue>, path: Arra
   }
 
   return nodeId;
-}
-
-function parsePrimitiveDraft(node: JsonNode, draft: string): { ok: true; value: JsonValue } | { ok: false; reason: string } {
-  if (node.type === "string") {
-    return { ok: true, value: draft };
-  }
-
-  if (node.type === "number") {
-    const value = Number(draft);
-
-    return Number.isFinite(value)
-      ? { ok: true, value }
-      : { ok: false, reason: "Number value must be finite." };
-  }
-
-  if (node.type === "boolean") {
-    if (draft === "true") {
-      return { ok: true, value: true };
-    }
-
-    if (draft === "false") {
-      return { ok: true, value: false };
-    }
-
-    return { ok: false, reason: "Boolean value must be true or false." };
-  }
-
-  if (draft === "" || draft === "null") {
-    return { ok: true, value: null };
-  }
-
-  return { ok: false, reason: "Null value must stay null." };
-}
-
-function parseOptionalJson(draft: string): { omitted: true } | { omitted: false; value: JsonValue } {
-  if (draft.trim() === "") {
-    return { omitted: true };
-  }
-
-  return {
-    omitted: false,
-    value: JSON.parse(draft) as JsonValue,
-  };
-}
-
-function parseKey(value: string): JsonKey {
-  const trimmed = value.trim();
-
-  if (/^-?\d+$/.test(trimmed)) {
-    return Number(trimmed);
-  }
-
-  return value;
-}
-
-function parseCreateKey(value: string): string | number {
-  const key = parseKey(value);
-
-  if (key === null) {
-    throw new Error("Create key cannot be null.");
-  }
-
-  return key;
 }
 
 function valueInput(node: JsonNode | undefined): string {

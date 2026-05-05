@@ -139,7 +139,7 @@ kbd {
   align-items: start;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(220px, 0.48fr) minmax(520px, 1.24fr) minmax(340px, 0.72fr);
+  grid-template-columns: minmax(390px, 0.7fr) minmax(520px, 1.15fr) minmax(330px, 0.65fr);
   padding: 14px;
 }
 
@@ -175,7 +175,6 @@ kbd {
   white-space: nowrap;
 }
 
-.api-sidebar,
 .api-workbench,
 .input-stack,
 .workbench-section {
@@ -183,18 +182,90 @@ kbd {
   gap: 10px;
 }
 
-.api-group {
-  display: grid;
-  gap: 8px;
+.command-table-wrap {
+  border: 1px solid #d9ded8;
+  border-radius: 7px;
+  max-height: calc(100vh - 146px);
+  overflow: auto;
 }
 
-.api-list,
+.command-table {
+  border-collapse: collapse;
+  min-width: 640px;
+  width: 100%;
+}
+
+.command-table th,
+.command-table td {
+  border-bottom: 1px solid #edf0ec;
+  font-size: 12px;
+  padding: 7px 8px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.command-table th {
+  background: #f1f4f1;
+  color: #52605a;
+  font-weight: 700;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.command-table tr.is-active td {
+  background: #eaf5ef;
+}
+
+.command-group-cell {
+  color: #65736d;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.command-api-button {
+  background: transparent;
+  border: 0;
+  color: #172026;
+  display: grid;
+  gap: 3px;
+  max-width: 220px;
+  min-width: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.command-api-button strong {
+  font-size: 12px;
+}
+
+.command-api-button span {
+  color: #65736d;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 10px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.icon-run-button {
+  background: #ffffff;
+  border: 1px solid #bdc7bf;
+  border-radius: 5px;
+  color: #172026;
+  min-height: 28px;
+  padding: 0 8px;
+}
+
+.muted {
+  color: #7a8580;
+}
+
 .entity-list {
   display: grid;
   gap: 6px;
 }
 
-.api-item,
 .entity-card {
   background: #ffffff;
   border: 1px solid #d9ded8;
@@ -207,20 +278,17 @@ kbd {
   text-align: left;
 }
 
-.api-item.is-active,
 .entity-card.is-active {
   background: #e2f1eb;
   border-color: #2e7d68;
   box-shadow: inset 0 0 0 1px #2e7d68;
 }
 
-.api-item span,
 .entity-card span {
   font-size: 13px;
   font-weight: 700;
 }
 
-.api-item small,
 .entity-card small {
   color: #65736d;
   font-size: 11px;
@@ -480,6 +548,34 @@ kbd {
   color: #52605a;
   font-size: 12px;
   line-height: 1.45;
+}
+
+.command-docs {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.command-docs div {
+  display: grid;
+  gap: 3px;
+}
+
+.command-docs dt {
+  color: #65736d;
+  font-size: 11px;
+}
+
+.command-docs dd {
+  font-size: 12px;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.command-docs code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: 11px;
 }
 
 .validation {

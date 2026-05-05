@@ -9,13 +9,15 @@ The app is intentionally a test bench, not a product demo. It keeps the
 
 ## Surfaces
 
-- API sidebar: all runtime-callable APIs grouped by factory, document, read,
-  mutation, clipboard, capability, history, and subscription.
+- Command matrix: all runtime-callable APIs with the user keymap, required
+  inputs, and a direct run control in one table.
 - JsonDoc tree: node id based row-navigation tree table with single, toggle,
   visible-row range multi-selection, inline primitive editing, and enum values
   shown as badges and constrained to selects.
-- Workbench: selected API inputs, primitive update validation preview, last
-  result, selected ids, subscription count, and current `toJson()` output.
+- Runner: selected API inputs, primitive update validation preview, last
+  result, selected ids, and current `toJson()` output.
+- Docs: selected command notes, input mapping, keymap, public call, and
+  subscription count.
 
 ## Shortcuts
 
@@ -39,6 +41,8 @@ Included:
 - Editor read, mutation, clipboard, capability, history, and subscription APIs.
 - Separate `*Many` API entries instead of hiding them behind selection facades.
 - Primitive value update preview and commit result messages.
+- Separate user command mapping, input preparation, and public call execution
+  modules.
 
 Excluded for now:
 
