@@ -328,6 +328,24 @@ kbd {
   cursor: pointer;
 }
 
+.enum-value-badge {
+  align-items: center;
+  background: #eef6f1;
+  border: 1px solid #9dc8b3;
+  border-radius: 999px;
+  color: #245744;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  max-width: 100%;
+  min-height: 23px;
+  overflow: hidden;
+  padding: 4px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .inline-checkbox {
   align-items: center;
   display: inline-flex;

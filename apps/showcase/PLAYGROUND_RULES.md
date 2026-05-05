@@ -22,6 +22,7 @@ compatibility demo.
   commit results.
 - If the selected value is backed by a Zod enum or literal-union schema, expose
   only a select control for that value. Do not allow free-text entry.
+- Display enum and literal-union values as value-column badges when not editing.
 - Keep schema switching preset-based until runtime Zod code entry is explicitly
   added.
 - Split playground code by responsibility.

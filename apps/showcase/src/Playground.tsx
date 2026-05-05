@@ -130,6 +130,23 @@ export function Playground() {
       ? []
       : enumValueOptionsAtPath(activeEntity.schema, editorRef.current.pathOf(inlineEdit.nodeId));
   }, [activeEntity.schema, doc, inlineEdit]);
+  const rowValueOptions = useMemo(() => {
+    const optionsByNodeId = new Map<NodeId, EnumValueOption[]>();
+
+    for (const row of rows) {
+      const node = doc.nodes[row.id];
+
+      if (node !== undefined && node.children.length === 0) {
+        const options = enumValueOptionsAtPath(activeEntity.schema, editorRef.current.pathOf(row.id));
+
+        if (options.length > 0) {
+          optionsByNodeId.set(row.id, options);
+        }
+      }
+    }
+
+    return optionsByNodeId;
+  }, [activeEntity.schema, doc, rows]);
   const lastChanges = isOperationResult(lastRun.output) && lastRun.output.ok ? lastRun.output.changes ?? [] : [];
   const changedRows = useMemo(() => new Map(lastChanges.map((change) => [change.nodeId, change.type])), [lastChanges]);
   const updatePreview = useMemo(
@@ -605,6 +622,7 @@ export function Playground() {
             columns={columns}
             rows={rows}
             changedRows={changedRows}
+            valueOptionsByNodeId={rowValueOptions}
             selectedId={safeSelectedId}
             selectedIds={selectedIds}
             inlineEdit={inlineEdit === null ? null : {

@@ -37,6 +37,7 @@ export function JsonTreeGrid({
   rows,
   columns,
   changedRows,
+  valueOptionsByNodeId,
   selectedId,
   selectedIds,
   inlineEdit,
@@ -53,6 +54,7 @@ export function JsonTreeGrid({
   columns: GridColumn[];
   rows: GridRow[];
   changedRows: Map<NodeId, "insert" | "update" | "delete">;
+  valueOptionsByNodeId: Map<NodeId, EnumValueOption[]>;
   selectedId: NodeId;
   selectedIds: Set<NodeId>;
   inlineEdit: InlineEditState | null;
@@ -169,6 +171,7 @@ export function JsonTreeGrid({
         const node = doc.nodes[row.id];
         const changeType = changedRows.get(row.id);
         const isActive = selectedId === row.id;
+        const valueOptions = valueOptionsByNodeId.get(row.id) ?? [];
 
         return (
           <div key={row.id} className="grid-row-block">
@@ -232,6 +235,8 @@ export function JsonTreeGrid({
                       onCommit={onCommitValueEdit}
                       onCancel={onCancelValueEdit}
                     />
+                  ) : valueOptions.length > 0 && node?.value !== undefined ? (
+                    <EnumValueBadge value={node.value} />
                   ) : (
                     row.value
                   )}
@@ -247,6 +252,14 @@ export function JsonTreeGrid({
         );
       })}
     </div>
+  );
+}
+
+function EnumValueBadge({ value }: { value: EnumValueOption }) {
+  return (
+    <span className="enum-value-badge" title={`enum ${enumOptionLabel(value)}`}>
+      {enumOptionLabel(value)}
+    </span>
   );
 }
 

@@ -13,7 +13,7 @@ The app is intentionally a test bench, not a product demo. It keeps the
   mutation, clipboard, capability, history, and subscription.
 - JsonDoc tree: node id based row-navigation tree table with single, toggle,
   visible-row range multi-selection, inline primitive editing, and enum values
-  constrained to selects.
+  shown as badges and constrained to selects.
 - Workbench: selected API inputs, primitive update validation preview, last
   result, selected ids, subscription count, and current `toJson()` output.
 
