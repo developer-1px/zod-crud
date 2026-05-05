@@ -12,11 +12,18 @@ import {
   eventSelectionMode,
   type SelectionMode,
 } from "./selection.js";
+import {
+  enumOptionDraft,
+  enumOptionKey,
+  enumOptionLabel,
+  type EnumValueOption,
+} from "./schema-options.js";
 
 export type InlineEditState = {
   nodeId: NodeId;
   draft: string;
   invalid: boolean;
+  options: EnumValueOption[];
 };
 
 export type InlineStatus = {
@@ -258,6 +265,37 @@ function InlineValueEditor({
   onCommit: () => void;
   onCancel: () => void;
 }) {
+  if (state.options.length > 0) {
+    return (
+      <select
+        aria-label={`Edit value for ${path}`}
+        autoFocus
+        className={state.invalid ? "inline-value-input inline-value-select is-invalid" : "inline-value-input inline-value-select"}
+        value={state.draft}
+        onChange={(event) => onDraft(event.target.value)}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+
+          if (event.key === "Enter") {
+            event.preventDefault();
+            onCommit();
+          }
+
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onCancel();
+          }
+        }}
+      >
+        {state.options.map((option) => (
+          <option key={enumOptionKey(option)} value={enumOptionDraft(option)}>
+            {enumOptionLabel(option)}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
   if (node.type === "boolean") {
     return (
       <label className="inline-checkbox">

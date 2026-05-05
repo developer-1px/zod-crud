@@ -30,7 +30,8 @@ button {
 }
 
 button:disabled,
-input:disabled {
+input:disabled,
+select:disabled {
   cursor: not-allowed;
   opacity: 0.6;
 }
@@ -321,6 +322,10 @@ kbd {
 .inline-value-input.is-invalid {
   border-color: #a33131;
   box-shadow: 0 0 0 2px #f8d7d4;
+}
+
+.inline-value-select {
+  cursor: pointer;
 }
 
 .inline-checkbox {

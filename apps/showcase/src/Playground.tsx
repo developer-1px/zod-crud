@@ -50,6 +50,13 @@ import {
   type SelectionMode,
   type SelectionState,
 } from "./selection.js";
+import {
+  enumOptionDraft,
+  enumOptionKey,
+  enumOptionLabel,
+  enumValueOptionsAtPath,
+  type EnumValueOption,
+} from "./schema-options.js";
 
 type ApiRun = {
   api: ApiId;
@@ -106,6 +113,23 @@ export function Playground() {
   const jsonValue = useMemo(() => editorRef.current.toJson(), [version]);
   const selectedIdList = useMemo(() => [...selectedIds], [selectedIds]);
   const selectedNode = doc.nodes[safeSelectedId];
+  const selectedValueOptions = useMemo(
+    () => selectedNode === undefined || selectedNode.children.length > 0
+      ? []
+      : enumValueOptionsAtPath(activeEntity.schema, editorRef.current.pathOf(safeSelectedId)),
+    [activeEntity.schema, safeSelectedId, selectedNode],
+  );
+  const inlineValueOptions = useMemo(() => {
+    if (inlineEdit === null) {
+      return [];
+    }
+
+    const node = doc.nodes[inlineEdit.nodeId];
+
+    return node === undefined || node.children.length > 0
+      ? []
+      : enumValueOptionsAtPath(activeEntity.schema, editorRef.current.pathOf(inlineEdit.nodeId));
+  }, [activeEntity.schema, doc, inlineEdit]);
   const lastChanges = isOperationResult(lastRun.output) && lastRun.output.ok ? lastRun.output.changes ?? [] : [];
   const changedRows = useMemo(() => new Map(lastChanges.map((change) => [change.nodeId, change.type])), [lastChanges]);
   const updatePreview = useMemo(
@@ -586,6 +610,7 @@ export function Playground() {
             inlineEdit={inlineEdit === null ? null : {
               ...inlineEdit,
               invalid: inlineUpdatePreview?.state === "invalid",
+              options: inlineValueOptions,
             }}
             inlineStatus={inlineStatus}
             onSelect={selectGridRow}
@@ -623,6 +648,7 @@ export function Playground() {
             subscriptionEvents={subscriptionEvents}
             updatePreview={updatePreview}
             valueDraft={valueDraft}
+            valueOptions={selectedValueOptions}
             onEntitySelect={selectEntity}
             onFindKeyDraft={setFindKeyDraft}
             onJsonValueDraft={setJsonValueDraft}
@@ -678,6 +704,7 @@ function ApiWorkbench({
   subscriptionEvents,
   updatePreview,
   valueDraft,
+  valueOptions,
   onEntitySelect,
   onFindKeyDraft,
   onJsonValueDraft,
@@ -702,6 +729,7 @@ function ApiWorkbench({
   subscriptionEvents: number;
   updatePreview: UpdatePreview;
   valueDraft: string;
+  valueOptions: EnumValueOption[];
   onEntitySelect: (entityId: string) => void;
   onFindKeyDraft: (value: string) => void;
   onJsonValueDraft: (value: string) => void;
@@ -745,6 +773,7 @@ function ApiWorkbench({
           selectedNode={selectedNode}
           updatePreview={updatePreview}
           valueDraft={valueDraft}
+          valueOptions={valueOptions}
           onFindKeyDraft={onFindKeyDraft}
           onJsonValueDraft={onJsonValueDraft}
           onKeyDraft={onKeyDraft}
@@ -789,6 +818,7 @@ function ApiInputs({
   selectedNode,
   updatePreview,
   valueDraft,
+  valueOptions,
   onFindKeyDraft,
   onJsonValueDraft,
   onKeyDraft,
@@ -805,6 +835,7 @@ function ApiInputs({
   selectedNode: JsonNode | undefined;
   updatePreview: UpdatePreview;
   valueDraft: string;
+  valueOptions: EnumValueOption[];
   onFindKeyDraft: (value: string) => void;
   onJsonValueDraft: (value: string) => void;
   onKeyDraft: (value: string) => void;
@@ -846,11 +877,25 @@ function ApiInputs({
         <>
           <label>
             <span>primitive value</span>
-            <input
-              value={valueDraft}
-              disabled={selectedNode === undefined || selectedNode.children.length > 0}
-              onChange={(event) => onValueDraft(event.target.value)}
-            />
+            {valueOptions.length > 0 ? (
+              <select
+                value={valueDraft}
+                disabled={selectedNode === undefined || selectedNode.children.length > 0}
+                onChange={(event) => onValueDraft(event.target.value)}
+              >
+                {valueOptions.map((option) => (
+                  <option key={enumOptionKey(option)} value={enumOptionDraft(option)}>
+                    {enumOptionLabel(option)}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                value={valueDraft}
+                disabled={selectedNode === undefined || selectedNode.children.length > 0}
+                onChange={(event) => onValueDraft(event.target.value)}
+              />
+            )}
           </label>
           <ValidationPreview preview={updatePreview} />
         </>

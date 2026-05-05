@@ -20,6 +20,8 @@ compatibility demo.
 - Use core `can*` APIs for capability checks and dry-run behavior.
 - Keep primitive value editing tied to `update(nodeId, value)` validation and
   commit results.
+- If the selected value is backed by a Zod enum or literal-union schema, expose
+  only a select control for that value. Do not allow free-text entry.
 - Keep schema switching preset-based until runtime Zod code entry is explicitly
   added.
 - Split playground code by responsibility.
