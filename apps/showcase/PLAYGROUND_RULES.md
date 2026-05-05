@@ -1,46 +1,45 @@
 # zod-crud Playground Rules
 
-This app is a thin playground for the `zod-crud` core package. It is not a
-product app, landing page, scenario gallery, or marketing showcase.
+This app is a thin API playground for the `zod-crud` core package. It is not a
+product app, landing page, scenario gallery, admin dashboard, or UI
+compatibility demo.
 
 ## Do
 
-- Keep the treegrid editor as the first screen and primary surface.
-- Map user commands directly to `zod-crud` core APIs.
-- Display core results as returned: `ok`, `reason`, `nodeId`,
-  `focusNodeId`, `focusNodeIds`, and `changes`.
-- Make every visible panel map to core state or generic editor integration
-  state.
-- Highlight treegrid changes only from `OperationResult.changes`.
-- Visualize focus and selection from `focusNodeId`, `focusNodeIds`, and the
-  current selection state; do not infer hidden focus reasons in the UI.
-- Use core `can*` APIs for command availability.
-- Keep schema/entity switching only to demonstrate schema-guarded editing.
-- Keep inspector panels focused on core state: selection, clipboard, command
-  result, changed nodes, schema, and JSON output.
+- Keep the `JsonDoc` tree as the first-class surface.
+- Keep all runtime-callable APIs reachable from the API sidebar.
+- Keep `*Many` APIs visible as separate API entries.
+- Map user commands directly to `zod-crud` public APIs.
+- Display core results as returned whenever practical: `ok`, `reason`,
+  `nodeId`, `focusNodeId`, `focusNodeIds`, and `changes`.
+- Highlight tree changes only from `OperationResult.changes`.
+- Use core `can*` APIs for capability checks and dry-run behavior.
+- Keep primitive value editing tied to `update(nodeId, value)` validation and
+  commit results.
+- Keep schema switching preset-based until runtime Zod code entry is explicitly
+  added.
 - Split playground code by responsibility.
 - Import files directly. Do not add internal barrels.
 
 ## Don't
 
 - Do not add landing pages, hero sections, marketing copy, onboarding flows,
-  fake analytics, or product-style navigation.
-- Do not add gradients, decorative icons, ornamental animations, charts,
-  dashboards, tutorials, or saved views.
-- Do not add demo-only business workflows.
+  fake analytics, product-style navigation, or dashboard workflows.
+- Do not add decorative gradients, charts, tutorials, saved views, or demo-only
+  business flows.
+- Do not hide core APIs behind app-only facades in the API sidebar.
 - Do not infer paste, focus, validation, batch, undo, redo, or change policies
   in the UI when the policy belongs in core.
 - Do not compute JSON diffs in the playground. Use core `changes`.
-- Do not grow `main.tsx` with selection, command, entity, treegrid, or inspector
-  responsibilities.
-- Do not add UI features unless they expose or verify `zod-crud` core behavior.
+- Do not add runtime schema editing in this scope.
+- Do not add object/array subtree replacement controls in this scope.
 
 ## Feature Gate
 
 A new playground feature is admissible only when it answers at least one of
 these:
 
-- Which core API does this exercise?
+- Which public API does this exercise?
 - Which core result does this reveal?
 - Which generic editor integration concern does this validate?
 

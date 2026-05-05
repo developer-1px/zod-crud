@@ -1,40 +1,34 @@
-# zod-crud JSON editor showcase
+# zod-crud API playground
 
-Local treegrid JSON editor harness for the `zod-crud` package.
+Local JSON tree playground for exercising every runtime-callable `zod-crud`
+API.
 
-It exists to verify that user inputs map cleanly to library operations:
+The app is intentionally a test bench, not a product demo. It keeps the
+`JsonDoc` tree as the primary surface because most editor APIs operate on
+`nodeId`, `JsonPath`, selected node ids, `OperationResult`, and changed nodes.
 
-- `Cmd+C`: copy selected node
-- `Cmd+X`: cut selected node
-- `Cmd+V`: paste into selected node
-- `Delete`: delete selected node
-- `Cmd+Z`: undo
-- `Cmd+Shift+Z`: redo
+## Surfaces
 
-The app intentionally avoids design-system, data-binding, and SSOT-builder
-scope. It keeps a small Zod entity registry, one `JsonCrud` editor per
-registered entity, treegrid selection state, command logging, clipboard display,
-schema display, changed-node display from `OperationResult.changes`, and JSON
-output.
+- API sidebar: all runtime-callable APIs grouped by factory, document, read,
+  mutation, clipboard, capability, history, and subscription.
+- JsonDoc tree: node id based treegrid with single, toggle, and range
+  multi-selection.
+- Workbench: selected API inputs, primitive update validation preview, last
+  result, selected ids, subscription count, and current `toJson()` output.
 
-Registered entities are plain objects in the showcase source:
+## Scope
 
-- `id`
-- label and schema name
-- Zod schema
-- initial JSON value
-- child insertion keys
-- sample value factory for Add child
+Included:
 
-Treegrid navigation:
+- `createJsonCrud` through preset schema/editor reset.
+- Top-level document APIs: `serialize`, `deserialize`, `getPath`.
+- Editor read, mutation, clipboard, capability, history, and subscription APIs.
+- Separate `*Many` API entries instead of hiding them behind selection facades.
+- Primitive value update preview and commit result messages.
 
-- arrow keys move the active grid cell
-- `Space` expands or collapses the active row
-- `Home` and `End` move across the current row
+Excluded for now:
 
-After create, update, delete, cut, paste, undo, or redo, focus follows the
-`focusNodeId` returned by `zod-crud`; the showcase does not compute the
-`JsonDoc` diff itself.
-
-The changed-node panel also reads core-provided `OperationResult.changes`
-instead of diffing snapshots in the showcase.
+- Runtime Zod code entry.
+- Schema builder UI.
+- Object/array subtree replacement UI.
+- Admin dashboard or product workflow demo.
