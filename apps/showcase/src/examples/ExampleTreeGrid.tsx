@@ -1,4 +1,4 @@
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { createJsonCrud, type JsonDoc, type NodeId } from "zod-crud";
 import { useTreeGridPattern } from "@p/headless/patterns";
@@ -28,7 +28,8 @@ export function ExampleTreeGrid() {
   const [crud] = useState(() =>
     createJsonCrud(Schema, { name: "alpha", tags: ["a", "b"] }),
   );
-  const doc = useSyncExternalStore(crud.subscribe, crud.snapshot);
+  const [doc, setDoc] = useState(() => crud.snapshot());
+  useEffect(() => crud.subscribe(() => setDoc(crud.snapshot())), [crud]);
   const [expanded, setExpanded] = useState<Set<NodeId>>(
     () => new Set([doc.rootId]),
   );

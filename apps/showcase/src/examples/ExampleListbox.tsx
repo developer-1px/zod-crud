@@ -1,4 +1,4 @@
-import { useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import { createJsonCrud } from "zod-crud";
 import { useListboxPattern } from "@p/headless/patterns";
@@ -8,7 +8,8 @@ const Schema = z.object({ status: z.enum(["todo", "doing", "done"]) });
 
 export function ExampleListbox() {
   const [crud] = useState(() => createJsonCrud(Schema, { status: "todo" }));
-  const doc = useSyncExternalStore(crud.subscribe, crud.snapshot);
+  const [doc, setDoc] = useState(() => crud.snapshot());
+  useEffect(() => crud.subscribe(() => setDoc(crud.snapshot())), [crud]);
   const statusId = crud.find(doc.rootId, "status")!;
   const current = doc.nodes[statusId]!.value as string;
   const options = Schema.shape.status.options;
