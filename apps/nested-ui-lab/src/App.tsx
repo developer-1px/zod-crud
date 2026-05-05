@@ -37,10 +37,10 @@ type CommandLog = {
   result: OperationResult;
 };
 
-const viewModes: Array<{ id: ViewMode; label: string }> = [
-  { id: "treegrid", label: "TreeGrid" },
-  { id: "outline", label: "Outline" },
-  { id: "cards", label: "Cards" },
+const routes: Array<{ path: string; mode: ViewMode; label: string }> = [
+  { path: "/treegrid", mode: "treegrid", label: "TreeGrid" },
+  { path: "/outline", mode: "outline", label: "Outline" },
+  { path: "/cards", mode: "cards", label: "Cards" },
 ];
 
 export function App() {
@@ -49,7 +49,7 @@ export function App() {
   const initialDoc = editorRef.current.snapshot();
   const [selectedId, setSelectedId] = useState<NodeId>(initialDoc.rootId);
   const [expandedIds, setExpandedIds] = useState<Set<NodeId>>(() => expandedContainerIds(initialDoc));
-  const [viewMode, setViewMode] = useState<ViewMode>("treegrid");
+  const [activeRoute, setActiveRoute] = useState(() => routeForPath(window.location.pathname));
   const [lastCommand, setLastCommand] = useState<CommandLog>({
     command: "ready",
     result: { ok: true },
@@ -61,6 +61,7 @@ export function App() {
   const safeSelectedId = doc.nodes[selectedId] === undefined ? doc.rootId : selectedId;
   const selectedNode = doc.nodes[safeSelectedId];
   const rows = useMemo(() => buildRows(doc, expandedIds), [doc, expandedIds]);
+  const viewMode = activeRoute.mode;
   const changedRows = useMemo(() => {
     const changes = lastCommand.result.ok ? lastCommand.result.changes ?? [] : [];
     return new Map(changes.map((change) => [change.nodeId, change.type]));
@@ -75,8 +76,29 @@ export function App() {
     setValueDraft(valueInput(node));
   }, [doc, safeSelectedId]);
 
+  useEffect(() => {
+    if (window.location.pathname !== activeRoute.path) {
+      window.history.replaceState(null, "", activeRoute.path);
+    }
+
+    function onPopState() {
+      setActiveRoute(routeForPath(window.location.pathname));
+    }
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [activeRoute.path]);
+
   function refresh() {
     setVersion((current) => current + 1);
+  }
+
+  function navigateRoute(route: (typeof routes)[number]) {
+    if (route.path !== window.location.pathname) {
+      window.history.pushState(null, "", route.path);
+    }
+
+    setActiveRoute(route);
   }
 
   function selectNode(nodeId: NodeId) {
@@ -202,20 +224,6 @@ export function App() {
           <h1>Nested UI projection lab</h1>
           <span>{labEntity.label}</span>
         </div>
-        <div className="view-switcher" role="tablist" aria-label="Projection views">
-          {viewModes.map((mode) => (
-            <button
-              key={mode.id}
-              type="button"
-              role="tab"
-              aria-selected={viewMode === mode.id}
-              className={viewMode === mode.id ? "is-active" : ""}
-              onClick={() => setViewMode(mode.id)}
-            >
-              {mode.label}
-            </button>
-          ))}
-        </div>
       </header>
 
       <main className="app-shell">
@@ -233,8 +241,29 @@ export function App() {
         />
 
         <section className="workspace">
+          <aside className="panel route-sidebar">
+            <PanelTitle title="Routes" detail={`${routes.length} available`} />
+            <nav className="route-list" aria-label="Available routes">
+              {routes.map((route) => (
+                <a
+                  key={route.path}
+                  href={route.path}
+                  aria-current={route.path === activeRoute.path ? "page" : undefined}
+                  className={route.path === activeRoute.path ? "route-link is-active" : "route-link"}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    navigateRoute(route);
+                  }}
+                >
+                  <span>{route.label}</span>
+                  <small>{route.path}</small>
+                </a>
+              ))}
+            </nav>
+          </aside>
+
           <section className="panel projection-panel">
-            <PanelTitle title={viewModes.find((mode) => mode.id === viewMode)?.label ?? "Projection"} detail={`${Object.keys(doc.nodes).length} nodes`} />
+            <PanelTitle title={activeRoute.label} detail={`${Object.keys(doc.nodes).length} nodes`} />
             {viewMode === "treegrid" ? (
               <TreeGridProjection
                 changedRows={changedRows}
@@ -289,6 +318,10 @@ export function App() {
       </main>
     </>
   );
+}
+
+function routeForPath(pathname: string): (typeof routes)[number] {
+  return routes.find((route) => route.path === pathname) ?? routes[0]!;
 }
 
 function CommandBar({

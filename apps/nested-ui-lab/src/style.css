@@ -65,14 +65,12 @@ h2 {
   font-size: 12px;
 }
 
-.view-switcher,
 .command-bar {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
 }
 
-.view-switcher button,
 .command-bar button,
 .inspector button {
   background: #ffffff;
@@ -81,12 +79,6 @@ h2 {
   color: #1b2329;
   min-height: 34px;
   padding: 0 11px;
-}
-
-.view-switcher button.is-active {
-  background: #e4f1eb;
-  border-color: #2e7d68;
-  box-shadow: inset 0 0 0 1px #2e7d68;
 }
 
 .app-shell {
@@ -99,7 +91,7 @@ h2 {
   align-items: start;
   display: grid;
   gap: 14px;
-  grid-template-columns: minmax(520px, 1fr) minmax(320px, 0.42fr);
+  grid-template-columns: minmax(180px, 0.28fr) minmax(520px, 1fr) minmax(320px, 0.42fr);
 }
 
 .panel {
@@ -108,6 +100,48 @@ h2 {
   border-radius: 8px;
   min-width: 0;
   padding: 14px;
+}
+
+.route-sidebar {
+  position: sticky;
+  top: 14px;
+}
+
+.route-list {
+  display: grid;
+  gap: 8px;
+}
+
+.route-link {
+  background: #ffffff;
+  border: 1px solid #d9ded8;
+  border-radius: 7px;
+  color: #1b2329;
+  display: grid;
+  gap: 5px;
+  min-height: 58px;
+  min-width: 0;
+  padding: 10px;
+  text-decoration: none;
+}
+
+.route-link.is-active {
+  background: #e4f1eb;
+  border-color: #2e7d68;
+  box-shadow: inset 0 0 0 1px #2e7d68;
+}
+
+.route-link span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.route-link small {
+  color: #64716b;
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .projection-panel {
@@ -417,5 +451,9 @@ h2 {
 
   .workspace {
     grid-template-columns: 1fr;
+  }
+
+  .route-sidebar {
+    position: static;
   }
 }
