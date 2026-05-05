@@ -30,7 +30,6 @@ import {
   columns,
   expandedContainerIds,
   expandedForSelection,
-  insertionArrayId,
   validExpandedIds,
 } from "./grid-rows.js";
 import {
@@ -47,7 +46,6 @@ export function Playground() {
   const [activeEntityId, setActiveEntityId] = useState(defaultEntityId);
   const activeEntity = entityById(activeEntityId);
   const editorRef = useRef(makeEditor(activeEntity));
-  const nextItemRef = useRef(1);
   const [version, setVersion] = useState(0);
   const [selection, setSelection] = useState<SelectionState>(() => singleSelection(editorRef.current.snapshot().rootId));
   const [activeColumn, setActiveColumn] = useState(0);
@@ -220,34 +218,29 @@ export function Playground() {
   function addChild() {
     const current = editorRef.current.snapshot();
     const targetId = current.nodes[safeSelectedId] === undefined ? current.rootId : safeSelectedId;
-    const childrenId = insertionArrayId(current, targetId, activeEntity.childKeys);
-
-    if (childrenId === null) {
-      setLastCommand({
-        command: "create",
-        result: { ok: false, reason: "Select an object with children or a children array." },
-      });
-      return;
-    }
-
-    const parent = current.nodes[childrenId];
-    const index = parent?.children.length ?? 0;
-    const result: OperationResult = parent === undefined
+    const target = current.nodes[targetId];
+    const parent = target?.parentId === undefined || target.parentId === null ? undefined : current.nodes[target.parentId];
+    const result: OperationResult = target === undefined
       ? { ok: false, reason: "Selected insertion target is missing." }
-      : editorRef.current.create(childrenId, index, activeEntity.createValue(parent, nextItemRef.current));
-
-    nextItemRef.current += 1;
+      : parent?.type === "array" && target.type !== "object" && target.type !== "array"
+        ? editorRef.current.insertAfter(target.id)
+        : editorRef.current.appendChild(target.id);
 
     const after = editorRef.current.snapshot();
+    const focusNodeId = result.ok ? result.focusNodeId : undefined;
 
     setExpandedIds((currentExpanded) => {
       const next = validExpandedIds(after, currentExpanded);
-      const parentId = after.nodes[childrenId]?.parentId;
+      let current = focusNodeId === undefined ? undefined : after.nodes[focusNodeId];
 
-      next.add(childrenId);
+      while (current?.parentId !== null && current?.parentId !== undefined) {
+        const parentNode = after.nodes[current.parentId];
 
-      if (parentId !== undefined && parentId !== null) {
-        next.add(parentId);
+        if (parentNode !== undefined && parentNode.children.length > 0) {
+          next.add(parentNode.id);
+        }
+
+        current = parentNode;
       }
 
       return next;
@@ -267,7 +260,6 @@ export function Playground() {
 
   function reset() {
     editorRef.current = makeEditor(activeEntity);
-    nextItemRef.current = 1;
 
     const nextDoc = editorRef.current.snapshot();
 

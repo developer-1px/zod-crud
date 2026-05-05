@@ -2,7 +2,7 @@ import * as z from "zod";
 
 import {
   createJsonCrud,
-  type JsonNode,
+  type JsonPath,
   type JsonValue,
 } from "zod-crud";
 
@@ -28,7 +28,7 @@ export type EntityDefinition = {
   schema: z.ZodType<JsonValue, unknown>;
   initialValue: JsonValue;
   childKeys: string[];
-  createValue: (parent: JsonNode, index: number) => JsonValue;
+  defaultValue: (parentPath: JsonPath, index: number) => JsonValue;
 };
 
 const CommandNodeSchema: z.ZodType<CommandNode> = z.lazy(() =>
@@ -88,7 +88,7 @@ export const entityDefinitions = [
     schema: CommandNodeSchema,
     initialValue: initialCommandDocument,
     childKeys: ["children"],
-    createValue: (_parent, index) => ({
+    defaultValue: (_parentPath, index) => ({
       title: `New child ${index}`,
       status: "draft",
       children: [],
@@ -101,7 +101,7 @@ export const entityDefinitions = [
     schema: CustomerDirectorySchema,
     initialValue: initialCustomerDirectory,
     childKeys: ["contacts", "tags"],
-    createValue: (parent, index) => parent.key === "tags"
+    defaultValue: (parentPath, index) => parentPath[parentPath.length - 1] === "tags"
       ? `tag-${index}`
       : {
           name: `New contact ${index}`,
@@ -114,7 +114,12 @@ export const entityDefinitions = [
 export const defaultEntityId = entityDefinitions[0]?.id ?? "";
 
 export function makeEditor(entity: EntityDefinition) {
-  return createJsonCrud(entity.schema, entity.initialValue, { childKeys: entity.childKeys });
+  let nextItemIndex = 1;
+
+  return createJsonCrud(entity.schema, entity.initialValue, {
+    childKeys: entity.childKeys,
+    defaultFor: (parentPath) => entity.defaultValue(parentPath, nextItemIndex++),
+  });
 }
 
 export function entityById(entityId: string): EntityDefinition {
@@ -128,7 +133,7 @@ function registerEntity<T extends JsonValue>(definition: {
   schema: z.ZodType<T, unknown>;
   initialValue: T;
   childKeys: string[];
-  createValue: (parent: JsonNode, index: number) => JsonValue;
+  defaultValue: (parentPath: JsonPath, index: number) => JsonValue;
 }): EntityDefinition {
   return definition as unknown as EntityDefinition;
 }
