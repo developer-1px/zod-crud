@@ -1,6 +1,7 @@
 import { StrictMode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 
+import { ExampleViewer } from "./ExampleViewer.js";
 import { Playground } from "./Playground.js";
 import "./style.css";
 
@@ -17,6 +18,7 @@ if (rootElement === null) {
 globalThis.zodCrudShowcaseRoot ??= createRoot(rootElement);
 globalThis.zodCrudShowcaseRoot.render(
   <StrictMode>
+    <ExampleViewer />
     <Playground />
   </StrictMode>,
 );
