@@ -306,6 +306,28 @@ kbd {
   box-shadow: inset 0 0 0 2px #2e7d68;
 }
 
+.inline-value-form {
+  display: flex;
+  min-width: 0;
+  width: 100%;
+}
+
+.inline-value-input {
+  background: #ffffff;
+  border: 1px solid #2e7d68;
+  border-radius: 5px;
+  color: #172026;
+  min-height: 26px;
+  min-width: 0;
+  padding: 3px 6px;
+  width: 100%;
+}
+
+.inline-value-input.is-invalid {
+  border-color: #a33131;
+  box-shadow: 0 0 0 2px #f8d7d4;
+}
+
 .grid-row.change-insert {
   border-left-color: #177245;
 }

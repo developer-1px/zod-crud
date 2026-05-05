@@ -30,9 +30,14 @@ export function JsonTreeGrid({
   changedRows,
   selectedId,
   selectedIds,
+  inlineEdit,
   onSelect,
   onMove,
   onExpand,
+  onStartValueEdit,
+  onInlineValueDraft,
+  onCommitValueEdit,
+  onCancelValueEdit,
 }: {
   doc: JsonDoc;
   expandedIds: Set<NodeId>;
@@ -42,9 +47,18 @@ export function JsonTreeGrid({
   changedRows: Map<NodeId, "insert" | "update" | "delete">;
   selectedId: NodeId;
   selectedIds: Set<NodeId>;
+  inlineEdit: {
+    nodeId: NodeId;
+    draft: string;
+    invalid: boolean;
+  } | null;
   onSelect: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
   onMove: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
   onExpand: (nodeId: NodeId, open: boolean) => void;
+  onStartValueEdit: (nodeId: NodeId) => void;
+  onInlineValueDraft: (value: string) => void;
+  onCommitValueEdit: () => void;
+  onCancelValueEdit: () => void;
 }) {
   const pointerTargetRef = useRef<{ columnIndex: number; mode: SelectionMode } | null>(null);
   const rowById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
@@ -103,14 +117,33 @@ export function JsonTreeGrid({
 
     if (event.type === "activate") {
       const pointerTarget = pointerTargetRef.current;
+      const node = doc.nodes[event.id];
 
       pointerTargetRef.current = null;
+
+      if (pointerTarget === null && node !== undefined && node.children.length === 0) {
+        onStartValueEdit(event.id);
+        return;
+      }
+
       onSelect(event.id, pointerTarget?.columnIndex ?? activeColumn, pointerTarget?.mode ?? "single");
     }
   }
 
   function onKeyDownCapture(event: React.KeyboardEvent<HTMLDivElement>) {
     const commandKey = event.metaKey || event.ctrlKey;
+
+    if (!commandKey && event.key === "Enter") {
+      const node = doc.nodes[activeRowId];
+
+      if (node !== undefined && node.children.length === 0) {
+        event.preventDefault();
+        event.stopPropagation();
+        pointerTargetRef.current = null;
+        onStartValueEdit(activeRowId);
+        return;
+      }
+    }
 
     if (commandKey && event.key === " ") {
       event.preventDefault();
@@ -145,6 +178,7 @@ export function JsonTreeGrid({
       aria-multiselectable={true}
       className="treegrid"
       onKeyDownCapture={onKeyDownCapture}
+      onMouseDownCapture={(event) => event.currentTarget.focus()}
     >
       <div {...treegrid.headerRowProps} className="grid-row grid-head">
         {columns.map((column, columnIndex) => (
@@ -162,6 +196,7 @@ export function JsonTreeGrid({
         }
 
         const changeType = changedRows.get(row.id);
+        const node = doc.nodes[row.id];
 
         return (
           <div
@@ -185,6 +220,7 @@ export function JsonTreeGrid({
                 aria-selected={selectedIds.has(row.id)}
                 className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
                 onMouseDown={(event) => {
+                  (event.currentTarget.closest(".treegrid") as HTMLElement | null)?.focus();
                   pointerTargetRef.current = {
                     columnIndex,
                     mode: eventSelectionMode(event),
@@ -193,6 +229,11 @@ export function JsonTreeGrid({
                 onDoubleClick={() => {
                   if (columnIndex === 0) {
                     onExpand(row.id, !row.expanded);
+                    return;
+                  }
+
+                  if (column.id === "value" && node !== undefined && node.children.length === 0) {
+                    onStartValueEdit(row.id);
                   }
                 }}
               >
@@ -207,6 +248,45 @@ export function JsonTreeGrid({
                   row.keyLabel
                 ) : column.id === "type" ? (
                   row.type
+                ) : inlineEdit?.nodeId === row.id ? (
+                  <form
+                    className="inline-value-form"
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      onCommitValueEdit();
+                    }}
+                  >
+                    <input
+                      aria-label={`Edit value for ${row.path}`}
+                      autoFocus
+                      className={inlineEdit.invalid ? "inline-value-input is-invalid" : "inline-value-input"}
+                      value={inlineEdit.draft}
+                      onChange={(event) => onInlineValueDraft(event.target.value)}
+                      onFocus={(event) => event.currentTarget.select()}
+                      onKeyDown={(event) => {
+                        event.stopPropagation();
+
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          onCommitValueEdit();
+                        }
+
+                        if (event.key === "Escape") {
+                          event.preventDefault();
+                          onCancelValueEdit();
+                        }
+                      }}
+                      onKeyUp={(event) => {
+                        event.stopPropagation();
+
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          onCommitValueEdit();
+                        }
+                      }}
+                    />
+                  </form>
                 ) : (
                   row.value
                 )}

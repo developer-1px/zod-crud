@@ -24,6 +24,7 @@ The app is intentionally a test bench, not a product demo. It keeps the
 - `Delete` / `Backspace`: `delete` or `deleteMany`
 - `Cmd/Ctrl+Z`: `undo`
 - `Cmd/Ctrl+Shift+Z` / `Cmd/Ctrl+Y`: `redo`
+- `Enter`: edit the selected primitive value inline
 - `Cmd/Ctrl+Enter`: run the selected API
 
 ## Scope

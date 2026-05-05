@@ -62,6 +62,11 @@ type UpdatePreview =
   | { state: "valid"; value: JsonValue; result: OperationResult }
   | { state: "invalid"; message: string; result?: OperationResult };
 
+type InlineEdit = {
+  nodeId: NodeId;
+  draft: string;
+};
+
 const emptyOptionalJson = "";
 
 export function Playground() {
@@ -80,6 +85,7 @@ export function Playground() {
   const [jsonValueDraft, setJsonValueDraft] = useState(emptyOptionalJson);
   const [pasteMode, setPasteMode] = useState<PasteMode>("auto");
   const [pasteIndexDraft, setPasteIndexDraft] = useState("");
+  const [inlineEdit, setInlineEdit] = useState<InlineEdit | null>(null);
   const [subscriptionEvents, setSubscriptionEvents] = useState(0);
   const [lastRun, setLastRun] = useState<ApiRun>({
     api: "snapshot",
@@ -100,6 +106,19 @@ export function Playground() {
     () => previewPrimitiveUpdate(activeEntity, jsonValue, editorRef.current.pathOf(safeSelectedId), selectedNode, valueDraft),
     [activeEntity, jsonValue, safeSelectedId, selectedNode, valueDraft],
   );
+  const inlineUpdatePreview = useMemo(() => {
+    if (inlineEdit === null || doc.nodes[inlineEdit.nodeId] === undefined) {
+      return null;
+    }
+
+    return previewPrimitiveUpdate(
+      activeEntity,
+      jsonValue,
+      editorRef.current.pathOf(inlineEdit.nodeId),
+      doc.nodes[inlineEdit.nodeId],
+      inlineEdit.draft,
+    );
+  }, [activeEntity, doc, inlineEdit, jsonValue]);
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
@@ -128,6 +147,7 @@ export function Playground() {
   const selectGridCell = useCallback((nodeId: NodeId, columnIndex: number, mode: SelectionMode = "single") => {
     setSelection((current) => applySelection(rows, current, nodeId, mode));
     setActiveColumn(clamp(columnIndex, 0, columns.length - 1));
+    window.setTimeout(() => document.querySelector<HTMLElement>(".treegrid")?.focus(), 0);
   }, [rows]);
 
   useEffect(() => {
@@ -153,7 +173,18 @@ export function Playground() {
         return;
       }
 
-      if (isEditableTarget(event.target)) {
+      if (isTextEntryTarget(event.target)) {
+        return;
+      }
+
+      if (!commandKey && key === "enter") {
+        const node = editorRef.current.snapshot().nodes[safeSelectedId];
+
+        if (node !== undefined && node.children.length === 0) {
+          event.preventDefault();
+          startInlineValueEdit(safeSelectedId);
+        }
+
         return;
       }
 
@@ -181,8 +212,8 @@ export function Playground() {
       }
     }
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => window.removeEventListener("keydown", onKeyDown, { capture: true });
   });
 
   function selectEntity(entityId: string) {
@@ -199,6 +230,7 @@ export function Playground() {
     setSelection(singleSelection(nextDoc.rootId));
     setActiveColumn(0);
     setExpandedIds(expandedContainerIds(nextDoc));
+    setInlineEdit(null);
     setSubscriptionEvents(0);
     setLastRun({
       api: "createJsonCrud",
@@ -226,8 +258,70 @@ export function Playground() {
       output,
     });
     setActiveApi(api);
+    setInlineEdit(null);
 
     afterApiRun(output, targetId);
+  }
+
+  function startInlineValueEdit(nodeId: NodeId) {
+    const node = editorRef.current.snapshot().nodes[nodeId];
+
+    if (node === undefined || node.children.length > 0) {
+      return;
+    }
+
+    setActiveApi("update");
+    setSelection(singleSelection(nodeId));
+    setActiveColumn(3);
+    setValueDraft(valueInput(node));
+    setInlineEdit({
+      nodeId,
+      draft: valueInput(node),
+    });
+  }
+
+  function commitInlineValueEdit() {
+    if (inlineEdit === null) {
+      return;
+    }
+
+    const node = editorRef.current.snapshot().nodes[inlineEdit.nodeId];
+    const preview = inlineUpdatePreview;
+
+    if (node === undefined || preview === null) {
+      setInlineEdit(null);
+      return;
+    }
+
+    if (preview.state !== "valid") {
+      setLastRun({
+        api: "update",
+        call: apiCallLabel("update"),
+        output: {
+          ok: false,
+          reason: preview.message,
+        },
+      });
+      setActiveApi("update");
+      setValueDraft(inlineEdit.draft);
+      return;
+    }
+
+    const result = editorRef.current.update(inlineEdit.nodeId, preview.value);
+
+    setLastRun({
+      api: "update",
+      call: apiCallLabel("update"),
+      output: result,
+    });
+    setActiveApi("update");
+    setValueDraft(inlineEdit.draft);
+
+    if (result.ok) {
+      setInlineEdit(null);
+    }
+
+    afterApiRun(result, inlineEdit.nodeId);
   }
 
   function executeApi(api: ApiId, targetId: NodeId, targetIds: NodeId[]): unknown {
@@ -447,9 +541,20 @@ export function Playground() {
             changedRows={changedRows}
             selectedId={safeSelectedId}
             selectedIds={selectedIds}
+            inlineEdit={inlineEdit === null ? null : {
+              ...inlineEdit,
+              invalid: inlineUpdatePreview?.state === "invalid",
+            }}
             onSelect={selectGridCell}
             onMove={selectGridCell}
             onExpand={setExpanded}
+            onStartValueEdit={startInlineValueEdit}
+            onInlineValueDraft={(draft) => {
+              setValueDraft(draft);
+              setInlineEdit((current) => current === null ? null : { ...current, draft });
+            }}
+            onCommitValueEdit={commitInlineValueEdit}
+            onCancelValueEdit={() => setInlineEdit(null)}
           />
         </section>
 
@@ -494,6 +599,7 @@ function ShortcutStrip() {
     ["Delete", "delete / deleteMany"],
     ["Cmd/Ctrl+Z", "undo"],
     ["Cmd/Ctrl+Shift+Z", "redo"],
+    ["Enter", "edit value inline"],
     ["Cmd/Ctrl+Enter", "run selected API"],
   ];
 
@@ -924,7 +1030,7 @@ function failure(error: unknown): OperationResult {
   };
 }
 
-function isEditableTarget(target: EventTarget | null): boolean {
+function isTextEntryTarget(target: EventTarget | null): boolean {
   return target instanceof HTMLElement &&
     (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 }
