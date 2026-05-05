@@ -1,14 +1,6 @@
-import {
-  useMemo,
-  useRef,
-} from "react";
-import { useTreeGridPattern } from "@p/headless/patterns";
-import {
-  type NormalizedData,
-  type UiEvent,
-} from "@p/headless";
 import type {
   JsonDoc,
+  JsonNode,
   NodeId,
 } from "zod-crud";
 
@@ -21,16 +13,27 @@ import {
   type SelectionMode,
 } from "./selection.js";
 
+export type InlineEditState = {
+  nodeId: NodeId;
+  draft: string;
+  invalid: boolean;
+};
+
+export type InlineStatus = {
+  nodeId: NodeId;
+  kind: "idle" | "valid" | "invalid";
+  message: string;
+};
+
 export function JsonTreeGrid({
   doc,
-  expandedIds,
-  columns,
   rows,
-  activeColumn,
+  columns,
   changedRows,
   selectedId,
   selectedIds,
   inlineEdit,
+  inlineStatus,
   onSelect,
   onMove,
   onExpand,
@@ -40,258 +43,199 @@ export function JsonTreeGrid({
   onCancelValueEdit,
 }: {
   doc: JsonDoc;
-  expandedIds: Set<NodeId>;
   columns: GridColumn[];
   rows: GridRow[];
-  activeColumn: number;
   changedRows: Map<NodeId, "insert" | "update" | "delete">;
   selectedId: NodeId;
   selectedIds: Set<NodeId>;
-  inlineEdit: {
-    nodeId: NodeId;
-    draft: string;
-    invalid: boolean;
-  } | null;
-  onSelect: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
-  onMove: (nodeId: NodeId, columnIndex: number, mode?: SelectionMode) => void;
+  inlineEdit: InlineEditState | null;
+  inlineStatus: InlineStatus | null;
+  onSelect: (nodeId: NodeId, mode?: SelectionMode) => void;
+  onMove: (nodeId: NodeId, mode?: SelectionMode) => void;
   onExpand: (nodeId: NodeId, open: boolean) => void;
   onStartValueEdit: (nodeId: NodeId) => void;
   onInlineValueDraft: (value: string) => void;
   onCommitValueEdit: () => void;
   onCancelValueEdit: () => void;
 }) {
-  const pointerTargetRef = useRef<{ columnIndex: number; mode: SelectionMode } | null>(null);
-  const rowById = useMemo(() => new Map(rows.map((row) => [row.id, row])), [rows]);
-  const headlessData = useMemo<NormalizedData>(() => {
-    const entities: NormalizedData["entities"] = {};
-    const relationships: NormalizedData["relationships"] = {};
-
-    for (const node of Object.values(doc.nodes)) {
-      entities[node.id] = {
-        label: rowById.get(node.id)?.path ?? String(node.key ?? node.id),
-        selected: selectedIds.has(node.id),
-      };
-      relationships[node.id] = [...node.children];
-    }
-
-    return {
-      entities,
-      relationships,
-      meta: {
-        root: [doc.rootId],
-        expanded: [...expandedIds],
-        focus: selectedId,
-      },
-    };
-  }, [doc, expandedIds, rowById, selectedId, selectedIds]);
   const selectedIndex = rows.findIndex((row) => row.id === selectedId);
   const visibleIndex = selectedIndex < 0 ? 0 : selectedIndex;
-  const activeRowId = rows[visibleIndex]?.id ?? selectedId;
-  const treegrid = useTreeGridPattern(headlessData, onTreeGridEvent, {
-    colCount: columns.length,
-    label: "JSON document treegrid",
-    selectionFollowsFocus: false,
-  });
+  const activeRow = rows[visibleIndex];
+  const activeRowId = activeRow?.id ?? selectedId;
+  const activeNode = doc.nodes[activeRowId];
 
-  function move(deltaRow: number, deltaColumn: number, mode: SelectionMode = "single") {
-    const nextRow = rows[clamp(visibleIndex + deltaRow, 0, rows.length - 1)];
-    const nextColumn = clamp(activeColumn + deltaColumn, 0, columns.length - 1);
+  function move(delta: number, mode: SelectionMode = "single") {
+    const nextRow = rows[clamp(visibleIndex + delta, 0, rows.length - 1)];
 
     if (nextRow !== undefined) {
-      onMove(nextRow.id, nextColumn, mode);
+      onMove(nextRow.id, mode);
     }
   }
 
-  function onTreeGridEvent(event: UiEvent) {
-    if (event.type === "navigate") {
-      pointerTargetRef.current = null;
-      onMove(event.id, activeColumn);
-      return;
-    }
+  function moveToParent() {
+    const parentId = activeNode?.parentId;
 
-    if (event.type === "expand") {
-      pointerTargetRef.current = null;
-      onExpand(event.id, event.open);
-      return;
-    }
-
-    if (event.type === "activate") {
-      const pointerTarget = pointerTargetRef.current;
-      const node = doc.nodes[event.id];
-
-      pointerTargetRef.current = null;
-
-      if (pointerTarget === null && node !== undefined && node.children.length === 0) {
-        onStartValueEdit(event.id);
-        return;
-      }
-
-      onSelect(event.id, pointerTarget?.columnIndex ?? activeColumn, pointerTarget?.mode ?? "single");
+    if (parentId !== null && parentId !== undefined && doc.nodes[parentId] !== undefined) {
+      onMove(parentId);
     }
   }
 
-  function onKeyDownCapture(event: React.KeyboardEvent<HTMLDivElement>) {
+  function moveToFirstChild() {
+    const firstChildId = activeNode?.children[0];
+
+    if (firstChildId !== undefined && doc.nodes[firstChildId] !== undefined) {
+      onMove(firstChildId);
+    }
+  }
+
+  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
     const commandKey = event.metaKey || event.ctrlKey;
 
-    if (!commandKey && event.key === "Enter") {
-      const node = doc.nodes[activeRowId];
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      move(1, event.shiftKey ? "range" : "single");
+      return;
+    }
 
-      if (node !== undefined && node.children.length === 0) {
-        event.preventDefault();
-        event.stopPropagation();
-        pointerTargetRef.current = null;
-        onStartValueEdit(activeRowId);
-        return;
+    if (event.key === "ArrowUp") {
+      event.preventDefault();
+      move(-1, event.shiftKey ? "range" : "single");
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+
+      if (activeRow?.expandable === true && activeRow.expanded) {
+        onExpand(activeRow.id, false);
+      } else {
+        moveToParent();
       }
+
+      return;
+    }
+
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+
+      if (activeRow?.expandable === true && !activeRow.expanded) {
+        onExpand(activeRow.id, true);
+      } else {
+        moveToFirstChild();
+      }
+
+      return;
     }
 
     if (commandKey && event.key === " ") {
       event.preventDefault();
-      event.stopPropagation();
-      pointerTargetRef.current = null;
-      onSelect(activeRowId, activeColumn, "toggle");
+      onSelect(activeRowId, "toggle");
       return;
     }
 
-    if (event.shiftKey && event.key === "ArrowDown") {
+    if (!commandKey && event.key === "Enter") {
       event.preventDefault();
-      event.stopPropagation();
-      pointerTargetRef.current = null;
-      move(1, 0, event.shiftKey ? "range" : "single");
-      return;
+      onStartValueEdit(activeRowId);
     }
-
-    if (event.shiftKey && event.key === "ArrowUp") {
-      event.preventDefault();
-      event.stopPropagation();
-      pointerTargetRef.current = null;
-      move(-1, 0, event.shiftKey ? "range" : "single");
-      return;
-    }
-
-    pointerTargetRef.current = null;
   }
 
   return (
     <div
-      {...treegrid.treegridProps}
+      role="treegrid"
+      aria-colcount={columns.length}
       aria-multiselectable={true}
+      aria-rowcount={rows.length + 1}
+      aria-label="JSON document tree"
       className="treegrid"
-      onKeyDownCapture={onKeyDownCapture}
-      onMouseDownCapture={(event) => event.currentTarget.focus()}
+      tabIndex={0}
+      onKeyDown={onKeyDown}
     >
-      <div {...treegrid.headerRowProps} className="grid-row grid-head">
+      <div role="row" aria-rowindex={1} className="grid-row grid-head">
         {columns.map((column, columnIndex) => (
-          <div key={column.id} {...treegrid.columnheaderProps(columnIndex)}>
+          <div key={column.id} role="columnheader" aria-colindex={columnIndex + 1}>
             {column.label}
           </div>
         ))}
       </div>
 
-      {treegrid.items.map((item, rowIndex) => {
-        const row = rowById.get(item.id);
-
-        if (row === undefined) {
-          return null;
-        }
-
-        const changeType = changedRows.get(row.id);
+      {rows.map((row, rowIndex) => {
         const node = doc.nodes[row.id];
+        const changeType = changedRows.get(row.id);
+        const isActive = selectedId === row.id;
 
         return (
-          <div
-            {...treegrid.rowProps(row.id)}
-            key={row.id}
-            aria-rowindex={rowIndex + 2}
-            className={[
-              "grid-row",
-              selectedIds.has(row.id) ? "is-selected" : "",
-              selectedId === row.id ? "is-active-row" : "",
-              changeType === undefined ? "" : `change-${changeType}`,
-            ].filter(Boolean).join(" ")}
-          >
-            {columns.map((column, columnIndex) => (
-              <div
-                key={column.id}
-                {...(columnIndex === 0
-                  ? treegrid.rowheaderProps(row.id)
-                  : treegrid.gridcellProps(row.id, columnIndex))}
-                id={cellId(row.id, columnIndex)}
-                aria-selected={selectedIds.has(row.id)}
-                className={selectedId === row.id && activeColumn === columnIndex ? "grid-cell is-active" : "grid-cell"}
-                onMouseDown={(event) => {
-                  (event.currentTarget.closest(".treegrid") as HTMLElement | null)?.focus();
-                  pointerTargetRef.current = {
-                    columnIndex,
-                    mode: eventSelectionMode(event),
-                  };
-                }}
-                onDoubleClick={() => {
-                  if (columnIndex === 0) {
-                    onExpand(row.id, !row.expanded);
-                    return;
-                  }
+          <div key={row.id} className="grid-row-block">
+            <div
+              role="row"
+              aria-expanded={row.expandable ? row.expanded : undefined}
+              aria-level={row.depth + 1}
+              aria-rowindex={rowIndex + 2}
+              aria-selected={selectedIds.has(row.id)}
+              className={[
+                "grid-row",
+                selectedIds.has(row.id) ? "is-selected" : "",
+                isActive ? "is-active-row" : "",
+                changeType === undefined ? "" : `change-${changeType}`,
+              ].filter(Boolean).join(" ")}
+              onClick={(event) => {
+                (event.currentTarget.closest(".treegrid") as HTMLElement | null)?.focus();
+                onSelect(row.id, eventSelectionMode(event));
+              }}
+              onDoubleClick={(event) => {
+                event.preventDefault();
 
-                  if (column.id === "value" && node !== undefined && node.children.length === 0) {
-                    onStartValueEdit(row.id);
-                  }
-                }}
-              >
-                {column.id === "path" ? (
-                  <span className="path-cell" style={{ paddingLeft: `${row.depth * 18}px` }}>
-                    <span aria-hidden="true" className="twisty">
-                      {row.expandable ? row.expanded ? "v" : ">" : ""}
+                if (row.expandable) {
+                  onExpand(row.id, !row.expanded);
+                }
+              }}
+            >
+              {columns.map((column, columnIndex) => (
+                <div
+                  key={column.id}
+                  role={columnIndex === 0 ? "rowheader" : "gridcell"}
+                  aria-colindex={columnIndex + 1}
+                  className="grid-cell"
+                >
+                  {column.id === "path" ? (
+                    <span className="path-cell" style={{ paddingLeft: `${row.depth * 18}px` }}>
+                      <button
+                        type="button"
+                        className="twisty-button"
+                        aria-label={`${row.expanded ? "Collapse" : "Expand"} ${row.path}`}
+                        disabled={!row.expandable}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onExpand(row.id, !row.expanded);
+                        }}
+                      >
+                        {row.expandable ? row.expanded ? "v" : ">" : ""}
+                      </button>
+                      <span>{row.path}</span>
                     </span>
-                    <span>{row.path}</span>
-                  </span>
-                ) : column.id === "key" ? (
-                  row.keyLabel
-                ) : column.id === "type" ? (
-                  row.type
-                ) : inlineEdit?.nodeId === row.id ? (
-                  <form
-                    className="inline-value-form"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      event.stopPropagation();
-                      onCommitValueEdit();
-                    }}
-                  >
-                    <input
-                      aria-label={`Edit value for ${row.path}`}
-                      autoFocus
-                      className={inlineEdit.invalid ? "inline-value-input is-invalid" : "inline-value-input"}
-                      value={inlineEdit.draft}
-                      onChange={(event) => onInlineValueDraft(event.target.value)}
-                      onFocus={(event) => event.currentTarget.select()}
-                      onKeyDown={(event) => {
-                        event.stopPropagation();
-
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          onCommitValueEdit();
-                        }
-
-                        if (event.key === "Escape") {
-                          event.preventDefault();
-                          onCancelValueEdit();
-                        }
-                      }}
-                      onKeyUp={(event) => {
-                        event.stopPropagation();
-
-                        if (event.key === "Enter") {
-                          event.preventDefault();
-                          onCommitValueEdit();
-                        }
-                      }}
+                  ) : column.id === "key" ? (
+                    row.keyLabel
+                  ) : column.id === "type" ? (
+                    row.type
+                  ) : inlineEdit?.nodeId === row.id && node !== undefined ? (
+                    <InlineValueEditor
+                      node={node}
+                      path={row.path}
+                      state={inlineEdit}
+                      onDraft={onInlineValueDraft}
+                      onCommit={onCommitValueEdit}
+                      onCancel={onCancelValueEdit}
                     />
-                  </form>
-                ) : (
-                  row.value
-                )}
+                  ) : (
+                    row.value
+                  )}
+                </div>
+              ))}
+            </div>
+            {inlineStatus?.nodeId === row.id ? (
+              <div className={`inline-status-row is-${inlineStatus.kind}`}>
+                <span>{inlineStatus.message}</span>
               </div>
-            ))}
+            ) : null}
           </div>
         );
       })}
@@ -299,8 +243,96 @@ export function JsonTreeGrid({
   );
 }
 
-function cellId(nodeId: NodeId, columnIndex: number): string {
-  return `grid-${nodeId}-${columnIndex}`;
+function InlineValueEditor({
+  node,
+  path,
+  state,
+  onDraft,
+  onCommit,
+  onCancel,
+}: {
+  node: JsonNode;
+  path: string;
+  state: InlineEditState;
+  onDraft: (value: string) => void;
+  onCommit: () => void;
+  onCancel: () => void;
+}) {
+  if (node.type === "boolean") {
+    return (
+      <label className="inline-checkbox">
+        <input
+          aria-label={`Edit value for ${path}`}
+          autoFocus
+          checked={state.draft === "true"}
+          type="checkbox"
+          onChange={(event) => onDraft(event.currentTarget.checked ? "true" : "false")}
+          onKeyDown={(event) => {
+            event.stopPropagation();
+
+            if (event.key === "Enter") {
+              event.preventDefault();
+              onCommit();
+            }
+
+            if (event.key === "Escape") {
+              event.preventDefault();
+              onCancel();
+            }
+          }}
+        />
+        <span>{state.draft === "true" ? "true" : "false"}</span>
+      </label>
+    );
+  }
+
+  if (node.type === "null") {
+    return (
+      <label className="inline-checkbox">
+        <input
+          aria-label={`Edit value for ${path}`}
+          checked={true}
+          disabled={true}
+          type="checkbox"
+        />
+        <span>null</span>
+      </label>
+    );
+  }
+
+  return (
+    <form
+      className="inline-value-form"
+      onSubmit={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onCommit();
+      }}
+    >
+      <input
+        aria-label={`Edit value for ${path}`}
+        autoFocus
+        className={state.invalid ? "inline-value-input is-invalid" : "inline-value-input"}
+        inputMode={node.type === "number" ? "decimal" : "text"}
+        value={state.draft}
+        onChange={(event) => onDraft(event.target.value)}
+        onFocus={(event) => event.currentTarget.select()}
+        onKeyDown={(event) => {
+          event.stopPropagation();
+
+          if (event.key === "Enter") {
+            event.preventDefault();
+            onCommit();
+          }
+
+          if (event.key === "Escape") {
+            event.preventDefault();
+            onCancel();
+          }
+        }}
+      />
+    </form>
+  );
 }
 
 function clamp(value: number, min: number, max: number): number {

@@ -11,8 +11,8 @@ The app is intentionally a test bench, not a product demo. It keeps the
 
 - API sidebar: all runtime-callable APIs grouped by factory, document, read,
   mutation, clipboard, capability, history, and subscription.
-- JsonDoc tree: node id based treegrid with single, toggle, and range
-  multi-selection.
+- JsonDoc tree: node id based row-navigation tree table with single, toggle,
+  and visible-row range multi-selection.
 - Workbench: selected API inputs, primitive update validation preview, last
   result, selected ids, subscription count, and current `toJson()` output.
 
@@ -25,6 +25,8 @@ The app is intentionally a test bench, not a product demo. It keeps the
 - `Cmd/Ctrl+Z`: `undo`
 - `Cmd/Ctrl+Shift+Z` / `Cmd/Ctrl+Y`: `redo`
 - `Enter`: edit the selected primitive value inline
+- `ArrowLeft` / `ArrowRight`: collapse, move to parent, expand, or move to first
+  child
 - `Cmd/Ctrl+Enter`: run the selected API
 
 ## Scope

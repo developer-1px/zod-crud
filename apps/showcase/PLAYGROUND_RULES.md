@@ -7,10 +7,13 @@ compatibility demo.
 ## Do
 
 - Keep the `JsonDoc` tree as the first-class surface.
+- Keep tree interaction row-based. Columns are display-only.
 - Keep all runtime-callable APIs reachable from the API sidebar.
 - Keep `*Many` APIs visible as separate API entries.
 - Map user commands directly to `zod-crud` public APIs.
 - Keep keyboard shortcuts mapped to the same public API calls that buttons use.
+- Keep `Enter` mapped only to selected-row primitive value editing. Do not edit
+  `path`, `key`, or `type` in the grid.
 - Display core results as returned whenever practical: `ok`, `reason`,
   `nodeId`, `focusNodeId`, `focusNodeIds`, and `changes`.
 - Highlight tree changes only from `OperationResult.changes`.

@@ -67,6 +67,12 @@ type InlineEdit = {
   draft: string;
 };
 
+type InlineNotice = {
+  nodeId: NodeId;
+  kind: "idle" | "valid" | "invalid";
+  message: string;
+};
+
 const emptyOptionalJson = "";
 
 export function Playground() {
@@ -76,7 +82,6 @@ export function Playground() {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const [version, setVersion] = useState(0);
   const [selection, setSelection] = useState<SelectionState>(() => singleSelection(editorRef.current.snapshot().rootId));
-  const [activeColumn, setActiveColumn] = useState(0);
   const [expandedIds, setExpandedIds] = useState<Set<NodeId>>(() => expandedContainerIds(editorRef.current.snapshot()));
   const [activeApi, setActiveApi] = useState<ApiId>("update");
   const [keyDraft, setKeyDraft] = useState("");
@@ -86,6 +91,7 @@ export function Playground() {
   const [pasteMode, setPasteMode] = useState<PasteMode>("auto");
   const [pasteIndexDraft, setPasteIndexDraft] = useState("");
   const [inlineEdit, setInlineEdit] = useState<InlineEdit | null>(null);
+  const [inlineNotice, setInlineNotice] = useState<InlineNotice | null>(null);
   const [subscriptionEvents, setSubscriptionEvents] = useState(0);
   const [lastRun, setLastRun] = useState<ApiRun>({
     api: "snapshot",
@@ -119,6 +125,33 @@ export function Playground() {
       inlineEdit.draft,
     );
   }, [activeEntity, doc, inlineEdit, jsonValue]);
+  const inlineStatus = useMemo(() => {
+    if (inlineEdit !== null) {
+      if (inlineUpdatePreview?.state === "valid") {
+        return {
+          nodeId: inlineEdit.nodeId,
+          kind: "valid" as const,
+          message: `Valid: ${valueLabel(inlineUpdatePreview.value)}`,
+        };
+      }
+
+      if (inlineUpdatePreview?.state === "invalid") {
+        return {
+          nodeId: inlineEdit.nodeId,
+          kind: "invalid" as const,
+          message: `Invalid: ${inlineUpdatePreview.message}`,
+        };
+      }
+
+      return {
+        nodeId: inlineEdit.nodeId,
+        kind: "idle" as const,
+        message: "Enter commits. Esc cancels.",
+      };
+    }
+
+    return inlineNotice;
+  }, [inlineEdit, inlineNotice, inlineUpdatePreview]);
 
   const refresh = useCallback(() => {
     setVersion((current) => current + 1);
@@ -144,9 +177,9 @@ export function Playground() {
     });
   }, []);
 
-  const selectGridCell = useCallback((nodeId: NodeId, columnIndex: number, mode: SelectionMode = "single") => {
+  const selectGridRow = useCallback((nodeId: NodeId, mode: SelectionMode = "single") => {
     setSelection((current) => applySelection(rows, current, nodeId, mode));
-    setActiveColumn(clamp(columnIndex, 0, columns.length - 1));
+    setInlineNotice(null);
     window.setTimeout(() => document.querySelector<HTMLElement>(".treegrid")?.focus(), 0);
   }, [rows]);
 
@@ -174,17 +207,6 @@ export function Playground() {
       }
 
       if (isTextEntryTarget(event.target)) {
-        return;
-      }
-
-      if (!commandKey && key === "enter") {
-        const node = editorRef.current.snapshot().nodes[safeSelectedId];
-
-        if (node !== undefined && node.children.length === 0) {
-          event.preventDefault();
-          startInlineValueEdit(safeSelectedId);
-        }
-
         return;
       }
 
@@ -228,9 +250,9 @@ export function Playground() {
 
     setActiveEntityId(nextEntity.id);
     setSelection(singleSelection(nextDoc.rootId));
-    setActiveColumn(0);
     setExpandedIds(expandedContainerIds(nextDoc));
     setInlineEdit(null);
+    setInlineNotice(null);
     setSubscriptionEvents(0);
     setLastRun({
       api: "createJsonCrud",
@@ -267,13 +289,19 @@ export function Playground() {
     const node = editorRef.current.snapshot().nodes[nodeId];
 
     if (node === undefined || node.children.length > 0) {
+      setInlineEdit(null);
+      setInlineNotice({
+        nodeId,
+        kind: "invalid",
+        message: "Only primitive values can be edited.",
+      });
       return;
     }
 
     setActiveApi("update");
     setSelection(singleSelection(nodeId));
-    setActiveColumn(3);
     setValueDraft(valueInput(node));
+    setInlineNotice(null);
     setInlineEdit({
       nodeId,
       draft: valueInput(node),
@@ -304,6 +332,11 @@ export function Playground() {
       });
       setActiveApi("update");
       setValueDraft(inlineEdit.draft);
+      setInlineNotice({
+        nodeId: inlineEdit.nodeId,
+        kind: "invalid",
+        message: preview.message,
+      });
       return;
     }
 
@@ -319,6 +352,17 @@ export function Playground() {
 
     if (result.ok) {
       setInlineEdit(null);
+      setInlineNotice({
+        nodeId: inlineEdit.nodeId,
+        kind: "valid",
+        message: `Committed: ${valueLabel(preview.value)}`,
+      });
+    } else {
+      setInlineNotice({
+        nodeId: inlineEdit.nodeId,
+        kind: "invalid",
+        message: validationMessage(result),
+      });
     }
 
     afterApiRun(result, inlineEdit.nodeId);
@@ -534,10 +578,8 @@ export function Playground() {
           />
           <JsonTreeGrid
             doc={doc}
-            expandedIds={expandedIds}
             columns={columns}
             rows={rows}
-            activeColumn={activeColumn}
             changedRows={changedRows}
             selectedId={safeSelectedId}
             selectedIds={selectedIds}
@@ -545,16 +587,21 @@ export function Playground() {
               ...inlineEdit,
               invalid: inlineUpdatePreview?.state === "invalid",
             }}
-            onSelect={selectGridCell}
-            onMove={selectGridCell}
+            inlineStatus={inlineStatus}
+            onSelect={selectGridRow}
+            onMove={selectGridRow}
             onExpand={setExpanded}
             onStartValueEdit={startInlineValueEdit}
             onInlineValueDraft={(draft) => {
               setValueDraft(draft);
+              setInlineNotice(null);
               setInlineEdit((current) => current === null ? null : { ...current, draft });
             }}
             onCommitValueEdit={commitInlineValueEdit}
-            onCancelValueEdit={() => setInlineEdit(null)}
+            onCancelValueEdit={() => {
+              setInlineEdit(null);
+              setInlineNotice(null);
+            }}
           />
         </section>
 
@@ -1047,8 +1094,4 @@ function stringify(value: unknown): string {
 
     return item;
   }, 2);
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
 }
