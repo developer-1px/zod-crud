@@ -142,6 +142,49 @@ export function Playground() {
     unsubscribeRef.current?.();
   }, []);
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const commandKey = event.metaKey || event.ctrlKey;
+      const key = event.key.toLowerCase();
+
+      if (commandKey && key === "enter") {
+        event.preventDefault();
+        runApi(activeApi);
+        return;
+      }
+
+      if (isEditableTarget(event.target)) {
+        return;
+      }
+
+      if (commandKey && !event.altKey) {
+        const shortcutApi =
+          key === "c" ? selectedIdList.length > 1 ? "copyMany" : "copy" :
+          key === "x" ? selectedIdList.length > 1 ? "cutMany" : "cut" :
+          key === "v" ? "paste" :
+          key === "z" && event.shiftKey ? "redo" :
+          key === "z" ? "undo" :
+          key === "y" ? "redo" :
+          null;
+
+        if (shortcutApi !== null) {
+          event.preventDefault();
+          runApi(shortcutApi);
+        }
+
+        return;
+      }
+
+      if (event.key === "Delete" || event.key === "Backspace") {
+        event.preventDefault();
+        runApi(selectedIdList.length > 1 ? "deleteMany" : "delete");
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
   function selectEntity(entityId: string) {
     const nextEntity = entityById(entityId);
     const nextEditor = makeEditor(nextEntity);
@@ -182,6 +225,7 @@ export function Playground() {
       call: apiCallLabel(api),
       output,
     });
+    setActiveApi(api);
 
     afterApiRun(output, targetId);
   }
@@ -371,13 +415,16 @@ export function Playground() {
   return (
     <>
       <header className="app-header">
-        <div>
-          <h1>zod-crud API Playground</h1>
-          <span>{activeEntity.schemaName}</span>
+        <div className="header-main">
+          <div>
+            <h1>zod-crud API Playground</h1>
+            <span>{activeEntity.schemaName}</span>
+          </div>
+          <div className="header-actions">
+            <button type="button" onClick={() => runApi("createJsonCrud")}>Recreate editor</button>
+          </div>
         </div>
-        <div className="header-actions">
-          <button type="button" onClick={() => runApi("createJsonCrud")}>Recreate editor</button>
-        </div>
+        <ShortcutStrip />
       </header>
 
       <main className="playground-shell">
@@ -436,6 +483,29 @@ export function Playground() {
         </aside>
       </main>
     </>
+  );
+}
+
+function ShortcutStrip() {
+  const shortcuts = [
+    ["Cmd/Ctrl+C", "copy / copyMany"],
+    ["Cmd/Ctrl+X", "cut / cutMany"],
+    ["Cmd/Ctrl+V", "paste"],
+    ["Delete", "delete / deleteMany"],
+    ["Cmd/Ctrl+Z", "undo"],
+    ["Cmd/Ctrl+Shift+Z", "redo"],
+    ["Cmd/Ctrl+Enter", "run selected API"],
+  ];
+
+  return (
+    <div className="shortcut-strip" aria-label="Keyboard shortcuts">
+      {shortcuts.map(([keys, label]) => (
+        <span key={keys}>
+          <kbd>{keys}</kbd>
+          {label}
+        </span>
+      ))}
+    </div>
   );
 }
 
@@ -852,6 +922,11 @@ function failure(error: unknown): OperationResult {
     ok: false,
     reason: error instanceof Error ? error.message : String(error),
   };
+}
+
+function isEditableTarget(target: EventTarget | null): boolean {
+  return target instanceof HTMLElement &&
+    (target.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName));
 }
 
 function stringify(value: unknown): string {

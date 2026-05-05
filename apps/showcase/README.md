@@ -16,6 +16,16 @@ The app is intentionally a test bench, not a product demo. It keeps the
 - Workbench: selected API inputs, primitive update validation preview, last
   result, selected ids, subscription count, and current `toJson()` output.
 
+## Shortcuts
+
+- `Cmd/Ctrl+C`: `copy` or `copyMany`
+- `Cmd/Ctrl+X`: `cut` or `cutMany`
+- `Cmd/Ctrl+V`: `paste`
+- `Delete` / `Backspace`: `delete` or `deleteMany`
+- `Cmd/Ctrl+Z`: `undo`
+- `Cmd/Ctrl+Shift+Z` / `Cmd/Ctrl+Y`: `redo`
+- `Cmd/Ctrl+Enter`: run the selected API
+
 ## Scope
 
 Included:
