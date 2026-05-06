@@ -4,6 +4,7 @@ import { useTreeGridPattern } from "@p/headless/patterns";
 import type { UiEvent } from "@p/headless";
 import { SampleSchema, sampleData } from "./sampleData.js";
 import { toNormalized } from "./jsonDocAdapter.js";
+import { RouteLayout, TreeNode } from "./RouteLayout.js";
 
 export function HeadlessRoute() {
   const [crud] = useState(() => createJsonCrud(SampleSchema, sampleData));
@@ -70,23 +71,24 @@ export function HeadlessRoute() {
   );
 
   return (
-    <main className="headless-route">
-      <h2>useTreeGridPattern + onEvent → zod-crud</h2>
-      <p className="hint">
-        화살표/Home/End 이동, ArrowRight/Space로 expand, Shift+화살표로 range select.
-      </p>
-      <div className="route-grid">
-        <div {...treegridProps} className="example-treegrid">
-          {items.map((it: { id: string; label: string }) => (
-            <div key={it.id} {...rowProps(it.id)}>
-              {it.label}
+    <RouteLayout
+      title="useTreeGridPattern"
+      hint="화살표 / Home·End / Space·Right로 expand / Shift+화살표 range select. onEvent → zod-crud."
+      tree={
+        <div {...treegridProps} className="tree">
+          {items.map((it) => (
+            <div key={it.id} {...rowProps(it.id)} className="tree__row">
+              <TreeNode
+                label={it.label}
+                level={it.level}
+                hasChildren={it.hasChildren}
+                expanded={it.expanded}
+              />
             </div>
           ))}
         </div>
-        <pre className="example-source">
-          <code>{JSON.stringify(crud.toJson(), null, 2)}</code>
-        </pre>
-      </div>
-    </main>
+      }
+      json={JSON.stringify(crud.toJson(), null, 2)}
+    />
   );
 }
