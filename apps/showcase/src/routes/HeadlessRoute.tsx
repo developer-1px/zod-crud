@@ -16,11 +16,43 @@ export function HeadlessRoute() {
     for (const child of doc.nodes[doc.rootId]!.children) initial.add(child);
     return initial;
   });
+  const [focus, setFocus] = useState<NodeId | null>(doc.rootId);
+  const [selected, setSelected] = useState<Set<NodeId>>(() => new Set());
 
-  const data = useMemo(() => toNormalized(doc, expanded), [doc, expanded]);
+  const data = useMemo(
+    () => toNormalized(doc, expanded, focus, selected),
+    [doc, expanded, focus, selected],
+  );
 
   const onEvent = (e: UiEvent) => {
     switch (e.type) {
+      case "navigate":
+        if (e.id) setFocus(e.id);
+        return;
+      case "select":
+        setSelected((prev) => {
+          const next = new Set(prev);
+          if (next.has(e.id)) next.delete(e.id);
+          else next.add(e.id);
+          return next;
+        });
+        setFocus(e.id);
+        return;
+      case "selectMany":
+        setSelected((prev) => {
+          const next = new Set(prev);
+          for (const id of e.ids) {
+            if (e.to === undefined) {
+              if (next.has(id)) next.delete(id);
+              else next.add(id);
+            } else if (e.to) next.add(id);
+            else next.delete(id);
+          }
+          return next;
+        });
+        return;
+      case "setAnchor":
+        return;
       case "expand":
         setExpanded((prev) => {
           const next = new Set(prev);

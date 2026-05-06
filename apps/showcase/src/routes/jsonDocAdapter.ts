@@ -4,6 +4,8 @@ import type { NormalizedData } from "@p/headless";
 export function toNormalized(
   doc: JsonDoc,
   expanded: Set<NodeId>,
+  focus: NodeId | null,
+  selected: Set<NodeId>,
 ): NormalizedData {
   return {
     entities: Object.fromEntries(
@@ -14,12 +16,13 @@ export function toNormalized(
             n.value !== undefined
               ? `${String(n.key ?? "")}: ${JSON.stringify(n.value)}`
               : `${String(n.key ?? "")} (${n.type})`,
+          selected: selected.has(n.id),
         },
       ]),
     ),
     relationships: Object.fromEntries(
       Object.values(doc.nodes).map((n) => [n.id, n.children.slice()]),
     ),
-    meta: { root: [doc.rootId], expanded: [...expanded] },
+    meta: { root: [doc.rootId], expanded: [...expanded], focus },
   };
 }
