@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { createJsonCrud, type JsonValue, type NodeId } from "zod-crud";
-import { useTreeGridPattern } from "@p/headless/patterns";
+import { useTreePattern } from "@p/headless/patterns";
 import type { UiEvent } from "@p/headless";
 import { SampleSchema, sampleData } from "./sampleData.js";
 import { toNormalized } from "./jsonDocAdapter.js";
 
-export function HeadlessRoute() {
+export function TreeRoute() {
   const [crud] = useState(() => createJsonCrud(SampleSchema, sampleData));
   const [doc, setDoc] = useState(() => crud.snapshot());
   useEffect(() => crud.subscribe(() => setDoc(crud.snapshot())), [crud]);
@@ -58,31 +58,25 @@ export function HeadlessRoute() {
     }
   };
 
-  const { treegridProps, rowProps, items } = useTreeGridPattern(
-    data,
-    onEvent,
-    {
-      label: "Headless TreeGrid + zod-crud",
-      multiSelectable: true,
-      navigationMode: "row",
-      colCount: 1,
-    },
-  );
+  const { rootProps, itemProps, items } = useTreePattern(data, onEvent, {
+    label: "Headless Tree + zod-crud",
+    multiSelectable: true,
+  });
 
   return (
     <main className="headless-route">
-      <h2>useTreeGridPattern + onEvent → zod-crud</h2>
+      <h2>useTreePattern + onEvent → zod-crud</h2>
       <p className="hint">
-        화살표/Home/End 이동, ArrowRight/Space로 expand, Shift+화살표로 range select.
+        화살표 ← → 로 expand/collapse + 부모/자식 이동, ↑↓로 visible siblings 이동.
       </p>
       <div className="route-grid">
-        <div {...treegridProps} className="example-treegrid">
+        <ul {...rootProps} className="example-tree">
           {items.map((it: { id: string; label: string }) => (
-            <div key={it.id} {...rowProps(it.id)}>
+            <li key={it.id} {...itemProps(it.id)}>
               {it.label}
-            </div>
+            </li>
           ))}
-        </div>
+        </ul>
         <pre className="example-source">
           <code>{JSON.stringify(crud.toJson(), null, 2)}</code>
         </pre>

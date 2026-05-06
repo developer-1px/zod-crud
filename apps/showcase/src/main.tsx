@@ -4,6 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { ExampleViewer } from "./ExampleViewer.js";
 import { Playground } from "./Playground.js";
 import { HeadlessRoute } from "./routes/HeadlessRoute.js";
+import { TreeRoute } from "./routes/TreeRoute.js";
 import "./style.css";
 
 declare global {
@@ -26,10 +27,13 @@ function App() {
     <>
       <nav className="route-nav">
         <a href="#/">Playground</a>
-        <a href="#/headless">Headless wrapper</a>
+        <a href="#/headless">TreeGrid</a>
+        <a href="#/tree">Tree</a>
       </nav>
       {route === "#/headless" ? (
         <HeadlessRoute />
+      ) : route === "#/tree" ? (
+        <TreeRoute />
       ) : (
         <>
           <ExampleViewer />
