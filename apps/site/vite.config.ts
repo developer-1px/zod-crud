@@ -3,6 +3,7 @@ import { defineConfig } from "vite";
 import { fileURLToPath } from "node:url";
 
 export default defineConfig({
+  base: process.env.SITE_BASE ?? "/",
   plugins: [react()],
   resolve: {
     alias: {

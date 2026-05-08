@@ -74,7 +74,10 @@ const routeTree = rootRoute.addChildren([
   examplesRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+export const router = createRouter({
+  routeTree,
+  basepath: import.meta.env.BASE_URL.replace(/\/$/, "") || "/",
+});
 
 declare module "@tanstack/react-router" {
   interface Register { router: typeof router }
