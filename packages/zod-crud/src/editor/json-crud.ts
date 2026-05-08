@@ -42,14 +42,6 @@ import {
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
-type HistoryEntry = {
-  doc: JsonDoc;
-  changes: JsonChange[];
-  nodeId?: NodeId;
-  focusNodeId?: NodeId;
-  focusNodeIds?: NodeId[];
-};
-
 type Clipboard = {
   values: JsonValue[];
   sourceIds: NodeId[] | null;
@@ -100,11 +92,16 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   let doc = serialize(parsed.data);
   const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
-  let undoStack: HistoryEntry[] = [];
-  let redoStack: HistoryEntry[] = [];
   let clipboard: Clipboard | null = null;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
   const listeners = new Set<() => void>();
+  const history = createHistory({
+    getDoc: () => doc,
+    setDoc: (next) => { doc = next; },
+    notify: notifyListeners,
+    ...(options.focusFilter && { focusFilter: options.focusFilter }),
+  });
+  const { commit, undo, redo, canUndo, canRedo } = history;
 
   const validation = validateDocument(schema, doc);
 
@@ -445,56 +442,6 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     }
   }
 
-  function canUndo(): boolean {
-    return undoStack.length > 0;
-  }
-
-  function canRedo(): boolean {
-    return redoStack.length > 0;
-  }
-
-  function undo(): OperationResult {
-    const previous = undoStack.pop();
-
-    if (previous === undefined) {
-      return { ok: false, reason: "Undo stack is empty." };
-    }
-
-    const current = cloneDoc(doc);
-
-    redoStack.push({
-      doc: current,
-      changes: previous.changes,
-      ...(previous.nodeId === undefined ? {} : { nodeId: previous.nodeId }),
-      ...(previous.focusNodeId === undefined ? {} : { focusNodeId: previous.focusNodeId }),
-      ...(previous.focusNodeIds === undefined ? {} : { focusNodeIds: previous.focusNodeIds }),
-    });
-    doc = previous.doc;
-    notifyListeners();
-    return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId, undefined, undefined, options.focusFilter);
-  }
-
-  function redo(): OperationResult {
-    const next = redoStack.pop();
-
-    if (next === undefined) {
-      return { ok: false, reason: "Redo stack is empty." };
-    }
-
-    const current = cloneDoc(doc);
-
-    undoStack.push({
-      doc: current,
-      changes: next.changes,
-      ...(next.nodeId === undefined ? {} : { nodeId: next.nodeId }),
-      ...(next.focusNodeId === undefined ? {} : { focusNodeId: next.focusNodeId }),
-      ...(next.focusNodeIds === undefined ? {} : { focusNodeIds: next.focusNodeIds }),
-    });
-    doc = next.doc;
-    notifyListeners();
-    return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId, next.focusNodeIds, options.focusFilter);
-  }
-
   function pasteCandidates(
     targetId: NodeId,
     payloads: JsonValue[],
@@ -615,25 +562,6 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
     commit(next, changes, nodeId, result.ok ? result.focusNodeId : focusNodeId, focusNodeIds);
     return result;
-  }
-
-  function commit(
-    next: JsonDoc,
-    changes: JsonChange[],
-    nodeId?: NodeId,
-    focusNodeId?: NodeId,
-    focusNodeIds?: NodeId[],
-  ): void {
-    undoStack.push({
-      doc: cloneDoc(doc),
-      changes,
-      ...(nodeId === undefined ? {} : { nodeId }),
-      ...(focusNodeId === undefined ? {} : { focusNodeId }),
-      ...(focusNodeIds === undefined ? {} : { focusNodeIds }),
-    });
-    doc = next;
-    redoStack = [];
-    notifyListeners();
   }
 
   function allocateNodeId(): NodeId {
