@@ -1,7 +1,7 @@
 ---
 type: reference
 mode: defacto
-query: "Zod 스키마로 nested JSON을 treegrid 형태로 CRUD 편집하는 OSS — 생태계 포지셔닝과 zod-crud의 슬롯"
+query: "Zod 스키마로 nested JSON tree를 treegrid 형태로 CRUD 다루는 OSS — 생태계 포지셔닝과 zod-crud의 슬롯"
 internalGap: "프로젝트 정체성(Zod 검증 + headless + flat node table + treegrid CRUD)이 단일 OSS로 채워진 사례가 외부에 있는지 미확인"
 tags: [research, ecosystem, zod, treegrid, json-editor, headless, positioning]
 ---
@@ -18,7 +18,7 @@ tags: [research, ecosystem, zod, treegrid, json-editor, headless, positioning]
 
 ## Why — 왜 이 질문이 지금 중요한가
 
-[`spec.md`](../../../../spec.md) · [`prd-headless-treegrid-migration.md`](../../../../prd-headless-treegrid-migration.md) 기준 zod-crud는 "Zod 스키마로 보호된 flat JSON 편집 엔진" — `createJsonCrud(schema, value)` → `JsonNode{id, type, parentId, key, children, value}` 평면 노드 + clipboard/history/CRUD가 1차 시민. 현재 headless 패턴(`@p/headless`) 마이그레이션 진행 중이며 W3C APG treegrid 어휘(roving tabindex, aria-activedescendant, Home/End)를 정확히 emit하는 것이 목표.
+[`spec.md`](../../../../spec.md) · [`prd-headless-treegrid-migration.md`](../../../../prd-headless-treegrid-migration.md) 기준 zod-crud는 "Zod 스키마로 보호된 flat JSON tree 라이브러리" (editor 아님 — JSON tree 자체를 CRUD/clipboard/history 어휘로 다루는 엔진) — `createJsonCrud(schema, value)` → `JsonNode{id, type, parentId, key, children, value}` 평면 노드 + clipboard/history/CRUD가 1차 시민. 현재 headless 패턴(`@p/headless`) 마이그레이션 진행 중이며 W3C APG treegrid 어휘(roving tabindex, aria-activedescendant, Home/End)를 정확히 emit하는 것이 목표.
 
 이 슬롯이 외부에 이미 채워져 있다면 우리 작업은 재발명. 비어있다면 신규 포지셔닝. **갭이 진짜인지의 외부 검증**이 이 조사의 동기다.
 
@@ -137,7 +137,7 @@ flowchart TD
   - 평면 모델: AG Grid `treeDataParentIdField` + `getRowId` 형태가 가장 가깝다 — `JsonNode.parentId`는 사실상 같은 결정.
   - 검증 분리: JSONForms의 data schema ↔ UI schema 분리가 좋은 모범. zod-crud는 schema 하나로 통합되어 있어 더 단순하다는 게 차별 포인트가 될 수 있다.
 - **고려할 차용 안 하는 결정**: react-jsonschema-form 어휘(uiSchema, widget map)는 끌어들이면 형식이 무거워진다. zod-crud의 "Zod 하나만으로 충분"이라는 단순성은 유지가 더 가치 있다.
-- **샘플 앱 포지셔닝**: `apps/showcase`는 의도적 test bench라 사용자가 zod-crud의 위치를 못 잡는다. 별도 "demo product" — 예: 스키마 기반 admin/editor 한 화면 — 를 만들면 슬롯이 명확해진다.
+- **샘플 앱 포지셔닝**: `apps/showcase`는 의도적 test bench라 사용자가 zod-crud의 위치를 못 잡는다. 별도 "demo product" — 예: 스키마 기반 JSON tree 다루기 한 화면(설정 트리, 카테고리 트리, AST 뷰 등) — 를 만들면 슬롯이 명확해진다.
 
 ## 흥미로운 이야기
 
