@@ -3,7 +3,6 @@ import * as z from "zod";
 import type {
   JsonChange,
   JsonDoc,
-  JsonNode,
   JsonPath,
   JsonValue,
   NodeId,
@@ -11,9 +10,7 @@ import type {
 } from "../types.js";
 import {
   cloneDoc,
-  cloneJson,
   deserialize,
-  ensureObjectArrayField,
   getNode,
   getPath,
   insertChild,
@@ -22,15 +19,13 @@ import {
   replaceSubtree,
 } from "../document/json-doc.js";
 import { validateAtPath } from "../schema/json-validation.js";
-import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
 import {
   changesForDeletedSubtree,
   changesForInsertedSubtree,
   changesForReplacedSubtree,
 } from "./operation-result.js";
 import { failure } from "./failure.js";
-
-type OperationFailure = Extract<OperationResult, { ok: false }>;
+import { childArrayIdForObjectAppend, resolveCreateValue } from "./json-create-helpers.js";
 
 export type MutationsDeps<T extends JsonValue> = {
   schema: z.ZodType<T, any>;
@@ -60,12 +55,16 @@ export type MutationsApi = {
 export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): MutationsApi {
   const { schema, childKeys, getDoc, commitIfValid, allocateNodeId, defaultFor } = deps;
 
+  function defaulted(parentPath: JsonPath, key: string | number, value: JsonValue | undefined) {
+    return resolveCreateValue({ schema, parentPath, key, value, ...(defaultFor && { defaultFor }) });
+  }
+
   function create(parentId: NodeId, key: string | number, value?: JsonValue): OperationResult {
     try {
       const doc = getDoc();
       const next = cloneDoc(doc);
       const parentPath = getPath(next, parentId);
-      const childValue = resolveCreateValue(parentPath, key, value);
+      const childValue = defaulted(parentPath, key, value);
 
       if (!childValue.ok) {
         return childValue;
@@ -131,10 +130,10 @@ export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): Mu
       const next = cloneDoc(doc);
       const childArrayId = parent.type === "array"
         ? parent.id
-        : childArrayIdForObjectAppend(next, parent.id);
+        : childArrayIdForObjectAppend({ schema, doc: next, objectId: parent.id, childKeys, allocateNodeId });
       const childArray = getNode(next, childArrayId);
       const childArrayPath = getPath(next, childArrayId);
-      const childValue = resolveCreateValue(childArrayPath, childArray.children.length, value);
+      const childValue = defaulted(childArrayPath, childArray.children.length, value);
 
       if (!childValue.ok) {
         return childValue;
@@ -234,68 +233,6 @@ export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): Mu
     } catch (error) {
       return failure(error);
     }
-  }
-
-  function resolveCreateValue(
-    parentPath: JsonPath,
-    key: string | number,
-    value: JsonValue | undefined,
-  ): OperationFailure | { ok: true; value: JsonValue } {
-    if (value !== undefined) {
-      return { ok: true, value };
-    }
-
-    if (defaultFor !== undefined) {
-      return { ok: true, value: cloneJson(defaultFor(parentPath)) };
-    }
-
-    const childSchema = schemaAtPath(schema, [...parentPath, key]);
-    const parsed = childSchema?.safeParse(undefined);
-
-    if (parsed?.success) {
-      return { ok: true, value: cloneJson(parsed.data as JsonValue) };
-    }
-
-    return { ok: false, reason: "No default value is configured for create." };
-  }
-
-  function childArrayIdForObjectAppend(next: JsonDoc, objectId: NodeId): NodeId {
-    const target = getNode(next, objectId);
-
-    if (target.type !== "object") {
-      throw new Error(`Cannot append a child to ${target.type} node.`);
-    }
-
-    for (const childKey of objectChildArrayKeys(next, target)) {
-      return ensureObjectArrayField(next, objectId, childKey, allocateNodeId);
-    }
-
-    throw new Error("No child array field is available for appendChild.");
-  }
-
-  function objectChildArrayKeys(currentDoc: JsonDoc, target: JsonNode): string[] {
-    const keys = new Set<string>();
-    const targetSchema = schemaAtPath(schema, getPath(currentDoc, target.id));
-
-    if (targetSchema !== null) {
-      for (const childKey of objectArrayFieldKeys(targetSchema)) {
-        keys.add(childKey);
-      }
-    }
-
-    for (const childId of target.children) {
-      const child = getNode(currentDoc, childId);
-
-      if (child.type === "array" && typeof child.key === "string") {
-        keys.add(child.key);
-      }
-    }
-
-    for (const childKey of childKeys) {
-      keys.add(childKey);
-    }
-
-    return [...keys];
   }
 
   return {

@@ -8,9 +8,10 @@ export function Intro() {
       <article className="prose-doc">
         <h1>What is zod-crud?</h1>
         <p>
-          <code>zod-crud</code> is a flat JSON editing core guarded by a Zod schema.
-          The editor parses your JSON once with the root schema, stores it as a flat
-          node table, and exposes CRUD / clipboard / undo / redo operations over node ids.
+          <code>zod-crud</code> is a flat JSON tree library guarded by a Zod schema —
+          not an editor, but the engine underneath one. It parses your JSON once with
+          the root schema, stores it as a flat node table, and exposes CRUD / clipboard /
+          undo / redo operations over node ids. UI is out of scope; bring your own.
         </p>
         <p>
           Every candidate mutation has to deserialize back into JSON that
