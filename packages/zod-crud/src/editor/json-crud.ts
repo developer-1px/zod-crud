@@ -28,15 +28,15 @@ import {
   serialize,
 } from "../document/json-doc.js";
 import { buildPasteCandidates, buildPasteManyCandidates, type PasteCandidate } from "./json-paste.js";
+import { planDeleteMany, uniqueNodes, type DeleteManyPlan } from "./json-delete-many.js";
+import { createHistory } from "./json-history.js";
 import { validateAtPath, validateDocument } from "../schema/json-validation.js";
 import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
 import {
   changesForDeletedSubtree,
-  changesForDeletedSubtrees,
   changesForInsertedSubtree,
   changesForInsertedSubtrees,
   changesForReplacedSubtree,
-  invertChanges,
   successResult,
 } from "./operation-result.js";
 
@@ -56,14 +56,6 @@ type Clipboard = {
 };
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
-
-type DeleteManyPlan = {
-  ok: true;
-  next: JsonDoc;
-  changes: JsonChange[];
-  focusNodeId: NodeId;
-  nodeId?: NodeId;
-};
 
 export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   snapshot: () => JsonDoc;
@@ -325,7 +317,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   function deleteMany(nodeIds: NodeId[]): OperationResult {
     try {
-      const plan = planDeleteMany(nodeIds);
+      const plan = planDeleteManyHere(nodeIds);
 
       if (!plan.ok) {
         return plan;
@@ -439,7 +431,7 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   function canDeleteMany(nodeIds: NodeId[]): OperationResult {
     try {
-      const plan = planDeleteMany(nodeIds);
+      const plan = planDeleteManyHere(nodeIds);
 
       if (!plan.ok) {
         return plan;
@@ -600,58 +592,8 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
-  function planDeleteMany(nodeIds: NodeId[]): DeleteManyPlan | OperationFailure {
-    const nodes = uniqueNodes(doc, nodeIds);
-
-    if (nodes.length === 0) {
-      return { ok: false, reason: "No nodes to delete." };
-    }
-
-    if (nodes.some((node) => node.id === doc.rootId || node.parentId === null)) {
-      return { ok: false, reason: "Cannot delete the root node." };
-    }
-
-    const parentId = nodes[0]?.parentId;
-
-    if (parentId === null || parentId === undefined) {
-      return { ok: false, reason: "Cannot delete a node without a parent." };
-    }
-
-    if (nodes.some((node) => node.parentId !== parentId)) {
-      return { ok: false, reason: "deleteMany only accepts sibling nodes." };
-    }
-
-    const parentPath = getPath(doc, parentId);
-    const next = cloneDoc(doc);
-    const sortedNodes = sortBySiblingIndexDescending(doc, parentId, nodes);
-
-    for (const node of sortedNodes) {
-      removeSubtree(next, node.id);
-    }
-
-    const validation = validateAtPath(schema, parentPath, deserialize(next, parentId));
-
-    if (!validation.ok) {
-      return validation;
-    }
-
-    const changes = changesForDeletedSubtrees(doc, next, sortedNodes.map((node) => node.id));
-    const focusNodeId = focusAfterSiblingBatchRemoval(
-      doc,
-      next,
-      parentId,
-      sortedNodes.map((node) => node.id),
-      options.focusFilter,
-    );
-    const nodeId = sortedNodes[0]?.id;
-
-    return {
-      ok: true,
-      next,
-      changes,
-      focusNodeId,
-      ...(nodeId === undefined ? {} : { nodeId }),
-    };
+  function planDeleteManyHere(nodeIds: NodeId[]): DeleteManyPlan | OperationFailure {
+    return planDeleteMany({ doc, schema, nodeIds, ...(options.focusFilter && { focusFilter: options.focusFilter }) });
   }
 
   function commitIfValid(
@@ -819,57 +761,3 @@ function failure(error: unknown): OperationResult {
   };
 }
 
-function uniqueNodes(doc: JsonDoc, nodeIds: NodeId[]): JsonNode[] {
-  const seen = new Set<NodeId>();
-  const nodes: JsonNode[] = [];
-
-  for (const nodeId of nodeIds) {
-    if (seen.has(nodeId)) {
-      continue;
-    }
-
-    seen.add(nodeId);
-    nodes.push(getNode(doc, nodeId));
-  }
-
-  return nodes;
-}
-
-function sortBySiblingIndexDescending(doc: JsonDoc, parentId: NodeId, nodes: JsonNode[]): JsonNode[] {
-  const parent = getNode(doc, parentId);
-  const siblingIndex = new Map(parent.children.map((childId, index) => [childId, index]));
-
-  return [...nodes].sort((left, right) =>
-    (siblingIndex.get(right.id) ?? -1) - (siblingIndex.get(left.id) ?? -1),
-  );
-}
-
-function focusAfterSiblingBatchRemoval(
-  before: JsonDoc,
-  after: JsonDoc,
-  parentId: NodeId,
-  deletedNodeIds: NodeId[],
-  focusFilter?: (doc: JsonDoc, candidateId: NodeId) => boolean,
-): NodeId {
-  const parent = before.nodes[parentId];
-  const deleted = new Set(deletedNodeIds);
-  const deletedIndexes = parent?.children
-    .map((childId, index) => deleted.has(childId) ? index : -1)
-    .filter((index) => index >= 0) ?? [];
-
-  if (deletedIndexes.length === 0) {
-    return after.nodes[parentId] === undefined ? after.rootId : parentId;
-  }
-
-  const minIndex = Math.min(...deletedIndexes);
-  const maxIndex = Math.max(...deletedIndexes);
-  const nextId = parent?.children.slice(maxIndex + 1).find((childId) => !deleted.has(childId));
-  const previousId = parent?.children.slice(0, minIndex).reverse().find((childId) => !deleted.has(childId));
-  const candidates = [nextId, previousId, parentId, after.rootId];
-
-  return candidates.find((id): id is NodeId =>
-    id !== undefined &&
-    after.nodes[id] !== undefined &&
-    (focusFilter?.(after, id) ?? true)
-  ) ?? after.rootId;
-}
