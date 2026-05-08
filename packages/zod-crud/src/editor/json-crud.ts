@@ -27,25 +27,19 @@ import {
   replaceSubtree,
   serialize,
 } from "../document/json-doc.js";
-import { buildPasteCandidates, buildPasteManyCandidates, type PasteCandidate } from "./json-paste.js";
-import { planDeleteMany, uniqueNodes, type DeleteManyPlan } from "./json-delete-many.js";
+import { planDeleteMany, type DeleteManyPlan } from "./json-delete-many.js";
 import { createHistory } from "./json-history.js";
+import { createClipboard } from "./json-clipboard.js";
 import { validateAtPath, validateDocument } from "../schema/json-validation.js";
 import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
 import {
   changesForDeletedSubtree,
   changesForInsertedSubtree,
-  changesForInsertedSubtrees,
   changesForReplacedSubtree,
   successResult,
 } from "./operation-result.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
-
-type Clipboard = {
-  values: JsonValue[];
-  sourceIds: NodeId[] | null;
-};
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 
@@ -92,7 +86,6 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
 
   let doc = serialize(parsed.data);
   const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
-  let clipboard: Clipboard | null = null;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
   const listeners = new Set<() => void>();
   const history = createHistory({
@@ -102,6 +95,21 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     ...(options.focusFilter && { focusFilter: options.focusFilter }),
   });
   const { commit, undo, redo, canUndo, canRedo } = history;
+  const clipboardApi = createClipboard({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    read,
+    deleteNode,
+    deleteMany,
+    canDeleteMany,
+    allocateNodeId,
+    saveAllocator: () => nextNodeIndex,
+    restoreAllocator: (saved) => { nextNodeIndex = saved; },
+    commit,
+    ...(options.focusFilter && { focusFilter: options.focusFilter }),
+  });
+  const { copy, copyMany, canCopyMany, cut, cutMany, canCutMany, paste, canPaste } = clipboardApi;
 
   const validation = validateDocument(schema, doc);
 
@@ -326,106 +334,6 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     }
   }
 
-  function copy(nodeId: NodeId): JsonValue {
-    const value = read(nodeId);
-    clipboard = { values: [value], sourceIds: [nodeId] };
-    return cloneJson(value);
-  }
-
-  function copyMany(nodeIds: NodeId[]): JsonValue[] {
-    const nodes = uniqueNodes(doc, nodeIds);
-
-    if (nodes.length === 0) {
-      throw new Error("No nodes to copy.");
-    }
-
-    const values = nodes.map((node) => read(node.id));
-
-    clipboard = { values, sourceIds: nodes.map((node) => node.id) };
-    return cloneJson(values);
-  }
-
-  function canCopyMany(nodeIds: NodeId[]): OperationResult {
-    try {
-      const nodes = uniqueNodes(doc, nodeIds);
-
-      return nodes.length === 0 ? { ok: false, reason: "No nodes to copy." } : { ok: true };
-    } catch (error) {
-      return failure(error);
-    }
-  }
-
-  function cut(nodeId: NodeId): OperationResult {
-    if (nodeId === doc.rootId) {
-      return { ok: false, reason: "Cannot cut the root node." };
-    }
-
-    try {
-      const value = read(nodeId);
-      const result = deleteNode(nodeId);
-
-      if (result.ok) {
-        clipboard = { values: [value], sourceIds: null };
-      }
-
-      return result;
-    } catch (error) {
-      return failure(error);
-    }
-  }
-
-  function cutMany(nodeIds: NodeId[]): OperationResult {
-    try {
-      const nodes = uniqueNodes(doc, nodeIds);
-      const values = nodes.map((node) => read(node.id));
-      const result = deleteMany(nodes.map((node) => node.id));
-
-      if (result.ok) {
-        clipboard = { values, sourceIds: null };
-      }
-
-      return result;
-    } catch (error) {
-      return failure(error);
-    }
-  }
-
-  function canCutMany(nodeIds: NodeId[]): OperationResult {
-    return canDeleteMany(nodeIds);
-  }
-
-  function paste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
-    try {
-      if (clipboard === null) {
-        return { ok: false, reason: "Clipboard is empty." };
-      }
-
-      const candidates = pasteCandidates(targetId, cloneJson(clipboard.values), options);
-      return commitFirstValidPaste(candidates);
-    } catch (error) {
-      return failure(error);
-    }
-  }
-
-  function canPaste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
-    if (clipboard === null) {
-      return { ok: false, reason: "Clipboard is empty." };
-    }
-
-    const initialNodeIndex = nextNodeIndex;
-
-    try {
-      const candidates = pasteCandidates(targetId, cloneJson(clipboard.values), options);
-      const result = firstValidPasteResult(candidates);
-
-      return result.ok ? { ok: true } : result;
-    } catch (error) {
-      return failure(error);
-    } finally {
-      nextNodeIndex = initialNodeIndex;
-    }
-  }
-
   function canDeleteMany(nodeIds: NodeId[]): OperationResult {
     try {
       const plan = planDeleteManyHere(nodeIds);
@@ -440,103 +348,6 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     } catch (error) {
       return failure(error);
     }
-  }
-
-  function pasteCandidates(
-    targetId: NodeId,
-    payloads: JsonValue[],
-    pasteOptions: PasteOptions,
-  ): PasteCandidate[] {
-    if (payloads.length !== 1) {
-      return buildPasteManyCandidates({
-        doc,
-        schema,
-        targetId,
-        payloads,
-        mode: pasteOptions.mode ?? "auto",
-        childKeys: pasteOptions.childKeys ?? childKeys,
-        index: pasteOptions.index,
-        allocateNodeId,
-      });
-    }
-
-    return buildPasteCandidates({
-      doc,
-      schema,
-      targetId,
-      payload: payloads[0]!,
-      mode: pasteOptions.mode ?? "auto",
-      childKeys: pasteOptions.childKeys ?? childKeys,
-      clipboardSourceId: clipboard?.sourceIds?.[0] ?? null,
-      index: pasteOptions.index,
-      allocateNodeId,
-    });
-  }
-
-  function commitFirstValidPaste(candidates: PasteCandidate[]): OperationResult {
-    let lastFailure: OperationResult | null = null;
-    const initialNodeIndex = nextNodeIndex;
-
-    for (const candidate of candidates) {
-      const candidateNodeIndex = nextNodeIndex;
-
-      try {
-        const { doc: next, pastedRootId, pastedRootIds } = candidate.apply();
-        const validation = validateDocument(schema, next);
-
-        if (validation.ok) {
-          const before = cloneDoc(doc);
-          const changes = pastedRootIds.some((nodeId) => before.nodes[nodeId] === undefined)
-            ? changesForInsertedSubtrees(before, next, pastedRootIds)
-            : changesForReplacedSubtree(before, next, pastedRootId);
-
-          const focusNodeIds = pastedRootIds.length > 1 ? pastedRootIds : undefined;
-          const focusNodeId = pastedRootIds[pastedRootIds.length - 1] ?? pastedRootId;
-
-          commit(next, changes, pastedRootId, focusNodeId, focusNodeIds);
-          clipboard = clipboard === null
-            ? null
-            : { values: cloneJson(clipboard.values), sourceIds: pastedRootIds };
-          return successResult(before, next, changes, pastedRootId, focusNodeId, focusNodeIds, options.focusFilter);
-        }
-
-        lastFailure = validation;
-      } catch (error) {
-        lastFailure = failure(error);
-      }
-
-      nextNodeIndex = candidateNodeIndex;
-    }
-
-    nextNodeIndex = initialNodeIndex;
-    return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
-  }
-
-  function firstValidPasteResult(candidates: PasteCandidate[]): OperationResult {
-    let lastFailure: OperationResult | null = null;
-    const initialNodeIndex = nextNodeIndex;
-
-    for (const candidate of candidates) {
-      const candidateNodeIndex = nextNodeIndex;
-
-      try {
-        const validation = validateDocument(schema, candidate.apply().doc);
-
-        if (validation.ok) {
-          nextNodeIndex = initialNodeIndex;
-          return { ok: true };
-        }
-
-        lastFailure = validation;
-      } catch (error) {
-        lastFailure = failure(error);
-      }
-
-      nextNodeIndex = candidateNodeIndex;
-    }
-
-    nextNodeIndex = initialNodeIndex;
-    return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
   }
 
   function planDeleteManyHere(nodeIds: NodeId[]): DeleteManyPlan | OperationFailure {
