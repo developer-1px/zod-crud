@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { SourceTabs } from "../code/SourceTabs";
-import { apiGroups, sourceMap, type ApiId } from "./api-catalog";
+import { apiGroups, type ApiId } from "./api-catalog";
+import { sourceMap } from "./source-registry";
 
 export function ApiReference() {
   const flat = useMemo(() => apiGroups.flatMap((g) => g.apis.map((a) => ({ group: g.title, ...a }))), []);
@@ -37,7 +38,7 @@ export function ApiReference() {
                           aria-current={current ? "page" : undefined}
                           className="block w-full rounded px-2 py-1 text-left font-mono text-[12px] text-stone-700 hover:bg-stone-200 hover:text-stone-900 aria-[current=page]:bg-stone-900 aria-[current=page]:text-stone-50"
                         >
-                          {a.label}
+                          {a.id}
                         </button>
                       </li>
                     );
@@ -57,13 +58,13 @@ export function ApiReference() {
           </div>
           <div className="flex flex-1 min-h-0">
             <SourceTabs
-              key={active.sourceKey + ":" + active.id}
+              key={active.id}
               tabs={[{
                 key: active.sourceKey,
                 label: sourceMeta.filename,
                 filename: sourceMeta.filename,
                 source: sourceMeta.source,
-                symbols: active.symbols.length > 0 ? active.symbols : undefined,
+                symbols: active.symbols,
               }]}
               filenamePrefix="packages/zod-crud/src/"
             />
