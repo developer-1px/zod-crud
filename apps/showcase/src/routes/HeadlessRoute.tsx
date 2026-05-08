@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createJsonCrud, type JsonValue, type NodeId } from "zod-crud";
-import { useTreeGridPattern } from "@p/headless/patterns";
-import type { UiEvent } from "@p/headless";
+import { useTreeGridPattern } from "@p/aria-kernel/patterns";
+import type { UiEvent } from "@p/aria-kernel";
 import { SampleSchema, sampleData } from "./sampleData.js";
 import { toNormalized } from "./jsonDocAdapter.js";
 import { RouteLayout, TreeNode } from "./RouteLayout.js";

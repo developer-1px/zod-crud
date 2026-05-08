@@ -6,7 +6,7 @@ import treegridSource from "./examples/ExampleTreeGrid.tsx?raw";
 export function ExampleViewer() {
   return (
     <section className="example-viewer">
-      <h2>Examples — zod + zod-crud + @p/headless</h2>
+      <h2>Examples — zod + zod-crud + @p/aria-kernel</h2>
 
       <article className="example-card">
         <header>

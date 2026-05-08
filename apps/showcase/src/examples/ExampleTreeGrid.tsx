@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { createJsonCrud, type JsonDoc, type NodeId } from "zod-crud";
-import { useTreeGridPattern } from "@p/headless/patterns";
-import type { NormalizedData } from "@p/headless";
+import { useTreeGridPattern } from "@p/aria-kernel/patterns";
+import type { NormalizedData } from "@p/aria-kernel";
 
 const Schema = z.object({
   name: z.string(),

@@ -18,7 +18,7 @@ tags: [research, ecosystem, zod, treegrid, json-editor, headless, positioning]
 
 ## Why — 왜 이 질문이 지금 중요한가
 
-[`spec.md`](../../../../spec.md) · [`prd-headless-treegrid-migration.md`](../../../../prd-headless-treegrid-migration.md) 기준 zod-crud는 "Zod 스키마로 보호된 flat JSON tree 라이브러리" (editor 아님 — JSON tree 자체를 CRUD/clipboard/history 어휘로 다루는 엔진) — `createJsonCrud(schema, value)` → `JsonNode{id, type, parentId, key, children, value}` 평면 노드 + clipboard/history/CRUD가 1차 시민. 현재 headless 패턴(`@p/headless`) 마이그레이션 진행 중이며 W3C APG treegrid 어휘(roving tabindex, aria-activedescendant, Home/End)를 정확히 emit하는 것이 목표.
+[`spec.md`](../../../../spec.md) · [`prd-headless-treegrid-migration.md`](../../../../prd-headless-treegrid-migration.md) 기준 zod-crud는 "Zod 스키마로 보호된 flat JSON tree 라이브러리" (editor 아님 — JSON tree 자체를 CRUD/clipboard/history 어휘로 다루는 엔진) — `createJsonCrud(schema, value)` → `JsonNode{id, type, parentId, key, children, value}` 평면 노드 + clipboard/history/CRUD가 1차 시민. 현재 headless 패턴(`@p/aria-kernel`) 마이그레이션 진행 중이며 W3C APG treegrid 어휘(roving tabindex, aria-activedescendant, Home/End)를 정확히 emit하는 것이 목표.
 
 이 슬롯이 외부에 이미 채워져 있다면 우리 작업은 재발명. 비어있다면 신규 포지셔닝. **갭이 진짜인지의 외부 검증**이 이 조사의 동기다.
 

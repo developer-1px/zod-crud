@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { serialize } from "zod-crud";
-import { ROOT, getChildren } from "@p/headless";
+import { ROOT, getChildren } from "@p/aria-kernel";
 import { jsonDocToNormalized } from "../src/jsonDocToNormalized.js";
 
 describe("jsonDocToNormalized", () => {

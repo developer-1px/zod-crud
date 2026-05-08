@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
 import { createJsonCrud } from "zod-crud";
-import { useListboxPattern } from "@p/headless/patterns";
-import type { NormalizedData } from "@p/headless";
+import { useListboxPattern } from "@p/aria-kernel/patterns";
+import type { NormalizedData } from "@p/aria-kernel";
 
 const Schema = z.object({ status: z.enum(["todo", "doing", "done"]) });
 
