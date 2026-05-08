@@ -67,7 +67,7 @@ export const apiGroups: ApiGroup[] = [
       { id: "update", call: "crud.update(nodeId, value)", sources: [mutationsFactory] },
       { id: "rename", call: "crud.rename(nodeId, key)", sources: [mutationsFactory] },
       { id: "delete", call: "crud.delete(nodeId)", sources: [mutationsFactory] },
-      { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sources: [deleteManyPlanner, crudFacade] },
+      { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sources: [deleteManyPlanner] },
     ],
   },
   {
@@ -81,7 +81,7 @@ export const apiGroups: ApiGroup[] = [
       { id: "canPaste", call: "crud.canPaste(targetId, options?)", sources: [clipboardFactory, pasteCandidates] },
       { id: "canCopyMany", call: "crud.canCopyMany(nodeIds)", sources: [clipboardFactory] },
       { id: "canCutMany", call: "crud.canCutMany(nodeIds)", sources: [clipboardFactory] },
-      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [deleteManyPlanner, crudFacade] },
+      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [deleteManyPlanner] },
     ],
   },
   {
