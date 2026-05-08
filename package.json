@@ -12,6 +12,8 @@
     "lab:dev": "npm run dev -w @zod-crud/nested-ui-lab",
     "lab:build": "npm run build -w @zod-crud/nested-ui-lab",
     "showcase:build": "npm run build -w @zod-crud/showcase",
+    "site:dev": "npm run dev -w @zod-crud/site",
+    "site:build": "npm run build -w @zod-crud/site",
     "test": "npm test -w zod-crud",
     "typecheck": "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/showcase && npm run typecheck -w @zod-crud/nested-ui-lab",
     "smoke:package": "npm run smoke:package -w zod-crud",
