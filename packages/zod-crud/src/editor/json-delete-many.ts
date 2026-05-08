@@ -17,7 +17,7 @@ import {
   removeSubtree,
 } from "../document/json-doc.js";
 import { validateAtPath } from "../schema/json-validation.js";
-import { changesForDeletedSubtrees } from "./operation-result.js";
+import { changesForDeletedSubtrees } from "./json-change-diff.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 

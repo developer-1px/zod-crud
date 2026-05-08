@@ -23,7 +23,7 @@ import {
   changesForDeletedSubtree,
   changesForInsertedSubtree,
   changesForReplacedSubtree,
-} from "./operation-result.js";
+} from "./json-change-diff.js";
 import { failure } from "./failure.js";
 import { childArrayIdForObjectAppend, resolveCreateValue } from "./json-create-helpers.js";
 

@@ -7,7 +7,16 @@ export function ApiReference() {
   const flat = useMemo(() => apiGroups.flatMap((g) => g.apis.map((a) => ({ group: g.title, ...a }))), []);
   const [activeId, setActiveId] = useState<ApiId>("createJsonCrud");
   const active = flat.find((a) => a.id === activeId)!;
-  const sourceMeta = sourceMap[active.sourceKey];
+  const tabs = active.sources.map((s) => {
+    const meta = sourceMap[s.key];
+    return {
+      key: s.key,
+      label: meta.filename,
+      filename: meta.filename,
+      source: meta.source,
+      ...(s.symbols && { symbols: s.symbols }),
+    };
+  });
 
   return (
     <main className="flex h-full min-h-0 flex-col">
@@ -59,13 +68,7 @@ export function ApiReference() {
           <div className="flex flex-1 min-h-0">
             <SourceTabs
               key={active.id}
-              tabs={[{
-                key: active.sourceKey,
-                label: sourceMeta.filename,
-                filename: sourceMeta.filename,
-                source: sourceMeta.source,
-                symbols: active.symbols,
-              }]}
+              tabs={tabs}
               filenamePrefix="packages/zod-crud/src/"
             />
           </div>

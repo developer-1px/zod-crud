@@ -9,11 +9,15 @@ export type ApiId =
   | "canCopyMany" | "canCutMany" | "canDeleteMany" | "canPaste" | "canUndo" | "canRedo"
   | "subscribe" | "undo" | "redo";
 
+export type ApiSource = {
+  key: SourceKey;
+  symbols?: string[];
+};
+
 export type ApiEntry = {
   id: ApiId;
   call: string;
-  sourceKey: SourceKey;
-  symbols?: string[];
+  sources: ApiSource[];
 };
 
 export type ApiGroup = {
@@ -21,66 +25,73 @@ export type ApiGroup = {
   apis: ApiEntry[];
 };
 
+const crudFacade: ApiSource = { key: "json-crud", symbols: ["createJsonCrud"] };
+const mutationsFactory: ApiSource = { key: "json-mutations", symbols: ["createMutations"] };
+const clipboardFactory: ApiSource = { key: "json-clipboard", symbols: ["createClipboard"] };
+const historyFactory: ApiSource = { key: "json-history", symbols: ["createHistory"] };
+const deleteManyPlanner: ApiSource = { key: "json-delete-many", symbols: ["planDeleteMany"] };
+const pasteCandidates: ApiSource = { key: "json-paste", symbols: ["buildPasteCandidates", "buildPasteManyCandidates"] };
+
 export const apiGroups: ApiGroup[] = [
   {
     title: "Factory",
     apis: [
-      { id: "createJsonCrud", call: "createJsonCrud(schema, initial, options?)", sourceKey: "json-crud", symbols: ["createJsonCrud"] },
+      { id: "createJsonCrud", call: "createJsonCrud(schema, initial, options?)", sources: [crudFacade] },
     ],
   },
   {
     title: "Document",
     apis: [
-      { id: "serialize", call: "serialize(value)", sourceKey: "json-doc", symbols: ["serialize"] },
-      { id: "deserialize", call: "deserialize(doc, nodeId?)", sourceKey: "json-doc", symbols: ["deserialize"] },
-      { id: "getPath", call: "getPath(doc, nodeId)", sourceKey: "json-doc", symbols: ["getPath"] },
+      { id: "serialize", call: "serialize(value)", sources: [{ key: "json-doc", symbols: ["serialize"] }] },
+      { id: "deserialize", call: "deserialize(doc, nodeId?)", sources: [{ key: "json-doc", symbols: ["deserialize"] }] },
+      { id: "getPath", call: "getPath(doc, nodeId)", sources: [{ key: "json-doc", symbols: ["getPath"] }] },
     ],
   },
   {
     title: "Read",
     apis: [
-      { id: "snapshot", call: "crud.snapshot()", sourceKey: "json-crud" },
-      { id: "toJson", call: "crud.toJson()", sourceKey: "json-crud" },
-      { id: "read", call: "crud.read(nodeId?)", sourceKey: "json-crud" },
-      { id: "pathOf", call: "crud.pathOf(nodeId)", sourceKey: "json-crud" },
-      { id: "find", call: "crud.find(parentId, key)", sourceKey: "json-crud" },
+      { id: "snapshot", call: "crud.snapshot()", sources: [crudFacade] },
+      { id: "toJson", call: "crud.toJson()", sources: [crudFacade] },
+      { id: "read", call: "crud.read(nodeId?)", sources: [crudFacade] },
+      { id: "pathOf", call: "crud.pathOf(nodeId)", sources: [crudFacade] },
+      { id: "find", call: "crud.find(parentId, key)", sources: [crudFacade] },
     ],
   },
   {
     title: "Mutation",
     apis: [
-      { id: "create", call: "crud.create(parentId, key, value?)", sourceKey: "json-crud" },
-      { id: "insertAfter", call: "crud.insertAfter(siblingId, value?)", sourceKey: "json-crud" },
-      { id: "insertBefore", call: "crud.insertBefore(siblingId, value?)", sourceKey: "json-crud" },
-      { id: "appendChild", call: "crud.appendChild(parentId, value?)", sourceKey: "json-crud" },
-      { id: "update", call: "crud.update(nodeId, value)", sourceKey: "json-crud" },
-      { id: "rename", call: "crud.rename(nodeId, key)", sourceKey: "json-crud" },
-      { id: "delete", call: "crud.delete(nodeId)", sourceKey: "json-crud" },
-      { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sourceKey: "json-crud" },
+      { id: "create", call: "crud.create(parentId, key, value?)", sources: [mutationsFactory] },
+      { id: "insertAfter", call: "crud.insertAfter(siblingId, value?)", sources: [mutationsFactory] },
+      { id: "insertBefore", call: "crud.insertBefore(siblingId, value?)", sources: [mutationsFactory] },
+      { id: "appendChild", call: "crud.appendChild(parentId, value?)", sources: [mutationsFactory] },
+      { id: "update", call: "crud.update(nodeId, value)", sources: [mutationsFactory] },
+      { id: "rename", call: "crud.rename(nodeId, key)", sources: [mutationsFactory] },
+      { id: "delete", call: "crud.delete(nodeId)", sources: [mutationsFactory] },
+      { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sources: [deleteManyPlanner] },
     ],
   },
   {
     title: "Clipboard",
     apis: [
-      { id: "copy", call: "crud.copy(nodeId)", sourceKey: "json-crud" },
-      { id: "copyMany", call: "crud.copyMany(nodeIds)", sourceKey: "json-crud" },
-      { id: "cut", call: "crud.cut(nodeId)", sourceKey: "json-crud" },
-      { id: "cutMany", call: "crud.cutMany(nodeIds)", sourceKey: "json-crud" },
-      { id: "paste", call: "crud.paste(targetId, options?)", sourceKey: "json-paste" },
-      { id: "canPaste", call: "crud.canPaste(targetId, options?)", sourceKey: "json-paste" },
-      { id: "canCopyMany", call: "crud.canCopyMany(nodeIds)", sourceKey: "json-crud" },
-      { id: "canCutMany", call: "crud.canCutMany(nodeIds)", sourceKey: "json-crud" },
-      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sourceKey: "json-crud" },
+      { id: "copy", call: "crud.copy(nodeId)", sources: [clipboardFactory] },
+      { id: "copyMany", call: "crud.copyMany(nodeIds)", sources: [clipboardFactory] },
+      { id: "cut", call: "crud.cut(nodeId)", sources: [clipboardFactory] },
+      { id: "cutMany", call: "crud.cutMany(nodeIds)", sources: [clipboardFactory] },
+      { id: "paste", call: "crud.paste(targetId, options?)", sources: [clipboardFactory, pasteCandidates] },
+      { id: "canPaste", call: "crud.canPaste(targetId, options?)", sources: [clipboardFactory, pasteCandidates] },
+      { id: "canCopyMany", call: "crud.canCopyMany(nodeIds)", sources: [clipboardFactory] },
+      { id: "canCutMany", call: "crud.canCutMany(nodeIds)", sources: [clipboardFactory] },
+      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [deleteManyPlanner] },
     ],
   },
   {
     title: "History",
     apis: [
-      { id: "undo", call: "crud.undo()", sourceKey: "json-crud" },
-      { id: "redo", call: "crud.redo()", sourceKey: "json-crud" },
-      { id: "canUndo", call: "crud.canUndo()", sourceKey: "json-crud" },
-      { id: "canRedo", call: "crud.canRedo()", sourceKey: "json-crud" },
-      { id: "subscribe", call: "crud.subscribe(listener)", sourceKey: "json-crud" },
+      { id: "undo", call: "crud.undo()", sources: [historyFactory] },
+      { id: "redo", call: "crud.redo()", sources: [historyFactory] },
+      { id: "canUndo", call: "crud.canUndo()", sources: [historyFactory] },
+      { id: "canRedo", call: "crud.canRedo()", sources: [historyFactory] },
+      { id: "subscribe", call: "crud.subscribe(listener)", sources: [crudFacade] },
     ],
   },
 ];
