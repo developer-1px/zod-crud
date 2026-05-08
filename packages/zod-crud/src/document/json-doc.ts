@@ -7,6 +7,14 @@ import type {
   NodeId,
 } from "../types.js";
 
+export {
+  ensureObjectArrayField,
+  insertChild,
+  removeSubtree,
+  renameObjectKey,
+  replaceSubtree,
+} from "./json-doc-mutations.js";
+
 export function serialize(value: JsonValue): JsonDoc {
   const doc: JsonDoc = { rootId: "n1", nodes: {} };
   doc.rootId = createSubtree(doc, value, null, null, "n1");
@@ -64,7 +72,7 @@ export function getPath(doc: JsonDoc, nodeId: NodeId): JsonPath {
   return path.reverse();
 }
 
-function createSubtree(
+export function createSubtree(
   doc: JsonDoc,
   value: JsonValue,
   parentId: NodeId | null,
@@ -127,134 +135,6 @@ function createNode(
   }
 
   throw new Error(`Unsupported JSON value: ${String(value)}.`);
-}
-
-export function insertChild(
-  doc: JsonDoc,
-  parentId: NodeId,
-  key: string | number,
-  value: JsonValue,
-  allocateNodeId?: () => NodeId,
-): NodeId {
-  const parent = getNode(doc, parentId);
-
-  if (parent.type === "object") {
-    if (typeof key !== "string") {
-      throw new Error("Object children require a string key.");
-    }
-
-    if (findChildByKey(doc, parentId, key) !== null) {
-      throw new Error(`Object key already exists: ${key}.`);
-    }
-
-    const childId = createSubtree(doc, value, parentId, key, undefined, allocateNodeId);
-    parent.children.push(childId);
-    return childId;
-  }
-
-  if (parent.type === "array") {
-    if (typeof key !== "number") {
-      throw new Error("Array children require a numeric index.");
-    }
-
-    if (!Number.isInteger(key)) {
-      throw new Error(`Array index must be an integer: ${key}.`);
-    }
-
-    if (key < 0 || key > parent.children.length) {
-      throw new Error(`Array index out of bounds: ${key}.`);
-    }
-
-    const childId = createSubtree(doc, value, parentId, key, undefined, allocateNodeId);
-    parent.children.splice(key, 0, childId);
-    normalizeArrayKeys(doc, parent.id);
-    return childId;
-  }
-
-  throw new Error(`Cannot insert child into ${parent.type} node.`);
-}
-
-export function replaceSubtree(
-  doc: JsonDoc,
-  nodeId: NodeId,
-  value: JsonValue,
-  allocateNodeId?: () => NodeId,
-): void {
-  const current = getNode(doc, nodeId);
-  const parentId = current.parentId;
-  const key = current.key;
-
-  for (const descendantId of collectDescendants(doc, nodeId)) {
-    delete doc.nodes[descendantId];
-  }
-
-  createSubtree(doc, value, parentId, key, nodeId, allocateNodeId);
-}
-
-export function renameObjectKey(doc: JsonDoc, nodeId: NodeId, key: string): void {
-  const node = getNode(doc, nodeId);
-
-  if (node.parentId === null) {
-    throw new Error("Cannot rename the root node.");
-  }
-
-  const parent = getNode(doc, node.parentId);
-
-  if (parent.type !== "object") {
-    throw new Error("Only object child keys can be renamed.");
-  }
-
-  const existing = findChildByKey(doc, parent.id, key);
-
-  if (existing !== null && existing.id !== nodeId) {
-    throw new Error(`Object key already exists: ${key}.`);
-  }
-
-  node.key = key;
-}
-
-export function removeSubtree(doc: JsonDoc, nodeId: NodeId): void {
-  const node = getNode(doc, nodeId);
-
-  if (node.parentId === null) {
-    throw new Error("Cannot remove the root node.");
-  }
-
-  const parent = getNode(doc, node.parentId);
-  parent.children = parent.children.filter((childId) => childId !== nodeId);
-
-  for (const id of [nodeId, ...collectDescendants(doc, nodeId)]) {
-    delete doc.nodes[id];
-  }
-
-  if (parent.type === "array") {
-    normalizeArrayKeys(doc, parent.id);
-  }
-}
-
-export function ensureObjectArrayField(
-  doc: JsonDoc,
-  objectId: NodeId,
-  key: string,
-  allocateNodeId?: () => NodeId,
-): NodeId {
-  const objectNode = getNode(doc, objectId);
-
-  if (objectNode.type !== "object") {
-    throw new Error("Target node is not an object.");
-  }
-
-  const existing = findChildByKey(doc, objectId, key);
-
-  if (existing !== null) {
-    if (existing.type !== "array") {
-      throw new Error(`Existing ${key} field is not an array.`);
-    }
-
-    return existing.id;
-  }
-
-  return insertChild(doc, objectId, key, [], allocateNodeId);
 }
 
 export function findChildByKey(doc: JsonDoc, parentId: NodeId, key: JsonKey): JsonNode | null {
@@ -331,29 +211,6 @@ export function formatPath(path: JsonPath): string {
 
     return `${text}.${segment}`;
   }, "$");
-}
-
-function collectDescendants(doc: JsonDoc, nodeId: NodeId): NodeId[] {
-  const node = getNode(doc, nodeId);
-  const descendants: NodeId[] = [];
-
-  for (const childId of node.children) {
-    descendants.push(childId, ...collectDescendants(doc, childId));
-  }
-
-  return descendants;
-}
-
-function normalizeArrayKeys(doc: JsonDoc, arrayId: NodeId): void {
-  const arrayNode = getNode(doc, arrayId);
-
-  if (arrayNode.type !== "array") {
-    return;
-  }
-
-  arrayNode.children.forEach((childId, index) => {
-    getNode(doc, childId).key = index;
-  });
 }
 
 function nextNodeId(doc: JsonDoc): NodeId {
