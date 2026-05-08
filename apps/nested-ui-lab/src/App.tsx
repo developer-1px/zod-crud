@@ -4,13 +4,7 @@ import {
   useRef,
   useState,
 } from "react";
-import type {
-  JsonChange,
-  JsonDoc,
-  JsonNode,
-  NodeId,
-  OperationResult,
-} from "zod-crud";
+import type { NodeId, OperationResult } from "zod-crud";
 
 import {
   labEntity,
@@ -18,30 +12,24 @@ import {
 } from "./entities.js";
 import {
   buildRows,
-  canRenameNode,
   canUpdateNode,
   expandedContainerIds,
   expandedForSelection,
   insertionArrayId,
-  nodeValueLabel,
   parseNodeValue,
   pathString,
-  projectionColumns,
   validExpandedIds,
   valueInput,
 } from "./projections.js";
-
-type ViewMode = "treegrid" | "outline" | "cards";
-type CommandLog = {
-  command: string;
-  result: OperationResult;
-};
-
-const routes: Array<{ path: string; mode: ViewMode; label: string }> = [
-  { path: "/treegrid", mode: "treegrid", label: "TreeGrid" },
-  { path: "/outline", mode: "outline", label: "Outline" },
-  { path: "/cards", mode: "cards", label: "Cards" },
-];
+import { routeForPath, routes } from "./App.routes.js";
+import { CommandBar, PanelTitle, RouteSidebar } from "./App.chrome.js";
+import {
+  CardsProjection,
+  Inspector,
+  OutlineProjection,
+  TreeGridProjection,
+  type CommandLog,
+} from "./App.views.js";
 
 export function App() {
   const editorRef = useRef(makeEditor());
@@ -241,26 +229,7 @@ export function App() {
         />
 
         <section className="workspace">
-          <aside className="panel route-sidebar">
-            <PanelTitle title="Routes" detail={`${routes.length} available`} />
-            <nav className="route-list" aria-label="Available routes">
-              {routes.map((route) => (
-                <a
-                  key={route.path}
-                  href={route.path}
-                  aria-current={route.path === activeRoute.path ? "page" : undefined}
-                  className={route.path === activeRoute.path ? "route-link is-active" : "route-link"}
-                  onClick={(event) => {
-                    event.preventDefault();
-                    navigateRoute(route);
-                  }}
-                >
-                  <span>{route.label}</span>
-                  <small>{route.path}</small>
-                </a>
-              ))}
-            </nav>
-          </aside>
+          <RouteSidebar activePath={activeRoute.path} onNavigate={navigateRoute} />
 
           <section className="panel projection-panel">
             <PanelTitle title={activeRoute.label} detail={`${Object.keys(doc.nodes).length} nodes`} />
@@ -318,295 +287,4 @@ export function App() {
       </main>
     </>
   );
-}
-
-function routeForPath(pathname: string): (typeof routes)[number] {
-  return routes.find((route) => route.path === pathname) ?? routes[0]!;
-}
-
-function CommandBar({
-  canDelete,
-  canPaste,
-  onAdd,
-  onCopy,
-  onCut,
-  onDelete,
-  onPaste,
-  onRedo,
-  onReset,
-  onUndo,
-}: {
-  canDelete: boolean;
-  canPaste: boolean;
-  onAdd: () => void;
-  onCopy: () => void;
-  onCut: () => void;
-  onDelete: () => void;
-  onPaste: () => void;
-  onRedo: () => void;
-  onReset: () => void;
-  onUndo: () => void;
-}) {
-  return (
-    <nav className="command-bar" aria-label="Document commands">
-      <button type="button" onClick={onAdd}>Add child</button>
-      <button type="button" onClick={onCopy}>Copy</button>
-      <button type="button" disabled={!canDelete} onClick={onCut}>Cut</button>
-      <button type="button" disabled={!canPaste} onClick={onPaste}>Paste</button>
-      <button type="button" disabled={!canDelete} onClick={onDelete}>Delete</button>
-      <button type="button" onClick={onUndo}>Undo</button>
-      <button type="button" onClick={onRedo}>Redo</button>
-      <button type="button" onClick={onReset}>Reset</button>
-    </nav>
-  );
-}
-
-function TreeGridProjection({
-  changedRows,
-  rows,
-  selectedId,
-  onSelect,
-  onToggle,
-}: {
-  changedRows: Map<NodeId, JsonChange["type"]>;
-  doc: JsonDoc;
-  expandedIds: Set<NodeId>;
-  rows: ReturnType<typeof buildRows>;
-  selectedId: NodeId;
-  onSelect: (nodeId: NodeId) => void;
-  onToggle: (nodeId: NodeId) => void;
-}) {
-  return (
-    <div role="treegrid" aria-label="Document treegrid" aria-colcount={projectionColumns.length} aria-rowcount={rows.length + 1} className="treegrid">
-      <div role="row" aria-rowindex={1} className="grid-row grid-head">
-        {projectionColumns.map((column, index) => (
-          <div key={column.id} role="columnheader" aria-colindex={index + 1}>
-            {column.label}
-          </div>
-        ))}
-      </div>
-      {rows.map((row, rowIndex) => (
-        <button
-          key={row.id}
-          type="button"
-          role="row"
-          aria-expanded={row.expandable ? row.expanded : undefined}
-          aria-level={row.depth + 1}
-          aria-rowindex={rowIndex + 2}
-          aria-selected={selectedId === row.id}
-          className={rowClass(row.id, selectedId, changedRows)}
-          onClick={() => onSelect(row.id)}
-          onDoubleClick={() => onToggle(row.id)}
-        >
-          <span role="rowheader" aria-colindex={1} className="grid-cell path-cell" style={{ paddingLeft: `${row.depth * 18 + 9}px` }}>
-            <span aria-hidden="true" className="twisty">{row.expandable ? row.expanded ? "v" : ">" : ""}</span>
-            {row.path}
-          </span>
-          <span role="gridcell" aria-colindex={2} className="grid-cell">{row.keyLabel}</span>
-          <span role="gridcell" aria-colindex={3} className="grid-cell">{row.type}</span>
-          <span role="gridcell" aria-colindex={4} className="grid-cell">{row.value}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function OutlineProjection({
-  changedRows,
-  doc,
-  expandedIds,
-  nodeId,
-  selectedId,
-  onSelect,
-  onToggle,
-}: {
-  changedRows: Map<NodeId, JsonChange["type"]>;
-  doc: JsonDoc;
-  expandedIds: Set<NodeId>;
-  nodeId: NodeId;
-  selectedId: NodeId;
-  onSelect: (nodeId: NodeId) => void;
-  onToggle: (nodeId: NodeId) => void;
-}) {
-  const node = doc.nodes[nodeId];
-
-  if (node === undefined) {
-    return null;
-  }
-
-  const expanded = expandedIds.has(nodeId);
-
-  return (
-    <ul className={node.parentId === null ? "outline-root" : "outline-list"}>
-      <li>
-        <div className={itemClass(nodeId, selectedId, changedRows)}>
-          <button type="button" className="icon-button" onClick={() => onToggle(nodeId)}>
-            {node.children.length > 0 ? expanded ? "v" : ">" : ""}
-          </button>
-          <button type="button" className="node-button" onClick={() => onSelect(nodeId)}>
-            <span>{node.key === null ? "root" : String(node.key)}</span>
-            <small>{node.type} {nodeValueLabel(node)}</small>
-          </button>
-        </div>
-        {expanded ? node.children.map((childId) => (
-          <OutlineProjection
-            key={childId}
-            changedRows={changedRows}
-            doc={doc}
-            expandedIds={expandedIds}
-            nodeId={childId}
-            selectedId={selectedId}
-            onSelect={onSelect}
-            onToggle={onToggle}
-          />
-        )) : null}
-      </li>
-    </ul>
-  );
-}
-
-function CardsProjection({
-  changedRows,
-  doc,
-  nodeId,
-  selectedId,
-  onSelect,
-}: {
-  changedRows: Map<NodeId, JsonChange["type"]>;
-  doc: JsonDoc;
-  nodeId: NodeId;
-  selectedId: NodeId;
-  onSelect: (nodeId: NodeId) => void;
-}) {
-  const node = doc.nodes[nodeId];
-
-  if (node === undefined) {
-    return null;
-  }
-
-  return (
-    <article className={cardClass(nodeId, selectedId, changedRows)} onClick={(event) => {
-      event.stopPropagation();
-      onSelect(nodeId);
-    }}>
-      <header>
-        <span>{node.key === null ? "root" : String(node.key)}</span>
-        <small>{node.type}</small>
-      </header>
-      {node.children.length === 0 ? (
-        <p>{nodeValueLabel(node)}</p>
-      ) : (
-        <div className="card-children">
-          {node.children.map((childId) => (
-            <CardsProjection
-              key={childId}
-              changedRows={changedRows}
-              doc={doc}
-              nodeId={childId}
-              selectedId={selectedId}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      )}
-    </article>
-  );
-}
-
-function Inspector({
-  doc,
-  keyDraft,
-  lastCommand,
-  selectedId,
-  selectedNode,
-  valueDraft,
-  onKeyDraft,
-  onRename,
-  onUpdate,
-  onValueDraft,
-}: {
-  doc: JsonDoc;
-  keyDraft: string;
-  lastCommand: CommandLog;
-  selectedId: NodeId;
-  selectedNode: JsonNode | undefined;
-  valueDraft: string;
-  onKeyDraft: (value: string) => void;
-  onRename: () => void;
-  onUpdate: () => void;
-  onValueDraft: (value: string) => void;
-}) {
-  return (
-    <div className="inspector">
-      <dl className="node-facts">
-        <div><dt>ID</dt><dd>{selectedId}</dd></div>
-        <div><dt>Type</dt><dd>{selectedNode?.type ?? "missing"}</dd></div>
-        <div><dt>Children</dt><dd>{selectedNode?.children.length ?? 0}</dd></div>
-      </dl>
-
-      <label>
-        <span>Key</span>
-        <input value={keyDraft} disabled={!canRenameNode(doc, selectedId)} onChange={(event) => onKeyDraft(event.target.value)} />
-      </label>
-      <button type="button" disabled={!canRenameNode(doc, selectedId)} onClick={onRename}>Rename key</button>
-
-      <label>
-        <span>Value</span>
-        <input value={valueDraft} disabled={!canUpdateNode(selectedNode)} onChange={(event) => onValueDraft(event.target.value)} />
-      </label>
-      <button type="button" disabled={!canUpdateNode(selectedNode)} onClick={onUpdate}>Update value</button>
-
-      <div className={`result ${lastCommand.result.ok ? "is-ok" : "is-fail"}`}>
-        <strong>{lastCommand.command}</strong>
-        <span>{lastCommand.result.ok ? "ok" : lastCommand.result.reason}</span>
-      </div>
-      {lastCommand.result.ok && lastCommand.result.changes !== undefined ? (
-        <ul className="changes">
-          {lastCommand.result.changes.map((change) => (
-            <li key={`${change.type}-${change.nodeId}`}>
-              <span>{change.type}</span>
-              <code>{change.nodeId}</code>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
-function PanelTitle({ title, detail }: { title: string; detail: string }) {
-  return (
-    <div className="panel-title">
-      <h2>{title}</h2>
-      <span>{detail}</span>
-    </div>
-  );
-}
-
-function rowClass(nodeId: NodeId, selectedId: NodeId, changedRows: Map<NodeId, JsonChange["type"]>): string {
-  return [
-    "grid-row",
-    selectedId === nodeId ? "is-selected" : "",
-    changeClass(changedRows.get(nodeId)),
-  ].filter(Boolean).join(" ");
-}
-
-function itemClass(nodeId: NodeId, selectedId: NodeId, changedRows: Map<NodeId, JsonChange["type"]>): string {
-  return [
-    "outline-item",
-    selectedId === nodeId ? "is-selected" : "",
-    changeClass(changedRows.get(nodeId)),
-  ].filter(Boolean).join(" ");
-}
-
-function cardClass(nodeId: NodeId, selectedId: NodeId, changedRows: Map<NodeId, JsonChange["type"]>): string {
-  return [
-    "node-card",
-    selectedId === nodeId ? "is-selected" : "",
-    changeClass(changedRows.get(nodeId)),
-  ].filter(Boolean).join(" ");
-}
-
-function changeClass(change: JsonChange["type"] | undefined): string {
-  return change === undefined ? "" : `change-${change}`;
 }

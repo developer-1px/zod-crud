@@ -2,7 +2,6 @@ import * as z from "zod";
 
 import type {
   JsonDoc,
-  JsonNode,
   JsonValue,
   NodeId,
   PasteOptions,
@@ -11,11 +10,11 @@ import {
   cloneDoc,
   ensureObjectArrayField,
   getNode,
-  getPath,
   insertChild,
   replaceSubtree,
 } from "../document/json-doc.js";
-import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
+import { childPasteManyCandidates } from "./json-paste-many.js";
+import { jsonNodeTypeOf, objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
 
 export type PasteCandidate = {
   apply: () => {
@@ -179,7 +178,7 @@ function childPasteCandidates(
     return [];
   }
 
-  return objectChildArrayKeys(doc, schema, target, childKeys).map((childKey) =>
+  return objectArrayFieldKeysOfTarget(doc, schema, target, childKeys).map((childKey) =>
     objectChildArrayPasteCandidate(doc, targetId, childKey, payload, index, allocateNodeId),
   );
 }
@@ -232,152 +231,3 @@ function arrayInsertPasteCandidate(
   };
 }
 
-function childPasteManyCandidates(
-  doc: JsonDoc,
-  schema: z.ZodType<unknown>,
-  targetId: NodeId,
-  payloads: JsonValue[],
-  childKeys: string[],
-  index: number | undefined,
-  allocateNodeId: () => NodeId,
-): PasteCandidate[] {
-  const target = getNode(doc, targetId);
-
-  if (target.type === "array") {
-    return [arrayInsertManyPasteCandidate(doc, targetId, payloads, index, allocateNodeId)];
-  }
-
-  if (target.parentId !== null) {
-    const parent = getNode(doc, target.parentId);
-
-    if (parent.type === "array") {
-      const targetIndex = parent.children.indexOf(targetId);
-
-      if (targetIndex >= 0) {
-        return [arrayInsertManyPasteCandidate(doc, parent.id, payloads, index ?? targetIndex + 1, allocateNodeId)];
-      }
-    }
-  }
-
-  if (target.type !== "object") {
-    return [];
-  }
-
-  return objectChildArrayKeys(doc, schema, target, childKeys).map((childKey) =>
-    objectChildArrayPasteManyCandidate(doc, targetId, childKey, payloads, index, allocateNodeId),
-  );
-}
-
-function objectChildArrayPasteManyCandidate(
-  doc: JsonDoc,
-  targetId: NodeId,
-  childKey: string,
-  payloads: JsonValue[],
-  index: number | undefined,
-  allocateNodeId: () => NodeId,
-): PasteCandidate {
-  return {
-    apply: () => {
-      const next = cloneDoc(doc);
-      const childArrayId = ensureObjectArrayField(next, targetId, childKey, allocateNodeId);
-      const pastedRootIds = insertManyChildren(
-        next,
-        childArrayId,
-        index ?? getNode(next, childArrayId).children.length,
-        payloads,
-        allocateNodeId,
-      );
-
-      return { doc: next, pastedRootId: pastedRootIds[0]!, pastedRootIds };
-    },
-  };
-}
-
-function arrayInsertManyPasteCandidate(
-  doc: JsonDoc,
-  arrayId: NodeId,
-  payloads: JsonValue[],
-  index: number | undefined,
-  allocateNodeId: () => NodeId,
-): PasteCandidate {
-  return {
-    apply: () => {
-      const next = cloneDoc(doc);
-      const pastedRootIds = insertManyChildren(
-        next,
-        arrayId,
-        index ?? getNode(next, arrayId).children.length,
-        payloads,
-        allocateNodeId,
-      );
-
-      return { doc: next, pastedRootId: pastedRootIds[0]!, pastedRootIds };
-    },
-  };
-}
-
-function insertManyChildren(
-  doc: JsonDoc,
-  arrayId: NodeId,
-  startIndex: number,
-  payloads: JsonValue[],
-  allocateNodeId: () => NodeId,
-): NodeId[] {
-  return payloads.map((payload, offset) =>
-    insertChild(doc, arrayId, startIndex + offset, payload, allocateNodeId),
-  );
-}
-
-function objectChildArrayKeys(
-  doc: JsonDoc,
-  schema: z.ZodType<unknown>,
-  target: JsonNode,
-  childKeys: string[],
-): string[] {
-  const keys = new Set<string>();
-  const targetSchema = schemaAtPath(schema, getPath(doc, target.id));
-
-  if (targetSchema !== null) {
-    for (const childKey of objectArrayFieldKeys(targetSchema)) {
-      keys.add(childKey);
-    }
-  }
-
-  for (const childId of target.children) {
-    const child = getNode(doc, childId);
-
-    if (child.type === "array" && typeof child.key === "string") {
-      keys.add(child.key);
-    }
-  }
-
-  for (const childKey of childKeys) {
-    keys.add(childKey);
-  }
-
-  return [...keys];
-}
-
-function jsonNodeTypeOf(value: JsonValue): JsonNode["type"] {
-  if (Array.isArray(value)) {
-    return "array";
-  }
-
-  if (value === null) {
-    return "null";
-  }
-
-  if (typeof value === "object") {
-    return "object";
-  }
-
-  if (typeof value === "string") {
-    return "string";
-  }
-
-  if (typeof value === "number") {
-    return "number";
-  }
-
-  return "boolean";
-}
