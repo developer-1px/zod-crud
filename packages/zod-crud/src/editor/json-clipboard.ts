@@ -18,6 +18,7 @@ import {
 } from "./operation-result.js";
 import { buildPasteCandidates, buildPasteManyCandidates, type PasteCandidate } from "./json-paste.js";
 import { uniqueNodes } from "./json-delete-many.js";
+import { failure } from "./failure.js";
 
 type Clipboard = {
   values: JsonValue[];
@@ -265,11 +266,4 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
   }
 
   return { copy, copyMany, canCopyMany, cut, cutMany, canCutMany, paste, canPaste };
-}
-
-function failure(error: unknown): OperationResult {
-  return {
-    ok: false,
-    reason: error instanceof Error ? error.message : String(error),
-  };
 }
