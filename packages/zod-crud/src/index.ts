@@ -13,6 +13,7 @@ export type {
 } from "./editor/json-crud.js";
 
 export type {
+  FocusFilter,
   JsonChange,
   JsonDoc,
   JsonKey,
