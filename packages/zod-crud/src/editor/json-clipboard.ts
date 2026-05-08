@@ -11,11 +11,11 @@ import type {
 } from "../types.js";
 import { cloneDoc, cloneJson } from "../document/json-doc.js";
 import { validateDocument } from "../schema/json-validation.js";
+import { successResult } from "./operation-result.js";
 import {
   changesForInsertedSubtrees,
   changesForReplacedSubtree,
-  successResult,
-} from "./operation-result.js";
+} from "./json-change-diff.js";
 import { buildPasteCandidates, buildPasteManyCandidates, type PasteCandidate } from "./json-paste.js";
 import { uniqueNodes } from "./json-delete-many.js";
 import { failure } from "./failure.js";
