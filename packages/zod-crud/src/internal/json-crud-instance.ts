@@ -12,7 +12,6 @@ import type {
   PasteOptions,
 } from "../types.js";
 import type {
-  ChangeListener,
   JsonCrud,
   NodePredicate,
   Transaction,
@@ -20,10 +19,13 @@ import type {
   WalkVisitor,
 } from "../json-crud.js";
 import type { JsonNode, JsonNodeType } from "../types.js";
-import { findChildByKey, getPath, maxNodeIndex } from "../document/json-doc-access.js";
-import { cloneDoc, cloneJson } from "../document/json-doc-clone.js";
-import { deserialize, serialize } from "../document/json-doc-serialization.js";
-import { planDeleteMany, type DeleteManyPlan } from "../mutate/delete-many.js";
+import { maxNodeIndex } from "../document/json-doc-access.js";
+import { cloneDoc } from "../document/json-doc-clone.js";
+import { serialize } from "../document/json-doc-serialization.js";
+import { createReadApi } from "../read/read-api.js";
+import { createDeleteMany } from "../mutate/delete-many.js";
+import { createSubscriber } from "../subscribe.js";
+import { createDirtyTracker } from "../dirty.js";
 import { createHistory } from "../history/json-history.js";
 import { createClipboard } from "../clipboard/clipboard.js";
 import { createMutations } from "../mutate/mutations.js";
@@ -32,12 +34,10 @@ import { select, type SelectionPlan } from "../select.js";
 import { validateDocument } from "../validation.js";
 import { successResult } from "../result.js";
 import { failure } from "../result.js";
-import { walk as walkDoc } from "../read/walk.js";
-import { findAll as findAllDoc } from "../read/find-all.js";
 import { invertChanges as invertChangesImpl } from "../history/change/change-inversion.js";
 import { diffDocs } from "../history/diff-doc.js";
 import { applyChangesToDoc } from "../history/apply-changes.js";
-import { createLockedRegion } from "../mutate/locked-region.js";
+import { createLockedRegion } from "../locked-region.js";
 import { transact as runTransact } from "../mutate/transaction.js";
 import { enumerateInsertableKeys, enumerateInsertableTypes } from "../schema/insertable.js";
 import { createTreeShape } from "../mutate/tree-shape.js";
@@ -60,9 +60,10 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   let doc = serialize(parsed.data);
   const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
-  const listeners = new Set<ChangeListener>();
-  let savedDoc: JsonDoc = cloneDoc(doc);
   const lockedRegion = createLockedRegion(() => doc);
+  const { subscribe, notify } = createSubscriber();
+  const { markClean, isDirty, savedSnapshot } = createDirtyTracker(() => doc);
+  const { snapshot, toJson, read, pathOf, find, findAll, walk } = createReadApi({ schema, getDoc: () => doc });
 
   const validation = validateDocument(schema, doc);
 
@@ -73,7 +74,14 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   const { commit, undo, redo, canUndo, canRedo } = createHistory({
     getDoc: () => doc,
     setDoc: (next) => { doc = next; },
-    notify: notifyListeners,
+    notify,
+    ...(options.focusFilter && { focusFilter: options.focusFilter }),
+  });
+
+  const { deleteMany, canDeleteMany } = createDeleteMany({
+    schema,
+    getDoc: () => doc,
+    commitIfValid,
     ...(options.focusFilter && { focusFilter: options.focusFilter }),
   });
 
@@ -143,26 +151,23 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return lockedRegion.guard([targetId]) ?? clipboard.canPaste(targetId, options);
   }
 
-  function snapshot(): JsonDoc {
-    return cloneDoc(doc);
-  }
-
-  function toJson(): T {
-    return schema.parse(deserialize(doc));
-  }
-
-  function read(nodeId: NodeId = doc.rootId): JsonValue {
-    return cloneJson(deserialize(doc, nodeId));
-  }
-
-  function pathOf(nodeId: NodeId): JsonPath {
-    return getPath(doc, nodeId);
-  }
-
-  function find(parentId: NodeId, key: JsonKey): NodeId | null {
-    const child = findChildByKey(doc, parentId, key);
-    return child?.id ?? null;
-  }
+  const treeShape = createTreeShape({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    commitIfValid,
+    allocateNodeId,
+  });
+  const preflightTreeShape = createTreeShape({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    commitIfValid: validateOnly,
+    allocateNodeId,
+  });
+  const { wrap, unwrap, split, join } = treeShape;
+  const indent = (nodeId: NodeId) => treeShape.indent(nodeId, moveInto);
+  const outdent = (nodeId: NodeId) => treeShape.outdent(nodeId, moveAfter);
 
   function selectHere(nodeIds: NodeId[]): SelectionPlan | OperationFailure {
     try {
@@ -210,40 +215,6 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
 
   function canMoveInto(nodeIds: NodeId[], parentId: NodeId, index?: number): OperationResult {
     return preflight(() => preflightMoveInto(nodeIds, parentId, index));
-  }
-
-  function deleteMany(nodeIds: NodeId[]): OperationResult {
-    try {
-      const plan = planDeleteManyHere(nodeIds);
-
-      if (!plan.ok) {
-        return plan;
-      }
-
-      return commitIfValid(plan.next, plan.changes, plan.nodeId, plan.focusNodeId);
-    } catch (error) {
-      return failure(error);
-    }
-  }
-
-  function canDeleteMany(nodeIds: NodeId[]): OperationResult {
-    try {
-      const plan = planDeleteManyHere(nodeIds);
-
-      if (!plan.ok) {
-        return plan;
-      }
-
-      const validation = validateDocument(schema, plan.next);
-
-      return validation.ok ? { ok: true } : validation;
-    } catch (error) {
-      return failure(error);
-    }
-  }
-
-  function planDeleteManyHere(nodeIds: NodeId[]): DeleteManyPlan | OperationFailure {
-    return planDeleteMany({ doc, schema, nodeIds, ...(options.focusFilter && { focusFilter: options.focusFilter }) });
   }
 
   function commitIfValid(
@@ -315,31 +286,6 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return id;
   }
 
-  function subscribe(listener: ChangeListener): () => void {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  }
-
-  function notifyListeners(changes: JsonChange[]): void {
-    for (const listener of listeners) {
-      listener(changes);
-    }
-  }
-
-  function notImplemented(method: string): OperationResult {
-    return { ok: false, code: "not_implemented", reason: `${method} is not yet implemented.` };
-  }
-
-  function walkHere(visit: WalkVisitor): void {
-    walkDoc(doc, visit);
-  }
-
-  function findAllHere(predicate: NodePredicate): NodeId[] {
-    return findAllDoc(doc, predicate);
-  }
-
   function transact<R>(fn: (tx: Transaction) => R): TransactionResult<R> {
     return runTransact<T, R>(
       {
@@ -357,24 +303,6 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
       fn,
     );
   }
-
-  const treeShape = createTreeShape({
-    schema,
-    childKeys,
-    getDoc: () => doc,
-    commitIfValid,
-    allocateNodeId,
-  });
-  const preflightTreeShape = createTreeShape({
-    schema,
-    childKeys,
-    getDoc: () => doc,
-    commitIfValid: validateOnly,
-    allocateNodeId,
-  });
-  const { wrap, unwrap, split, join } = treeShape;
-  const indent = (nodeId: NodeId) => treeShape.indent(nodeId, moveInto);
-  const outdent = (nodeId: NodeId) => treeShape.outdent(nodeId, moveAfter);
 
   function applyChanges(changes: JsonChange[]): OperationResult {
     if (changes.length === 0) return { ok: true };
@@ -394,16 +322,6 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   }
   function diff(other: JsonDoc): JsonChange[] {
     return diffDocs(doc, other);
-  }
-
-  function markClean(): void {
-    savedDoc = cloneDoc(doc);
-  }
-  function isDirty(): boolean {
-    return doc !== savedDoc;
-  }
-  function savedSnapshot(): JsonDoc {
-    return cloneDoc(savedDoc);
   }
 
   function insertableKeys(parentId: NodeId): string[] {
@@ -433,8 +351,8 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     read,
     pathOf,
     find,
-    findAll: findAllHere,
-    walk: walkHere,
+    findAll,
+    walk,
     select: selectHere,
     create: locked((parentId) => [parentId], create),
     canCreate: locked((parentId) => [parentId], canCreate),

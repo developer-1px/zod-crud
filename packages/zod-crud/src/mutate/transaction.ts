@@ -15,7 +15,7 @@ import { failure } from "../result.js";
 import { createMutations } from "./mutations.js";
 import { createMove } from "./move.js";
 import { planDeleteMany } from "./delete-many.js";
-import type { LockedRegion } from "./locked-region.js";
+import type { LockedRegion } from "../locked-region.js";
 
 const TX_ABORT = Symbol("zod-crud:tx-abort");
 

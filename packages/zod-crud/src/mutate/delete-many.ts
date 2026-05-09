@@ -17,6 +17,8 @@ import { focusAfterSiblingBatchRemoval } from "../mutate/delete-many-focus.js";
 import { sortBySiblingIndexDescending } from "./delete-many-order.js";
 import { changesForDeletedSubtrees } from "../history/change/change-diff.js";
 import { select } from "../select.js";
+import { failure } from "../result.js";
+import { validateDocument } from "../validation.js";
 
 export { uniqueNodes } from "../select.js";
 
@@ -92,4 +94,53 @@ export function planDeleteMany<T extends JsonValue>(args: {
     focusNodeId,
     ...(nodeId === undefined ? {} : { nodeId }),
   };
+}
+
+export type DeleteManyDeps<T extends JsonValue> = {
+  schema: z.ZodType<T, any>;
+  getDoc: () => JsonDoc;
+  focusFilter?: FocusFilter;
+  commitIfValid: (
+    next: JsonDoc,
+    changes: JsonChange[],
+    nodeId?: NodeId,
+    focusNodeId?: NodeId,
+    focusNodeIds?: NodeId[],
+  ) => OperationResult;
+};
+
+export type DeleteManyApi = {
+  deleteMany: (nodeIds: NodeId[]) => OperationResult;
+  canDeleteMany: (nodeIds: NodeId[]) => OperationResult;
+};
+
+export function createDeleteMany<T extends JsonValue>(deps: DeleteManyDeps<T>): DeleteManyApi {
+  const { schema, getDoc, focusFilter, commitIfValid } = deps;
+
+  function plan(nodeIds: NodeId[]): DeleteManyPlan | OperationFailure {
+    return planDeleteMany({ doc: getDoc(), schema, nodeIds, ...(focusFilter && { focusFilter }) });
+  }
+
+  function deleteMany(nodeIds: NodeId[]): OperationResult {
+    try {
+      const result = plan(nodeIds);
+      if (!result.ok) return result;
+      return commitIfValid(result.next, result.changes, result.nodeId, result.focusNodeId);
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  function canDeleteMany(nodeIds: NodeId[]): OperationResult {
+    try {
+      const result = plan(nodeIds);
+      if (!result.ok) return result;
+      const validation = validateDocument(schema, result.next);
+      return validation.ok ? { ok: true } : validation;
+    } catch (error) {
+      return failure(error);
+    }
+  }
+
+  return { deleteMany, canDeleteMany };
 }

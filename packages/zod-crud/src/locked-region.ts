@@ -1,4 +1,4 @@
-import type { JsonDoc, NodeId, OperationResult } from "../types.js";
+import type { JsonDoc, NodeId, OperationResult } from "./types.js";
 
 export type LockedRegion = {
   lock: (nodeId: NodeId) => void;
