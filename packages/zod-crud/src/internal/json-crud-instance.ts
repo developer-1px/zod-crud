@@ -40,6 +40,7 @@ import { applyChangesToDoc } from "../history/apply-changes.js";
 import { createLockedRegion } from "../mutate/locked-region.js";
 import { transact as runTransact } from "../mutate/transaction.js";
 import { enumerateInsertableKeys, enumerateInsertableTypes } from "../schema/insertable.js";
+import { createTreeShape } from "../mutate/tree-shape.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
@@ -357,12 +358,51 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     );
   }
 
-  function wrap(_nodeId: NodeId, _key: string): OperationResult { return notImplemented("wrap"); }
-  function unwrap(_nodeId: NodeId): OperationResult { return notImplemented("unwrap"); }
-  function indent(_nodeId: NodeId): OperationResult { return notImplemented("indent"); }
-  function outdent(_nodeId: NodeId): OperationResult { return notImplemented("outdent"); }
-  function split(_nodeId: NodeId, _at: number): OperationResult { return notImplemented("split"); }
-  function join(_nodeId: NodeId, _withId: NodeId): OperationResult { return notImplemented("join"); }
+  const treeShape = createTreeShape({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    commitIfValid,
+    allocateNodeId,
+  });
+  const preflightTreeShape = createTreeShape({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    commitIfValid: validateOnly,
+    allocateNodeId,
+  });
+  const { wrap, unwrap, split, join } = treeShape;
+
+  function indent(nodeId: NodeId): OperationResult {
+    const docNow = doc;
+    const node = docNow.nodes[nodeId];
+    if (node === undefined) return { ok: false, code: "invalid_target", reason: "Node not found.", nodeId };
+    if (node.parentId === null) {
+      return { ok: false, code: "cannot_indent_first_child" as never, reason: "Cannot indent root.", nodeId };
+    }
+    const parent = docNow.nodes[node.parentId]!;
+    const idx = parent.children.indexOf(nodeId);
+    if (idx <= 0) {
+      return { ok: false, code: "invalid_target", reason: "No previous sibling to indent into.", nodeId };
+    }
+    const prevSiblingId = parent.children[idx - 1]!;
+    return moveInto([nodeId], prevSiblingId);
+  }
+
+  function outdent(nodeId: NodeId): OperationResult {
+    const docNow = doc;
+    const node = docNow.nodes[nodeId];
+    if (node === undefined) return { ok: false, code: "invalid_target", reason: "Node not found.", nodeId };
+    if (node.parentId === null) {
+      return { ok: false, code: "root_operation", reason: "Cannot outdent root.", nodeId };
+    }
+    const parent = docNow.nodes[node.parentId]!;
+    if (parent.parentId === null) {
+      return { ok: false, code: "invalid_target", reason: "Cannot outdent: parent is root.", nodeId };
+    }
+    return moveAfter([nodeId], parent.id);
+  }
 
   function applyChanges(changes: JsonChange[]): OperationResult {
     if (changes.length === 0) return { ok: true };
@@ -447,18 +487,18 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     moveInto: locked((ids, parentId) => [...ids, parentId], moveInto),
     canMoveInto: locked((ids, parentId) => [...ids, parentId], canMoveInto),
     transact,
-    wrap,
-    canWrap: (id: NodeId, key: string) => notImplemented("canWrap"),
-    unwrap,
-    canUnwrap: (id: NodeId) => notImplemented("canUnwrap"),
-    indent,
-    canIndent: (id: NodeId) => notImplemented("canIndent"),
-    outdent,
-    canOutdent: (id: NodeId) => notImplemented("canOutdent"),
-    split,
-    canSplit: (id: NodeId, at: number) => notImplemented("canSplit"),
-    join,
-    canJoin: (id: NodeId, w: NodeId) => notImplemented("canJoin"),
+    wrap: locked(guardSingle, wrap),
+    canWrap: locked(guardSingle, (id: NodeId, key: string) => preflight(() => preflightTreeShape.wrap(id, key))),
+    unwrap: locked(guardSingle, unwrap),
+    canUnwrap: locked(guardSingle, (id: NodeId) => preflight(() => preflightTreeShape.unwrap(id))),
+    indent: locked(guardSingle, indent),
+    canIndent: locked(guardSingle, (id: NodeId) => preflight(() => indent(id))),
+    outdent: locked(guardSingle, outdent),
+    canOutdent: locked(guardSingle, (id: NodeId) => preflight(() => outdent(id))),
+    split: locked(guardSingle, split),
+    canSplit: locked(guardSingle, (id: NodeId, at: number) => preflight(() => preflightTreeShape.split(id, at))),
+    join: locked((id, w) => [id, w], join),
+    canJoin: locked((id, w) => [id, w], (id: NodeId, w: NodeId) => preflight(() => preflightTreeShape.join(id, w))),
     copy,
     copyMany,
     canCopyMany,
