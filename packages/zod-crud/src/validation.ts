@@ -6,7 +6,7 @@ import type {
   JsonValue,
   OperationResult,
 } from "./types.js";
-import { firstJsonDifference, sameJson } from "./history/diff.js";
+import { firstJsonDifference, sameJson } from "./document/json-doc-values.js";
 import { formatPath } from "./document/json-doc-format.js";
 import { deserialize } from "./document/json-doc-serialization.js";
 import { schemaAtPath } from "./schema/schema-path.js";
