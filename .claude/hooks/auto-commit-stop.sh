@@ -19,42 +19,15 @@ if [ -f "$git_dir/MERGE_HEAD" ] || [ -d "$git_dir/rebase-merge" ] || [ -d "$git_
   exit 0
 fi
 
-git add -A
-
-if git diff --cached --quiet; then
+if git diff --quiet && git diff --cached --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
   exit 0
 fi
 
-files="$(git diff --cached --name-only)"
+status="$(git status --short)"
 
-has_src=0
-has_test=0
-has_docs=0
-has_config=0
-has_hooks=0
+reason="커밋되지 않은 변경이 있습니다. 내용을 검토한 뒤 적절한 conventional-commit 메시지로 직접 git commit 하세요. 변경 요약을 본 뒤 본인이 메시지를 작성해야 합니다 — 자동 분류 금지.
 
-while IFS= read -r file; do
-  case "$file" in
-    src/*) has_src=1 ;;
-    test/*|*.test.*|*.spec.*) has_test=1 ;;
-    README.md|docs/*|*.md) has_docs=1 ;;
-    .claude/*) has_hooks=1 ;;
-    package.json|package-lock.json|tsconfig*.json|*.config.*|.gitignore) has_config=1 ;;
-  esac
-done <<< "$files"
+git status --short:
+${status}"
 
-if [ "$has_src" = "1" ]; then
-  message="feat: update json crud core"
-elif [ "$has_test" = "1" ]; then
-  message="test: update json crud coverage"
-elif [ "$has_hooks" = "1" ]; then
-  message="chore: update automation hooks"
-elif [ "$has_docs" = "1" ]; then
-  message="docs: update project documentation"
-elif [ "$has_config" = "1" ]; then
-  message="chore: update project config"
-else
-  message="chore: checkpoint project changes"
-fi
-
-git commit -m "$message"
+jq -n --arg r "$reason" '{decision:"block", reason:$r}'
