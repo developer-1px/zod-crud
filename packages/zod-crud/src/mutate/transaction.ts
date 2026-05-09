@@ -4,6 +4,7 @@ import type {
   FocusFilter,
   JsonChange,
   JsonDoc,
+  JsonPath,
   JsonValue,
   NodeId,
   OperationResult,
@@ -12,10 +13,21 @@ import type { Transaction, TransactionResult } from "../json-crud.js";
 import { cloneDoc } from "../document/json-doc-clone.js";
 import { validateDocument } from "../validation.js";
 import { failure } from "../result.js";
-import { createMutations } from "./mutations.js";
-import { createMove } from "./move.js";
+import {
+  planAppendChild,
+  planCreate,
+  planDelete,
+  planInsertAfter,
+  planInsertBefore,
+  planRename,
+  planUpdate,
+  type MutationPlan,
+  type MutationsCtx,
+} from "./mutations.js";
+import { planMoveBeside, planMoveInto, type MoveCtx } from "./move.js";
 import { planDeleteMany } from "./delete-many.js";
 import type { LockedRegion } from "../locked-region.js";
+import type { MovePlan } from "./move-plan.js";
 
 const TX_ABORT = Symbol("zod-crud:tx-abort");
 
@@ -35,14 +47,19 @@ export type TransactionDeps<T extends JsonValue> = {
   ) => void;
   lockedRegion: LockedRegion;
   focusFilter?: FocusFilter;
-  defaultFor?: (path: import("../types.js").JsonPath) => JsonValue;
+  defaultFor?: (path: JsonPath) => JsonValue;
 };
+
+type AnyPlan =
+  | MutationPlan
+  | (MovePlan | Extract<OperationResult, { ok: false }>);
 
 export function transact<T extends JsonValue, R>(
   deps: TransactionDeps<T>,
   fn: (tx: Transaction) => R,
 ): TransactionResult<R> {
-  const { schema, childKeys, getDoc, setDoc, getAllocator, setAllocator, commit, lockedRegion, focusFilter, defaultFor } = deps;
+  const { schema, childKeys, getDoc, getAllocator, setAllocator, commit, lockedRegion, focusFilter, defaultFor } = deps;
+  void deps.setDoc;
 
   let tempDoc = cloneDoc(getDoc());
   let tempAllocator = getAllocator();
@@ -58,14 +75,23 @@ export function transact<T extends JsonValue, R>(
     return id;
   }
 
-  function txCommitIfValid(
-    next: JsonDoc,
-    changes: JsonChange[],
-    nodeId?: NodeId,
-    focusNodeId?: NodeId,
-    focusNodeIds?: NodeId[],
-  ): OperationResult {
-    for (const change of changes) {
+  const mutCtx: MutationsCtx<T> = {
+    schema,
+    childKeys,
+    allocateNodeId: txAllocate,
+    ...(defaultFor && { defaultFor }),
+  };
+  const moveCtx: MoveCtx<T> = {
+    schema,
+    childKeys,
+    allocateNodeId: txAllocate,
+    ...(focusFilter && { focusFilter }),
+  };
+
+  function applyPlan(plan: AnyPlan): OperationResult {
+    if (!plan.ok) return plan;
+
+    for (const change of plan.changes) {
       if (lockedRegion.isLocked(change.nodeId)) {
         return {
           ok: false,
@@ -75,54 +101,30 @@ export function transact<T extends JsonValue, R>(
         };
       }
     }
-    const validation = validateDocument(schema, next);
+
+    const validation = validateDocument(schema, plan.next);
     if (!validation.ok) return validation;
 
-    tempDoc = next;
-    accumulated.push(...changes);
+    tempDoc = plan.next;
+    accumulated.push(...plan.changes);
+
+    const focusNodeId = "focusNodeId" in plan ? plan.focusNodeId : undefined;
+    const focusNodeIds = "focusNodeIds" in plan ? plan.focusNodeIds : undefined;
+
     return {
       ok: true,
-      ...(nodeId === undefined ? {} : { nodeId }),
+      ...(plan.nodeId === undefined ? {} : { nodeId: plan.nodeId }),
       ...(focusNodeId === undefined ? {} : { focusNodeId }),
       ...(focusNodeIds === undefined ? {} : { focusNodeIds }),
-      changes,
+      changes: plan.changes,
     };
-  }
-
-  const txMutations = createMutations({
-    schema,
-    childKeys,
-    getDoc: () => tempDoc,
-    commitIfValid: txCommitIfValid,
-    allocateNodeId: txAllocate,
-    ...(defaultFor && { defaultFor }),
-  });
-
-  const txMove = createMove({
-    schema,
-    childKeys,
-    getDoc: () => tempDoc,
-    commitIfValid: txCommitIfValid,
-    allocateNodeId: txAllocate,
-    ...(focusFilter && { focusFilter }),
-  });
-
-  function txDeleteMany(nodeIds: NodeId[]): OperationResult {
-    try {
-      const plan = planDeleteMany({ doc: tempDoc, schema, nodeIds, ...(focusFilter && { focusFilter }) });
-      if (!plan.ok) return plan;
-      return txCommitIfValid(plan.next, plan.changes);
-    } catch (error) {
-      return failure(error);
-    }
   }
 
   function notImpl(name: string): OperationResult {
     return { ok: false, code: "not_implemented", reason: `${name} is not yet implemented in transactions.` };
   }
 
-  // eslint-disable-next-line prefer-const
-  let txAbortFailure = { ref: null as OperationResult | null };
+  const txAbortFailure: { ref: OperationResult | null } = { ref: null };
 
   function strict<F extends (...args: never[]) => OperationResult>(fn: F): F {
     return ((...args: Parameters<F>) => {
@@ -136,17 +138,23 @@ export function transact<T extends JsonValue, R>(
   }
 
   const tx: Transaction = {
-    create: strict(txMutations.create),
-    insertAfter: strict(txMutations.insertAfter),
-    insertBefore: strict(txMutations.insertBefore),
-    appendChild: strict(txMutations.appendChild),
-    update: strict(txMutations.update),
-    rename: strict(txMutations.rename),
-    delete: strict(txMutations.delete),
-    deleteMany: strict(txDeleteMany),
-    moveBefore: strict(txMove.moveBefore),
-    moveAfter: strict(txMove.moveAfter),
-    moveInto: strict(txMove.moveInto),
+    create: strict((parentId, key, value) => applyPlan(planCreate(tempDoc, mutCtx, parentId, key, value))),
+    insertAfter: strict((siblingId, value) => applyPlan(planInsertAfter(tempDoc, mutCtx, siblingId, value))),
+    insertBefore: strict((siblingId, value) => applyPlan(planInsertBefore(tempDoc, mutCtx, siblingId, value))),
+    appendChild: strict((parentId, value) => applyPlan(planAppendChild(tempDoc, mutCtx, parentId, value))),
+    update: strict((nodeId, value) => applyPlan(planUpdate(tempDoc, mutCtx, nodeId, value))),
+    rename: strict((nodeId, key) => applyPlan(planRename(tempDoc, mutCtx, nodeId, key))),
+    delete: strict((nodeId) => applyPlan(planDelete(tempDoc, mutCtx, nodeId))),
+    deleteMany: strict((nodeIds) => {
+      try {
+        return applyPlan(planDeleteMany({ doc: tempDoc, schema, nodeIds, ...(focusFilter && { focusFilter }) }));
+      } catch (error) {
+        return failure(error);
+      }
+    }),
+    moveBefore: strict((ids, sib) => applyPlan(planMoveBeside(tempDoc, moveCtx, ids, sib, "before"))),
+    moveAfter: strict((ids, sib) => applyPlan(planMoveBeside(tempDoc, moveCtx, ids, sib, "after"))),
+    moveInto: strict((ids, parentId, index) => applyPlan(planMoveInto(tempDoc, moveCtx, ids, parentId, index))),
     wrap: strict(() => notImpl("wrap")),
     unwrap: strict(() => notImpl("unwrap")),
     indent: strict(() => notImpl("indent")),
@@ -173,6 +181,4 @@ export function transact<T extends JsonValue, R>(
   commit(tempDoc, accumulated);
   setAllocator(tempAllocator);
   return { ok: true, value, changes: accumulated };
-
-  void setDoc;
 }
