@@ -29,11 +29,15 @@ export type TreeShapeDeps<T extends JsonValue> = {
   allocateNodeId: () => NodeId;
 };
 
+type MoveFn = (nodeIds: NodeId[], target: NodeId) => OperationResult;
+
 export type TreeShapeApi = {
   wrap: (nodeId: NodeId, key: string) => OperationResult;
   unwrap: (nodeId: NodeId) => OperationResult;
   split: (nodeId: NodeId, at: number) => OperationResult;
   join: (nodeId: NodeId, withId: NodeId) => OperationResult;
+  indent: (nodeId: NodeId, moveInto: MoveFn) => OperationResult;
+  outdent: (nodeId: NodeId, moveAfter: MoveFn) => OperationResult;
 };
 
 export function createTreeShape<T extends JsonValue>(deps: TreeShapeDeps<T>): TreeShapeApi {
@@ -233,5 +237,35 @@ export function createTreeShape<T extends JsonValue>(deps: TreeShapeDeps<T>): Tr
     }
   }
 
-  return { wrap, unwrap, split, join };
+  function indent(nodeId: NodeId, moveInto: MoveFn): OperationResult {
+    const doc = getDoc();
+    const node = doc.nodes[nodeId];
+    if (node === undefined) return { ok: false, code: "invalid_target", reason: "Node not found.", nodeId };
+    if (node.parentId === null) {
+      return { ok: false, code: "root_operation", reason: "Cannot indent root.", nodeId };
+    }
+    const parent = doc.nodes[node.parentId]!;
+    const idx = parent.children.indexOf(nodeId);
+    if (idx <= 0) {
+      return { ok: false, code: "invalid_target", reason: "No previous sibling to indent into.", nodeId };
+    }
+    const prevSiblingId = parent.children[idx - 1]!;
+    return moveInto([nodeId], prevSiblingId);
+  }
+
+  function outdent(nodeId: NodeId, moveAfter: MoveFn): OperationResult {
+    const doc = getDoc();
+    const node = doc.nodes[nodeId];
+    if (node === undefined) return { ok: false, code: "invalid_target", reason: "Node not found.", nodeId };
+    if (node.parentId === null) {
+      return { ok: false, code: "root_operation", reason: "Cannot outdent root.", nodeId };
+    }
+    const parent = doc.nodes[node.parentId]!;
+    if (parent.parentId === null) {
+      return { ok: false, code: "invalid_target", reason: "Cannot outdent: parent is root.", nodeId };
+    }
+    return moveAfter([nodeId], parent.id);
+  }
+
+  return { wrap, unwrap, split, join, indent, outdent };
 }

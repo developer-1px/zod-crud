@@ -28,7 +28,7 @@ import { createHistory } from "../history/json-history.js";
 import { createClipboard } from "../clipboard/clipboard.js";
 import { createMutations } from "../mutate/mutations.js";
 import { createMove } from "../mutate/move.js";
-import { select, type SelectionPlan } from "../selection/select.js";
+import { select, type SelectionPlan } from "../select.js";
 import { validateDocument } from "../validation.js";
 import { successResult } from "../result.js";
 import { failure } from "../result.js";
@@ -373,36 +373,8 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     allocateNodeId,
   });
   const { wrap, unwrap, split, join } = treeShape;
-
-  function indent(nodeId: NodeId): OperationResult {
-    const docNow = doc;
-    const node = docNow.nodes[nodeId];
-    if (node === undefined) return { ok: false, code: "invalid_target", reason: "Node not found.", nodeId };
-    if (node.parentId === null) {
-      return { ok: false, code: "cannot_indent_first_child" as never, reason: "Cannot indent root.", nodeId };
-    }
-    const parent = docNow.nodes[node.parentId]!;
-    const idx = parent.children.indexOf(nodeId);
-    if (idx <= 0) {
-      return { ok: false, code: "invalid_target", reason: "No previous sibling to indent into.", nodeId };
-    }
-    const prevSiblingId = parent.children[idx - 1]!;
-    return moveInto([nodeId], prevSiblingId);
-  }
-
-  function outdent(nodeId: NodeId): OperationResult {
-    const docNow = doc;
-    const node = docNow.nodes[nodeId];
-    if (node === undefined) return { ok: false, code: "invalid_target", reason: "Node not found.", nodeId };
-    if (node.parentId === null) {
-      return { ok: false, code: "root_operation", reason: "Cannot outdent root.", nodeId };
-    }
-    const parent = docNow.nodes[node.parentId]!;
-    if (parent.parentId === null) {
-      return { ok: false, code: "invalid_target", reason: "Cannot outdent: parent is root.", nodeId };
-    }
-    return moveAfter([nodeId], parent.id);
-  }
+  const indent = (nodeId: NodeId) => treeShape.indent(nodeId, moveInto);
+  const outdent = (nodeId: NodeId) => treeShape.outdent(nodeId, moveAfter);
 
   function applyChanges(changes: JsonChange[]): OperationResult {
     if (changes.length === 0) return { ok: true };

@@ -3,8 +3,8 @@ import type {
   JsonNode,
   NodeId,
   OperationResult,
-} from "../types.js";
-import { getNode } from "../document/json-doc-access.js";
+} from "./types.js";
+import { getNode } from "./document/json-doc-access.js";
 
 export type SelectionPlan = {
   ok: true;

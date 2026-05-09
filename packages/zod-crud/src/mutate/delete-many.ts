@@ -16,9 +16,9 @@ import { validateAtPath } from "../validation.js";
 import { focusAfterSiblingBatchRemoval } from "../mutate/delete-many-focus.js";
 import { sortBySiblingIndexDescending } from "./delete-many-order.js";
 import { changesForDeletedSubtrees } from "../history/change/change-diff.js";
-import { select } from "../selection/select.js";
+import { select } from "../select.js";
 
-export { uniqueNodes } from "../selection/select.js";
+export { uniqueNodes } from "../select.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 

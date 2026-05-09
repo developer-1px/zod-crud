@@ -11,7 +11,7 @@ export type {
 
 export type {
   SelectionPlan,
-} from "./selection/select.js";
+} from "./select.js";
 
 export type {
   FocusFilter,

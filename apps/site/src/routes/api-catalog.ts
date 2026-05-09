@@ -15,7 +15,7 @@ const sourcesByAxis: Record<string, ApiSource[]> = {
   "read": [{ path: "internal/json-crud-instance.ts" }],
   "selection": [
     { path: "internal/json-crud-instance.ts" },
-    { path: "selection/select.ts", symbols: ["select"] },
+    { path: "select.ts", symbols: ["select"] },
   ],
   "mutate (single)": [{ path: "mutate/mutations.ts", symbols: ["createMutations"] }],
   "mutate (multi)": [
@@ -39,20 +39,6 @@ const sourcesByAxis: Record<string, ApiSource[]> = {
 };
 
 // ── JsonCrud 타입 외 entry (수동) ──────────────────────────────────────
-const factoryGroup: ApiGroup = {
-  title: "Factory",
-  apis: [
-    {
-      id: "createJsonCrud",
-      call: "createJsonCrud(schema, initial, options?)",
-      sources: [
-        { path: "json-crud.ts", symbols: ["createJsonCrud"] },
-        { path: "internal/json-crud-instance.ts", symbols: ["createJsonCrudInstance"] },
-      ],
-    },
-  ],
-};
-
 const documentGroup: ApiGroup = {
   title: "Document",
   apis: [
@@ -178,7 +164,7 @@ function validatePaths(groups: ApiGroup[]): void {
 void packageSources;
 
 export const apiGroups: ApiGroup[] = (() => {
-  const groups = [factoryGroup, documentGroup, ...buildAxisGroups()];
+  const groups = [documentGroup, ...buildAxisGroups()];
   validatePaths(groups);
   return groups;
 })();

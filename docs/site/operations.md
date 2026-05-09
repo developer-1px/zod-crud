@@ -16,7 +16,7 @@
 
 UI가 여러 node를 선택하더라도 core operation은 안전한 target set을 받아야 합니다. `normalizeSelection`은 duplicate를 제거하고, parent와 descendant가 동시에 들어오면 descendant를 제거하며, document order로 정렬합니다. 이것은 UI selection state가 아니라 batch operation planning입니다.
 
-::source{path="packages/zod-crud/src/selection/select.ts" lines="18-38" title="normalizeSelection"}
+::source{path="packages/zod-crud/src/select.ts" lines="18-38" title="normalizeSelection"}
 
 ## create와 append
 

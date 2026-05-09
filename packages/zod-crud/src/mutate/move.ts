@@ -16,7 +16,7 @@ import { normalizeArrayKeys } from "../document/json-doc-mutation-helpers.js";
 import { validateDocument } from "../validation.js";
 import { cloneNode, pushExistingUpdate } from "../history/change/change-nodes.js";
 import { objectArrayFieldKeysOfTarget } from "../schema/schema-array-fields.js";
-import { select, type SelectionPlan } from "../selection/select.js";
+import { select, type SelectionPlan } from "../select.js";
 import { failure } from "../result.js";
 import { changesForMove, insertionIndex, isDescendant, type MovePlan } from "./move-plan.js";
 
