@@ -1,3 +1,7 @@
+import * as z from "zod";
+
+import type { JsonDoc, JsonNode } from "../types.js";
+import { getNode, getPath } from "../document/json-doc.js";
 import {
   type AnySchema,
   objectShape,
@@ -7,6 +11,7 @@ import {
   unwrapTransparent,
 } from "./schema-introspection.js";
 import { schemaAllowsArray } from "./schema-allows-array.js";
+import { schemaAtPath } from "./schema-path.js";
 
 export function objectArrayFieldKeys(schema: AnySchema): string[] {
   const current = unwrapTransparent(schema);
@@ -47,6 +52,36 @@ export function objectArrayFieldKeys(schema: AnySchema): string[] {
         keys.add(key);
       }
     }
+  }
+
+  return [...keys];
+}
+
+export function objectArrayFieldKeysOfTarget(
+  doc: JsonDoc,
+  schema: z.ZodType<unknown>,
+  target: JsonNode,
+  childKeys: string[],
+): string[] {
+  const keys = new Set<string>();
+  const targetSchema = schemaAtPath(schema, getPath(doc, target.id));
+
+  if (targetSchema !== null) {
+    for (const childKey of objectArrayFieldKeys(targetSchema)) {
+      keys.add(childKey);
+    }
+  }
+
+  for (const childId of target.children) {
+    const child = getNode(doc, childId);
+
+    if (child.type === "array" && typeof child.key === "string") {
+      keys.add(child.key);
+    }
+  }
+
+  for (const childKey of childKeys) {
+    keys.add(childKey);
   }
 
   return [...keys];

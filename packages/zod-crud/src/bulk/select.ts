@@ -15,7 +15,7 @@ export type SelectionPlan = {
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 
-export function normalizeSelection(doc: JsonDoc, nodeIds: NodeId[]): SelectionPlan | OperationFailure {
+export function select(doc: JsonDoc, nodeIds: NodeId[]): SelectionPlan | OperationFailure {
   const unique = uniqueNodes(doc, nodeIds);
 
   if (unique.length === 0) {

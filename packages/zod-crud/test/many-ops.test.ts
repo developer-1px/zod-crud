@@ -126,7 +126,7 @@ describe("JsonCrud many-ops", () => {
     const textNodeId = editor.find(childrenId!, 0);
     const textValueId = editor.find(textNodeId!, "text");
 
-    const result = editor.normalizeSelection([textValueId!, textNodeId!, textNodeId!]);
+    const result = editor.select([textValueId!, textNodeId!, textNodeId!]);
 
     expect(result.ok).toBe(true);
 

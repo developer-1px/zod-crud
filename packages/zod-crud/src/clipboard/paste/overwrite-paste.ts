@@ -2,12 +2,12 @@ import type {
   JsonDoc,
   JsonValue,
   NodeId,
-} from "../types.js";
+} from "../../types.js";
 import {
   cloneDoc,
   replaceSubtree,
-} from "../document/json-doc.js";
-import type { PastePlan } from "./json-paste-plan.js";
+} from "../../document/json-doc.js";
+import type { PastePlan } from "./paste-plan.js";
 
 export function overwritePastePlan(
   doc: JsonDoc,

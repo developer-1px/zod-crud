@@ -14,13 +14,13 @@ import {
   getPath,
   removeSubtree,
 } from "../document/json-doc.js";
-import { validateAtPath } from "../schema/json-validation.js";
-import { focusAfterSiblingBatchRemoval } from "./delete-many-focus.js";
+import { validateAtPath } from "../validation/json-validation.js";
+import { focusAfterSiblingBatchRemoval } from "../focus/delete-many-focus.js";
 import { sortBySiblingIndexDescending } from "./delete-many-order.js";
-import { changesForDeletedSubtrees } from "../crud/json-change-diff.js";
-import { normalizeSelection } from "./json-selection.js";
+import { changesForDeletedSubtrees } from "../mutate/diff/change-diff.js";
+import { select } from "./select.js";
 
-export { uniqueNodes } from "./json-selection.js";
+export { uniqueNodes } from "./select.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 
@@ -39,7 +39,7 @@ export function planDeleteMany<T extends JsonValue>(args: {
   focusFilter?: FocusFilter;
 }): DeleteManyPlan | OperationFailure {
   const { doc, schema, nodeIds, focusFilter } = args;
-  const selection = normalizeSelection(doc, nodeIds);
+  const selection = select(doc, nodeIds);
 
   if (!selection.ok) {
     return selection.code === "empty_selection"

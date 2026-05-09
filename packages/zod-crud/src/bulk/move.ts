@@ -15,11 +15,11 @@ import {
   getNode,
 } from "../document/json-doc.js";
 import { normalizeArrayKeys } from "../document/json-doc-mutation-helpers.js";
-import { validateDocument } from "../schema/json-validation.js";
-import { cloneNode, pushExistingUpdate } from "../crud/json-change-nodes.js";
-import { objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
-import { normalizeSelection, type SelectionPlan } from "../selection/json-selection.js";
-import { failure } from "../failure.js";
+import { validateDocument } from "../validation/json-validation.js";
+import { cloneNode, pushExistingUpdate } from "../mutate/diff/change-nodes.js";
+import { objectArrayFieldKeysOfTarget } from "../schema/schema-array-fields.js";
+import { select, type SelectionPlan } from "./select.js";
+import { failure } from "../result/failure.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 
@@ -158,7 +158,7 @@ export function createMove<T extends JsonValue>(deps: MoveDeps<T>): MoveApi {
   }
 
   function normalizeMoveSelection(doc: JsonDoc, nodeIds: NodeId[]): SelectionPlan | OperationFailure {
-    const selection = normalizeSelection(doc, nodeIds);
+    const selection = select(doc, nodeIds);
 
     if (!selection.ok) {
       return selection;

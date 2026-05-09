@@ -3,12 +3,12 @@ import type {
   JsonDoc,
   JsonNode,
   NodeId,
-} from "../types.js";
+} from "../../types.js";
 import {
   cloneNode,
   collectSubtree,
   pushExistingUpdate,
-} from "./json-change-nodes.js";
+} from "./change-nodes.js";
 
 export function changesForDeletedSubtree(
   before: JsonDoc,

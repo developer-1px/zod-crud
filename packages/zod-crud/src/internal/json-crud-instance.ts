@@ -10,8 +10,8 @@ import type {
   NodeId,
   OperationResult,
   PasteOptions,
-} from "./types.js";
-import type { JsonCrud } from "./json-crud.js";
+} from "../types.js";
+import type { JsonCrud } from "../json-crud.js";
 import {
   cloneDoc,
   cloneJson,
@@ -20,16 +20,16 @@ import {
   getPath,
   maxNodeIndex,
   serialize,
-} from "./document/json-doc.js";
-import { planDeleteMany, type DeleteManyPlan } from "./selection/json-delete-many.js";
-import { createHistory } from "./history/json-history.js";
-import { createClipboard } from "./clipboard/json-clipboard.js";
-import { createMutations } from "./crud/json-mutations.js";
-import { createMove } from "./clipboard/json-move.js";
-import { normalizeSelection, type SelectionPlan } from "./selection/json-selection.js";
-import { validateDocument } from "./schema/json-validation.js";
-import { successResult } from "./operation-result.js";
-import { failure } from "./failure.js";
+} from "../document/json-doc.js";
+import { planDeleteMany, type DeleteManyPlan } from "../bulk/delete-many.js";
+import { createHistory } from "../history/json-history.js";
+import { createClipboard } from "../clipboard/clipboard.js";
+import { createMutations } from "../mutate/mutations.js";
+import { createMove } from "../bulk/move.js";
+import { select, type SelectionPlan } from "../bulk/select.js";
+import { validateDocument } from "../validation/json-validation.js";
+import { successResult } from "../result/operation-result.js";
+import { failure } from "../result/failure.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
@@ -144,9 +144,9 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return child?.id ?? null;
   }
 
-  function normalizeSelectionHere(nodeIds: NodeId[]): SelectionPlan | OperationFailure {
+  function selectHere(nodeIds: NodeId[]): SelectionPlan | OperationFailure {
     try {
-      return normalizeSelection(doc, nodeIds);
+      return select(doc, nodeIds);
     } catch (error) {
       return failure(error) as OperationFailure;
     }
@@ -293,7 +293,7 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     read,
     pathOf,
     find,
-    normalizeSelection: normalizeSelectionHere,
+    select: selectHere,
     create,
     canCreate,
     insertAfter,

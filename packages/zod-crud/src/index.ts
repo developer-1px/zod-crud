@@ -14,7 +14,7 @@ export type {
 
 export type {
   SelectionPlan,
-} from "./selection/json-selection.js";
+} from "./bulk/select.js";
 
 export type {
   FocusFilter,

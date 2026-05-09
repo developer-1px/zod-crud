@@ -3,7 +3,7 @@ import type {
   JsonDoc,
   JsonNode,
   NodeId,
-} from "../types.js";
+} from "../../types.js";
 
 export function cloneNode(node: JsonNode): JsonNode {
   return {

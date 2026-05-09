@@ -18,14 +18,14 @@ import {
   renameObjectKey,
   replaceSubtree,
 } from "../document/json-doc.js";
-import { validateAtPath } from "../schema/json-validation.js";
+import { validateAtPath } from "../validation/json-validation.js";
 import {
   changesForDeletedSubtree,
   changesForInsertedSubtree,
   changesForReplacedSubtree,
-} from "./json-change-diff.js";
-import { failure } from "../failure.js";
-import { childArrayIdForObjectAppend, resolveCreateValue } from "./json-create-helpers.js";
+} from "./diff/change-diff.js";
+import { failure } from "../result/failure.js";
+import { childArrayIdForObjectAppend, resolveCreateValue } from "./create-helpers.js";
 
 export type MutationsDeps<T extends JsonValue> = {
   schema: z.ZodType<T, any>;

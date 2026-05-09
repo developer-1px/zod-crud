@@ -2,10 +2,10 @@ import type {
   JsonDoc,
   JsonValue,
   NodeId,
-} from "../types.js";
-import { getNode } from "../document/json-doc.js";
-import { arrayInsertPastePlan } from "./json-array-paste.js";
-import type { PastePlan } from "./json-paste-plan.js";
+} from "../../types.js";
+import { getNode } from "../../document/json-doc.js";
+import { arrayInsertPastePlan } from "./array-paste.js";
+import type { PastePlan } from "./paste-plan.js";
 
 export function selfSiblingPastePlans(
   doc: JsonDoc,

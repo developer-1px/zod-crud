@@ -1,9 +1,9 @@
 import * as z from "zod";
 
-import type { JsonDoc, JsonValue, NodeId } from "../types.js";
-import { cloneDoc, ensureObjectArrayField, getNode, insertChild } from "../document/json-doc.js";
-import { objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
-import type { PastePlan } from "./json-paste-plan.js";
+import type { JsonDoc, JsonValue, NodeId } from "../../types.js";
+import { cloneDoc, ensureObjectArrayField, getNode, insertChild } from "../../document/json-doc.js";
+import { objectArrayFieldKeysOfTarget } from "../../schema/schema-array-fields.js";
+import type { PastePlan } from "./paste-plan.js";
 
 export function childPasteManyPlans(
   doc: JsonDoc,

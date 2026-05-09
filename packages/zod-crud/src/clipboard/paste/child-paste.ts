@@ -4,16 +4,16 @@ import type {
   JsonDoc,
   JsonValue,
   NodeId,
-} from "../types.js";
+} from "../../types.js";
 import {
   cloneDoc,
   ensureObjectArrayField,
   getNode,
   insertChild,
-} from "../document/json-doc.js";
-import { arrayInsertPastePlan } from "./json-array-paste.js";
-import type { PastePlan } from "./json-paste-plan.js";
-import { objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
+} from "../../document/json-doc.js";
+import { arrayInsertPastePlan } from "./array-paste.js";
+import type { PastePlan } from "./paste-plan.js";
+import { objectArrayFieldKeysOfTarget } from "../../schema/schema-array-fields.js";
 
 export function childPastePlans(
   doc: JsonDoc,

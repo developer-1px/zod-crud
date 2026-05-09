@@ -1,123 +1,23 @@
-import type { ZodError } from "zod";
-
-export type JsonPrimitive = string | number | boolean | null;
-export type JsonObject = { [key: string]: JsonValue };
-export type JsonArray = JsonValue[];
-export type JsonValue = JsonPrimitive | JsonObject | JsonArray;
-
-export type NodeId = string;
-export type JsonKey = string | number | null;
-export type JsonNodeType =
-  | "object"
-  | "array"
-  | "string"
-  | "number"
-  | "boolean"
-  | "null";
-
-export type JsonNode = {
-  id: NodeId;
-  type: JsonNodeType;
-  parentId: NodeId | null;
-  key: JsonKey;
-  children: NodeId[];
-  value?: JsonPrimitive;
-};
-
-export type JsonDoc = {
-  rootId: NodeId;
-  nodes: Record<NodeId, JsonNode>;
-};
-
-export type JsonPath = Array<string | number>;
-
-export type FocusFilter = (doc: JsonDoc, candidateId: NodeId) => boolean;
-
-export type DefaultValueFactory = (parentPath: JsonPath) => JsonValue;
-
-export type OperationFailureCode =
-  | "clipboard_empty"
-  | "duplicate_key"
-  | "empty_selection"
-  | "exception"
-  | "invalid_target"
-  | "missing_default"
-  | "root_operation"
-  | "schema_mismatch";
-
-export type JsonChange =
-  | {
-      type: "insert";
-      nodeId: NodeId;
-      after: JsonNode;
-    }
-  | {
-      type: "update";
-      nodeId: NodeId;
-      before: JsonNode;
-      after: JsonNode;
-    }
-  | {
-      type: "delete";
-      nodeId: NodeId;
-      before: JsonNode;
-    };
-
-export type OperationResult =
-  | {
-      ok: true;
-      /**
-       * Primary node affected by a successful mutation.
-       *
-       * For create and insert paste this is the inserted subtree root.
-       * For overwrite paste and update this is the target root.
-       * For delete and cut this is the removed root.
-       * For deleteMany this is the removed sibling used as the history focus
-       * anchor.
-       */
-      nodeId?: NodeId;
-      /**
-       * Existing node that editor UIs should focus after the mutation.
-       *
-       * This is always a live node in the committed document.
-       * For multi-value paste this is the last inserted root, while
-       * `focusNodeIds` contains the whole pasted selection.
-       */
-      focusNodeId?: NodeId;
-      /**
-       * Existing nodes that editor UIs should select after a batch mutation.
-       *
-       * This is used when a single committed operation creates or restores
-       * multiple peer roots, such as multi-value paste.
-       */
-      focusNodeIds?: NodeId[];
-      /**
-       * Changed JsonDoc nodes for this successful mutation.
-       *
-       * This contains only inserted, updated, and deleted nodes, not a full
-       * document snapshot.
-       */
-      changes?: JsonChange[];
-    }
-  | {
-      ok: false;
-      code?: OperationFailureCode;
-      reason: string;
-      nodeId?: NodeId;
-      path?: JsonPath;
-      error?: ZodError;
-    };
-
-export type PasteMode = "auto" | "child" | "overwrite";
-
-export type PasteOptions = {
-  mode?: PasteMode;
-  childKeys?: string[];
-  index?: number;
-};
-
-export type JsonCrudOptions = {
-  childKeys?: string[];
-  focusFilter?: FocusFilter;
-  defaultFor?: DefaultValueFactory;
-};
+// Barrel re-export. Source-of-truth types now live in their domain folders:
+//   - document/json-doc-types.ts  (JsonValue, JsonDoc, JsonNode, JsonPath, JsonChange, FocusFilter, ...)
+//   - result/operation-types.ts   (OperationResult, OperationFailureCode)
+//   - clipboard/paste/paste-types.ts (PasteMode, PasteOptions)
+//   - internal/crud-options.ts    (JsonCrudOptions)
+export type {
+  DefaultValueFactory,
+  FocusFilter,
+  JsonArray,
+  JsonChange,
+  JsonDoc,
+  JsonKey,
+  JsonNode,
+  JsonNodeType,
+  JsonObject,
+  JsonPath,
+  JsonPrimitive,
+  JsonValue,
+  NodeId,
+} from "./document/json-doc-types.js";
+export type { OperationFailureCode, OperationResult } from "./result/operation-types.js";
+export type { PasteMode, PasteOptions } from "./clipboard/paste/paste-types.js";
+export type { JsonCrudOptions } from "./internal/crud-options.js";

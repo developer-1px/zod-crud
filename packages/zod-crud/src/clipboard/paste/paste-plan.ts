@@ -1,7 +1,7 @@
 import type {
   JsonDoc,
   NodeId,
-} from "../types.js";
+} from "../../types.js";
 
 export type PastePlan = {
   apply: () => {

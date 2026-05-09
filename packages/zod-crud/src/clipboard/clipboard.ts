@@ -10,15 +10,15 @@ import type {
   PasteOptions,
 } from "../types.js";
 import { cloneDoc, cloneJson } from "../document/json-doc.js";
-import { validateDocument } from "../schema/json-validation.js";
-import { successResult } from "../operation-result.js";
+import { validateDocument } from "../validation/json-validation.js";
+import { successResult } from "../result/operation-result.js";
 import {
   changesForInsertedSubtrees,
   changesForReplacedSubtree,
-} from "../crud/json-change-diff.js";
-import { buildPastePlans, buildPasteManyPlans, type PastePlan } from "./json-paste.js";
-import { uniqueNodes } from "../selection/json-delete-many.js";
-import { failure } from "../failure.js";
+} from "../mutate/diff/change-diff.js";
+import { buildPastePlans, buildPasteManyPlans, type PastePlan } from "./paste/paste.js";
+import { uniqueNodes } from "../bulk/delete-many.js";
+import { failure } from "../result/failure.js";
 
 type Clipboard = {
   values: JsonValue[];

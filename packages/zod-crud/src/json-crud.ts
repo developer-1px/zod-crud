@@ -10,8 +10,8 @@ import type {
   OperationResult,
   PasteOptions,
 } from "./types.js";
-import { createJsonCrudInstance } from "./json-crud-instance.js";
-import type { SelectionPlan } from "./selection/json-selection.js";
+import { createJsonCrudInstance } from "./internal/json-crud-instance.js";
+import type { SelectionPlan } from "./bulk/select.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 
@@ -21,7 +21,7 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   read: (nodeId?: NodeId) => JsonValue;
   pathOf: (nodeId: NodeId) => JsonPath;
   find: (parentId: NodeId, key: JsonKey) => NodeId | null;
-  normalizeSelection: (nodeIds: NodeId[]) => SelectionPlan | OperationFailure;
+  select: (nodeIds: NodeId[]) => SelectionPlan | OperationFailure;
   create: (parentId: NodeId, key: string | number, value?: JsonValue) => OperationResult;
   canCreate: (parentId: NodeId, key: string | number, value?: JsonValue) => OperationResult;
   insertAfter: (siblingId: NodeId, value?: JsonValue) => OperationResult;

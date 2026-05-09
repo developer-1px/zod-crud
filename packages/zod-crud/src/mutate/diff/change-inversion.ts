@@ -1,5 +1,5 @@
-import type { JsonChange } from "../types.js";
-import { cloneNode } from "./json-change-nodes.js";
+import type { JsonChange } from "../../types.js";
+import { cloneNode } from "./change-nodes.js";
 
 export function invertChanges(changes: JsonChange[]): JsonChange[] {
   return changes.slice().reverse().map((change) => {

@@ -1,4 +1,4 @@
-import type { OperationFailureCode, OperationResult } from "./types.js";
+import type { OperationFailureCode, OperationResult } from "../types.js";
 
 export function failure(error: unknown, code: OperationFailureCode = codeForError(error)): OperationResult {
   return {

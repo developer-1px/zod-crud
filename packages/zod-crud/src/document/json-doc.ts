@@ -22,7 +22,7 @@ export {
 } from "./json-doc-values.js";
 export {
   ensureObjectArrayField,
-} from "./ensureObjectArrayField.js";
+} from "./ensure-object-array-field.js";
 export {
   insertChild,
   removeSubtree,
