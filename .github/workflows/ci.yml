@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install package dependencies
+        working-directory: packages/zod-crud
+        run: npm install --no-audit --no-fund
+      - name: Verify package
+        working-directory: packages/zod-crud
+        run: npm run verify
+      - name: Check package contents
+        working-directory: packages/zod-crud
+        run: npm pack --dry-run

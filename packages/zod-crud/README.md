@@ -4,6 +4,7 @@ Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.
 
 The behavior contract lives in [`spec.md`](./spec.md). Treat it as the SSOT for
 operation semantics, Zod compatibility, and package readiness checks.
+LLM-oriented usage constraints live in [`LLMS.md`](./LLMS.md).
 
 The core idea is simple:
 
@@ -18,6 +19,36 @@ nested JSON
 
 Zod is used as the structural policy layer. A mutation is committed only when
 the target subtree matches the Zod schema at that JSON path.
+
+## Install
+
+```sh
+npm install zod-crud zod
+```
+
+`zod` is a peer dependency. `zod-crud` is ESM-only, so use `import` from Node
+ESM, TypeScript, or a bundler.
+
+## When To Use It
+
+Use `zod-crud` when an app edits JSON as a document structure: nested menus,
+schema-aware admin data, settings trees, rule editors, JSON inspectors, or other
+interfaces where selection and mutation happen at object fields, array items,
+and primitive leaves.
+
+It is not a UI component, form library, JSON Schema renderer, persistence
+layer, or visual treegrid. Consumers own rendering and storage.
+
+## Safety Contract
+
+- Every committed document must pass the root Zod schema.
+- Zod parsed output must be JSON-identical to stored JSON. If Zod would strip,
+  coerce, transform, or add data to an already-stored candidate, the mutation is
+  rejected.
+- Failed operations leave document state, history, clipboard, and id allocation
+  unchanged.
+- Mutations return `OperationResult` instead of throwing for expected invalid
+  input. Read-only helpers may throw for malformed docs or invalid ids.
 
 ## Model
 
@@ -46,8 +77,6 @@ type JsonNode = {
 - root: `null`
 
 ## Usage
-
-`zod-crud` is ESM-only. Use `import` from Node ESM, TypeScript, or a bundler.
 
 ```ts
 import * as z from "zod";

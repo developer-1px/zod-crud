@@ -3,11 +3,35 @@
   "version": "0.1.0",
   "description": "Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.",
   "type": "module",
+  "license": "MIT",
   "sideEffects": false,
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "homepage": "https://developer-1px.github.io/zod-crud/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/developer-1px/zod-crud.git",
+    "directory": "packages/zod-crud"
+  },
+  "bugs": {
+    "url": "https://github.com/developer-1px/zod-crud/issues"
+  },
+  "keywords": [
+    "zod",
+    "json",
+    "crud",
+    "schema",
+    "tree",
+    "treegrid",
+    "editor",
+    "clipboard",
+    "undo",
+    "redo",
+    "headless"
+  ],
   "files": [
     "dist",
+    "LLMS.md",
     "README.md",
     "spec.md"
   ],
