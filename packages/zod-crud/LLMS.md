@@ -1,8 +1,8 @@
 # zod-crud LLM Guide
 
-This package is a headless JSON document editing core guarded by a Zod root
-schema. It is not a React component, form library, JSON Schema renderer,
-persistence layer, or visual treegrid.
+This package is a headless JSON CRUD core guarded by a Zod root schema. It is
+not a React component, form library, JSON Schema renderer, persistence layer,
+or visual treegrid.
 
 Source of truth:
 
@@ -36,7 +36,7 @@ import type { JsonCrud, JsonDoc, JsonValue, OperationResult } from "zod-crud";
 
 The package is ESM-only. Do not generate `require("zod-crud")` examples.
 
-Main editor methods:
+Main `JsonCrud` methods:
 
 - Read: `snapshot`, `toJson`, `read`, `pathOf`, `find`
 - Mutate: `create`, `insertBefore`, `insertAfter`, `appendChild`, `update`,
@@ -86,7 +86,7 @@ console.log(crud.toJson());
 
 ## Common Mistakes
 
-- Do not mutate `crud.snapshot()` and expect the editor to update. Snapshots are
+- Do not mutate `crud.snapshot()` and expect `crud` to update. Snapshots are
   cloned read models.
 - Do not store array indexes as durable selection state. Use `NodeId`; array
   keys normalize after insert/delete.

@@ -6,9 +6,9 @@ first or explicitly mark the implementation as out of spec.
 
 ## Product Contract
 
-`zod-crud` is a flat JSON editing core guarded by a Zod schema.
+`zod-crud` is a flat JSON CRUD core guarded by a Zod schema.
 
-The editor stores parsed JSON as a flat node table, exposes CRUD, clipboard, and
+`JsonCrud` stores parsed JSON as a flat node table, exposes CRUD, clipboard, and
 history operations over node ids, and commits only mutations that keep the full
 document valid under the root schema.
 
@@ -83,7 +83,7 @@ Node id rules:
 
 - Serialized root starts at `n1`.
 - IDs allocated by a `JsonCrud` instance are monotonic for that instance.
-- Deleted ids are not reused later in that editor instance.
+- Deleted ids are not reused later in that `JsonCrud` instance.
 - Replacing a subtree preserves the replaced root node id and allocates fresh ids
   for its descendants.
 
@@ -519,7 +519,7 @@ Add or update tests when behavior changes in any of these areas:
 - OperationResult focus and changed-node metadata.
 - Package import/type surface.
 
-Regression tests should encode de-facto editor expectations, not only current
+Regression tests should encode de-facto consumer expectations, not only current
 implementation details. If a behavior is debatable, record the chosen rule in
 this spec first.
 
