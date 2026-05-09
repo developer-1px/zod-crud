@@ -2,7 +2,7 @@ import type { SourceKey } from "./source-registry";
 
 export type ApiId =
   | "createJsonCrud" | "serialize" | "deserialize" | "getPath"
-  | "snapshot" | "toJson" | "read" | "pathOf" | "find" | "normalizeSelection"
+  | "snapshot" | "toJson" | "read" | "pathOf" | "find" | "select"
   | "create" | "insertAfter" | "insertBefore" | "appendChild"
   | "update" | "rename" | "delete" | "deleteMany"
   | "canCreate" | "canInsertAfter" | "canInsertBefore" | "canAppendChild"
@@ -37,7 +37,7 @@ const historyFactory: ApiSource = { key: "json-history", symbols: ["createHistor
 const deleteManyPlanner: ApiSource = { key: "json-delete-many", symbols: ["planDeleteMany"] };
 const pastePlans: ApiSource = { key: "json-paste", symbols: ["buildPastePlans", "buildPasteManyPlans"] };
 const moveFactory: ApiSource = { key: "json-move", symbols: ["createMove"] };
-const selectionNormalizer: ApiSource = { key: "json-selection", symbols: ["normalizeSelection"] };
+const selectionNormalizer: ApiSource = { key: "json-selection", symbols: ["select"] };
 
 export const apiGroups: ApiGroup[] = [
   {
@@ -62,7 +62,7 @@ export const apiGroups: ApiGroup[] = [
       { id: "read", call: "crud.read(nodeId?)", sources: [crudInstance] },
       { id: "pathOf", call: "crud.pathOf(nodeId)", sources: [crudInstance] },
       { id: "find", call: "crud.find(parentId, key)", sources: [crudInstance] },
-      { id: "normalizeSelection", call: "crud.normalizeSelection(nodeIds)", sources: [crudInstance, selectionNormalizer] },
+      { id: "select", call: "crud.select(nodeIds)", sources: [crudInstance, selectionNormalizer] },
     ],
   },
   {
