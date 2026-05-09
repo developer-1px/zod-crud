@@ -10,13 +10,13 @@
 
 일부 mutation은 먼저 해당 경로의 schema를 찾아 값 하나를 검증합니다. 하지만 최종 commit 전에는 document 전체를 다시 검증합니다. 부분 검증은 빠른 실패를 위한 것이고, 전체 검증은 최종 불변식입니다.
 
-::source{path="packages/zod-crud/src/schema/json-validation.ts" lines="16-40" title="validateAtPath"}
+::source{path="packages/zod-crud/src/validation.ts" lines="16-40" title="validateAtPath"}
 
 ## parse output exact match
 
 전체 검증의 핵심은 `sameJson(result.data, value)`입니다. Zod parse 결과와 후보 JSON이 다르면 스키마는 통과했더라도 document drift로 봅니다.
 
-::source{path="packages/zod-crud/src/schema/json-validation.ts" lines="43-67" title="validateDocument"}
+::source{path="packages/zod-crud/src/validation.ts" lines="43-67" title="validateDocument"}
 
 ## commit은 검증 뒤에만 발생합니다
 

@@ -2,11 +2,8 @@ export {
   createJsonCrud,
 } from "./json-crud.js";
 
-export {
-  deserialize,
-  getPath,
-  serialize,
-} from "./document/json-doc.js";
+export { deserialize, serialize } from "./document/json-doc-serialization.js";
+export { getPath } from "./document/json-doc-access.js";
 
 export type {
   JsonCrud,
@@ -14,7 +11,7 @@ export type {
 
 export type {
   SelectionPlan,
-} from "./bulk/select.js";
+} from "./selection/select.js";
 
 export type {
   FocusFilter,

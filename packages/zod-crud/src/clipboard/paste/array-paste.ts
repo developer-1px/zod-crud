@@ -3,12 +3,10 @@ import type {
   JsonValue,
   NodeId,
 } from "../../types.js";
-import {
-  cloneDoc,
-  getNode,
-  insertChild,
-} from "../../document/json-doc.js";
-import type { PastePlan } from "./paste-plan.js";
+import { getNode } from "../../document/json-doc-access.js";
+import { cloneDoc } from "../../document/json-doc-clone.js";
+import { insertChild } from "../../document/json-doc-mutations.js";
+import type { PastePlan } from "./plan.js";
 
 export function arrayInsertPastePlan(
   doc: JsonDoc,

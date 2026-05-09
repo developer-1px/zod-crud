@@ -8,23 +8,17 @@ import type {
   NodeId,
   OperationResult,
 } from "../types.js";
-import {
-  cloneDoc,
-  deserialize,
-  getNode,
-  getPath,
-  insertChild,
-  removeSubtree,
-  renameObjectKey,
-  replaceSubtree,
-} from "../document/json-doc.js";
-import { validateAtPath } from "../validation/json-validation.js";
+import { getNode, getPath } from "../document/json-doc-access.js";
+import { cloneDoc } from "../document/json-doc-clone.js";
+import { insertChild, removeSubtree, renameObjectKey, replaceSubtree } from "../document/json-doc-mutations.js";
+import { deserialize } from "../document/json-doc-serialization.js";
+import { validateAtPath } from "../validation.js";
 import {
   changesForDeletedSubtree,
   changesForInsertedSubtree,
   changesForReplacedSubtree,
-} from "./diff/change-diff.js";
-import { failure } from "../result/failure.js";
+} from "../history/change/change-diff.js";
+import { failure } from "../result.js";
 import { childArrayIdForObjectAppend, resolveCreateValue } from "./create-helpers.js";
 
 export type MutationsDeps<T extends JsonValue> = {

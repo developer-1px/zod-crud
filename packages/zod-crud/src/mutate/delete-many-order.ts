@@ -3,7 +3,7 @@ import type {
   JsonNode,
   NodeId,
 } from "../types.js";
-import { getNode } from "../document/json-doc.js";
+import { getNode } from "../document/json-doc-access.js";
 
 export function sortBySiblingIndexDescending(doc: JsonDoc, parentId: NodeId, nodes: JsonNode[]): JsonNode[] {
   const parent = getNode(doc, parentId);

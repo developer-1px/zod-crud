@@ -14,7 +14,7 @@ import type {
   PasteOptions,
 } from "./types.js";
 import { createJsonCrudInstance } from "./internal/json-crud-instance.js";
-import type { SelectionPlan } from "./bulk/select.js";
+import type { SelectionPlan } from "./selection/select.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 

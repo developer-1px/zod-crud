@@ -5,13 +5,11 @@ import type {
   JsonPath,
   JsonValue,
   OperationResult,
-} from "../types.js";
-import { firstJsonDifference, sameJson } from "../diff/json-diff.js";
-import {
-  deserialize,
-  formatPath,
-} from "../document/json-doc.js";
-import { schemaAtPath } from "../schema/schema-path.js";
+} from "./types.js";
+import { firstJsonDifference, sameJson } from "./history/diff.js";
+import { formatPath } from "./document/json-doc-format.js";
+import { deserialize } from "./document/json-doc-serialization.js";
+import { schemaAtPath } from "./schema/schema-path.js";
 
 export function validateAtPath(
   schema: z.ZodType<JsonValue>,

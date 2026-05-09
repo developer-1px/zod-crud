@@ -20,24 +20,20 @@ import type {
   WalkVisitor,
 } from "../json-crud.js";
 import type { JsonNode, JsonNodeType } from "../types.js";
-import {
-  cloneDoc,
-  cloneJson,
-  deserialize,
-  findChildByKey,
-  getPath,
-  maxNodeIndex,
-  serialize,
-} from "../document/json-doc.js";
-import { planDeleteMany, type DeleteManyPlan } from "../bulk/delete-many.js";
+import { findChildByKey, getPath, maxNodeIndex } from "../document/json-doc-access.js";
+import { cloneDoc, cloneJson } from "../document/json-doc-clone.js";
+import { deserialize, serialize } from "../document/json-doc-serialization.js";
+import { planDeleteMany, type DeleteManyPlan } from "../mutate/delete-many.js";
 import { createHistory } from "../history/json-history.js";
 import { createClipboard } from "../clipboard/clipboard.js";
 import { createMutations } from "../mutate/mutations.js";
-import { createMove } from "../bulk/move.js";
-import { select, type SelectionPlan } from "../bulk/select.js";
-import { validateDocument } from "../validation/json-validation.js";
-import { successResult } from "../result/operation-result.js";
-import { failure } from "../result/failure.js";
+import { createMove } from "../mutate/move.js";
+import { select, type SelectionPlan } from "../selection/select.js";
+import { validateDocument } from "../validation.js";
+import { successResult } from "../result.js";
+import { failure } from "../result.js";
+import { walk as walkDoc } from "../read/walk.js";
+import { findAll as findAllDoc } from "../read/find-all.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
@@ -300,30 +296,12 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return { ok: false, code: "not_implemented", reason: `${method} is not yet implemented.` };
   }
 
-  function walk(visit: WalkVisitor): void {
-    const visitNode = (nodeId: NodeId, path: JsonPath): boolean => {
-      const node = doc.nodes[nodeId];
-      if (node === undefined) return true;
-      const result = visit(node, path);
-      if (result === "stop") return false;
-      if (result === "skip") return true;
-      for (const childId of node.children) {
-        const child = doc.nodes[childId];
-        if (child === undefined) continue;
-        const childPath: JsonPath = child.key === null ? path : [...path, child.key];
-        if (!visitNode(childId, childPath)) return false;
-      }
-      return true;
-    };
-    visitNode(doc.rootId, []);
+  function walkHere(visit: WalkVisitor): void {
+    walkDoc(doc, visit);
   }
 
-  function findAll(predicate: NodePredicate): NodeId[] {
-    const results: NodeId[] = [];
-    walk((node, path) => {
-      if (predicate(node, path)) results.push(node.id);
-    });
-    return results;
+  function findAllHere(predicate: NodePredicate): NodeId[] {
+    return findAllDoc(doc, predicate);
   }
 
   function transact<R>(_fn: (tx: Transaction) => R): TransactionResult<R> {
@@ -366,8 +344,8 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     read,
     pathOf,
     find,
-    findAll,
-    walk,
+    findAll: findAllHere,
+    walk: walkHere,
     select: selectHere,
     create,
     canCreate,

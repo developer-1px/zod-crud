@@ -49,9 +49,9 @@ export const apiGroups: ApiGroup[] = [
   {
     title: "Document",
     apis: [
-      { id: "serialize", call: "serialize(value)", sources: [{ key: "json-doc", symbols: ["serialize"] }] },
-      { id: "deserialize", call: "deserialize(doc, nodeId?)", sources: [{ key: "json-doc", symbols: ["deserialize"] }] },
-      { id: "getPath", call: "getPath(doc, nodeId)", sources: [{ key: "json-doc", symbols: ["getPath"] }] },
+      { id: "serialize", call: "serialize(value)", sources: [{ key: "json-doc-serialization", symbols: ["serialize"] }] },
+      { id: "deserialize", call: "deserialize(doc, nodeId?)", sources: [{ key: "json-doc-serialization", symbols: ["deserialize"] }] },
+      { id: "getPath", call: "getPath(doc, nodeId)", sources: [{ key: "json-doc-access", symbols: ["getPath"] }] },
     ],
   },
   {

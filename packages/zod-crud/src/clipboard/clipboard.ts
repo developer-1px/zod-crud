@@ -9,16 +9,16 @@ import type {
   OperationResult,
   PasteOptions,
 } from "../types.js";
-import { cloneDoc, cloneJson } from "../document/json-doc.js";
-import { validateDocument } from "../validation/json-validation.js";
-import { successResult } from "../result/operation-result.js";
+import { cloneDoc, cloneJson } from "../document/json-doc-clone.js";
+import { validateDocument } from "../validation.js";
+import { successResult } from "../result.js";
 import {
   changesForInsertedSubtrees,
   changesForReplacedSubtree,
-} from "../mutate/diff/change-diff.js";
-import { buildPastePlans, buildPasteManyPlans, type PastePlan } from "./paste/paste.js";
-import { uniqueNodes } from "../bulk/delete-many.js";
-import { failure } from "../result/failure.js";
+} from "../history/change/change-diff.js";
+import { buildPastePlans, buildPasteManyPlans, type PastePlan } from "./paste/dispatch.js";
+import { uniqueNodes } from "../mutate/delete-many.js";
+import { failure } from "../result.js";
 
 type Clipboard = {
   values: JsonValue[];

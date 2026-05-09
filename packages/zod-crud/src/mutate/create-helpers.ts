@@ -1,7 +1,9 @@
 import * as z from "zod";
 
 import type { JsonDoc, JsonNode, JsonPath, JsonValue, NodeId, OperationResult } from "../types.js";
-import { cloneJson, ensureObjectArrayField, getNode, getPath } from "../document/json-doc.js";
+import { ensureObjectArrayField } from "../document/ensure-object-array-field.js";
+import { getNode, getPath } from "../document/json-doc-access.js";
+import { cloneJson } from "../document/json-doc-clone.js";
 import { objectArrayFieldKeys, schemaAtPath } from "../schema/schema-path.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;

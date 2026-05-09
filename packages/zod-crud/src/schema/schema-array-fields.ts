@@ -1,7 +1,7 @@
 import * as z from "zod";
 
 import type { JsonDoc, JsonNode } from "../types.js";
-import { getNode, getPath } from "../document/json-doc.js";
+import { getNode, getPath } from "../document/json-doc-access.js";
 import {
   type AnySchema,
   objectShape,

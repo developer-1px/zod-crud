@@ -4,11 +4,12 @@ import jsonCrudInstanceSrc from "../../../../packages/zod-crud/src/internal/json
 import jsonMutationsSrc from "../../../../packages/zod-crud/src/mutate/mutations.ts?raw";
 import jsonClipboardSrc from "../../../../packages/zod-crud/src/clipboard/clipboard.ts?raw";
 import jsonHistorySrc from "../../../../packages/zod-crud/src/history/json-history.ts?raw";
-import jsonDeleteManySrc from "../../../../packages/zod-crud/src/bulk/delete-many.ts?raw";
-import jsonPasteSrc from "../../../../packages/zod-crud/src/clipboard/paste/paste.ts?raw";
-import jsonMoveSrc from "../../../../packages/zod-crud/src/bulk/move.ts?raw";
-import jsonSelectionSrc from "../../../../packages/zod-crud/src/bulk/select.ts?raw";
-import jsonDocSrc from "../../../../packages/zod-crud/src/document/json-doc.ts?raw";
+import jsonDeleteManySrc from "../../../../packages/zod-crud/src/mutate/delete-many.ts?raw";
+import jsonPasteSrc from "../../../../packages/zod-crud/src/clipboard/paste/dispatch.ts?raw";
+import jsonMoveSrc from "../../../../packages/zod-crud/src/mutate/move.ts?raw";
+import jsonSelectionSrc from "../../../../packages/zod-crud/src/selection/select.ts?raw";
+import jsonDocSerializationSrc from "../../../../packages/zod-crud/src/document/json-doc-serialization.ts?raw";
+import jsonDocAccessSrc from "../../../../packages/zod-crud/src/document/json-doc-access.ts?raw";
 
 export type SourceKey =
   | "json-crud"
@@ -20,7 +21,8 @@ export type SourceKey =
   | "json-paste"
   | "json-move"
   | "json-selection"
-  | "json-doc";
+  | "json-doc-serialization"
+  | "json-doc-access";
 
 export const sourceMap: Record<SourceKey, { filename: string; source: string }> = {
   "json-crud": { filename: "json-crud.ts", source: jsonCrudSrc },
@@ -28,9 +30,10 @@ export const sourceMap: Record<SourceKey, { filename: string; source: string }> 
   "json-mutations": { filename: "mutate/mutations.ts", source: jsonMutationsSrc },
   "json-clipboard": { filename: "clipboard/clipboard.ts", source: jsonClipboardSrc },
   "json-history": { filename: "history/json-history.ts", source: jsonHistorySrc },
-  "json-delete-many": { filename: "bulk/delete-many.ts", source: jsonDeleteManySrc },
-  "json-paste": { filename: "clipboard/paste/paste.ts", source: jsonPasteSrc },
-  "json-move": { filename: "bulk/move.ts", source: jsonMoveSrc },
-  "json-selection": { filename: "bulk/select.ts", source: jsonSelectionSrc },
-  "json-doc": { filename: "document/json-doc.ts", source: jsonDocSrc },
+  "json-delete-many": { filename: "mutate/delete-many.ts", source: jsonDeleteManySrc },
+  "json-paste": { filename: "clipboard/paste/dispatch.ts", source: jsonPasteSrc },
+  "json-move": { filename: "mutate/move.ts", source: jsonMoveSrc },
+  "json-selection": { filename: "selection/select.ts", source: jsonSelectionSrc },
+  "json-doc-serialization": { filename: "document/json-doc-serialization.ts", source: jsonDocSerializationSrc },
+  "json-doc-access": { filename: "document/json-doc-access.ts", source: jsonDocAccessSrc },
 };

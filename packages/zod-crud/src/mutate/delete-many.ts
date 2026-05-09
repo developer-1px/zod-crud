@@ -8,19 +8,17 @@ import type {
   NodeId,
   OperationResult,
 } from "../types.js";
-import {
-  cloneDoc,
-  deserialize,
-  getPath,
-  removeSubtree,
-} from "../document/json-doc.js";
-import { validateAtPath } from "../validation/json-validation.js";
-import { focusAfterSiblingBatchRemoval } from "../focus/delete-many-focus.js";
+import { getPath } from "../document/json-doc-access.js";
+import { cloneDoc } from "../document/json-doc-clone.js";
+import { removeSubtree } from "../document/json-doc-mutations.js";
+import { deserialize } from "../document/json-doc-serialization.js";
+import { validateAtPath } from "../validation.js";
+import { focusAfterSiblingBatchRemoval } from "../mutate/delete-many-focus.js";
 import { sortBySiblingIndexDescending } from "./delete-many-order.js";
-import { changesForDeletedSubtrees } from "../mutate/diff/change-diff.js";
-import { select } from "./select.js";
+import { changesForDeletedSubtrees } from "../history/change/change-diff.js";
+import { select } from "../selection/select.js";
 
-export { uniqueNodes } from "./select.js";
+export { uniqueNodes } from "../selection/select.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 

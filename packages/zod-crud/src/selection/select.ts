@@ -4,7 +4,7 @@ import type {
   NodeId,
   OperationResult,
 } from "../types.js";
-import { getNode } from "../document/json-doc.js";
+import { getNode } from "../document/json-doc-access.js";
 
 export type SelectionPlan = {
   ok: true;

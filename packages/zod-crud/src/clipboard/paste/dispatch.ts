@@ -6,15 +6,15 @@ import type {
   NodeId,
   PasteOptions,
 } from "../../types.js";
-import { getNode } from "../../document/json-doc.js";
+import { getNode } from "../../document/json-doc-access.js";
 import { childPastePlans } from "./child-paste.js";
 import { overwritePastePlan } from "./overwrite-paste.js";
-import type { PastePlan } from "./paste-plan.js";
-import { childPasteManyPlans } from "./paste-many.js";
+import type { PastePlan } from "./plan.js";
+import { childPasteManyPlans } from "./many.js";
 import { selfSiblingPastePlans } from "./self-sibling-paste.js";
 import { jsonNodeTypeOf } from "../../document/json-doc-values.js";
 
-export type { PastePlan } from "./paste-plan.js";
+export type { PastePlan } from "./plan.js";
 
 export function buildPastePlans({
   doc,

@@ -5,9 +5,9 @@ import type {
   NodeId,
   OperationResult,
 } from "../types.js";
-import { cloneDoc } from "../document/json-doc.js";
-import { successResult } from "../result/operation-result.js";
-import { invertChanges } from "../mutate/diff/change-diff.js";
+import { cloneDoc } from "../document/json-doc-clone.js";
+import { successResult } from "../result.js";
+import { invertChanges } from "../history/change/change-diff.js";
 
 export type HistoryEntry = {
   doc: JsonDoc;

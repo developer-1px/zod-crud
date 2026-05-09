@@ -1,8 +1,5 @@
-import {
-  formatPath,
-  hasOwn,
-  isJsonObject,
-} from "../document/json-doc.js";
+import { formatPath } from "../document/json-doc-format.js";
+import { hasOwn, isJsonObject } from "../document/json-doc-values.js";
 import type { JsonPath, JsonValue } from "../types.js";
 
 export function sameJson(left: JsonValue, right: JsonValue): boolean {
