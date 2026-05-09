@@ -34,6 +34,10 @@ import { successResult } from "../result.js";
 import { failure } from "../result.js";
 import { walk as walkDoc } from "../read/walk.js";
 import { findAll as findAllDoc } from "../read/find-all.js";
+import { invertChanges as invertChangesImpl } from "../history/change/change-inversion.js";
+import { diffDocs } from "../history/diff-doc.js";
+import { applyChangesToDoc } from "../history/apply-changes.js";
+import { createLockedRegion } from "../mutate/locked-region.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
@@ -55,6 +59,7 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   let nextNodeIndex = maxNodeIndex(doc) + 1;
   const listeners = new Set<ChangeListener>();
   let savedDoc: JsonDoc = cloneDoc(doc);
+  const lockedRegion = createLockedRegion(() => doc);
 
   const validation = validateDocument(schema, doc);
 
@@ -113,7 +118,7 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     ...(options.focusFilter && { focusFilter: options.focusFilter }),
   });
 
-  const { copy, copyMany, canCopyMany, cut, cutMany, canCutMany, paste, canPaste } = createClipboard({
+  const clipboard = createClipboard({
     schema,
     childKeys,
     getDoc: () => doc,
@@ -127,6 +132,13 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     commit,
     ...(options.focusFilter && { focusFilter: options.focusFilter }),
   });
+  const { copy, copyMany, canCopyMany, cut, cutMany, canCutMany } = clipboard;
+  function paste(targetId: NodeId, options?: PasteOptions): OperationResult {
+    return lockedRegion.guard([targetId]) ?? clipboard.paste(targetId, options);
+  }
+  function canPaste(targetId: NodeId, options?: PasteOptions): OperationResult {
+    return lockedRegion.guard([targetId]) ?? clipboard.canPaste(targetId, options);
+  }
 
   function snapshot(): JsonDoc {
     return cloneDoc(doc);
@@ -238,6 +250,17 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     focusNodeId?: NodeId,
     focusNodeIds?: NodeId[],
   ): OperationResult {
+    for (const change of changes) {
+      if (lockedRegion.isLocked(change.nodeId)) {
+        return {
+          ok: false,
+          code: "locked_region",
+          reason: `Cannot mutate node ${change.nodeId}: it is in a locked region.`,
+          nodeId: change.nodeId,
+        };
+      }
+    }
+
     const validation = validateDocument(schema, next);
 
     if (!validation.ok) {
@@ -251,7 +274,17 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return result;
   }
 
-  function validateOnly(next: JsonDoc): OperationResult {
+  function validateOnly(next: JsonDoc, changes: JsonChange[] = []): OperationResult {
+    for (const change of changes) {
+      if (lockedRegion.isLocked(change.nodeId)) {
+        return {
+          ok: false,
+          code: "locked_region",
+          reason: `Cannot mutate node ${change.nodeId}: it is in a locked region.`,
+          nodeId: change.nodeId,
+        };
+      }
+    }
     const validation = validateDocument(schema, next);
     return validation.ok ? { ok: true } : validation;
   }
@@ -315,11 +348,25 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   function split(_nodeId: NodeId, _at: number): OperationResult { return notImplemented("split"); }
   function join(_nodeId: NodeId, _withId: NodeId): OperationResult { return notImplemented("join"); }
 
-  function applyChanges(_changes: JsonChange[]): OperationResult {
-    return notImplemented("applyChanges");
+  function applyChanges(changes: JsonChange[]): OperationResult {
+    if (changes.length === 0) return { ok: true };
+    const result = applyChangesToDoc(doc, changes);
+    if (!result.ok) {
+      return {
+        ok: false,
+        code: "change_conflict",
+        reason: result.reason,
+        nodeId: result.conflict,
+      };
+    }
+    return commitIfValid(result.next, changes);
   }
-  function invertChangesStub(_changes: JsonChange[]): JsonChange[] { return []; }
-  function diff(_other: JsonDoc): JsonChange[] { return []; }
+  function invertChangesPublic(changes: JsonChange[]): JsonChange[] {
+    return invertChangesImpl(changes);
+  }
+  function diff(other: JsonDoc): JsonChange[] {
+    return diffDocs(doc, other);
+  }
 
   function markClean(): void {
     savedDoc = cloneDoc(doc);
@@ -334,9 +381,19 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   function insertableKeys(_parentId: NodeId): string[] { return []; }
   function insertableTypes(_parentId: NodeId, _key?: string): JsonNodeType[] { return []; }
 
-  function lock(_nodeId: NodeId): void { /* stub */ }
-  function unlock(_nodeId: NodeId): void { /* stub */ }
-  function isLocked(_nodeId: NodeId): boolean { return false; }
+  const { lock, unlock, isLocked } = lockedRegion;
+
+  function locked<F extends (...args: never[]) => OperationResult>(
+    targetIdsFromArgs: (...args: Parameters<F>) => ReadonlyArray<NodeId | undefined>,
+    fn: F,
+  ): F {
+    return ((...args: Parameters<F>) => {
+      return lockedRegion.guard(targetIdsFromArgs(...args)) ?? fn(...args);
+    }) as F;
+  }
+
+  const guardSingle = (id: NodeId) => [id];
+  const guardMany = (ids: NodeId[]) => ids;
 
   return {
     snapshot,
@@ -347,28 +404,28 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     findAll: findAllHere,
     walk: walkHere,
     select: selectHere,
-    create,
-    canCreate,
-    insertAfter,
-    canInsertAfter,
-    insertBefore,
-    canInsertBefore,
-    appendChild,
-    canAppendChild,
-    update,
-    canUpdate,
-    rename,
-    canRename,
-    delete: deleteNode,
-    canDelete,
-    deleteMany,
-    canDeleteMany,
-    moveBefore,
-    canMoveBefore,
-    moveAfter,
-    canMoveAfter,
-    moveInto,
-    canMoveInto,
+    create: locked((parentId) => [parentId], create),
+    canCreate: locked((parentId) => [parentId], canCreate),
+    insertAfter: locked((siblingId) => [siblingId], insertAfter),
+    canInsertAfter: locked((siblingId) => [siblingId], canInsertAfter),
+    insertBefore: locked((siblingId) => [siblingId], insertBefore),
+    canInsertBefore: locked((siblingId) => [siblingId], canInsertBefore),
+    appendChild: locked((parentId) => [parentId], appendChild),
+    canAppendChild: locked((parentId) => [parentId], canAppendChild),
+    update: locked(guardSingle, update),
+    canUpdate: locked(guardSingle, canUpdate),
+    rename: locked(guardSingle, rename),
+    canRename: locked(guardSingle, canRename),
+    delete: locked(guardSingle, deleteNode),
+    canDelete: locked(guardSingle, canDelete),
+    deleteMany: locked(guardMany, deleteMany),
+    canDeleteMany: locked(guardMany, canDeleteMany),
+    moveBefore: locked((ids, sib) => [...ids, sib], moveBefore),
+    canMoveBefore: locked((ids, sib) => [...ids, sib], canMoveBefore),
+    moveAfter: locked((ids, sib) => [...ids, sib], moveAfter),
+    canMoveAfter: locked((ids, sib) => [...ids, sib], canMoveAfter),
+    moveInto: locked((ids, parentId) => [...ids, parentId], moveInto),
+    canMoveInto: locked((ids, parentId) => [...ids, parentId], canMoveInto),
     transact,
     wrap,
     canWrap: (id: NodeId, key: string) => notImplemented("canWrap"),
@@ -385,9 +442,9 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     copy,
     copyMany,
     canCopyMany,
-    cut,
-    cutMany,
-    canCutMany,
+    cut: locked(guardSingle, cut),
+    cutMany: locked(guardMany, cutMany),
+    canCutMany: locked(guardMany, canCutMany),
     paste,
     canPaste,
     undo,
@@ -396,7 +453,7 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     canRedo,
     subscribe,
     applyChanges,
-    invertChanges: invertChangesStub,
+    invertChanges: invertChangesPublic,
     diff,
     markClean,
     isDirty,

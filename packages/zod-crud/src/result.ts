@@ -9,11 +9,13 @@ import type {
 } from "./document/json-doc-types.js";
 
 export type OperationFailureCode =
+  | "change_conflict"
   | "clipboard_empty"
   | "duplicate_key"
   | "empty_selection"
   | "exception"
   | "invalid_target"
+  | "locked_region"
   | "missing_default"
   | "not_implemented"
   | "root_operation"
