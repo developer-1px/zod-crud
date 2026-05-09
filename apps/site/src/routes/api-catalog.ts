@@ -68,7 +68,7 @@ type ParsedMethod = { name: string; signature: string; axis: string };
 
 function parseJsonCrudMethods(): ParsedMethod[] {
   const src = getPackageSource("json-crud.ts").source;
-  const typeMatch = /export type JsonCrud<[^=]*?>\s*=\s*\{([\s\S]*?)\n\};/.exec(src);
+  const typeMatch = /export type JsonCrud<[\s\S]*?>\s*=\s*\{([\s\S]*?)\n\};/.exec(src);
   if (!typeMatch) {
     throw new Error("api-catalog: cannot locate `export type JsonCrud<...> = { ... };` in json-crud.ts");
   }
