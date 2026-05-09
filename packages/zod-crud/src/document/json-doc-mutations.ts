@@ -1,5 +1,10 @@
 import type { JsonDoc, JsonValue, NodeId } from "../types.js";
-import { createSubtree, findChildByKey, getNode } from "./json-doc.js";
+import { findChildByKey, getNode } from "./json-doc-access.js";
+import {
+  collectDescendants,
+  normalizeArrayKeys,
+} from "./json-doc-mutation-helpers.js";
+import { createSubtree } from "./json-doc-serialization.js";
 
 export function insertChild(
   doc: JsonDoc,
@@ -102,52 +107,4 @@ export function removeSubtree(doc: JsonDoc, nodeId: NodeId): void {
   if (parent.type === "array") {
     normalizeArrayKeys(doc, parent.id);
   }
-}
-
-export function ensureObjectArrayField(
-  doc: JsonDoc,
-  objectId: NodeId,
-  key: string,
-  allocateNodeId?: () => NodeId,
-): NodeId {
-  const objectNode = getNode(doc, objectId);
-
-  if (objectNode.type !== "object") {
-    throw new Error("Target node is not an object.");
-  }
-
-  const existing = findChildByKey(doc, objectId, key);
-
-  if (existing !== null) {
-    if (existing.type !== "array") {
-      throw new Error(`Existing ${key} field is not an array.`);
-    }
-
-    return existing.id;
-  }
-
-  return insertChild(doc, objectId, key, [], allocateNodeId);
-}
-
-function collectDescendants(doc: JsonDoc, nodeId: NodeId): NodeId[] {
-  const node = getNode(doc, nodeId);
-  const descendants: NodeId[] = [];
-
-  for (const childId of node.children) {
-    descendants.push(childId, ...collectDescendants(doc, childId));
-  }
-
-  return descendants;
-}
-
-function normalizeArrayKeys(doc: JsonDoc, arrayId: NodeId): void {
-  const arrayNode = getNode(doc, arrayId);
-
-  if (arrayNode.type !== "array") {
-    return;
-  }
-
-  arrayNode.children.forEach((childId, index) => {
-    getNode(doc, childId).key = index;
-  });
 }

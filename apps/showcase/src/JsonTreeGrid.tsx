@@ -1,6 +1,5 @@
 import type {
   JsonDoc,
-  JsonNode,
   NodeId,
 } from "zod-crud";
 
@@ -8,25 +7,13 @@ import type {
   GridColumn,
   GridRow,
 } from "./grid-rows.js";
-import {
-  eventSelectionMode,
-  type SelectionMode,
-} from "./selection.js";
-import { type EnumValueOption } from "./schema-options.js";
-import { EnumValueBadge, InlineValueEditor } from "./InlineValueEditor.js";
+import { createTreeGridKeyDown } from "./createTreeGridKeyDown.js";
+import { JsonTreeGridRow } from "./JsonTreeGridRow.js";
+import type { InlineEditState, InlineStatus } from "./JsonTreeGridTypes.js";
+import type { SelectionMode } from "./selection.js";
+import type { EnumValueOption } from "./schema-options.js";
 
-export type InlineEditState = {
-  nodeId: NodeId;
-  draft: string;
-  invalid: boolean;
-  options: EnumValueOption[];
-};
-
-export type InlineStatus = {
-  nodeId: NodeId;
-  kind: "idle" | "valid" | "invalid";
-  message: string;
-};
+export type { InlineEditState, InlineStatus } from "./JsonTreeGridTypes.js";
 
 export function JsonTreeGrid({
   doc,
@@ -69,80 +56,18 @@ export function JsonTreeGrid({
   const activeRowId = activeRow?.id ?? selectedId;
   const activeNode = doc.nodes[activeRowId];
 
-  function move(delta: number, mode: SelectionMode = "single") {
-    const nextRow = rows[clamp(visibleIndex + delta, 0, rows.length - 1)];
-
-    if (nextRow !== undefined) {
-      onMove(nextRow.id, mode);
-    }
-  }
-
-  function moveToParent() {
-    const parentId = activeNode?.parentId;
-
-    if (parentId !== null && parentId !== undefined && doc.nodes[parentId] !== undefined) {
-      onMove(parentId);
-    }
-  }
-
-  function moveToFirstChild() {
-    const firstChildId = activeNode?.children[0];
-
-    if (firstChildId !== undefined && doc.nodes[firstChildId] !== undefined) {
-      onMove(firstChildId);
-    }
-  }
-
-  function onKeyDown(event: React.KeyboardEvent<HTMLDivElement>) {
-    const commandKey = event.metaKey || event.ctrlKey;
-
-    if (event.key === "ArrowDown") {
-      event.preventDefault();
-      move(1, event.shiftKey ? "range" : "single");
-      return;
-    }
-
-    if (event.key === "ArrowUp") {
-      event.preventDefault();
-      move(-1, event.shiftKey ? "range" : "single");
-      return;
-    }
-
-    if (event.key === "ArrowLeft") {
-      event.preventDefault();
-
-      if (activeRow?.expandable === true && activeRow.expanded) {
-        onExpand(activeRow.id, false);
-      } else {
-        moveToParent();
-      }
-
-      return;
-    }
-
-    if (event.key === "ArrowRight") {
-      event.preventDefault();
-
-      if (activeRow?.expandable === true && !activeRow.expanded) {
-        onExpand(activeRow.id, true);
-      } else {
-        moveToFirstChild();
-      }
-
-      return;
-    }
-
-    if (commandKey && event.key === " ") {
-      event.preventDefault();
-      onSelect(activeRowId, "toggle");
-      return;
-    }
-
-    if (!commandKey && event.key === "Enter") {
-      event.preventDefault();
-      onStartValueEdit(activeRowId);
-    }
-  }
+  const onKeyDown = createTreeGridKeyDown({
+    activeNode,
+    activeRow,
+    activeRowId,
+    doc,
+    rows,
+    visibleIndex,
+    onExpand,
+    onMove,
+    onSelect,
+    onStartValueEdit,
+  });
 
   return (
     <div
@@ -163,94 +88,26 @@ export function JsonTreeGrid({
         ))}
       </div>
 
-      {rows.map((row, rowIndex) => {
-        const node = doc.nodes[row.id];
-        const changeType = changedRows.get(row.id);
-        const isActive = selectedId === row.id;
-        const valueOptions = valueOptionsByNodeId.get(row.id) ?? [];
-
-        return (
-          <div key={row.id} className="grid-row-block">
-            <div
-              role="row"
-              aria-expanded={row.expandable ? row.expanded : undefined}
-              aria-level={row.depth + 1}
-              aria-rowindex={rowIndex + 2}
-              aria-selected={selectedIds.has(row.id)}
-              className={[
-                "grid-row",
-                selectedIds.has(row.id) ? "is-selected" : "",
-                isActive ? "is-active-row" : "",
-                changeType === undefined ? "" : `change-${changeType}`,
-              ].filter(Boolean).join(" ")}
-              onClick={(event) => {
-                (event.currentTarget.closest(".treegrid") as HTMLElement | null)?.focus();
-                onSelect(row.id, eventSelectionMode(event));
-              }}
-              onDoubleClick={(event) => {
-                event.preventDefault();
-
-                if (row.expandable) {
-                  onExpand(row.id, !row.expanded);
-                }
-              }}
-            >
-              {columns.map((column, columnIndex) => (
-                <div
-                  key={column.id}
-                  role={columnIndex === 0 ? "rowheader" : "gridcell"}
-                  aria-colindex={columnIndex + 1}
-                  className="grid-cell"
-                >
-                  {column.id === "path" ? (
-                    <span className="path-cell" style={{ paddingLeft: `${row.depth * 18}px` }}>
-                      <button
-                        type="button"
-                        className="twisty-button"
-                        aria-label={`${row.expanded ? "Collapse" : "Expand"} ${row.path}`}
-                        disabled={!row.expandable}
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onExpand(row.id, !row.expanded);
-                        }}
-                      >
-                        {row.expandable ? row.expanded ? "v" : ">" : ""}
-                      </button>
-                      <span>{row.path}</span>
-                    </span>
-                  ) : column.id === "key" ? (
-                    row.keyLabel
-                  ) : column.id === "type" ? (
-                    row.type
-                  ) : inlineEdit?.nodeId === row.id && node !== undefined ? (
-                    <InlineValueEditor
-                      node={node}
-                      path={row.path}
-                      state={inlineEdit}
-                      onDraft={onInlineValueDraft}
-                      onCommit={onCommitValueEdit}
-                      onCancel={onCancelValueEdit}
-                    />
-                  ) : valueOptions.length > 0 && node?.value !== undefined ? (
-                    <EnumValueBadge value={node.value} />
-                  ) : (
-                    row.value
-                  )}
-                </div>
-              ))}
-            </div>
-            {inlineStatus?.nodeId === row.id ? (
-              <div className={`inline-status-row is-${inlineStatus.kind}`}>
-                <span>{inlineStatus.message}</span>
-              </div>
-            ) : null}
-          </div>
-        );
-      })}
+      {rows.map((row, rowIndex) => (
+        <JsonTreeGridRow
+          key={row.id}
+          changedRows={changedRows}
+          columns={columns}
+          doc={doc}
+          inlineEdit={inlineEdit}
+          inlineStatus={inlineStatus}
+          row={row}
+          rowIndex={rowIndex}
+          selectedId={selectedId}
+          selectedIds={selectedIds}
+          valueOptionsByNodeId={valueOptionsByNodeId}
+          onCancelValueEdit={onCancelValueEdit}
+          onCommitValueEdit={onCommitValueEdit}
+          onExpand={onExpand}
+          onInlineValueDraft={onInlineValueDraft}
+          onSelect={onSelect}
+        />
+      ))}
     </div>
   );
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
 }

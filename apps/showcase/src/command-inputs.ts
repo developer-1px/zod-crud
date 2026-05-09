@@ -1,46 +1,26 @@
-import type {
-  JsonKey,
-  JsonValue,
-  OperationResult,
-  PasteMode,
-} from "zod-crud";
-
 import type { ApiId } from "./api-catalog.js";
+import {
+  parseCreateKey,
+  parseKey,
+  parseOptionalJson,
+  parsePasteOptions,
+  parsePrimitiveDraft,
+} from "./command-input-parsers.js";
+import type {
+  CommandDrafts,
+  PreparedCommandResult,
+} from "./command-input-types.js";
 
-export type UpdatePreview =
-  | { state: "idle"; message: string }
-  | { state: "valid"; value: JsonValue; result: OperationResult }
-  | { state: "invalid"; message: string; result?: OperationResult };
-
-export type CommandDrafts = {
-  findKeyDraft: string;
-  jsonValueDraft: string;
-  keyDraft: string;
-  pasteIndexDraft: string;
-  pasteMode: PasteMode;
-  updatePreview: UpdatePreview;
-};
-
-export type OptionalJsonInput =
-  | { omitted: true }
-  | { omitted: false; value: JsonValue };
-
-export type PreparedCommand = {
-  api: ApiId;
-  createKey?: string | number;
-  findKey?: JsonKey;
-  jsonValue?: OptionalJsonInput;
-  pasteOptions?: {
-    mode: PasteMode;
-    index?: number;
-  };
-  renameKey?: string;
-  updateValue?: JsonValue;
-};
-
-export type PreparedCommandResult =
-  | { ok: true; command: PreparedCommand }
-  | { ok: false; output: OperationResult };
+export type {
+  CommandDrafts,
+  OptionalJsonInput,
+  PreparedCommand,
+  PreparedCommandResult,
+  UpdatePreview,
+} from "./command-input-types.js";
+export {
+  parsePrimitiveDraft,
+} from "./command-input-parsers.js";
 
 export function prepareUserCommand(api: ApiId, drafts: CommandDrafts): PreparedCommandResult {
   try {
@@ -89,79 +69,4 @@ export function prepareUserCommand(api: ApiId, drafts: CommandDrafts): PreparedC
       },
     };
   }
-}
-
-export function parsePrimitiveDraft(
-  node: { type: string },
-  draft: string,
-): { ok: true; value: JsonValue } | { ok: false; reason: string } {
-  if (node.type === "string") {
-    return { ok: true, value: draft };
-  }
-
-  if (node.type === "number") {
-    const value = Number(draft);
-
-    return Number.isFinite(value)
-      ? { ok: true, value }
-      : { ok: false, reason: "Number value must be finite." };
-  }
-
-  if (node.type === "boolean") {
-    if (draft === "true") {
-      return { ok: true, value: true };
-    }
-
-    if (draft === "false") {
-      return { ok: true, value: false };
-    }
-
-    return { ok: false, reason: "Boolean value must be true or false." };
-  }
-
-  if (draft === "" || draft === "null") {
-    return { ok: true, value: null };
-  }
-
-  return { ok: false, reason: "Null value must stay null." };
-}
-
-function parseOptionalJson(draft: string): OptionalJsonInput {
-  if (draft.trim() === "") {
-    return { omitted: true };
-  }
-
-  return {
-    omitted: false,
-    value: JSON.parse(draft) as JsonValue,
-  };
-}
-
-function parsePasteOptions(mode: PasteMode, indexDraft: string): { mode: PasteMode; index?: number } {
-  const index = indexDraft.trim() === "" ? undefined : Number(indexDraft);
-
-  return {
-    mode,
-    ...(index === undefined || !Number.isInteger(index) ? {} : { index }),
-  };
-}
-
-function parseKey(value: string): JsonKey {
-  const trimmed = value.trim();
-
-  if (/^-?\d+$/.test(trimmed)) {
-    return Number(trimmed);
-  }
-
-  return value;
-}
-
-function parseCreateKey(value: string): string | number {
-  const key = parseKey(value);
-
-  if (key === null) {
-    throw new Error("Create key cannot be null.");
-  }
-
-  return key;
 }

@@ -1,63 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { codeToHtml } from "shiki";
-import { parse } from "@babel/parser";
-import type { Statement } from "@babel/types";
 
-const langFromFilename = (f: string): string => {
-  if (f.endsWith(".tsx")) return "tsx";
-  if (f.endsWith(".ts")) return "ts";
-  if (f.endsWith(".jsx")) return "jsx";
-  if (f.endsWith(".js")) return "js";
-  if (f.endsWith(".json")) return "json";
-  if (f.endsWith(".md")) return "md";
-  return "tsx";
-};
-
-/**
- * AST 기반 highlight set — top-level export 선언 라인 (0-indexed).
- */
-const computeHighlightSet = (source: string, symbols: string[]): Set<number> => {
-  const out = new Set<number>();
-  if (symbols.length === 0) return out;
-  let ast;
-  try {
-    ast = parse(source, {
-      sourceType: "module",
-      plugins: ["typescript", "jsx"],
-      errorRecovery: true,
-    });
-  } catch {
-    return out;
-  }
-  const wanted = new Set(symbols);
-  for (const node of ast.program.body as Statement[]) {
-    if (node.type !== "ExportNamedDeclaration" && node.type !== "ExportDefaultDeclaration") continue;
-    if (!node.loc) continue;
-    const startLine = node.loc.start.line - 1;
-    const endLine = node.loc.end.line - 1;
-    let matches = false;
-    if (node.type === "ExportNamedDeclaration") {
-      const d = node.declaration;
-      if (d) {
-        if ("id" in d && d.id && d.id.type === "Identifier" && wanted.has(d.id.name)) matches = true;
-        if (d.type === "VariableDeclaration") {
-          for (const v of d.declarations) {
-            if (v.id.type === "Identifier" && wanted.has(v.id.name)) matches = true;
-          }
-        }
-      }
-      for (const s of node.specifiers) {
-        if (s.type !== "ExportSpecifier") continue;
-        const exportedName = s.exported.type === "Identifier" ? s.exported.name : s.exported.value;
-        if (wanted.has(exportedName)) matches = true;
-      }
-    }
-    if (matches) {
-      for (let i = startLine; i <= endLine; i++) out.add(i);
-    }
-  }
-  return out;
-};
+import { computeHighlightSet } from "./computeHighlightSet.js";
+import { FallbackCode } from "./FallbackCode.js";
+import { langFromFilename } from "./langFromFilename.js";
 
 export function HighlightedCode({
   source,
@@ -102,17 +48,5 @@ export function HighlightedCode({
       />
     );
   }
-  const lines = source.split("\n");
-  return (
-    <pre className="flex-1 p-4 text-xs leading-relaxed text-stone-100 font-mono md:overflow-auto whitespace-pre break-normal">
-      <code>
-        {lines.map((line, i) => (
-          <span key={i} className="block">
-            <span className="inline-block w-8 pr-3 text-right text-stone-600 select-none">{i + 1}</span>
-            {line}
-          </span>
-        ))}
-      </code>
-    </pre>
-  );
+  return <FallbackCode source={source} />;
 }

@@ -1,68 +1,15 @@
-import {
-  deserialize,
-  getPath,
-  serialize,
-  type JsonCrud,
-  type JsonDoc,
-  type JsonValue,
-  type NodeId,
-} from "zod-crud";
-
 import type { PreparedCommand } from "./command-inputs.js";
+import type { PublicCallContext } from "./PublicCallContext.js";
+import { executeReadPublicCall } from "./public-read-calls.js";
 
-export type PublicCallContext = {
-  createEditor: () => {
-    entity: string;
-    snapshot: JsonDoc;
-  };
-  editor: JsonCrud<JsonValue>;
-  jsonValue: JsonValue;
-  targetId: NodeId;
-  targetIds: NodeId[];
-  toggleSubscribe: () => { ok: true; subscribed: boolean; events: number };
-};
+export type { PublicCallContext } from "./PublicCallContext.js";
 
 export function executePublicCall(command: PreparedCommand, context: PublicCallContext): unknown {
   const { editor, targetId, targetIds } = context;
+  const readCall = executeReadPublicCall(command, context);
 
-  if (command.api === "createJsonCrud") {
-    return { ok: true, ...context.createEditor() };
-  }
-
-  if (command.api === "serialize") {
-    return serialize(context.jsonValue);
-  }
-
-  if (command.api === "deserialize") {
-    return deserialize(editor.snapshot(), targetId);
-  }
-
-  if (command.api === "getPath") {
-    return getPath(editor.snapshot(), targetId);
-  }
-
-  if (command.api === "snapshot") {
-    return editor.snapshot();
-  }
-
-  if (command.api === "toJson") {
-    return editor.toJson();
-  }
-
-  if (command.api === "read") {
-    return editor.read(targetId);
-  }
-
-  if (command.api === "pathOf") {
-    return editor.pathOf(targetId);
-  }
-
-  if (command.api === "find") {
-    return {
-      parentId: targetId,
-      key: command.findKey,
-      nodeId: editor.find(targetId, command.findKey ?? ""),
-    };
+  if (readCall.handled) {
+    return readCall.output;
   }
 
   if (command.api === "create") {

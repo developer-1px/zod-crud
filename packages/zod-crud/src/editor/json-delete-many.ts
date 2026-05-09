@@ -17,6 +17,8 @@ import {
   removeSubtree,
 } from "../document/json-doc.js";
 import { validateAtPath } from "../schema/json-validation.js";
+import { focusAfterSiblingBatchRemoval } from "./delete-many-focus.js";
+import { sortBySiblingIndexDescending } from "./delete-many-order.js";
 import { changesForDeletedSubtrees } from "./json-change-diff.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
@@ -103,43 +105,4 @@ export function planDeleteMany<T extends JsonValue>(args: {
     focusNodeId,
     ...(nodeId === undefined ? {} : { nodeId }),
   };
-}
-
-function sortBySiblingIndexDescending(doc: JsonDoc, parentId: NodeId, nodes: JsonNode[]): JsonNode[] {
-  const parent = getNode(doc, parentId);
-  const siblingIndex = new Map(parent.children.map((childId, index) => [childId, index]));
-
-  return [...nodes].sort((left, right) =>
-    (siblingIndex.get(right.id) ?? -1) - (siblingIndex.get(left.id) ?? -1),
-  );
-}
-
-function focusAfterSiblingBatchRemoval(
-  before: JsonDoc,
-  after: JsonDoc,
-  parentId: NodeId,
-  deletedNodeIds: NodeId[],
-  focusFilter?: FocusFilter,
-): NodeId {
-  const parent = before.nodes[parentId];
-  const deleted = new Set(deletedNodeIds);
-  const deletedIndexes = parent?.children
-    .map((childId, index) => deleted.has(childId) ? index : -1)
-    .filter((index) => index >= 0) ?? [];
-
-  if (deletedIndexes.length === 0) {
-    return after.nodes[parentId] === undefined ? after.rootId : parentId;
-  }
-
-  const minIndex = Math.min(...deletedIndexes);
-  const maxIndex = Math.max(...deletedIndexes);
-  const nextId = parent?.children.slice(maxIndex + 1).find((childId) => !deleted.has(childId));
-  const previousId = parent?.children.slice(0, minIndex).reverse().find((childId) => !deleted.has(childId));
-  const candidates = [nextId, previousId, parentId, after.rootId];
-
-  return candidates.find((id): id is NodeId =>
-    id !== undefined &&
-    after.nodes[id] !== undefined &&
-    (focusFilter?.(after, id) ?? true)
-  ) ?? after.rootId;
 }

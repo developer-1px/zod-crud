@@ -3,7 +3,7 @@ import * as z from "zod";
 import type { JsonDoc, JsonValue, NodeId } from "../types.js";
 import { cloneDoc, ensureObjectArrayField, getNode, insertChild } from "../document/json-doc.js";
 import { objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
-import type { PasteCandidate } from "./json-paste.js";
+import type { PasteCandidate } from "./json-paste-candidate.js";
 
 export function childPasteManyCandidates(
   doc: JsonDoc,

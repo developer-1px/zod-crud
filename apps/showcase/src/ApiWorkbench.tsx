@@ -1,32 +1,16 @@
-import type {
-  JsonNode,
-  JsonValue,
-  NodeId,
-  PasteMode,
-} from "zod-crud";
-
 import {
   apiCallLabel,
-  type ApiId,
 } from "./api-catalog.js";
-import {
-  commandByApi,
-  commandInputLabel,
-} from "./command-matrix.js";
-import { type UpdatePreview } from "./command-inputs.js";
+import type { ApiWorkbenchProps } from "./ApiWorkbenchProps.js";
 import { EntityRegistry } from "./EntityRegistry.js";
 import { entityDefinitions } from "./entities.js";
-import {
-  type EnumValueOption,
-} from "./schema-options.js";
+import { CommandDocs } from "./CommandDocs.js";
 import { stringify } from "./playground-helpers.js";
 import { ApiInputs } from "./ApiInputs.js";
+import { RunResult } from "./RunResult.js";
+import { SelectionSummary } from "./SelectionSummary.js";
 
-export type ApiRun = {
-  api: ApiId;
-  call: string;
-  output: unknown;
-};
+export type { ApiRun } from "./ApiRun.js";
 
 export function ApiWorkbench({
   activeApi,
@@ -53,32 +37,7 @@ export function ApiWorkbench({
   onPasteMode,
   onRun,
   onValueDraft,
-}: {
-  activeApi: ApiId;
-  activeEntityId: string;
-  keyDraft: string;
-  findKeyDraft: string;
-  jsonValue: JsonValue;
-  jsonValueDraft: string;
-  lastRun: ApiRun;
-  pasteIndexDraft: string;
-  pasteMode: PasteMode;
-  selectedIds: NodeId[];
-  selectedNode: JsonNode | undefined;
-  selectedPath: string;
-  subscriptionEvents: number;
-  updatePreview: UpdatePreview;
-  valueDraft: string;
-  valueOptions: EnumValueOption[];
-  onEntitySelect: (entityId: string) => void;
-  onFindKeyDraft: (value: string) => void;
-  onJsonValueDraft: (value: string) => void;
-  onKeyDraft: (value: string) => void;
-  onPasteIndexDraft: (value: string) => void;
-  onPasteMode: (value: PasteMode) => void;
-  onRun: () => void;
-  onValueDraft: (value: string) => void;
-}) {
+}: ApiWorkbenchProps) {
   return (
     <div className="api-workbench">
       <section className="workbench-section">
@@ -92,13 +51,11 @@ export function ApiWorkbench({
 
       <section className="workbench-section">
         <h3>Selection</h3>
-        <pre className="mini-json">{stringify({
-          activeId: selectedNode?.id ?? null,
-          path: selectedPath,
-          type: selectedNode?.type ?? "missing",
-          key: selectedNode?.key ?? null,
-          selectedIds,
-        })}</pre>
+        <SelectionSummary
+          selectedIds={selectedIds}
+          selectedNode={selectedNode}
+          selectedPath={selectedPath}
+        />
       </section>
 
       <section className="workbench-section">
@@ -128,11 +85,7 @@ export function ApiWorkbench({
 
       <section className="workbench-section">
         <h3>Last result</h3>
-        <pre className="json-output">{stringify({
-          api: lastRun.api,
-          call: lastRun.call,
-          output: lastRun.output,
-        })}</pre>
+        <RunResult lastRun={lastRun} />
       </section>
 
       <CommandDocs activeApi={activeApi} subscriptionEvents={subscriptionEvents} />
@@ -142,40 +95,5 @@ export function ApiWorkbench({
         <pre className="json-output">{stringify(jsonValue)}</pre>
       </section>
     </div>
-  );
-}
-
-function CommandDocs({
-  activeApi,
-  subscriptionEvents,
-}: {
-  activeApi: ApiId;
-  subscriptionEvents: number;
-}) {
-  const command = commandByApi(activeApi);
-
-  return (
-    <section className="workbench-section docs-section">
-      <h3>Docs</h3>
-      <dl className="command-docs">
-        <div>
-          <dt>User input</dt>
-          <dd>{commandInputLabel(command.input)}</dd>
-        </div>
-        <div>
-          <dt>Keymap</dt>
-          <dd>{command.keys === "" ? "manual only" : command.keys}</dd>
-        </div>
-        <div>
-          <dt>Public call</dt>
-          <dd><code>{command.call}</code></dd>
-        </div>
-        <div>
-          <dt>Subscription events</dt>
-          <dd>{subscriptionEvents}</dd>
-        </div>
-      </dl>
-      {command.notes === "" ? null : <p className="api-hint">{command.notes}</p>}
-    </section>
   );
 }
