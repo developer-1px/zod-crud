@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react";
 import { SourceTabs } from "../code/SourceTabs";
 import { apiGroups, type ApiId } from "./api-catalog";
-import { sourceMap } from "./source-registry";
+import { getPackageSource } from "./source-registry";
 
 export function ApiReference() {
   const flat = useMemo(() => apiGroups.flatMap((g) => g.apis.map((a) => ({ group: g.title, ...a }))), []);
   const [activeId, setActiveId] = useState<ApiId>("createJsonCrud");
   const active = flat.find((a) => a.id === activeId)!;
   const tabs = active.sources.map((s) => {
-    const meta = sourceMap[s.key];
+    const meta = getPackageSource(s.path);
     return {
-      key: s.key,
+      key: s.path,
       label: meta.filename,
       filename: meta.filename,
       source: meta.source,

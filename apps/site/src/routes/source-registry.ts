@@ -1,39 +1,28 @@
-// SSOT: 라이브러리 패키지 소스 그대로. 문서가 코드보다 뒤처질 수 없다.
-import jsonCrudSrc from "../../../../packages/zod-crud/src/json-crud.ts?raw";
-import jsonCrudInstanceSrc from "../../../../packages/zod-crud/src/internal/json-crud-instance.ts?raw";
-import jsonMutationsSrc from "../../../../packages/zod-crud/src/mutate/mutations.ts?raw";
-import jsonClipboardSrc from "../../../../packages/zod-crud/src/clipboard/clipboard.ts?raw";
-import jsonHistorySrc from "../../../../packages/zod-crud/src/history/json-history.ts?raw";
-import jsonDeleteManySrc from "../../../../packages/zod-crud/src/mutate/delete-many.ts?raw";
-import jsonPasteSrc from "../../../../packages/zod-crud/src/clipboard/paste/dispatch.ts?raw";
-import jsonMoveSrc from "../../../../packages/zod-crud/src/mutate/move.ts?raw";
-import jsonSelectionSrc from "../../../../packages/zod-crud/src/selection/select.ts?raw";
-import jsonDocSerializationSrc from "../../../../packages/zod-crud/src/document/json-doc-serialization.ts?raw";
-import jsonDocAccessSrc from "../../../../packages/zod-crud/src/document/json-doc-access.ts?raw";
+// SSOT: Vite glob이 packages/zod-crud/src/**/*.{ts,tsx} 전체를 자동 수집한다.
+// 새 파일을 추가하거나 옮길 때 이 파일을 손댈 필요가 없다.
 
-export type SourceKey =
-  | "json-crud"
-  | "json-crud-instance"
-  | "json-mutations"
-  | "json-clipboard"
-  | "json-history"
-  | "json-delete-many"
-  | "json-paste"
-  | "json-move"
-  | "json-selection"
-  | "json-doc-serialization"
-  | "json-doc-access";
+const PACKAGE_PREFIX = "../../../../packages/zod-crud/src/";
 
-export const sourceMap: Record<SourceKey, { filename: string; source: string }> = {
-  "json-crud": { filename: "json-crud.ts", source: jsonCrudSrc },
-  "json-crud-instance": { filename: "internal/json-crud-instance.ts", source: jsonCrudInstanceSrc },
-  "json-mutations": { filename: "mutate/mutations.ts", source: jsonMutationsSrc },
-  "json-clipboard": { filename: "clipboard/clipboard.ts", source: jsonClipboardSrc },
-  "json-history": { filename: "history/json-history.ts", source: jsonHistorySrc },
-  "json-delete-many": { filename: "mutate/delete-many.ts", source: jsonDeleteManySrc },
-  "json-paste": { filename: "clipboard/paste/dispatch.ts", source: jsonPasteSrc },
-  "json-move": { filename: "mutate/move.ts", source: jsonMoveSrc },
-  "json-selection": { filename: "selection/select.ts", source: jsonSelectionSrc },
-  "json-doc-serialization": { filename: "document/json-doc-serialization.ts", source: jsonDocSerializationSrc },
-  "json-doc-access": { filename: "document/json-doc-access.ts", source: jsonDocAccessSrc },
-};
+const rawSources = import.meta.glob(
+  "../../../../packages/zod-crud/src/**/*.{ts,tsx}",
+  { eager: true, import: "default", query: "?raw" }
+) as Record<string, string>;
+
+export const packageSources: Record<string, string> = Object.fromEntries(
+  Object.entries(rawSources).map(([key, source]) => [key.slice(PACKAGE_PREFIX.length), source]),
+);
+
+export function getPackageSource(relativePath: string): { filename: string; source: string } {
+  const source = packageSources[relativePath];
+  if (source === undefined) {
+    throw new Error(
+      `source-registry: "${relativePath}" not found in packages/zod-crud/src. ` +
+        `Did the file move? Available: ${Object.keys(packageSources).slice(0, 5).join(", ")}…`,
+    );
+  }
+  return { filename: relativePath, source };
+}
+
+export function listPackagePaths(): string[] {
+  return Object.keys(packageSources).sort();
+}

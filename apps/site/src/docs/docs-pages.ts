@@ -1,21 +1,24 @@
-import advancedMd from "../../../../docs/site/advanced.md?raw";
-import clipboardHistoryMd from "../../../../docs/site/clipboard-history.md?raw";
-import conceptsMd from "../../../../docs/site/concepts.md?raw";
-import examplesMd from "../../../../docs/site/examples.md?raw";
-import gettingStartedMd from "../../../../docs/site/getting-started.md?raw";
-import introMd from "../../../../docs/site/intro.md?raw";
-import operationsMd from "../../../../docs/site/operations.md?raw";
-import schemaSafetyMd from "../../../../docs/site/schema-safety.md?raw";
+// SSOT: docs/site/*.md를 Vite glob으로 자동 수집한다.
+// navLabel/order만 슬러그별로 유지한다.
 
-export type DocsPageSlug =
-  | "intro"
-  | "getting-started"
-  | "concepts"
-  | "schema-safety"
-  | "operations"
-  | "clipboard-history"
-  | "examples"
-  | "advanced";
+const rawDocs = import.meta.glob("../../../../docs/site/*.md", {
+  eager: true,
+  import: "default",
+  query: "?raw",
+}) as Record<string, string>;
+
+const slugMeta = {
+  "intro": { navLabel: "zod-crud 소개", order: 1 },
+  "getting-started": { navLabel: "시작하기", order: 2 },
+  "concepts": { navLabel: "핵심 개념", order: 3 },
+  "schema-safety": { navLabel: "스키마 안전성", order: 4 },
+  "operations": { navLabel: "작업 모델", order: 5 },
+  "clipboard-history": { navLabel: "클립보드와 히스토리", order: 6 },
+  "examples": { navLabel: "예제 읽기", order: 7 },
+  "advanced": { navLabel: "고급 옵션", order: 8 },
+} as const;
+
+export type DocsPageSlug = keyof typeof slugMeta;
 
 export type DocsPage = {
   slug: DocsPageSlug;
@@ -25,64 +28,55 @@ export type DocsPage = {
   markdown: string;
 };
 
-export const docsPages = [
-  {
-    slug: "intro",
-    route: "/docs/intro",
-    navLabel: "zod-crud 소개",
-    order: 1,
-    markdown: introMd,
-  },
-  {
-    slug: "getting-started",
-    route: "/docs/getting-started",
-    navLabel: "시작하기",
-    order: 2,
-    markdown: gettingStartedMd,
-  },
-  {
-    slug: "concepts",
-    route: "/docs/concepts",
-    navLabel: "핵심 개념",
-    order: 3,
-    markdown: conceptsMd,
-  },
-  {
-    slug: "schema-safety",
-    route: "/docs/schema-safety",
-    navLabel: "스키마 안전성",
-    order: 4,
-    markdown: schemaSafetyMd,
-  },
-  {
-    slug: "operations",
-    route: "/docs/operations",
-    navLabel: "작업 모델",
-    order: 5,
-    markdown: operationsMd,
-  },
-  {
-    slug: "clipboard-history",
-    route: "/docs/clipboard-history",
-    navLabel: "클립보드와 히스토리",
-    order: 6,
-    markdown: clipboardHistoryMd,
-  },
-  {
-    slug: "examples",
-    route: "/docs/examples",
-    navLabel: "예제 읽기",
-    order: 7,
-    markdown: examplesMd,
-  },
-  {
-    slug: "advanced",
-    route: "/docs/advanced",
-    navLabel: "고급 옵션",
-    order: 8,
-    markdown: advancedMd,
-  },
-] as const satisfies readonly DocsPage[];
+function slugFromPath(path: string): string {
+  const file = path.split("/").at(-1) ?? path;
+  return file.replace(/\.md$/i, "");
+}
+
+const collected: DocsPage[] = [];
+for (const [path, markdown] of Object.entries(rawDocs)) {
+  const slug = slugFromPath(path);
+  if (slug === "README") continue;
+  if (!(slug in slugMeta)) {
+    throw new Error(`docs-pages: ${path} has no slugMeta entry. Add "${slug}" to slugMeta.`);
+  }
+  const meta = slugMeta[slug as DocsPageSlug];
+  collected.push({
+    slug: slug as DocsPageSlug,
+    route: `/docs/${slug}`,
+    navLabel: meta.navLabel,
+    order: meta.order,
+    markdown,
+  });
+}
+collected.sort((a, b) => a.order - b.order);
+
+// 빌드 타임 검증: 모든 ::source{path="..."}가 실제 파일을 가리키는가
+import { parseMarkdown } from "./markdown.js";
+import { packageSources } from "../routes/source-registry.js";
+{
+  const known = new Set([
+    ...Object.keys(packageSources).map((p) => `packages/zod-crud/src/${p}`),
+  ]);
+  // apps/site 내부 참조도 허용 (기존 패턴 유지)
+  const sitePrefixOK = (p: string) => p.startsWith("apps/site/");
+  const broken: string[] = [];
+  for (const page of collected) {
+    const blocks = parseMarkdown(page.markdown);
+    for (const b of blocks) {
+      if (b.kind !== "source") continue;
+      const path = b.reference.path;
+      if (!known.has(path) && !sitePrefixOK(path)) {
+        broken.push(`${page.slug}.md → ${path}`);
+      }
+    }
+  }
+  if (broken.length > 0) {
+    throw new Error(`docs ::source paths broken (${broken.length}):\n  ${broken.join("\n  ")}`);
+  }
+}
+
+export const docsPages = collected;
 
 export const docsPagesBySlug = Object.fromEntries(
   docsPages.map((page) => [page.slug, page]),
