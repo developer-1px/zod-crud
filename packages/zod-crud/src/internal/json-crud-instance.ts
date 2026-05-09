@@ -38,6 +38,8 @@ import { invertChanges as invertChangesImpl } from "../history/change/change-inv
 import { diffDocs } from "../history/diff-doc.js";
 import { applyChangesToDoc } from "../history/apply-changes.js";
 import { createLockedRegion } from "../mutate/locked-region.js";
+import { transact as runTransact } from "../mutate/transaction.js";
+import { enumerateInsertableKeys, enumerateInsertableTypes } from "../schema/insertable.js";
 
 const DEFAULT_CHILD_KEYS = ["children"];
 
@@ -337,8 +339,22 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return findAllDoc(doc, predicate);
   }
 
-  function transact<R>(_fn: (tx: Transaction) => R): TransactionResult<R> {
-    return notImplemented("transact");
+  function transact<R>(fn: (tx: Transaction) => R): TransactionResult<R> {
+    return runTransact<T, R>(
+      {
+        schema,
+        childKeys,
+        getDoc: () => doc,
+        setDoc: (next) => { doc = next; },
+        getAllocator: () => nextNodeIndex,
+        setAllocator: (n) => { nextNodeIndex = n; },
+        commit,
+        lockedRegion,
+        ...(options.focusFilter && { focusFilter: options.focusFilter }),
+        ...(options.defaultFor && { defaultFor: options.defaultFor }),
+      },
+      fn,
+    );
   }
 
   function wrap(_nodeId: NodeId, _key: string): OperationResult { return notImplemented("wrap"); }
@@ -378,8 +394,12 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return cloneDoc(savedDoc);
   }
 
-  function insertableKeys(_parentId: NodeId): string[] { return []; }
-  function insertableTypes(_parentId: NodeId, _key?: string): JsonNodeType[] { return []; }
+  function insertableKeys(parentId: NodeId): string[] {
+    return enumerateInsertableKeys(schema, doc, parentId);
+  }
+  function insertableTypes(parentId: NodeId, key?: string): JsonNodeType[] {
+    return enumerateInsertableTypes(schema, doc, parentId, key);
+  }
 
   const { lock, unlock, isLocked } = lockedRegion;
 
