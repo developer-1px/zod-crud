@@ -1,5 +1,6 @@
 // SSOT: 라이브러리 패키지 소스 그대로. 문서가 코드보다 뒤처질 수 없다.
 import jsonCrudSrc from "../../../../packages/zod-crud/src/json-crud.ts?raw";
+import jsonCrudInstanceSrc from "../../../../packages/zod-crud/src/json-crud-instance.ts?raw";
 import jsonMutationsSrc from "../../../../packages/zod-crud/src/crud/json-mutations.ts?raw";
 import jsonClipboardSrc from "../../../../packages/zod-crud/src/clipboard/json-clipboard.ts?raw";
 import jsonHistorySrc from "../../../../packages/zod-crud/src/history/json-history.ts?raw";
@@ -11,6 +12,7 @@ import jsonDocSrc from "../../../../packages/zod-crud/src/document/json-doc.ts?r
 
 export type SourceKey =
   | "json-crud"
+  | "json-crud-instance"
   | "json-mutations"
   | "json-clipboard"
   | "json-history"
@@ -22,6 +24,7 @@ export type SourceKey =
 
 export const sourceMap: Record<SourceKey, { filename: string; source: string }> = {
   "json-crud": { filename: "json-crud.ts", source: jsonCrudSrc },
+  "json-crud-instance": { filename: "json-crud-instance.ts", source: jsonCrudInstanceSrc },
   "json-mutations": { filename: "crud/json-mutations.ts", source: jsonMutationsSrc },
   "json-clipboard": { filename: "clipboard/json-clipboard.ts", source: jsonClipboardSrc },
   "json-history": { filename: "history/json-history.ts", source: jsonHistorySrc },

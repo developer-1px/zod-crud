@@ -9,6 +9,7 @@ Source of truth:
 - Behavior contract: `spec.md`
 - Public exports: `src/index.ts`
 - Runtime facade: `src/json-crud.ts`
+- Runtime implementation: `src/json-crud-instance.ts`
 - Public usage guide: `README.md`
 
 ## Mental Model
@@ -97,3 +98,6 @@ console.log(crud.toJson());
   after successful mutations.
 - Do not add exports without updating `src/index.ts`, README, smoke tests, and
   this file.
+- Do not deep-import implementation modules such as `src/json-crud-instance.ts`,
+  `src/crud/*`, `src/clipboard/*`, `src/selection/*`, `src/history/*`, or
+  `src/schema/*`. They are internal to the package facade.

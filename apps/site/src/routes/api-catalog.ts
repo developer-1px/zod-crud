@@ -30,6 +30,7 @@ export type ApiGroup = {
 };
 
 const crudFacade: ApiSource = { key: "json-crud", symbols: ["createJsonCrud"] };
+const crudInstance: ApiSource = { key: "json-crud-instance", symbols: ["createJsonCrudInstance"] };
 const mutationsFactory: ApiSource = { key: "json-mutations", symbols: ["createMutations"] };
 const clipboardFactory: ApiSource = { key: "json-clipboard", symbols: ["createClipboard"] };
 const historyFactory: ApiSource = { key: "json-history", symbols: ["createHistory"] };
@@ -42,7 +43,7 @@ export const apiGroups: ApiGroup[] = [
   {
     title: "Factory",
     apis: [
-      { id: "createJsonCrud", call: "createJsonCrud(schema, initial, options?)", sources: [crudFacade] },
+      { id: "createJsonCrud", call: "createJsonCrud(schema, initial, options?)", sources: [crudFacade, crudInstance] },
     ],
   },
   {
@@ -56,12 +57,12 @@ export const apiGroups: ApiGroup[] = [
   {
     title: "Read",
     apis: [
-      { id: "snapshot", call: "crud.snapshot()", sources: [crudFacade] },
-      { id: "toJson", call: "crud.toJson()", sources: [crudFacade] },
-      { id: "read", call: "crud.read(nodeId?)", sources: [crudFacade] },
-      { id: "pathOf", call: "crud.pathOf(nodeId)", sources: [crudFacade] },
-      { id: "find", call: "crud.find(parentId, key)", sources: [crudFacade] },
-      { id: "normalizeSelection", call: "crud.normalizeSelection(nodeIds)", sources: [crudFacade, selectionNormalizer] },
+      { id: "snapshot", call: "crud.snapshot()", sources: [crudInstance] },
+      { id: "toJson", call: "crud.toJson()", sources: [crudInstance] },
+      { id: "read", call: "crud.read(nodeId?)", sources: [crudInstance] },
+      { id: "pathOf", call: "crud.pathOf(nodeId)", sources: [crudInstance] },
+      { id: "find", call: "crud.find(parentId, key)", sources: [crudInstance] },
+      { id: "normalizeSelection", call: "crud.normalizeSelection(nodeIds)", sources: [crudInstance, selectionNormalizer] },
     ],
   },
   {
@@ -74,7 +75,7 @@ export const apiGroups: ApiGroup[] = [
       { id: "update", call: "crud.update(nodeId, value)", sources: [mutationsFactory] },
       { id: "rename", call: "crud.rename(nodeId, key)", sources: [mutationsFactory] },
       { id: "delete", call: "crud.delete(nodeId)", sources: [mutationsFactory] },
-      { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sources: [deleteManyPlanner] },
+      { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sources: [crudInstance, deleteManyPlanner] },
       { id: "moveBefore", call: "crud.moveBefore(nodeIds, siblingId)", sources: [moveFactory] },
       { id: "moveAfter", call: "crud.moveAfter(nodeIds, siblingId)", sources: [moveFactory] },
       { id: "moveInto", call: "crud.moveInto(nodeIds, parentId, index?)", sources: [moveFactory] },
@@ -83,17 +84,17 @@ export const apiGroups: ApiGroup[] = [
   {
     title: "Preflight",
     apis: [
-      { id: "canCreate", call: "crud.canCreate(parentId, key, value?)", sources: [crudFacade, mutationsFactory] },
-      { id: "canInsertAfter", call: "crud.canInsertAfter(siblingId, value?)", sources: [crudFacade, mutationsFactory] },
-      { id: "canInsertBefore", call: "crud.canInsertBefore(siblingId, value?)", sources: [crudFacade, mutationsFactory] },
-      { id: "canAppendChild", call: "crud.canAppendChild(parentId, value?)", sources: [crudFacade, mutationsFactory] },
-      { id: "canUpdate", call: "crud.canUpdate(nodeId, value)", sources: [crudFacade, mutationsFactory] },
-      { id: "canRename", call: "crud.canRename(nodeId, key)", sources: [crudFacade, mutationsFactory] },
-      { id: "canDelete", call: "crud.canDelete(nodeId)", sources: [crudFacade, mutationsFactory] },
-      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [crudFacade, deleteManyPlanner] },
-      { id: "canMoveBefore", call: "crud.canMoveBefore(nodeIds, siblingId)", sources: [crudFacade, moveFactory] },
-      { id: "canMoveAfter", call: "crud.canMoveAfter(nodeIds, siblingId)", sources: [crudFacade, moveFactory] },
-      { id: "canMoveInto", call: "crud.canMoveInto(nodeIds, parentId, index?)", sources: [crudFacade, moveFactory] },
+      { id: "canCreate", call: "crud.canCreate(parentId, key, value?)", sources: [crudInstance, mutationsFactory] },
+      { id: "canInsertAfter", call: "crud.canInsertAfter(siblingId, value?)", sources: [crudInstance, mutationsFactory] },
+      { id: "canInsertBefore", call: "crud.canInsertBefore(siblingId, value?)", sources: [crudInstance, mutationsFactory] },
+      { id: "canAppendChild", call: "crud.canAppendChild(parentId, value?)", sources: [crudInstance, mutationsFactory] },
+      { id: "canUpdate", call: "crud.canUpdate(nodeId, value)", sources: [crudInstance, mutationsFactory] },
+      { id: "canRename", call: "crud.canRename(nodeId, key)", sources: [crudInstance, mutationsFactory] },
+      { id: "canDelete", call: "crud.canDelete(nodeId)", sources: [crudInstance, mutationsFactory] },
+      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [crudInstance, deleteManyPlanner] },
+      { id: "canMoveBefore", call: "crud.canMoveBefore(nodeIds, siblingId)", sources: [crudInstance, moveFactory] },
+      { id: "canMoveAfter", call: "crud.canMoveAfter(nodeIds, siblingId)", sources: [crudInstance, moveFactory] },
+      { id: "canMoveInto", call: "crud.canMoveInto(nodeIds, parentId, index?)", sources: [crudInstance, moveFactory] },
     ],
   },
   {
@@ -116,7 +117,7 @@ export const apiGroups: ApiGroup[] = [
       { id: "redo", call: "crud.redo()", sources: [historyFactory] },
       { id: "canUndo", call: "crud.canUndo()", sources: [historyFactory] },
       { id: "canRedo", call: "crud.canRedo()", sources: [historyFactory] },
-      { id: "subscribe", call: "crud.subscribe(listener)", sources: [crudFacade] },
+      { id: "subscribe", call: "crud.subscribe(listener)", sources: [crudInstance] },
     ],
   },
 ];
