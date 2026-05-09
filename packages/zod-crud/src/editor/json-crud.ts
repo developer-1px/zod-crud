@@ -24,6 +24,8 @@ import { planDeleteMany, type DeleteManyPlan } from "./json-delete-many.js";
 import { createHistory } from "./json-history.js";
 import { createClipboard } from "./json-clipboard.js";
 import { createMutations } from "./json-mutations.js";
+import { createMove } from "./json-move.js";
+import { normalizeSelection, type SelectionPlan } from "./json-selection.js";
 import { validateDocument } from "../schema/json-validation.js";
 import { successResult } from "./operation-result.js";
 import { failure } from "./failure.js";
@@ -38,14 +40,28 @@ export type JsonCrud<T extends JsonValue = JsonValue, I = unknown> = {
   read: (nodeId?: NodeId) => JsonValue;
   pathOf: (nodeId: NodeId) => JsonPath;
   find: (parentId: NodeId, key: JsonKey) => NodeId | null;
+  normalizeSelection: (nodeIds: NodeId[]) => SelectionPlan | OperationFailure;
   create: (parentId: NodeId, key: string | number, value?: JsonValue) => OperationResult;
+  canCreate: (parentId: NodeId, key: string | number, value?: JsonValue) => OperationResult;
   insertAfter: (siblingId: NodeId, value?: JsonValue) => OperationResult;
+  canInsertAfter: (siblingId: NodeId, value?: JsonValue) => OperationResult;
   insertBefore: (siblingId: NodeId, value?: JsonValue) => OperationResult;
+  canInsertBefore: (siblingId: NodeId, value?: JsonValue) => OperationResult;
   appendChild: (parentId: NodeId, value?: JsonValue) => OperationResult;
+  canAppendChild: (parentId: NodeId, value?: JsonValue) => OperationResult;
   update: (nodeId: NodeId, value: JsonValue) => OperationResult;
+  canUpdate: (nodeId: NodeId, value: JsonValue) => OperationResult;
   rename: (nodeId: NodeId, key: string) => OperationResult;
+  canRename: (nodeId: NodeId, key: string) => OperationResult;
   delete: (nodeId: NodeId) => OperationResult;
+  canDelete: (nodeId: NodeId) => OperationResult;
   deleteMany: (nodeIds: NodeId[]) => OperationResult;
+  moveBefore: (nodeIds: NodeId[], siblingId: NodeId) => OperationResult;
+  canMoveBefore: (nodeIds: NodeId[], siblingId: NodeId) => OperationResult;
+  moveAfter: (nodeIds: NodeId[], siblingId: NodeId) => OperationResult;
+  canMoveAfter: (nodeIds: NodeId[], siblingId: NodeId) => OperationResult;
+  moveInto: (nodeIds: NodeId[], parentId: NodeId, index?: number) => OperationResult;
+  canMoveInto: (nodeIds: NodeId[], parentId: NodeId, index?: number) => OperationResult;
   copy: (nodeId: NodeId) => JsonValue;
   copyMany: (nodeIds: NodeId[]) => JsonValue[];
   canCopyMany: (nodeIds: NodeId[]) => OperationResult;
@@ -101,6 +117,39 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
   });
   const { create, insertAfter, insertBefore, appendChild, update, rename } = mutations;
   const deleteNode = mutations.delete;
+  const preflightMutations = createMutations({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    commitIfValid: validateOnly,
+    allocateNodeId,
+    ...(options.defaultFor && { defaultFor: options.defaultFor }),
+  });
+  const {
+    create: preflightCreate,
+    insertAfter: preflightInsertAfter,
+    insertBefore: preflightInsertBefore,
+    appendChild: preflightAppendChild,
+    update: preflightUpdate,
+    rename: preflightRename,
+    delete: preflightDelete,
+  } = preflightMutations;
+
+  const {
+    moveBefore,
+    canMoveBefore: preflightMoveBefore,
+    moveAfter,
+    canMoveAfter: preflightMoveAfter,
+    moveInto,
+    canMoveInto: preflightMoveInto,
+  } = createMove({
+    schema,
+    childKeys,
+    getDoc: () => doc,
+    commitIfValid,
+    allocateNodeId,
+    ...(options.focusFilter && { focusFilter: options.focusFilter }),
+  });
 
   const { copy, copyMany, canCopyMany, cut, cutMany, canCutMany, paste, canPaste } = createClipboard({
     schema,
@@ -136,6 +185,54 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
   function find(parentId: NodeId, key: JsonKey): NodeId | null {
     const child = findChildByKey(doc, parentId, key);
     return child?.id ?? null;
+  }
+
+  function normalizeSelectionHere(nodeIds: NodeId[]): SelectionPlan | OperationFailure {
+    try {
+      return normalizeSelection(doc, nodeIds);
+    } catch (error) {
+      return failure(error) as OperationFailure;
+    }
+  }
+
+  function canCreate(parentId: NodeId, key: string | number, value?: JsonValue): OperationResult {
+    return preflight(() => preflightCreate(parentId, key, value));
+  }
+
+  function canInsertAfter(siblingId: NodeId, value?: JsonValue): OperationResult {
+    return preflight(() => preflightInsertAfter(siblingId, value));
+  }
+
+  function canInsertBefore(siblingId: NodeId, value?: JsonValue): OperationResult {
+    return preflight(() => preflightInsertBefore(siblingId, value));
+  }
+
+  function canAppendChild(parentId: NodeId, value?: JsonValue): OperationResult {
+    return preflight(() => preflightAppendChild(parentId, value));
+  }
+
+  function canUpdate(nodeId: NodeId, value: JsonValue): OperationResult {
+    return preflight(() => preflightUpdate(nodeId, value));
+  }
+
+  function canRename(nodeId: NodeId, key: string): OperationResult {
+    return preflight(() => preflightRename(nodeId, key));
+  }
+
+  function canDelete(nodeId: NodeId): OperationResult {
+    return preflight(() => preflightDelete(nodeId));
+  }
+
+  function canMoveBefore(nodeIds: NodeId[], siblingId: NodeId): OperationResult {
+    return preflight(() => preflightMoveBefore(nodeIds, siblingId));
+  }
+
+  function canMoveAfter(nodeIds: NodeId[], siblingId: NodeId): OperationResult {
+    return preflight(() => preflightMoveAfter(nodeIds, siblingId));
+  }
+
+  function canMoveInto(nodeIds: NodeId[], parentId: NodeId, index?: number): OperationResult {
+    return preflight(() => preflightMoveInto(nodeIds, parentId, index));
   }
 
   function deleteMany(nodeIds: NodeId[]): OperationResult {
@@ -192,6 +289,22 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     return result;
   }
 
+  function validateOnly(next: JsonDoc): OperationResult {
+    const validation = validateDocument(schema, next);
+    return validation.ok ? { ok: true } : validation;
+  }
+
+  function preflight(action: () => OperationResult): OperationResult {
+    const savedNodeIndex = nextNodeIndex;
+
+    try {
+      const result = action();
+      return result.ok ? { ok: true } : result;
+    } finally {
+      nextNodeIndex = savedNodeIndex;
+    }
+  }
+
   function allocateNodeId(): NodeId {
     let id = `n${nextNodeIndex}`;
     nextNodeIndex += 1;
@@ -223,14 +336,28 @@ export function createJsonCrud<T extends JsonValue, I = unknown>(
     read,
     pathOf,
     find,
+    normalizeSelection: normalizeSelectionHere,
     create,
+    canCreate,
     insertAfter,
+    canInsertAfter,
     insertBefore,
+    canInsertBefore,
     appendChild,
+    canAppendChild,
     update,
+    canUpdate,
     rename,
+    canRename,
     delete: deleteNode,
+    canDelete,
     deleteMany,
+    moveBefore,
+    canMoveBefore,
+    moveAfter,
+    canMoveAfter,
+    moveInto,
+    canMoveInto,
     copy,
     copyMany,
     canCopyMany,

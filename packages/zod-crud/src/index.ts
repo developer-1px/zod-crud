@@ -13,6 +13,10 @@ export type {
 } from "./editor/json-crud.js";
 
 export type {
+  SelectionPlan,
+} from "./editor/json-selection.js";
+
+export type {
   FocusFilter,
   JsonChange,
   JsonDoc,
@@ -21,6 +25,7 @@ export type {
   JsonPath,
   JsonValue,
   NodeId,
+  OperationFailureCode,
   OperationResult,
   PasteMode,
 } from "./types.js";

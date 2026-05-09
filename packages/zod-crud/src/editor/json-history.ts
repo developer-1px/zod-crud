@@ -66,7 +66,7 @@ export function createHistory(deps: HistoryDeps): History {
     const previous = undoStack.pop();
 
     if (previous === undefined) {
-      return { ok: false, reason: "Undo stack is empty." };
+      return { ok: false, code: "invalid_target", reason: "Undo stack is empty." };
     }
 
     const current = cloneDoc(getDoc());
@@ -87,7 +87,7 @@ export function createHistory(deps: HistoryDeps): History {
     const next = redoStack.pop();
 
     if (next === undefined) {
-      return { ok: false, reason: "Redo stack is empty." };
+      return { ok: false, code: "invalid_target", reason: "Redo stack is empty." };
     }
 
     const current = cloneDoc(getDoc());

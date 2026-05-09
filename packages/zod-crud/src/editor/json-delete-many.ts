@@ -4,7 +4,6 @@ import type {
   FocusFilter,
   JsonChange,
   JsonDoc,
-  JsonNode,
   JsonValue,
   NodeId,
   OperationResult,
@@ -12,7 +11,6 @@ import type {
 import {
   cloneDoc,
   deserialize,
-  getNode,
   getPath,
   removeSubtree,
 } from "../document/json-doc.js";
@@ -20,6 +18,9 @@ import { validateAtPath } from "../schema/json-validation.js";
 import { focusAfterSiblingBatchRemoval } from "./delete-many-focus.js";
 import { sortBySiblingIndexDescending } from "./delete-many-order.js";
 import { changesForDeletedSubtrees } from "./json-change-diff.js";
+import { normalizeSelection } from "./json-selection.js";
+
+export { uniqueNodes } from "./json-selection.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 
@@ -31,22 +32,6 @@ export type DeleteManyPlan = {
   nodeId?: NodeId;
 };
 
-export function uniqueNodes(doc: JsonDoc, nodeIds: NodeId[]): JsonNode[] {
-  const seen = new Set<NodeId>();
-  const nodes: JsonNode[] = [];
-
-  for (const nodeId of nodeIds) {
-    if (seen.has(nodeId)) {
-      continue;
-    }
-
-    seen.add(nodeId);
-    nodes.push(getNode(doc, nodeId));
-  }
-
-  return nodes;
-}
-
 export function planDeleteMany<T extends JsonValue>(args: {
   doc: JsonDoc;
   schema: z.ZodType<T, any>;
@@ -54,24 +39,28 @@ export function planDeleteMany<T extends JsonValue>(args: {
   focusFilter?: FocusFilter;
 }): DeleteManyPlan | OperationFailure {
   const { doc, schema, nodeIds, focusFilter } = args;
-  const nodes = uniqueNodes(doc, nodeIds);
+  const selection = normalizeSelection(doc, nodeIds);
 
-  if (nodes.length === 0) {
-    return { ok: false, reason: "No nodes to delete." };
+  if (!selection.ok) {
+    return selection.code === "empty_selection"
+      ? { ok: false, code: "empty_selection", reason: "No nodes to delete." }
+      : selection;
   }
 
+  const nodes = selection.nodes;
+
   if (nodes.some((node) => node.id === doc.rootId || node.parentId === null)) {
-    return { ok: false, reason: "Cannot delete the root node." };
+    return { ok: false, code: "root_operation", reason: "Cannot delete the root node." };
   }
 
   const parentId = nodes[0]?.parentId;
 
   if (parentId === null || parentId === undefined) {
-    return { ok: false, reason: "Cannot delete a node without a parent." };
+    return { ok: false, code: "invalid_target", reason: "Cannot delete a node without a parent." };
   }
 
   if (nodes.some((node) => node.parentId !== parentId)) {
-    return { ok: false, reason: "deleteMany only accepts sibling nodes." };
+    return { ok: false, code: "invalid_target", reason: "deleteMany only accepts sibling nodes." };
   }
 
   const parentPath = getPath(doc, parentId);

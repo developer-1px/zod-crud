@@ -102,19 +102,19 @@ export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): Mu
       const sibling = getNode(doc, siblingId);
 
       if (sibling.parentId === null) {
-        return { ok: false, reason: "Cannot insert next to the root node." };
+        return { ok: false, code: "root_operation", reason: "Cannot insert next to the root node.", nodeId: siblingId };
       }
 
       const parent = getNode(doc, sibling.parentId);
 
       if (parent.type !== "array") {
-        return { ok: false, reason: `${method} requires a sibling whose parent is an array.` };
+        return { ok: false, code: "invalid_target", reason: `${method} requires a sibling whose parent is an array.`, nodeId: siblingId };
       }
 
       const index = parent.children.indexOf(siblingId);
 
       if (index < 0) {
-        return { ok: false, reason: "Sibling is not present in its parent." };
+        return { ok: false, code: "invalid_target", reason: "Sibling is not present in its parent.", nodeId: siblingId };
       }
 
       return create(parent.id, index + offset, value);
@@ -179,13 +179,13 @@ export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): Mu
       const node = getNode(doc, nodeId);
 
       if (node.parentId === null) {
-        return { ok: false, reason: "Cannot rename the root node." };
+        return { ok: false, code: "root_operation", reason: "Cannot rename the root node.", nodeId };
       }
 
       const parent = getNode(doc, node.parentId);
 
       if (parent.type !== "object") {
-        return { ok: false, reason: "Only object child keys can be renamed." };
+        return { ok: false, code: "invalid_target", reason: "Only object child keys can be renamed.", nodeId };
       }
 
       const parentPath = getPath(doc, parent.id);
@@ -208,7 +208,7 @@ export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): Mu
     const doc = getDoc();
 
     if (nodeId === doc.rootId) {
-      return { ok: false, reason: "Cannot delete the root node." };
+      return { ok: false, code: "root_operation", reason: "Cannot delete the root node.", nodeId };
     }
 
     try {
@@ -216,7 +216,7 @@ export function createMutations<T extends JsonValue>(deps: MutationsDeps<T>): Mu
       const parentId = node.parentId;
 
       if (parentId === null) {
-        return { ok: false, reason: "Cannot delete a node without a parent." };
+        return { ok: false, code: "invalid_target", reason: "Cannot delete a node without a parent.", nodeId };
       }
 
       const parentPath = getPath(doc, parentId);

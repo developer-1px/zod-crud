@@ -35,6 +35,16 @@ export type FocusFilter = (doc: JsonDoc, candidateId: NodeId) => boolean;
 
 export type DefaultValueFactory = (parentPath: JsonPath) => JsonValue;
 
+export type OperationFailureCode =
+  | "clipboard_empty"
+  | "duplicate_key"
+  | "empty_selection"
+  | "exception"
+  | "invalid_target"
+  | "missing_default"
+  | "root_operation"
+  | "schema_mismatch";
+
 export type JsonChange =
   | {
       type: "insert";
@@ -91,7 +101,10 @@ export type OperationResult =
     }
   | {
       ok: false;
+      code?: OperationFailureCode;
       reason: string;
+      nodeId?: NodeId;
+      path?: JsonPath;
       error?: ZodError;
     };
 

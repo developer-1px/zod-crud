@@ -2,9 +2,13 @@ import type { SourceKey } from "./source-registry";
 
 export type ApiId =
   | "createJsonCrud" | "serialize" | "deserialize" | "getPath"
-  | "snapshot" | "toJson" | "read" | "pathOf" | "find"
+  | "snapshot" | "toJson" | "read" | "pathOf" | "find" | "normalizeSelection"
   | "create" | "insertAfter" | "insertBefore" | "appendChild"
   | "update" | "rename" | "delete" | "deleteMany"
+  | "canCreate" | "canInsertAfter" | "canInsertBefore" | "canAppendChild"
+  | "canUpdate" | "canRename" | "canDelete"
+  | "moveBefore" | "moveAfter" | "moveInto"
+  | "canMoveBefore" | "canMoveAfter" | "canMoveInto"
   | "copy" | "copyMany" | "cut" | "cutMany" | "paste"
   | "canCopyMany" | "canCutMany" | "canDeleteMany" | "canPaste" | "canUndo" | "canRedo"
   | "subscribe" | "undo" | "redo";
@@ -31,6 +35,8 @@ const clipboardFactory: ApiSource = { key: "json-clipboard", symbols: ["createCl
 const historyFactory: ApiSource = { key: "json-history", symbols: ["createHistory"] };
 const deleteManyPlanner: ApiSource = { key: "json-delete-many", symbols: ["planDeleteMany"] };
 const pasteCandidates: ApiSource = { key: "json-paste", symbols: ["buildPasteCandidates", "buildPasteManyCandidates"] };
+const moveFactory: ApiSource = { key: "json-move", symbols: ["createMove"] };
+const selectionNormalizer: ApiSource = { key: "json-selection", symbols: ["normalizeSelection"] };
 
 export const apiGroups: ApiGroup[] = [
   {
@@ -55,6 +61,7 @@ export const apiGroups: ApiGroup[] = [
       { id: "read", call: "crud.read(nodeId?)", sources: [crudFacade] },
       { id: "pathOf", call: "crud.pathOf(nodeId)", sources: [crudFacade] },
       { id: "find", call: "crud.find(parentId, key)", sources: [crudFacade] },
+      { id: "normalizeSelection", call: "crud.normalizeSelection(nodeIds)", sources: [crudFacade, selectionNormalizer] },
     ],
   },
   {
@@ -68,6 +75,25 @@ export const apiGroups: ApiGroup[] = [
       { id: "rename", call: "crud.rename(nodeId, key)", sources: [mutationsFactory] },
       { id: "delete", call: "crud.delete(nodeId)", sources: [mutationsFactory] },
       { id: "deleteMany", call: "crud.deleteMany(nodeIds)", sources: [deleteManyPlanner] },
+      { id: "moveBefore", call: "crud.moveBefore(nodeIds, siblingId)", sources: [moveFactory] },
+      { id: "moveAfter", call: "crud.moveAfter(nodeIds, siblingId)", sources: [moveFactory] },
+      { id: "moveInto", call: "crud.moveInto(nodeIds, parentId, index?)", sources: [moveFactory] },
+    ],
+  },
+  {
+    title: "Preflight",
+    apis: [
+      { id: "canCreate", call: "crud.canCreate(parentId, key, value?)", sources: [crudFacade, mutationsFactory] },
+      { id: "canInsertAfter", call: "crud.canInsertAfter(siblingId, value?)", sources: [crudFacade, mutationsFactory] },
+      { id: "canInsertBefore", call: "crud.canInsertBefore(siblingId, value?)", sources: [crudFacade, mutationsFactory] },
+      { id: "canAppendChild", call: "crud.canAppendChild(parentId, value?)", sources: [crudFacade, mutationsFactory] },
+      { id: "canUpdate", call: "crud.canUpdate(nodeId, value)", sources: [crudFacade, mutationsFactory] },
+      { id: "canRename", call: "crud.canRename(nodeId, key)", sources: [crudFacade, mutationsFactory] },
+      { id: "canDelete", call: "crud.canDelete(nodeId)", sources: [crudFacade, mutationsFactory] },
+      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [crudFacade, deleteManyPlanner] },
+      { id: "canMoveBefore", call: "crud.canMoveBefore(nodeIds, siblingId)", sources: [crudFacade, moveFactory] },
+      { id: "canMoveAfter", call: "crud.canMoveAfter(nodeIds, siblingId)", sources: [crudFacade, moveFactory] },
+      { id: "canMoveInto", call: "crud.canMoveInto(nodeIds, parentId, index?)", sources: [crudFacade, moveFactory] },
     ],
   },
   {
@@ -81,7 +107,6 @@ export const apiGroups: ApiGroup[] = [
       { id: "canPaste", call: "crud.canPaste(targetId, options?)", sources: [clipboardFactory, pasteCandidates] },
       { id: "canCopyMany", call: "crud.canCopyMany(nodeIds)", sources: [clipboardFactory] },
       { id: "canCutMany", call: "crud.canCutMany(nodeIds)", sources: [clipboardFactory] },
-      { id: "canDeleteMany", call: "crud.canDeleteMany(nodeIds)", sources: [deleteManyPlanner] },
     ],
   },
   {

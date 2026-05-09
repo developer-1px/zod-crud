@@ -89,7 +89,7 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
     try {
       const nodes = uniqueNodes(getDoc(), nodeIds);
 
-      return nodes.length === 0 ? { ok: false, reason: "No nodes to copy." } : { ok: true };
+      return nodes.length === 0 ? { ok: false, code: "empty_selection", reason: "No nodes to copy." } : { ok: true };
     } catch (error) {
       return failure(error);
     }
@@ -97,7 +97,7 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
 
   function cut(nodeId: NodeId): OperationResult {
     if (nodeId === getDoc().rootId) {
-      return { ok: false, reason: "Cannot cut the root node." };
+      return { ok: false, code: "root_operation", reason: "Cannot cut the root node.", nodeId };
     }
 
     try {
@@ -137,7 +137,7 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
   function paste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
     try {
       if (clipboard === null) {
-        return { ok: false, reason: "Clipboard is empty." };
+        return { ok: false, code: "clipboard_empty", reason: "Clipboard is empty." };
       }
 
       const candidates = buildCandidates(targetId, cloneJson(clipboard.values), options);
@@ -149,7 +149,7 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
 
   function canPaste(targetId: NodeId, options: PasteOptions = {}): OperationResult {
     if (clipboard === null) {
-      return { ok: false, reason: "Clipboard is empty." };
+      return { ok: false, code: "clipboard_empty", reason: "Clipboard is empty." };
     }
 
     const initialNodeIndex = saveAllocator();
@@ -235,7 +235,7 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
     }
 
     restoreAllocator(initialNodeIndex);
-    return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
+    return lastFailure ?? { ok: false, code: "invalid_target", reason: "No paste candidate accepted the clipboard payload." };
   }
 
   function firstValidPasteResult(candidates: PasteCandidate[]): OperationResult {
@@ -262,7 +262,7 @@ export function createClipboard<T extends JsonValue>(deps: ClipboardDeps<T>): Cl
     }
 
     restoreAllocator(initialNodeIndex);
-    return lastFailure ?? { ok: false, reason: "No paste candidate accepted the clipboard payload." };
+    return lastFailure ?? { ok: false, code: "invalid_target", reason: "No paste candidate accepted the clipboard payload." };
   }
 
   return { copy, copyMany, canCopyMany, cut, cutMany, canCutMany, paste, canPaste };

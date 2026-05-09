@@ -8,10 +8,14 @@ import { langFromFilename } from "./langFromFilename.js";
 export function HighlightedCode({
   source,
   filename,
+  lineStart = 1,
+  fitContent = false,
   highlightSymbols,
 }: {
   source: string;
   filename: string;
+  lineStart?: number;
+  fitContent?: boolean;
   highlightSymbols?: string[];
 }) {
   const [html, setHtml] = useState<string | null>(null);
@@ -40,13 +44,18 @@ export function HighlightedCode({
   }, [html, highlightSymbols, source]);
 
   if (html) {
+    const className = fitContent
+      ? "text-xs leading-relaxed font-mono overflow-x-auto [&_pre]:!bg-transparent [&_pre]:py-4 [&_pre]:pl-2 [&_pre]:pr-4 [&_pre]:whitespace-pre [&_pre]:break-normal [counter-reset:lineno] [&_.line]:before:content-[counter(lineno)] [&_.line]:before:[counter-increment:lineno] [&_.line]:before:inline-block [&_.line]:before:w-8 [&_.line]:before:pr-3 [&_.line]:before:text-right [&_.line]:before:text-stone-600 [&_.line]:before:select-none"
+      : "flex-1 text-xs leading-relaxed font-mono md:overflow-auto [&_pre]:!bg-transparent [&_pre]:py-4 [&_pre]:pl-2 [&_pre]:pr-4 [&_pre]:h-full [&_pre]:whitespace-pre [&_pre]:break-normal [counter-reset:lineno] [&_.line]:before:content-[counter(lineno)] [&_.line]:before:[counter-increment:lineno] [&_.line]:before:inline-block [&_.line]:before:w-8 [&_.line]:before:pr-3 [&_.line]:before:text-right [&_.line]:before:text-stone-600 [&_.line]:before:select-none";
+
     return (
       <div
         ref={ref}
-        className="flex-1 text-xs leading-relaxed font-mono md:overflow-auto [&_pre]:!bg-transparent [&_pre]:py-4 [&_pre]:pl-2 [&_pre]:pr-4 [&_pre]:h-full [&_pre]:whitespace-pre [&_pre]:break-normal [counter-reset:lineno] [&_.line]:before:content-[counter(lineno)] [&_.line]:before:[counter-increment:lineno] [&_.line]:before:inline-block [&_.line]:before:w-8 [&_.line]:before:pr-3 [&_.line]:before:text-right [&_.line]:before:text-stone-600 [&_.line]:before:select-none"
+        className={className}
+        style={{ counterReset: `lineno ${lineStart - 1}` }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
     );
   }
-  return <FallbackCode source={source} />;
+  return <FallbackCode source={source} lineStart={lineStart} fitContent={fitContent} />;
 }

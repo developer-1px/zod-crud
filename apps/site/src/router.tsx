@@ -6,11 +6,10 @@ import {
 } from "@tanstack/react-router";
 import { SidebarNav } from "./nav/SidebarNav";
 import { Landing } from "./routes/Landing";
-import { Intro } from "./routes/Intro";
-import { Concepts } from "./routes/Concepts";
-import { GettingStarted } from "./routes/GettingStarted";
 import { ApiReference } from "./routes/ApiReference";
 import { Examples } from "./routes/Examples";
+import { MarkdownDocPage } from "./docs/MarkdownDocPage";
+import { docsPagesBySlug, type DocsPage } from "./docs/docs-pages";
 
 const rootRoute = createRootRoute({
   component: () => (
@@ -33,36 +32,71 @@ const indexRoute = createRoute({
 const introRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs/intro",
-  component: Intro,
-  staticData: { palette: { label: "What is zod-crud?", to: "/docs/intro", category: "Docs", order: 1 } },
+  component: () => <MarkdownDocPage page={docsPagesBySlug.intro} />,
+  staticData: { palette: docPalette(docsPagesBySlug.intro) },
 });
 
 const gettingStartedRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs/getting-started",
-  component: GettingStarted,
-  staticData: { palette: { label: "Getting started", to: "/docs/getting-started", category: "Docs", order: 2 } },
+  component: () => <MarkdownDocPage page={docsPagesBySlug["getting-started"]} />,
+  staticData: { palette: docPalette(docsPagesBySlug["getting-started"]) },
 });
 
 const conceptsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs/concepts",
-  component: Concepts,
-  staticData: { palette: { label: "Concepts", to: "/docs/concepts", category: "Docs", order: 3 } },
+  component: () => <MarkdownDocPage page={docsPagesBySlug.concepts} />,
+  staticData: { palette: docPalette(docsPagesBySlug.concepts) },
+});
+
+const schemaSafetyRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs/schema-safety",
+  component: () => <MarkdownDocPage page={docsPagesBySlug["schema-safety"]} />,
+  staticData: { palette: docPalette(docsPagesBySlug["schema-safety"]) },
+});
+
+const operationsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs/operations",
+  component: () => <MarkdownDocPage page={docsPagesBySlug.operations} />,
+  staticData: { palette: docPalette(docsPagesBySlug.operations) },
+});
+
+const clipboardHistoryRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs/clipboard-history",
+  component: () => <MarkdownDocPage page={docsPagesBySlug["clipboard-history"]} />,
+  staticData: { palette: docPalette(docsPagesBySlug["clipboard-history"]) },
+});
+
+const examplesGuideRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs/examples",
+  component: () => <MarkdownDocPage page={docsPagesBySlug.examples} />,
+  staticData: { palette: docPalette(docsPagesBySlug.examples) },
+});
+
+const advancedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/docs/advanced",
+  component: () => <MarkdownDocPage page={docsPagesBySlug.advanced} />,
+  staticData: { palette: docPalette(docsPagesBySlug.advanced) },
 });
 
 const apiRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/api",
   component: ApiReference,
-  staticData: { palette: { label: "API reference", to: "/api", category: "Reference", order: 4 } },
+  staticData: { palette: { label: "API reference", to: "/api", category: "Reference", order: 20 } },
 });
 
 const examplesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/examples",
   component: Examples,
-  staticData: { palette: { label: "Examples", to: "/examples", category: "Reference", order: 5 } },
+  staticData: { palette: { label: "Examples", to: "/examples", category: "Reference", order: 21 } },
 });
 
 const routeTree = rootRoute.addChildren([
@@ -70,6 +104,11 @@ const routeTree = rootRoute.addChildren([
   introRoute,
   gettingStartedRoute,
   conceptsRoute,
+  schemaSafetyRoute,
+  operationsRoute,
+  clipboardHistoryRoute,
+  examplesGuideRoute,
+  advancedRoute,
   apiRoute,
   examplesRoute,
 ]);
@@ -91,4 +130,13 @@ declare module "@tanstack/react-router" {
       order?: number;
     };
   }
+}
+
+function docPalette(page: DocsPage) {
+  return {
+    label: page.navLabel,
+    to: page.route,
+    category: "Docs",
+    order: page.order,
+  };
 }

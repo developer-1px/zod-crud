@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import * as z from "zod";
 
 import { createJsonCrud } from "../src/index.js";
 import { UiNodeSchema, createEditor } from "./test-helpers.js";
@@ -118,6 +119,58 @@ describe("JsonCrud many-ops", () => {
     expect(editor.canUndo()).toBe(false);
   });
 
+  it("normalizes selection targets by document order and selected ancestors", () => {
+    const editor = createEditor();
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const textNodeId = editor.find(childrenId!, 0);
+    const textValueId = editor.find(textNodeId!, "text");
+
+    const result = editor.normalizeSelection([textValueId!, textNodeId!, textNodeId!]);
+
+    expect(result.ok).toBe(true);
+
+    if (result.ok) {
+      expect(result.nodeIds).toEqual([textNodeId]);
+      expect(result.removedNodeIds).toEqual([textValueId]);
+    }
+  });
+
+  it("preflights single-node mutations without changing document, history, or allocator", () => {
+    const editor = createEditor();
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const textNodeId = editor.find(childrenId!, 0);
+    const textValueId = editor.find(textNodeId!, "text");
+
+    expect(editor.canUpdate(textValueId!, "changed")).toEqual({ ok: true });
+    expect(editor.canUpdate(textValueId!, 123)).toEqual(expect.objectContaining({
+      ok: false,
+      code: "schema_mismatch",
+    }));
+    expect(editor.canAppendChild(rootId, { kind: "text", text: "next" })).toEqual({ ok: true });
+    expect(editor.canDelete(textNodeId!)).toEqual({ ok: true });
+
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [{ kind: "text", text: "hello" }],
+    });
+    expect(editor.canUndo()).toBe(false);
+
+    const appendResult = editor.appendChild(rootId, { kind: "text", text: "next" });
+
+    expect(appendResult.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "hello" },
+        { kind: "text", text: "next" },
+      ],
+    });
+  });
+
   it("copies multiple nodes and pastes them into an array target in order", () => {
     const editor = createJsonCrud(UiNodeSchema, {
       kind: "frame",
@@ -205,6 +258,100 @@ describe("JsonCrud many-ops", () => {
         { kind: "text", text: "first" },
         { kind: "text", text: "second" },
       ],
+    });
+  });
+
+  it("moves sibling selections without touching clipboard", () => {
+    const editor = createJsonCrud(UiNodeSchema, {
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "first" },
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+        { kind: "text", text: "fourth" },
+      ],
+    });
+    const rootId = editor.snapshot().rootId;
+    const childrenId = editor.find(rootId, "children");
+    const firstId = editor.find(childrenId!, 0);
+    const secondId = editor.find(childrenId!, 1);
+    const thirdId = editor.find(childrenId!, 2);
+
+    editor.copy(firstId!);
+
+    const moveResult = editor.moveBefore([thirdId!, secondId!], firstId!);
+
+    expect(moveResult.ok).toBe(true);
+
+    if (moveResult.ok) {
+      expect(moveResult.nodeId).toBe(secondId);
+      expect(moveResult.focusNodeId).toBe(thirdId);
+      expect(moveResult.focusNodeIds).toEqual([secondId, thirdId]);
+      expect(moveResult.changes).toEqual(expect.arrayContaining([
+        expect.objectContaining({ type: "update", nodeId: childrenId }),
+        expect.objectContaining({ type: "update", nodeId: secondId }),
+        expect.objectContaining({ type: "update", nodeId: thirdId }),
+      ]));
+    }
+
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+        { kind: "text", text: "first" },
+        { kind: "text", text: "fourth" },
+      ],
+    });
+
+    const pasteResult = editor.paste(childrenId!);
+
+    expect(pasteResult.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      kind: "frame",
+      name: "root",
+      children: [
+        { kind: "text", text: "second" },
+        { kind: "text", text: "third" },
+        { kind: "text", text: "first" },
+        { kind: "text", text: "fourth" },
+        { kind: "text", text: "first" },
+      ],
+    });
+  });
+
+  it("moves nodes between array parents as one undoable operation", () => {
+    const Schema = z.object({
+      left: z.array(z.string()),
+      right: z.array(z.string()),
+    });
+    const editor = createJsonCrud(Schema, {
+      left: ["a", "b"],
+      right: ["c"],
+    });
+    const rootId = editor.snapshot().rootId;
+    const leftId = editor.find(rootId, "left");
+    const rightId = editor.find(rootId, "right");
+    const aId = editor.find(leftId!, 0);
+
+    expect(editor.canMoveInto([aId!], rightId!, 0)).toEqual({ ok: true });
+
+    const result = editor.moveInto([aId!], rightId!, 0);
+
+    expect(result.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      left: ["b"],
+      right: ["a", "c"],
+    });
+
+    const undoResult = editor.undo();
+
+    expect(undoResult.ok).toBe(true);
+    expect(editor.toJson()).toEqual({
+      left: ["a", "b"],
+      right: ["c"],
     });
   });
 });

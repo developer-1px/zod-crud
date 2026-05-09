@@ -100,10 +100,13 @@ describe("JsonCrud mutations", () => {
     expect(editor.rename(rootId, "document").ok).toBe(false);
     expect(editor.rename(nameId!, "title")).toEqual({
       ok: false,
+      code: "duplicate_key",
       reason: "Object key already exists: title.",
     });
     expect(editor.rename(itemId!, "label")).toEqual({
       ok: false,
+      code: "invalid_target",
+      nodeId: itemId,
       reason: "Only object child keys can be renamed.",
     });
     expect(editor.toJson()).toEqual({

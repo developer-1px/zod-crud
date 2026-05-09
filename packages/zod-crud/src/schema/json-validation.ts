@@ -23,7 +23,9 @@ export function validateAtPath(
   if (targetSchema === null) {
     return {
       ok: false,
+      code: "schema_mismatch",
       reason: `No schema found for path ${formatPath(path)}.`,
+      path,
     };
   }
 
@@ -32,7 +34,9 @@ export function validateAtPath(
   if (!result.success) {
     return {
       ok: false,
+      code: "schema_mismatch",
       reason: `Value does not match schema at ${formatPath(path)}.`,
+      path,
       error: result.error,
     };
   }
@@ -47,6 +51,7 @@ export function validateDocument(schema: z.ZodType<JsonValue>, doc: JsonDoc): Op
   if (!result.success) {
     return {
       ok: false,
+      code: "schema_mismatch",
       reason: "Document does not match the root schema.",
       error: result.error,
     };
@@ -57,6 +62,7 @@ export function validateDocument(schema: z.ZodType<JsonValue>, doc: JsonDoc): Op
 
     return {
       ok: false,
+      code: "schema_mismatch",
       reason: difference === null
         ? "Document does not match the root schema exactly."
         : `Document does not match the root schema exactly: ${difference}.`,

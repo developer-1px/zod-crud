@@ -30,7 +30,7 @@ export function resolveCreateValue<T>(args: {
     return { ok: true, value: cloneJson(parsed.data as JsonValue) };
   }
 
-  return { ok: false, reason: "No default value is configured for create." };
+  return { ok: false, code: "missing_default", reason: "No default value is configured for create." };
 }
 
 export function childArrayIdForObjectAppend<T>(args: {

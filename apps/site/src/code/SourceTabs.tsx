@@ -7,6 +7,8 @@ export type SourceTab = {
   label: string;
   filename: string;
   source: string;
+  lineStart?: number;
+  lineEnd?: number;
   symbols?: string[];
 };
 
@@ -18,17 +20,26 @@ export function SourceTabs({
   tabs,
   filenamePrefix,
   initialKey,
+  fitContent = false,
 }: {
   tabs: SourceTab[];
   filenamePrefix?: string;
   initialKey?: string;
+  fitContent?: boolean;
 }) {
   const [activeKey, setActiveKey] = useState<string>(initialKey ?? tabs[0]?.key ?? "");
   const active = tabs.find((t) => t.key === activeKey) ?? tabs[0];
   if (!active) return null;
+  const activeLocation = formatLocation(active);
+  const frameClassName = fitContent
+    ? "flex flex-col bg-stone-900 rounded-md border border-stone-800 overflow-hidden"
+    : "flex h-full min-h-0 flex-col bg-stone-900 rounded-md border border-stone-800 overflow-hidden";
+  const panelClassName = fitContent
+    ? "flex flex-col"
+    : "flex flex-1 min-h-0 flex-col md:overflow-hidden";
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-stone-900 rounded-md border border-stone-800 overflow-hidden">
+    <div className={frameClassName}>
       <div className="flex items-center justify-between border-b border-stone-800 px-4 py-2">
         <div role="tablist" aria-label="Source tabs" className="flex items-center gap-1 overflow-x-auto">
           {tabs.map((tab) => {
@@ -47,18 +58,27 @@ export function SourceTabs({
             );
           })}
           <code className="ml-2 whitespace-nowrap text-xs font-mono text-stone-500">
-            {(filenamePrefix ?? "") + active.filename}
+            {(filenamePrefix ?? "") + activeLocation}
           </code>
         </div>
         <CopyButton text={active.source} />
       </div>
-      <div role="tabpanel" className="flex flex-1 min-h-0 flex-col md:overflow-hidden">
+      <div role="tabpanel" className={panelClassName}>
         <HighlightedCode
           source={active.source}
           filename={active.filename}
+          lineStart={active.lineStart}
+          fitContent={fitContent}
           highlightSymbols={active.symbols}
         />
       </div>
     </div>
   );
+}
+
+function formatLocation(tab: SourceTab): string {
+  const filename = tab.filename;
+  if (!tab.lineStart) return filename;
+  if (!tab.lineEnd || tab.lineEnd === tab.lineStart) return `${filename}:${tab.lineStart}`;
+  return `${filename}:${tab.lineStart}-${tab.lineEnd}`;
 }
