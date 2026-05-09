@@ -1,6 +1,6 @@
 export {
   createJsonCrud,
-} from "./editor/json-crud.js";
+} from "./json-crud.js";
 
 export {
   deserialize,
@@ -10,11 +10,11 @@ export {
 
 export type {
   JsonCrud,
-} from "./editor/json-crud.js";
+} from "./json-crud.js";
 
 export type {
   SelectionPlan,
-} from "./editor/json-selection.js";
+} from "./selection/json-selection.js";
 
 export type {
   FocusFilter,

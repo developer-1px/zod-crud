@@ -10,7 +10,7 @@ import type {
   NodeId,
   OperationResult,
   PasteOptions,
-} from "../types.js";
+} from "./types.js";
 import {
   cloneDoc,
   cloneJson,
@@ -19,14 +19,14 @@ import {
   getPath,
   maxNodeIndex,
   serialize,
-} from "../document/json-doc.js";
-import { planDeleteMany, type DeleteManyPlan } from "./json-delete-many.js";
-import { createHistory } from "./json-history.js";
-import { createClipboard } from "./json-clipboard.js";
-import { createMutations } from "./json-mutations.js";
-import { createMove } from "./json-move.js";
-import { normalizeSelection, type SelectionPlan } from "./json-selection.js";
-import { validateDocument } from "../schema/json-validation.js";
+} from "./document/json-doc.js";
+import { planDeleteMany, type DeleteManyPlan } from "./selection/json-delete-many.js";
+import { createHistory } from "./history/json-history.js";
+import { createClipboard } from "./clipboard/json-clipboard.js";
+import { createMutations } from "./crud/json-mutations.js";
+import { createMove } from "./clipboard/json-move.js";
+import { normalizeSelection, type SelectionPlan } from "./selection/json-selection.js";
+import { validateDocument } from "./schema/json-validation.js";
 import { successResult } from "./operation-result.js";
 import { failure } from "./failure.js";
 

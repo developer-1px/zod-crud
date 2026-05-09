@@ -16,10 +16,10 @@ import {
 } from "../document/json-doc.js";
 import { normalizeArrayKeys } from "../document/json-doc-mutation-helpers.js";
 import { validateDocument } from "../schema/json-validation.js";
-import { cloneNode, pushExistingUpdate } from "./json-change-nodes.js";
+import { cloneNode, pushExistingUpdate } from "../crud/json-change-nodes.js";
 import { objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
-import { normalizeSelection, type SelectionPlan } from "./json-selection.js";
-import { failure } from "./failure.js";
+import { normalizeSelection, type SelectionPlan } from "../selection/json-selection.js";
+import { failure } from "../failure.js";
 
 type OperationFailure = Extract<OperationResult, { ok: false }>;
 

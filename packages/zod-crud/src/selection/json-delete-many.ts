@@ -17,7 +17,7 @@ import {
 import { validateAtPath } from "../schema/json-validation.js";
 import { focusAfterSiblingBatchRemoval } from "./delete-many-focus.js";
 import { sortBySiblingIndexDescending } from "./delete-many-order.js";
-import { changesForDeletedSubtrees } from "./json-change-diff.js";
+import { changesForDeletedSubtrees } from "../crud/json-change-diff.js";
 import { normalizeSelection } from "./json-selection.js";
 
 export { uniqueNodes } from "./json-selection.js";

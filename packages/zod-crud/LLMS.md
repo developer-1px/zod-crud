@@ -8,7 +8,7 @@ Source of truth:
 
 - Behavior contract: `spec.md`
 - Public exports: `src/index.ts`
-- Runtime facade: `src/editor/json-crud.ts`
+- Runtime facade: `src/json-crud.ts`
 - Public usage guide: `README.md`
 
 ## Mental Model

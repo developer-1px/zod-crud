@@ -22,7 +22,7 @@
 
 mutation은 `commitIfValid`를 통해서만 현재 document가 됩니다. 검증이 실패하면 실패 결과를 반환하고, 성공하면 history entry와 change diff를 만들고 commit합니다.
 
-::source{path="packages/zod-crud/src/editor/json-crud.ts" lines="272-290" title="commitIfValid"}
+::source{path="packages/zod-crud/src/json-crud.ts" lines="272-290" title="commitIfValid"}
 
 ## 거절되는 값의 실제 예
 

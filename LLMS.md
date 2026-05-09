@@ -17,7 +17,7 @@ Source of truth:
 - Behavior contract: `packages/zod-crud/spec.md`
 - Public exports: `packages/zod-crud/src/index.ts`
 - Public README: `packages/zod-crud/README.md`
-- Runtime facade: `packages/zod-crud/src/editor/json-crud.ts`
+- Runtime facade: `packages/zod-crud/src/json-crud.ts`
 
 ## Mental Model
 

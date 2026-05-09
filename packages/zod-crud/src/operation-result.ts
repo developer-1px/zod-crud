@@ -4,8 +4,8 @@ import type {
   FocusFilter,
   NodeId,
   OperationResult,
-} from "../types.js";
-import { focusFromMutation } from "./focus-result.js";
+} from "./types.js";
+import { focusFromMutation } from "./selection/focus-result.js";
 
 export function successResult(
   before: JsonDoc,
