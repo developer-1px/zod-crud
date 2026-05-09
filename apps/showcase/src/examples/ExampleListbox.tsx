@@ -25,7 +25,8 @@ export function ExampleListbox() {
   const { rootProps, optionProps, items } = useListboxPattern(
     data,
     (e) => {
-      if (e.type === "select") crud.update(statusId, e.id);
+      const selectedId = e.type === "select" ? e.ids[0] : undefined;
+      if (selectedId !== undefined) crud.update(statusId, selectedId);
     },
     { label: "Status" },
   );

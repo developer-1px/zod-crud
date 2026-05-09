@@ -6,6 +6,7 @@ export function toNormalized(
   expanded: Set<NodeId>,
   focus: NodeId | null,
   selected: Set<NodeId>,
+  selectAnchor: NodeId | null,
 ): NormalizedData {
   return {
     entities: Object.fromEntries(
@@ -23,6 +24,6 @@ export function toNormalized(
     relationships: Object.fromEntries(
       Object.values(doc.nodes).map((n) => [n.id, n.children.slice()]),
     ),
-    meta: { root: [doc.rootId], expanded: [...expanded], focus },
+    meta: { root: [doc.rootId], expanded: [...expanded], focus, selectAnchor },
   };
 }

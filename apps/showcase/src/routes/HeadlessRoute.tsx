@@ -1,95 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
-import { createJsonCrud, type JsonValue, type NodeId } from "zod-crud";
 import { useTreeGridPattern } from "@p/aria-kernel/patterns";
-import type { UiEvent } from "@p/aria-kernel";
-import { SampleSchema, sampleData } from "./sampleData.js";
-import { toNormalized } from "./jsonDocAdapter.js";
 import { RouteLayout, TreeNode } from "./RouteLayout.js";
+import { useJsonDocRouteAdapter } from "./useJsonDocRouteAdapter.js";
 
 export function HeadlessRoute() {
-  const [crud] = useState(() => createJsonCrud(SampleSchema, sampleData));
-  const [doc, setDoc] = useState(() => crud.snapshot());
-  useEffect(() => crud.subscribe(() => setDoc(crud.snapshot())), [crud]);
-
-  const [expanded, setExpanded] = useState<Set<NodeId>>(() => {
-    const initial = new Set<NodeId>([doc.rootId]);
-    for (const child of doc.nodes[doc.rootId]!.children) initial.add(child);
-    return initial;
-  });
-  const [focus, setFocus] = useState<NodeId | null>(doc.rootId);
-  const [selected, setSelected] = useState<Set<NodeId>>(() => new Set());
-
-  const data = useMemo(
-    () => toNormalized(doc, expanded, focus, selected),
-    [doc, expanded, focus, selected],
-  );
-
-  const onEvent = (e: UiEvent) => {
-    switch (e.type) {
-      case "navigate":
-        if (e.id) setFocus(e.id);
-        return;
-      case "select":
-        setSelected((prev) => {
-          const next = new Set(prev);
-          if (next.has(e.id)) next.delete(e.id);
-          else next.add(e.id);
-          return next;
-        });
-        setFocus(e.id);
-        return;
-      case "selectMany":
-        setSelected((prev) => {
-          const next = new Set(prev);
-          for (const id of e.ids) {
-            if (e.to === undefined) {
-              if (next.has(id)) next.delete(id);
-              else next.add(id);
-            } else if (e.to) next.add(id);
-            else next.delete(id);
-          }
-          return next;
-        });
-        return;
-      case "setAnchor":
-        return;
-      case "expand":
-        setExpanded((prev) => {
-          const next = new Set(prev);
-          if (e.open) next.add(e.id);
-          else next.delete(e.id);
-          return next;
-        });
-        return;
-      case "insertAfter":
-        crud.insertAfter(e.siblingId, e.value as JsonValue);
-        return;
-      case "appendChild":
-        crud.appendChild(e.parentId, e.value as JsonValue);
-        return;
-      case "update":
-        crud.update(e.id, e.value as JsonValue);
-        return;
-      case "remove":
-        crud.delete(e.id);
-        return;
-      case "copy":
-        crud.copy(e.id);
-        return;
-      case "cut":
-        crud.cut(e.id);
-        return;
-      case "paste":
-        crud.paste(e.targetId);
-        return;
-      case "undo":
-        crud.undo();
-        return;
-      case "redo":
-        crud.redo();
-        return;
-    }
-  };
+  const { data, json, onEvent } = useJsonDocRouteAdapter();
 
   const { treegridProps, rowProps, items } = useTreeGridPattern(
     data,
@@ -120,7 +34,7 @@ export function HeadlessRoute() {
           ))}
         </div>
       }
-      json={JSON.stringify(crud.toJson(), null, 2)}
+      json={json}
     />
   );
 }
