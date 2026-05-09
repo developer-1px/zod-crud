@@ -9,6 +9,7 @@ export type OperationFailureCode =
   | "exception"
   | "invalid_target"
   | "missing_default"
+  | "not_implemented"
   | "root_operation"
   | "schema_mismatch";
 

@@ -11,7 +11,15 @@ import type {
   OperationResult,
   PasteOptions,
 } from "../types.js";
-import type { JsonCrud } from "../json-crud.js";
+import type {
+  ChangeListener,
+  JsonCrud,
+  NodePredicate,
+  Transaction,
+  TransactionResult,
+  WalkVisitor,
+} from "../json-crud.js";
+import type { JsonNode, JsonNodeType } from "../types.js";
 import {
   cloneDoc,
   cloneJson,
@@ -49,7 +57,8 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
   let doc = serialize(parsed.data);
   const childKeys = options.childKeys ?? DEFAULT_CHILD_KEYS;
   let nextNodeIndex = maxNodeIndex(doc) + 1;
-  const listeners = new Set<() => void>();
+  const listeners = new Set<ChangeListener>();
+  let savedDoc: JsonDoc = cloneDoc(doc);
 
   const validation = validateDocument(schema, doc);
 
@@ -274,18 +283,82 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     return id;
   }
 
-  function subscribe(notify: () => void): () => void {
-    listeners.add(notify);
+  function subscribe(listener: ChangeListener): () => void {
+    listeners.add(listener);
     return () => {
-      listeners.delete(notify);
+      listeners.delete(listener);
     };
   }
 
-  function notifyListeners(): void {
+  function notifyListeners(changes: JsonChange[]): void {
     for (const listener of listeners) {
-      listener();
+      listener(changes);
     }
   }
+
+  function notImplemented(method: string): OperationResult {
+    return { ok: false, code: "not_implemented", reason: `${method} is not yet implemented.` };
+  }
+
+  function walk(visit: WalkVisitor): void {
+    const visitNode = (nodeId: NodeId, path: JsonPath): boolean => {
+      const node = doc.nodes[nodeId];
+      if (node === undefined) return true;
+      const result = visit(node, path);
+      if (result === "stop") return false;
+      if (result === "skip") return true;
+      for (const childId of node.children) {
+        const child = doc.nodes[childId];
+        if (child === undefined) continue;
+        const childPath: JsonPath = child.key === null ? path : [...path, child.key];
+        if (!visitNode(childId, childPath)) return false;
+      }
+      return true;
+    };
+    visitNode(doc.rootId, []);
+  }
+
+  function findAll(predicate: NodePredicate): NodeId[] {
+    const results: NodeId[] = [];
+    walk((node, path) => {
+      if (predicate(node, path)) results.push(node.id);
+    });
+    return results;
+  }
+
+  function transact<R>(_fn: (tx: Transaction) => R): TransactionResult<R> {
+    return notImplemented("transact");
+  }
+
+  function wrap(_nodeId: NodeId, _key: string): OperationResult { return notImplemented("wrap"); }
+  function unwrap(_nodeId: NodeId): OperationResult { return notImplemented("unwrap"); }
+  function indent(_nodeId: NodeId): OperationResult { return notImplemented("indent"); }
+  function outdent(_nodeId: NodeId): OperationResult { return notImplemented("outdent"); }
+  function split(_nodeId: NodeId, _at: number): OperationResult { return notImplemented("split"); }
+  function join(_nodeId: NodeId, _withId: NodeId): OperationResult { return notImplemented("join"); }
+
+  function applyChanges(_changes: JsonChange[]): OperationResult {
+    return notImplemented("applyChanges");
+  }
+  function invertChangesStub(_changes: JsonChange[]): JsonChange[] { return []; }
+  function diff(_other: JsonDoc): JsonChange[] { return []; }
+
+  function markClean(): void {
+    savedDoc = cloneDoc(doc);
+  }
+  function isDirty(): boolean {
+    return doc !== savedDoc;
+  }
+  function savedSnapshot(): JsonDoc {
+    return cloneDoc(savedDoc);
+  }
+
+  function insertableKeys(_parentId: NodeId): string[] { return []; }
+  function insertableTypes(_parentId: NodeId, _key?: string): JsonNodeType[] { return []; }
+
+  function lock(_nodeId: NodeId): void { /* stub */ }
+  function unlock(_nodeId: NodeId): void { /* stub */ }
+  function isLocked(_nodeId: NodeId): boolean { return false; }
 
   return {
     snapshot,
@@ -293,6 +366,8 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     read,
     pathOf,
     find,
+    findAll,
+    walk,
     select: selectHere,
     create,
     canCreate,
@@ -309,12 +384,26 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     delete: deleteNode,
     canDelete,
     deleteMany,
+    canDeleteMany,
     moveBefore,
     canMoveBefore,
     moveAfter,
     canMoveAfter,
     moveInto,
     canMoveInto,
+    transact,
+    wrap,
+    canWrap: (id: NodeId, key: string) => notImplemented("canWrap"),
+    unwrap,
+    canUnwrap: (id: NodeId) => notImplemented("canUnwrap"),
+    indent,
+    canIndent: (id: NodeId) => notImplemented("canIndent"),
+    outdent,
+    canOutdent: (id: NodeId) => notImplemented("canOutdent"),
+    split,
+    canSplit: (id: NodeId, at: number) => notImplemented("canSplit"),
+    join,
+    canJoin: (id: NodeId, w: NodeId) => notImplemented("canJoin"),
     copy,
     copyMany,
     canCopyMany,
@@ -322,12 +411,22 @@ export function createJsonCrudInstance<T extends JsonValue, I = unknown>(
     cutMany,
     canCutMany,
     paste,
-    canDeleteMany,
     canPaste,
+    undo,
+    redo,
     canUndo,
     canRedo,
     subscribe,
-    undo,
-    redo,
+    applyChanges,
+    invertChanges: invertChangesStub,
+    diff,
+    markClean,
+    isDirty,
+    savedSnapshot,
+    insertableKeys,
+    insertableTypes,
+    lock,
+    unlock,
+    isLocked,
   };
 }

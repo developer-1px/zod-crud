@@ -20,7 +20,7 @@ export type HistoryEntry = {
 export type HistoryDeps = {
   getDoc: () => JsonDoc;
   setDoc: (doc: JsonDoc) => void;
-  notify: () => void;
+  notify: (changes: JsonChange[]) => void;
   focusFilter?: FocusFilter;
 };
 
@@ -59,7 +59,7 @@ export function createHistory(deps: HistoryDeps): History {
     });
     setDoc(next);
     redoStack = [];
-    notify();
+    notify(changes);
   }
 
   function undo(): OperationResult {
@@ -79,8 +79,9 @@ export function createHistory(deps: HistoryDeps): History {
       ...(previous.focusNodeIds === undefined ? {} : { focusNodeIds: previous.focusNodeIds }),
     });
     setDoc(previous.doc);
-    notify();
-    return successResult(current, previous.doc, invertChanges(previous.changes), previous.nodeId, undefined, undefined, focusFilter);
+    const inverted = invertChanges(previous.changes);
+    notify(inverted);
+    return successResult(current, previous.doc, inverted, previous.nodeId, undefined, undefined, focusFilter);
   }
 
   function redo(): OperationResult {
@@ -100,7 +101,7 @@ export function createHistory(deps: HistoryDeps): History {
       ...(next.focusNodeIds === undefined ? {} : { focusNodeIds: next.focusNodeIds }),
     });
     setDoc(next.doc);
-    notify();
+    notify(next.changes);
     return successResult(current, next.doc, next.changes, next.nodeId, next.focusNodeId, next.focusNodeIds, focusFilter);
   }
 
