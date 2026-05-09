@@ -3,7 +3,7 @@ import type {
   NodeId,
 } from "../types.js";
 
-export type PasteCandidate = {
+export type PastePlan = {
   apply: () => {
     doc: JsonDoc;
     pastedRootId: NodeId;

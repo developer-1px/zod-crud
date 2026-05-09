@@ -4,17 +4,17 @@ import type {
   NodeId,
 } from "../types.js";
 import { getNode } from "../document/json-doc.js";
-import { arrayInsertPasteCandidate } from "./json-array-paste.js";
-import type { PasteCandidate } from "./json-paste-candidate.js";
+import { arrayInsertPastePlan } from "./json-array-paste.js";
+import type { PastePlan } from "./json-paste-plan.js";
 
-export function selfSiblingPasteCandidates(
+export function selfSiblingPastePlans(
   doc: JsonDoc,
   clipboardSourceId: NodeId | null,
   targetId: NodeId,
   payload: JsonValue,
   index: number | undefined,
   allocateNodeId: () => NodeId,
-): PasteCandidate[] {
+): PastePlan[] {
   if (clipboardSourceId !== targetId) {
     return [];
   }
@@ -37,5 +37,5 @@ export function selfSiblingPasteCandidates(
     return [];
   }
 
-  return [arrayInsertPasteCandidate(doc, parent.id, payload, index ?? targetIndex + 1, allocateNodeId)];
+  return [arrayInsertPastePlan(doc, parent.id, payload, index ?? targetIndex + 1, allocateNodeId)];
 }

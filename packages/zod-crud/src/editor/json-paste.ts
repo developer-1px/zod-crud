@@ -7,16 +7,16 @@ import type {
   PasteOptions,
 } from "../types.js";
 import { getNode } from "../document/json-doc.js";
-import { childPasteCandidates } from "./json-child-paste.js";
-import { overwritePasteCandidate } from "./json-overwrite-paste.js";
-import type { PasteCandidate } from "./json-paste-candidate.js";
-import { childPasteManyCandidates } from "./json-paste-many.js";
-import { selfSiblingPasteCandidates } from "./json-self-sibling-paste.js";
+import { childPastePlans } from "./json-child-paste.js";
+import { overwritePastePlan } from "./json-overwrite-paste.js";
+import type { PastePlan } from "./json-paste-plan.js";
+import { childPasteManyPlans } from "./json-paste-many.js";
+import { selfSiblingPastePlans } from "./json-self-sibling-paste.js";
 import { jsonNodeTypeOf } from "./json-paste-shared.js";
 
-export type { PasteCandidate } from "./json-paste-candidate.js";
+export type { PastePlan } from "./json-paste-plan.js";
 
-export function buildPasteCandidates({
+export function buildPastePlans({
   doc,
   schema,
   targetId,
@@ -36,18 +36,18 @@ export function buildPasteCandidates({
   clipboardSourceId: NodeId | null;
   index: number | undefined;
   allocateNodeId: () => NodeId;
-}): PasteCandidate[] {
+}): PastePlan[] {
   const target = getNode(doc, targetId);
 
   if (mode === "overwrite") {
-    return [overwritePasteCandidate(doc, targetId, payload, allocateNodeId)];
+    return [overwritePastePlan(doc, targetId, payload, allocateNodeId)];
   }
 
   if (mode === "child") {
-    return childPasteCandidates(doc, schema, targetId, payload, childKeys, index, allocateNodeId);
+    return childPastePlans(doc, schema, targetId, payload, childKeys, index, allocateNodeId);
   }
 
-  const selfSiblingCandidates = selfSiblingPasteCandidates(
+  const selfSiblingPlans = selfSiblingPastePlans(
     doc,
     clipboardSourceId,
     targetId,
@@ -55,28 +55,28 @@ export function buildPasteCandidates({
     index,
     allocateNodeId,
   );
-  const childCandidates = childPasteCandidates(doc, schema, targetId, payload, childKeys, index, allocateNodeId);
+  const childPlans = childPastePlans(doc, schema, targetId, payload, childKeys, index, allocateNodeId);
 
-  if (selfSiblingCandidates.length > 0) {
-    return [...selfSiblingCandidates, ...childCandidates];
+  if (selfSiblingPlans.length > 0) {
+    return [...selfSiblingPlans, ...childPlans];
   }
 
   if (target.type === "array") {
-    return childCandidates;
+    return childPlans;
   }
 
   if (target.type === "object") {
-    return [overwritePasteCandidate(doc, targetId, payload, allocateNodeId)];
+    return [overwritePastePlan(doc, targetId, payload, allocateNodeId)];
   }
 
   if (target.type === jsonNodeTypeOf(payload)) {
-    return [overwritePasteCandidate(doc, targetId, payload, allocateNodeId)];
+    return [overwritePastePlan(doc, targetId, payload, allocateNodeId)];
   }
 
   return [];
 }
 
-export function buildPasteManyCandidates({
+export function buildPasteManyPlans({
   doc,
   schema,
   targetId,
@@ -94,10 +94,10 @@ export function buildPasteManyCandidates({
   childKeys: string[];
   index: number | undefined;
   allocateNodeId: () => NodeId;
-}): PasteCandidate[] {
+}): PastePlan[] {
   if (payloads.length === 0 || mode === "overwrite") {
     return [];
   }
 
-  return childPasteManyCandidates(doc, schema, targetId, payloads, childKeys, index, allocateNodeId);
+  return childPasteManyPlans(doc, schema, targetId, payloads, childKeys, index, allocateNodeId);
 }

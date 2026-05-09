@@ -34,7 +34,7 @@ const mutationsFactory: ApiSource = { key: "json-mutations", symbols: ["createMu
 const clipboardFactory: ApiSource = { key: "json-clipboard", symbols: ["createClipboard"] };
 const historyFactory: ApiSource = { key: "json-history", symbols: ["createHistory"] };
 const deleteManyPlanner: ApiSource = { key: "json-delete-many", symbols: ["planDeleteMany"] };
-const pasteCandidates: ApiSource = { key: "json-paste", symbols: ["buildPasteCandidates", "buildPasteManyCandidates"] };
+const pastePlans: ApiSource = { key: "json-paste", symbols: ["buildPastePlans", "buildPasteManyPlans"] };
 const moveFactory: ApiSource = { key: "json-move", symbols: ["createMove"] };
 const selectionNormalizer: ApiSource = { key: "json-selection", symbols: ["normalizeSelection"] };
 
@@ -103,8 +103,8 @@ export const apiGroups: ApiGroup[] = [
       { id: "copyMany", call: "crud.copyMany(nodeIds)", sources: [clipboardFactory] },
       { id: "cut", call: "crud.cut(nodeId)", sources: [clipboardFactory] },
       { id: "cutMany", call: "crud.cutMany(nodeIds)", sources: [clipboardFactory] },
-      { id: "paste", call: "crud.paste(targetId, options?)", sources: [clipboardFactory, pasteCandidates] },
-      { id: "canPaste", call: "crud.canPaste(targetId, options?)", sources: [clipboardFactory, pasteCandidates] },
+      { id: "paste", call: "crud.paste(targetId, options?)", sources: [clipboardFactory, pastePlans] },
+      { id: "canPaste", call: "crud.canPaste(targetId, options?)", sources: [clipboardFactory, pastePlans] },
       { id: "canCopyMany", call: "crud.canCopyMany(nodeIds)", sources: [clipboardFactory] },
       { id: "canCutMany", call: "crud.canCutMany(nodeIds)", sources: [clipboardFactory] },
     ],

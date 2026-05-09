@@ -7,14 +7,14 @@ import {
   cloneDoc,
   replaceSubtree,
 } from "../document/json-doc.js";
-import type { PasteCandidate } from "./json-paste-candidate.js";
+import type { PastePlan } from "./json-paste-plan.js";
 
-export function overwritePasteCandidate(
+export function overwritePastePlan(
   doc: JsonDoc,
   targetId: NodeId,
   payload: JsonValue,
   allocateNodeId: () => NodeId,
-): PasteCandidate {
+): PastePlan {
   return {
     apply: () => {
       const next = cloneDoc(doc);

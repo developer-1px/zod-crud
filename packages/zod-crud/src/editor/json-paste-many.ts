@@ -3,9 +3,9 @@ import * as z from "zod";
 import type { JsonDoc, JsonValue, NodeId } from "../types.js";
 import { cloneDoc, ensureObjectArrayField, getNode, insertChild } from "../document/json-doc.js";
 import { objectArrayFieldKeysOfTarget } from "./json-paste-shared.js";
-import type { PasteCandidate } from "./json-paste-candidate.js";
+import type { PastePlan } from "./json-paste-plan.js";
 
-export function childPasteManyCandidates(
+export function childPasteManyPlans(
   doc: JsonDoc,
   schema: z.ZodType<unknown>,
   targetId: NodeId,
@@ -13,11 +13,11 @@ export function childPasteManyCandidates(
   childKeys: string[],
   index: number | undefined,
   allocateNodeId: () => NodeId,
-): PasteCandidate[] {
+): PastePlan[] {
   const target = getNode(doc, targetId);
 
   if (target.type === "array") {
-    return [arrayInsertManyPasteCandidate(doc, targetId, payloads, index, allocateNodeId)];
+    return [arrayInsertManyPastePlan(doc, targetId, payloads, index, allocateNodeId)];
   }
 
   if (target.parentId !== null) {
@@ -27,7 +27,7 @@ export function childPasteManyCandidates(
       const targetIndex = parent.children.indexOf(targetId);
 
       if (targetIndex >= 0) {
-        return [arrayInsertManyPasteCandidate(doc, parent.id, payloads, index ?? targetIndex + 1, allocateNodeId)];
+        return [arrayInsertManyPastePlan(doc, parent.id, payloads, index ?? targetIndex + 1, allocateNodeId)];
       }
     }
   }
@@ -37,18 +37,18 @@ export function childPasteManyCandidates(
   }
 
   return objectArrayFieldKeysOfTarget(doc, schema, target, childKeys).map((childKey) =>
-    objectChildArrayPasteManyCandidate(doc, targetId, childKey, payloads, index, allocateNodeId),
+    objectChildArrayPasteManyPlan(doc, targetId, childKey, payloads, index, allocateNodeId),
   );
 }
 
-function objectChildArrayPasteManyCandidate(
+function objectChildArrayPasteManyPlan(
   doc: JsonDoc,
   targetId: NodeId,
   childKey: string,
   payloads: JsonValue[],
   index: number | undefined,
   allocateNodeId: () => NodeId,
-): PasteCandidate {
+): PastePlan {
   return {
     apply: () => {
       const next = cloneDoc(doc);
@@ -66,13 +66,13 @@ function objectChildArrayPasteManyCandidate(
   };
 }
 
-function arrayInsertManyPasteCandidate(
+function arrayInsertManyPastePlan(
   doc: JsonDoc,
   arrayId: NodeId,
   payloads: JsonValue[],
   index: number | undefined,
   allocateNodeId: () => NodeId,
-): PasteCandidate {
+): PastePlan {
   return {
     apply: () => {
       const next = cloneDoc(doc);

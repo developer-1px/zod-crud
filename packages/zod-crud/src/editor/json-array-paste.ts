@@ -8,15 +8,15 @@ import {
   getNode,
   insertChild,
 } from "../document/json-doc.js";
-import type { PasteCandidate } from "./json-paste-candidate.js";
+import type { PastePlan } from "./json-paste-plan.js";
 
-export function arrayInsertPasteCandidate(
+export function arrayInsertPastePlan(
   doc: JsonDoc,
   arrayId: NodeId,
   payload: JsonValue,
   index: number | undefined,
   allocateNodeId: () => NodeId,
-): PasteCandidate {
+): PastePlan {
   return {
     apply: () => {
       const next = cloneDoc(doc);
