@@ -1,12 +1,19 @@
 # zod-crud
 
-A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and
-**RFC 6902 (JSON Patch)**. State, actions, and change records are 100%
-serializable JSON. The core is pure functions; React hooks layer editor
-coordinates such as selection and focus on top of that RFC substrate.
+zod-crud is a JSON tree library that maps the **edit vocabulary every FE
+service rebuilds from scratch** (select, move, cut, copy, paste, duplicate,
+undo, redo, find, replace) onto JSON standards (**RFC 6901 Pointer · RFC
+6902 Patch · RFC 9535 JSONPath · W3C Selection · RFC 8927 + Zod**) so the
+vocabulary becomes a **reusable standard layer**.
+
+State, actions, and change records are 100% serializable JSON. The core is
+pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
+`hooks/useJsonDocument` is a thin React adapter that injects selection.
+`sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single
-source of truth and outranks code, docs, and tests on conflict.
+source of truth and outranks code, docs, and tests on conflict. The
+RFC ↔ `core/*` 1:1 mapping is in [`STANDARDS.md`](./STANDARDS.md).
 
 ## Install
 

@@ -35,13 +35,20 @@ ADR 0001.
 ### `aria-selected`
 WAI-ARIA 속성. item 별 selection 여부. `selection.has(p)` 의 의미. ADR 0001.
 
-### Axis 1 (Data Substrate)
-zod-crud 헌장의 첫 번째 30년 축. RFC 6901 + RFC 6902 + JSON 직렬화 + pure core +
-React 진입점 단일 (`useJson`). SPEC §0.1.
+### Axis 1 (Data Substrate) — **deprecated (ADR-0002)**
+ADR-0001 의 어휘. ADR-0002 에서 어휘 폐기. 의미는 **3-layer 의 `core/` + RFC 표준** 으로 흡수됨. 새 코드 / 문서에서 사용 금지.
 
-### Axis 2 (Editor Abstractions)
-zod-crud 헌장의 두 번째 30년 축. Pointer 위에 짓는 selection · focus, WAI-ARIA 어휘
-정합, 자동 추적, opt-in hook. SPEC §0.2.
+### Axis 2 (Editor Abstractions) — **deprecated (ADR-0002)**
+ADR-0001 의 어휘. ADR-0002 에서 어휘 폐기. "Editor abstractions" 명명이 정체성 ("editor 가 아니라 JSON tree 라이브러리") 과 충돌. 의미는 **`core/selection/` + 10 verbs (select / find) + Selection 기둥** 으로 흡수. 새 코드 / 문서에서 사용 금지.
+
+### 4대 기둥 (Pillars)
+편집 어휘 분류축. **Selection · Edit · Clipboard · Undo**. 10 verbs 가 이 기둥 위에 닫힌다 (closure). SPEC §0.1 의 매핑 표 참조. ADR-0002.
+
+### 10 verbs (Edit vocabulary)
+`select / move / cut / copy / paste / duplicate / undo / redo / find / replace`. zod-crud 의 본체 책임 단위. closure 검증 단위. SPEC §0.1.
+
+### 3-layer
+코드 위계. **`hooks/`** (얇은 React 어댑터) → **`verbs/`** (편집 어휘 composer, pure) → **`core/`** (RFC 표준 substrate, pure). 별도 박스로 **`sidecars/`** (횡단 관심사). SPEC §0.2. ADR-0002.
 
 ## B
 

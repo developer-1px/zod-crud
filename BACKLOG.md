@@ -12,9 +12,8 @@
 
 ## zod-crud library
 
-- [ ] **system clipboard 통합 (R4)** — 4-risk 매트릭스 합의됐으나 미구현. `useClipboard` 를 zod-crud 로 승격, `navigator.clipboard` + JSON serialize, paste 진입 시점에 schema 검증.
-- [ ] **silent fail 차단** — `strict=false` + `onError` 미설정 시 `console.error` fallback. SPEC §0.1 (5) "시끄러운 에러" 가 사용자 wiring 에 의존하는 약점 보강.
-- [ ] **cut 의 atomicity 누수 (G8 위반)** — `commands.cut` 이 `clipboard.copy(...)` + `ops.patch(remove)` 두 호출. 사이가 atomic 아님. 현재 outliner-local 이라 무사하지만 system clipboard 가면 진짜 문제.
+> Clipboard / cut atomicity / system clipboard 통합 항목은 Epic #15 의 P5 sub-issue 들 (#35 verbs/copy, #36 verbs/cut, #37 verbs/paste, #38 verbs/duplicate) 로 이전됨. `boundary` 정합 (ADR-0002) — system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체. 본 BACKLOG 에서 트래킹 제거.
+> silent fail 정책은 P4 (#31~#34) 의 schema preFlight gate 결과로 흡수.
 
 ## SPEC drift
 
