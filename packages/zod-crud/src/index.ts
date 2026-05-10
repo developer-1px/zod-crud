@@ -13,7 +13,7 @@ export type {
 export { useJson, JsonCrudError } from "./hooks/useJson.js";
 export type { JsonOps, UseJsonOptions, JsonChangeListener } from "./hooks/useJson.js";
 
-export { applyOperation, applyPatch } from "./core/patch/index.js";
+export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";
 export type {
   JsonPatchOperation,
   JsonResult,
@@ -48,7 +48,18 @@ export type {
   UseSelectionOptions,
 } from "./hooks/useSelection.js";
 
-export { trackPointer, trackPointers } from "./core/track.js";
+export { trackPointer, trackPointers, pickAutoTarget, pickAutoTargets, recoverLostPointer } from "./core/track.js";
+
+// pure selection — headless 사용자용 (React 무관). hooks/useSelection 가 이걸 wrapping.
+export {
+  reduceSelection,
+  applySelectionAutoRules,
+  EMPTY_SELECTION,
+  isCollapsed as isSelectionCollapsed,
+  selectionType,
+} from "./core/selection/index.js";
+export type { SelectionAction, SelectionSnap } from "./core/selection/index.js";
+export { expandRange } from "./core/selection/range.js";
 
 // HTTP transport — RFC 5789 + 6902 + 7396 (SPEC §5.11)
 export {

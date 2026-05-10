@@ -168,6 +168,9 @@ export function trackPointer(
   for (const op of applied) {
     if (cur === null) return null;
     cur = trackOne(cur, op);
+    // 방어: `/-` 가 결과 pointer 에 누출되면 broken — null 반환.
+    // applyPatch 의 applied 는 normalizeOp 으로 이미 concrete index. 이 가드는 hand-built ops 보호용.
+    if (cur !== null && (cur === "-" || cur.endsWith("/-"))) return null;
   }
   return cur;
 }
