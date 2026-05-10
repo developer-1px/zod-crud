@@ -6,7 +6,6 @@
 // useMemo / useDeferredValue 로 캐싱 권장. canUndo/canRedo 는 stack 길이 검사라 저비용.
 
 import type * as z from "zod";
-import type { JsonOps } from "../hooks/useJson.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { cut } from "../verbs/cut.js";
 import { copy } from "../verbs/copy.js";
@@ -14,9 +13,9 @@ import { paste, type PasteMode } from "../verbs/paste.js";
 import { duplicate, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb } from "../verbs/move.js";
 import { replace as replaceVerb } from "../verbs/replace.js";
+import type { BuildCommandsArgs } from "./buildCommands.js";
 
 export interface Can<T> {
-  // Mutation guards (full preFlight)
   move(from: Pointer, to: Pointer): boolean;
   duplicate(source: Pointer, opts?: DuplicateOpts): boolean;
   replace(jsonpath: string, value: unknown): boolean;
@@ -24,15 +23,11 @@ export interface Can<T> {
   paste(payload: unknown, target: Pointer, mode?: PasteMode): boolean;
   copy(source: Pointer): boolean;
 
-  // Stack flags (저비용)
   readonly undo: boolean;
   readonly redo: boolean;
 }
 
-export interface BuildCanArgs<S extends z.ZodType> {
-  schema: S;
-  ops: JsonOps<z.output<S>>;
-}
+export type BuildCanArgs<S extends z.ZodType> = Pick<BuildCommandsArgs<S>, "schema" | "ops">;
 
 export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.output<S>> {
   const { schema, ops } = args;
