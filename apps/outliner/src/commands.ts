@@ -44,7 +44,9 @@ export function insertSibling(ctx: CommandContext): JsonResult {
   const parent = parentOf(p);
   if (parent === null) return { ok: false, code: "path_not_found" };
   const insertAt = `${parent}/${idx + 1}`;
-  return ctx.ops.patch([{ op: "add", path: insertAt, value: EMPTY_NODE }]);
+  const r = ctx.ops.patch([{ op: "add", path: insertAt, value: EMPTY_NODE }]);
+  if (r.ok) ctx.selection.set([insertAt]);
+  return r;
 }
 
 export function demote(ctx: CommandContext): JsonResult {

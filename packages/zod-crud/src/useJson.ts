@@ -7,6 +7,7 @@ import type * as z from "zod";
 import {
   applyOperation,
   applyPatch,
+  computeInverses,
   type JsonPatchOperation,
   type JsonResult,
 } from "./core/patch.js";
@@ -86,8 +87,13 @@ export function useJson<S extends z.ZodType>(
   stateRef.current = state;
 
   const historyLimit = options.history ?? 0;
-  const undoStackRef = useRef<JsonPatchOperation[][]>([]);
-  const redoStackRef = useRef<JsonPatchOperation[][]>([]);
+  // 각 entry = { forward, inverse }. forward 는 redo 시 다시 적용, inverse 는 undo 시 적용.
+  // 적용 순서: forward 는 그대로, inverse 는 그대로 (computeInverses 가 reverse 로 쌓아둠).
+  interface HistoryEntry { forward: JsonPatchOperation[]; inverse: JsonPatchOperation[] }
+  const undoStackRef = useRef<HistoryEntry[]>([]);
+  const redoStackRef = useRef<HistoryEntry[]>([]);
+  const lastDispatchAtRef = useRef<number>(0);
+  const COALESCE_MS = 500;
 
   const listenersRef = useRef<Set<JsonChangeListener>>(new Set());
   const notify = useCallback((applied: ReadonlyArray<JsonPatchOperation>) => {
@@ -112,15 +118,29 @@ export function useJson<S extends z.ZodType>(
 
   const dispatch = useCallback(
     (label: JsonPatchOperation | "patch", ops: ReadonlyArray<JsonPatchOperation>): JsonResult => {
-      const { state: next, result, applied } = applyPatch(schema, stateRef.current, ops);
+      const before = stateRef.current;
+      const { state: next, result, applied } = applyPatch(schema, before, ops);
       if (!result.ok) return handle(label, result);
-      if (next === stateRef.current) return result;
+      if (next === before) return result;
 
       if (historyLimit > 0) {
-        const stack = undoStackRef.current;
-        stack.push([ROOT_REPLACE(stateRef.current)]);
-        if (stack.length > historyLimit) stack.shift();
-        redoStackRef.current = [];
+        const inv = computeInverses(before, applied);
+        if (inv.ok) {
+          const stack = undoStackRef.current;
+          const now = Date.now();
+          const last = stack[stack.length - 1];
+          // 같은 시간 창 안의 입력은 직전 entry 에 합친다 — 빠른 타이핑 = 1 undo.
+          if (last && now - lastDispatchAtRef.current < COALESCE_MS) {
+            last.forward.push(...applied);
+            // inverse 는 이전 inverse 의 앞에 prepend (시간 역순)
+            last.inverse.unshift(...inv.inverses);
+          } else {
+            stack.push({ forward: [...applied], inverse: inv.inverses });
+            if (stack.length > historyLimit) stack.shift();
+          }
+          lastDispatchAtRef.current = now;
+          redoStackRef.current = [];
+        }
       }
 
       stateRef.current = next;
@@ -146,22 +166,24 @@ export function useJson<S extends z.ZodType>(
       patch(operations) { return dispatch("patch", operations); },
 
       undo() {
-        const inv = undoStackRef.current.pop();
-        if (!inv) return false;
-        const { state: next, result, applied } = applyPatch(schema, stateRef.current, inv);
+        const entry = undoStackRef.current.pop();
+        if (!entry) return false;
+        const { state: next, result, applied } = applyPatch(schema, stateRef.current, entry.inverse);
         if (!result.ok) return false;
-        redoStackRef.current.push([ROOT_REPLACE(stateRef.current)]);
+        redoStackRef.current.push(entry);
+        lastDispatchAtRef.current = 0; // 다음 dispatch 는 새 entry 로
         stateRef.current = next;
         setState(next);
         notify(applied);
         return true;
       },
       redo() {
-        const inv = redoStackRef.current.pop();
-        if (!inv) return false;
-        const { state: next, result, applied } = applyPatch(schema, stateRef.current, inv);
+        const entry = redoStackRef.current.pop();
+        if (!entry) return false;
+        const { state: next, result, applied } = applyPatch(schema, stateRef.current, entry.forward);
         if (!result.ok) return false;
-        undoStackRef.current.push([ROOT_REPLACE(stateRef.current)]);
+        undoStackRef.current.push(entry);
+        lastDispatchAtRef.current = 0;
         stateRef.current = next;
         setState(next);
         notify(applied);

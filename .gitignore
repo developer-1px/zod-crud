@@ -3,5 +3,6 @@ dist/
 dist-demo/
 packages/*/dist/
 apps/*/dist/
+apps/*/coverage/
 *.tgz
 *.tsbuildinfo

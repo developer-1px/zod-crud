@@ -302,6 +302,83 @@ export function applyOperation<S extends z.ZodType>(
   return { state: parsed.data as z.output<S>, result: ok, applied: [op] };
 }
 
+// 각 forward op 의 inverse 를 계산. before-state 기준. 적용 순서를 따라가며 반환.
+// 반환 배열은 reverse 적용용 — 호출자는 [last, ..., first] 로 받아서 그대로 applyPatch 에 넘기면 forward 를 되돌린다.
+export function computeInverses(
+  state: unknown,
+  ops: ReadonlyArray<JsonPatchOperation>,
+): { ok: true; inverses: JsonPatchOperation[] } | { ok: false } {
+  const out: JsonPatchOperation[] = [];
+  let cur: unknown = state;
+  for (const op of ops) {
+    const inv = inverseOp(op, cur);
+    const r = applyOpRaw(cur, op);
+    if ("error" in r) return { ok: false };
+    if (inv) out.unshift(inv);
+    cur = r.state;
+  }
+  return { ok: true, inverses: out };
+}
+
+function readAt(state: unknown, segs: string[]): { ok: true; value: unknown } | { ok: false } {
+  let cur: unknown = state;
+  for (const seg of segs) {
+    if (cur === null || typeof cur !== "object") return { ok: false };
+    if (Array.isArray(cur)) {
+      const i = seg === "-" ? -1 : Number(seg);
+      if (!Number.isInteger(i) || i < 0 || i >= cur.length) return { ok: false };
+      cur = cur[i];
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) return { ok: false };
+      cur = (cur as Record<string, unknown>)[seg];
+    }
+  }
+  return { ok: true, value: cur };
+}
+
+function resolveAppendPath(path: Pointer, before: unknown): Pointer {
+  if (!path.endsWith("/-")) return path;
+  const parent = path.slice(0, -2);
+  const parentSegs = parent === "" ? [] : parsePointer(parent);
+  const r = readAt(before, parentSegs);
+  if (!r.ok || !Array.isArray(r.value)) return path;
+  return parent === "" ? `/${r.value.length}` : `${parent}/${r.value.length}`;
+}
+
+function inverseOp(op: JsonPatchOperation, before: unknown): JsonPatchOperation | null {
+  switch (op.op) {
+    case "add": {
+      const path = resolveAppendPath(op.path, before);
+      return { op: "remove", path };
+    }
+    case "remove": {
+      const segs = parsePointer(op.path);
+      const prev = readAt(before, segs);
+      if (!prev.ok) return null;
+      return { op: "add", path: op.path, value: prev.value };
+    }
+    case "replace": {
+      if (op.path === "") return { op: "replace", path: "", value: before };
+      const segs = parsePointer(op.path);
+      const prev = readAt(before, segs);
+      if (!prev.ok) return null;
+      return { op: "replace", path: op.path, value: prev.value };
+    }
+    case "move": {
+      // forward: from → path. inverse: path → from. /- destination 은 적용 후 idx 로 resolve 필요.
+      // 같은 array 내부 move 는 length 불변, 다른 부모면 destination array length 가 +1.
+      // 단순화: applyOpRaw 후 위치를 추정 — append 가 아니면 그대로.
+      const path = resolveAppendPath(op.path, before);
+      return { op: "move", from: path, path: op.from };
+    }
+    case "copy": {
+      const path = resolveAppendPath(op.path, before);
+      return { op: "remove", path };
+    }
+    case "test": return null;
+  }
+}
+
 // Batch (RFC 6902 §3): atomic. 한 op 실패 시 전체 롤백. Schema 검증은 끝에서 1회. SPEC §5.3.
 export function applyPatch<S extends z.ZodType>(
   schema: S,
