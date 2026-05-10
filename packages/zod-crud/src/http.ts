@@ -1,0 +1,127 @@
+// SPEC §5 — HTTP transport for RFC 6902 patches.
+// 선택적 import. 트리쉐이킹 보장. 표면 = 4 개 함수.
+//
+//   parsePatchResponse  ─ 응답 body + content-type → JsonPatchOperation[]
+//   buildPatchRequest   ─ ops → { headers, body }
+//   withIfMatch         ─ ETag 조건부 PATCH (RFC 5789 §2.4)
+//   parseMergePatch     ─ RFC 7396 merge-patch → RFC 6902 ops 변환
+//
+// 외부 의존 0 — fetch / axios / 다른 client 와 직접 결합하지 않는다.
+// 사용자가 client 를 가지고 와서 wiring 한다.
+
+import type { JsonPatchOperation } from "./core/patch.js";
+
+export const JSON_PATCH_MIME = "application/json-patch+json";    // RFC 6902 §6
+export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
+
+export interface PatchRequest {
+  method: "PATCH";
+  headers: Record<string, string>;
+  body: string;
+}
+
+/**
+ * RFC 6902 §6 — `application/json-patch+json` 으로 직렬화된 PATCH 요청 build.
+ * fetch / axios 등 client 의 옵션으로 spread 하면 된다.
+ */
+export function buildPatchRequest(ops: ReadonlyArray<JsonPatchOperation>): PatchRequest {
+  return {
+    method: "PATCH",
+    headers: { "content-type": JSON_PATCH_MIME },
+    body: JSON.stringify(ops),
+  };
+}
+
+/**
+ * RFC 5789 §2.4 — ETag 기반 조건부 PATCH. 서버가 동일 etag 를 가진 자원에만 적용.
+ * mid-air collision (다른 클라이언트가 먼저 변경) 방지.
+ */
+export function withIfMatch(req: PatchRequest, etag: string): PatchRequest {
+  return { ...req, headers: { ...req.headers, "if-match": etag } };
+}
+
+export interface ParseResult {
+  ok: true;
+  ops: JsonPatchOperation[];
+}
+
+export interface ParseError {
+  ok: false;
+  reason: string;
+}
+
+/**
+ * 응답 body + content-type 을 RFC 6902 ops 로 정규화.
+ * - `application/json-patch+json`         그대로 파싱
+ * - `application/merge-patch+json`        RFC 7396 → RFC 6902 변환
+ * - 그 외                                  거부
+ */
+export function parsePatchResponse(body: string, contentType: string | null | undefined): ParseResult | ParseError {
+  const ct = (contentType ?? "").split(";")[0]?.trim().toLowerCase() ?? "";
+  let raw: unknown;
+  try {
+    raw = JSON.parse(body);
+  } catch (e) {
+    return { ok: false, reason: `body is not valid JSON: ${(e as Error).message}` };
+  }
+  if (ct === JSON_PATCH_MIME) {
+    if (!Array.isArray(raw)) return { ok: false, reason: "json-patch body must be an array" };
+    return { ok: true, ops: raw as JsonPatchOperation[] };
+  }
+  if (ct === MERGE_PATCH_MIME) {
+    return { ok: true, ops: parseMergePatch(raw, "") };
+  }
+  return { ok: false, reason: `unsupported content-type: ${contentType}` };
+}
+
+/**
+ * RFC 7396 — merge patch 의미를 RFC 6902 ops 로 분해 (top-level only).
+ *
+ * 규칙 (§2):
+ *   - root 가 non-object: 전체 replace
+ *   - object: 각 key 에 대해
+ *     - value 가 null → remove
+ *     - 그 외 (primitive · array · object) → add (whole subtree)
+ *
+ * 한계: nested null = nested remove 는 target 컨텍스트 없이 6902 ops 로 분해 불가
+ *      (RFC 7396 merge 는 stateful). nested merge 가 필요하면 `applyMergePatch`
+ *      를 직접 사용한다.
+ */
+export function parseMergePatch(patch: unknown, basePath: string): JsonPatchOperation[] {
+  if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
+    return [{ op: "replace", path: basePath, value: patch }];
+  }
+  const out: JsonPatchOperation[] = [];
+  for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
+    const path = `${basePath}/${escapeMergeKey(k)}`;
+    if (v === null) out.push({ op: "remove", path });
+    else out.push({ op: "add", path, value: v });
+  }
+  return out;
+}
+
+/**
+ * RFC 7396 — merge patch 를 target 에 직접 적용. nested merge·null-remove 모두 정확.
+ * Pure: target 미변경, 새 객체 반환.
+ */
+export function applyMergePatch(target: unknown, patch: unknown): unknown {
+  if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
+    return patch;
+  }
+  const isTargetObject = target !== null && typeof target === "object" && !Array.isArray(target);
+  const out: Record<string, unknown> = isTargetObject ? { ...(target as Record<string, unknown>) } : {};
+  for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
+    if (v === null) {
+      delete out[k];
+    } else if (typeof v === "object" && !Array.isArray(v)) {
+      out[k] = applyMergePatch(out[k], v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+function escapeMergeKey(k: string): string {
+  return k.replace(/~/g, "~0").replace(/\//g, "~1");
+}

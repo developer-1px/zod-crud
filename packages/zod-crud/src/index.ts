@@ -50,3 +50,15 @@ export { useFocus } from "./useFocus.js";
 export type { FocusState, UseFocusOptions } from "./useFocus.js";
 
 export { trackPointer, trackPointers } from "./core/track.js";
+
+// HTTP transport — RFC 5789 + 6902 + 7396 (SPEC §5.11)
+export {
+  buildPatchRequest,
+  withIfMatch,
+  parsePatchResponse,
+  parseMergePatch,
+  applyMergePatch,
+  JSON_PATCH_MIME,
+  MERGE_PATCH_MIME,
+} from "./http.js";
+export type { PatchRequest, ParseResult, ParseError } from "./http.js";
