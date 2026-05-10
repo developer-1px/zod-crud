@@ -1,58 +1,75 @@
-# zod-crud 소개
+# Overview
 
-`zod-crud`는 JSON 문서를 안전하게 고치는 작은 도구입니다. 핵심 생각은 단순합니다.
+zod-crud는 **Zod schema로 보호되는 JSON editor state layer**입니다.
 
-1. 데이터는 그냥 JSON 객체입니다.
-2. 위치는 RFC 6901 JSON Pointer 문자열로 가리킵니다.
-3. 변경은 RFC 6902 JSON Patch 6개 작업으로 표현합니다.
-4. Zod schema가 변경 후 상태를 검사합니다.
-5. React에서는 `useJson`으로 상태와 작업 함수를 받습니다.
+조금 풀어서 말하면, JSON으로 된 문서를 편집하는 화면을 만들 때 필요한 상태 관리를 대신 맡아주는 headless 라이브러리입니다. headless라는 말은 버튼, input, tree row 같은 UI 모양은 제공하지 않고, 그 아래에서 움직이는 상태와 작업만 제공한다는 뜻입니다.
 
-처음에는 “JSON 객체를 직접 `setState` 하면 되지 않나?”라고 생각할 수 있습니다. 작은 예제에서는 맞습니다. 하지만 문서 편집기, 트리 편집기, 리스트 편집기처럼 변경을 기록하고, 되돌리고, 서버와 주고받고, 선택된 항목의 위치까지 따라가야 하면 규칙이 필요합니다. zod-crud는 그 규칙을 표준 위에 얇게 올립니다.
+## 어떤 문제를 해결하나요?
 
-## 두 개의 축
-
-zod-crud는 기능을 두 축으로 나눕니다.
-
-| 축 | 맡는 일 |
-|----|---------|
-| Axis 1 | JSON 데이터 자체를 안전하게 바꾸는 일 |
-| Axis 2 | editor에서 쓰는 selection/focus 좌표를 따라가게 하는 일 |
-
-Axis 1은 React 없이도 동작합니다. 서버, 테스트, Worker에서도 `applyPatch`를 바로 쓸 수 있습니다.
-
-Axis 2는 React hook입니다. `useSelection`과 `useFocus`가 `useJson`의 변경 알림을 구독해서, 배열 삽입·삭제·이동이 일어나도 선택과 포커스 위치를 자동으로 갱신합니다.
-
-## 가장 작은 예
+JSON 편집 UI는 처음에는 쉬워 보입니다.
 
 ```ts
-const [json, ops] = useJson(Schema, initial);
-
-ops.replace("/title", "New title");
-ops.add("/tasks/-", { id: "1", done: false });
-ops.move("/tasks/2", "/tasks/0");
+setState({ ...state, title: "new title" });
 ```
 
-여기서 `"/title"`과 `"/tasks/2"`는 모두 JSON Pointer입니다. `replace`, `add`, `move`는 모두 JSON Patch 표준 작업입니다.
+하지만 실제 편집기를 만들면 금방 복잡해집니다.
 
-## Public surface
+- 값이 schema를 깨면 저장하면 안 됩니다.
+- 항목을 삭제하면 선택된 위치도 같이 움직여야 합니다.
+- 항목을 이동하면 focus도 새 위치를 따라가야 합니다.
+- undo/redo가 필요합니다.
+- 서버나 테스트에서는 React 없이 같은 변경 규칙을 쓰고 싶습니다.
 
-현재 public export는 이 파일이 기준입니다.
+zod-crud는 이 문제를 한 곳에 모읍니다. 사용자는 UI를 만들고, zod-crud는 문서 값, 편집 작업, 선택, 포커스, 히스토리를 안전하게 관리합니다.
 
-::source{path="packages/zod-crud/src/index.ts" title="public exports" lines="1-35"}
+## 가장 중요한 API
 
-## 무엇을 하지 않나요?
+처음 만날 API는 `useJsonDocument`입니다.
 
-zod-crud는 UI 컴포넌트가 아닙니다. 버튼, input, tree row, keyboard shortcut, drag-and-drop 이벤트는 직접 만듭니다.
+```ts
+const doc = useJsonDocument(Schema, initial, {
+  history: 50,
+  focus: true,
+  selection: { mode: "multiple" },
+});
+```
 
-대신 라이브러리는 UI 아래쪽의 안정적인 모델을 제공합니다.
+`doc`는 편집기 하나의 상태 모델입니다.
 
-- JSON state 검증
-- JSON Pointer path
-- JSON Patch operation
-- undo/redo history
-- selection/focus 좌표 추적
+| 필드 | 뜻 |
+|------|----|
+| `doc.value` | 현재 JSON 문서 값 |
+| `doc.ops` | 문서를 바꾸는 작업들 |
+| `doc.history` | undo/redo |
+| `doc.selection` | 선택된 JSON 위치들 |
+| `doc.focus` | 현재 활성 JSON 위치 |
 
-## 다음 단계
+## Zod는 무엇을 하나요?
 
-[시작하기](/docs/getting-started)에서 첫 patch를 적용해 보고, [핵심 개념](/docs/concepts)에서 Pointer와 Patch를 천천히 익힙니다.
+Zod schema는 이 편집기가 다룰 수 있는 문서의 모양입니다.
+
+```ts
+const Todo = z.object({
+  title: z.string(),
+  done: z.boolean(),
+});
+```
+
+편집 작업이 끝난 뒤 결과가 schema를 통과하면 commit됩니다. 통과하지 못하면 state는 바뀌지 않습니다. 그래서 zod-crud에서 Zod는 단순한 검증 도구가 아니라, 편집 가능한 세계의 안전 경계입니다.
+
+## 내부 표준은 뒤에서 배웁니다
+
+zod-crud 내부는 JSON Pointer와 JSON Patch 위에 있습니다. 하지만 처음부터 이 단어를 외울 필요는 없습니다.
+
+처음에는 이렇게만 기억하면 됩니다.
+
+1. `doc.value`를 읽습니다.
+2. `doc.ops`로 편집합니다.
+3. Zod가 안전하지 않은 변경을 막습니다.
+4. selection/focus/history가 편집을 따라갑니다.
+
+나중에 서버 연동, 외부 patch, core API가 필요해지면 [Core & Design](/docs/advanced)에서 내부 계약을 보면 됩니다.
+
+## 다음에 읽을 것
+
+[Quick Start](/docs/getting-started)에서 아주 작은 편집기를 만들어 봅니다.

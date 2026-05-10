@@ -8,6 +8,7 @@ export type ApiEntry = { id: string; call: string; sources: ApiSource[] };
 export type ApiGroup = { title: string; apis: ApiEntry[] };
 export type ApiId = string;
 
+const DOCUMENT_SRC: ApiSource = { path: "useJsonDocument.ts" };
 const HOOK_SRC: ApiSource = { path: "useJson.ts" };
 const PATCH_SRC: ApiSource = { path: "core/patch.ts" };
 const POINTER_SRC: ApiSource = { path: "core/pointer.ts" };
@@ -19,7 +20,15 @@ const FOCUS_SRC: ApiSource = { path: "useFocus.ts" };
 
 const groups: ApiGroup[] = [
   {
-    title: "React hook",
+    title: "Identity hook",
+    apis: [
+      { id: "useJsonDocument", call: "useJsonDocument(schema, initial, options?)", sources: [DOCUMENT_SRC, HOOK_SRC, SELECTION_SRC, FOCUS_SRC] },
+      { id: "JsonDocument", call: "type JsonDocument<T>", sources: [DOCUMENT_SRC] },
+      { id: "UseJsonDocumentOptions", call: "type UseJsonDocumentOptions<T>", sources: [DOCUMENT_SRC] },
+    ],
+  },
+  {
+    title: "Lower-level data hook",
     apis: [
       { id: "useJson", call: "useJson(schema, initial, options?)", sources: [HOOK_SRC] },
     ],

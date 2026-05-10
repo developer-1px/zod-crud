@@ -1,97 +1,110 @@
-# 핵심 개념
+# useJsonDocument
 
-이 문서는 zod-crud를 처음 배우는 사람이 꼭 알아야 할 단어를 정리합니다. 어려운 부분은 세 가지뿐입니다.
+`useJsonDocument`는 zod-crud의 중심 hook입니다. 사용자가 처음 만나는 제품 표면이고, 내부적으로는 낮은 레벨 hook들을 묶어 하나의 문서 편집기 상태 객체를 만듭니다.
 
-- JSON Pointer: 어디를 바꿀지 가리키는 문자열
-- JSON Patch: 어떻게 바꿀지 말하는 작업
-- Schema validation: 바꾼 결과가 맞는지 확인하는 검사
+::source{path="packages/zod-crud/src/useJsonDocument.ts" title="useJsonDocument" lines="12-85"}
 
-## State는 그냥 JSON입니다
-
-`useJson(Schema, initial)`이 반환하는 첫 번째 값은 특별한 class가 아닙니다. 그냥 객체입니다.
+## 반환값은 하나의 `doc` 객체입니다
 
 ```ts
-const [json, ops] = useJson(Schema, initial);
-
-json.title;
-json.tasks[0];
-JSON.stringify(json);
+const doc = useJsonDocument(Schema, initial);
 ```
 
-이 점이 중요합니다. 저장, 복사, 서버 전송, SSR hydration, Worker 메시지 전달을 할 때 별도 변환이 필요 없습니다.
+`doc`는 편집 중인 JSON 문서 하나를 나타냅니다.
 
-## Pointer는 “주소”입니다
+| 필드 | 설명 |
+|------|------|
+| `doc.value` | 현재 문서 값 |
+| `doc.ops` | 문서를 바꾸는 작업 API |
+| `doc.history` | undo/redo API |
+| `doc.selection` | 선택 상태. 옵션을 켰을 때 사용 |
+| `doc.focus` | 포커스 상태. 옵션을 켰을 때 사용 |
 
-JSON 안의 위치는 RFC 6901 JSON Pointer로 씁니다.
+## `doc.value`
 
-::source{path="packages/zod-crud/src/core/pointer.ts" title="pointer helpers" lines="1-29"}
+`doc.value`는 schema를 통과한 JSON 값입니다. 특별한 class가 아니라 평범한 객체입니다.
 
-자주 쓰는 예시는 다음과 같습니다.
+```tsx
+<h1>{doc.value.title}</h1>
+```
 
-| Pointer | 의미 |
-|---------|------|
-| `""` | root 전체 |
-| `"/title"` | `state.title` |
-| `"/tasks/0"` | `state.tasks[0]` |
-| `"/tasks/-"` | 배열 끝. `add`에서만 사용 |
-| `"/users/a~1b"` | `state.users["a/b"]` |
-| `"/users/a~0b"` | `state.users["a~b"]` |
+읽을 때는 그냥 React state처럼 읽으면 됩니다. 직접 수정하지 말고, 변경할 때는 `doc.ops`를 사용합니다.
 
-`.`으로 잇는 `tasks.0.title`도, bracket을 쓰는 `tasks[0].title`도 사용하지 않습니다. 오래 가는 API에서는 주소 형식이 하나여야 합니다.
+## `doc.ops`
 
-## Patch는 “명령”입니다
-
-JSON Patch는 6개 operation만 가집니다.
-
-| op | 설명 |
-|----|------|
-| `add` | object key를 만들거나 배열에 삽입합니다 |
-| `remove` | 값을 제거합니다 |
-| `replace` | 이미 있는 값을 교체합니다 |
-| `move` | 한 위치에서 제거한 뒤 다른 위치에 추가합니다 |
-| `copy` | 값을 복제해서 다른 위치에 추가합니다 |
-| `test` | 값이 기대와 같은지 확인합니다 |
-
-zod-crud는 `set`, `insert`, `delete`, `rename`, `paste` 같은 별도 alias를 만들지 않습니다. 모두 위 6개 operation 조합으로 표현합니다.
-
-## Schema는 마지막 문지기입니다
-
-operation 자체가 문법적으로 맞아도 결과가 schema를 깨면 commit되지 않습니다.
-
-예를 들어 `title`이 string이어야 하는데 number를 넣으면 실패합니다.
+`doc.ops`는 문서를 바꾸는 함수들입니다.
 
 ```ts
-const result = ops.replace("/title", 123 as never);
-
-if (!result.ok) {
-  result.code; // "schema_violation"
-}
+doc.ops.replace("/title", "New title");
+doc.ops.add("/tasks/-", { text: "new task", done: false });
+doc.ops.remove("/tasks/0");
 ```
 
-이때 state는 그대로 유지됩니다. 실패한 변경이 반쯤 적용되는 일은 없습니다.
+여기서 `"/title"`이나 `"/tasks/0"`은 문서 안의 위치입니다. 처음에는 파일 경로처럼 “어디를 바꿀지 적는 문자열”이라고 생각하면 됩니다.
 
-## Pure core와 React hook
+## `doc.history`
 
-코어 함수는 React를 모릅니다.
+history는 undo/redo를 담당합니다.
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="274-329"}
+```tsx
+const doc = useJsonDocument(Schema, initial, { history: 100 });
 
-React hook은 이 코어를 감싸서 `setState`와 history, listener notification을 붙입니다.
+doc.history.undo();
+doc.history.redo();
+doc.history.canUndo;
+doc.history.canRedo;
+```
 
-::source{path="packages/zod-crud/src/useJson.ts" title="useJson surface" lines="21-46"}
+history를 켜지 않으면 undo/redo 스택은 쌓이지 않습니다.
 
-이 구조 덕분에 같은 작업 모델을 브라우저 UI, 서버 검증, 테스트 코드에서 함께 사용할 수 있습니다.
+## `doc.selection`
 
-## Axis 2: selection과 focus
-
-문서 편집기를 만들면 “지금 선택된 항목”과 “키보드 포커스가 있는 항목”이 필요합니다. zod-crud는 이것도 Pointer로 표현합니다.
+selection은 “선택된 위치들”입니다. 리스트나 트리 편집기에서 여러 항목을 선택할 때 씁니다.
 
 ```ts
-const selection = useSelection(ops, { mode: "multiple" });
-const focus = useFocus(ops);
+const doc = useJsonDocument(Schema, initial, {
+  selection: { mode: "multiple" },
+});
 
-selection.toggle("/tasks/2");
-focus.set("/tasks/2");
+doc.selection?.toggle("/tasks/2");
+doc.selection?.has("/tasks/2");
 ```
 
-그 뒤 `/tasks/0`이 삭제되면 기존 `/tasks/2`는 자동으로 `/tasks/1`로 따라갑니다. 이 자동 추적이 Axis 2의 핵심입니다.
+selection은 Pointer 배열로 저장됩니다. 즉 선택된 DOM element가 아니라 선택된 JSON 위치를 기억합니다.
+
+## `doc.focus`
+
+focus는 “현재 활성 위치”입니다. 키보드 조작의 기준이 되는 항목을 표현할 때 씁니다.
+
+```ts
+const doc = useJsonDocument(Schema, initial, {
+  focus: { initial: "/tasks/0" },
+});
+
+doc.focus?.set("/tasks/1");
+doc.focus?.clear();
+```
+
+항목이 이동하거나 삭제되면 focus는 변경을 따라갑니다. 삭제된 위치를 어떻게 복구할지는 `recover` 옵션으로 정할 수 있습니다.
+
+## 옵션 전체
+
+| 옵션 | 설명 |
+|------|------|
+| `history` | undo/redo 스택 크기 |
+| `strict` | 실패 시 throw할지 여부 |
+| `onError` | 실패했을 때 호출할 콜백 |
+| `selection` | 선택 상태 켜기와 설정 |
+| `focus` | 포커스 상태 켜기와 설정 |
+
+## 언제 낮은 레벨 hook을 쓰나요?
+
+대부분의 앱은 `useJsonDocument`로 시작하면 됩니다.
+
+낮은 레벨 hook은 이런 경우에 씁니다.
+
+- selection과 focus를 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
+- React 밖에서 core만 쓰고 싶을 때
+- document facade 없이 `useJson`만 가볍게 쓰고 싶을 때
+
+그 전까지는 `useJsonDocument`를 기본값으로 두는 편이 이 프로젝트의 의도에 맞습니다.

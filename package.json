@@ -8,13 +8,15 @@
   ],
   "scripts": {
     "dev": "npm run dev -w @zod-crud/site",
-    "build": "npm run build -w zod-crud && npm run build -w @zod-crud/site",
+    "build": "npm run build -w zod-crud && npm run build -w @zod-crud/site && npm run build -w @zod-crud/outliner",
     "test": "npm test -w zod-crud",
-    "typecheck": "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/site",
+    "typecheck": "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/site && npm run typecheck -w @zod-crud/outliner",
     "smoke:package": "npm run smoke:package -w zod-crud",
     "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package",
     "pack:library": "npm pack -w zod-crud",
     "site:dev": "npm run dev -w @zod-crud/site",
-    "site:build": "npm run build -w @zod-crud/site"
+    "site:build": "npm run build -w @zod-crud/site",
+    "outliner:dev": "npm run dev -w @zod-crud/outliner",
+    "outliner:build": "npm run build -w @zod-crud/outliner"
   }
 }

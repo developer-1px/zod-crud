@@ -8,14 +8,14 @@ const rawDocs = import.meta.glob("../../../../docs/site/*.md", {
 }) as Record<string, string>;
 
 const slugMeta = {
-  "intro": { navLabel: "zod-crud 소개", order: 1 },
-  "getting-started": { navLabel: "시작하기", order: 2 },
-  "concepts": { navLabel: "핵심 개념", order: 3 },
-  "schema-safety": { navLabel: "스키마 안전성", order: 4 },
-  "operations": { navLabel: "작업 모델", order: 5 },
-  "clipboard-history": { navLabel: "클립보드와 히스토리", order: 6 },
-  "examples": { navLabel: "예제 읽기", order: 7 },
-  "advanced": { navLabel: "고급 옵션", order: 8 },
+  "intro": { navLabel: "Overview", order: 1 },
+  "getting-started": { navLabel: "Quick Start", order: 2 },
+  "concepts": { navLabel: "useJsonDocument", order: 3 },
+  "operations": { navLabel: "Editor State", order: 4 },
+  "schema-safety": { navLabel: "Safety", order: 5 },
+  "clipboard-history": { navLabel: "Patterns", order: 6 },
+  "examples": { navLabel: "Lower-level Hooks", order: 7 },
+  "advanced": { navLabel: "Core & Design", order: 8 },
 } as const;
 
 export type DocsPageSlug = keyof typeof slugMeta;

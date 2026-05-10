@@ -3,12 +3,10 @@ import { SourceTabs } from "../code/SourceTabs";
 import { BasicCrud } from "../examples/BasicCrud";
 import { ClipboardArray } from "../examples/ClipboardArray";
 import { RejectedDrift } from "../examples/RejectedDrift";
-import { Outliner } from "../examples/Outliner";
 
 import basicSrc from "../examples/BasicCrud.tsx?raw";
 import clipboardSrc from "../examples/ClipboardArray.tsx?raw";
 import rejectSrc from "../examples/RejectedDrift.tsx?raw";
-import outlinerSrc from "../examples/Outliner.tsx?raw";
 
 type Example = {
   key: string;
@@ -21,7 +19,6 @@ type Example = {
 
 const examples: Example[] = [
   { key: "basic", label: "Basic CRUD", blurb: "update primitives, render via subscribe.", filename: "BasicCrud.tsx", source: basicSrc, Demo: BasicCrud },
-  { key: "outliner", label: "Outliner (Workflowy)", blurb: "useJson + useFocus — recursive tree with Tab/Shift+Tab/Enter/Backspace.", filename: "Outliner.tsx", source: outlinerSrc, Demo: Outliner },
   { key: "clipboard", label: "Clipboard + history", blurb: "copy / cut / paste over an array, undo · redo.", filename: "ClipboardArray.tsx", source: clipboardSrc, Demo: ClipboardArray },
   { key: "reject", label: "Schema-rejected drift", blurb: "try a value the schema refuses — state stays untouched.", filename: "RejectedDrift.tsx", source: rejectSrc, Demo: RejectedDrift },
 ];

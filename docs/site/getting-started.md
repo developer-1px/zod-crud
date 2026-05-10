@@ -1,4 +1,6 @@
-# 시작하기
+# Quick Start
+
+이 페이지에서는 가장 작은 JSON 편집기를 만듭니다. 목표는 `useJsonDocument`가 어떤 느낌인지 먼저 잡는 것입니다.
 
 ## 설치
 
@@ -6,71 +8,97 @@
 npm install zod-crud zod
 ```
 
-`zod`는 peer dependency입니다. React hook을 사용할 때만 `react >=18`이 필요합니다. 패키지는 ESM 전용입니다.
+React에서 hook을 쓸 것이므로 앱에는 `react >=18`도 필요합니다.
 
-## 1단계: schema를 먼저 정합니다
+## 1. 문서 모양을 Zod schema로 선언합니다
 
-zod-crud는 “아무 JSON이나” 편집하지 않습니다. 먼저 Zod schema로 문서의 모양을 정합니다.
+편집기는 아무 값이나 받으면 안 됩니다. 먼저 “이 문서는 어떤 모양이어야 하는가”를 정합니다.
 
 ```ts
-import * as z from "zod";
+import { z } from "zod";
 
-const TodoSchema = z.object({
-  title: z.string(),
-  tasks: z.array(
-    z.object({
-      id: z.string(),
-      done: z.boolean(),
-    }),
-  ),
+const Todo = z.object({
+  title: z.string().min(1),
+  done: z.boolean(),
 });
 ```
 
-이 schema는 계약입니다. 작업을 적용한 뒤 결과가 이 계약을 깨면 state는 바뀌지 않습니다.
+여기서는 문서가 `title`과 `done`을 가진 JSON 객체입니다. `title`은 빈 문자열이면 안 되고, `done`은 boolean이어야 합니다.
 
-## 2단계: React 없이 먼저 이해하기
+## 2. `useJsonDocument`로 문서를 엽니다
 
-`applyPatch`는 순수함수입니다. 같은 schema, 같은 state, 같은 operations를 넣으면 항상 같은 결과가 나옵니다.
+```tsx
+import { useJsonDocument } from "zod-crud";
 
-::source{path="apps/site/src/examples/snippet-getting-started.ts" title="first patch" lines="1-28"}
+const doc = useJsonDocument(Todo, {
+  title: "write docs",
+  done: false,
+});
+```
 
-반환값은 `{ state, result, applied }`입니다.
+이제 `doc`가 편집기 상태입니다.
 
-| 필드 | 의미 |
+- `doc.value`는 현재 문서입니다.
+- `doc.ops`는 문서를 바꾸는 함수 묶음입니다.
+- `doc.history`는 undo/redo입니다.
+
+## 3. 화면에 값을 보여줍니다
+
+```tsx
+<input
+  value={doc.value.title}
+  onChange={(event) => {
+    doc.ops.replace("/title", event.target.value);
+  }}
+/>
+```
+
+`"/title"`은 문서 안에서 `title` 위치를 가리키는 주소입니다. 지금은 “앞에 `/`를 붙인 key 이름” 정도로 이해해도 됩니다.
+
+## 4. 실패는 state를 바꾸지 않습니다
+
+schema는 `title`이 빈 문자열이면 안 된다고 말합니다. 그래서 아래 변경은 실패합니다.
+
+```ts
+const result = doc.ops.replace("/title", "");
+```
+
+결과는 `JsonResult`입니다.
+
+| 경우 | 의미 |
 |------|------|
-| `state` | 성공하면 새 state, 실패하면 기존 state |
-| `result` | `{ ok: true }` 또는 실패 코드 |
-| `applied` | 실제 commit된 RFC 6902 operation 목록 |
+| `{ ok: true }` | 변경 성공 |
+| `{ ok: false, code: "schema_violation" }` | schema 위반으로 실패 |
 
-실패하면 `applied`는 빈 배열입니다. 그래서 selection/focus 같은 좌표 모델도 실패한 변경에는 반응하지 않습니다.
+실패하면 `doc.value`는 이전 값 그대로입니다. 이게 zod-crud의 가장 중요한 안전성입니다.
 
-## 3단계: React에서 사용하기
+## 5. undo/redo를 켭니다
 
-React에서는 `useJson`을 씁니다.
+history는 옵션으로 켭니다.
+
+```tsx
+const doc = useJsonDocument(Todo, initial, {
+  history: 50,
+});
+```
+
+```tsx
+<button onClick={doc.history.undo} disabled={!doc.history.canUndo}>
+  undo
+</button>
+<button onClick={doc.history.redo} disabled={!doc.history.canRedo}>
+  redo
+</button>
+```
+
+`history: 50`은 최근 50개 변경을 되돌릴 수 있게 하겠다는 뜻입니다.
+
+## 전체 예제
+
+이 예제는 낮은 레벨 `useJson`을 보여주지만, 입력과 schema-safe commit의 기본 흐름은 같습니다. 다음 페이지부터는 `useJsonDocument`를 중심으로 봅니다.
 
 ::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx" lines="1-35"}
 
-`useJson`은 `[json, ops]`를 반환합니다.
+## 다음에 읽을 것
 
-- `json`은 schema를 통과한 plain JSON state입니다.
-- `ops`는 JSON Patch 작업을 함수로 묶은 객체입니다.
-
-`setTitle`, `insertTask`, `deleteTask` 같은 전용 함수가 따로 있지 않습니다. 표준 작업 6개를 그대로 씁니다.
-
-## 빠른 작업 표
-
-| 하고 싶은 일 | 쓰는 작업 |
-|--------------|-----------|
-| 기존 값 바꾸기 | `ops.replace("/title", value)` |
-| object key 추가 | `ops.add("/draft", value)` |
-| 배열 끝에 추가 | `ops.add("/tasks/-", task)` |
-| 배열 중간에 삽입 | `ops.add("/tasks/0", task)` |
-| 제거 | `ops.remove("/tasks/2")` |
-| 이동 | `ops.move("/tasks/2", "/tasks/0")` |
-| 복제 | `ops.copy("/tasks/2", "/tasks/-")` |
-| 조건 확인 | `ops.test("/version", 1)` |
-| 여러 작업 atomic 적용 | `ops.patch([...])` |
-
-## 다음 단계
-
-[작업 모델](/docs/operations)에서 6개 operation을 하나씩 봅니다. [선택과 포커스](/docs/clipboard-history)에서는 editor 좌표가 변경을 따라가는 방식을 배웁니다.
+[useJsonDocument](/docs/concepts)에서 `doc.value`, `doc.ops`, `doc.history`, `doc.selection`, `doc.focus`를 하나씩 설명합니다.
