@@ -1,0 +1,170 @@
+# Patterns — 시나리오별 정본 카탈로그
+
+"X 를 만들고 싶다" → 거기에 맞는 canonical 코드. 베껴 쓸 수 있게 짧고 자족적으로.
+
+`Why Not` 페이지가 *거부한* 빈자리를 다룬다면, 이 페이지는 *우리가 의도한* 표현을 다룹니다.
+
+---
+
+## 1. Dict-record 한 키 쓰기
+
+**언제**: `z.record(z.string(), V)` 스키마의 키 한 개 변경. spreadsheet 의 cells, notes, formats 같은 dict-shaped state.
+
+**Canonical**:
+
+```ts
+const writeKey = (k: string, v: V | undefined) => {
+  if (v === undefined && current[k] !== undefined) ops.remove(`/path/${k}`);
+  else if (v !== undefined && current[k] === undefined) ops.add(`/path/${k}`, v);
+  else if (v !== undefined && current[k] !== v) ops.replace(`/path/${k}`, v);
+};
+```
+
+3분기가 반복되면 앱 내부 `dictOps` helper 로 추출. 자세한 이유와 안티패턴은 [Why no upsert verb](/docs/why-not#why-no-upsert-verb-issue-53) 참조.
+
+---
+
+## 2. Drag / keystroke burst — undo entry 폭증 방지
+
+**언제**: 컬럼 드래그 리사이즈, IME composition, 빠른 키스트로크 등 transient 한 입력이 ops 를 100+ 번 호출하는 상황.
+
+**Pattern A — local React state preview** (권장):
+
+```tsx
+const [livePreview, setLivePreview] = useState<V | null>(null);
+
+const onMove = (e) => setLivePreview(computeFrom(e));
+const onDrop = () => {
+  if (livePreview !== null) ops.replace('/path', livePreview);
+  setLivePreview(null);
+};
+
+// 렌더: livePreview ?? committedValue
+```
+
+**Pattern B — `doc.history.mergeLast()`** (commit 후 합치기):
+
+```ts
+ops.replace('/text', 'h');
+ops.replace('/text', 'hi');
+ops.replace('/text', 'hil');
+doc.history.mergeLast();  // 직전 두 entry 를 한 entry 로 합침
+```
+
+자세한 비교는 [Why no transaction verb](/docs/why-not#why-no-transaction-verb-issue-56).
+
+---
+
+## 3. Selection 이 patch 를 자동으로 따라가기
+
+**언제**: 항목을 삭제·이동했을 때 selection 좌표가 깨지지 않아야 함.
+
+**Canonical**: zero-config — selection 은 ops.subscribe 로 commit 을 듣고 Pointer 를 자동 follow.
+
+```ts
+const doc = useJsonDocument(Schema, initial, { selection: { mode: 'multiple' } });
+
+doc.selection?.collapse('/items/2');
+doc.ops.remove('/items/0');
+// doc.selection.focus 는 /items/1 로 이동 — 직접 보정 불필요
+```
+
+해드리스 환경에서는 `trackPointer` 를 직접 호출. `core/track.ts` 참조.
+
+---
+
+## 4. Clipboard roundtrip — cut / copy / paste
+
+**언제**: 사용자가 노드를 잘라/복사해서 다른 위치에 붙이기. JSON fragment 단위.
+
+**Canonical**:
+
+```ts
+doc.commands.cut();    // selection 의 fragment 를 내부 clipboard 로 이동 + remove
+doc.commands.copy();   // remove 없이 복제
+doc.commands.paste();  // 현재 selection 의 anchor 위치에 fragment 삽입
+```
+
+DOM Clipboard API 와의 연결은 sidecar 책임 — `sidecars/recorder` 옆에 자체 brigde 를 두거나, OS clipboard 연동은 직접 짭니다 (라이브러리 정체성 밖).
+
+`can` 으로 가능 여부 가드:
+
+```tsx
+<button disabled={!doc.can.paste()} onClick={doc.commands.paste}>paste</button>
+```
+
+---
+
+## 5. Optimistic HTTP sync — 서버와 합의 (RFC 5789 + 6902 / 7396)
+
+**언제**: 로컬에서 즉시 commit 하고 서버에 patch 를 전송, 실패 시 inverse 로 되돌리기.
+
+**Canonical**:
+
+```ts
+import { buildPatchRequest, parsePatchResponse } from 'zod-crud';
+
+const { state, result, inverses } = applyPatch(Schema, prev, ops);
+if (!result.ok) return;  // schema 위반이면 commit 안 됨
+
+const req = buildPatchRequest(`/api/doc/${id}`, ops, { ifMatch: etag });
+const res = await fetch(req.url, { method: req.method, headers: req.headers, body: req.body });
+const parsed = await parsePatchResponse(res);
+if (!parsed.ok) ops.patch(inverses);  // 서버 거부 → 로컬 되돌리기
+```
+
+`JSON_PATCH_MIME` / `MERGE_PATCH_MIME` 상수도 export. wire format 만 다루고 transport 결정은 앱이.
+
+---
+
+## 6. Headless `applyPatch` — React 없이
+
+**언제**: 테스트, CLI, 서버사이드 — React 없이 같은 편집 규칙 재사용.
+
+**Canonical**:
+
+```ts
+import { applyPatch } from 'zod-crud';
+
+const { state, result, inverses } = applyPatch(Schema, prev, [
+  { op: 'replace', path: '/title', value: 'final' },
+]);
+
+if (result.ok) commit(state);
+else log(result.violations);
+```
+
+같은 schema · 같은 op 가 React UI / 테스트 / 서버에서 동일한 결과. `exactOptionalPropertyTypes: true` 에서도 generic 통과 (issue #55 회귀 가드).
+
+---
+
+## 7. Sidecar — session recorder
+
+**언제**: 사용자 세션을 patch stream 으로 녹화 → 재생 (bug repro, 데모, 데이터 마이그레이션 검증).
+
+**Canonical**:
+
+```tsx
+import { useRecorder, replayRecording } from 'zod-crud';
+
+function App() {
+  const doc = useJsonDocument(Schema, initial);
+  const recorder = useRecorder(doc);
+
+  return (
+    <>
+      <button onClick={recorder.start}>record</button>
+      <button onClick={() => download('session.json', recorder.export())}>save</button>
+      <button onClick={() => replayRecording(doc, uploadedJson)}>replay</button>
+    </>
+  );
+}
+```
+
+sidecar 는 core 의 정상 흐름(ops.subscribe · history)을 *관찰만* 합니다. 본체 데이터 동작 영향 없음. 새 sidecar 가 필요하면 `recorder` / `debug-log` / `http` 의 패턴을 따라가세요.
+
+---
+
+## 패턴 추가 제안
+
+여기 없는 시나리오에 대해 "이거 어떻게 하지" 가 떠오르면 issue 로 보고해주세요. 새 패턴이 자주 요청되면 카탈로그에 추가되고, 정체성 침범이면 [Why Not](/docs/why-not) 에 거부 이유가 추가됩니다.

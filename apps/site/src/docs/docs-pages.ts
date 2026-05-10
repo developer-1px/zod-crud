@@ -16,7 +16,8 @@ const slugMeta = {
   "clipboard-history": { navLabel: "Patterns", order: 106 },
   "examples": { navLabel: "Lower-level Hooks", order: 107 },
   "advanced": { navLabel: "Core & Design", order: 108 },
-  "why-not": { navLabel: "Why Not", order: 109 },
+  "patterns": { navLabel: "Patterns", order: 110 },
+  "why-not": { navLabel: "Why Not", order: 111 },
 } as const;
 
 export type DocsPageSlug = keyof typeof slugMeta;
