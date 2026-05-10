@@ -133,8 +133,8 @@ export function cut(ctx: CommandContext): void {
   if (targets.length === 0) return;
   if (targets.includes("")) return;
   const sorted = sortDfs(ctx, targets);
-  // 1) 클립보드에 deep clone 저장
-  ctx.clipboard.cut(ctx.state, sorted);
+  // 1) 클립보드에 deep clone 저장 (cut 후 원본은 사라지므로 copy 의미와 동등)
+  ctx.clipboard.copy(ctx.state, sorted);
   // 2) 원본 row 즉시 제거 (Notion / Workflowy 동작)
   const batch: JsonPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
   const r = ctx.ops.patch(batch);
