@@ -6,29 +6,76 @@
 
 ## 0. 헌장 (Charter)
 
-zod-crud는 **Zod schema로 보호되는 JSON tree 라이브러리 + RFC 표준 위에 구축된 editor abstraction**이다. UI 렌더링·폼 라이브러리·DOM 이벤트는 아니다. tree 위 좌표(selection, focus)는 라이브러리 책임이다.
+### 0.0 정체성 (정본 한 줄)
 
-### 0.1 절대 원칙 — Axis 1 (Data Substrate)
+zod-crud 는 **FE 서비스가 매번 다시 만드는 편집 어휘 (select / move / cut / copy / paste / duplicate / undo / redo / find / replace) 를 JSON 표준 (RFC 6901 Pointer · 6902 Patch · 9535 JSONPath · W3C Selection · RFC 8927+Zod) 과 매핑하여 재사용 가능한 표준 레이어로 정립한 JSON tree 라이브러리** 다.
 
-다음 원칙은 30년 호환을 위해 **편의보다 우선한다.** state·action·change·history 는 모두 이 축 위에서 정의된다.
+UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · system clipboard 호출 · 시각적 selection 표시는 본체가 아니다. JSON 데이터 편집만 본체.
 
-1. **JSON-Only State** — state·action·change는 100% JSON (ECMA-404). function·Symbol·Date·Map·Set·class instance·undefined 0개. `JSON.parse(JSON.stringify(x))`가 항상 round-trip.
-2. **표준 Path 단일 정본** — path 표현은 **RFC 6901 JSON Pointer** 한 가지. 편의 형식(dotted, bracket, array shorthand) 0개.
+### 0.1 4대 기둥 ↔ 10 verbs ↔ RFC 매핑 (closure 검증 표)
+
+10 verbs 가 4대 기둥 위에 닫힌다 (closure). 새 verb 후보가 등장하면 이 표 어느 칸에 귀속되는지로 본체 진입 여부를 판정한다.
+
+| 기둥 | verbs | RFC/표준 substrate |
+|------|-------|---------------------|
+| **Selection** (어디) | select, find | RFC 6901 + W3C Selection / RFC 9535 |
+| **Edit** (뭐를) | move, duplicate, replace | RFC 6902 (move/copy/replace op + 합성) |
+| **Clipboard** (외부 round-trip) | cut, copy, paste | RFC 6902 (remove/add) + RFC 8259 fragment 직렬화 |
+| **Undo** (되돌림) | undo, redo | RFC 6902 inverse + history stack |
+
+= 2 + 3 + 3 + 2 = **10 verbs**.
+
+합성 동사 (cut = copy⊗remove, replace = find⊗patch, duplicate = copy⊗paste) 는 **결과 기둥** 에 귀속. 합성 별도 행 두지 않는다 (표가 흐려짐).
+
+### 0.2 코드 위계 — 3-layer + sidecars
+
+```
+hooks/      (얇은 React 어댑터 — verbs 를 React state 에 묶음)
+   │ uses
+verbs/      (편집 어휘 composer — pure, React 무관, core 만 의존)
+   │ uses
+core/       (RFC 표준 substrate — pure, 1폴더 = 1표준)
+   │
+sidecars/   (횡단 관심사 — recorder / debug-log / http, 어떤 layer 에도 속하지 않음)
+```
+
+**의존 방향 (단방향):**
+- `core/*` → 외부 의존 0 (단 `core/schema/` 만 Zod 의존 허용)
+- `verbs/*` → `core/*` 만 의존. **verbs 끼리 import 금지 (lint rule)**
+- `hooks/*` → `verbs/*` + `core/*` + React API 만
+- `sidecars/*` → 자유. 단 위 3 layer 가 sidecars 에 의존 금지
+
+### 0.3 절대 원칙 (10개)
+
+다음 원칙은 30년 호환을 위해 편의보다 우선한다.
+
+1. **JSON-Only State** — state · action · change 는 100% JSON (ECMA-404). function · Symbol · Date · Map · Set · class instance · undefined 0개. `JSON.parse(JSON.stringify(x))` 가 항상 round-trip.
+2. **표준 Path 단일 정본** — path 표현은 **RFC 6901 JSON Pointer** 한 가지. 단 query 어휘는 **RFC 9535 JSONPath** (Pointer 의 query 표현 확장). 편의 형식 (dotted · bracket · array shorthand) 0개.
 3. **표준 Operation 단일 정본** — 변경은 **RFC 6902 JSON Patch** 6 op 그대로. 추가 op 0개.
-4. **Pure Core** — 모든 mutation은 `(state, op) → { state, result, applied }` 순수함수. side effect 0, instance 0, dispatch 0.
-5. **코어 데이터 hook = 1개** — Axis 1 코어는 React 없이 동작. React 진입점은 `useJson` 1개. Axis 2 의 부가 hook 들은 별도 sibling.
+4. **Pure Core** — 모든 mutation 은 `(state, op) → { state, result, applied }` 순수함수. side effect 0, instance 0, dispatch 0.
+5. **모든 좌표 = RFC 6901 Pointer** — selection 도 Pointer. `NodeId` 같은 내부 식별자 0. JSONPath query 결과도 `Pointer[]` 로 환원.
+6. **모든 좌표 상태 = JSON 직렬화 가능** — selection state `JSON.stringify` round-trip. collaborative cursor · SSR hydration · postMessage 무료.
+7. **WAI-ARIA 어휘 정합** — selection mode (`single`/`multiple`/`extended`), per-item selected 상태 (`aria-selected` 의미). ARIA 패턴 (Listbox · Tree · Grid · TreeGrid) 에서 정의된 의미만 차용한다.
+8. **자동 추적** — RFC 6902 op 적용 시 selection 이 자동 추종 (이동 · 제거 · 삽입 따라 Pointer 갱신 · 소실). 사용자 wiring 0.
+9. **Schema mandatory** — `useJsonDocument({ schema, initial })` 에서 schema 는 required. 모든 mutating verb 는 `core/schema/preFlight` gate 를 통과한다 (branch-only 검증). cross-field refinement 는 보호 밖 (사용자 책임).
+10. **단일 facade** — React 진입점은 `useJsonDocument` 1개. 10 verbs 전부 + state 가 한 객체에 노출. headless 사용자는 `core/*`, `verbs/*` pure 함수 직접 import.
 
-### 0.2 절대 원칙 — Axis 2 (Editor Abstractions)
+### 0.4 Boundary
 
-Editor에서 쓰이는 tree 좌표는 라이브러리가 표준 어휘로 제공한다. UI 렌더링은 사용자 책임이지만 좌표 모델은 정본화한다.
+**JSON 데이터 편집만 본체.** 다음은 본체 밖이다 — 사용자 책임:
 
-6. **모든 좌표 = RFC 6901 Pointer** — selection·focus 모두 Pointer. `NodeId` 같은 내부 식별자 0.
-7. **모든 좌표 상태 = JSON 직렬화 가능** — selection·focus state 모두 `JSON.stringify` round-trip. (collaborative cursor·SSR hydration·postMessage 무료)
-8. **WAI-ARIA 어휘 정합** — selection mode (`single`/`multiple`/`extended`), focus 단일 활성 좌표(`aria-activedescendant` 의미), per-item selected 상태(`aria-selected` 의미). ARIA 패턴(Listbox·Tree·Grid·TreeGrid)에서 정의된 의미만 차용한다.
-9. **자동 추적** — RFC 6902 op 적용 시 selection·focus 가 자동으로 추종한다 (이동·제거·삽입 따라 Pointer 갱신·소실). 사용자가 wiring 0.
-10. **Axis 2 hook 별도, opt-in** — `useSelection`·`useFocus` 는 별도 hook. 미사용 시 tree-shake 로 비용 0.
+- `navigator.clipboard.read/write` 호출 (verb 는 payload 산출만)
+- DOM 이벤트 → verb 매핑 (Cmd+C / Cmd+V 등)
+- 시각적 selection rendering · ARIA 자동 부여
+- 키보드 매핑 / IME composition / DnD / multi-cursor / folding
 
-위 10개 원칙은 라이브러리 정체성이며 후속 결정의 기각 사유로 사용된다.
+### 0.5 Layer 규약
+
+- `core/verbs/*` — 명시 인자만 받는 pure 함수. selection 자동 사용 금지.
+- `hooks/useJsonDocument` — pure verb 호출 전 `state.selection` 자동 주입하는 sugar. 명시 인자 override 옵션.
+- `verbs/*` 끼리 import 금지. 합성은 facade (`useJsonDocument`) 에서만.
+
+위 10개 원칙 + boundary + layer 규약은 라이브러리 정체성이며 후속 결정의 기각 사유로 사용된다.
 
 ---
 
@@ -41,11 +88,12 @@ Editor에서 쓰이는 tree 좌표는 라이브러리가 표준 어휘로 제공
 | **RFC 6902** — JSON Patch (conformance suite 100%) | 변경 표현 | 절대 |
 | **RFC 5789** — HTTP PATCH method | 서버 통신 | 옵셔널 (http.ts) |
 | **RFC 7396** — JSON Merge Patch | merge 의미 | 옵셔널 (http.ts) |
-| **JSON Schema draft-2020-12** | 외부 스펙 다리 | 옵셔널 (schema-bridge.ts) |
-| **WAI-ARIA** Listbox/Tree/Grid | selection·focus 어휘 | 절대 (Axis 2) |
+| **JSON Schema draft-2020-12** | 외부 스펙 다리 | 옵셔널 (core/schema/bridge.ts) |
+| **RFC 9535** — JSONPath | find/replace query 어휘 | 절대 (core/jsonpath/) |
+| **WAI-ARIA** Listbox/Tree/Grid | selection 어휘 | 절대 |
 | **ECMAScript** | 런타임 | 절대 |
 | Zod 4 (semver-major 시 검토) | schema 검증 + JSON Schema 양방향 | 의존 라이브러리 |
-| React `>=18` (optional peer) | React hooks (`useJson`, Axis 2 hooks) | 옵셔널 |
+| React `>=18` (optional peer) | React hooks (`useJsonDocument`) | 옵셔널 |
 
 표준 외의 디팩토 관행(lodash dot path, RHF bracket path 등)은 **참조하지 않는다.** 호환 어댑터도 라이브러리 본체에 포함하지 않는다.
 
