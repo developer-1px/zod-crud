@@ -1,97 +1,116 @@
-# 고급 사용
+# Core & Design
 
-기본 사용법을 익혔다면, 이 페이지에서 타입 추론, 외부 patch, 순수 코어, 구독 API를 살펴봅니다.
+여기부터는 zod-crud의 아래층입니다. 처음 사용하는 사람은 앞 문서만 읽어도 됩니다. 이 페이지는 “왜 이렇게 설계됐는가”와 “React 밖에서 어떻게 쓰는가”를 설명합니다.
 
-## `UseJsonOptions`
+## Core는 React를 모릅니다
 
-::source{path="packages/zod-crud/src/useJson.ts" title="UseJsonOptions" lines="14-19"}
-
-| 옵션 | 기본 | 설명 |
-|------|------|------|
-| `history` | `0` | undo/redo 스택 크기. `0`이면 비활성 |
-| `strict` | dev=`true`, prod=`false` | 실패 시 throw 여부 |
-| `onError` | 없음 | 실패 시 호출되는 콜백 |
-
-처음 배울 때는 `history`만 기억해도 충분합니다.
+`applyPatch`와 `applyOperation`은 순수함수입니다.
 
 ```ts
-const [json, ops] = useJson(Schema, initial, { history: 100 });
+const result = applyPatch(Schema, state, operations);
 ```
 
-## 타입으로 Pointer와 value를 맞춥니다
+같은 입력을 넣으면 같은 출력이 나옵니다. React state, DOM, 이벤트, 시간, 랜덤 값에 의존하지 않습니다.
 
-`JsonOps<T>`는 `PointerOf<T>`와 `ValueAt<T, P>`를 사용합니다. 그래서 가능한 경우 TypeScript가 path와 value 타입을 같이 확인합니다.
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyPatch" lines="274-329"}
 
-::source{path="packages/zod-crud/src/core/path-types.ts" title="PointerOf / ValueAt" lines="1-44"}
+## JSON Pointer
 
-예를 들어 `title`이 string이면 다음처럼 잡힙니다.
+문서 안의 위치는 Pointer로 표현됩니다.
+
+| Pointer | 뜻 |
+|---------|----|
+| `""` | 문서 전체 |
+| `"/title"` | `value.title` |
+| `"/items/0"` | `value.items[0]` |
+| `"/items/-"` | 배열 끝. add에서 사용 |
+
+사용자 표면에서는 “문서 안의 주소”로 이해하면 됩니다. core 관점에서는 RFC 6901 JSON Pointer입니다.
+
+::source{path="packages/zod-crud/src/core/pointer.ts" title="pointer helpers" lines="1-29"}
+
+## JSON Patch
+
+문서 변경은 patch operation으로 표현됩니다.
 
 ```ts
-ops.replace("/title", "ok");
-ops.replace("/title", 42);       // TypeScript error
-ops.replace("/unknown", "no");   // TypeScript error
+{ op: "replace", path: "/title", value: "Next" }
 ```
 
-복잡한 동적 path를 만들 때는 TypeScript가 모든 문자열을 증명하지 못할 수 있습니다. 그때도 런타임에서는 Pointer parse, path resolve, schema validation이 다시 검사합니다.
+사용자 표면에서는 `doc.ops.replace("/title", "Next")`처럼 함수로 씁니다. core 관점에서는 RFC 6902 JSON Patch입니다.
 
-## 외부 patch 적용
+이 표준 형식 덕분에 변경 기록을 저장하거나 서버로 보낼 수 있습니다.
 
-서버나 다른 클라이언트에서 받은 JSON Patch도 그대로 적용할 수 있습니다.
+## Pointer tracking
 
-```ts
-const patch: JsonPatchOperation[] = await response.json();
-const result = ops.patch(patch);
-```
-
-표준 RFC 6902 형식이므로 다른 언어의 JSON Patch 라이브러리와도 맞출 수 있습니다.
-
-## 순수 코어 직접 사용
-
-React 바깥에서는 `applyOperation`과 `applyPatch`를 씁니다.
-
-::source{path="packages/zod-crud/src/core/patch.ts" title="pure core" lines="274-329"}
-
-예를 들어 서버에서 클라이언트 patch를 검증할 수 있습니다.
+selection과 focus가 변경을 따라갈 수 있는 이유는 Pointer tracking입니다.
 
 ```ts
-const r = applyPatch(Schema, currentState, clientPatch);
-
-if (!r.result.ok) {
-  return new Response(r.result.code, { status: 400 });
-}
-
-await save(r.state);
-```
-
-## 구독 API
-
-`ops.subscribe`는 commit된 operation 목록을 알려줍니다. `useSelection`과 `useFocus`가 이 API를 사용합니다.
-
-```ts
-const unsubscribe = ops.subscribe((applied) => {
-  console.log(applied);
-});
-```
-
-실패한 patch는 commit되지 않으므로 listener가 호출되지 않습니다.
-
-`ops.state`는 listener나 focus recovery에서 현재 state를 읽기 위한 snapshot입니다.
-
-## Pointer tracking helper
-
-selection/focus hook 없이 직접 좌표를 따라가고 싶다면 `trackPointer` 또는 `trackPointers`를 씁니다.
-
-::source{path="packages/zod-crud/src/core/track.ts" title="track helpers" lines="131-135"}
-
-```ts
-const next = trackPointer("/items/3", [
-  { op: "remove", path: "/items/1" },
+const next = trackPointer("/items/2", [
+  { op: "remove", path: "/items/0" },
 ]);
-// "/items/2"
+// "/items/1"
 ```
 
-삭제된 위치나 그 자식은 `null`이 됩니다.
+::source{path="packages/zod-crud/src/core/track.ts" title="trackPointer" lines="131-135"}
 
-## SPEC을 먼저 봅니다
+## 직렬화
 
-동작이 헷갈리면 [`packages/zod-crud/SPEC.md`](https://github.com/developer-1px/zod-crud/blob/main/packages/zod-crud/SPEC.md)가 기준입니다. 코드, 문서, 테스트가 충돌하면 SPEC이 이깁니다.
+state와 operation은 JSON입니다. 그래서 저장과 복원이 단순합니다.
+
+```ts
+const text = serialize(value);
+const restored = parse(Schema, text);
+```
+
+::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize helpers" lines="1-29"}
+
+## 왜 UI 컴포넌트가 아닌가요?
+
+편집 UI는 앱마다 다릅니다.
+
+- todo list
+- tree editor
+- outliner
+- table editor
+- document editor
+
+모양과 키보드 규칙은 다르지만, 아래 문제는 반복됩니다.
+
+- schema-safe commit
+- undo/redo
+- selection/focus tracking
+- JSON 위치 관리
+
+zod-crud는 이 공통 하부만 맡습니다. 그래서 UI는 직접 만들 수 있고, 편집 상태는 재사용할 수 있습니다.
+
+## 왜 Zod가 중심인가요?
+
+편집기는 “이 문서가 어떤 모양이어야 하는가”를 알아야 합니다. Zod schema는 그 경계를 코드로 선언합니다.
+
+zod-crud는 변경을 먼저 계산한 뒤, schema를 통과할 때만 commit합니다. 그래서 Zod는 이 프로젝트에서 validation helper가 아니라 **문서 편집의 안전 경계**입니다.
+
+## 설계 요약
+
+```txt
+사용자 표면
+└─ useJsonDocument
+   ├─ doc.value
+   ├─ doc.ops
+   ├─ doc.history
+   ├─ doc.selection
+   └─ doc.focus
+
+낮은 레벨 hook
+├─ useJson
+├─ useSelection
+└─ useFocus
+
+Core
+├─ applyPatch / applyOperation
+├─ Pointer helpers
+├─ tracking helpers
+└─ serialize / parse
+```
+
+SPEC와 ADR은 이 설계를 더 엄격한 언어로 기록합니다.
