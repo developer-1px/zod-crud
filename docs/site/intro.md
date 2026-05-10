@@ -63,10 +63,10 @@ zod-crud 내부는 JSON Pointer와 JSON Patch 위에 있습니다. 하지만 처
 
 처음에는 이렇게만 기억하면 됩니다.
 
-1. `doc.value`를 읽습니다.
-2. `doc.ops`로 편집합니다.
-3. Zod가 안전하지 않은 변경을 막습니다.
-4. selection/focus/history가 편집을 따라갑니다.
+- `doc.value`를 읽습니다.
+- `doc.ops`로 편집합니다.
+- Zod가 안전하지 않은 변경을 막습니다.
+- selection/focus/history가 편집을 따라갑니다.
 
 나중에 서버 연동, 외부 patch, core API가 필요해지면 [Core & Design](/docs/advanced)에서 내부 계약을 보면 됩니다.
 

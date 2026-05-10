@@ -2,8 +2,6 @@
 
 `useJsonDocument`는 zod-crud의 중심 hook입니다. 사용자가 처음 만나는 제품 표면이고, 내부적으로는 낮은 레벨 hook들을 묶어 하나의 문서 편집기 상태 객체를 만듭니다.
 
-::source{path="packages/zod-crud/src/useJsonDocument.ts" title="useJsonDocument" lines="12-85"}
-
 ## 반환값은 하나의 `doc` 객체입니다
 
 ```ts
@@ -108,3 +106,9 @@ doc.focus?.clear();
 - document facade 없이 `useJson`만 가볍게 쓰고 싶을 때
 
 그 전까지는 `useJsonDocument`를 기본값으로 두는 편이 이 프로젝트의 의도에 맞습니다.
+
+## 타입 표면
+
+전체 구현보다 먼저 타입 표면만 보면 충분합니다.
+
+::source{path="packages/zod-crud/src/useJsonDocument.ts" title="useJsonDocument types" lines="12-37"}

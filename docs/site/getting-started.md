@@ -38,9 +38,11 @@ const doc = useJsonDocument(Todo, {
 
 이제 `doc`가 편집기 상태입니다.
 
-- `doc.value`는 현재 문서입니다.
-- `doc.ops`는 문서를 바꾸는 함수 묶음입니다.
-- `doc.history`는 undo/redo입니다.
+| 필드 | 지금 단계에서의 의미 |
+|------|----------------------|
+| `doc.value` | 현재 문서 |
+| `doc.ops` | 문서를 바꾸는 함수 묶음 |
+| `doc.history` | undo/redo |
 
 ## 3. 화면에 값을 보여줍니다
 

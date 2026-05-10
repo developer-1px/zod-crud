@@ -8,6 +8,7 @@ import { SidebarNav } from "./nav/SidebarNav";
 import { Landing } from "./routes/Landing";
 import { ApiReference } from "./routes/ApiReference";
 import { Examples } from "./routes/Examples";
+import { OutlinerPage } from "./routes/Outliner";
 import { MarkdownDocPage } from "./docs/MarkdownDocPage";
 import { docsPagesBySlug, type DocsPage } from "./docs/docs-pages";
 
@@ -99,6 +100,13 @@ const examplesRoute = createRoute({
   staticData: { palette: { label: "Examples", to: "/examples", category: "Reference", order: 21 } },
 });
 
+const outlinerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/outliner",
+  component: OutlinerPage,
+  staticData: { palette: { label: "Outliner", to: "/outliner", category: "Reference editor", order: 30 } },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   introRoute,
@@ -111,6 +119,7 @@ const routeTree = rootRoute.addChildren([
   advancedRoute,
   apiRoute,
   examplesRoute,
+  outlinerRoute,
 ]);
 
 export const router = createRouter({
