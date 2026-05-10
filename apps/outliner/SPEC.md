@@ -41,6 +41,26 @@ type OutlineNode = { text: string; children: OutlineNode[] };
 DOM 이벤트는 `eventToChord` 로 정규화 → `findCommand(chord)` 로 lookup → `dispatch(id)`.
 chord 가 keymap 에 없으면 default 동작 통과 (텍스트 입력 등).
 
+## 2.5 Mode — select / edit (Workflowy 모델)
+
+이 outliner 는 **두 모드**를 분리한다. 표준 role model = Workflowy / Roam / LogSeq 의 정통 outliner 패턴 (Notion·VSCode·Excel 도 동일 2-mode 패턴).
+
+| Mode | DOM | Arrow keys | Enter | Esc | 외형 |
+|------|-----|------------|-------|-----|------|
+| `select` | input readOnly, focus 유지 | row navigation | edit mode 진입 | (no-op) | 파란 배경 |
+| `edit` | input editable, caret 보임 | caret 이동 (DOM 기본) | insert sibling + 새 row 도 edit | select mode 로 escape | 흰 배경 + 파란 outline |
+
+기본 모드 = `select`. 진입 트리거:
+- click 텍스트 → `edit`
+- click 불릿 → `select`
+- Enter (in select) → `edit`
+- insert-sibling 자동 진입 → `edit`
+- Esc (in edit) → `select`
+
+구조 명령 (Tab/Shift+Tab/Cmd+Z/Cmd+C/X/V) 은 **두 모드 모두**에서 동작 (mode-independent). row navigation 은 select 만, caret 이동은 edit 만.
+
+`mode` state 자체는 outliner-local — zod-crud 는 mode 를 모른다 (다른 editor 가 다른 mode 의미를 가질 수 있음).
+
 ## 3. Cursor (focus) + 키보드 navigation
 
 - 단일 활성 좌표 = `useFocus` value (Pointer | null).

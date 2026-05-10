@@ -71,6 +71,21 @@ header .tag {
 .row.selected { background: #dbeafe; }
 .row.focused { background: #bfdbfe; }
 .row.selected.focused { background: #93c5fd; }
+.row.editing {
+  background: white;
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+.row .text { caret-color: transparent; }
+.row.editing .text { caret-color: auto; }
+.mode { font-weight: 600; padding: 1px 6px; border-radius: 3px; }
+.mode-select { background: #dbeafe; color: #1e3a8a; }
+.mode-edit { background: #fef3c7; color: #92400e; }
+.keymap td.modes {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  color: #a8a29e;
+}
 .row .marker {
   color: #a8a29e;
   user-select: none;
