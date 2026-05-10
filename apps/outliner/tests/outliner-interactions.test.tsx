@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
-import { Outliner } from "../src/Outliner.js";
+import { Outliner } from "../src/index.js";
 
 const firstItem = "Enter — insert sibling after focus";
 const secondItem = "Tab — demote (move into prev sibling)";
@@ -133,6 +133,33 @@ describe("outliner keyboard and mouse interactions", () => {
 
     expect(statusText()).toMatch(/selection =\s*17/);
     expect(selectedRows()).toHaveLength(17);
+  });
+
+  test("Shift+Arrow extends selection through visible rows", async () => {
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(markerForText(firstItem));
+    await user.keyboard("{Shift>}{ArrowDown}{/Shift}");
+
+    expect(statusText()).toMatch(/focus =\s*\/children\/1/);
+    expect(statusText()).toMatch(/selection =\s*2/);
+    expect(selectedRows()).toHaveLength(2);
+
+    await user.keyboard("{Shift>}{ArrowUp}{/Shift}");
+
+    expect(statusText()).toMatch(/focus =\s*\/children\/0/);
+    expect(statusText()).toMatch(/selection =\s*1/);
+  });
+
+  test.fails("pasting with an empty clipboard reports an error through rendered status", async () => {
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(markerForText(firstItem));
+    await user.keyboard("{Control>}v{/Control}");
+
+    expect(screen.getByText("path_not_found: clipboard is empty")).toBeTruthy();
   });
 
   test("copy and paste as sibling operate through keyboard shortcuts and rendered rows", async () => {

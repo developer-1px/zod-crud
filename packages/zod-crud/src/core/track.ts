@@ -2,16 +2,8 @@
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 
-import { parsePointer, buildPointer, type Pointer } from "./pointer.js";
+import { parsePointer, buildPointer, isPrefix, type Pointer } from "./pointer.js";
 import type { JsonPatchOperation } from "./patch.js";
-
-function startsWith(prefix: string[], full: string[]): boolean {
-  if (prefix.length > full.length) return false;
-  for (let i = 0; i < prefix.length; i++) {
-    if (prefix[i] !== full[i]) return false;
-  }
-  return true;
-}
 
 function isArrayIndex(seg: string): boolean {
   return /^(0|[1-9][0-9]*)$/.test(seg);
@@ -72,7 +64,7 @@ function trackOne(pointer: Pointer, op: JsonPatchOperation): Pointer | null {
     case "remove": {
       const at = parsePointer(op.path);
       // 동일 또는 자손이면 drop
-      if (startsWith(at, target)) return null;
+      if (isPrefix(at, target)) return null;
       const shifted = shiftArraySibling(at, target, -1);
       return shifted ? buildPointer(shifted) : pointer;
     }
@@ -80,7 +72,7 @@ function trackOne(pointer: Pointer, op: JsonPatchOperation): Pointer | null {
     case "replace": {
       const at = parsePointer(op.path);
       // 자손은 cascading drop (값이 통째로 교체됨)
-      if (startsWith(at, target) && at.length < target.length) return null;
+      if (isPrefix(at, target) && at.length < target.length) return null;
       // 동일 위치는 유지 (값만 바뀐 것)
       return pointer;
     }
@@ -89,11 +81,11 @@ function trackOne(pointer: Pointer, op: JsonPatchOperation): Pointer | null {
       const from = parsePointer(op.from);
       const to = parsePointer(op.path);
       // from === target → to 로 이동
-      if (from.length === target.length && startsWith(from, target)) {
+      if (from.length === target.length && isPrefix(from, target)) {
         return op.path;
       }
       // from prefix of target → 자손도 이동: from 부분을 to 로 치환
-      if (startsWith(from, target) && from.length < target.length) {
+      if (isPrefix(from, target) && from.length < target.length) {
         const tail = target.slice(from.length);
         return buildPointer([...to, ...tail]);
       }

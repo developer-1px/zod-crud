@@ -14,6 +14,7 @@ import {
   withLastSegment,
   parsePointer,
   buildPointer,
+  readAt,
   type Pointer,
 } from "./core/pointer.js";
 import type { JsonOps } from "./useJson.js";
@@ -29,22 +30,8 @@ export interface FocusState<T> {
   clear(): void;
 }
 
-// state 에서 pointer 위치의 값 읽기. exists 체크용.
-function readAtPointer(state: unknown, pointer: Pointer): { ok: true; value: unknown } | { ok: false } {
-  if (pointer === "") return { ok: true, value: state };
-  let cur: unknown = state;
-  for (const seg of parsePointer(pointer)) {
-    if (cur === null || typeof cur !== "object") return { ok: false };
-    if (Array.isArray(cur)) {
-      const idx = Number(seg);
-      if (!Number.isInteger(idx) || idx < 0 || idx >= cur.length) return { ok: false };
-      cur = cur[idx];
-    } else {
-      if (!Object.prototype.hasOwnProperty.call(cur, seg)) return { ok: false };
-      cur = (cur as Record<string, unknown>)[seg];
-    }
-  }
-  return { ok: true, value: cur };
+function exists(state: unknown, pointer: Pointer): boolean {
+  return readAt(state, parsePointer(pointer)).ok;
 }
 
 // rule ① — applied ops 에서 새 좌표를 식별. add·copy·move 의 destination.
@@ -61,7 +48,7 @@ function autoFocusFrom(applied: ReadonlyArray<JsonPatchOperation>, after: unknow
     // /- 를 actual index 로 resolve
     if (dest.endsWith("/-")) {
       const parent = dest.slice(0, -2);
-      const arr = readAtPointer(after, parent);
+      const arr = readAt(after, parsePointer(parent));
       if (arr.ok && Array.isArray(arr.value) && arr.value.length > 0) {
         return buildPointer([...parsePointer(parent), arr.value.length - 1]);
       }
@@ -86,18 +73,18 @@ function recoverLostFocus(lost: Pointer, applied: ReadonlyArray<JsonPatchOperati
   // nextSibling: same index (제거 후 뒤가 당겨졌으므로 idx 위치는 옛 idx+1)
   const nextCandidate = withLastSegment(`${trackedParent}/${idx}`, idx);
   if (nextCandidate !== null) {
-    if (readAtPointer(after, nextCandidate).ok) return nextCandidate;
+    if (exists(after, nextCandidate)) return nextCandidate;
   }
 
   // prevSibling: idx - 1
   if (idx > 0) {
     const prevCandidate = `${trackedParent}/${idx - 1}`;
-    if (readAtPointer(after, prevCandidate).ok) return prevCandidate;
+    if (exists(after, prevCandidate)) return prevCandidate;
   }
 
   // parent (root 면 null)
   if (trackedParent === "") return null;
-  if (readAtPointer(after, trackedParent).ok) return trackedParent;
+  if (exists(after, trackedParent)) return trackedParent;
 
   return null;
 }
@@ -125,7 +112,7 @@ export function useFocus<T>(
       // 추가가 없으면 기존 focus 추적 → 사라지면 rule ② 복구
       if (prev === null) return;
       const tracked = trackPointer(prev, applied);
-      if (tracked !== null && readAtPointer(after, tracked).ok) {
+      if (tracked !== null && exists(after, tracked)) {
         if (tracked !== prev) setValue(tracked);
         return;
       }

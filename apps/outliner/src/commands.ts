@@ -131,7 +131,14 @@ export function copy(ctx: CommandContext): void {
 export function cut(ctx: CommandContext): void {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return;
-  ctx.clipboard.cut(ctx.state, sortDfs(ctx, targets));
+  if (targets.includes("")) return;
+  const sorted = sortDfs(ctx, targets);
+  // 1) 클립보드에 deep clone 저장
+  ctx.clipboard.cut(ctx.state, sorted);
+  // 2) 원본 row 즉시 제거 (Notion / Workflowy 동작)
+  const batch: JsonPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
+  const r = ctx.ops.patch(batch);
+  if (r.ok) ctx.selection.clear();
 }
 
 export function paste(ctx: CommandContext, mode: PasteMode): JsonResult {

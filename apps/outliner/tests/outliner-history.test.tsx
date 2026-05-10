@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
-import { Outliner } from "../src/Outliner.js";
+import { Outliner } from "../src/index.js";
 
 const firstItem = "Enter — insert sibling after focus";
 const editedFirstItem = "Edited first item";
@@ -57,7 +57,7 @@ describe("outliner editor history", () => {
     expect(selectedRows()).toHaveLength(1);
   });
 
-  test.fails("undo restores the full editor transaction: text, node structure, focus, and selection", async () => {
+  test("undo restores the full editor transaction: text, node structure, focus, and selection", async () => {
     renderOutliner();
     const user = await editFirstItemAndInsertSibling();
 
@@ -74,7 +74,7 @@ describe("outliner editor history", () => {
     expect(selectedRows()).toHaveLength(1);
   });
 
-  test.fails("redo restores the same full editor transaction through the rendered DOM", async () => {
+  test("redo restores the same full editor transaction through the rendered DOM", async () => {
     renderOutliner();
     const user = await editFirstItemAndInsertSibling();
 

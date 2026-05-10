@@ -123,7 +123,7 @@ export function Outliner() {
     } else {
       doc.selection.set([p]);
       doc.focus.set(p);
-      setMode("edit");
+      setMode("select");
     }
   }, [doc]);
 

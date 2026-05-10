@@ -3,7 +3,7 @@
 
 import type * as z from "zod";
 
-import { parsePointer, type Pointer, PointerSyntaxError } from "./pointer.js";
+import { parsePointer, isPrefix, readAt, type Pointer, PointerSyntaxError } from "./pointer.js";
 
 export type JsonPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
@@ -54,14 +54,6 @@ function deepEqual(a: unknown, b: unknown): boolean {
   for (const k of ak) {
     if (!Object.prototype.hasOwnProperty.call(bo, k)) return false;
     if (!deepEqual(ao[k], bo[k])) return false;
-  }
-  return true;
-}
-
-function isPrefix(prefix: string[], full: string[]): boolean {
-  if (prefix.length > full.length) return false;
-  for (let i = 0; i < prefix.length; i++) {
-    if (prefix[i] !== full[i]) return false;
   }
   return true;
 }
@@ -318,22 +310,6 @@ export function computeInverses(
     cur = r.state;
   }
   return { ok: true, inverses: out };
-}
-
-function readAt(state: unknown, segs: string[]): { ok: true; value: unknown } | { ok: false } {
-  let cur: unknown = state;
-  for (const seg of segs) {
-    if (cur === null || typeof cur !== "object") return { ok: false };
-    if (Array.isArray(cur)) {
-      const i = seg === "-" ? -1 : Number(seg);
-      if (!Number.isInteger(i) || i < 0 || i >= cur.length) return { ok: false };
-      cur = cur[i];
-    } else {
-      if (!Object.prototype.hasOwnProperty.call(cur, seg)) return { ok: false };
-      cur = (cur as Record<string, unknown>)[seg];
-    }
-  }
-  return { ok: true, value: cur };
 }
 
 function resolveAppendPath(path: Pointer, before: unknown): Pointer {

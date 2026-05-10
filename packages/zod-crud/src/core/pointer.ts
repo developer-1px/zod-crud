@@ -66,3 +66,29 @@ export function withLastSegment(pointer: Pointer, seg: string | number): Pointer
   if (i < 0) return null;
   return pointer.slice(0, i + 1) + escapeSegment(String(seg));
 }
+
+// ── Internal helpers (not in public index) ──────────────────────────────────
+
+/** segs prefix check. */
+export function isPrefix(prefix: ReadonlyArray<string>, full: ReadonlyArray<string>): boolean {
+  if (prefix.length > full.length) return false;
+  for (let i = 0; i < prefix.length; i++) if (prefix[i] !== full[i]) return false;
+  return true;
+}
+
+/** state + segments → value. boolean ok. `"-"` 는 path_not_found 로 취급. */
+export function readAt(state: unknown, segs: ReadonlyArray<string>): { ok: true; value: unknown } | { ok: false } {
+  let cur: unknown = state;
+  for (const seg of segs) {
+    if (cur === null || typeof cur !== "object") return { ok: false };
+    if (Array.isArray(cur)) {
+      const i = seg === "-" ? -1 : Number(seg);
+      if (!Number.isInteger(i) || i < 0 || i >= cur.length) return { ok: false };
+      cur = cur[i];
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) return { ok: false };
+      cur = (cur as Record<string, unknown>)[seg];
+    }
+  }
+  return { ok: true, value: cur };
+}
