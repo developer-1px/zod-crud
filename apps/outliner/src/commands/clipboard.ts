@@ -22,5 +22,5 @@ export function cut(ctx: CommandContext): void {
 }
 
 export function paste(ctx: CommandContext, mode: PasteMode): JsonResult {
-  return ctx.clipboard.paste(ctx.focus.value ?? "", mode, ctx.ops);
+  return ctx.clipboard.paste(ctx.selection.focus ?? "", mode, ctx.ops);
 }

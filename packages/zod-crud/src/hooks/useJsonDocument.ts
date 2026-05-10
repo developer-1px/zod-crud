@@ -1,13 +1,14 @@
 // SPEC §5.10 — useJsonDocument facade.
-// 정체성 표면. useJson(Axis 1) + useSelection·useFocus(Axis 2) + history facade 를 한 객체로 묶는다.
-// History 는 이 facade 가 소유한다 — Axis 2 state(focus·selection) 도 entry 에 함께 캡처해야
+// 정체성 표면. useJson(Axis 1) + useSelection(Axis 2) + history 를 한 객체로 묶는다.
+// History 는 이 facade 가 소유한다 — Axis 2 selection snapshot 도 entry 에 캡처해
 // 사용자 한 동작 = 한 undo 가 데이터+UI 상태 전부를 원복.
+//
+// DOM Selection 모델 — 별도 focus 축은 없다. 캐럿 = collapsed selection.
 
 import { useCallback, useMemo, useRef } from "react";
 import type * as z from "zod";
 
 import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
-import { useFocus, type FocusState, type UseFocusOptions } from "./useFocus.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
 import { computeInverses, type JsonPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
@@ -17,7 +18,6 @@ export interface UseJsonDocumentOptions<T> {
   strict?: boolean;
   onError?: (error: JsonCrudError) => void;
   selection?: boolean | UseSelectionOptions;
-  focus?: boolean | UseFocusOptions;
 }
 
 export interface JsonDocumentHistory {
@@ -25,11 +25,6 @@ export interface JsonDocumentHistory {
   canRedo: boolean;
   undo: () => boolean;
   redo: () => boolean;
-  /**
-   * 최상단 두 entry 를 하나로 합친다 — 직전 dispatch 가 같은 사용자 동작의 일부였다고
-   * 판단했을 때 editor 가 호출. 정책 (시간·op 종류 등) 은 editor 책임.
-   * 합칠 entry 가 부족하거나 isRestoring 중이면 false 반환.
-   */
   mergeLast: () => boolean;
 }
 
@@ -38,11 +33,10 @@ export interface JsonDocument<T> {
   ops: JsonOps<T>;
   history: JsonDocumentHistory;
   selection: SelectionState<T> | undefined;
-  focus: FocusState<T> | undefined;
 }
 
 interface SelectionSnap {
-  values: ReadonlyArray<Pointer>;
+  ranges: ReadonlyArray<Pointer>;
   anchor: Pointer | null;
   focus: Pointer | null;
 }
@@ -50,9 +44,7 @@ interface SelectionSnap {
 interface HistoryEntry {
   forward: JsonPatchOperation[];
   inverse: JsonPatchOperation[];
-  focusBefore: Pointer | null;
   selectionBefore: SelectionSnap;
-  focusAfter: Pointer | null;
   selectionAfter: SelectionSnap;
 }
 
@@ -75,54 +67,43 @@ export function useJsonDocument<S extends z.ZodType>(
     selectionEnabled ? selectionOptions : { mode: "single" },
   );
 
-  const focusEnabled = options.focus !== undefined && options.focus !== false;
-  const focusOptions: UseFocusOptions =
-    typeof options.focus === "object" ? options.focus : {};
-  const focusState = useFocus<z.output<S>>(rawOps, focusEnabled ? focusOptions : {});
-
   const historyLimit = options.history ?? 0;
   const undoStackRef = useRef<HistoryEntry[]>([]);
   const redoStackRef = useRef<HistoryEntry[]>([]);
   const isRestoringRef = useRef(false);
 
-  const focusRef = useRef(focusState);
-  focusRef.current = focusState;
   const selectionRef = useRef(selectionState);
   selectionRef.current = selectionState;
 
   const snapSelection = useCallback((): SelectionSnap => ({
-    values: [...selectionRef.current.values],
+    ranges: [...selectionRef.current.ranges],
     anchor: selectionRef.current.anchor,
     focus: selectionRef.current.focus,
   }), []);
 
-  // 매 dispatch = 1 entry. 시간·정책은 editor 책임 — `mergeLast()` 로 합치도록 노출.
   const recordHistory = useCallback((before: z.output<S>, ops: ReadonlyArray<JsonPatchOperation>) => {
     if (historyLimit <= 0 || isRestoringRef.current) return;
     const inv = computeInverses(before, ops);
     if (!inv.ok) return;
     const stack = undoStackRef.current;
+    const snap = snapSelection();
     stack.push({
       forward: [...ops],
       inverse: inv.inverses,
-      focusBefore: focusRef.current.value,
-      selectionBefore: snapSelection(),
-      focusAfter: focusRef.current.value,
-      selectionAfter: snapSelection(),
+      selectionBefore: snap,
+      selectionAfter: snap,
     });
     if (stack.length > historyLimit) stack.shift();
     redoStackRef.current = [];
   }, [historyLimit, snapSelection]);
 
   const ops = useMemo<JsonOps<z.output<S>>>(() => {
-    // 모든 단일 op 는 patch([op]) 로 환원 — recordHistory 는 한 곳만.
     const patch: JsonOps<z.output<S>>["patch"] = (operations) => {
       const before = rawOps.state;
       const r = rawOps.patch(operations);
       if (r.ok) recordHistory(before, operations);
       return r;
     };
-    // undo/redo 는 entry 의 inverse 또는 forward 를 라이브러리 자체 history 우회로 적용.
     const restore = (
       popStack: HistoryEntry[],
       pushStack: HistoryEntry[],
@@ -130,14 +111,21 @@ export function useJsonDocument<S extends z.ZodType>(
     ): boolean => {
       const e = popStack.pop();
       if (!e) return false;
-      if (direction === "undo") { e.focusAfter = focusRef.current.value; e.selectionAfter = snapSelection(); }
+      if (direction === "undo") e.selectionAfter = snapSelection();
       isRestoringRef.current = true;
       const r = rawOps.patch(direction === "undo" ? e.inverse : e.forward);
       isRestoringRef.current = false;
       if (!r.ok) { popStack.push(e); return false; }
-      const target = direction === "undo" ? "Before" : "After";
-      focusRef.current.set(e[`focus${target}`]);
-      selectionRef.current.set(e[`selection${target}`].values);
+      const target = direction === "undo" ? e.selectionBefore : e.selectionAfter;
+      // selection 복원 — collapsed 면 collapse, 아니면 setBaseAndExtent (range 펼침은 reduce 가 처리)
+      if (target.ranges.length === 0) selectionRef.current.empty();
+      else if (target.anchor && target.focus && target.anchor === target.focus) {
+        selectionRef.current.collapse(target.anchor);
+      } else if (target.anchor && target.focus) {
+        selectionRef.current.setBaseAndExtent(target.anchor, target.focus);
+      } else {
+        selectionRef.current.empty();
+      }
       pushStack.push(e);
       return true;
     };
@@ -166,12 +154,8 @@ export function useJsonDocument<S extends z.ZodType>(
     if (stack.length < 2) return false;
     const top = stack.pop()!;
     const prev = stack[stack.length - 1]!;
-    // forward 는 시간 순서대로 이어붙임. inverse 는 역순으로 prepend.
     prev.forward.push(...top.forward);
     prev.inverse = [...top.inverse, ...prev.inverse];
-    // axis 2 snapshot 은 prev 의 before 가 사용자 동작 시작점이므로 그대로 두고
-    // after 는 top 의 after 로 갱신.
-    prev.focusAfter = top.focusAfter;
     prev.selectionAfter = top.selectionAfter;
     return true;
   }, []);
@@ -189,7 +173,6 @@ export function useJsonDocument<S extends z.ZodType>(
       ops,
       history,
       selection: selectionEnabled ? selectionState : undefined,
-      focus: focusEnabled ? focusState : undefined,
     };
-  }, [value, ops, selectionEnabled, selectionState, focusEnabled, focusState, mergeLast]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast]);
 }

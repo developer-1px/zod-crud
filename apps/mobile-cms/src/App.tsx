@@ -385,6 +385,7 @@ export function App() {
             <div
               key={item.id}
               role="option"
+              aria-label={`${item.name} ${label(item.kind)}`}
               aria-selected={paletteSelection?.node.id === item.id}
               tabIndex={0}
               className={`palette-item ${paletteSelection?.node.id === item.id ? "selected" : ""}`}

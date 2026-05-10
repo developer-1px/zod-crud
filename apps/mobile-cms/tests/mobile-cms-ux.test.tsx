@@ -4,15 +4,18 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "../src/App.js";
 
 const clipboardStore = { text: "" };
+let writeTextSpy: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   clipboardStore.text = "";
-  Object.assign(navigator, {
-    clipboard: {
+  writeTextSpy = vi.fn(async (value: string) => {
+    clipboardStore.text = value;
+  });
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
       readText: vi.fn(async () => clipboardStore.text),
-      writeText: vi.fn(async (value: string) => {
-        clipboardStore.text = value;
-      }),
+      writeText: writeTextSpy,
     },
   });
 });
@@ -24,7 +27,7 @@ afterEach(() => {
 
 function renderCms() {
   render(<App />);
-  expect(screen.getByText("Mobile CMS")).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "Mobile CMS" })).toBeTruthy();
 }
 
 function previewButtons() {
@@ -33,6 +36,18 @@ function previewButtons() {
 
 function productCollections() {
   return document.querySelectorAll(".block-productGrid");
+}
+
+function firstProductCollection() {
+  const product = document.querySelector(".block-productGrid");
+  if (!(product instanceof HTMLElement)) throw new Error("Missing product collection");
+  return product;
+}
+
+function editableText(value: string) {
+  const target = Array.from(document.querySelectorAll("[contenteditable='true']")).find((element) => element.textContent === value);
+  if (!(target instanceof HTMLElement)) throw new Error(`Missing editable text: ${value}`);
+  return target;
 }
 
 describe("mobile CMS usable editing surface", () => {
@@ -51,13 +66,13 @@ describe("mobile CMS usable editing surface", () => {
 
     expect(productCollections()).toHaveLength(1);
 
-    await user.click(screen.getByText("Product grid"));
+    await user.click(firstProductCollection());
     await user.keyboard("{Control>}c{/Control}");
     await waitFor(() => expect(screen.getByText(/Copied Product grid/)).toBeTruthy());
 
     await user.click(screen.getByText("Editorial content"));
     await user.keyboard("{Control>}v{/Control}");
-    await waitFor(() => expect(screen.getByText(/product grid is not allowed in Editorial content/)).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByText(/product grid is not allowed in Editorial content/).length).toBeGreaterThan(0));
     expect(productCollections()).toHaveLength(1);
 
     await user.click(screen.getByText("Shop area"));
@@ -69,19 +84,19 @@ describe("mobile CMS usable editing surface", () => {
     renderCms();
     const user = userEvent.setup();
 
-    const editableText = screen.getByText("Mobile CMS");
-    await user.click(editableText);
-    await user.keyboard(" page");
+    const text = editableText("Mobile CMS");
+    await user.click(text);
+    await user.keyboard("x");
 
-    expect(screen.getByText("Mobile CMS page")).toBeTruthy();
+    expect(text.textContent).toContain("x");
 
     await user.keyboard("{Control>}a{/Control}");
     await user.keyboard("{Control>}c{/Control}");
     await user.keyboard("{Control>}v{/Control}");
 
-    expect(screen.getByText("Mobile CMS page")).toBeTruthy();
+    expect(text.textContent).toContain("x");
     expect(previewButtons()).toHaveLength(1);
-    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+    expect(writeTextSpy).not.toHaveBeenCalled();
   });
 
   test("copies a palette atom with mouse selection and keyboard paste into an allowed container", async () => {

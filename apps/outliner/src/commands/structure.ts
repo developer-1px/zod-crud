@@ -7,7 +7,7 @@ import { parentOf, lastIndex, siblingAt, readChildren } from "../pointer-utils.j
 import { type CommandContext, targetsOf, sortDfs } from "./context.js";
 
 export function insertSibling(ctx: CommandContext): JsonResult {
-  const p = ctx.focus.value;
+  const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found", reason: "no focus" };
   const idx = lastIndex(p);
   if (idx === null) return { ok: false, code: "path_not_found", reason: "root has no sibling" };
@@ -17,7 +17,7 @@ export function insertSibling(ctx: CommandContext): JsonResult {
 }
 
 export function demote(ctx: CommandContext): JsonResult {
-  const p = ctx.focus.value;
+  const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null || idx === 0) return { ok: false, code: "path_not_found", reason: "no previous sibling" };
@@ -28,7 +28,7 @@ export function demote(ctx: CommandContext): JsonResult {
 // row 를 자기 부모의 sibling 으로 끌어올림. path 형태: /children/i/.../children/k.
 // 마지막 2 segment ("children", index) 를 떼면 row 의 부모 OutlineNode pointer.
 export function promote(ctx: CommandContext): JsonResult {
-  const p = ctx.focus.value;
+  const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found" };
   const segs = p === "" ? [] : p.slice(1).split("/");
   if (segs.length < 4) return { ok: false, code: "path_not_found", reason: "already at root level" };
@@ -48,7 +48,7 @@ export function remove(ctx: CommandContext): JsonResult {
 }
 
 export function moveUp(ctx: CommandContext): JsonResult {
-  const p = ctx.focus.value;
+  const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null || idx === 0) return { ok: false, code: "path_not_found", reason: "already first" };
@@ -56,7 +56,7 @@ export function moveUp(ctx: CommandContext): JsonResult {
 }
 
 export function moveDown(ctx: CommandContext): JsonResult {
-  const p = ctx.focus.value;
+  const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null) return { ok: false, code: "path_not_found" };

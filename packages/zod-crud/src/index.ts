@@ -39,15 +39,14 @@ export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 export { serialize, parse, safeParse } from "./core/pointer/serialize.js";
 
 // Axis 2 — Editor abstractions (SPEC §0.2 / §5.7-§5.9)
+// W3C Selection API 정합. caret = collapsed selection. 별도 focus 축 없음.
 export { useSelection } from "./hooks/useSelection.js";
 export type {
   SelectionMode,
+  SelectionType,
   SelectionState,
   UseSelectionOptions,
 } from "./hooks/useSelection.js";
-
-export { useFocus } from "./hooks/useFocus.js";
-export type { FocusState, UseFocusOptions } from "./hooks/useFocus.js";
 
 export { trackPointer, trackPointers } from "./core/track.js";
 

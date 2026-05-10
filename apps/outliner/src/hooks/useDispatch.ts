@@ -29,7 +29,7 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
       case "insert-sibling": surface(cmd.insertSibling(ctx)); setMode("edit"); return true;
       // edit 모드 Backspace: 빈 텍스트일 때만 row 제거. 그 외는 DOM 기본 (글자 삭제) 통과.
       case "remove-if-empty": {
-        const f = ctx.focus.value;
+        const f = ctx.selection.focus;
         if (f === null) return false;
         const node = readNode(ctx.state, f);
         if (!node || node.text !== "") return false;
@@ -49,8 +49,8 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
       case "extend-down":    cmd.extendSelection(ctx, "down"); return true;
       case "move-up":        surface(cmd.moveUp(ctx)); return true;
       case "move-down":      surface(cmd.moveDown(ctx)); return true;
-      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.values.length || 1}`); return true;
-      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.values.length || 1}`); return true;
+      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.ranges.length || 1}`); return true;
+      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.ranges.length || 1}`); return true;
       case "paste-sibling":  surface(cmd.paste(ctx, "sibling")); return true;
       case "paste-child":    surface(cmd.paste(ctx, "child")); return true;
       case "undo":           undo(); return true;

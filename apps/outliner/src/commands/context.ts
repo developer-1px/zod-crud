@@ -15,8 +15,8 @@ export interface CommandContext {
 
 // 현재 동작 대상 — multi-select 가 비어있으면 focus 단일 사용.
 export function targetsOf(ctx: CommandContext): Pointer[] {
-  if (ctx.selection.values.length > 0) return [...ctx.selection.values];
-  if (ctx.focus.value !== null) return [ctx.focus.value];
+  if (ctx.selection.ranges.length > 0) return [...ctx.selection.ranges];
+  if (ctx.selection.focus !== null) return [ctx.selection.focus];
   return [];
 }
 
