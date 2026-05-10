@@ -60,9 +60,10 @@ const active = doc.selection?.focus;
 
 ## 패턴 4. Outliner
 
-Outliner 예제는 `useJsonDocument`의 정체성을 가장 잘 보여줍니다.
+Outliner reference editor는 `useJsonDocument`의 정체성을 가장 잘 보여줍니다. site의
+`/outliner` route는 `apps/outliner` workspace의 실제 컴포넌트를 그대로 렌더합니다.
 
-::source{path="apps/site/src/examples/Outliner.tsx" title="Outliner.tsx" lines="1-135"}
+::source{path="apps/site/src/routes/Outliner.tsx" title="Outliner route" lines="1-8"}
 
 여기서 볼 점은 세 가지입니다.
 
@@ -90,6 +91,8 @@ Outliner 예제는 `useJsonDocument`의 정체성을 가장 잘 보여줍니다.
 저장된 recording은 JSON으로 직렬화할 수 있고, `replayRecording`으로 다른 `ops` 인스턴스에 재생할 수 있습니다.
 
 ```ts
+import { replayRecording, useRecorder } from "zod-crud";
+
 const recorder = useRecorder(doc.ops);
 
 recorder.start();
