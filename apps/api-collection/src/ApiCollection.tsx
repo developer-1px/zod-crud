@@ -5,7 +5,9 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { useJsonDocument, type JsonPatchOperation } from "zod-crud";
-import { Collection, SAMPLE, type Item, type Folder, type Request, type Header } from "./schema.js";
+import { Collection, SAMPLE, type Item, type Folder, type Request, type Header, type Method } from "./schema.js";
+
+const ALL_METHODS: ReadonlyArray<Method> = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 type Clipboard = { kind: "items"; items: Item[] } | null;
 
@@ -42,6 +44,7 @@ export function ApiCollection() {
   });
   const clipboardRef = useRef<Clipboard>(null);
   const [pathExpr, setPathExpr] = useState("$..items[?(@.method=='POST')]");
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [toast, setToast] = useState<string>("");
 
   const flash = useCallback((msg: string) => {
@@ -64,8 +67,8 @@ export function ApiCollection() {
   }, [doc.selection]);
 
   // ── JSONPath bulk select (RFC 9535) ──────────────────────────────────────
-  const runJsonPath = useCallback(() => {
-    const r = doc.commands.find(pathExpr);
+  const runQuery = useCallback((expr: string) => {
+    const r = doc.commands.find(expr);
     if (!("ok" in r) || !r.ok) {
       flash(`JSONPath 오류: ${"reason" in r ? r.reason : "unknown"}`);
       return;
@@ -74,7 +77,19 @@ export function ApiCollection() {
     if (ptrs.length === 0) { flash("매칭 없음"); return; }
     doc.selection?.selectRanges(ptrs, ptrs[0] ?? null, ptrs[ptrs.length - 1] ?? null);
     flash(`${ptrs.length}개 매칭 — 선택됨`);
-  }, [pathExpr, doc.commands, doc.selection, flash]);
+  }, [doc.commands, doc.selection, flash]);
+
+  const selectByMethod = useCallback((method: Method) => {
+    const expr = `$..items[?(@.method=='${method}')]`;
+    setPathExpr(expr);
+    runQuery(expr);
+  }, [runQuery]);
+
+  const selectAllRequests = useCallback(() => {
+    const expr = `$..items[?(@.kind=='request')]`;
+    setPathExpr(expr);
+    runQuery(expr);
+  }, [runQuery]);
 
   // ── bulk: 선택된 모든 request 에 X-Trace-Id 헤더 추가 (단일 patch) ───────
   const bulkAddTraceHeader = useCallback(() => {
@@ -157,10 +172,10 @@ export function ApiCollection() {
             <li><em>Auth 폴더의 "Login" 클릭 → Shift+Click "Me"</em> — 3개 range select (W3C Selection extend).</li>
             <li><em>Cmd+Click 으로 Users/Create 추가</em> — 비연속 toggle.</li>
             <li><em>copy → Billing 폴더 클릭 → paste</em> — request 가 폴더 간 이동 (RFC 6902 add).</li>
-            <li><em>JSONPath <code>$..items[?(@.method=='POST')]</code> select matches</em> — 모든 POST 일괄 선택 (RFC 9535).</li>
-            <li><em>+ X-Trace-Id (bulk)</em> — 매치된 모든 request 에 헤더 일괄 추가, 단일 patch · 단일 undo step.</li>
+            <li><em>filter 줄에서 <strong>POST</strong> 칩 클릭</em> — 트리 가로질러 모든 POST 요청 한번에 선택. 내부적으로 <code>$..items[?(@.method=='POST')]</code> 가 실행됨 (advanced 토글로 확인).</li>
+            <li><em>+ X-Trace-Id (선택 일괄)</em> — 매치된 모든 request 에 헤더 일괄 추가. 단일 patch · 단일 undo step.</li>
             <li><em>undo 한 번</em> — bulk 가 한 step 으로 묶였는지 확인.</li>
-            <li><em>JSONPath <code>$..items[?(@.method=='DELETE')]</code> → cut → 다른 폴더 paste</em> — 위험 동작 격리 시연.</li>
+            <li><em>DELETE 칩 클릭 → cut → 다른 폴더 paste</em> — 위험 동작들을 한 폴더로 격리.</li>
           </ol>
         </details>
       </header>
@@ -178,20 +193,37 @@ export function ApiCollection() {
         <button onClick={() => doc.ops.reset()}>reset</button>
       </div>
 
-      <div style={S.jsonpathBar}>
-        <span style={S.jsonpathLabel}>JSONPath (RFC 9535)</span>
-        <input
-          value={pathExpr}
-          onChange={(e) => setPathExpr(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") runJsonPath(); }}
-          style={S.input}
-          spellCheck={false}
-        />
-        <button onClick={runJsonPath}>select matches</button>
-        <button onClick={bulkAddTraceHeader} disabled={selectedItems.length === 0} title="선택된 모든 request 에 X-Trace-Id 일괄 추가 — 단일 undo">
-          + X-Trace-Id (bulk)
+      <div style={S.queryBar}>
+        <span style={S.toolbarLabel} title="RFC 9535 JSONPath 가 트리를 가로지르는 일괄 선택을 한 줄로">filter</span>
+        {ALL_METHODS.map((m) => (
+          <button key={m} onClick={() => selectByMethod(m)} style={{ ...S.chip, color: METHOD_COLOR[m], borderColor: METHOD_COLOR[m] }}>
+            {m}
+          </button>
+        ))}
+        <button onClick={selectAllRequests} style={S.chip}>모든 request</button>
+        <button onClick={() => doc.selection?.empty()} style={S.chip}>해제</button>
+        <span style={S.sep} />
+        <button onClick={bulkAddTraceHeader} disabled={selectedItems.length === 0} title="선택된 모든 request 에 X-Trace-Id 일괄 추가 — 단일 patch · 단일 undo step">
+          + X-Trace-Id (선택 일괄)
+        </button>
+        <button onClick={() => setShowAdvanced((v) => !v)} style={S.linkBtn}>
+          {showAdvanced ? "− advanced" : "+ advanced"}
         </button>
       </div>
+
+      {showAdvanced && (
+        <div style={S.queryBar}>
+          <span style={S.toolbarLabel}>JSONPath</span>
+          <input
+            value={pathExpr}
+            onChange={(e) => setPathExpr(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") runQuery(pathExpr); }}
+            style={S.input}
+            spellCheck={false}
+          />
+          <button onClick={() => runQuery(pathExpr)}>실행</button>
+        </div>
+      )}
 
       <div style={S.body}>
         <div style={S.left}>
@@ -258,9 +290,10 @@ function Tree(props: {
               ) : (
                 <>
                   <span style={{ ...S.method, color: METHOD_COLOR[item.method] }}>{item.method}</span>
-                  <span>{item.name}</span>
+                  <span style={S.reqName}>{item.name}</span>
                   <code style={S.url}>{item.url}</code>
-                  {item.headers.length > 0 && <span style={S.muted2}>· {item.headers.length} header{item.headers.length > 1 ? "s" : ""}</span>}
+                  {item.headers.length > 0 && <span style={S.muted2}>· {item.headers.length} hdr</span>}
+                  <div style={S.reqDesc}>{item.description}</div>
                 </>
               )}
             </div>
@@ -287,6 +320,11 @@ const S = {
   tryList: { margin: "8px 0 6px", paddingLeft: 22, lineHeight: 1.7, color: "#333" } as React.CSSProperties,
   toolbar: { display: "flex", gap: 6, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
   jsonpathBar: { display: "flex", gap: 6, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
+  queryBar: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
+  chip: { fontFamily: "ui-monospace, monospace", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, border: "1px solid #ccc", background: "#fff", cursor: "pointer" } as React.CSSProperties,
+  linkBtn: { background: "none", border: "none", color: "#06c", fontSize: 12, cursor: "pointer", marginLeft: "auto", textDecoration: "underline" } as React.CSSProperties,
+  reqName: { fontWeight: 500 } as React.CSSProperties,
+  reqDesc: { fontSize: 12, color: "#888", marginLeft: 60, marginTop: 2, flexBasis: "100%" } as React.CSSProperties,
   jsonpathLabel: { fontSize: 11, color: "#666", textTransform: "uppercase" as const, letterSpacing: 1, marginRight: 4 },
   toolbarLabel: { fontSize: 10, color: "#999", textTransform: "uppercase" as const, letterSpacing: 1, marginRight: 2 },
   input: { flex: 1, fontFamily: "ui-monospace, monospace", fontSize: 13, padding: "4px 8px", border: "1px solid #ccc", borderRadius: 4 } as React.CSSProperties,
@@ -296,7 +334,7 @@ const S = {
   right: { fontSize: 13 } as React.CSSProperties,
   h3: { fontSize: 11, color: "#666", textTransform: "uppercase" as const, letterSpacing: 1, marginTop: 12, marginBottom: 4 },
   tree: { listStyle: "none", margin: 0, padding: "0 0 0 14px" } as React.CSSProperties,
-  row: { display: "flex", gap: 8, alignItems: "center", padding: "4px 8px", borderRadius: 4, cursor: "pointer", fontSize: 14 } as React.CSSProperties,
+  row: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", padding: "4px 8px", borderRadius: 4, cursor: "pointer", fontSize: 14 } as React.CSSProperties,
   folderGlyph: { color: "#888", width: 12, display: "inline-block" } as React.CSSProperties,
   method: { fontFamily: "ui-monospace, monospace", fontSize: 11, fontWeight: 700, width: 52, display: "inline-block" } as React.CSSProperties,
   url: { fontFamily: "ui-monospace, monospace", fontSize: 12, color: "#444" } as React.CSSProperties,
