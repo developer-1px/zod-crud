@@ -35,7 +35,8 @@ export function pickAutoTarget(
   return all.length > 0 ? all[0]! : null;
 }
 
-// SPEC §5.7 rule 2 / §5.8 rule 2 — lost pointer 복구: nextSibling → prevSibling → parent.
+// SPEC §5.7 rule 2 / §5.8 rule 2 — lost pointer 복구: nextSibling → prevSibling → 가장 가까운 존재 ancestor.
+// array container 는 좌표 의미가 없는 "항목 컨테이너" 라 fallback 시 건너뛰고 한 단계 더 climb.
 export function recoverLostPointer(
   lost: Pointer,
   applied: ReadonlyArray<JsonPatchOperation>,
@@ -52,8 +53,13 @@ export function recoverLostPointer(
     const prevCandidate = `${trackedParent}/${idx - 1}`;
     if (exists(after, prevCandidate)) return prevCandidate;
   }
-  if (trackedParent === "") return null;
-  if (exists(after, trackedParent)) return trackedParent;
+  // array container 를 건너뛰며 가장 가까운 non-array ancestor 로 fallback.
+  let cur: Pointer | null = trackedParent;
+  while (cur !== null && cur !== "") {
+    const r = readAt(after, parsePointer(cur));
+    if (r.ok && !Array.isArray(r.value)) return cur;
+    cur = parentPointer(cur);
+  }
   return null;
 }
 
