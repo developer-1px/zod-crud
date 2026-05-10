@@ -233,7 +233,7 @@ export function App() {
   const [selectedId, setSelectedId] = useState("section-hero");
   const [paletteSelection, setPaletteSelection] = useState<PaletteSelection>(null);
   const [clipboard, setClipboard] = useState<Clipboard>(null);
-  const [message, setMessage] = useState("Select a block or design-system part. Use Ctrl/Cmd+C and Ctrl/Cmd+V.");
+  const [message, setMessage] = useState("Select a block or design-system part. Press C to copy and V to paste.");
   const selected = useMemo(() => findNode(page, selectedId), [page, selectedId]);
 
   const copy = (node: CmsNode) => {
@@ -292,7 +292,7 @@ export function App() {
     const key = event.key.toLowerCase();
     const mod = event.metaKey || event.ctrlKey;
 
-    if (mod && key === "c") {
+    if ((mod && key === "c") || (!mod && key === "c")) {
       event.preventDefault();
       if (paletteSelection) copy(paletteSelection.node);
       else if (selected && selected.kind !== "page") copy(selected);
@@ -300,7 +300,7 @@ export function App() {
       return;
     }
 
-    if (mod && key === "v") {
+    if ((mod && key === "v") || (!mod && key === "v")) {
       event.preventDefault();
       if (selected) pasteInto(selected);
       return;
@@ -498,8 +498,8 @@ function ShortcutList() {
   return (
     <div className="shortcut-card">
       <h3>Shortcuts</h3>
-      <div><kbd>Ctrl/Cmd+C</kbd><span>Copy selected block</span></div>
-      <div><kbd>Ctrl/Cmd+V</kbd><span>Paste into selected slot</span></div>
+      <div><kbd>C</kbd><span>Copy selected block</span></div>
+      <div><kbd>V</kbd><span>Paste into selected slot</span></div>
       <div><kbd>Delete</kbd><span>Remove selected block</span></div>
       <div><kbd>R</kbd><span>Reset page</span></div>
     </div>
