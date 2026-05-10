@@ -53,7 +53,7 @@ export function Outliner() {
   }, [mode, dispatch]);
 
   useGlobalKey(mode, dispatch);
-  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
+  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode, logger);
 
   return (
     <div className="app">
@@ -80,6 +80,19 @@ export function Outliner() {
         <button onClick={recorder.loadAndReplay} disabled={recorder.replaying} title="JSON 녹화 재생">
           {recorder.replaying ? "재생중…" : "↻ 재생"}
         </button>
+        {debug.enabled ? (
+          <button
+            onClick={() => debug.stopAndDownload()}
+            title="debug log 종료 + JSON 다운로드"
+            style={{ color: "#06c", fontWeight: 600 }}
+          >
+            🐛 정지 ({debug.eventCount})
+          </button>
+        ) : (
+          <button onClick={debug.start} title="입력·dispatch·commit·selection 모든 trace 기록">
+            🐛 디버그
+          </button>
+        )}
         <span className="status">
           mode = <code className={`mode mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focus ?? "—"}</code>
