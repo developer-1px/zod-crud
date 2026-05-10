@@ -78,6 +78,18 @@ describe("mobile CMS usable editing surface", () => {
     await user.click(screen.getByText("Shop area"));
     await user.keyboard("{Control>}v{/Control}");
     await waitFor(() => expect(productCollections()).toHaveLength(2));
+    expect(screen.getByRole("heading", { name: "Product grid" })).toBeTruthy();
+  });
+
+  test("does not copy page sections because sections are paste targets, not portable blocks", async () => {
+    renderCms();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByText("Editorial content"));
+    await user.keyboard("{Control>}c{/Control}");
+
+    expect(screen.getByText("Sections are paste targets. Copy a block or collection block instead.")).toBeTruthy();
+    expect(writeTextSpy).not.toHaveBeenCalled();
   });
 
   test("selecting and editing text does not trigger block copy paste shortcuts", async () => {

@@ -271,6 +271,10 @@ export function App() {
   const selected = useMemo(() => findNode(page, selectedId), [page, selectedId]);
 
   const copy = (node: CmsNode) => {
+    if (node.kind === "page" || node.kind === "section") {
+      setMessage("Sections are paste targets. Copy a block or collection block instead.");
+      return;
+    }
     setClipboard({ node: cloneNode(node), sourceId: node.id });
     const payload = serializeBlock(node);
     if (payload) void navigator.clipboard?.writeText(payload).catch(() => undefined);
@@ -287,8 +291,9 @@ export function App() {
       setMessage(verdict.reason ?? "This block is not allowed here.");
       return;
     }
-    setPage((current) => insertInto(current, target.id, cloneNode(incoming as BlockNode)));
-    setSelectedId(target.id);
+    const pasted = cloneNode(incoming as BlockNode);
+    setPage((current) => insertInto(current, target.id, pasted));
+    setSelectedId(pasted.id);
     setMessage(`Pasted ${incoming.name} into ${target.name}.`);
   };
 
@@ -336,7 +341,7 @@ export function App() {
     if (mod && key === "c") {
       event.preventDefault();
       if (paletteSelection) copy(paletteSelection.node);
-      else if (selected && selected.kind !== "page") copy(selected);
+      else if (selected) copy(selected);
       else setMessage("Select a design block before copying.");
       return;
     }
@@ -408,7 +413,7 @@ export function App() {
         <div className="topbar">
           <div>
             <strong>{page.name}</strong>
-            <span>{message}</span>
+            <span role="status" aria-live="polite">{message}</span>
           </div>
           <kbd>R reset</kbd>
         </div>
@@ -467,7 +472,7 @@ function SectionView(props: {
     >
       <div className="section-label">
         <span>{props.section.name}</span>
-        <kbd>paste target</kbd>
+        <kbd>{verdict?.ok ? "Cmd+V" : verdict ? "blocked" : "slot"}</kbd>
       </div>
       {props.section.children.map((child) => (
         <BlockView
@@ -499,7 +504,7 @@ function BlockView(props: {
     >
       <div className="block-toolbar">
         <span>{node.name}</span>
-        <kbd>{verdict?.ok ? "V" : "C"}</kbd>
+        <kbd>{verdict?.ok ? "Cmd+V" : "Cmd+C"}</kbd>
       </div>
       <BlockContent node={node} onTextChange={props.onTextChange} />
       {node.children && node.children.length > 0 && (
