@@ -10,51 +10,23 @@ export function exists(state: unknown, pointer: Pointer): boolean {
 }
 
 // SPEC §5.7 rule 1 / §5.8 rule 1 — applied ops 의 add/copy/move destination 모두 수집.
-// 한 patch 에 여러 노드가 추가되면 모두 selection 범위가 된다 (잘라내기 2개 → 붙여넣기 → 2개 선택).
-//
-// `/-` 는 after-state 의 array 길이를 보고 resolve — 같은 parent 에 N 개 append 면
-// final index = arr.length - N + k (k=order). explicit path 는 후속 ops 의 index shift 만 반영.
+// 단일 표준 모델: applyPatch 가 `/-` 를 concrete index 로 이미 정규화했으므로
+// 모든 op.path 는 적용 시점의 실제 위치. 이후 ops 의 index shift 는 trackPointer 가 처리.
 export function pickAutoTargets(
   applied: ReadonlyArray<JsonPatchOperation>,
-  after: unknown,
+  _after: unknown,
 ): Pointer[] {
-  type Raw =
-    | { kind: "explicit"; path: Pointer; opIndex: number }
-    | { kind: "append"; parent: string; opIndex: number };
-  const raw: Raw[] = [];
+  const out: Pointer[] = [];
   for (let i = 0; i < applied.length; i++) {
     const op = applied[i]!;
-    let dest: string | null = null;
-    if (op.op === "add" || op.op === "copy" || op.op === "move") dest = op.path;
-    if (dest === null || dest === "") continue;
-    if (dest.endsWith("/-")) raw.push({ kind: "append", parent: dest.slice(0, -2), opIndex: i });
-    else raw.push({ kind: "explicit", path: dest, opIndex: i });
-  }
-
-  const appendsPerParent = new Map<string, number>();
-  for (const r of raw) if (r.kind === "append") appendsPerParent.set(r.parent, (appendsPerParent.get(r.parent) ?? 0) + 1);
-
-  const seenAppendOrder = new Map<string, number>();
-  const out: Pointer[] = [];
-  for (const r of raw) {
-    if (r.kind === "append") {
-      const total = appendsPerParent.get(r.parent)!;
-      const k = seenAppendOrder.get(r.parent) ?? 0;
-      seenAppendOrder.set(r.parent, k + 1);
-      const arr = readAt(after, parsePointer(r.parent));
-      if (!arr.ok || !Array.isArray(arr.value) || arr.value.length < total) continue;
-      const finalIdx = arr.value.length - total + k;
-      out.push(buildPointer([...parsePointer(r.parent), finalIdx]));
-    } else {
-      // explicit path — 이후 ops 의 index shift 반영
-      const tracked = trackPointer(r.path, applied.slice(r.opIndex + 1));
-      if (tracked !== null) out.push(tracked);
-    }
+    if (op.op !== "add" && op.op !== "copy" && op.op !== "move") continue;
+    if (op.path === "") continue;
+    const tracked = trackPointer(op.path, applied.slice(i + 1));
+    if (tracked !== null) out.push(tracked);
   }
   return out;
 }
 
-// 단수형 — 첫 매치만 필요한 호출자용 (현재 lost recovery fallback 등).
 export function pickAutoTarget(
   applied: ReadonlyArray<JsonPatchOperation>,
   after: unknown,

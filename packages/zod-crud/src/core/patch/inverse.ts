@@ -3,15 +3,7 @@
 import { parsePointer, readAt, type Pointer } from "../pointer/index.js";
 import type { JsonPatchOperation } from "./index.js";
 import { applyOpRaw } from "./apply.js";
-
-function resolveAppendPath(path: Pointer, before: unknown): Pointer {
-  if (!path.endsWith("/-")) return path;
-  const parent = path.slice(0, -2);
-  const parentSegs = parent === "" ? [] : parsePointer(parent);
-  const r = readAt(before, parentSegs);
-  if (!r.ok || !Array.isArray(r.value)) return path;
-  return parent === "" ? `/${r.value.length}` : `${parent}/${r.value.length}`;
-}
+import { resolveAppendPath } from "./internal.js";
 
 function inverseOp(op: JsonPatchOperation, before: unknown): JsonPatchOperation | null {
   switch (op.op) {
