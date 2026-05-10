@@ -251,7 +251,7 @@
     "xmlchars": "^2.2.0",
     "yallist": "^3.1.1",
     "zod": "^4.4.2",
-    "zod-crud": "^0.1.0",
+    "zod-crud": "*",
     "zwitch": "^2.0.4"
   },
   "devDependencies": {},
