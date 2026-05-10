@@ -3,7 +3,7 @@
 zod-crud에서 안전하다는 말은 두 가지입니다.
 
 1. schema를 깨는 변경은 commit하지 않습니다.
-2. 실패한 변경은 문서 값, selection, focus, history를 어중간하게 바꾸지 않습니다.
+2. 실패한 변경은 문서 값, selection, history를 어중간하게 바꾸지 않습니다.
 
 ## Zod schema가 안전 경계입니다
 

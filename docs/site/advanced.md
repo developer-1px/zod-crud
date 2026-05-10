@@ -43,7 +43,8 @@ const result = applyPatch(Schema, state, operations);
 
 ## Pointer tracking
 
-selection과 focus가 변경을 따라갈 수 있는 이유는 Pointer tracking입니다.
+selection이 변경을 따라갈 수 있는 이유는 Pointer tracking입니다. 현재 캐럿도
+`selection.focus`로 저장되므로 같은 규칙을 따릅니다.
 
 ```ts
 const next = trackPointer("/items/2", [
@@ -79,7 +80,7 @@ const restored = parse(Schema, text);
 
 - schema-safe commit
 - undo/redo
-- selection/focus tracking
+- selection/caret tracking
 - JSON 위치 관리
 
 zod-crud는 이 공통 하부만 맡습니다. 그래서 UI는 직접 만들 수 있고, 편집 상태는 재사용할 수 있습니다.

@@ -103,4 +103,4 @@ const doc = useJsonDocument(Todo, initial, {
 
 ## 다음에 읽을 것
 
-[useJsonDocument](/docs/concepts)에서 `doc.value`, `doc.ops`, `doc.history`, `doc.selection`, `doc.focus`를 하나씩 설명합니다.
+[useJsonDocument](/docs/concepts)에서 `doc.value`, `doc.ops`, `doc.history`, `doc.selection`을 하나씩 설명합니다.

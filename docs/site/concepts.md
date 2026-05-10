@@ -16,7 +16,6 @@ const doc = useJsonDocument(Schema, initial);
 | `doc.ops` | 문서를 바꾸는 작업 API |
 | `doc.history` | undo/redo API |
 | `doc.selection` | 선택 상태. 옵션을 켰을 때 사용 |
-| `doc.focus` | 포커스 상태. 옵션을 켰을 때 사용 |
 
 ## `doc.value`
 
@@ -58,32 +57,35 @@ history를 켜지 않으면 undo/redo 스택은 쌓이지 않습니다.
 ## `doc.selection`
 
 selection은 “선택된 위치들”입니다. 리스트나 트리 편집기에서 여러 항목을 선택할 때 씁니다.
+W3C Selection API와 같은 모델이라서, 단일 캐럿도 별도 focus 객체가 아니라 collapsed
+selection으로 표현합니다.
 
 ```ts
 const doc = useJsonDocument(Schema, initial, {
   selection: { mode: "multiple" },
 });
 
-doc.selection?.toggle("/tasks/2");
-doc.selection?.has("/tasks/2");
+doc.selection?.toggleRange("/tasks/2");
+doc.selection?.containsNode("/tasks/2");
 ```
 
 selection은 Pointer 배열로 저장됩니다. 즉 선택된 DOM element가 아니라 선택된 JSON 위치를 기억합니다.
 
-## `doc.focus`
+## 캐럿은 `doc.selection.focus`
 
-focus는 “현재 활성 위치”입니다. 키보드 조작의 기준이 되는 항목을 표현할 때 씁니다.
+현재 활성 위치는 `doc.selection.focus`입니다. 키보드 조작의 기준이 되는 항목을 표현할 때 씁니다.
 
 ```ts
 const doc = useJsonDocument(Schema, initial, {
-  focus: { initial: "/tasks/0" },
+  selection: { mode: "multiple", initial: ["/tasks/0"] },
 });
 
-doc.focus?.set("/tasks/1");
-doc.focus?.clear();
+doc.selection?.collapse("/tasks/1");
+doc.selection?.empty();
 ```
 
-항목이 이동하거나 삭제되면 focus는 변경을 따라갑니다. 삭제된 위치를 어떻게 복구할지는 `recover` 옵션으로 정할 수 있습니다.
+항목이 이동하거나 삭제되면 selection의 `anchor`와 `focus`는 변경을 따라갑니다.
+`selection.isCollapsed`가 `true`이면 현재 selection은 단일 캐럿입니다.
 
 ## 옵션 전체
 
@@ -93,7 +95,6 @@ doc.focus?.clear();
 | `strict` | 실패 시 throw할지 여부 |
 | `onError` | 실패했을 때 호출할 콜백 |
 | `selection` | 선택 상태 켜기와 설정 |
-| `focus` | 포커스 상태 켜기와 설정 |
 
 ## 언제 낮은 레벨 hook을 쓰나요?
 
@@ -101,7 +102,7 @@ doc.focus?.clear();
 
 낮은 레벨 hook은 이런 경우에 씁니다.
 
-- selection과 focus를 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
+- selection을 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
 - React 밖에서 core만 쓰고 싶을 때
 - document facade 없이 `useJson`만 가볍게 쓰고 싶을 때
 

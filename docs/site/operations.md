@@ -1,6 +1,6 @@
 # Editor State
 
-편집기는 단순히 값 하나만 들고 있지 않습니다. 사용자가 보고 있는 문서 값, 방금 한 편집, 선택된 항목, 포커스, 되돌리기 기록이 함께 움직입니다.
+편집기는 단순히 값 하나만 들고 있지 않습니다. 사용자가 보고 있는 문서 값, 방금 한 편집, 선택된 항목, 캐럿, 되돌리기 기록이 함께 움직입니다.
 
 zod-crud는 이 묶음을 `doc` 객체로 다룹니다.
 
@@ -56,32 +56,32 @@ doc.ops.patch([
 selection은 사용자가 선택한 JSON 위치들입니다.
 
 ```ts
-doc.selection?.set(["/items/0", "/items/1"]);
-doc.selection?.toggle("/items/2");
-doc.selection?.clear();
+doc.selection?.setBaseAndExtent("/items/0", "/items/1");
+doc.selection?.toggleRange("/items/2");
+doc.selection?.empty();
 ```
 
 선택 상태는 UI와 분리되어 있습니다. DOM node를 저장하지 않고 JSON 문서 안의 위치를 저장합니다.
 
-## 포커스 상태
+## 캐럿 상태
 
-focus는 현재 키보드 조작의 기준이 되는 위치입니다.
+캐럿은 collapsed selection입니다. 현재 키보드 조작의 기준이 되는 위치는 `selection.focus`입니다.
 
 ```ts
-doc.focus?.set("/items/0");
-doc.focus?.clear();
+doc.selection?.collapse("/items/0");
+doc.selection?.empty();
 ```
 
 트리나 아웃라이너에서는 “현재 커서가 있는 노드”라고 생각하면 됩니다.
 
 ## 변경을 따라가는 좌표
 
-배열에서 `/items/0`을 삭제하면 원래 `/items/2`였던 항목은 `/items/1`이 됩니다. selection과 focus는 이런 변경을 자동으로 따라갑니다.
+배열에서 `/items/0`을 삭제하면 원래 `/items/2`였던 항목은 `/items/1`이 됩니다. selection의 range, anchor, focus는 이런 변경을 자동으로 따라갑니다.
 
 ```ts
-doc.focus?.set("/items/2");
+doc.selection?.collapse("/items/2");
 doc.ops.remove("/items/0");
-// focus는 /items/1 쪽으로 이동
+// selection.focus는 /items/1 쪽으로 이동
 ```
 
 이 동작 때문에 사용자는 매번 “삭제했으니 선택 index를 하나 줄여야 하나?” 같은 코드를 직접 쓰지 않아도 됩니다.
@@ -112,8 +112,7 @@ doc
 ├─ value      현재 문서
 ├─ ops        문서를 바꾸는 방법
 ├─ history    되돌리기
-├─ selection  선택된 위치들
-└─ focus      현재 활성 위치
+└─ selection  선택된 위치들. collapsed selection이면 현재 캐럿
 ```
 
 내부에서 이것이 JSON Pointer와 JSON Patch로 표현된다는 사실은 나중에 알아도 됩니다.

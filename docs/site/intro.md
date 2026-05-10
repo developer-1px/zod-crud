@@ -16,11 +16,11 @@ setState({ ...state, title: "new title" });
 
 - 값이 schema를 깨면 저장하면 안 됩니다.
 - 항목을 삭제하면 선택된 위치도 같이 움직여야 합니다.
-- 항목을 이동하면 focus도 새 위치를 따라가야 합니다.
+- 항목을 이동하면 현재 캐럿 위치도 새 위치를 따라가야 합니다.
 - undo/redo가 필요합니다.
 - 서버나 테스트에서는 React 없이 같은 변경 규칙을 쓰고 싶습니다.
 
-zod-crud는 이 문제를 한 곳에 모읍니다. 사용자는 UI를 만들고, zod-crud는 문서 값, 편집 작업, 선택, 포커스, 히스토리를 안전하게 관리합니다.
+zod-crud는 이 문제를 한 곳에 모읍니다. 사용자는 UI를 만들고, zod-crud는 문서 값, 편집 작업, 선택, 캐럿, 히스토리를 안전하게 관리합니다.
 
 ## 가장 중요한 API
 
@@ -29,7 +29,6 @@ zod-crud는 이 문제를 한 곳에 모읍니다. 사용자는 UI를 만들고,
 ```ts
 const doc = useJsonDocument(Schema, initial, {
   history: 50,
-  focus: true,
   selection: { mode: "multiple" },
 });
 ```
@@ -41,8 +40,7 @@ const doc = useJsonDocument(Schema, initial, {
 | `doc.value` | 현재 JSON 문서 값 |
 | `doc.ops` | 문서를 바꾸는 작업들 |
 | `doc.history` | undo/redo |
-| `doc.selection` | 선택된 JSON 위치들 |
-| `doc.focus` | 현재 활성 JSON 위치 |
+| `doc.selection` | 선택된 JSON 위치들. collapsed selection이면 현재 캐럿 |
 
 ## Zod는 무엇을 하나요?
 
@@ -66,7 +64,7 @@ zod-crud 내부는 JSON Pointer와 JSON Patch 위에 있습니다. 하지만 처
 - `doc.value`를 읽습니다.
 - `doc.ops`로 편집합니다.
 - Zod가 안전하지 않은 변경을 막습니다.
-- selection/focus/history가 편집을 따라갑니다.
+- selection/history가 편집을 따라갑니다.
 
 나중에 서버 연동, 외부 patch, core API가 필요해지면 [Core & Design](/docs/advanced)에서 내부 계약을 보면 됩니다.
 
