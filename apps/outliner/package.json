@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
-    "test:e2e": "playwright test",
+    "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc --noEmit",
     "preview": "vite preview"
   },
