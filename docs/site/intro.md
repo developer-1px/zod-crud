@@ -1,30 +1,40 @@
-# Overview
+# zod-crud
 
-zod-crud는 **Zod schema로 보호되는 JSON editor state layer**입니다.
+zod-crud는 **Zod schema로 보호되는 headless JSON tree editing layer**입니다.
 
-조금 풀어서 말하면, JSON으로 된 문서를 편집하는 화면을 만들 때 필요한 상태 관리를 대신 맡아주는 headless 라이브러리입니다. headless라는 말은 버튼, input, tree row 같은 UI 모양은 제공하지 않고, 그 아래에서 움직이는 상태와 작업만 제공한다는 뜻입니다.
+JSON 문서를 편집하는 서비스가 매번 다시 만드는 선택, 편집, clipboard, undo/redo 규칙을 하나의 재사용 가능한 상태 계층으로 제공합니다. UI 컴포넌트, 키보드 매핑, DOM clipboard 호출은 애플리케이션이 맡고, zod-crud는 그 아래의 JSON 값, 작업, 선택, 히스토리, schema 검증을 다룹니다.
 
-## 어떤 문제를 해결하나요?
+## 공식 계약
 
-JSON 편집 UI는 처음에는 쉬워 보입니다.
+이 사이트의 설명은 `packages/zod-crud/SPEC.md`를 기준으로 합니다. SPEC은 코드, 문서, 테스트보다 우선하는 정본 계약입니다.
+
+zod-crud의 본체는 다음 네 가지 축으로 닫힙니다.
+
+- **Selection**: JSON Pointer 기반 선택과 검색
+- **Edit**: JSON Patch 기반 이동, 복제, 교체
+- **Clipboard**: JSON fragment의 cut, copy, paste
+- **Undo**: JSON Patch inverse 기반 undo/redo
+
+## 왜 필요한가요?
+
+JSON 편집 UI는 간단한 `setState`로 시작할 수 있습니다.
 
 ```ts
 setState({ ...state, title: "new title" });
 ```
 
-하지만 실제 편집기를 만들면 금방 복잡해집니다.
+하지만 실제 제품에서는 변경 규칙이 곧 데이터 계약이 됩니다.
 
-- 값이 schema를 깨면 저장하면 안 됩니다.
-- 항목을 삭제하면 선택된 위치도 같이 움직여야 합니다.
-- 항목을 이동하면 현재 캐럿 위치도 새 위치를 따라가야 합니다.
-- undo/redo가 필요합니다.
-- 서버나 테스트에서는 React 없이 같은 변경 규칙을 쓰고 싶습니다.
+- 변경 결과가 schema를 깨면 commit되면 안 됩니다.
+- 항목을 삭제하거나 이동하면 selection도 같은 규칙으로 따라가야 합니다.
+- undo/redo는 실제 적용된 JSON Patch와 역연산을 기준으로 쌓여야 합니다.
+- React 화면, 서버, 테스트가 같은 변경 규칙을 공유해야 합니다.
 
-zod-crud는 이 문제를 한 곳에 모읍니다. 사용자는 UI를 만들고, zod-crud는 문서 값, 편집 작업, 선택, 캐럿, 히스토리를 안전하게 관리합니다.
+zod-crud는 이 규칙을 UI 밖으로 분리합니다. 애플리케이션은 화면을 만들고, zod-crud는 문서 값과 편집 명령이 항상 같은 표준 위에서 움직이도록 관리합니다.
 
-## 가장 중요한 API
+## React entry point
 
-처음 만날 API는 `useJsonDocument`입니다.
+React에서 가장 높은 수준의 진입점은 `useJsonDocument`입니다.
 
 ```ts
 const doc = useJsonDocument(Schema, initial, {
@@ -33,41 +43,37 @@ const doc = useJsonDocument(Schema, initial, {
 });
 ```
 
-`doc`는 편집기 하나의 상태 모델입니다.
+`doc`는 편집기 하나의 headless 상태 모델입니다.
 
 | 필드 | 뜻 |
 |------|----|
 | `doc.value` | 현재 JSON 문서 값 |
-| `doc.ops` | 문서를 바꾸는 작업들 |
-| `doc.history` | undo/redo |
-| `doc.selection` | 선택된 JSON 위치들. collapsed selection이면 현재 캐럿 |
+| `doc.ops` | schema gate를 통과해 문서를 바꾸는 작업 |
+| `doc.history` | undo/redo 상태와 명령 |
+| `doc.selection` | 선택된 JSON Pointer 위치들 |
 
-## Zod는 무엇을 하나요?
+## Standards inside
 
-Zod schema는 이 편집기가 다룰 수 있는 문서의 모양입니다.
+zod-crud는 내부 표현을 임의 형식으로 만들지 않습니다.
 
-```ts
-const Todo = z.object({
-  title: z.string(),
-  done: z.boolean(),
-});
-```
+- **RFC 6901 JSON Pointer**: 모든 좌표와 selection의 정본 path
+- **RFC 6902 JSON Patch**: 모든 변경의 정본 operation
+- **RFC 9535 JSONPath**: find/replace query 어휘
+- **Zod schema**: commit 가능한 JSON 상태의 안전 경계
 
-편집 작업이 끝난 뒤 결과가 schema를 통과하면 commit됩니다. 통과하지 못하면 state는 바뀌지 않습니다. 그래서 zod-crud에서 Zod는 단순한 검증 도구가 아니라, 편집 가능한 세계의 안전 경계입니다.
+편집 작업은 먼저 계산되고, 결과가 Zod schema를 통과할 때만 commit됩니다. 실패하면 기존 state는 유지됩니다.
 
-## 내부 표준은 뒤에서 배웁니다
+## What it is not
 
-zod-crud 내부는 JSON Pointer와 JSON Patch 위에 있습니다. 하지만 처음부터 이 단어를 외울 필요는 없습니다.
+zod-crud는 form generator도, 완성형 JSON editor UI도 아닙니다.
 
-처음에는 이렇게만 기억하면 됩니다.
+- 버튼, input, tree row 같은 화면 요소를 제공하지 않습니다.
+- DOM event와 keyboard shortcut을 자동으로 연결하지 않습니다.
+- 브라우저 clipboard API를 직접 호출하지 않습니다.
+- 시각적 selection이나 ARIA 속성 렌더링을 대신하지 않습니다.
 
-- `doc.value`를 읽습니다.
-- `doc.ops`로 편집합니다.
-- Zod가 안전하지 않은 변경을 막습니다.
-- selection/history가 편집을 따라갑니다.
+이 경계를 유지하기 때문에 같은 편집 규칙을 React UI, headless 테스트, 서버 연동 코드에서 재사용할 수 있습니다.
 
-나중에 서버 연동, 외부 patch, core API가 필요해지면 [Core & Design](/docs/advanced)에서 내부 계약을 보면 됩니다.
+## Start here
 
-## 다음에 읽을 것
-
-[Quick Start](/docs/getting-started)에서 아주 작은 편집기를 만들어 봅니다.
+[Quick Start](/docs/getting-started)에서 작은 편집기를 만들고, [Core & Design](/docs/advanced)에서 SPEC 기반 내부 계약을 확인할 수 있습니다.
