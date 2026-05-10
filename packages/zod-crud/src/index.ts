@@ -115,3 +115,13 @@ export { undo as undoVerb } from "./verbs/undo.js";
 export type { UndoEntry, UndoResult, UndoNoop } from "./verbs/undo.js";
 export { redo as redoVerb } from "./verbs/redo.js";
 export type { RedoResult } from "./verbs/redo.js";
+
+// Clipboard 기둥 verbs (P5)
+export { copy as copyVerb } from "./verbs/copy.js";
+export type { CopyOk, CopyError, CopyResult } from "./verbs/copy.js";
+export { cut as cutVerb } from "./verbs/cut.js";
+export type { CutOk, CutError } from "./verbs/cut.js";
+export { paste as pasteVerb } from "./verbs/paste.js";
+export type { PasteOk, PasteError, PasteMode } from "./verbs/paste.js";
+export { duplicate as duplicateVerb } from "./verbs/duplicate.js";
+export type { DuplicateOk, DuplicateError, DuplicateOpts } from "./verbs/duplicate.js";
