@@ -41,6 +41,16 @@ type OutlineNode = { text: string; children: OutlineNode[] };
 DOM 이벤트는 `eventToChord` 로 정규화 → `findCommand(chord)` 로 lookup → `dispatch(id)`.
 chord 가 keymap 에 없으면 default 동작 통과 (텍스트 입력 등).
 
+### IME composition 가드
+
+한글·일본어·중국어 IME 조합 중인 키는 chord 로 처리하지 않는다. `e.isComposing` 또는
+`keyCode === 229` 일 때 dispatcher 가 early return 한다. 이 가드 없이는:
+
+- 한글 입력 후 Enter 가 IME 확정 + insert-sibling 두 번 발화
+- 일본어 변환 중 ArrowDown 이 후보 이동 + focus-next 충돌
+
+표준 web app 의 IME 처리 (Slack·Notion·CodeMirror 모두 동일 패턴).
+
 ## 2.5 Mode — select / edit (Workflowy 모델)
 
 이 outliner 는 **두 모드**를 분리한다. 표준 role model = Workflowy / Roam / LogSeq 의 정통 outliner 패턴 (Notion·VSCode·Excel 도 동일 2-mode 패턴).

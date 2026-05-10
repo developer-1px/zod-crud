@@ -94,7 +94,10 @@ export function Outliner() {
   }, [doc, clipboard, pushToast]);
 
   // 키보드 dispatcher — chord + 현재 mode 로 lookup.
+  // IME composition 중 (한/중/일 입력) 키는 무시 — Enter 가 조합 확정용으로 쓰여
+  //   command 디스패치하면 row 삽입과 충돌. e.isComposing 또는 keyCode 229 둘 다 체크.
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     const chord = eventToChord(e);
     const id = findCommand(chord, mode);
     if (!id) return;
