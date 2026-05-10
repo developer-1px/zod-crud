@@ -1,6 +1,14 @@
 // zod-crud — canonical public surface.
 // 정본: SPEC.md §5. 변경 시 SPEC.md를 먼저 갱신할 것.
 
+// Identity surface (SPEC §5.10) — facade
+export { useJsonDocument } from "./useJsonDocument.js";
+export type {
+  JsonDocument,
+  JsonDocumentHistory,
+  UseJsonDocumentOptions,
+} from "./useJsonDocument.js";
+
 // Axis 1 — Data substrate
 export { useJson, JsonCrudError } from "./useJson.js";
 export type { JsonOps, UseJsonOptions, JsonChangeListener } from "./useJson.js";

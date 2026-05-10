@@ -1,10 +1,10 @@
-// Workflowy/Roam 풍 outliner — RFC 6902 op + useJson + useFocus 만으로 구현.
+// Workflowy/Roam 풍 outliner — useJsonDocument facade 1개로 구현.
 // schema = recursive { text, children: Self[] }. focus = 현재 활성 노드 Pointer.
-// 모든 키 동작이 RFC 6902 op 1~2 개로 표현됨.
+// 모든 키 동작이 RFC 6902 op 1~2 개로 표현되고, history·focus 가 facade 안에 있음.
 
 import { useEffect, useRef } from "react";
 import { z } from "zod";
-import { useJson, useFocus, type Pointer } from "zod-crud";
+import { useJsonDocument, type Pointer } from "zod-crud";
 
 type OutlineNode = { text: string; children: OutlineNode[] };
 
@@ -49,77 +49,74 @@ function siblingAt(p: Pointer, idx: number): Pointer {
 }
 
 export function Outliner() {
-  const [json, ops] = useJson(OutlineSchema, SAMPLE, { history: 200, strict: false });
-  const fcs = useFocus(ops, { initial: "" });
-  const focus: Pointer | null = fcs.value;
+  const doc = useJsonDocument(OutlineSchema, SAMPLE, {
+    history: 200,
+    strict: false,
+    focus: { initial: "" },
+  });
+  const focus: Pointer | null = doc.focus?.value ?? null;
 
-  // 인라인 편집은 contentEditable 로 — text 만 path-direct replace.
-  // 키 매핑은 input 자체 onKeyDown 에서 처리 (DOM 이벤트는 사용자 책임 — SPEC §8).
+  // 키 매핑 (DOM 이벤트 → RFC 6902 op) — UI 책임.
   const onKey = (e: React.KeyboardEvent, p: Pointer): void => {
     const isMeta = e.metaKey || e.ctrlKey;
     if (isMeta && e.key === "z" && !e.shiftKey) {
       e.preventDefault();
-      ops.undo();
+      doc.history.undo();
       return;
     }
     if (isMeta && (e.key === "z" && e.shiftKey || e.key === "y")) {
       e.preventDefault();
-      ops.redo();
+      doc.history.redo();
       return;
     }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      // 같은 부모 array 의 focus 다음 위치에 새 형제 추가
       const idx = lastIndex(p);
-      if (idx === null) return;            // root 에는 sibling 없음
+      if (idx === null) return;
       const parent = parentOf(p);
       if (parent === null) return;
       const insertAt = `${parent}/${idx + 1}`;
-      const r = ops.patch([{ op: "add", path: insertAt, value: { text: "", children: [] } }]);
-      if (r.ok) fcs.set(insertAt);
+      const r = doc.ops.patch([{ op: "add", path: insertAt, value: { text: "", children: [] } }]);
+      if (r.ok) doc.focus?.set(insertAt);
       return;
     }
     if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
-      // demote: focus → prev sibling 의 children 끝
       const idx = lastIndex(p);
       if (idx === null || idx === 0) return;
       const prev = siblingAt(p, idx - 1);
       const target = `${prev}/children/-`;
-      const r = ops.patch([{ op: "move", from: p, path: target }]);
+      const r = doc.ops.patch([{ op: "move", from: p, path: target }]);
       if (r.ok) {
-        const prevChildren = readChildren(json, prev);
-        fcs.set(`${prev}/children/${prevChildren.length}`);
+        const prevChildren = readChildren(doc.value, prev);
+        doc.focus?.set(`${prev}/children/${prevChildren.length}`);
       }
       return;
     }
     if (e.key === "Tab" && e.shiftKey) {
       e.preventDefault();
-      // promote: parent 의 sibling-after 로 이동. parent 가 root 이면 무시.
       const parent = parentOf(p);
       if (parent === null || parent === "") return;
-      // parent 의 형식: ".../children/<idx>". parent 의 부모 = ".../children" 또는 root
       const parentIdx = lastIndex(parent);
       if (parentIdx === null) return;
       const parentParent = parentOf(parent);
       if (parentParent === null) return;
       const targetIdx = parentIdx + 1;
       const target = `${parentParent}/${targetIdx}`;
-      const r = ops.patch([{ op: "move", from: p, path: target }]);
-      if (r.ok) fcs.set(target);
+      const r = doc.ops.patch([{ op: "move", from: p, path: target }]);
+      if (r.ok) doc.focus?.set(target);
       return;
     }
     if (e.key === "Backspace") {
-      const text = readText(json, p);
+      const text = readText(doc.value, p);
       if (text === "") {
         e.preventDefault();
-        // empty 면 제거. focus 는 prev sibling 또는 parent 로 이동.
         const idx = lastIndex(p);
         const parent = parentOf(p);
         if (idx === null || parent === null) return;
-        const r = ops.patch([{ op: "remove", path: p }]);
+        const r = doc.ops.patch([{ op: "remove", path: p }]);
         if (r.ok) {
-          fcs.set(idx > 0 ? siblingAt(p, idx - 1) : parent);
+          doc.focus?.set(idx > 0 ? siblingAt(p, idx - 1) : parent);
         }
       }
     }
@@ -128,13 +125,13 @@ export function Outliner() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2 text-xs">
-        <button onClick={ops.undo} disabled={!ops.canUndo()} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
-        <button onClick={ops.redo} disabled={!ops.canRedo()} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
-        <button onClick={() => ops.reset()} className="rounded border border-stone-300 bg-white px-2 py-1">reset</button>
+        <button onClick={doc.history.undo} disabled={!doc.history.canUndo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
+        <button onClick={doc.history.redo} disabled={!doc.history.canRedo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
+        <button onClick={() => doc.ops.reset()} className="rounded border border-stone-300 bg-white px-2 py-1">reset</button>
         <span className="ml-auto font-mono text-stone-500">focus = {focus ?? "—"}</span>
       </div>
       <ul role="tree" aria-label="outline" className="rounded border border-stone-200 bg-white p-2 font-mono text-sm">
-        <OutlineRow node={json} pointer="" depth={0} focus={focus} fcs={fcs} ops={ops} onKey={onKey} />
+        <OutlineRow node={doc.value} pointer="" depth={0} focus={focus} setFocus={(p) => doc.focus?.set(p)} ops={doc.ops} onKey={onKey} />
       </ul>
     </div>
   );
@@ -145,14 +142,14 @@ interface RowProps {
   pointer: Pointer;
   depth: number;
   focus: Pointer | null;
-  fcs: ReturnType<typeof useFocus<OutlineNode>>;
-  ops: ReturnType<typeof useJson<typeof OutlineSchema>>[1];
+  setFocus: (p: Pointer) => void;
+  ops: ReturnType<typeof useJsonDocument<typeof OutlineSchema>>["ops"];
   onKey: (e: React.KeyboardEvent, p: Pointer) => void;
 }
 
 function OutlineRow(props: RowProps) {
-  const { node, pointer, depth, focus, fcs, ops, onKey } = props;
-  const textPath = `${pointer}/text` as never;
+  const { node, pointer, depth, focus, setFocus, ops, onKey } = props;
+  const textPath = `${pointer}/text`;
   const isFocused = pointer === focus;
   const ref = useRef<HTMLInputElement>(null);
   useEffect(() => { if (isFocused) ref.current?.focus(); }, [isFocused]);
@@ -165,7 +162,7 @@ function OutlineRow(props: RowProps) {
         aria-level={depth + 1}
         className="flex items-center gap-2"
         style={{ paddingLeft: `${depth * 1.25}rem` }}
-        onClick={() => fcs.set(pointer)}
+        onClick={() => setFocus(pointer)}
       >
         <span aria-hidden className="select-none text-stone-400">
           {node.children.length > 0 ? "▾" : "•"}
@@ -174,7 +171,7 @@ function OutlineRow(props: RowProps) {
           ref={ref}
           value={node.text}
           onChange={(e) => ops.patch([{ op: "replace", path: textPath, value: e.target.value }])}
-          onFocus={() => fcs.set(pointer)}
+          onFocus={() => setFocus(pointer)}
           onKeyDown={(e) => onKey(e, pointer)}
           placeholder="(empty)"
           className={`flex-1 bg-transparent outline-none ${isFocused ? "rounded bg-sky-50 px-1" : ""}`}
@@ -184,10 +181,10 @@ function OutlineRow(props: RowProps) {
         <OutlineRow
           key={`${pointer}/children/${i}`}
           node={child}
-          pointer={`${pointer}/children/${i}` as never}
+          pointer={`${pointer}/children/${i}`}
           depth={depth + 1}
           focus={focus}
-          fcs={fcs}
+          setFocus={setFocus}
           ops={ops}
           onKey={onKey}
         />
