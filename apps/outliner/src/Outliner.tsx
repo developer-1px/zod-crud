@@ -57,10 +57,14 @@ export function Outliner() {
       focus: doc.focus,
       clipboard,
     };
+    // Command 가 JsonResult 를 반환하면 실패를 toast 로 surface (ops 경로 밖의 정합성 위반).
+    const surface = (r: { ok: boolean; code?: string; reason?: string } | void) => {
+      if (r && !r.ok) pushToast("error", `${r.code}${r.reason ? `: ${r.reason}` : ""}`);
+    };
     switch (id) {
       case "enter-edit":     setMode("edit"); return true;
       case "exit-edit":      setMode("select"); return true;
-      case "insert-sibling": cmd.insertSibling(ctx); setMode("edit"); return true;
+      case "insert-sibling": surface(cmd.insertSibling(ctx)); setMode("edit"); return true;
 
       // edit 모드의 Backspace: 빈 텍스트일 때만 row 제거. 그 외에는 DOM 기본 (글자 삭제) 통과.
       case "remove-if-empty": {
@@ -73,9 +77,9 @@ export function Outliner() {
         return true;
       }
 
-      case "demote":         cmd.demote(ctx); return true;
-      case "promote":        cmd.promote(ctx); return true;
-      case "remove":         cmd.remove(ctx); return true;
+      case "demote":         surface(cmd.demote(ctx)); return true;
+      case "promote":        surface(cmd.promote(ctx)); return true;
+      case "remove":         surface(cmd.remove(ctx)); return true;
       case "select-all":     cmd.selectAll(ctx); return true;
       case "focus-prev":     cmd.focusPrev(ctx); return true;
       case "focus-next":     cmd.focusNext(ctx); return true;
@@ -85,12 +89,12 @@ export function Outliner() {
       case "focus-last":     cmd.focusLast(ctx); return true;
       case "extend-up":      cmd.extendSelection(ctx, "up"); return true;
       case "extend-down":    cmd.extendSelection(ctx, "down"); return true;
-      case "move-up":        cmd.moveUp(ctx); return true;
-      case "move-down":      cmd.moveDown(ctx); return true;
+      case "move-up":        surface(cmd.moveUp(ctx)); return true;
+      case "move-down":      surface(cmd.moveDown(ctx)); return true;
       case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.values.length || 1}`); return true;
       case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.values.length || 1}`); return true;
-      case "paste-sibling":  cmd.paste(ctx, "sibling"); return true;
-      case "paste-child":    cmd.paste(ctx, "child"); return true;
+      case "paste-sibling":  surface(cmd.paste(ctx, "sibling")); return true;
+      case "paste-child":    surface(cmd.paste(ctx, "child")); return true;
       case "undo":           doc.history.undo(); return true;
       case "redo":           doc.history.redo(); return true;
     }
