@@ -1,173 +1,187 @@
-import { useCallback, useMemo, useRef, useSyncExternalStore } from "react";
+// SPEC.md §5.1 — 유일한 React 진입점.
+// 코어는 src/core/patch.ts (pure). 이 파일은 useState + ops binding.
+
+import { useCallback, useMemo, useRef, useState } from "react";
 import type * as z from "zod";
 
-import { createJsonCrud, type JsonCrud } from "./json-crud.js";
-import type { JsonValue, NodeId } from "./types.js";
+import {
+  applyOperation,
+  applyPatch,
+  type JsonPatchOperation,
+  type JsonResult,
+} from "./core/patch.js";
+import type { Pointer } from "./core/pointer.js";
 
-export type JsonPathSegment = string | number;
-export type JsonPath = JsonPathSegment | JsonPathSegment[];
-
-export type JsonResult<T = void> =
-  | (T extends void ? { ok: true } : { ok: true; value: T })
-  | { ok: false; code: string; reason?: string };
+export interface UseJsonOptions {
+  history?: number;
+  strict?: boolean;
+  onError?: (error: JsonCrudError) => void;
+}
 
 export interface JsonOps<T> {
-  set(path: JsonPath, value: unknown): JsonResult;
-  insert(path: JsonPath, value: unknown, at?: number): JsonResult;
-  delete(path: JsonPath | JsonPath[]): JsonResult;
-  move(from: JsonPath, to: JsonPath): JsonResult;
-  rename(path: JsonPath, key: string): JsonResult;
-  reset(value?: T): void;
-  load(value: T): JsonResult;
+  add(path: Pointer, value: unknown): JsonResult;
+  remove(path: Pointer): JsonResult;
+  replace(path: Pointer, value: unknown): JsonResult;
+  move(from: Pointer, path: Pointer): JsonResult;
+  copy(from: Pointer, path: Pointer): JsonResult;
+  test(path: Pointer, value: unknown): JsonResult;
+
+  patch(operations: ReadonlyArray<JsonPatchOperation>): JsonResult;
+
   undo(): boolean;
   redo(): boolean;
   canUndo(): boolean;
   canRedo(): boolean;
+
+  load(value: T): JsonResult;
+  reset(value?: T): void;
 }
 
-export interface UseJsonOptions {
-  history?: boolean;
-  onError?: (result: Extract<JsonResult, { ok: false }>) => void;
-}
-
-function toSegments(path: JsonPath): JsonPathSegment[] {
-  return Array.isArray(path) ? path : [path];
-}
-
-function resolveNodeId(crud: JsonCrud, path: JsonPathSegment[]): NodeId | null {
-  const doc = crud.snapshot();
-  let nodeId: NodeId = doc.rootId;
-
-  for (const segment of path) {
-    const next = crud.find(nodeId, segment);
-    if (next === null) return null;
-    nodeId = next;
+export class JsonCrudError extends Error {
+  override readonly name = "JsonCrudError";
+  constructor(
+    public readonly op: JsonPatchOperation | "load" | "reset" | "patch",
+    public readonly result: Extract<JsonResult, { ok: false }>,
+  ) {
+    super(`useJson failed: ${result.code}${result.reason ? ` — ${result.reason}` : ""}`);
   }
-
-  return nodeId;
 }
 
-function fail(code: string, reason?: string): Extract<JsonResult, { ok: false }> {
-  return reason === undefined ? { ok: false, code } : { ok: false, code, reason };
-}
+declare const process: { env?: { NODE_ENV?: string } } | undefined;
+const isProd = ((): boolean => {
+  try {
+    return typeof process !== "undefined" && process?.env?.NODE_ENV === "production";
+  } catch {
+    return false;
+  }
+})();
 
 export function useJson<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
   options: UseJsonOptions = {},
 ): [z.output<S>, JsonOps<z.output<S>>] {
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const optsRef = useRef(options);
+  optsRef.current = options;
 
-  const crud = useMemo(
-    () => createJsonCrud(schema as never, initial as never) as JsonCrud,
-    // schema/initial은 의도적으로 stable 가정 — 변경 시 reset/load 사용
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const [initialParsed] = useState(() => {
+    const parsed = schema.safeParse(initial);
+    if (!parsed.success) throw parsed.error;
+    return parsed.data as z.output<S>;
+  });
+  const initialRef = useRef(initialParsed);
+
+  const [state, setState] = useState<z.output<S>>(initialParsed);
+
+  // History — opt-in. forward stack: 적용된 op + inverse. RFC 6902 op 그대로 저장.
+  const historyLimit = options.history ?? 0;
+  const undoStackRef = useRef<JsonPatchOperation[][]>([]);
+  const redoStackRef = useRef<JsonPatchOperation[][]>([]);
+
+  const handle = useCallback(
+    (op: JsonPatchOperation | "load" | "reset" | "patch", result: JsonResult): JsonResult => {
+      if (result.ok) return result;
+      const strict = optsRef.current.strict ?? !isProd;
+      if (optsRef.current.onError) {
+        optsRef.current.onError(new JsonCrudError(op, result));
+      }
+      if (strict) {
+        throw new JsonCrudError(op, result);
+      }
+      return result;
+    },
     [],
   );
 
-  const subscribe = useCallback(
-    (notify: () => void) => crud.subscribe(() => notify()),
-    [crud],
+  const computeInverse = useCallback(
+    (prev: z.output<S>, ops: ReadonlyArray<JsonPatchOperation>): JsonPatchOperation[] => {
+      // 단순화: forward 적용 전 prev 전체를 replace로 되돌리는 단일 op로 인버스 표현.
+      // RFC 6902 호환은 유지(replace at root는 표준). 미세 단위 inverse는 후속 wave에서 정밀화.
+      void ops;
+      return [{ op: "replace", path: "", value: prev }];
+    },
+    [],
   );
 
-  const getSnapshot = useCallback(() => crud.toJson(), [crud]);
+  const dispatch = useCallback(
+    (label: JsonPatchOperation | "patch", ops: ReadonlyArray<JsonPatchOperation>): JsonResult => {
+      const { state: next, result } = applyPatch(schema, state, ops);
+      if (!result.ok) return handle(label, result);
+      if (next === state) return result;
 
-  const json = useSyncExternalStore(subscribe, getSnapshot, getSnapshot) as z.output<S>;
+      if (historyLimit > 0) {
+        const inverse = computeInverse(state, ops);
+        const stack = undoStackRef.current;
+        stack.push(inverse);
+        if (stack.length > historyLimit) stack.shift();
+        redoStackRef.current = [];
+      }
+
+      setState(next);
+      return result;
+    },
+    [schema, state, historyLimit, handle, computeInverse],
+  );
 
   const ops = useMemo<JsonOps<z.output<S>>>(() => {
-    const handle = <T,>(result: { ok: boolean; reason?: string; code?: string } | JsonResult<T>): JsonResult<T> => {
-      const r = result as JsonResult<T>;
-      if (!r.ok && optionsRef.current.onError) optionsRef.current.onError(r);
-      return r;
-    };
-
+    const single = (op: JsonPatchOperation): JsonResult => dispatch(op, [op]);
     return {
-      set(path, value) {
-        const segments = toSegments(path);
-        const id = resolveNodeId(crud, segments);
-        if (id === null) return handle(fail("not_found", `path: ${segments.join(".")}`));
-        const r = crud.update(id, value as JsonValue);
-        return handle(r.ok ? { ok: true } : fail(r.reason ?? "update_failed"));
+      add(path, value) { return single({ op: "add", path, value }); },
+      remove(path) { return single({ op: "remove", path }); },
+      replace(path, value) { return single({ op: "replace", path, value }); },
+      move(from, path) { return single({ op: "move", from, path }); },
+      copy(from, path) { return single({ op: "copy", from, path }); },
+      test(path, value) {
+        const r = applyOperation(schema, state, { op: "test", path, value });
+        return handle({ op: "test", path, value }, r.result);
       },
-      insert(path, value, at) {
-        const segments = toSegments(path);
-        const parentId = resolveNodeId(crud, segments);
-        if (parentId === null) return handle(fail("not_found", `path: ${segments.join(".")}`));
+      patch(operations) { return dispatch("patch", operations); },
 
-        if (at === undefined) {
-          const r = crud.appendChild(parentId, value as JsonValue);
-          return handle(r.ok ? { ok: true } : fail(r.reason ?? "insert_failed"));
-        }
-
-        const parent = crud.snapshot().nodes[parentId];
-        if (!parent) return handle(fail("not_found"));
-        const sibling = parent.children[at];
-        if (sibling === undefined) {
-          const r = crud.appendChild(parentId, value as JsonValue);
-          return handle(r.ok ? { ok: true } : fail(r.reason ?? "insert_failed"));
-        }
-        const r = crud.insertBefore(sibling, value as JsonValue);
-        return handle(r.ok ? { ok: true } : fail(r.reason ?? "insert_failed"));
-      },
-      delete(path) {
-        const paths = Array.isArray(path) && Array.isArray(path[0])
-          ? (path as JsonPath[])
-          : [path as JsonPath];
-        const ids: NodeId[] = [];
-        for (const p of paths) {
-          const id = resolveNodeId(crud, toSegments(p));
-          if (id === null) return handle(fail("not_found"));
-          ids.push(id);
-        }
-        const r = ids.length === 1 ? crud.delete(ids[0]!) : crud.deleteMany(ids);
-        return handle(r.ok ? { ok: true } : fail(r.reason ?? "delete_failed"));
-      },
-      move(from, to) {
-        const fromId = resolveNodeId(crud, toSegments(from));
-        if (fromId === null) return handle(fail("not_found", "from"));
-
-        const toSeg = toSegments(to);
-        const lastIdx = toSeg[toSeg.length - 1];
-        const parentSeg = toSeg.slice(0, -1);
-        const parentId = resolveNodeId(crud, parentSeg);
-        if (parentId === null) return handle(fail("not_found", "to.parent"));
-
-        const index = typeof lastIdx === "number" ? lastIdx : null;
-        const r = crud.moveInto([fromId], parentId, index ?? undefined);
-        return handle(r.ok ? { ok: true } : fail(r.reason ?? "move_failed"));
-      },
-      rename(path, key) {
-        const id = resolveNodeId(crud, toSegments(path));
-        if (id === null) return handle(fail("not_found"));
-        const r = crud.rename(id, key);
-        return handle(r.ok ? { ok: true } : fail(r.reason ?? "rename_failed"));
-      },
-      reset(value) {
-        // 현재는 instance 교체 불가 — load로 우회. 후속 wave에서 store 재구성으로 정리
-        if (value !== undefined) ops.load(value);
-      },
-      load(value) {
-        const parsed = (schema as z.ZodType).safeParse(value);
-        if (!parsed.success) return handle(fail("schema_violation", parsed.error.message));
-        const root = crud.snapshot().rootId;
-        const r = crud.update(root, parsed.data as JsonValue);
-        return handle(r.ok ? { ok: true } : fail(r.reason ?? "load_failed"));
-      },
       undo() {
-        return crud.undo().ok;
+        const inv = undoStackRef.current.pop();
+        if (!inv) return false;
+        const { state: next, result } = applyPatch(schema, state, inv);
+        if (!result.ok) return false;
+        // redo용: 현재 state를 redo stack에 inverse로 저장
+        redoStackRef.current.push([{ op: "replace", path: "", value: state }]);
+        setState(next);
+        return true;
       },
       redo() {
-        return crud.redo().ok;
+        const inv = redoStackRef.current.pop();
+        if (!inv) return false;
+        const { state: next, result } = applyPatch(schema, state, inv);
+        if (!result.ok) return false;
+        undoStackRef.current.push([{ op: "replace", path: "", value: state }]);
+        setState(next);
+        return true;
       },
-      canUndo() {
-        return crud.canUndo();
+      canUndo() { return undoStackRef.current.length > 0; },
+      canRedo() { return redoStackRef.current.length > 0; },
+
+      load(value) {
+        const parsed = schema.safeParse(value);
+        if (!parsed.success) {
+          return handle("load", { ok: false, code: "schema_violation", reason: parsed.error.message });
+        }
+        undoStackRef.current = [];
+        redoStackRef.current = [];
+        setState(parsed.data as z.output<S>);
+        return { ok: true };
       },
-      canRedo() {
-        return crud.canRedo();
+      reset(value) {
+        const target = value ?? initialRef.current;
+        const parsed = schema.safeParse(target);
+        if (!parsed.success) {
+          handle("reset", { ok: false, code: "schema_violation", reason: parsed.error.message });
+          return;
+        }
+        undoStackRef.current = [];
+        redoStackRef.current = [];
+        setState(parsed.data as z.output<S>);
       },
     };
-  }, [crud, schema]);
+  }, [dispatch, schema, state, handle]);
 
-  return [json, ops];
+  return [state, ops];
 }

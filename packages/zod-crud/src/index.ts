@@ -2,8 +2,15 @@ export {
   createJsonCrud,
 } from "./json-crud.js";
 
-export { useJson } from "./useJson.js";
-export type { JsonOps, JsonPath as JsonOpsPath, JsonResult, UseJsonOptions } from "./useJson.js";
+// SPEC.md §5 — canonical public surface.
+export { useJson, JsonCrudError } from "./useJson.js";
+export type { JsonOps, UseJsonOptions } from "./useJson.js";
+
+export { applyOperation, applyPatch } from "./core/patch.js";
+export type { JsonPatchOperation, JsonResult, ErrorCode } from "./core/patch.js";
+
+export { parsePointer, buildPointer, escapeSegment, unescapeSegment, PointerSyntaxError } from "./core/pointer.js";
+export type { Pointer } from "./core/pointer.js";
 export {
   createJsonCrudState,
 } from "./state/json-crud-state.js";
