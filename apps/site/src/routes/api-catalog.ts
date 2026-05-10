@@ -16,13 +16,12 @@ const SERIALIZE_SRC: ApiSource = { path: "core/pointer/serialize.ts" };
 const TYPES_SRC: ApiSource = { path: "core/pointer/types.ts" };
 const TRACK_SRC: ApiSource = { path: "core/track.ts" };
 const SELECTION_SRC: ApiSource = { path: "hooks/useSelection.ts" };
-const FOCUS_SRC: ApiSource = { path: "hooks/useFocus.ts" };
 
 const groups: ApiGroup[] = [
   {
     title: "Identity hook",
     apis: [
-      { id: "useJsonDocument", call: "useJsonDocument(schema, initial, options?)", sources: [DOCUMENT_SRC, HOOK_SRC, SELECTION_SRC, FOCUS_SRC] },
+      { id: "useJsonDocument", call: "useJsonDocument(schema, initial, options?)", sources: [DOCUMENT_SRC, HOOK_SRC, SELECTION_SRC] },
       { id: "JsonDocument", call: "type JsonDocument<T>", sources: [DOCUMENT_SRC] },
       { id: "UseJsonDocumentOptions", call: "type UseJsonDocumentOptions<T>", sources: [DOCUMENT_SRC] },
     ],
@@ -86,12 +85,6 @@ const groups: ApiGroup[] = [
     title: "Axis 2 — Selection",
     apis: [
       { id: "useSelection", call: "useSelection(ops, options?)", sources: [SELECTION_SRC, TRACK_SRC] },
-    ],
-  },
-  {
-    title: "Axis 2 — Focus",
-    apis: [
-      { id: "useFocus", call: "useFocus(ops, options?)", sources: [FOCUS_SRC, TRACK_SRC] },
     ],
   },
   {
