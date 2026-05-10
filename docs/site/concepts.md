@@ -111,4 +111,4 @@ doc.focus?.clear();
 
 전체 구현보다 먼저 타입 표면만 보면 충분합니다.
 
-::source{path="packages/zod-crud/src/useJsonDocument.ts" title="useJsonDocument types" lines="12-37"}
+::source{path="packages/zod-crud/src/hooks/useJsonDocument.ts" title="useJsonDocument types" lines="12-37"}

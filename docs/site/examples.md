@@ -32,7 +32,7 @@ const [value, ops] = useJson(Schema, initial, {
 
 selection과 focus가 필요 없고, 단순한 JSON 편집만 필요하면 `useJson`만으로 충분합니다.
 
-::source{path="packages/zod-crud/src/useJson.ts" title="useJson" lines="21-46"}
+::source{path="packages/zod-crud/src/hooks/useJson.ts" title="useJson" lines="21-46"}
 
 ## `useSelection`
 
@@ -45,7 +45,7 @@ const selection = useSelection(ops, { mode: "multiple" });
 
 `selection`은 `ops.subscribe`를 통해 commit된 변경을 듣고 Pointer를 따라갑니다.
 
-::source{path="packages/zod-crud/src/useSelection.ts" title="useSelection" lines="9-31"}
+::source{path="packages/zod-crud/src/hooks/useSelection.ts" title="useSelection" lines="9-31"}
 
 ## `useFocus`
 
@@ -62,7 +62,7 @@ const focus = useFocus(ops, {
 
 `filter`로 focus 가능한 위치를 제한하고, `recover`로 삭제 후 복구 위치를 정할 수 있습니다.
 
-::source{path="packages/zod-crud/src/useFocus.ts" title="useFocus" lines="9-20"}
+::source{path="packages/zod-crud/src/hooks/useFocus.ts" title="useFocus" lines="9-20"}
 
 ## 언제 lower-level hook을 쓰나요?
 

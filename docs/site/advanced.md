@@ -12,7 +12,7 @@ const result = applyPatch(Schema, state, operations);
 
 같은 입력을 넣으면 같은 출력이 나옵니다. React state, DOM, 이벤트, 시간, 랜덤 값에 의존하지 않습니다.
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyPatch" lines="274-329"}
+::source{path="packages/zod-crud/src/core/patch/index.ts" title="applyPatch" lines="274-329"}
 
 ## JSON Pointer
 
@@ -27,7 +27,7 @@ const result = applyPatch(Schema, state, operations);
 
 사용자 표면에서는 “문서 안의 주소”로 이해하면 됩니다. core 관점에서는 RFC 6901 JSON Pointer입니다.
 
-::source{path="packages/zod-crud/src/core/pointer.ts" title="pointer helpers" lines="1-29"}
+::source{path="packages/zod-crud/src/core/pointer/index.ts" title="pointer helpers" lines="1-29"}
 
 ## JSON Patch
 
@@ -63,7 +63,7 @@ const text = serialize(value);
 const restored = parse(Schema, text);
 ```
 
-::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize helpers" lines="1-29"}
+::source{path="packages/zod-crud/src/core/pointer/serialize.ts" title="serialize helpers" lines="1-29"}
 
 ## 왜 UI 컴포넌트가 아닌가요?
 
