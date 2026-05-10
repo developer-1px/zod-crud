@@ -64,7 +64,7 @@ export function SidebarNav() {
                         params={e.params as never}
                         onClick={closeOnMobile}
                         aria-current={current ? "page" : undefined}
-                        className="block !rounded-none !border-0 !bg-transparent px-2 py-1 text-stone-700 no-underline !shadow-none hover:!bg-stone-200 hover:text-stone-900 aria-[current=page]:!bg-stone-900 aria-[current=page]:text-stone-50"
+                        className="inline-block !rounded-none !border-0 !bg-transparent px-2 py-1 text-stone-700 no-underline !shadow-none hover:!bg-stone-200 hover:text-stone-900 aria-[current=page]:!bg-stone-900 aria-[current=page]:text-stone-50"
                       >
                         {e.label}
                       </Link>

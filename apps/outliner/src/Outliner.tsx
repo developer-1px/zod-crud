@@ -12,6 +12,7 @@ import { useTextEditCoalesce } from "./hooks/useTextEditCoalesce.js";
 import { useDispatch } from "./hooks/useDispatch.js";
 import { useGlobalKey } from "./hooks/useGlobalKey.js";
 import { useClickPolicy } from "./hooks/useClickPolicy.js";
+import { useRecorderUI } from "./hooks/useRecorderUI.js";
 
 export function Outliner() {
   const [mode, setMode] = useState<Mode>("select");
@@ -42,6 +43,7 @@ export function Outliner() {
 
   useGlobalKey(mode, dispatch);
   const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
+  const recorder = useRecorderUI(doc.ops);
 
   return (
     <div className="app">
@@ -54,6 +56,20 @@ export function Outliner() {
         <button onClick={doc.history.undo} disabled={!doc.history.canUndo}>undo</button>
         <button onClick={doc.history.redo} disabled={!doc.history.canRedo}>redo</button>
         <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
+        {recorder.isRecording ? (
+          <button
+            onClick={() => recorder.stopAndDownload()}
+            title="녹화 종료 + JSON 다운로드 (버그 제보용)"
+            style={{ color: "#c33", fontWeight: 600 }}
+          >
+            ■ 정지 ({recorder.stepCount})
+          </button>
+        ) : (
+          <button onClick={recorder.start} title="이 시점부터 모든 패치 녹화">● 녹화</button>
+        )}
+        <button onClick={recorder.loadAndReplay} disabled={recorder.replaying} title="JSON 녹화 재생">
+          {recorder.replaying ? "재생중…" : "↻ 재생"}
+        </button>
         <span className="status">
           mode = <code className={`mode mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focus ?? "—"}</code>
