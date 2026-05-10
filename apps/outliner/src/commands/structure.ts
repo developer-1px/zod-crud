@@ -35,8 +35,9 @@ export function demote(ctx: CommandContext): JsonResult {
   return ctx.ops.patch(ops);
 }
 
-// 선택된 row 들을 자기 부모의 다음 형제로 끌어올림. owner 의 형제 인덱스 (idx+1) 부터 순서대로 차지.
-// path 형태: /children/i/.../children/k → 마지막 2 segment ("children", index) 떼면 부모 row.
+// 선택된 row 들을 자기 부모의 다음 형제로 끌어올림. trail-siblings 모델 — promoted row
+// 뒤에 있던 형제들도 promoted 의 자식으로 따라와 visual reading 순서를 보존한다.
+// (Roam/Logseq 류; 글로 봤을 때 행 순서가 안 바뀜.)
 export function promote(ctx: CommandContext): JsonResult {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
@@ -52,7 +53,31 @@ export function promote(ctx: CommandContext): JsonResult {
     const ownerIdx = Number(ownerSegs[ownerSegs.length - 1]);
     if (!Number.isInteger(ownerIdx)) return { ok: false, code: "path_not_found" };
     const ownerParent: Pointer = "/" + ownerSegs.slice(0, -1).join("/");
-    ops.push({ op: "move", from: cur, path: `${ownerParent}/${ownerIdx + 1}` });
+    const ownerChildrenPath: Pointer = "/" + segs.slice(0, -1).join("/");  // .../children
+    const k = Number(segs[segs.length - 1]);
+
+    // 1) row 자체 promote — owner 의 다음 sibling 자리로
+    const promotedPath: Pointer = `${ownerParent}/${ownerIdx + 1}`;
+    ops.push({ op: "move", from: cur, path: promotedPath });
+
+    // 2) trail siblings — original 에서 row 뒤에 있던 형제들을 promoted 의 children 끝에 차례 append.
+    //    매 trail-move 후 owner.children 의 idx 가 한 칸씩 당겨지므로 from 은 항상 /k 자리.
+    //    trail 갯수 = orig 시점의 owner.children.length - origK - 1.
+    const origSegs = orig.slice(1).split("/");
+    const origK = Number(origSegs[origSegs.length - 1]);
+    const origOwnerChildrenSegs = origSegs.slice(0, -1);  // ".../children"
+    const origOwnerChildrenPath: Pointer = "/" + origOwnerChildrenSegs.join("/");
+    const origChildren = readChildren(ctx.state, "/" + origOwnerChildrenSegs.slice(0, -1).join("/"));
+    const trailCount = Math.max(0, origChildren.length - origK - 1);
+    for (let i = 0; i < trailCount; i++) {
+      ops.push({
+        op: "move",
+        from: `${ownerChildrenPath}/${k}` as Pointer,
+        path: `${promotedPath}/children/-` as Pointer,
+      });
+      // origOwnerChildrenPath 는 멀티 promote 시 추적용 (현재는 단일 promote 가정)
+      void origOwnerChildrenPath;
+    }
   }
   return ctx.ops.patch(ops);
 }
