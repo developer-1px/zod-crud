@@ -209,11 +209,12 @@ function applyOpRaw(state: unknown, op: JsonPatchOperation): { state: unknown } 
   if (typeof op.path !== "string") {
     return { error: "invalid_pointer", reason: "missing 'path'" };
   }
-  if ((op.op === "add" || op.op === "replace" || op.op === "test") && !("value" in op)) {
-    return { error: "invalid_pointer", reason: `missing 'value' for op '${op.op}'` };
+  const opName = (op as { op: string }).op;
+  if ((opName === "add" || opName === "replace" || opName === "test") && !("value" in op)) {
+    return { error: "invalid_pointer", reason: `missing 'value' for op '${opName}'` };
   }
-  if ((op.op === "move" || op.op === "copy") && typeof (op as { from?: unknown }).from !== "string") {
-    return { error: "invalid_pointer", reason: `missing 'from' for op '${op.op}'` };
+  if ((opName === "move" || opName === "copy") && typeof (op as { from?: unknown }).from !== "string") {
+    return { error: "invalid_pointer", reason: `missing 'from' for op '${opName}'` };
   }
 
   let segments: string[];

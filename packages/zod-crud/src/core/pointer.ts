@@ -11,17 +11,42 @@ export function unescapeSegment(s: string): string {
   return s.replace(/~1/g, "/").replace(/~0/g, "~");
 }
 
-export function buildPointer(segments: ReadonlyArray<string | number>): Pointer {
-  if (segments.length === 0) return "";
-  return "/" + segments.map((s) => escapeSegment(String(s))).join("/");
+export interface BuildPointerOptions {
+  /** RFC 6901 §6 — URI fragment 표현 (`#` prefix + percent-encoding). default false. */
+  uriFragment?: boolean;
+}
+
+export function buildPointer(
+  segments: ReadonlyArray<string | number>,
+  options: BuildPointerOptions = {},
+): Pointer {
+  if (segments.length === 0) return options.uriFragment ? "#" : "";
+  const body = "/" + segments.map((s) => escapeSegment(String(s))).join("/");
+  return options.uriFragment ? "#" + encodePointerForFragment(body) : body;
 }
 
 export function parsePointer(pointer: Pointer): string[] {
-  if (pointer === "") return [];
+  if (pointer === "" || pointer === "#") return [];
+  // RFC 6901 §6 — URI fragment 형식 (`#/foo`) 자동 디코드.
+  if (pointer[0] === "#") {
+    if (pointer[1] !== "/") {
+      throw new PointerSyntaxError(`JSON Pointer URI fragment must be '#' or start with '#/': ${JSON.stringify(pointer)}`);
+    }
+    return decodeURIComponent(pointer.slice(2)).split("/").map(unescapeSegment);
+  }
   if (pointer[0] !== "/") {
     throw new PointerSyntaxError(`JSON Pointer must be empty or start with '/': ${JSON.stringify(pointer)}`);
   }
   return pointer.slice(1).split("/").map(unescapeSegment);
+}
+
+// RFC 3986 + 6901 §6: fragment 안에서 안전하지 않은 문자 percent-encode.
+// JSON Pointer 자체의 escape (~0, ~1) 는 이미 처리됐으므로 fragment 의 추가 제약만.
+function encodePointerForFragment(s: string): string {
+  // %, " ", '"', '<', '>', '\\', '^', '`', '{', '|', '}' 등을 인코딩.
+  return s.replace(/[^A-Za-z0-9\-._~!$&'()*+,;=:@/?]/g, (c) =>
+    "%" + c.charCodeAt(0).toString(16).toUpperCase().padStart(2, "0"),
+  );
 }
 
 export class PointerSyntaxError extends Error {
