@@ -1,25 +1,27 @@
 // verbs/move — Edit 기둥, RFC 6902 move op.
-// pure composer. core/patch.applyOperation wrapping.
+// pure composer. preFlight gate 통과 후 next + patch 산출.
 
-import { applyOperation, type JsonPatchOperation } from "../core/patch/index.js";
+import type { JsonPatchOperation } from "../core/patch/index.js";
+import { preFlight } from "../core/schema/preFlight.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type * as z from "zod";
 
 export interface MoveResult<T> {
+  ok: true;
   next: T;
   patch: JsonPatchOperation[];
-  ok: true;
 }
 
 export interface MoveError {
   ok: false;
   code: string;
   message: string;
+  violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
 /**
- * RFC 6902 `move` op 적용. (state, schema, from, to) → { next, patch }.
- * pure. preFlight 가 schema 검증 (P4 진입 후 자동 결합).
+ * RFC 6902 `move` op. (schema, state, from, to) → preFlight gate → { next, patch }.
+ * preFlight 거부 시 commit 하지 않음 — history 오염 0 (P4.4).
  */
 export function move<S extends z.ZodType>(
   schema: S,
@@ -28,9 +30,9 @@ export function move<S extends z.ZodType>(
   to: Pointer,
 ): MoveResult<z.output<S>> | MoveError {
   const op: JsonPatchOperation = { op: "move", from, path: to };
-  const r = applyOperation(schema, state, op);
-  if (!r.result.ok) {
-    return { ok: false, code: r.result.code, message: r.result.message ?? "" };
+  const r = preFlight(schema, state, [op]);
+  if (!r.ok) {
+    return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.state, patch: [op] };
+  return { ok: true, next: r.draft, patch: [op] };
 }

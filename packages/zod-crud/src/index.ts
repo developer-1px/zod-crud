@@ -85,6 +85,14 @@ export type { PatchRequest, ParseResult, ParseError } from "./sidecars/http.js";
 // JSON Schema bridge — RFC 8927 / draft-bhutton (core/schema/)
 export { toJSONSchema, fromJSONSchema } from "./core/schema/bridge.js";
 
+// core/schema/preFlight — patch 적용 전 schema gate (P4.2)
+export { preFlight } from "./core/schema/preFlight.js";
+export type { PreFlightOk, PreFlightErr, PreFlightResult } from "./core/schema/preFlight.js";
+
+// core/schema/validate — dev-only post-commit assertion (P4.3)
+export { validate as validateState } from "./core/schema/validate.js";
+export type { ValidateOk, ValidateErr, ValidateResult } from "./core/schema/validate.js";
+
 // core/history — pure undo/redo stack (P2)
 export {
   emptyHistory,

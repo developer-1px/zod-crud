@@ -1,7 +1,8 @@
 // verbs/undo — Undo 기둥, RFC 6902 inverse + history.back.
 // pure composer. core/history/stack + core/patch wrapping.
 
-import { applyPatch, type JsonPatchOperation } from "../core/patch/index.js";
+import type { JsonPatchOperation } from "../core/patch/index.js";
+import { preFlight } from "../core/schema/preFlight.js";
 import { back as historyBack, type HistoryStack } from "../core/history/stack.js";
 import type * as z from "zod";
 
@@ -34,11 +35,11 @@ export function undo<S extends z.ZodType, E extends UndoEntry>(
 ): UndoResult<z.output<S>, E> | UndoNoop {
   const popped = historyBack(stack);
   if (!popped) return { ok: false, reason: "empty_stack" };
-  const r = applyPatch(schema, state, popped.entry.inverse);
-  if (!r.result.ok) return { ok: false, reason: "apply_failed" };
+  const r = preFlight(schema, state, popped.entry.inverse);
+  if (!r.ok) return { ok: false, reason: "apply_failed" };
   return {
     ok: true,
-    next: r.state,
+    next: r.draft,
     patch: popped.entry.inverse,
     nextStack: popped.next,
     entry: popped.entry,

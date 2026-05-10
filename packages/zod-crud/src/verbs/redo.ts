@@ -1,7 +1,8 @@
 // verbs/redo — Undo 기둥 (forward), RFC 6902 forward + history.forward.
 // pure composer. core/history/stack + core/patch wrapping.
 
-import { applyPatch, type JsonPatchOperation } from "../core/patch/index.js";
+import type { JsonPatchOperation } from "../core/patch/index.js";
+import { preFlight } from "../core/schema/preFlight.js";
 import { forward as historyForward, type HistoryStack } from "../core/history/stack.js";
 import type * as z from "zod";
 import type { UndoEntry, UndoNoop } from "./undo.js";
@@ -26,11 +27,11 @@ export function redo<S extends z.ZodType, E extends UndoEntry>(
 ): RedoResult<z.output<S>, E> | UndoNoop {
   const popped = historyForward(stack);
   if (!popped) return { ok: false, reason: "empty_stack" };
-  const r = applyPatch(schema, state, popped.entry.forward);
-  if (!r.result.ok) return { ok: false, reason: "apply_failed" };
+  const r = preFlight(schema, state, popped.entry.forward);
+  if (!r.ok) return { ok: false, reason: "apply_failed" };
   return {
     ok: true,
-    next: r.state,
+    next: r.draft,
     patch: popped.entry.forward,
     nextStack: popped.next,
     entry: popped.entry,
