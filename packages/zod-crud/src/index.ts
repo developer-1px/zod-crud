@@ -116,6 +116,18 @@ export type { UndoEntry, UndoResult, UndoNoop } from "./verbs/undo.js";
 export { redo as redoVerb } from "./verbs/redo.js";
 export type { RedoResult } from "./verbs/redo.js";
 
+// core/jsonpath — RFC 9535 (P6.1~P6.4)
+export { parse as parseJsonPath, evaluate as evaluateJsonPath, query as queryJsonPath, queryMatches as queryJsonPathMatches, JSONPathSyntaxError } from "./core/jsonpath/index.js";
+export type { Query as JSONPathQuery, Match as JSONPathMatch } from "./core/jsonpath/index.js";
+
+// Selection 기둥 verbs — find (P6.6)
+export { find as findVerb } from "./verbs/find.js";
+export type { FindOk, FindError } from "./verbs/find.js";
+
+// Edit 기둥 verbs — replace (P6.7)
+export { replace as replaceVerb } from "./verbs/replace.js";
+export type { ReplaceOk, ReplaceError } from "./verbs/replace.js";
+
 // Clipboard 기둥 verbs (P5)
 export { copy as copyVerb } from "./verbs/copy.js";
 export type { CopyOk, CopyError, CopyResult } from "./verbs/copy.js";
