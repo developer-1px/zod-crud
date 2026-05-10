@@ -9,7 +9,8 @@ import type * as z from "zod";
 import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
 import { buildJsonDocumentOps } from "./buildJsonDocumentOps.js";
-import { buildVerbFacade, type VerbFacade } from "./buildVerbFacade.js";
+import { buildCommands, type Commands } from "./buildCommands.js";
+import { buildCan, type Can } from "./buildCan.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
   emptyHistory,
@@ -24,27 +25,33 @@ export interface UseJsonDocumentOptions<T> {
   selection?: boolean | UseSelectionOptions;
 }
 
+/** History state surface — undo/redo 는 commands.undo/redo 또는 직접 method 로. */
 export interface JsonDocumentHistory {
-  canUndo: boolean;
-  canRedo: boolean;
-  undo: () => boolean;
-  redo: () => boolean;
-  mergeLast: () => boolean;
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  mergeLast(): boolean;
 }
 
 /**
  * JsonDocument — 단일 facade. 4대 기둥 ↔ 10 verbs (ADR-0002).
- * - data: value, ops (RFC 6902 primitives)
- * - history: undo/redo/mergeLast
- * - selection: 좌표 어휘
- * - verb facade methods: cut/copy/paste/duplicate/find/replace
- *   (RFC 6902 ops 와 별도 — 편집 어휘 표면화)
+ *
+ * State surface (read-only data):
+ * - value: T — current state
+ * - selection: SelectionState — read-only 좌표 state
+ * - history: { canUndo, canRedo, mergeLast } — read-only flags
+ * - ops: RFC 6902 raw escape hatch (low-level)
+ *
+ * Editor command surface (TipTap 식 디팩토 — `commands` + `can` group):
+ * - commands: 10 verb methods (select/find/move/duplicate/replace/cut/copy/paste/undo/redo)
+ * - can: mutation guard predicates + stack flags
  */
-export interface JsonDocument<T> extends VerbFacade<T> {
+export interface JsonDocument<T> {
   value: T;
-  ops: JsonOps<T>;
-  history: JsonDocumentHistory;
   selection: SelectionState<T> | undefined;
+  history: JsonDocumentHistory;
+  ops: JsonOps<T>;
+  commands: Commands<T>;
+  can: Can<T>;
 }
 
 export function useJsonDocument<S extends z.ZodType>(
@@ -90,22 +97,25 @@ export function useJsonDocument<S extends z.ZodType>(
     return true;
   }, []);
 
-  const verbFacade = useMemo(() => buildVerbFacade(schema, ops), [schema, ops]);
+  const commands = useMemo(
+    () => buildCommands({ schema, ops, selectionRef }),
+    [schema, ops],
+  );
+  const can = useMemo(() => buildCan({ schema, ops }), [schema, ops]);
 
   return useMemo<JsonDocument<z.output<S>>>(() => {
     const history: JsonDocumentHistory = {
       get canUndo() { return ops.canUndo(); },
       get canRedo() { return ops.canRedo(); },
-      undo: () => ops.undo(),
-      redo: () => ops.redo(),
       mergeLast,
     };
     return {
       value,
-      ops,
-      history,
       selection: selectionEnabled ? selectionState : undefined,
-      ...verbFacade,
+      history,
+      ops,
+      commands,
+      can,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast, verbFacade]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, commands, can]);
 }
