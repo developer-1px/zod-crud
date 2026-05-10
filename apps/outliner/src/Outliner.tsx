@@ -40,9 +40,9 @@ export function Outliner() {
   });
   const clipboard = useClipboard();
 
-  // command 디스패치 — keymap 의 CommandId 를 받아 실행. mode 전환은 여기서 처리.
-  const dispatch = useCallback((id: CommandId): void => {
-    if (!doc.selection || !doc.focus) return;
+  // command 디스패치 — true 반환 = handled (preventDefault), false = not handled (DOM default 통과).
+  const dispatch = useCallback((id: CommandId): boolean => {
+    if (!doc.selection || !doc.focus) return false;
     const ctx = {
       state: doc.value,
       ops: doc.ops,
@@ -51,58 +51,54 @@ export function Outliner() {
       clipboard,
     };
     switch (id) {
-      // mode 전환
-      case "enter-edit":     setMode("edit"); return;
-      case "exit-edit":      setMode("select"); return;
+      case "enter-edit":     setMode("edit"); return true;
+      case "exit-edit":      setMode("select"); return true;
+      case "insert-sibling": cmd.insertSibling(ctx); setMode("edit"); return true;
 
-      // insert-sibling 후 새 row 는 edit mode (workflowy)
-      case "insert-sibling": cmd.insertSibling(ctx); setMode("edit"); return;
-
-      // remove-if-empty: edit 모드에서 빈 텍스트일 때만 row 제거 → select 로 escape
+      // edit 모드의 Backspace: 빈 텍스트일 때만 row 제거. 그 외에는 DOM 기본 (글자 삭제) 통과.
       case "remove-if-empty": {
         const f = doc.focus.value;
-        if (f === null) return;
+        if (f === null) return false;
         const node = readNode(doc.value, f);
-        if (node && node.text === "") {
-          cmd.remove(ctx);
-          setMode("select");
-        }
-        return;
+        if (!node || node.text !== "") return false;
+        cmd.remove(ctx);
+        setMode("select");
+        return true;
       }
 
-      case "demote":         cmd.demote(ctx); return;
-      case "promote":        cmd.promote(ctx); return;
-      case "remove":         cmd.remove(ctx); return;
-      case "select-all":     cmd.selectAll(ctx); return;
-      case "focus-prev":     cmd.focusPrev(ctx); return;
-      case "focus-next":     cmd.focusNext(ctx); return;
-      case "focus-parent":   cmd.focusParent(ctx); return;
-      case "focus-first-child": cmd.focusFirstChild(ctx); return;
-      case "focus-first":    cmd.focusFirst(ctx); return;
-      case "focus-last":     cmd.focusLast(ctx); return;
-      case "extend-up":      cmd.extendSelection(ctx, "up"); return;
-      case "extend-down":    cmd.extendSelection(ctx, "down"); return;
-      case "move-up":        cmd.moveUp(ctx); return;
-      case "move-down":      cmd.moveDown(ctx); return;
-      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.values.length || 1}`); return;
-      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.values.length || 1}`); return;
-      case "paste-sibling":  cmd.paste(ctx, "sibling"); return;
-      case "paste-child":    cmd.paste(ctx, "child"); return;
-      case "undo":           doc.history.undo(); return;
-      case "redo":           doc.history.redo(); return;
+      case "demote":         cmd.demote(ctx); return true;
+      case "promote":        cmd.promote(ctx); return true;
+      case "remove":         cmd.remove(ctx); return true;
+      case "select-all":     cmd.selectAll(ctx); return true;
+      case "focus-prev":     cmd.focusPrev(ctx); return true;
+      case "focus-next":     cmd.focusNext(ctx); return true;
+      case "focus-parent":   cmd.focusParent(ctx); return true;
+      case "focus-first-child": cmd.focusFirstChild(ctx); return true;
+      case "focus-first":    cmd.focusFirst(ctx); return true;
+      case "focus-last":     cmd.focusLast(ctx); return true;
+      case "extend-up":      cmd.extendSelection(ctx, "up"); return true;
+      case "extend-down":    cmd.extendSelection(ctx, "down"); return true;
+      case "move-up":        cmd.moveUp(ctx); return true;
+      case "move-down":      cmd.moveDown(ctx); return true;
+      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.values.length || 1}`); return true;
+      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.values.length || 1}`); return true;
+      case "paste-sibling":  cmd.paste(ctx, "sibling"); return true;
+      case "paste-child":    cmd.paste(ctx, "child"); return true;
+      case "undo":           doc.history.undo(); return true;
+      case "redo":           doc.history.redo(); return true;
     }
   }, [doc, clipboard, pushToast]);
 
   // 키보드 dispatcher — chord + 현재 mode 로 lookup.
-  // IME composition 중 (한/중/일 입력) 키는 무시 — Enter 가 조합 확정용으로 쓰여
-  //   command 디스패치하면 row 삽입과 충돌. e.isComposing 또는 keyCode 229 둘 다 체크.
+  // IME composition 중 키는 무시 (e.isComposing / keyCode 229).
+  // dispatch 가 false 면 DOM 기본 동작 통과 (글자 삭제 등).
   const onKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.nativeEvent.isComposing || e.keyCode === 229) return;
     const chord = eventToChord(e);
     const id = findCommand(chord, mode);
     if (!id) return;
-    e.preventDefault();
-    dispatch(id);
+    const handled = dispatch(id);
+    if (handled) e.preventDefault();
   }, [mode, dispatch]);
 
   // 클릭 정책:
