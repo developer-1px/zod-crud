@@ -116,16 +116,10 @@ export function useJsonDocument<S extends z.ZodType>(
       const r = rawOps.patch(direction === "undo" ? e.inverse : e.forward);
       isRestoringRef.current = false;
       if (!r.ok) { popStack.push(e); return false; }
-      const target = direction === "undo" ? e.selectionBefore : e.selectionAfter;
-      // selection 복원 — collapsed 면 collapse, 아니면 setBaseAndExtent (range 펼침은 reduce 가 처리)
-      if (target.ranges.length === 0) selectionRef.current.empty();
-      else if (target.anchor && target.focus && target.anchor === target.focus) {
-        selectionRef.current.collapse(target.anchor);
-      } else if (target.anchor && target.focus) {
-        selectionRef.current.setBaseAndExtent(target.anchor, target.focus);
-      } else {
-        selectionRef.current.empty();
-      }
+      // selection 복원 — setBaseAndExtent 가 collapsed (anchor===focus) 케이스도 처리.
+      const t = direction === "undo" ? e.selectionBefore : e.selectionAfter;
+      if (t.anchor && t.focus) selectionRef.current.setBaseAndExtent(t.anchor, t.focus);
+      else selectionRef.current.empty();
       pushStack.push(e);
       return true;
     };

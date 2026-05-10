@@ -1,11 +1,9 @@
 // SPEC §5.7 — Selection state (Axis 2). 정체성: "다음 명령의 작용 범위" + 캐럿 위치.
-// 순수 함수. React 무관. W3C Selection API 어휘를 따른다.
+// 순수 함수. React 무관. W3C Selection API 어휘.
+// DOM Selection 모델: collapsed selection (anchor === focus, ranges.length === 1) = 캐럿.
 //
-// DOM Selection 모델: collapsed selection (anchor === focus, ranges.length === 1) 이
-// 곧 캐럿. 별도 focus 축은 없다.
-//
-// 자동 규칙 4 개:
-//   ① Mutation auto-select  — add/copy/move 발생 시 destination 으로 collapse
+// 자동 규칙:
+//   ① Mutation auto-select  — add/copy/move destination 모두 새 selection
 //   ② Lost recovery         — 사라진 항목은 nextSibling/prev/parent 로 복구
 //   ③ Index shift tracking  — 살아남은 형제 인덱스 자동 보정
 //   ④ Anchor tracking       — anchor 도 동일 규칙
@@ -16,7 +14,6 @@ import type { JsonPatchOperation } from "../patch/index.js";
 import { expandRange } from "./range.js";
 
 export type SelectionMode = "single" | "multiple" | "extended";
-
 export type SelectionType = "None" | "Caret" | "Range";
 
 export interface SelectionSnap {
@@ -27,17 +24,15 @@ export interface SelectionSnap {
 
 export const EMPTY_SELECTION: SelectionSnap = { ranges: [], anchor: null, focus: null };
 
-export function isCollapsed(snap: SelectionSnap): boolean {
-  return snap.ranges.length === 1 && snap.anchor !== null && snap.anchor === snap.focus;
+export function isCollapsed(s: SelectionSnap): boolean {
+  return s.ranges.length === 1 && s.anchor !== null && s.anchor === s.focus;
 }
 
-export function selectionType(snap: SelectionSnap): SelectionType {
-  if (snap.ranges.length === 0) return "None";
-  if (isCollapsed(snap)) return "Caret";
-  return "Range";
+export function selectionType(s: SelectionSnap): SelectionType {
+  if (s.ranges.length === 0) return "None";
+  return isCollapsed(s) ? "Caret" : "Range";
 }
 
-// W3C Selection API 어휘. toggleRange 만 비표준 확장.
 export type SelectionAction =
   | { type: "collapse"; pointer: Pointer }
   | { type: "setBaseAndExtent"; anchor: Pointer; focus: Pointer }
@@ -47,60 +42,44 @@ export type SelectionAction =
   | { type: "toggleRange"; pointer: Pointer }
   | { type: "empty" };
 
+const isMulti = (m: SelectionMode) => m === "extended" || m === "multiple";
+
+function extentOf(mode: SelectionMode, anchor: Pointer, focus: Pointer): SelectionSnap {
+  if (!isMulti(mode)) return { ranges: [focus], anchor: focus, focus };
+  return { ranges: expandRange(anchor, focus), anchor, focus };
+}
+
+function withAdded(prev: SelectionSnap, mode: SelectionMode, p: Pointer): SelectionSnap {
+  if (prev.ranges.includes(p)) return { ...prev, focus: p };
+  const merged = mode === "single" ? [p] : [...prev.ranges, p];
+  return { ranges: merged, anchor: prev.anchor ?? p, focus: p };
+}
+
+function withRemoved(prev: SelectionSnap, p: Pointer): SelectionSnap {
+  if (!prev.ranges.includes(p)) return prev;
+  const next = prev.ranges.filter((x) => x !== p);
+  return {
+    ranges: next,
+    anchor: prev.anchor === p ? null : prev.anchor,
+    focus: prev.focus === p ? next[next.length - 1] ?? null : prev.focus,
+  };
+}
+
 export function reduceSelection(
   prev: SelectionSnap,
   action: SelectionAction,
   mode: SelectionMode,
 ): SelectionSnap {
   switch (action.type) {
-    case "collapse": {
-      // single caret — anchor === focus, ranges = [p]
-      return { ranges: [action.pointer], anchor: action.pointer, focus: action.pointer };
-    }
-    case "setBaseAndExtent": {
-      if (mode !== "extended" && mode !== "multiple") {
-        return { ranges: [action.focus], anchor: action.focus, focus: action.focus };
-      }
-      const expanded = expandRange(action.anchor, action.focus);
-      return { ranges: expanded, anchor: action.anchor, focus: action.focus };
-    }
-    case "extend": {
-      // anchor 유지 (없으면 pointer 가 anchor 됨), focus 갱신, range 재계산
-      const anchor = prev.anchor ?? action.pointer;
-      if (mode !== "extended" && mode !== "multiple") {
-        return { ranges: [action.pointer], anchor: action.pointer, focus: action.pointer };
-      }
-      const expanded = expandRange(anchor, action.pointer);
-      return { ranges: expanded, anchor, focus: action.pointer };
-    }
-    case "addRange": {
-      if (prev.ranges.includes(action.pointer)) return { ...prev, focus: action.pointer };
-      const merged = mode === "single" ? [action.pointer] : [...prev.ranges, action.pointer];
-      return { ranges: merged, anchor: prev.anchor ?? action.pointer, focus: action.pointer };
-    }
-    case "removeRange": {
-      if (!prev.ranges.includes(action.pointer)) return prev;
-      const next = prev.ranges.filter((p) => p !== action.pointer);
-      return {
-        ranges: next,
-        anchor: prev.anchor === action.pointer ? null : prev.anchor,
-        focus: prev.focus === action.pointer ? next[next.length - 1] ?? null : prev.focus,
-      };
-    }
-    case "toggleRange": {
-      if (prev.ranges.includes(action.pointer)) {
-        const next = prev.ranges.filter((p) => p !== action.pointer);
-        return {
-          ranges: next,
-          anchor: prev.anchor === action.pointer ? null : prev.anchor,
-          focus: prev.focus === action.pointer ? next[next.length - 1] ?? null : prev.focus,
-        };
-      }
-      const merged = mode === "single" ? [action.pointer] : [...prev.ranges, action.pointer];
-      return { ranges: merged, anchor: prev.anchor ?? action.pointer, focus: action.pointer };
-    }
-    case "empty":
-      return EMPTY_SELECTION;
+    case "collapse":         return { ranges: [action.pointer], anchor: action.pointer, focus: action.pointer };
+    case "setBaseAndExtent": return extentOf(mode, action.anchor, action.focus);
+    case "extend":           return extentOf(mode, prev.anchor ?? action.pointer, action.pointer);
+    case "addRange":         return withAdded(prev, mode, action.pointer);
+    case "removeRange":      return withRemoved(prev, action.pointer);
+    case "toggleRange":      return prev.ranges.includes(action.pointer)
+                               ? withRemoved(prev, action.pointer)
+                               : withAdded(prev, mode, action.pointer);
+    case "empty":            return EMPTY_SELECTION;
   }
 }
 
@@ -110,16 +89,14 @@ export function applySelectionAutoRules(
   after: unknown,
   mode: SelectionMode,
 ): SelectionSnap {
-  // 패치 안의 모든 add/copy/move destination = 새 selection (diff 기반).
-  const autoTargets = pickAutoTargets(applied, after);
-  if (autoTargets.length > 0) {
-    const limited = limitMode(mode, autoTargets);
-    return {
-      ranges: limited,
-      anchor: limited[0] ?? null,
-      focus: limited[limited.length - 1] ?? null,
-    };
+  // 패치 안의 모든 add/copy/move destination = 새 selection (rule ①).
+  const targets = pickAutoTargets(applied, after);
+  if (targets.length > 0) {
+    const limited = limitMode(mode, targets);
+    return { ranges: limited, anchor: limited[0] ?? null, focus: limited[limited.length - 1] ?? null };
   }
+
+  // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
   const trackOrRecover = (p: Pointer | null): Pointer | null => {
     if (p === null) return null;
     const t = trackPointer(p, applied);
@@ -128,27 +105,20 @@ export function applySelectionAutoRules(
   };
   const nextRanges: Pointer[] = [];
   for (const p of prev.ranges) {
-    const next = trackOrRecover(p);
-    if (next !== null && !nextRanges.includes(next)) nextRanges.push(next);
+    const n = trackOrRecover(p);
+    if (n !== null && !nextRanges.includes(n)) nextRanges.push(n);
   }
   const nextAnchor = trackOrRecover(prev.anchor);
   const nextFocus = trackOrRecover(prev.focus);
-  if (
-    sameArray(nextRanges, prev.ranges) &&
-    nextAnchor === prev.anchor &&
-    nextFocus === prev.focus
-  ) return prev;
-  return { ranges: nextRanges, anchor: nextAnchor, focus: nextFocus };
+  // 모두 그대로면 prev 재사용해 re-render 방지
+  const same = nextRanges.length === prev.ranges.length
+    && nextRanges.every((p, i) => p === prev.ranges[i])
+    && nextAnchor === prev.anchor
+    && nextFocus === prev.focus;
+  return same ? prev : { ranges: nextRanges, anchor: nextAnchor, focus: nextFocus };
 }
 
 export function limitMode(mode: SelectionMode, pointers: ReadonlyArray<Pointer>): Pointer[] {
   if (mode === "single") return pointers.length > 0 ? [pointers[pointers.length - 1]!] : [];
   return [...pointers];
-}
-
-function sameArray(a: ReadonlyArray<Pointer>, b: ReadonlyArray<Pointer>): boolean {
-  if (a === b) return true;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-  return true;
 }

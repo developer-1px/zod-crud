@@ -1,10 +1,7 @@
 // SPEC §5.7 — Selection state hook (Axis 2). pure 로직은 core/selection/.
-// W3C Selection API 어휘: collapse / setBaseAndExtent / extend / addRange /
-// removeRange / empty / containsNode / toggleRange (비표준 확장).
-//
-// DOM Selection 모델: collapsed selection 이 곧 캐럿. 별도 focus 축 없음.
+// W3C Selection API 어휘. collapsed selection = 캐럿 (별도 focus 축 없음).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import {
   EMPTY_SELECTION,
@@ -28,13 +25,11 @@ export interface UseSelectionOptions {
 }
 
 export interface SelectionState<T> {
-  // W3C Selection API 어휘
   ranges: ReadonlyArray<Pointer>;
   anchor: Pointer | null;
   focus: Pointer | null;
   isCollapsed: boolean;
   type: SelectionType;
-  // methods
   collapse(pointer: Pointer): void;
   setBaseAndExtent(anchor: Pointer, focus: Pointer): void;
   extend(pointer: Pointer): void;
@@ -51,13 +46,11 @@ export function useSelection<T>(
 ): SelectionState<T> {
   const mode: SelectionMode = options.mode ?? "single";
   const [snap, setSnap] = useState<SelectionSnap>(() => {
-    if (!options.initial || options.initial.length === 0) return EMPTY_SELECTION;
-    if (options.initial.length === 1) {
-      return reduceSelection(EMPTY_SELECTION, { type: "collapse", pointer: options.initial[0]! }, mode);
-    }
+    const init = options.initial;
+    if (!init?.length) return EMPTY_SELECTION;
     return reduceSelection(
       EMPTY_SELECTION,
-      { type: "setBaseAndExtent", anchor: options.initial[0]!, focus: options.initial[options.initial.length - 1]! },
+      { type: "setBaseAndExtent", anchor: init[0]!, focus: init[init.length - 1]! },
       mode,
     );
   });
@@ -73,25 +66,19 @@ export function useSelection<T>(
     [mode],
   );
 
-  const rangesRef = useRef(snap.ranges);
-  rangesRef.current = snap.ranges;
-
-  return useMemo<SelectionState<T>>(
-    () => ({
-      ranges: snap.ranges,
-      anchor: snap.anchor,
-      focus: snap.focus,
-      isCollapsed: isCollapsed(snap),
-      type: selectionType(snap),
-      collapse: (pointer) => dispatch({ type: "collapse", pointer }),
-      setBaseAndExtent: (anchor, focus) => dispatch({ type: "setBaseAndExtent", anchor, focus }),
-      extend: (pointer) => dispatch({ type: "extend", pointer }),
-      addRange: (pointer) => dispatch({ type: "addRange", pointer }),
-      removeRange: (pointer) => dispatch({ type: "removeRange", pointer }),
-      toggleRange: (pointer) => dispatch({ type: "toggleRange", pointer }),
-      empty: () => dispatch({ type: "empty" }),
-      containsNode: (pointer) => rangesRef.current.includes(pointer),
-    }),
-    [snap, dispatch],
-  );
+  return useMemo<SelectionState<T>>(() => ({
+    ranges: snap.ranges,
+    anchor: snap.anchor,
+    focus: snap.focus,
+    isCollapsed: isCollapsed(snap),
+    type: selectionType(snap),
+    collapse: (pointer) => dispatch({ type: "collapse", pointer }),
+    setBaseAndExtent: (anchor, focus) => dispatch({ type: "setBaseAndExtent", anchor, focus }),
+    extend: (pointer) => dispatch({ type: "extend", pointer }),
+    addRange: (pointer) => dispatch({ type: "addRange", pointer }),
+    removeRange: (pointer) => dispatch({ type: "removeRange", pointer }),
+    toggleRange: (pointer) => dispatch({ type: "toggleRange", pointer }),
+    empty: () => dispatch({ type: "empty" }),
+    containsNode: (pointer) => snap.ranges.includes(pointer),
+  }), [snap, dispatch]);
 }
