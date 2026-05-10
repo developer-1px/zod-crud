@@ -13,6 +13,7 @@ import { useDispatch } from "./hooks/useDispatch.js";
 import { useGlobalKey } from "./hooks/useGlobalKey.js";
 import { useClickPolicy } from "./hooks/useClickPolicy.js";
 import { useRecorderUI } from "./hooks/useRecorderUI.js";
+import { useDebugUI } from "./hooks/useDebugUI.js";
 
 export function Outliner() {
   const [mode, setMode] = useState<Mode>("select");
@@ -25,6 +26,8 @@ export function Outliner() {
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
   const recorder = useRecorderUI(doc.ops);
+  const debug = useDebugUI(doc.ops, doc.selection);
+  const logger = { enabled: debug.enabled, log: debug.log };
   const toggleRecord = useCallback(() => {
     if (recorder.isRecording) recorder.stopAndDownload();
     else recorder.start();
@@ -37,6 +40,7 @@ export function Outliner() {
     ctx, mode, setMode, pushToast,
     undo: doc.history.undo, redo: doc.history.redo,
     toggleRecord,
+    logger,
   });
 
   // row 의 onKeyDown — chord dispatcher. handled 면 preventDefault + stopPropagation

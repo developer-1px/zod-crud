@@ -54,6 +54,10 @@ export { trackPointer, trackPointers, pickAutoTarget, pickAutoTargets, recoverLo
 export { useRecorder, replayRecording } from "./hooks/useRecorder.js";
 export type { Recording, RecordedStep, RecorderApi, ReplayOptions } from "./hooks/useRecorder.js";
 
+// Debug log — 입력·dispatch·command·commit·selection·toast 모든 단계의 trace.
+export { useDebugLog } from "./hooks/useDebugLog.js";
+export type { DebugLog, DebugEvent, DebugLogger, DebugLogApi } from "./hooks/useDebugLog.js";
+
 // pure selection — headless 사용자용 (React 무관). hooks/useSelection 가 이걸 wrapping.
 export {
   reduceSelection,

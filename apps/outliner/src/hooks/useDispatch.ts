@@ -2,6 +2,7 @@
 // command 의 JsonResult 실패는 toast 로 surface.
 
 import { useCallback } from "react";
+import type { DebugLogger } from "zod-crud";
 import * as cmd from "../commands/index.js";
 import type { CommandId, Mode } from "../keymap.js";
 import type { CommandContext } from "../commands/index.js";
@@ -15,11 +16,13 @@ interface UseDispatchArgs {
   undo: () => boolean;
   redo: () => boolean;
   toggleRecord: () => void;
+  logger?: DebugLogger;
 }
 
-export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleRecord }: UseDispatchArgs) {
+export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleRecord, logger }: UseDispatchArgs) {
   void mode; // 현재 dispatch 는 mode 를 직접 안 쓰지만 dependency 로 노출
   return useCallback((id: CommandId): boolean => {
+    logger?.log("dispatch", { id, mode, ctx: ctx ? { focus: ctx.selection.focus, ranges: [...ctx.selection.ranges] } : null });
     if (id === "toggle-record") { toggleRecord(); return true; }
     if (!ctx) return false;
     const surface = (r: { ok: boolean; code?: string; reason?: string } | void) => {
@@ -58,5 +61,5 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleR
       case "undo":           undo(); return true;
       case "redo":           redo(); return true;
     }
-  }, [ctx, setMode, pushToast, undo, redo, toggleRecord]);
+  }, [ctx, mode, setMode, pushToast, undo, redo, toggleRecord, logger]);
 }
