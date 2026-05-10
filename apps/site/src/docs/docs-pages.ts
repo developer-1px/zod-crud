@@ -8,14 +8,14 @@ const rawDocs = import.meta.glob("../../../../docs/site/*.md", {
 }) as Record<string, string>;
 
 const slugMeta = {
-  "intro": { navLabel: "Overview", order: 1 },
-  "getting-started": { navLabel: "Quick Start", order: 2 },
-  "concepts": { navLabel: "useJsonDocument", order: 3 },
-  "operations": { navLabel: "Editor State", order: 4 },
-  "schema-safety": { navLabel: "Safety", order: 5 },
-  "clipboard-history": { navLabel: "Patterns", order: 6 },
-  "examples": { navLabel: "Lower-level Hooks", order: 7 },
-  "advanced": { navLabel: "Core & Design", order: 8 },
+  "intro": { navLabel: "Overview", order: 101 },
+  "getting-started": { navLabel: "Quick Start", order: 102 },
+  "concepts": { navLabel: "useJsonDocument", order: 103 },
+  "operations": { navLabel: "Editor State", order: 104 },
+  "schema-safety": { navLabel: "Safety", order: 105 },
+  "clipboard-history": { navLabel: "Patterns", order: 106 },
+  "examples": { navLabel: "Lower-level Hooks", order: 107 },
+  "advanced": { navLabel: "Core & Design", order: 108 },
 } as const;
 
 export type DocsPageSlug = keyof typeof slugMeta;

@@ -17,6 +17,20 @@ export function Landing() {
           keep the document valid under your root <code className="bg-stone-100 px-1 font-mono text-sm">z.object</code>.
           CRUD · clipboard · undo / redo — all schema-checked, all rejected on the slightest drift.
         </p>
+        <p className="text-sm text-stone-500">
+          This site is a <strong className="text-stone-700">source viewer</strong> — every example, every API
+          reference reads directly from <code className="bg-stone-100 px-1 font-mono text-xs">packages/zod-crud/src</code> via
+          Vite <code className="bg-stone-100 px-1 font-mono text-xs">?raw</code>. The package source is the SSOT;
+          the docs only orient you to it.
+        </p>
+        <div className="flex gap-2 pt-1">
+          <Link to="/api" className="border border-stone-900 bg-stone-900 px-3 py-1.5 text-sm text-stone-50 hover:bg-stone-700">
+            Browse API source →
+          </Link>
+          <Link to="/examples" className="border border-stone-300 px-3 py-1.5 text-sm text-stone-900 hover:border-stone-900">
+            See examples
+          </Link>
+        </div>
       </header>
 
       <section aria-labelledby="quick" className="flex flex-col gap-3">

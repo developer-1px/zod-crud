@@ -9,6 +9,7 @@ import type * as z from "zod";
 import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
 import { buildJsonDocumentOps } from "./buildJsonDocumentOps.js";
+import { buildVerbFacade, type VerbFacade } from "./buildVerbFacade.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
   emptyHistory,
@@ -31,7 +32,15 @@ export interface JsonDocumentHistory {
   mergeLast: () => boolean;
 }
 
-export interface JsonDocument<T> {
+/**
+ * JsonDocument — 단일 facade. 4대 기둥 ↔ 10 verbs (ADR-0002).
+ * - data: value, ops (RFC 6902 primitives)
+ * - history: undo/redo/mergeLast
+ * - selection: 좌표 어휘
+ * - verb facade methods: cut/copy/paste/duplicate/find/replace
+ *   (RFC 6902 ops 와 별도 — 편집 어휘 표면화)
+ */
+export interface JsonDocument<T> extends VerbFacade<T> {
   value: T;
   ops: JsonOps<T>;
   history: JsonDocumentHistory;
@@ -81,6 +90,8 @@ export function useJsonDocument<S extends z.ZodType>(
     return true;
   }, []);
 
+  const verbFacade = useMemo(() => buildVerbFacade(schema, ops), [schema, ops]);
+
   return useMemo<JsonDocument<z.output<S>>>(() => {
     const history: JsonDocumentHistory = {
       get canUndo() { return ops.canUndo(); },
@@ -94,6 +105,7 @@ export function useJsonDocument<S extends z.ZodType>(
       ops,
       history,
       selection: selectionEnabled ? selectionState : undefined,
+      ...verbFacade,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, verbFacade]);
 }

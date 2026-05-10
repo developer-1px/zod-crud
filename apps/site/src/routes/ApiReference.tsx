@@ -40,7 +40,7 @@ export function ApiReference() {
 
   return (
     <main className="flex h-full min-h-0 flex-col md:flex-row">
-      <aside className="shrink-0 border-stone-200 bg-stone-50 md:h-full md:w-64 md:overflow-y-auto md:border-r">
+      <aside className="shrink-0 border-stone-200 bg-stone-50 md:h-full md:w-56 md:overflow-y-auto md:border-r">
         <div className="sticky top-0 z-10 flex gap-1 border-b border-stone-200 bg-stone-50 p-2">
           {(["essential", "common", "all"] as TierLevel[]).map((t) => (
             <button
@@ -82,9 +82,9 @@ export function ApiReference() {
 
       <section className="flex flex-1 min-h-0 flex-col p-2 md:overflow-hidden">
         {active && (
-          <div className="px-2 pb-2 pt-1 font-mono text-[12px] text-stone-600">
-            <span className="text-stone-400">{active.group} · </span>
-            <span className="text-stone-900">{active.call}</span>
+          <div className="px-3 py-2 border-b border-stone-200">
+            <div className="text-[10px] uppercase tracking-wider text-stone-400">{active.group}</div>
+            <code className="block font-mono text-sm font-semibold text-stone-900">{active.call}</code>
           </div>
         )}
         <div className="flex flex-1 min-h-0">

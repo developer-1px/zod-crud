@@ -91,14 +91,14 @@ const apiRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/api",
   component: ApiReference,
-  staticData: { palette: { label: "API reference", to: "/api", category: "Reference", order: 20 } },
+  staticData: { palette: { label: "API reference", to: "/api", category: "Reference", order: 5 } },
 });
 
 const examplesRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/examples",
   component: Examples,
-  staticData: { palette: { label: "Examples", to: "/examples", category: "Reference", order: 21 } },
+  staticData: { palette: { label: "Examples", to: "/examples", category: "Reference", order: 6 } },
 });
 
 const outlinerRoute = createRoute({
