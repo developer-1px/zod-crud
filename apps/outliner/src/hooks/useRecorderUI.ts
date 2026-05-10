@@ -8,22 +8,24 @@ export function useRecorderUI(ops: JsonOps<OutlineNode>) {
   const rec = useRecorder<OutlineNode>(ops);
   const [replaying, setReplaying] = useState(false);
 
-  const downloadRecording = useCallback((recording: Recording<OutlineNode>) => {
-    const blob = new Blob([JSON.stringify(recording, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `outliner-session-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }, []);
-
-  const stopAndDownload = useCallback(() => {
+  const stopAndShare = useCallback(async () => {
     const r = rec.stop();
     if (r.steps.length === 0) return null;
-    downloadRecording(r);
+    const json = JSON.stringify(r, null, 2);
+    // eslint-disable-next-line no-console
+    console.log("[outliner session recording]", r);
+    // eslint-disable-next-line no-console
+    console.log(json);
+    try {
+      await navigator.clipboard.writeText(json);
+      // eslint-disable-next-line no-console
+      console.log(`✓ ${r.steps.length} steps copied to clipboard (${json.length} chars)`);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("clipboard write failed — JSON above is the recording", e);
+    }
     return r;
-  }, [rec, downloadRecording]);
+  }, [rec]);
 
   const loadAndReplay = useCallback(async () => {
     const input = document.createElement("input");
@@ -52,7 +54,7 @@ export function useRecorderUI(ops: JsonOps<OutlineNode>) {
     stepCount: rec.steps.length,
     replaying,
     start: rec.start,
-    stopAndDownload,
+    stopAndShare,
     loadAndReplay,
   };
 }

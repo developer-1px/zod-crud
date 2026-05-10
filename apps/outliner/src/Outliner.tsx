@@ -29,7 +29,7 @@ export function Outliner() {
   const debug = useDebugUI(doc.ops, doc.selection);
   const logger = { enabled: debug.enabled, log: debug.log };
   const toggleRecord = useCallback(() => {
-    if (recorder.isRecording) recorder.stopAndDownload();
+    if (recorder.isRecording) recorder.stopAndShare();
     else recorder.start();
   }, [recorder]);
 
@@ -68,7 +68,7 @@ export function Outliner() {
         <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
         {recorder.isRecording ? (
           <button
-            onClick={() => recorder.stopAndDownload()}
+            onClick={() => recorder.stopAndShare()}
             title="녹화 종료 + JSON 다운로드 (버그 제보용)"
             style={{ color: "#c33", fontWeight: 600 }}
           >
@@ -82,7 +82,7 @@ export function Outliner() {
         </button>
         {debug.enabled ? (
           <button
-            onClick={() => debug.stopAndDownload()}
+            onClick={() => debug.stopAndShare()}
             title="debug log 종료 + JSON 다운로드"
             style={{ color: "#06c", fontWeight: 600 }}
           >

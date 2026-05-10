@@ -10,15 +10,22 @@ export function useDebugUI(
 ) {
   const dbg = useDebugLog<OutlineNode>(ops, selection);
 
-  const stopAndDownload = useCallback(() => {
+  const stopAndShare = useCallback(async () => {
     const log: DebugLog<OutlineNode> = dbg.stop();
-    const blob = new Blob([JSON.stringify(log, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `outliner-debug-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const json = JSON.stringify(log, null, 2);
+    // 콘솔 로그 — DevTools 에서 확장 가능한 객체로 보기
+    // eslint-disable-next-line no-console
+    console.log("[outliner debug log]", log);
+    // eslint-disable-next-line no-console
+    console.log(json);
+    try {
+      await navigator.clipboard.writeText(json);
+      // eslint-disable-next-line no-console
+      console.log(`✓ ${log.events.length} events copied to clipboard (${json.length} chars)`);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.warn("clipboard write failed — JSON above is the log", e);
+    }
     return log;
   }, [dbg]);
 
@@ -27,7 +34,7 @@ export function useDebugUI(
     eventCount: dbg.events.length,
     log: dbg.log,
     start: dbg.start,
-    stopAndDownload,
+    stopAndShare,
     clear: dbg.clear,
   };
 }
