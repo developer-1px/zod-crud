@@ -14,11 +14,13 @@ interface UseDispatchArgs {
   pushToast: (level: "error" | "info", text: string) => void;
   undo: () => boolean;
   redo: () => boolean;
+  toggleRecord: () => void;
 }
 
-export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDispatchArgs) {
+export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleRecord }: UseDispatchArgs) {
   void mode; // 현재 dispatch 는 mode 를 직접 안 쓰지만 dependency 로 노출
   return useCallback((id: CommandId): boolean => {
+    if (id === "toggle-record") { toggleRecord(); return true; }
     if (!ctx) return false;
     const surface = (r: { ok: boolean; code?: string; reason?: string } | void) => {
       if (r && !r.ok) pushToast("error", `${r.code}${r.reason ? `: ${r.reason}` : ""}`);
@@ -56,5 +58,5 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
       case "undo":           undo(); return true;
       case "redo":           redo(); return true;
     }
-  }, [ctx, setMode, pushToast, undo, redo]);
+  }, [ctx, setMode, pushToast, undo, redo, toggleRecord]);
 }

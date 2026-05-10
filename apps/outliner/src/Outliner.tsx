@@ -24,12 +24,19 @@ export function Outliner() {
   const clipboard = useClipboard();
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
+  const recorder = useRecorderUI(doc.ops);
+  const toggleRecord = useCallback(() => {
+    if (recorder.isRecording) recorder.stopAndDownload();
+    else recorder.start();
+  }, [recorder]);
+
   const ctx = doc.selection
     ? { state: doc.value, ops: doc.ops, selection: doc.selection, clipboard }
     : null;
   const dispatch = useDispatch({
     ctx, mode, setMode, pushToast,
     undo: doc.history.undo, redo: doc.history.redo,
+    toggleRecord,
   });
 
   // row 의 onKeyDown — chord dispatcher. handled 면 preventDefault + stopPropagation
@@ -43,7 +50,6 @@ export function Outliner() {
 
   useGlobalKey(mode, dispatch);
   const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
-  const recorder = useRecorderUI(doc.ops);
 
   return (
     <div className="app">

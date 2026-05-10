@@ -28,7 +28,8 @@ export type CommandId =
   | "paste-sibling"
   | "paste-child"
   | "undo"
-  | "redo";
+  | "redo"
+  | "toggle-record";
 
 export interface KeyBinding {
   chord: Chord;
@@ -80,6 +81,9 @@ export const KEYMAP: ReadonlyArray<KeyBinding> = [
   { chord: "Mod+z",        command: "undo",           label: "Undo",                modes: ["select", "edit"] },
   { chord: "Mod+Shift+z",  command: "redo",           label: "Redo",                modes: ["select", "edit"] },
   { chord: "Mod+y",        command: "redo",           label: "Redo (Win)",          modes: ["select", "edit"] },
+
+  // ── Recording (mode 무관) ─────────────────────────────────────────────
+  { chord: "Mod+Shift+\\",  command: "toggle-record",  label: "Toggle session recording", modes: ["select", "edit"] },
 ];
 
 // DOM KeyboardEvent → chord 문자열 정규화.
