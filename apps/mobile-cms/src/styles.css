@@ -13,6 +13,10 @@ input {
   font: inherit;
 }
 
+::selection {
+  background: #9fc5ff;
+}
+
 .app-shell {
   display: grid;
   grid-template-columns: 280px minmax(360px, 1fr) 320px;
@@ -202,8 +206,7 @@ kbd {
   line-height: 1.05;
 }
 
-.hero-copy p,
-.media-card p,
+.body-copy,
 .text-block {
   margin-bottom: 0;
   color: #596154;
@@ -247,6 +250,27 @@ kbd {
   border-color: #20231f;
   background: #20231f;
   color: #fff;
+}
+
+.editable-text {
+  display: inline;
+  min-width: 1ch;
+  border-radius: 4px;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+  white-space: pre-wrap;
+  cursor: text;
+}
+
+.editable-text:focus {
+  outline-color: #2f66d0;
+  background: #fff;
+}
+
+.title-copy {
+  display: block;
+  color: #20231f;
+  font-weight: 700;
 }
 
 .child-slot {

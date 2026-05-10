@@ -34,6 +34,7 @@ interface BlockNode extends BaseNode {
 type CmsNode = PageNode | SectionNode | BlockNode;
 type Clipboard = { node: CmsNode; sourceId: string } | null;
 type PaletteSelection = { source: "palette"; node: BlockNode } | null;
+type TextEditTarget = { nodeId: string; propKey: string };
 
 const BlockSchema: z.ZodType<BlockNode> = z.lazy(() =>
   z.object({
@@ -224,8 +225,41 @@ function updateProps(root: PageNode, nodeId: string, props: Record<string, strin
   return PageSchema.parse(next);
 }
 
+function updateProp(root: PageNode, nodeId: string, key: string, value: string): PageNode {
+  const next = structuredClone(root) as PageNode;
+  const node = findNode(next, nodeId);
+  if (node && node.kind !== "page" && node.kind !== "section") node.props = { ...node.props, [key]: value };
+  return PageSchema.parse(next);
+}
+
 function label(kind: string) {
   return kind.replace(/[A-Z]/g, (m) => ` ${m.toLowerCase()}`);
+}
+
+const clipboardPrefix = "zod-crud.cms-block:";
+
+function serializeBlock(node: CmsNode) {
+  if (node.kind === "page" || node.kind === "section") return "";
+  return `${clipboardPrefix}${JSON.stringify(node)}`;
+}
+
+function deserializeBlock(value: string): BlockNode | null {
+  if (!value.startsWith(clipboardPrefix)) return null;
+  try {
+    return BlockSchema.parse(JSON.parse(value.slice(clipboardPrefix.length)));
+  } catch {
+    return null;
+  }
+}
+
+function isTextEditingTarget(target: EventTarget | null) {
+  if (!(target instanceof HTMLElement)) return false;
+  return Boolean(target.closest("input, textarea, [contenteditable='true']"));
+}
+
+function hasUserTextSelection() {
+  const selection = window.getSelection();
+  return Boolean(selection && !selection.isCollapsed && selection.toString().length > 0);
 }
 
 export function App() {
@@ -233,27 +267,29 @@ export function App() {
   const [selectedId, setSelectedId] = useState("section-hero");
   const [paletteSelection, setPaletteSelection] = useState<PaletteSelection>(null);
   const [clipboard, setClipboard] = useState<Clipboard>(null);
-  const [message, setMessage] = useState("Select a block or design-system part. Press C to copy and V to paste.");
+  const [message, setMessage] = useState("Select a block or collection. Cmd/Ctrl+C copies it, Cmd/Ctrl+V pastes into an allowed slot.");
   const selected = useMemo(() => findNode(page, selectedId), [page, selectedId]);
 
   const copy = (node: CmsNode) => {
     setClipboard({ node: cloneNode(node), sourceId: node.id });
+    const payload = serializeBlock(node);
+    if (payload) void navigator.clipboard?.writeText(payload).catch(() => undefined);
     setMessage(`Copied ${node.name}. Valid drop targets are now highlighted.`);
   };
 
-  const pasteInto = (target: CmsNode) => {
-    if (!clipboard) {
+  const pasteInto = (target: CmsNode, incoming = clipboard?.node ?? null) => {
+    if (!incoming) {
       setMessage("Clipboard is empty. Copy a design block first.");
       return;
     }
-    const verdict = canAccept(target, clipboard.node);
+    const verdict = canAccept(target, incoming);
     if (!verdict.ok) {
       setMessage(verdict.reason ?? "This block is not allowed here.");
       return;
     }
-    setPage((current) => insertInto(current, target.id, cloneNode(clipboard.node as BlockNode)));
+    setPage((current) => insertInto(current, target.id, cloneNode(incoming as BlockNode)));
     setSelectedId(target.id);
-    setMessage(`Pasted ${clipboard.node.name} into ${target.name}.`);
+    setMessage(`Pasted ${incoming.name} into ${target.name}.`);
   };
 
   const selectCanvasNode = (id: string) => {
@@ -264,7 +300,7 @@ export function App() {
   const selectPaletteNode = (node: BlockNode) => {
     setPaletteSelection({ source: "palette", node });
     setClipboard({ node: cloneNode(node), sourceId: node.id });
-    setMessage(`${node.name} is staged. Select a slot and press V.`);
+    setMessage(`${node.name} is staged. Select a slot and press Cmd/Ctrl+V.`);
   };
 
   const resetPage = () => {
@@ -286,13 +322,18 @@ export function App() {
     setMessage(`Deleted ${target.name}.`);
   };
 
+  const pasteFromSystemClipboard = async (target: CmsNode) => {
+    const text = await navigator.clipboard?.readText().catch(() => "");
+    const external = text ? deserializeBlock(text) : null;
+    pasteInto(target, external ?? clipboard?.node ?? null);
+  };
+
   const onShortcut = (event: KeyboardEvent) => {
-    const target = event.target as HTMLElement;
-    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+    if (isTextEditingTarget(event.target) || hasUserTextSelection()) return;
     const key = event.key.toLowerCase();
     const mod = event.metaKey || event.ctrlKey;
 
-    if ((mod && key === "c") || (!mod && key === "c")) {
+    if (mod && key === "c") {
       event.preventDefault();
       if (paletteSelection) copy(paletteSelection.node);
       else if (selected && selected.kind !== "page") copy(selected);
@@ -300,9 +341,9 @@ export function App() {
       return;
     }
 
-    if ((mod && key === "v") || (!mod && key === "v")) {
+    if (mod && key === "v") {
       event.preventDefault();
-      if (selected) pasteInto(selected);
+      if (selected) void pasteFromSystemClipboard(selected);
       return;
     }
 
@@ -326,6 +367,10 @@ export function App() {
   const updateSelectedProps = (props: Record<string, string>) => {
     if (!selected || selected.kind === "page" || selected.kind === "section") return;
     setPage((current) => updateProps(current, selected.id, props));
+  };
+
+  const updateInlineText = ({ nodeId, propKey }: TextEditTarget, value: string) => {
+    setPage((current) => updateProp(current, nodeId, propKey, value));
   };
 
   return (
@@ -375,6 +420,7 @@ export function App() {
                 selectedId={selectedId}
                 clipboard={clipboard}
                 onSelect={selectCanvasNode}
+                onTextChange={updateInlineText}
               />
             ))}
           </div>
@@ -410,6 +456,7 @@ function SectionView(props: {
   selectedId: string;
   clipboard: Clipboard;
   onSelect: (id: string) => void;
+  onTextChange: (target: TextEditTarget, value: string) => void;
 }) {
   const verdict = props.clipboard ? canAccept(props.section, props.clipboard.node) : null;
   return (
@@ -428,6 +475,7 @@ function SectionView(props: {
           selectedId={props.selectedId}
           clipboard={props.clipboard}
           onSelect={props.onSelect}
+          onTextChange={props.onTextChange}
         />
       ))}
     </section>
@@ -439,6 +487,7 @@ function BlockView(props: {
   selectedId: string;
   clipboard: Clipboard;
   onSelect: (id: string) => void;
+  onTextChange: (target: TextEditTarget, value: string) => void;
 }) {
   const { node } = props;
   const verdict = props.clipboard ? canAccept(node, props.clipboard.node) : null;
@@ -451,7 +500,7 @@ function BlockView(props: {
         <span>{node.name}</span>
         <kbd>{verdict?.ok ? "V" : "C"}</kbd>
       </div>
-      <BlockContent node={node} />
+      <BlockContent node={node} onTextChange={props.onTextChange} />
       {node.children && node.children.length > 0 && (
         <div className="child-slot">
           {node.children.map((child) => (
@@ -461,6 +510,7 @@ function BlockView(props: {
               selectedId={props.selectedId}
               clipboard={props.clipboard}
               onSelect={props.onSelect}
+              onTextChange={props.onTextChange}
             />
           ))}
         </div>
@@ -469,15 +519,37 @@ function BlockView(props: {
   );
 }
 
-function BlockContent({ node }: { node: BlockNode }) {
-  if (node.kind === "hero") return <div className="hero-copy"><h2>{node.props.title}</h2><p>{node.props.body}</p></div>;
-  if (node.kind === "mediaCard") return <div className="media-card"><div className="thumb" /><strong>{node.props.title}</strong><p>{node.props.body}</p></div>;
-  if (node.kind === "ctaRow") return <div className="cta-row"><span>{node.props.label}</span></div>;
-  if (node.kind === "productGrid") return <div className="grid-title">{node.props.title}</div>;
-  if (node.kind === "articleList") return <div className="article-title">{node.props.title}</div>;
-  if (node.kind === "button") return <div className="preview-button">{node.props.label}</div>;
+function BlockContent({ node, onTextChange }: { node: BlockNode; onTextChange: (target: TextEditTarget, value: string) => void }) {
+  const edit = (propKey: string, className?: string) => (
+    <EditableText
+      className={className}
+      value={node.props[propKey] ?? ""}
+      onChange={(value) => onTextChange({ nodeId: node.id, propKey }, value)}
+    />
+  );
+  if (node.kind === "hero") return <div className="hero-copy"><h2>{edit("title")}</h2>{edit("body", "body-copy")}</div>;
+  if (node.kind === "mediaCard") return <div className="media-card"><div className="thumb" />{edit("title", "title-copy")}{edit("body", "body-copy")}</div>;
+  if (node.kind === "ctaRow") return <div className="cta-row">{edit("label")}</div>;
+  if (node.kind === "productGrid") return <div className="grid-title">{edit("title")}</div>;
+  if (node.kind === "articleList") return <div className="article-title">{edit("title")}</div>;
+  if (node.kind === "button") return <div className="preview-button">{edit("label")}</div>;
   if (node.kind === "image") return <div className="image-block" aria-label={node.props.alt} />;
-  return <p className="text-block">{node.props.text}</p>;
+  return edit("text", "text-block");
+}
+
+function EditableText({ value, className, onChange }: { value: string; className?: string | undefined; onChange: (value: string) => void }) {
+  return (
+    <span
+      className={`editable-text ${className ?? ""}`}
+      contentEditable
+      suppressContentEditableWarning
+      spellCheck
+      onInput={(event) => onChange(event.currentTarget.textContent ?? "")}
+      onKeyDown={(event) => event.stopPropagation()}
+    >
+      {value}
+    </span>
+  );
 }
 
 function PropEditor({ node, onChange }: { node: BlockNode; onChange: (props: Record<string, string>) => void }) {
@@ -498,8 +570,8 @@ function ShortcutList() {
   return (
     <div className="shortcut-card">
       <h3>Shortcuts</h3>
-      <div><kbd>C</kbd><span>Copy selected block</span></div>
-      <div><kbd>V</kbd><span>Paste into selected slot</span></div>
+      <div><kbd>Cmd/Ctrl+C</kbd><span>Copy selected block or collection</span></div>
+      <div><kbd>Cmd/Ctrl+V</kbd><span>Paste into selected schema slot</span></div>
       <div><kbd>Delete</kbd><span>Remove selected block</span></div>
       <div><kbd>R</kbd><span>Reset page</span></div>
     </div>
