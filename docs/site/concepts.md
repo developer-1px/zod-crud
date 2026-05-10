@@ -1,63 +1,97 @@
 # 핵심 개념
 
-## State = JSON
+이 문서는 zod-crud를 처음 배우는 사람이 꼭 알아야 할 단어를 정리합니다. 어려운 부분은 세 가지뿐입니다.
 
-`useJson(Schema, initial)` 가 반환하는 첫 번째 요소는 `z.output<Schema>` 그대로입니다. 내부 표현이 따로 없으므로 사용자는 그냥 객체로 읽고, `JSON.stringify(state)` 가 곧 직렬화입니다.
+- JSON Pointer: 어디를 바꿀지 가리키는 문자열
+- JSON Patch: 어떻게 바꿀지 말하는 작업
+- Schema validation: 바꾼 결과가 맞는지 확인하는 검사
+
+## State는 그냥 JSON입니다
+
+`useJson(Schema, initial)`이 반환하는 첫 번째 값은 특별한 class가 아닙니다. 그냥 객체입니다.
 
 ```ts
-const [json, ops] = useJson(Schema, init);
-console.log(json.title);          // 그냥 string
-console.log(JSON.stringify(json)); // 그냥 JSON
+const [json, ops] = useJson(Schema, initial);
+
+json.title;
+json.tasks[0];
+JSON.stringify(json);
 ```
 
-이 설계의 비용은 op 적용 시 영향 받은 부모 체인을 spread 로 복제한다는 것입니다. 이득은 G1 (직렬화) · G2 (불변) · G3 (schema valid) · G6 (purity) 가 자동으로 따라온다는 것입니다.
+이 점이 중요합니다. 저장, 복사, 서버 전송, SSR hydration, Worker 메시지 전달을 할 때 별도 변환이 필요 없습니다.
 
-## RFC 6901 Pointer
+## Pointer는 “주소”입니다
 
-::source{path="packages/zod-crud/src/core/pointer.ts" title="parsePointer / buildPointer" lines="1-29"}
+JSON 안의 위치는 RFC 6901 JSON Pointer로 씁니다.
 
-path 는 항상 RFC 6901 문자열입니다. dotted (`a.b.c`), bracket (`a[0].b`), array shorthand (`["a", 0, "b"]`) 같은 편의 형식은 SPEC §0.1 (2) 로 금지됩니다 — 30년 호환을 위해 정본 1개만 허용합니다.
+::source{path="packages/zod-crud/src/core/pointer.ts" title="pointer helpers" lines="1-29"}
 
-```
-""              → root
-"/title"        → state.title
-"/tasks/0"      → state.tasks[0]
-"/tasks/-"      → state.tasks 끝 (add 전용, RFC 6901 §4)
-"/users/a~1b"   → state.users["a/b"]
-```
+자주 쓰는 예시는 다음과 같습니다.
 
-## RFC 6902 6 op
+| Pointer | 의미 |
+|---------|------|
+| `""` | root 전체 |
+| `"/title"` | `state.title` |
+| `"/tasks/0"` | `state.tasks[0]` |
+| `"/tasks/-"` | 배열 끝. `add`에서만 사용 |
+| `"/users/a~1b"` | `state.users["a/b"]` |
+| `"/users/a~0b"` | `state.users["a~b"]` |
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="1-317"}
+`.`으로 잇는 `tasks.0.title`도, bracket을 쓰는 `tasks[0].title`도 사용하지 않습니다. 오래 가는 API에서는 주소 형식이 하나여야 합니다.
 
-모든 변경은 6 op 중 하나입니다. 추가 op 신설은 SPEC §3.3 에 의해 금지됩니다.
+## Patch는 “명령”입니다
 
-| op | 의미 |
+JSON Patch는 6개 operation만 가집니다.
+
+| op | 설명 |
 |----|------|
-| `add` | object key 생성 또는 array 위치 삽입. `/-` 는 끝 |
-| `remove` | object key 또는 array element 제거 |
-| `replace` | 기존 값 교체 (대상 존재 필수) |
-| `move` | from 제거 → path 위치에 add. record key rename 도 포함 |
-| `copy` | from 값 deep clone → path 위치에 add |
-| `test` | path 값이 value 와 deep-equal 인지 검사. 실패 시 batch 롤백 |
+| `add` | object key를 만들거나 배열에 삽입합니다 |
+| `remove` | 값을 제거합니다 |
+| `replace` | 이미 있는 값을 교체합니다 |
+| `move` | 한 위치에서 제거한 뒤 다른 위치에 추가합니다 |
+| `copy` | 값을 복제해서 다른 위치에 추가합니다 |
+| `test` | 값이 기대와 같은지 확인합니다 |
 
-## Pure core
+zod-crud는 `set`, `insert`, `delete`, `rename`, `paste` 같은 별도 alias를 만들지 않습니다. 모두 위 6개 operation 조합으로 표현합니다.
 
-`applyOperation` / `applyPatch` 는 React 의존이 0인 순수함수입니다. 같은 입력은 같은 출력을 반환하고 (SPEC G6), 서버·Worker·테스트 어디서나 import 가능합니다.
+## Schema는 마지막 문지기입니다
 
-## Hook = setState wrapper
+operation 자체가 문법적으로 맞아도 결과가 schema를 깨면 commit되지 않습니다.
 
-::source{path="packages/zod-crud/src/useJson.ts" title="useJson" lines="1-188"}
+예를 들어 `title`이 string이어야 하는데 number를 넣으면 실패합니다.
 
-훅 본체는 `useState(initial) + useMemo(ops, ...)` 만 합니다. 모든 mutation 은 `applyPatch` 를 호출해 다음 state 를 계산하고, 결과가 schema 를 통과하면 setState. 실패하면 state 변경 0 (SPEC G8 atomicity).
+```ts
+const result = ops.replace("/title", 123 as never);
 
-## 시끄러운 에러 (SPEC §6)
+if (!result.ok) {
+  result.code; // "schema_violation"
+}
+```
 
-| 단계 | 시점 | 잡히는 위반 |
-|------|------|-------------|
-| TS 타입 | 빌드 | `PointerOf<T>` 가 path·value 타입 검증 |
-| Pointer parse | dispatch 시작 | RFC 6901 형식 위반 |
-| Path resolve | dispatch 시작 | replace/remove/test 대상 없음 |
-| Schema validate | dispatch 후 | Zod 검증 실패 |
+이때 state는 그대로 유지됩니다. 실패한 변경이 반쯤 적용되는 일은 없습니다.
 
-`strict` 옵션이 `true` (dev 기본) 이면 위반 시 `JsonCrudError` throw, `false` (prod 기본) 이면 `JsonResult` 반환 + `onError` 콜백.
+## Pure core와 React hook
+
+코어 함수는 React를 모릅니다.
+
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="274-329"}
+
+React hook은 이 코어를 감싸서 `setState`와 history, listener notification을 붙입니다.
+
+::source{path="packages/zod-crud/src/useJson.ts" title="useJson surface" lines="21-46"}
+
+이 구조 덕분에 같은 작업 모델을 브라우저 UI, 서버 검증, 테스트 코드에서 함께 사용할 수 있습니다.
+
+## Axis 2: selection과 focus
+
+문서 편집기를 만들면 “지금 선택된 항목”과 “키보드 포커스가 있는 항목”이 필요합니다. zod-crud는 이것도 Pointer로 표현합니다.
+
+```ts
+const selection = useSelection(ops, { mode: "multiple" });
+const focus = useFocus(ops);
+
+selection.toggle("/tasks/2");
+focus.set("/tasks/2");
+```
+
+그 뒤 `/tasks/0`이 삭제되면 기존 `/tasks/2`는 자동으로 `/tasks/1`로 따라갑니다. 이 자동 추적이 Axis 2의 핵심입니다.

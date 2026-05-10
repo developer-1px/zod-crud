@@ -1,60 +1,97 @@
-# 고급 옵션과 설계 선택
+# 고급 사용
 
-## 옵션
+기본 사용법을 익혔다면, 이 페이지에서 타입 추론, 외부 patch, 순수 코어, 구독 API를 살펴봅니다.
 
-::source{path="packages/zod-crud/src/useJson.ts" title="UseJsonOptions" lines="1-188"}
+## `UseJsonOptions`
 
-| 옵션 | 기본 | 의미 |
+::source{path="packages/zod-crud/src/useJson.ts" title="UseJsonOptions" lines="14-19"}
+
+| 옵션 | 기본 | 설명 |
 |------|------|------|
-| `history` | `0` | undo/redo 스택 한계. `0` 이면 비활성, 비용 0 |
-| `strict` | dev=`true`, prod=`false` | 위반 시 throw 여부 |
-| `onError` | undefined | 위반 시 호출되는 콜백. strict 와 무관하게 항상 호출 |
+| `history` | `0` | undo/redo 스택 크기. `0`이면 비활성 |
+| `strict` | dev=`true`, prod=`false` | 실패 시 throw 여부 |
+| `onError` | 없음 | 실패 시 호출되는 콜백 |
 
-## 빌드 타임 path 검증
+처음 배울 때는 `history`만 기억해도 충분합니다.
+
+```ts
+const [json, ops] = useJson(Schema, initial, { history: 100 });
+```
+
+## 타입으로 Pointer와 value를 맞춥니다
+
+`JsonOps<T>`는 `PointerOf<T>`와 `ValueAt<T, P>`를 사용합니다. 그래서 가능한 경우 TypeScript가 path와 value 타입을 같이 확인합니다.
 
 ::source{path="packages/zod-crud/src/core/path-types.ts" title="PointerOf / ValueAt" lines="1-44"}
 
-```ts
-const [json, ops] = useJson(Schema, init);
+예를 들어 `title`이 string이면 다음처럼 잡힙니다.
 
-ops.replace("/title", "ok")        // ✅
-ops.replace("/title", 42)          // ❌ TS: number not assignable
-ops.replace("/titel", "x")         // ❌ TS: 키 없음
-ops.replace("/tasks/0/done", true) // ✅
+```ts
+ops.replace("/title", "ok");
+ops.replace("/title", 42);       // TypeScript error
+ops.replace("/unknown", "no");   // TypeScript error
 ```
 
-깊이 한계는 5단입니다. 그 이상은 `string` fallback (TS 컴파일 비용 관리). depth 가 더 필요하면 batch (`ops.patch`) 로 우회.
+복잡한 동적 path를 만들 때는 TypeScript가 모든 문자열을 증명하지 못할 수 있습니다. 그때도 런타임에서는 Pointer parse, path resolve, schema validation이 다시 검사합니다.
 
 ## 외부 patch 적용
 
-```ts
-const patch: JsonPatchOperation[] = await fetchFromServer();
-ops.patch(patch);
-```
-
-서버에서 만든 RFC 6902 patch 를 그대로 적용. 한 op 가 실패하면 state 변경 0 (G8).
-
-## Pure core 직접 사용
-
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="1-317"}
-
-React 와 무관하게 patch 적용:
+서버나 다른 클라이언트에서 받은 JSON Patch도 그대로 적용할 수 있습니다.
 
 ```ts
-import { applyPatch } from "zod-crud";
-
-const r = applyPatch(Schema, state, ops);
-if (r.result.ok) saveToDisk(r.state);
+const patch: JsonPatchOperation[] = await response.json();
+const result = ops.patch(patch);
 ```
 
-서버, Worker, 테스트, 다른 framework 어디서나 동일하게 동작합니다 (G6).
+표준 RFC 6902 형식이므로 다른 언어의 JSON Patch 라이브러리와도 맞출 수 있습니다.
 
-## 직렬화 헬퍼
+## 순수 코어 직접 사용
 
-::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize / parse / safeParse" lines="1-29"}
+React 바깥에서는 `applyOperation`과 `applyPatch`를 씁니다.
 
-state 자체가 JSON 이라 별도 직렬화 단계가 거의 필요 없습니다. schema 검증을 끼우려면 `parse` / `safeParse` 사용.
+::source{path="packages/zod-crud/src/core/patch.ts" title="pure core" lines="274-329"}
 
-## SPEC 변경 절차
+예를 들어 서버에서 클라이언트 patch를 검증할 수 있습니다.
 
-라이브러리 동작 변경은 [`SPEC.md`](https://github.com/developer-1px/zod-crud/blob/main/packages/zod-crud/SPEC.md) 를 먼저 갱신한 뒤 코드를 따라가는 게 원칙입니다 (CONTRIBUTING.md 참조). §0.1 의 5대 원칙은 절대 변경되지 않습니다.
+```ts
+const r = applyPatch(Schema, currentState, clientPatch);
+
+if (!r.result.ok) {
+  return new Response(r.result.code, { status: 400 });
+}
+
+await save(r.state);
+```
+
+## 구독 API
+
+`ops.subscribe`는 commit된 operation 목록을 알려줍니다. `useSelection`과 `useFocus`가 이 API를 사용합니다.
+
+```ts
+const unsubscribe = ops.subscribe((applied) => {
+  console.log(applied);
+});
+```
+
+실패한 patch는 commit되지 않으므로 listener가 호출되지 않습니다.
+
+`ops.state`는 listener나 focus recovery에서 현재 state를 읽기 위한 snapshot입니다.
+
+## Pointer tracking helper
+
+selection/focus hook 없이 직접 좌표를 따라가고 싶다면 `trackPointer` 또는 `trackPointers`를 씁니다.
+
+::source{path="packages/zod-crud/src/core/track.ts" title="track helpers" lines="131-135"}
+
+```ts
+const next = trackPointer("/items/3", [
+  { op: "remove", path: "/items/1" },
+]);
+// "/items/2"
+```
+
+삭제된 위치나 그 자식은 `null`이 됩니다.
+
+## SPEC을 먼저 봅니다
+
+동작이 헷갈리면 [`packages/zod-crud/SPEC.md`](https://github.com/developer-1px/zod-crud/blob/main/packages/zod-crud/SPEC.md)가 기준입니다. 코드, 문서, 테스트가 충돌하면 SPEC이 이깁니다.
