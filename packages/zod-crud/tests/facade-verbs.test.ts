@@ -3,8 +3,8 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { buildCommands } from "../src/hooks/buildCommands.js";
-import { buildCan } from "../src/hooks/buildCan.js";
+import { buildCommands } from "../src/commands/buildCommands.js";
+import { buildCan } from "../src/commands/buildCan.js";
 import type { JsonOps } from "../src/hooks/useJson.js";
 import { applyPatch, type JsonPatchOperation } from "../src/core/patch/index.js";
 

@@ -9,8 +9,8 @@ import type * as z from "zod";
 import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
 import { buildJsonDocumentOps } from "./buildJsonDocumentOps.js";
-import { buildCommands, type Commands } from "./buildCommands.js";
-import { buildCan, type Can } from "./buildCan.js";
+import { buildCommands, type Commands } from "../commands/buildCommands.js";
+import { buildCan, type Can } from "../commands/buildCan.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
   emptyHistory,

@@ -41,6 +41,16 @@ core/
 └── track.ts      RFC 6902 op 적용 후 Pointer follow (인프라)
 ```
 
+## commands/ (facade builders, pure)
+
+`useJsonDocument.commands` / `useJsonDocument.can` group 의 빌더. React 무관 — `hooks/` 에 없음 (셀프 점검 결과 분리, 2026-05-10).
+
+```
+commands/
+├── buildCommands.ts   Commands<T> 빌더 — 10 verb namespace
+└── buildCan.ts        Can<T> 빌더 — preFlight 가드 namespace
+```
+
 ## sidecars/ (횡단 관심사)
 
 3-layer (hooks/verbs/core) 어디에도 속하지 않는 횡단 관심사 박스. 각 sidecar 는 useJsonDocument 의 정상 흐름 (state · ops · selection · history) 에 **수평으로 hook 한다 (관찰만 또는 wire format 변환)**. 본체 데이터 동작에 영향을 주지 않는다.

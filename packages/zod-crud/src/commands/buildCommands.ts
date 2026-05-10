@@ -1,4 +1,4 @@
-// hooks/buildCommands — useJsonDocument.commands group (TipTap 식 디팩토).
+// commands/buildCommands — useJsonDocument.commands group (TipTap 식 디팩토).
 // 편집도구 어휘 10 verbs 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
 //
 // 정합 메모리:
@@ -9,7 +9,7 @@
 // undo/redo 는 useJsonDocument 의 history stack ref 를 통해 라우팅 — 외부에서 주입.
 
 import type * as z from "zod";
-import type { JsonOps } from "./useJson.js";
+import type { JsonOps } from "../hooks/useJson.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type {
   SelectionAction,

@@ -1,4 +1,4 @@
-// hooks/buildCan — useJsonDocument.can group (TipTap 식 디팩토).
+// commands/buildCan — useJsonDocument.can group (TipTap 식 디팩토).
 // 각 mutation 가 현재 state 에서 성공할지 boolean 으로 반환.
 // preFlight gate 까지 거쳐 정확한 답 산출 (UI 가드 용도).
 //
@@ -6,7 +6,7 @@
 // useMemo / useDeferredValue 로 캐싱 권장. canUndo/canRedo 는 stack 길이 검사라 저비용.
 
 import type * as z from "zod";
-import type { JsonOps } from "./useJson.js";
+import type { JsonOps } from "../hooks/useJson.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { cut } from "../verbs/cut.js";
 import { copy } from "../verbs/copy.js";
