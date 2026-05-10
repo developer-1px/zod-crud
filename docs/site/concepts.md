@@ -14,7 +14,7 @@ console.log(JSON.stringify(json)); // 그냥 JSON
 
 ## RFC 6901 Pointer
 
-::source{path="packages/zod-crud/src/core/pointer.ts" title="parsePointer / buildPointer"}
+::source{path="packages/zod-crud/src/core/pointer.ts" title="parsePointer / buildPointer" lines="1-29"}
 
 path 는 항상 RFC 6901 문자열입니다. dotted (`a.b.c`), bracket (`a[0].b`), array shorthand (`["a", 0, "b"]`) 같은 편의 형식은 SPEC §0.1 (2) 로 금지됩니다 — 30년 호환을 위해 정본 1개만 허용합니다.
 
@@ -28,7 +28,7 @@ path 는 항상 RFC 6901 문자열입니다. dotted (`a.b.c`), bracket (`a[0].b`
 
 ## RFC 6902 6 op
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch"}
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="1-317"}
 
 모든 변경은 6 op 중 하나입니다. 추가 op 신설은 SPEC §3.3 에 의해 금지됩니다.
 
@@ -47,7 +47,7 @@ path 는 항상 RFC 6901 문자열입니다. dotted (`a.b.c`), bracket (`a[0].b`
 
 ## Hook = setState wrapper
 
-::source{path="packages/zod-crud/src/useJson.ts" title="useJson"}
+::source{path="packages/zod-crud/src/useJson.ts" title="useJson" lines="1-188"}
 
 훅 본체는 `useState(initial) + useMemo(ops, ...)` 만 합니다. 모든 mutation 은 `applyPatch` 를 호출해 다음 state 를 계산하고, 결과가 schema 를 통과하면 setState. 실패하면 state 변경 0 (SPEC G8 atomicity).
 

@@ -27,7 +27,7 @@ ops.patch([
 
 ## Public surface (SPEC §5)
 
-::source{path="packages/zod-crud/src/index.ts" title="public exports"}
+::source{path="packages/zod-crud/src/index.ts" title="public exports" lines="1-20"}
 
 ## 무엇이 아닌가 (SPEC §8)
 

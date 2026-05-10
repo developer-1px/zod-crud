@@ -2,7 +2,7 @@
 
 ## RFC 6902 6 op
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation"}
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation" lines="1-317"}
 
 ### `add`
 
@@ -55,7 +55,7 @@ deep-equal 검사. 실패 시 batch 전체 롤백.
 
 ## Batch — `patch(operations)`
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyPatch"}
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyPatch" lines="1-317"}
 
 여러 op 를 atomic 하게 적용합니다. 한 op 가 실패하면 state 는 변경 0 (SPEC G8). Schema 검증은 batch 끝에서 1회.
 
@@ -69,7 +69,7 @@ ops.patch([
 
 ## Hook 표면
 
-::source{path="packages/zod-crud/src/useJson.ts" title="useJson"}
+::source{path="packages/zod-crud/src/useJson.ts" title="useJson" lines="1-188"}
 
 `ops.add/remove/replace/move/copy/test` 는 단일 op, `ops.patch` 는 batch. 모두 `JsonResult` 반환.
 

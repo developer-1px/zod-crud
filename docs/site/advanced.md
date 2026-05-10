@@ -2,7 +2,7 @@
 
 ## 옵션
 
-::source{path="packages/zod-crud/src/useJson.ts" title="UseJsonOptions"}
+::source{path="packages/zod-crud/src/useJson.ts" title="UseJsonOptions" lines="1-188"}
 
 | 옵션 | 기본 | 의미 |
 |------|------|------|
@@ -12,7 +12,7 @@
 
 ## 빌드 타임 path 검증
 
-::source{path="packages/zod-crud/src/core/path-types.ts" title="PointerOf / ValueAt"}
+::source{path="packages/zod-crud/src/core/path-types.ts" title="PointerOf / ValueAt" lines="1-44"}
 
 ```ts
 const [json, ops] = useJson(Schema, init);
@@ -36,7 +36,7 @@ ops.patch(patch);
 
 ## Pure core 직접 사용
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch"}
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="1-317"}
 
 React 와 무관하게 patch 적용:
 
@@ -51,7 +51,7 @@ if (r.result.ok) saveToDisk(r.state);
 
 ## 직렬화 헬퍼
 
-::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize / parse / safeParse"}
+::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize / parse / safeParse" lines="1-29"}
 
 state 자체가 JSON 이라 별도 직렬화 단계가 거의 필요 없습니다. schema 검증을 끼우려면 `parse` / `safeParse` 사용.
 

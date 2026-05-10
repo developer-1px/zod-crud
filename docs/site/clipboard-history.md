@@ -6,7 +6,7 @@ SPEC §8 비-목표: zod-crud 는 selection model, focus management, multi-paste
 
 ## copy / cut / duplicate — 6 op 조합
 
-::source{path="apps/site/src/examples/ClipboardArray.tsx" title="ClipboardArray.tsx"}
+::source{path="apps/site/src/examples/ClipboardArray.tsx" title="ClipboardArray.tsx" lines="1-75"}
 
 | 동작 | 표준 표현 |
 |------|-----------|
@@ -33,7 +33,7 @@ fetch("/api/save", {
 
 ## History — opt-in
 
-::source{path="packages/zod-crud/src/useJson.ts" title="useJson history"}
+::source{path="packages/zod-crud/src/useJson.ts" title="useJson history" lines="1-188"}
 
 ```ts
 const [json, ops] = useJson(Schema, init, { history: 50 });

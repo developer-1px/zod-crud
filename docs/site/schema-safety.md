@@ -4,7 +4,7 @@
 
 state 는 항상 `schema.safeParse(state).success === true` 를 만족합니다. 매 op 적용 직후 (또는 `patch` 의 경우 batch 종료 후 1회) Zod 가 검증하고, 실패하면 state 는 변경 0.
 
-::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch"}
+::source{path="packages/zod-crud/src/core/patch.ts" title="applyOperation / applyPatch" lines="1-317"}
 
 ## G8 — atomicity
 
@@ -21,13 +21,13 @@ ops.patch([
 
 ## 실패가 시끄러워지는 모드
 
-::source{path="apps/site/src/examples/RejectedDrift.tsx" title="rejected drift"}
+::source{path="apps/site/src/examples/RejectedDrift.tsx" title="rejected drift" lines="1-50"}
 
 `strict: false` (prod 기본) 이면 `JsonResult` 가 반환되고, `strict: true` (dev 기본) 이면 `JsonCrudError` 가 throw 됩니다. 두 모드 모두 `onError` 콜백을 호출합니다.
 
 ## 직렬화 보증 (G1)
 
-::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize / parse / safeParse"}
+::source{path="packages/zod-crud/src/core/serialize.ts" title="serialize / parse / safeParse" lines="1-29"}
 
 state 는 100% JSON 이므로 `JSON.parse(JSON.stringify(state))` 가 항상 round-trip 합니다. localStorage, SSR hydration, postMessage, Worker 어디서나 비용 0 으로 넘길 수 있습니다.
 

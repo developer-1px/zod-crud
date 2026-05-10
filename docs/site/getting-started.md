@@ -10,13 +10,13 @@ npm install zod-crud zod
 
 ## 첫 번째 편집
 
-::source{path="apps/site/src/examples/snippet-getting-started.ts" title="first patch"}
+::source{path="apps/site/src/examples/snippet-getting-started.ts" title="first patch" lines="1-28"}
 
 `applyPatch` 는 `(state, ops) → { state, result }` 의 순수함수입니다. React 와 무관하게 어디서나 import 할 수 있고, 동일 입력은 동일 출력을 보장합니다 (SPEC G6).
 
 ## React 에서 — `useJson`
 
-::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx"}
+::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx" lines="1-35"}
 
 훅이 반환하는 `[json, ops]` 의 `ops` 는 RFC 6902 6 op 와 1:1 대응하는 메서드 객체입니다. `set` `insert` `delete` `rename` `paste` 같은 편의 alias 는 SPEC §3.3 에 의해 금지됩니다 — 표준 6 op 의 조합으로 모든 mutation 을 표현합니다.
 
