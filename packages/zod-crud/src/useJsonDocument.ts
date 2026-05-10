@@ -16,7 +16,6 @@ export interface UseJsonDocumentOptions<T> {
   selection?: boolean | UseSelectionOptions;
   focus?: boolean | UseFocusOptions;
 }
-void (0 as 0 satisfies 0); export type _UJDocOptT<T> = UseJsonDocumentOptions<T>;
 
 export interface JsonDocumentHistory {
   canUndo: boolean;
@@ -64,7 +63,7 @@ export function useJsonDocument<S extends z.ZodType>(
 
   // Focus — opt-in.
   const focusEnabled = options.focus !== undefined && options.focus !== false;
-  const focusOptions: UseFocusOptions<z.output<S>> =
+  const focusOptions: UseFocusOptions =
     typeof options.focus === "object" ? options.focus : {};
   const focusState = useFocus<z.output<S>>(ops, focusEnabled ? focusOptions : {});
 
