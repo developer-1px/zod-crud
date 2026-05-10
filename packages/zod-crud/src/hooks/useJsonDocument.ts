@@ -9,8 +9,8 @@ import type * as z from "zod";
 import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
 import { useFocus, type FocusState, type UseFocusOptions } from "./useFocus.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
-import { computeInverses, type JsonPatchOperation } from "./core/patch.js";
-import type { Pointer } from "./core/pointer.js";
+import { computeInverses, type JsonPatchOperation } from "../core/patch/index.js";
+import type { Pointer } from "../core/pointer/index.js";
 
 export interface UseJsonDocumentOptions<T> {
   history?: number;

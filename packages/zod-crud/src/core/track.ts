@@ -2,8 +2,8 @@
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 
-import { parsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer.js";
-import type { JsonPatchOperation } from "./patch.js";
+import { parsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer/index.js";
+import type { JsonPatchOperation } from "./patch/index.js";
 
 export function exists(state: unknown, pointer: Pointer): boolean {
   return readAt(state, parsePointer(pointer)).ok;

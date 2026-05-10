@@ -8,15 +8,15 @@ export type ApiEntry = { id: string; call: string; sources: ApiSource[] };
 export type ApiGroup = { title: string; apis: ApiEntry[] };
 export type ApiId = string;
 
-const DOCUMENT_SRC: ApiSource = { path: "useJsonDocument.ts" };
-const HOOK_SRC: ApiSource = { path: "useJson.ts" };
-const PATCH_SRC: ApiSource = { path: "core/patch.ts" };
-const POINTER_SRC: ApiSource = { path: "core/pointer.ts" };
-const SERIALIZE_SRC: ApiSource = { path: "core/serialize.ts" };
-const TYPES_SRC: ApiSource = { path: "core/path-types.ts" };
+const DOCUMENT_SRC: ApiSource = { path: "hooks/useJsonDocument.ts" };
+const HOOK_SRC: ApiSource = { path: "hooks/useJson.ts" };
+const PATCH_SRC: ApiSource = { path: "core/patch/index.ts" };
+const POINTER_SRC: ApiSource = { path: "core/pointer/index.ts" };
+const SERIALIZE_SRC: ApiSource = { path: "core/pointer/serialize.ts" };
+const TYPES_SRC: ApiSource = { path: "core/pointer/types.ts" };
 const TRACK_SRC: ApiSource = { path: "core/track.ts" };
-const SELECTION_SRC: ApiSource = { path: "useSelection.ts" };
-const FOCUS_SRC: ApiSource = { path: "useFocus.ts" };
+const SELECTION_SRC: ApiSource = { path: "hooks/useSelection.ts" };
+const FOCUS_SRC: ApiSource = { path: "hooks/useFocus.ts" };
 
 const groups: ApiGroup[] = [
   {

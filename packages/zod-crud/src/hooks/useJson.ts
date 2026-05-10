@@ -10,9 +10,9 @@ import {
   computeInverses,
   type JsonPatchOperation,
   type JsonResult,
-} from "./core/patch.js";
-import type { Pointer } from "./core/pointer.js";
-import type { PointerOf, ValueAt } from "./core/path-types.js";
+} from "../core/patch/index.js";
+import type { Pointer } from "../core/pointer/index.js";
+import type { PointerOf, ValueAt } from "../core/pointer/types.js";
 
 export interface UseJsonOptions {
   history?: number;

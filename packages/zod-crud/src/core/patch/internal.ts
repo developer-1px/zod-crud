@@ -1,7 +1,7 @@
 // patch.ts 내부 헬퍼 — public API 아님. SPEC.md §3 의 RFC 6902 구현 디테일.
 
-import { parsePointer, type Pointer, PointerSyntaxError } from "./pointer.js";
-import type { ErrorCode } from "./patch.js";
+import { parsePointer, type Pointer, PointerSyntaxError } from "../pointer/index.js";
+import type { ErrorCode } from "./index.js";
 
 export type ContainerError = { error: ErrorCode; reason?: string };
 export type ParseSafeResult = { ok: true; segs: string[] } | { error: ErrorCode; reason: string; pointer: Pointer };

@@ -3,10 +3,10 @@
 // 구현 디테일: ./patch-internal · ./patch-apply · ./patch-inverse.
 
 import type * as z from "zod";
-import type { Pointer } from "./pointer.js";
-import { applyOpRaw } from "./patch-apply.js";
+import type { Pointer } from "../pointer/index.js";
+import { applyOpRaw } from "./apply.js";
 
-export { computeInverses } from "./patch-inverse.js";
+export { computeInverses } from "./inverse.js";
 
 export type JsonPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }

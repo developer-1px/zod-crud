@@ -9,7 +9,7 @@
 // 외부 의존 0 — fetch / axios / 다른 client 와 직접 결합하지 않는다.
 // 사용자가 client 를 가지고 와서 wiring 한다.
 
-import type { JsonPatchOperation } from "./core/patch.js";
+import type { JsonPatchOperation } from "../core/patch/index.js";
 
 export const JSON_PATCH_MIME = "application/json-patch+json";    // RFC 6902 §6
 export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396

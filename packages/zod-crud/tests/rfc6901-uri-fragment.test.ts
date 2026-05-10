@@ -2,7 +2,7 @@
 // §6 의 4 개 예제 + edge case.
 
 import { describe, expect, test } from "vitest";
-import { buildPointer, parsePointer } from "../src/core/pointer.js";
+import { buildPointer, parsePointer } from "../src/core/pointer/index.js";
 
 describe("RFC 6901 §6 — URI fragment 형 Pointer", () => {
   // RFC 6901 §6 의 표준 예제 (§5 examples 가 fragment 형으로 인용됨)

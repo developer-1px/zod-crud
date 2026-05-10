@@ -9,8 +9,8 @@ import {
   applyMergePatch,
   JSON_PATCH_MIME,
   MERGE_PATCH_MIME,
-} from "../src/http.js";
-import { applyPatch } from "../src/core/patch.js";
+} from "../src/http/index.js";
+import { applyPatch } from "../src/core/patch/index.js";
 import { z } from "zod";
 
 const PASS = z.unknown();

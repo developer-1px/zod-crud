@@ -1,8 +1,8 @@
 // computeInverses — undo 용 RFC 6902 inverse op 계산.
 
-import { parsePointer, readAt, type Pointer } from "./pointer.js";
-import type { JsonPatchOperation } from "./patch.js";
-import { applyOpRaw } from "./patch-apply.js";
+import { parsePointer, readAt, type Pointer } from "../pointer/index.js";
+import type { JsonPatchOperation } from "./index.js";
+import { applyOpRaw } from "./apply.js";
 
 function resolveAppendPath(path: Pointer, before: unknown): Pointer {
   if (!path.endsWith("/-")) return path;

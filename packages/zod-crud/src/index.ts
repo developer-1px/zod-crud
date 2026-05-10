@@ -2,24 +2,24 @@
 // 정본: SPEC.md §5. 변경 시 SPEC.md를 먼저 갱신할 것.
 
 // Identity surface (SPEC §5.10) — facade
-export { useJsonDocument } from "./useJsonDocument.js";
+export { useJsonDocument } from "./hooks/useJsonDocument.js";
 export type {
   JsonDocument,
   JsonDocumentHistory,
   UseJsonDocumentOptions,
-} from "./useJsonDocument.js";
+} from "./hooks/useJsonDocument.js";
 
 // Axis 1 — Data substrate
-export { useJson, JsonCrudError } from "./useJson.js";
-export type { JsonOps, UseJsonOptions, JsonChangeListener } from "./useJson.js";
+export { useJson, JsonCrudError } from "./hooks/useJson.js";
+export type { JsonOps, UseJsonOptions, JsonChangeListener } from "./hooks/useJson.js";
 
-export { applyOperation, applyPatch } from "./core/patch.js";
+export { applyOperation, applyPatch } from "./core/patch/index.js";
 export type {
   JsonPatchOperation,
   JsonResult,
   ErrorCode,
   ApplyResult,
-} from "./core/patch.js";
+} from "./core/patch/index.js";
 
 export {
   parsePointer,
@@ -32,22 +32,22 @@ export {
   lastSegmentIndex,
   appendSegment,
   withLastSegment,
-} from "./core/pointer.js";
-export type { Pointer } from "./core/pointer.js";
-export type { PointerOf, ValueAt } from "./core/path-types.js";
+} from "./core/pointer/index.js";
+export type { Pointer } from "./core/pointer/index.js";
+export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 
-export { serialize, parse, safeParse } from "./core/serialize.js";
+export { serialize, parse, safeParse } from "./core/pointer/serialize.js";
 
 // Axis 2 — Editor abstractions (SPEC §0.2 / §5.7-§5.9)
-export { useSelection } from "./useSelection.js";
+export { useSelection } from "./hooks/useSelection.js";
 export type {
   SelectionMode,
   SelectionState,
   UseSelectionOptions,
-} from "./useSelection.js";
+} from "./hooks/useSelection.js";
 
-export { useFocus } from "./useFocus.js";
-export type { FocusState, UseFocusOptions } from "./useFocus.js";
+export { useFocus } from "./hooks/useFocus.js";
+export type { FocusState, UseFocusOptions } from "./hooks/useFocus.js";
 
 export { trackPointer, trackPointers } from "./core/track.js";
 
@@ -60,8 +60,8 @@ export {
   applyMergePatch,
   JSON_PATCH_MIME,
   MERGE_PATCH_MIME,
-} from "./http.js";
-export type { PatchRequest, ParseResult, ParseError } from "./http.js";
+} from "./http/index.js";
+export type { PatchRequest, ParseResult, ParseError } from "./http/index.js";
 
 // JSON Schema bridge — RFC 8927 / draft-bhutton (SPEC §1.x)
-export { toJSONSchema, fromJSONSchema } from "./schema-bridge.js";
+export { toJSONSchema, fromJSONSchema } from "./schema/index.js";

@@ -2,8 +2,8 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { toJSONSchema, fromJSONSchema } from "../src/schema-bridge.js";
-import { applyPatch } from "../src/core/patch.js";
+import { toJSONSchema, fromJSONSchema } from "../src/schema/index.js";
+import { applyPatch } from "../src/core/patch/index.js";
 
 describe("zod → JSON Schema (draft-2020-12)", () => {
   test("기본 object 타입 export", () => {

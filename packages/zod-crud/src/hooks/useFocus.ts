@@ -7,8 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { trackPointer, pickAutoTarget, recoverLostPointer, exists } from "./core/track.js";
-import type { Pointer } from "./core/pointer.js";
+import { trackPointer, pickAutoTarget, recoverLostPointer, exists } from "../core/track.js";
+import type { Pointer } from "../core/pointer/index.js";
 import type { JsonOps } from "./useJson.js";
 
 export interface UseFocusOptions {
