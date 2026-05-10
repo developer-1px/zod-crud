@@ -200,6 +200,22 @@ function attachPointer(
 }
 
 function applyOpRaw(state: unknown, op: JsonPatchOperation): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } {
+  // RFC 6902 §3 — op shape 검증. path 는 모든 op 에 필수, value 는 add/replace/test, from 은 move/copy.
+  if (!op || typeof op !== "object") return { error: "invalid_pointer", reason: "op must be object" };
+  const validOps = ["add", "remove", "replace", "move", "copy", "test"];
+  if (!validOps.includes((op as { op: string }).op)) {
+    return { error: "invalid_pointer", reason: `unrecognized op: ${(op as { op: string }).op}` };
+  }
+  if (typeof op.path !== "string") {
+    return { error: "invalid_pointer", reason: "missing 'path'" };
+  }
+  if ((op.op === "add" || op.op === "replace" || op.op === "test") && !("value" in op)) {
+    return { error: "invalid_pointer", reason: `missing 'value' for op '${op.op}'` };
+  }
+  if ((op.op === "move" || op.op === "copy") && typeof (op as { from?: unknown }).from !== "string") {
+    return { error: "invalid_pointer", reason: `missing 'from' for op '${op.op}'` };
+  }
+
   let segments: string[];
   try {
     segments = parsePointer(op.path);

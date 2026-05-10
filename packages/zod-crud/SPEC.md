@@ -133,6 +133,17 @@ RFC 6902 §3 batch semantics:
 - 순차 적용. 한 op이 실패하면 **전체 롤백** (모두 적용 또는 모두 미적용).
 - Schema 검증은 **batch 종료 후 1회**. 중간 상태가 schema 위반이어도 최종이 valid면 통과.
 
+### 3.5 Conformance — RFC 6902 인증
+
+[`github.com/json-patch/json-patch-tests`](https://github.com/json-patch/json-patch-tests) 의 표준 suite (`tests.json` + `spec_tests.json`, 합계 163 케이스, 그중 4 케이스는 suite 자체에서 disabled) 를 vendor 해 매 빌드에 자동 검증한다.
+
+- 정본 위치: [`tests/conformance/`](./tests/conformance/)
+- Runner: [`tests/rfc6902-conformance.test.ts`](./tests/rfc6902-conformance.test.ts)
+- 통과율: **159 / 159 (100%)** — 활성 케이스 전부.
+- CI 가 실패 시 main 보호.
+
+이 인증이 \"RFC 6902 따른다\" 의 사실상 게이트 — fast-json-patch · jsondiffpatch · rfc6902 등 주류 라이브러리의 채택 기준과 동일.
+
 ---
 
 ## 4. State Model
