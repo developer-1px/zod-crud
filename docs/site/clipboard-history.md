@@ -1,6 +1,8 @@
-# Patterns
+# UI Recipes — list / clipboard / history wiring
 
-이 페이지는 zod-crud를 실제 편집기처럼 쓰는 패턴을 보여줍니다. 핵심은 UI 이벤트를 `doc.ops`, `doc.selection`, `doc.history`에 연결하는 것입니다.
+이 페이지는 zod-crud 를 실제 편집기처럼 쓸 때의 UI 이벤트 연결 레시피입니다. 시나리오별 정본 카탈로그는 [Patterns](/docs/patterns), 거부한 기능 빈자리는 [Why Not](/docs/why-not).
+
+핵심은 UI 이벤트를 `doc.ops`, `doc.selection`, `doc.history`에 연결하는 것입니다.
 
 ## 패턴 1. 리스트 편집기
 
