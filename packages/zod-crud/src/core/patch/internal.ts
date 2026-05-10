@@ -52,7 +52,7 @@ export function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v));
 }
 
-export function parseArrayIndex(seg: string): number | null {
+function parseArrayIndex(seg: string): number | null {
   if (seg === "-") return -1; // RFC 6901 §4 append marker
   if (!/^(0|[1-9][0-9]*)$/.test(seg)) return null;
   return Number(seg);

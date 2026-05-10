@@ -2,7 +2,6 @@
 // RFC 9535 §2 의 normalized 의미. Pointer 는 RFC 6901.
 
 import type { Query, Segment, Selector, FilterExpr, Comparable, SingularPath, Match } from "./types.js";
-import { buildPointer } from "../pointer/index.js";
 
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
@@ -161,5 +160,3 @@ export function matchPointers(matches: Match[]): string[] {
   return matches.map((m) => m.pointer);
 }
 
-// re-export for convenience
-export { buildPointer };

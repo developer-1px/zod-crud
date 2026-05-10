@@ -121,7 +121,7 @@ export function applySelectionAutoRules(
   return same ? prev : { ranges: nextRanges, anchor: nextAnchor, focus: nextFocus };
 }
 
-export function limitMode(mode: SelectionMode, pointers: ReadonlyArray<Pointer>): Pointer[] {
+function limitMode(mode: SelectionMode, pointers: ReadonlyArray<Pointer>): Pointer[] {
   if (mode === "single") return pointers.length > 0 ? [pointers[pointers.length - 1]!] : [];
   return [...pointers];
 }

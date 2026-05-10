@@ -27,14 +27,6 @@ export function pickAutoTargets(
   return out;
 }
 
-export function pickAutoTarget(
-  applied: ReadonlyArray<JsonPatchOperation>,
-  after: unknown,
-): Pointer | null {
-  const all = pickAutoTargets(applied, after);
-  return all.length > 0 ? all[0]! : null;
-}
-
 // SPEC §5.7 rule 2 / §5.8 rule 2 — lost pointer 복구: nextSibling → prevSibling → 가장 가까운 존재 ancestor.
 // array container 는 좌표 의미가 없는 "항목 컨테이너" 라 fallback 시 건너뛰고 한 단계 더 climb.
 export function recoverLostPointer(
