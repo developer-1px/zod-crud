@@ -98,13 +98,11 @@ zod-crud는 변경을 먼저 계산한 뒤, schema를 통과할 때만 commit합
    ├─ doc.value
    ├─ doc.ops
    ├─ doc.history
-   ├─ doc.selection
-   └─ doc.focus
+   └─ doc.selection   ← W3C Selection. 캐럿 = collapsed
 
 낮은 레벨 hook
 ├─ useJson
-├─ useSelection
-└─ useFocus
+└─ useSelection
 
 Core
 ├─ applyPatch / applyOperation
