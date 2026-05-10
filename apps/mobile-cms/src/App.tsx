@@ -264,7 +264,7 @@ export function App() {
   const selectPaletteNode = (node: BlockNode) => {
     setPaletteSelection({ source: "palette", node });
     setClipboard({ node: cloneNode(node), sourceId: node.id });
-    setMessage(`${node.name} is staged. Select a slot and press Ctrl/Cmd+V.`);
+    setMessage(`${node.name} is staged. Select a slot and press V.`);
   };
 
   const resetPage = () => {
@@ -449,7 +449,7 @@ function BlockView(props: {
     >
       <div className="block-toolbar">
         <span>{node.name}</span>
-        <kbd>{verdict?.ok ? "Ctrl+V" : "Ctrl+C"}</kbd>
+        <kbd>{verdict?.ok ? "V" : "C"}</kbd>
       </div>
       <BlockContent node={node} />
       {node.children && node.children.length > 0 && (
