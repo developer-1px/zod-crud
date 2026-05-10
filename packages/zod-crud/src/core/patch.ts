@@ -274,44 +274,56 @@ function applyOpRaw(state: unknown, op: JsonPatchOperation): { state: unknown } 
   }
 }
 
-// 단일 op. Schema 검증 포함.
+export interface ApplyResult<S extends z.ZodType> {
+  state: z.output<S>;
+  result: JsonResult;
+  applied: ReadonlyArray<JsonPatchOperation>;
+}
+
+const EMPTY_APPLIED: ReadonlyArray<JsonPatchOperation> = Object.freeze([]);
+
+// 단일 op. Schema 검증 포함. SPEC §5.3.
 export function applyOperation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   op: JsonPatchOperation,
-): { state: z.output<S>; result: JsonResult } {
+): ApplyResult<S> {
   const r = applyOpRaw(state, op);
   if ("error" in r) {
-    return { state, result: fail(r.error, r.reason, r.pointer) };
+    return { state, result: fail(r.error, r.reason, r.pointer), applied: EMPTY_APPLIED };
   }
   if (op.op === "test") {
-    return { state, result: ok };
+    return { state, result: ok, applied: [op] };
   }
   const parsed = schema.safeParse(r.state);
   if (!parsed.success) {
-    return { state, result: fail("schema_violation", parsed.error.message) };
+    return { state, result: fail("schema_violation", parsed.error.message), applied: EMPTY_APPLIED };
   }
-  return { state: parsed.data as z.output<S>, result: ok };
+  return { state: parsed.data as z.output<S>, result: ok, applied: [op] };
 }
 
-// Batch (RFC 6902 §3): atomic. 한 op 실패 시 전체 롤백. Schema 검증은 끝에서 1회.
+// Batch (RFC 6902 §3): atomic. 한 op 실패 시 전체 롤백. Schema 검증은 끝에서 1회. SPEC §5.3.
 export function applyPatch<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JsonPatchOperation>,
-): { state: z.output<S>; result: JsonResult } {
+): ApplyResult<S> {
   let cur: unknown = state;
   for (let i = 0; i < ops.length; i++) {
     const op = ops[i]!;
     const r = applyOpRaw(cur, op);
     if ("error" in r) {
-      return { state, result: fail(r.error, r.reason ? `op[${i}]: ${r.reason}` : `op[${i}]`, r.pointer) };
+      return {
+        state,
+        result: fail(r.error, r.reason ? `op[${i}]: ${r.reason}` : `op[${i}]`, r.pointer),
+        applied: EMPTY_APPLIED,
+      };
     }
     cur = r.state;
   }
   const parsed = schema.safeParse(cur);
   if (!parsed.success) {
-    return { state, result: fail("schema_violation", parsed.error.message) };
+    return { state, result: fail("schema_violation", parsed.error.message), applied: EMPTY_APPLIED };
   }
-  return { state: parsed.data as z.output<S>, result: ok };
+  return { state: parsed.data as z.output<S>, result: ok, applied: ops };
 }

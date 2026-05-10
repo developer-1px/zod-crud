@@ -6,19 +6,29 @@
 
 ## 0. 헌장 (Charter)
 
-zod-crud는 **Zod schema로 보호되는 JSON tree 라이브러리**다. editor 아님, 폼 라이브러리 아님, UI 라이브러리 아님.
+zod-crud는 **Zod schema로 보호되는 JSON tree 라이브러리 + RFC 표준 위에 구축된 editor abstraction**이다. UI 렌더링·폼 라이브러리·DOM 이벤트는 아니다. tree 위 좌표(selection, focus, clipboard buffer)는 라이브러리 책임이다.
 
-### 0.1 절대 원칙 — 깨지 못함
+### 0.1 절대 원칙 — Axis 1 (Data Substrate)
 
-다음 원칙은 30년 호환을 위해 **편의보다 우선한다.**
+다음 원칙은 30년 호환을 위해 **편의보다 우선한다.** state·action·change·history 는 모두 이 축 위에서 정의된다.
 
 1. **JSON-Only State** — state·action·change는 100% JSON (ECMA-404). function·Symbol·Date·Map·Set·class instance·undefined 0개. `JSON.parse(JSON.stringify(x))`가 항상 round-trip.
 2. **표준 Path 단일 정본** — path 표현은 **RFC 6901 JSON Pointer** 한 가지. 편의 형식(dotted, bracket, array shorthand) 0개.
 3. **표준 Operation 단일 정본** — 변경은 **RFC 6902 JSON Patch** 6 op 그대로. 추가 op 0개.
-4. **Pure Core** — 모든 mutation은 `(state, op) → { state, result }` 순수함수. side effect 0, instance 0, dispatch 0.
-5. **React 의존 = hook 1개** — 코어는 React 없이 동작. hook은 코어 위 어댑터.
+4. **Pure Core** — 모든 mutation은 `(state, op) → { state, result, applied }` 순수함수. side effect 0, instance 0, dispatch 0.
+5. **코어 데이터 hook = 1개** — Axis 1 코어는 React 없이 동작. React 진입점은 `useJson` 1개. Axis 2 의 부가 hook 들은 별도 sibling.
 
-위 5개는 라이브러리 정체성이며 후속 결정의 기각 사유로 사용된다.
+### 0.2 절대 원칙 — Axis 2 (Editor Abstractions)
+
+Editor에서 쓰이는 tree 좌표는 라이브러리가 표준 어휘로 제공한다. UI 렌더링은 사용자 책임이지만 좌표 모델은 정본화한다.
+
+6. **모든 좌표 = RFC 6901 Pointer** — selection·focus·clipboard sources 모두 Pointer. `NodeId` 같은 내부 식별자 0.
+7. **모든 좌표 상태 = JSON 직렬화 가능** — selection·focus·clipboard buffer 모두 `JSON.stringify` round-trip. (collaborative cursor·SSR hydration·postMessage 무료)
+8. **WAI-ARIA 어휘 정합** — selection mode (`single`/`multiple`/`extended`), focus 단일 활성 좌표(`aria-activedescendant` 의미), per-item selected 상태(`aria-selected` 의미). ARIA 패턴(Listbox·Tree·Grid·TreeGrid)에서 정의된 의미만 차용한다.
+9. **자동 추적** — RFC 6902 op 적용 시 selection·focus 가 자동으로 추종한다 (이동·제거·삽입 따라 Pointer 갱신·소실). 사용자가 wiring 0.
+10. **Axis 2 hook 별도, opt-in** — `useSelection`·`useFocus`·`useClipboard` 는 별도 hook. 미사용 시 tree-shake 로 비용 0.
+
+위 10개 원칙은 라이브러리 정체성이며 후속 결정의 기각 사유로 사용된다.
 
 ---
 
@@ -212,16 +222,19 @@ export function applyOperation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   op: JsonPatchOperation,
-): { state: z.output<S>; result: JsonResult };
+): { state: z.output<S>; result: JsonResult; applied: JsonPatchOperation[] };
 
 export function applyPatch<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   ops: JsonPatchOperation[],
-): { state: z.output<S>; result: JsonResult };
+): { state: z.output<S>; result: JsonResult; applied: JsonPatchOperation[] };
 ```
 
 순수함수. React 의존 0. 어떤 환경에서도 import 가능 (서버, Worker, 다른 framework).
+
+`applied` 는 실제로 commit 된 op 목록. 성공 시 입력 ops 와 동일, 실패 시 빈 배열 (G8 atomicity).
+Axis 2 hook 들은 이 배열을 보고 selection·focus·clipboard 를 자동 추적한다 (§0.2 (9)).
 
 ### 5.4 Pointer 타입 추론
 
@@ -252,6 +265,91 @@ export function escapeSegment(s: string): string;           // ~ → ~0, / → ~
 ```
 
 내부 정본은 segment 배열이지만 **외부 API 전체가 Pointer string**이라 사용자는 이 헬퍼 없이도 라이브러리 사용 가능.
+
+### 5.7 `useSelection` — Selection state hook (Axis 2)
+
+```ts
+export function useSelection<T>(
+  ops: JsonOps<T>,
+  options?: UseSelectionOptions,
+): SelectionState<T>;
+
+export interface UseSelectionOptions {
+  mode?: "single" | "multiple" | "extended";  // ARIA Listbox/Tree/Grid 어휘. 기본 "single"
+  initial?: Pointer[];
+}
+
+export interface SelectionState<T> {
+  values: ReadonlyArray<Pointer>;
+  anchor: Pointer | null;     // extended 모드의 range 시작점
+  focus: Pointer | null;       // extended 모드의 range 끝점 (= 활성 좌표)
+  has(pointer: Pointer): boolean;
+  set(pointers: Pointer[]): void;
+  add(pointer: Pointer): void;
+  remove(pointer: Pointer): void;
+  toggle(pointer: Pointer): void;
+  clear(): void;
+  range(anchor: Pointer, focus: Pointer): void;  // anchor → focus 사이 모두 선택 (extended)
+}
+```
+
+Axis 1 op 적용 시 자동 추적: `add` 는 인덱스 shift, `remove` 는 cascading drop, `move` 는 좌표 이동 (§0.2 (9)).
+
+### 5.8 `useFocus` — 단일 활성 좌표 hook (Axis 2)
+
+```ts
+export function useFocus<T>(
+  ops: JsonOps<T>,
+  options?: UseFocusOptions<T>,
+): FocusState<T>;
+
+export interface UseFocusOptions<T> {
+  initial?: Pointer | null;
+  filter?: (state: T, pointer: Pointer) => boolean;          // 후보 좌표 필터
+  recover?: (state: T, removed: Pointer) => Pointer | null;  // 제거 시 복구 위치 계산
+}
+
+export interface FocusState<T> {
+  value: Pointer | null;       // aria-activedescendant 의미
+  set(pointer: Pointer | null): void;
+  clear(): void;
+}
+```
+
+### 5.9 `useClipboard` — copy / cut / paste hook (Axis 2)
+
+```ts
+export function useClipboard<T>(
+  ops: JsonOps<T>,
+  options?: UseClipboardOptions,
+): ClipboardState<T>;
+
+export interface UseClipboardOptions {
+  initial?: ClipboardSnapshot;
+}
+
+export type ClipboardMode = "empty" | "copy" | "cut";
+
+export interface ClipboardSnapshot {
+  mode: ClipboardMode;
+  values: ReadonlyArray<unknown>;
+  sources: ReadonlyArray<Pointer>;
+}
+
+export interface ClipboardState<T> extends ClipboardSnapshot {
+  copy(sources: ReadonlyArray<Pointer>): void;
+  cut(sources: ReadonlyArray<Pointer>): void;
+  paste(target: Pointer): JsonResult;
+  clear(): void;
+}
+```
+
+`paste` 의미:
+- `mode === "copy"` → `target` 위치에 `add` (sources 가 다중이면 batch)
+- `mode === "cut"` → sources 를 `move` 로 target 으로 이동. paste 후 `mode = "empty"` (1회용)
+- `target` 이 array 의 `/-` 이면 끝에 append, `/N` 이면 N 위치에 insert
+
+paste 가 RFC 6902 batch 로 표현되므로 G8 atomicity 그대로 보장.
 
 ---
 
@@ -316,16 +414,26 @@ export class JsonCrudError extends Error {
 
 ## 8. 비-목표 (Non-Goals)
 
-다음은 **본 라이브러리가 의도적으로 다루지 않는다.** 사용자 layer 또는 별도 패키지의 책임.
+다음은 **본 라이브러리가 의도적으로 다루지 않는다.** 사용자 layer 책임.
 
-- UI 컴포넌트, 렌더링, 스타일
+- UI 컴포넌트, 렌더링, 스타일, CSS
 - Form 통합 (`<input name=...>`, validation messages)
-- Selection model, focus management, keyboard navigation
-- Drag and drop
+- Keyboard navigation 의 키 매핑 (Shift+Click·Cmd+A 등 의 의미는 §0.2 선언, 키 이벤트 → 의미 매핑은 사용자)
+- Drag and drop 의 DOM 이벤트 처리 (drop 시 어떤 op 를 보낼지는 사용자)
 - Multi-user CRDT, OT, conflict resolution (단, RFC 6902 patch 교환은 지원)
 - 네트워크 sync, persistence backend
-- Lock / region / dirty tracking (UI 책임)
+- Lock / region / dirty tracking
 - Tree-shape 변형 (wrap/unwrap/indent/outdent/split/join — 이것들은 RFC 6902 op 조합으로 사용자가 직접 구성)
+
+## 8.5 라이브러리 책임 (정본 — §0.2)
+
+다음은 **본 라이브러리가 책임진다.** SPEC §0.2 의 Axis 2 헌장에 의해 락인됨.
+
+- Selection model (Pointer 집합, single/multiple/extended 모드, anchor/focus, range 선택)
+- Focus model (단일 활성 좌표, filter/recover)
+- Clipboard model (copy/cut buffer + paste semantics, RFC 6902 batch 생성)
+- 좌표 자동 추적 (RFC 6902 op 적용 시 selection·focus·clipboard sources 가 추종)
+- 직렬화 (모든 좌표 상태가 JSON.stringify round-trip)
 
 ---
 

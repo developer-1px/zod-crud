@@ -1,11 +1,17 @@
 // zod-crud — canonical public surface.
 // 정본: SPEC.md §5. 변경 시 SPEC.md를 먼저 갱신할 것.
 
+// Axis 1 — Data substrate
 export { useJson, JsonCrudError } from "./useJson.js";
-export type { JsonOps, UseJsonOptions } from "./useJson.js";
+export type { JsonOps, UseJsonOptions, JsonChangeListener } from "./useJson.js";
 
 export { applyOperation, applyPatch } from "./core/patch.js";
-export type { JsonPatchOperation, JsonResult, ErrorCode } from "./core/patch.js";
+export type {
+  JsonPatchOperation,
+  JsonResult,
+  ErrorCode,
+  ApplyResult,
+} from "./core/patch.js";
 
 export {
   parsePointer,
@@ -18,3 +24,24 @@ export type { Pointer } from "./core/pointer.js";
 export type { PointerOf, ValueAt } from "./core/path-types.js";
 
 export { serialize, parse, safeParse } from "./core/serialize.js";
+
+// Axis 2 — Editor abstractions (SPEC §0.2 / §5.7-§5.9)
+export { useSelection } from "./useSelection.js";
+export type {
+  SelectionMode,
+  SelectionState,
+  UseSelectionOptions,
+} from "./useSelection.js";
+
+export { useFocus } from "./useFocus.js";
+export type { FocusState, UseFocusOptions } from "./useFocus.js";
+
+export { useClipboard } from "./useClipboard.js";
+export type {
+  ClipboardMode,
+  ClipboardSnapshot,
+  ClipboardState,
+  UseClipboardOptions,
+} from "./useClipboard.js";
+
+export { trackPointer, trackPointers } from "./core/track.js";
