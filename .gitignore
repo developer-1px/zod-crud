@@ -6,3 +6,4 @@ apps/*/dist/
 apps/*/coverage/
 *.tgz
 *.tsbuildinfo
+.claude/scheduled_tasks.lock
