@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
 
-import { createJsonCrud } from "../src/index.js";
+import { createJsonCrud, type JsonValue } from "../src/index.js";
 
 const ArrayDocSchema = z.array(z.union([z.array(z.union([z.string(), z.number()])), z.string(), z.number()]));
 
-const NestedSchema: z.ZodType<unknown> = z.lazy(() =>
+const NestedSchema: z.ZodType<JsonValue> = z.lazy(() =>
   z.union([
     z.string(),
     z.number(),
@@ -14,7 +14,7 @@ const NestedSchema: z.ZodType<unknown> = z.lazy(() =>
     z.array(NestedSchema),
     z.record(z.string(), NestedSchema),
   ]),
-) as z.ZodType<unknown>;
+) as z.ZodType<JsonValue>;
 
 describe("tree-shape: wrap / unwrap", () => {
   it("wrap puts node into a single-key object", () => {

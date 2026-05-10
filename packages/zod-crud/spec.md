@@ -6,18 +6,24 @@ first or explicitly mark the implementation as out of spec.
 
 ## Product Contract
 
-`zod-crud` is a flat JSON CRUD core guarded by a Zod schema.
+`zod-crud` is a schema-guarded document operation engine for flat JSON CRUD.
 
-`JsonCrud` stores parsed JSON as a flat node table, exposes CRUD, clipboard, and
-history operations over node ids, and commits only mutations that keep the full
-document valid under the root schema.
+The core state is a fully serializable JSON-compatible value. Runtime-only
+dependencies such as Zod schemas, callbacks, subscribers, and React state live
+outside that state in a context, facade, or hook.
+
+`JsonCrud` is the compatibility facade over this engine. It stores parsed JSON
+as a flat node table, exposes CRUD, clipboard, and history operations over node
+ids, and commits only mutations that keep the full document valid under the root
+schema.
 
 ```txt
 input JSON
   -> root schema safeParse()
   -> parsed JSON output
   -> serialize() into JsonDoc
-  -> node-id CRUD / clipboard / undo / redo
+  -> serializable JsonCrudState
+  -> serializable command / event / change history
   -> candidate JsonDoc
   -> deserialize()
   -> root schema safeParse()
@@ -27,6 +33,20 @@ input JSON
 
 ## Core Invariants
 
+- Core state, commands, operation results, events, and history entries must be
+  JSON-serializable. They must round-trip through `JSON.stringify` and
+  `JSON.parse` without losing semantic meaning.
+- Pure dispatch failures must summarize validation errors as serializable
+  fields such as `code`, `reason`, `nodeId`, and `path`; they must not expose
+  `ZodError` objects in the dispatch result.
+- Core state must not contain Zod schema instances, functions, closures,
+  subscribers, Promises, `Map`, `Set`, class instances, symbols, or `undefined`
+  as a meaningful value.
+- Schema and callback dependencies belong to runtime context, not state. The
+  context may contain non-serializable values such as a Zod schema,
+  `focusFilter`, or `defaultFor`.
+- Given the same serializable state, command, and runtime context, the core
+  reducer must produce the same serializable next state and result.
 - Every committed document must deserialize to JSON that passes the root Zod
   schema.
 - The parsed schema output must be JSON-identical to the stored JSON. If Zod
@@ -45,6 +65,104 @@ input JSON
   the committed operation delta, not a full document snapshot.
 - Read-only methods such as `read`, `snapshot`, `pathOf`, `find`, `toJson`, and
   standalone `deserialize` may throw for malformed docs or invalid ids.
+
+## Serializable Engine Model
+
+The pure engine is organized around serializable data:
+
+```ts
+type JsonCrudState = {
+  doc: JsonDoc;
+  nextNodeIndex: number;
+  revision: string | number | null;
+  history: JsonCrudHistoryState;
+  clipboard: JsonCrudClipboardState;
+  locks: NodeId[];
+  savedDoc: JsonDoc | null;
+};
+
+type JsonCrudCommand = {
+  type: string;
+  // command-specific JSON-compatible fields
+};
+
+type JsonCrudEvent = {
+  id: string | null;
+  actorId: string | null;
+  command: JsonCrudCommand;
+  changes: JsonChange[];
+  inverseChanges: JsonChange[];
+  beforeRevision: string | number | null;
+  afterRevision: string | number | null;
+  timestamp: number | null;
+};
+```
+
+`JsonCrudState` is durable application state. It may be saved to disk, sent over
+a worker boundary, included in a test fixture, or handed to an external store.
+It must not depend on object identity or closures.
+
+`JsonCrudCommand` is the serializable user or system intent. It is suitable for
+local dispatch, remote control, or operation replay.
+
+`JsonCrudEvent` is the accepted operation log entry. It records the command,
+forward changes, inverse changes, actor metadata, and revision metadata needed
+by future concurrency or CRDT adapters.
+
+Runtime context is separate:
+
+```ts
+type JsonCrudContext = {
+  schema: z.ZodType<JsonValue>;
+  childKeys: string[];
+  focusFilter?: (doc: JsonDoc, candidateId: NodeId) => boolean;
+  defaultFor?: (parentPath: JsonPath) => JsonValue;
+};
+```
+
+Context is allowed to contain non-serializable dependencies because it is not
+stored in `JsonCrudState`, history, commands, or events.
+
+The target reducer shape is:
+
+```txt
+dispatchJsonCrudCommand(state, command, context)
+  validate command against current state and context
+  compute candidate state without mutating input state
+  validate candidate document against root schema exactness
+  compute forward changes and inverse changes
+  append or move history entries when the command is accepted
+  return { ok: true, state: nextState, result, event }
+or
+  return { ok: false, state: originalState, result }
+```
+
+Command failure is atomic: failed commands return the original state object
+semantics. Implementations may clone internally, but the observable returned
+state must be equivalent to the input state.
+
+Focus is view policy, not durable engine state. Core results may expose
+`focusNodeId` and `focusNodeIds` for compatibility, but long-term replay and
+remote synchronization must rely on commands, events, and changes rather than
+focus metadata.
+
+### Undo and Remote Intent
+
+Undo is modeled as an inverse operation for a local actor's accepted event, not
+as a blind restoration of a previous whole-document snapshot.
+
+This matters for future collaboration:
+
+- Remote events may be applied between a local command and local undo.
+- Local undo should target the actor's most recent undoable intent.
+- The undo history entry must include `inverseChanges` so an adapter can attempt
+  inverse application against the current document.
+- Whole-document snapshots may be retained for compatibility, but the durable
+  contract is event and change based.
+
+CRDT behavior is out of scope for the core package. The core package must avoid
+blocking a CRDT adapter by keeping commands, events, state, and history fully
+serializable and deterministic.
 
 ## Data Model
 

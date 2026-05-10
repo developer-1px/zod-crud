@@ -26,13 +26,27 @@ nested JSON
 Every JSON value is a node. Object fields, array items, primitives, and the root
 all have `NodeId`s. UI state should prefer `NodeId` over long-lived JSON paths.
 
+The long-term core model is a serializable operation engine:
+
+```txt
+schema + initial JSON
+  -> createJsonCrudState(schema, initial)
+  -> JSON-compatible JsonCrudState
+  -> dispatchJsonCrudCommand(state, command, context)
+  -> JSON-compatible commands / events / history
+```
+
+Do not put Zod schemas, callbacks, subscribers, `Map`, `Set`, class instances,
+or closures into `JsonCrudState`. Runtime dependencies belong in context,
+React hooks, or compatibility facades.
+
 ## Public API
 
 Import from the package root only:
 
 ```ts
-import { createJsonCrud, serialize, deserialize, getPath } from "zod-crud";
-import type { JsonCrud, JsonDoc, JsonValue, OperationResult } from "zod-crud";
+import { createJsonCrud, createJsonCrudState, dispatchJsonCrudCommand, serialize, deserialize, getPath } from "zod-crud";
+import type { JsonCrud, JsonCrudState, JsonDoc, JsonValue, OperationResult } from "zod-crud";
 ```
 
 The package is ESM-only. Do not generate `require("zod-crud")` examples.

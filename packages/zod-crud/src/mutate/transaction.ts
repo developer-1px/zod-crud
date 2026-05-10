@@ -25,7 +25,7 @@ import {
   type MutationsCtx,
 } from "./mutations.js";
 import { planMoveBeside, planMoveInto, type MoveCtx } from "./move.js";
-import { planDeleteMany } from "./delete-many.js";
+import { planDeleteMany, type DeleteManyPlan } from "./delete-many.js";
 import type { LockedRegion } from "../locked-region.js";
 import type { MovePlan } from "./move-plan.js";
 
@@ -52,6 +52,7 @@ export type TransactionDeps<T extends JsonValue> = {
 
 type AnyPlan =
   | MutationPlan
+  | DeleteManyPlan
   | (MovePlan | Extract<OperationResult, { ok: false }>);
 
 export function transact<T extends JsonValue, R>(

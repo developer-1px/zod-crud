@@ -140,6 +140,43 @@ const json = editor.toJson();
 unsubscribe();
 ```
 
+## Serializable Engine State
+
+`createJsonCrudState(schema, initialValue)` creates the durable engine state
+without constructing a mutable editor instance. `dispatchJsonCrudCommand()`
+applies serializable commands to that state. The returned state is plain JSON
+data: it contains the flat document, allocator cursor, clipboard, history,
+locks, revision, and saved snapshot, but never the Zod schema, callbacks, or
+subscribers.
+
+```ts
+import * as z from "zod";
+import { createJsonCrudState, dispatchJsonCrudCommand } from "zod-crud";
+
+const schema = z.object({
+  title: z.string(),
+});
+
+const state = createJsonCrudState(schema, {
+  title: "Draft",
+});
+
+const next = dispatchJsonCrudCommand(state, {
+  type: "update",
+  nodeId: state.doc.rootId,
+  value: { title: "Published" },
+}, {
+  schema,
+  childKeys: ["children"],
+});
+
+const restored = JSON.parse(JSON.stringify(next.state));
+```
+
+This is the migration path toward pure command dispatch, replayable history,
+and future collaboration adapters. The existing `createJsonCrud()` facade
+remains the compatibility API for current consumers.
+
 ## API Reference
 
 ### `createJsonCrud(schema, initialValue, options?)`

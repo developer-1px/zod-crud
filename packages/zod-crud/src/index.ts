@@ -1,6 +1,12 @@
 export {
   createJsonCrud,
 } from "./json-crud.js";
+export {
+  createJsonCrudState,
+} from "./state/json-crud-state.js";
+export {
+  dispatchJsonCrudCommand,
+} from "./state/json-crud-dispatch.js";
 
 export { deserialize, serialize } from "./document/json-doc-serialization.js";
 export { getPath } from "./document/json-doc-access.js";
@@ -25,4 +31,18 @@ export type {
   OperationFailureCode,
   OperationResult,
   PasteMode,
+  JsonCrudClipboardState,
+  JsonCrudCommand,
+  JsonCrudContext,
+  JsonCrudDispatchFailure,
+  JsonCrudDispatchResult,
+  JsonCrudDispatchSuccess,
+  JsonCrudEvent,
+  JsonCrudHistoryEntry,
+  JsonCrudHistoryState,
+  JsonCrudOptionalValue,
+  JsonCrudRevision,
+  JsonCrudSerializableOperationFailure,
+  JsonCrudSerializableOperationResult,
+  JsonCrudState,
 } from "./types.js";

@@ -76,19 +76,29 @@ try {
     join(workspace, "smoke.mjs"),
     [
       'import * as z from "zod";',
-      'import { createJsonCrud } from "zod-crud";',
+      'import { createJsonCrud, createJsonCrudState, dispatchJsonCrudCommand } from "zod-crud";',
       'const editor = createJsonCrud(z.object({ name: z.string() }), { name: "ok" });',
       'if (editor.toJson().name !== "ok") throw new Error("runtime import failed");',
+      'const schema = z.object({ name: z.string() });',
+      'const state = createJsonCrudState(schema, { name: "ok" });',
+      'if (JSON.parse(JSON.stringify(state)).doc.rootId !== state.doc.rootId) throw new Error("state import failed");',
+      'const dispatched = dispatchJsonCrudCommand(state, { type: "update", nodeId: state.doc.rootId, value: { name: "next" } }, { schema, childKeys: ["children"] });',
+      'if (!dispatched.ok) throw new Error("dispatch import failed");',
     ].join("\n"),
   );
   await writeFile(
     join(workspace, "smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { createJsonCrud, type JsonValue } from "zod-crud";',
+      'import { createJsonCrud, createJsonCrudState, dispatchJsonCrudCommand, type JsonCrudState, type JsonValue } from "zod-crud";',
       'const value: JsonValue = { name: "ok" };',
       'const editor = createJsonCrud(z.object({ name: z.string() }), value);',
       'editor.toJson().name satisfies string;',
+      'const schema = z.object({ name: z.string() });',
+      'const state: JsonCrudState = createJsonCrudState(schema, value);',
+      'state.doc.rootId satisfies string;',
+      'const dispatched = dispatchJsonCrudCommand(state, { type: "update", nodeId: state.doc.rootId, value }, { schema, childKeys: ["children"] });',
+      'dispatched.state.doc.rootId satisfies string;',
     ].join("\n"),
   );
 
