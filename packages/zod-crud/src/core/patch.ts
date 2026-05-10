@@ -65,22 +65,21 @@ function parseArrayIndex(seg: string): number | null {
   return Number(seg);
 }
 
-function getValueAt(state: unknown, segments: string[]): { ok: true; value: unknown } | { ok: false; code: ErrorCode; reason?: string } {
+function getValueAt(state: unknown, segments: string[]): { ok: true; value: unknown } | { ok: false; error: ErrorCode; reason: string } {
   let cur: unknown = state;
   for (let i = 0; i < segments.length; i++) {
     const seg = segments[i]!;
-    if (cur === null || cur === undefined) return { ok: false, code: "path_not_found", reason: `segment ${i}: ${seg}` };
+    const fail = (reason: string) => ({ ok: false as const, error: "path_not_found" as ErrorCode, reason });
+    if (cur === null || cur === undefined) return fail(`segment ${i}: ${seg}`);
     if (Array.isArray(cur)) {
       const idx = parseArrayIndex(seg);
-      if (idx === null || idx === -1 || idx >= cur.length) return { ok: false, code: "path_not_found", reason: `segment ${i}: ${seg}` };
+      if (idx === null || idx === -1 || idx >= cur.length) return fail(`segment ${i}: ${seg}`);
       cur = cur[idx];
     } else if (typeof cur === "object") {
-      if (!Object.prototype.hasOwnProperty.call(cur, seg)) {
-        return { ok: false, code: "path_not_found", reason: `segment ${i}: ${seg}` };
-      }
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) return fail(`segment ${i}: ${seg}`);
       cur = (cur as Record<string, unknown>)[seg];
     } else {
-      return { ok: false, code: "path_not_found", reason: `segment ${i}: not a container` };
+      return fail(`segment ${i}: not a container`);
     }
   }
   return { ok: true, value: cur };
@@ -211,65 +210,47 @@ function applyOpRaw(state: unknown, op: JsonPatchOperation): { state: unknown } 
     return { error: "invalid_pointer", reason: `missing 'from' for op '${opName}'` };
   }
 
-  let segments: string[];
-  try {
-    segments = parsePointer(op.path);
-  } catch (e) {
-    if (e instanceof PointerSyntaxError) return { error: "invalid_pointer", reason: e.message, pointer: op.path };
-    throw e;
-  }
+  const parsed = parseSafe(op.path);
+  if ("error" in parsed) return parsed;
+  const segments = parsed.segs;
 
   switch (op.op) {
     case "add": {
       if (segments.length === 0) return { state: op.value };
-      const r = withMutated(state, segments, (parent, key) => setAtParent(parent, key, op.value));
+      const r = withMutated(state, segments, (p, k) => mutateContainer(p, k, "set", op.value));
       return "error" in r ? attachPointer(r, op.path) : r;
     }
     case "replace": {
       if (segments.length === 0) return { state: op.value };
-      const r = withMutated(state, segments, (parent, key) => replaceAtParent(parent, key, op.value));
+      const r = withMutated(state, segments, (p, k) => mutateContainer(p, k, "replace", op.value));
       return "error" in r ? attachPointer(r, op.path) : r;
     }
     case "remove": {
       if (segments.length === 0) return { error: "path_not_found", reason: "cannot remove root", pointer: op.path };
-      const r = withMutated(state, segments, (parent, key) => removeAtParent(parent, key));
+      const r = withMutated(state, segments, (p, k) => mutateContainer(p, k, "remove"));
       return "error" in r ? attachPointer(r, op.path) : r;
     }
     case "test": {
       const got = getValueAt(state, segments);
-      if (!got.ok) return attachPointer({ error: got.code, ...(got.reason !== undefined && { reason: got.reason }) }, op.path);
+      if (!got.ok) return attachPointer(got, op.path);
       if (!deepEqual(got.value, op.value)) return { error: "test_failed", reason: "value mismatch", pointer: op.path };
       return { state };
     }
-    case "copy": {
-      let fromSeg: string[];
-      try {
-        fromSeg = parsePointer(op.from);
-      } catch (e) {
-        if (e instanceof PointerSyntaxError) return { error: "invalid_pointer", reason: e.message, pointer: op.from };
-        throw e;
-      }
-      const got = getValueAt(state, fromSeg);
-      if (!got.ok) return attachPointer({ error: got.code, ...(got.reason !== undefined && { reason: got.reason }) }, op.from);
-      return applyOpRaw(state, { op: "add", path: op.path, value: deepClone(got.value) });
-    }
+    case "copy":
     case "move": {
-      let fromSeg: string[];
-      try {
-        fromSeg = parsePointer(op.from);
-      } catch (e) {
-        if (e instanceof PointerSyntaxError) return { error: "invalid_pointer", reason: e.message, pointer: op.from };
-        throw e;
-      }
-      if (isPrefix(fromSeg, segments) && fromSeg.length <= segments.length) {
-        if (fromSeg.length === segments.length) {
-          // 같은 위치로 move = no-op이지만 RFC상 OK. 그대로 반환.
-          return { state };
-        }
+      const fromParsed = parseSafe(op.from);
+      if ("error" in fromParsed) return fromParsed;
+      const fromSeg = fromParsed.segs;
+      if (op.op === "move" && isPrefix(fromSeg, segments)) {
+        // 자기 자신으로 move = no-op. 자손 path 로 move = 위반.
+        if (fromSeg.length === segments.length) return { state };
         return { error: "move_into_self", reason: "cannot move into own descendant", pointer: op.path };
       }
       const got = getValueAt(state, fromSeg);
-      if (!got.ok) return attachPointer({ error: got.code, ...(got.reason !== undefined && { reason: got.reason }) }, op.from);
+      if (!got.ok) return attachPointer(got, op.from);
+      if (op.op === "copy") {
+        return applyOpRaw(state, { op: "add", path: op.path, value: deepClone(got.value) });
+      }
       const removed = applyOpRaw(state, { op: "remove", path: op.from });
       if ("error" in removed) return removed;
       return applyOpRaw(removed.state, { op: "add", path: op.path, value: got.value });
@@ -283,8 +264,6 @@ export interface ApplyResult<S extends z.ZodType> {
   applied: ReadonlyArray<JsonPatchOperation>;
 }
 
-const EMPTY_APPLIED: ReadonlyArray<JsonPatchOperation> = Object.freeze([]);
-
 // 단일 op. Schema 검증 포함. SPEC §5.3.
 export function applyOperation<S extends z.ZodType>(
   schema: S,
@@ -293,14 +272,14 @@ export function applyOperation<S extends z.ZodType>(
 ): ApplyResult<S> {
   const r = applyOpRaw(state, op);
   if ("error" in r) {
-    return { state, result: fail(r.error, r.reason, r.pointer), applied: EMPTY_APPLIED };
+    return { state, result: fail(r.error, r.reason, r.pointer), applied: [] };
   }
   if (op.op === "test") {
     return { state, result: ok, applied: [op] };
   }
   const parsed = schema.safeParse(r.state);
   if (!parsed.success) {
-    return { state, result: fail("schema_violation", parsed.error.message), applied: EMPTY_APPLIED };
+    return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
   }
   return { state: parsed.data as z.output<S>, result: ok, applied: [op] };
 }
@@ -380,14 +359,14 @@ export function applyPatch<S extends z.ZodType>(
       return {
         state,
         result: fail(r.error, r.reason ? `op[${i}]: ${r.reason}` : `op[${i}]`, r.pointer),
-        applied: EMPTY_APPLIED,
+        applied: [],
       };
     }
     cur = r.state;
   }
   const parsed = schema.safeParse(cur);
   if (!parsed.success) {
-    return { state, result: fail("schema_violation", parsed.error.message), applied: EMPTY_APPLIED };
+    return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
   }
   return { state: parsed.data as z.output<S>, result: ok, applied: ops };
 }

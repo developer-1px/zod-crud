@@ -115,82 +115,46 @@ export function useJsonDocument<S extends z.ZodType>(
   }, [historyLimit, snapSelection]);
 
   const ops = useMemo<JsonOps<z.output<S>>>(() => {
+    // 모든 단일 op 는 patch([op]) 로 환원 — recordHistory 는 한 곳만.
+    const patch: JsonOps<z.output<S>>["patch"] = (operations) => {
+      const before = rawOps.state;
+      const r = rawOps.patch(operations);
+      if (r.ok) recordHistory(before, operations);
+      return r;
+    };
+    // undo/redo 는 entry 의 inverse 또는 forward 를 라이브러리 자체 history 우회로 적용.
+    const restore = (
+      popStack: HistoryEntry[],
+      pushStack: HistoryEntry[],
+      direction: "undo" | "redo",
+    ): boolean => {
+      const e = popStack.pop();
+      if (!e) return false;
+      if (direction === "undo") { e.focusAfter = focusRef.current.value; e.selectionAfter = snapSelection(); }
+      isRestoringRef.current = true;
+      const r = rawOps.patch(direction === "undo" ? e.inverse : e.forward);
+      isRestoringRef.current = false;
+      if (!r.ok) { popStack.push(e); return false; }
+      const target = direction === "undo" ? "Before" : "After";
+      focusRef.current.set(e[`focus${target}`]);
+      selectionRef.current.set(e[`selection${target}`].values);
+      pushStack.push(e);
+      return true;
+    };
     return {
-      add(path, value) {
-        const before = rawOps.state;
-        const r = rawOps.add(path, value);
-        if (r.ok) recordHistory(before, [{ op: "add", path: path as Pointer, value }]);
-        return r;
-      },
-      remove(path) {
-        const before = rawOps.state;
-        const r = rawOps.remove(path);
-        if (r.ok) recordHistory(before, [{ op: "remove", path: path as Pointer }]);
-        return r;
-      },
-      replace(path, value) {
-        const before = rawOps.state;
-        const r = rawOps.replace(path, value);
-        if (r.ok) recordHistory(before, [{ op: "replace", path: path as Pointer, value }]);
-        return r;
-      },
-      move(from, path) {
-        const before = rawOps.state;
-        const r = rawOps.move(from, path);
-        if (r.ok) recordHistory(before, [{ op: "move", from: from as Pointer, path: path as Pointer }]);
-        return r;
-      },
-      copy(from, path) {
-        const before = rawOps.state;
-        const r = rawOps.copy(from, path);
-        if (r.ok) recordHistory(before, [{ op: "copy", from: from as Pointer, path: path as Pointer }]);
-        return r;
-      },
+      add: (path, value) => patch([{ op: "add", path: path as Pointer, value }]),
+      remove: (path) => patch([{ op: "remove", path: path as Pointer }]),
+      replace: (path, value) => patch([{ op: "replace", path: path as Pointer, value }]),
+      move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
+      copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
       test: rawOps.test,
-      patch(operations) {
-        const before = rawOps.state;
-        const r = rawOps.patch(operations);
-        if (r.ok) recordHistory(before, operations);
-        return r;
-      },
-
-      undo() {
-        const e = undoStackRef.current.pop();
-        if (!e) return false;
-        e.focusAfter = focusRef.current.value;
-        e.selectionAfter = snapSelection();
-        isRestoringRef.current = true;
-        const r = rawOps.patch(e.inverse);
-        isRestoringRef.current = false;
-        if (!r.ok) {
-          undoStackRef.current.push(e);
-          return false;
-        }
-        focusRef.current.set(e.focusBefore);
-        selectionRef.current.set(e.selectionBefore.values);
-        redoStackRef.current.push(e);
-        return true;
-      },
-      redo() {
-        const e = redoStackRef.current.pop();
-        if (!e) return false;
-        isRestoringRef.current = true;
-        const r = rawOps.patch(e.forward);
-        isRestoringRef.current = false;
-        if (!r.ok) {
-          redoStackRef.current.push(e);
-          return false;
-        }
-        focusRef.current.set(e.focusAfter);
-        selectionRef.current.set(e.selectionAfter.values);
-        undoStackRef.current.push(e);
-        return true;
-      },
-      canUndo() { return undoStackRef.current.length > 0; },
-      canRedo() { return redoStackRef.current.length > 0; },
-
-      load(v) { undoStackRef.current = []; redoStackRef.current = []; return rawOps.load(v); },
-      reset(v) { undoStackRef.current = []; redoStackRef.current = []; rawOps.reset(v); },
+      patch,
+      undo: () => restore(undoStackRef.current, redoStackRef.current, "undo"),
+      redo: () => restore(redoStackRef.current, undoStackRef.current, "redo"),
+      canUndo: () => undoStackRef.current.length > 0,
+      canRedo: () => redoStackRef.current.length > 0,
+      load: (v) => { undoStackRef.current = []; redoStackRef.current = []; return rawOps.load(v); },
+      reset: (v) => { undoStackRef.current = []; redoStackRef.current = []; rawOps.reset(v); },
       subscribe: rawOps.subscribe,
       get state() { return rawOps.state; },
     };

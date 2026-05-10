@@ -161,55 +161,26 @@ export function extendSelection(ctx: CommandContext, dir: "up" | "down"): void {
 }
 
 // ── focus navigation (DFS visible order) ────────────────────────────────────
+// 모두 같은 패턴: 현 focus + state → 새 좌표 (또는 null = 무동작).
 
-export function focusPrev(ctx: CommandContext): void {
-  const f = ctx.focus.value;
-  if (f === null) {
-    const last = lastVisible(ctx.state);
-    if (last) ctx.focus.set(last);
-    return;
-  }
-  const target = prevVisible(ctx.state, f);
-  if (target) ctx.focus.set(target);
+function navigate(ctx: CommandContext, compute: (state: OutlineNode, f: Pointer | null) => Pointer | null) {
+  const target = compute(ctx.state, ctx.focus.value);
+  if (target !== null) ctx.focus.set(target);
 }
 
-export function focusNext(ctx: CommandContext): void {
-  const f = ctx.focus.value;
-  if (f === null) {
-    const first = firstVisible(ctx.state);
-    if (first) ctx.focus.set(first);
-    return;
-  }
-  const target = nextVisible(ctx.state, f);
-  if (target) ctx.focus.set(target);
-}
+export const focusPrev = (ctx: CommandContext) =>
+  navigate(ctx, (s, f) => f === null ? lastVisible(s) : prevVisible(s, f));
+export const focusNext = (ctx: CommandContext) =>
+  navigate(ctx, (s, f) => f === null ? firstVisible(s) : nextVisible(s, f));
+export const focusFirst = (ctx: CommandContext) => navigate(ctx, (s) => firstVisible(s));
+export const focusLast = (ctx: CommandContext) => navigate(ctx, (s) => lastVisible(s));
+export const focusFirstChild = (ctx: CommandContext) =>
+  navigate(ctx, (s, f) => f === null ? firstVisible(s) : firstChildOf(s, f));
+export const focusParent = (ctx: CommandContext) =>
+  navigate(ctx, (_s, f) => {
+    if (f === null) return null;
+    const p = parentOf(f);
+    // root ("") 은 편집 row 가 아님 (UI 정책) — 거기로 이동 안 함.
+    return p === null || p === "" ? null : p;
+  });
 
-export function focusParent(ctx: CommandContext): void {
-  const f = ctx.focus.value;
-  if (f === null) return;
-  const parent = parentOf(f);
-  // root("") 으로의 이동은 막음 — root 는 편집 row 가 아님 (UI 정책).
-  if (parent === null || parent === "") return;
-  ctx.focus.set(parent);
-}
-
-export function focusFirstChild(ctx: CommandContext): void {
-  const f = ctx.focus.value;
-  if (f === null) {
-    const first = firstVisible(ctx.state);
-    if (first) ctx.focus.set(first);
-    return;
-  }
-  const child = firstChildOf(ctx.state, f);
-  if (child) ctx.focus.set(child);
-}
-
-export function focusFirst(ctx: CommandContext): void {
-  const first = firstVisible(ctx.state);
-  if (first) ctx.focus.set(first);
-}
-
-export function focusLast(ctx: CommandContext): void {
-  const last = lastVisible(ctx.state);
-  if (last) ctx.focus.set(last);
-}
