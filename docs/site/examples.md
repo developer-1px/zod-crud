@@ -1,59 +1,82 @@
-# 예제 읽기
+# Lower-level Hooks
 
-예제는 “완성된 앱”이라기보다 API 사용법을 작게 보여주는 코드입니다. 처음에는 아래 순서로 읽으면 됩니다.
+`useJsonDocument`가 기본 표면입니다. 하지만 필요하면 더 낮은 레벨 hook을 따로 조합할 수 있습니다.
 
-## 1. 첫 patch
+## 전체 그림
 
-::source{path="apps/site/src/examples/snippet-getting-started.ts" title="snippet-getting-started.ts" lines="1-28"}
+```txt
+useJsonDocument
+├─ useJson
+├─ useSelection
+└─ useFocus
+```
 
-React 없이 `applyPatch`를 사용하는 예제입니다. zod-crud의 가장 안쪽 모델을 보여줍니다.
+`useJsonDocument`는 위 hook들을 하나의 `doc` 객체로 묶습니다. 반대로 낮은 레벨 hook을 직접 쓰면 상태 경계를 더 세밀하게 나눌 수 있습니다.
 
-읽을 때는 세 가지만 보면 됩니다.
+## `useJson`
 
-- schema가 먼저 있습니다.
-- state는 plain object입니다.
-- patch는 RFC 6902 operation 배열입니다.
+`useJson`은 문서 값과 편집 작업만 제공합니다.
 
-## 2. BasicCrud
+```ts
+const [value, ops] = useJson(Schema, initial, {
+  history: 50,
+});
+```
+
+반환값은 tuple입니다.
+
+| 값 | 설명 |
+|----|------|
+| `value` | schema-valid JSON 값 |
+| `ops` | 편집 작업 API |
+
+selection과 focus가 필요 없고, 단순한 JSON 편집만 필요하면 `useJson`만으로 충분합니다.
+
+::source{path="packages/zod-crud/src/useJson.ts" title="useJson" lines="21-46"}
+
+## `useSelection`
+
+`useSelection`은 선택 상태만 담당합니다.
+
+```ts
+const [value, ops] = useJson(Schema, initial);
+const selection = useSelection(ops, { mode: "multiple" });
+```
+
+`selection`은 `ops.subscribe`를 통해 commit된 변경을 듣고 Pointer를 따라갑니다.
+
+::source{path="packages/zod-crud/src/useSelection.ts" title="useSelection" lines="9-31"}
+
+## `useFocus`
+
+`useFocus`는 단일 활성 위치를 담당합니다.
+
+```ts
+const focus = useFocus(ops, {
+  initial: "/items/0",
+  recover(state, removed) {
+    return state.items.length > 0 ? "/items/0" : null;
+  },
+});
+```
+
+`filter`로 focus 가능한 위치를 제한하고, `recover`로 삭제 후 복구 위치를 정할 수 있습니다.
+
+::source{path="packages/zod-crud/src/useFocus.ts" title="useFocus" lines="9-20"}
+
+## 언제 lower-level hook을 쓰나요?
+
+| 상황 | 추천 |
+|------|------|
+| 처음 시작하는 앱 | `useJsonDocument` |
+| 값 편집만 필요한 작은 UI | `useJson` |
+| selection/focus를 별도 provider로 나누고 싶음 | `useJson` + `useSelection` + `useFocus` |
+| React 밖에서 patch만 적용 | `applyPatch` |
+
+처음에는 `useJsonDocument`로 시작하고, 실제로 분리할 이유가 생겼을 때 내려오면 됩니다.
+
+## 예제 읽기
+
+기존 작은 예제들은 낮은 레벨 API를 이해하는 데 도움이 됩니다.
 
 ::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx" lines="1-35"}
-
-React에서 `useJson`을 사용하는 가장 작은 예제입니다.
-
-`json`은 화면에 보여줄 값이고, `ops`는 값을 바꾸는 작업입니다. input의 `onChange`에서 `ops.replace`를 호출하는 흐름만 이해하면 됩니다.
-
-## 3. RejectedDrift
-
-::source{path="apps/site/src/examples/RejectedDrift.tsx" title="RejectedDrift.tsx" lines="1-50"}
-
-schema를 깨는 변경이 들어오면 어떻게 실패하는지 보여줍니다.
-
-입문자에게 중요한 포인트는 이것입니다.
-
-> 실패한 변경은 state를 바꾸지 않습니다.
-
-실패를 화면에 보여주고 싶다면 `strict: false`와 `onError`를 함께 씁니다.
-
-## 4. ClipboardArray
-
-::source{path="apps/site/src/examples/ClipboardArray.tsx" title="ClipboardArray.tsx" lines="1-75"}
-
-이 예제 이름에는 Clipboard가 들어 있지만, 현재 public API에 `useClipboard` hook은 없습니다. 예제는 복제와 이동을 JSON Patch operation으로 표현하는 법을 보여줍니다.
-
-| UI에서 부르는 이름 | 실제 operation |
-|--------------------|----------------|
-| duplicate | `copy` |
-| move | `move` |
-| 여러 단계 변경 | `patch` |
-
-이 구분이 중요합니다. UI 용어는 애플리케이션마다 달라도, 데이터 변경은 표준 operation으로 남습니다.
-
-## 예제를 읽는 습관
-
-예제를 볼 때 “컴포넌트 구조”보다 먼저 이 세 가지를 찾으면 이해가 빠릅니다.
-
-1. schema는 무엇인가?
-2. 어떤 Pointer를 쓰는가?
-3. 어떤 operation을 호출하는가?
-
-이 세 가지가 보이면 zod-crud 코드는 대부분 읽을 수 있습니다.
