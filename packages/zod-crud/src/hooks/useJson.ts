@@ -6,13 +6,15 @@ import type * as z from "zod";
 
 import {
   applyOperation,
-  applyPatch,
-  computeInverses,
   type JsonPatchOperation,
   type JsonResult,
 } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type { PointerOf, ValueAt } from "../core/pointer/types.js";
+import { handleResult, JsonCrudError, type ErrorPolicy } from "./json-crud-error.js";
+import { useHistoryDispatch } from "./use-history-dispatch.js";
+
+export { JsonCrudError } from "./json-crud-error.js";
 
 export interface UseJsonOptions {
   history?: number;
@@ -46,25 +48,6 @@ export interface JsonOps<T> {
   readonly state: T;
 }
 
-export class JsonCrudError extends Error {
-  override readonly name = "JsonCrudError";
-  constructor(
-    public readonly op: JsonPatchOperation | "load" | "reset" | "patch",
-    public readonly result: Extract<JsonResult, { ok: false }>,
-  ) {
-    super(`useJson failed: ${result.code}${result.reason ? ` — ${result.reason}` : ""}`);
-  }
-}
-
-declare const process: { env?: { NODE_ENV?: string } } | undefined;
-const isProd = ((): boolean => {
-  try {
-    return typeof process !== "undefined" && process?.env?.NODE_ENV === "production";
-  } catch {
-    return false;
-  }
-})();
-
 const ROOT_REPLACE = (value: unknown): JsonPatchOperation => ({ op: "replace", path: "", value });
 
 export function useJson<S extends z.ZodType>(
@@ -72,8 +55,8 @@ export function useJson<S extends z.ZodType>(
   initial: z.input<S>,
   options: UseJsonOptions = {},
 ): [z.output<S>, JsonOps<z.output<S>>] {
-  const optsRef = useRef(options);
-  optsRef.current = options;
+  const policyRef = useRef<ErrorPolicy>(options);
+  policyRef.current = options;
 
   const [initialParsed] = useState(() => {
     const parsed = schema.safeParse(initial);
@@ -86,74 +69,39 @@ export function useJson<S extends z.ZodType>(
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const historyLimit = options.history ?? 0;
-  // 각 entry = { forward, inverse }. forward 는 redo 시 다시 적용, inverse 는 undo 시 적용.
-  // 적용 순서: forward 는 그대로, inverse 는 그대로 (computeInverses 가 reverse 로 쌓아둠).
-  interface HistoryEntry { forward: JsonPatchOperation[]; inverse: JsonPatchOperation[] }
-  const undoStackRef = useRef<HistoryEntry[]>([]);
-  const redoStackRef = useRef<HistoryEntry[]>([]);
-  const lastDispatchAtRef = useRef<number>(0);
-  const COALESCE_MS = 500;
-
   const listenersRef = useRef<Set<JsonChangeListener>>(new Set());
   const notify = useCallback((applied: ReadonlyArray<JsonPatchOperation>) => {
     if (applied.length === 0) return;
     for (const fn of listenersRef.current) fn(applied);
   }, []);
 
-  const handle = useCallback(
-    (op: JsonPatchOperation | "load" | "reset" | "patch", result: JsonResult): JsonResult => {
-      if (result.ok) return result;
-      const strict = optsRef.current.strict ?? !isProd;
-      if (optsRef.current.onError) {
-        optsRef.current.onError(new JsonCrudError(op, result));
-      }
-      if (strict) {
-        throw new JsonCrudError(op, result);
-      }
-      return result;
-    },
-    [],
-  );
-
-  const dispatch = useCallback(
-    (label: JsonPatchOperation | "patch", ops: ReadonlyArray<JsonPatchOperation>): JsonResult => {
-      const before = stateRef.current;
-      const { state: next, result, applied } = applyPatch(schema, before, ops);
-      if (!result.ok) return handle(label, result);
-      if (next === before) return result;
-
-      if (historyLimit > 0) {
-        const inv = computeInverses(before, applied);
-        if (inv.ok) {
-          const stack = undoStackRef.current;
-          const now = Date.now();
-          const last = stack[stack.length - 1];
-          // 같은 시간 창 안의 입력은 직전 entry 에 합친다 — 빠른 타이핑 = 1 undo.
-          if (last && now - lastDispatchAtRef.current < COALESCE_MS) {
-            last.forward.push(...applied);
-            // inverse 는 이전 inverse 의 앞에 prepend (시간 역순)
-            last.inverse.unshift(...inv.inverses);
-          } else {
-            stack.push({ forward: [...applied], inverse: inv.inverses });
-            if (stack.length > historyLimit) stack.shift();
-          }
-          lastDispatchAtRef.current = now;
-          redoStackRef.current = [];
-        }
-      }
-
-      stateRef.current = next;
-      setState(next);
-      notify(applied);
-      return result;
-    },
-    [schema, historyLimit, handle, notify],
-  );
+  const history = useHistoryDispatch(schema, stateRef, setState, policyRef, options.history ?? 0);
 
   const ops = useMemo<JsonOps<z.output<S>>>(() => {
-    const single = (op: JsonPatchOperation): JsonResult => dispatch(op, [op]);
-    const obj: JsonOps<z.output<S>> = {
+    const dispatch = (label: JsonPatchOperation | "patch", list: ReadonlyArray<JsonPatchOperation>): JsonResult => {
+      const { result, applied } = history.dispatch(label, list);
+      if (result.ok) notify(applied);
+      return result;
+    };
+    const single = (op: JsonPatchOperation) => dispatch(op, [op]);
+
+    const replaceRoot = (label: "load" | "reset", value: unknown): JsonResult => {
+      const parsed = schema.safeParse(value);
+      if (!parsed.success) {
+        return handleResult(policyRef.current, label, {
+          ok: false, code: "schema_violation", reason: parsed.error.message,
+        });
+      }
+      const next = parsed.data as z.output<S>;
+      const replaceOp = ROOT_REPLACE(next);
+      history.clear();
+      stateRef.current = next;
+      setState(next);
+      notify([replaceOp]);
+      return { ok: true };
+    };
+
+    return {
       add(path, value) { return single({ op: "add", path, value }); },
       remove(path) { return single({ op: "remove", path }); },
       replace(path, value) { return single({ op: "replace", path, value }); },
@@ -161,66 +109,27 @@ export function useJson<S extends z.ZodType>(
       copy(from, path) { return single({ op: "copy", from, path }); },
       test(path, value) {
         const r = applyOperation(schema, stateRef.current, { op: "test", path, value });
-        return handle({ op: "test", path, value }, r.result);
+        return handleResult(policyRef.current, { op: "test", path, value }, r.result);
       },
       patch(operations) { return dispatch("patch", operations); },
 
       undo() {
-        const entry = undoStackRef.current.pop();
-        if (!entry) return false;
-        const { state: next, result, applied } = applyPatch(schema, stateRef.current, entry.inverse);
-        if (!result.ok) return false;
-        redoStackRef.current.push(entry);
-        lastDispatchAtRef.current = 0; // 다음 dispatch 는 새 entry 로
-        stateRef.current = next;
-        setState(next);
-        notify(applied);
+        const out = history.applyEntry("undo");
+        if (!out) return false;
+        notify(out.applied);
         return true;
       },
       redo() {
-        const entry = redoStackRef.current.pop();
-        if (!entry) return false;
-        const { state: next, result, applied } = applyPatch(schema, stateRef.current, entry.forward);
-        if (!result.ok) return false;
-        undoStackRef.current.push(entry);
-        lastDispatchAtRef.current = 0;
-        stateRef.current = next;
-        setState(next);
-        notify(applied);
+        const out = history.applyEntry("redo");
+        if (!out) return false;
+        notify(out.applied);
         return true;
       },
-      canUndo() { return undoStackRef.current.length > 0; },
-      canRedo() { return redoStackRef.current.length > 0; },
+      canUndo: history.canUndo,
+      canRedo: history.canRedo,
 
-      load(value) {
-        const parsed = schema.safeParse(value);
-        if (!parsed.success) {
-          return handle("load", { ok: false, code: "schema_violation", reason: parsed.error.message });
-        }
-        const next = parsed.data as z.output<S>;
-        const replaceOp = ROOT_REPLACE(next);
-        undoStackRef.current = [];
-        redoStackRef.current = [];
-        stateRef.current = next;
-        setState(next);
-        notify([replaceOp]);
-        return { ok: true };
-      },
-      reset(value) {
-        const target = value ?? initialRef.current;
-        const parsed = schema.safeParse(target);
-        if (!parsed.success) {
-          handle("reset", { ok: false, code: "schema_violation", reason: parsed.error.message });
-          return;
-        }
-        const next = parsed.data as z.output<S>;
-        const replaceOp = ROOT_REPLACE(next);
-        undoStackRef.current = [];
-        redoStackRef.current = [];
-        stateRef.current = next;
-        setState(next);
-        notify([replaceOp]);
-      },
+      load(value) { return replaceRoot("load", value); },
+      reset(value) { replaceRoot("reset", value ?? initialRef.current); },
 
       subscribe(listener) {
         listenersRef.current.add(listener);
@@ -228,8 +137,7 @@ export function useJson<S extends z.ZodType>(
       },
       get state() { return stateRef.current; },
     };
-    return obj;
-  }, [dispatch, schema, handle, notify]);
+  }, [schema, history, notify]);
 
   return [state, ops];
 }
