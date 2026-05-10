@@ -1,6 +1,9 @@
 // zod-crud — canonical public surface.
 // 정본: SPEC.md §5. 변경 시 SPEC.md를 먼저 갱신할 것.
 // 어휘: ADR-0002 — 편집 어휘 wrapper. Axis 1/2 / "Editor abstractions" 어휘 폐기.
+//
+// Single facade: useJsonDocument. 10 verbs 와 state 가 한 객체에 노출.
+// Headless 사용자: core/* + verbs/* pure 함수 직접 import.
 
 // Identity facade — useJsonDocument (단일 진입점)
 export { useJsonDocument } from "./hooks/useJsonDocument.js";
@@ -10,8 +13,9 @@ export type {
   UseJsonDocumentOptions,
 } from "./hooks/useJsonDocument.js";
 
-// Data substrate — RFC 6901 + 6902
-export { useJson, JsonCrudError } from "./hooks/useJson.js";
+// Data substrate types — useJsonDocument.ops 의 type. JsonCrudError 도 boundary 표면.
+// (useJson 자체는 public surface 에서 제외 — useJsonDocument 가 facade. P7.)
+export { JsonCrudError } from "./hooks/useJson.js";
 export type { JsonOps, UseJsonOptions, JsonChangeListener } from "./hooks/useJson.js";
 
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";
@@ -39,8 +43,8 @@ export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 
 export { serialize, parse, safeParse } from "./core/pointer/serialize.js";
 
-// Selection — W3C Selection API 정합. caret = collapsed selection.
-export { useSelection } from "./hooks/useSelection.js";
+// Selection types — useJsonDocument.selection 의 type. (useSelection hook 자체는
+// public surface 에서 제외 — useJsonDocument 가 facade. P7.)
 export type {
   SelectionMode,
   SelectionType,

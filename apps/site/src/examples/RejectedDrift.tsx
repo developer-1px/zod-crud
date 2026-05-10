@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useJson, type JsonResult } from "zod-crud";
+import { useJsonDocument, type JsonResult } from "zod-crud";
 
 // 의도적으로 까다로운 스키마: 빈 문자열 금지 + 상한 100.
 const Schema = z.object({
@@ -9,7 +9,7 @@ const Schema = z.object({
 });
 
 export function RejectedDrift() {
-  const [json, ops] = useJson(Schema, { count: 7, label: "ok" }, { strict: false });
+  const { value: json, ops } = useJsonDocument(Schema, { count: 7, label: "ok" }, { strict: false });
   const [draft, setDraft] = useState("999");
   const [reason, setReason] = useState<string | null>(null);
 
