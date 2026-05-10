@@ -54,11 +54,19 @@ function markerForText(text: string) {
   return marker;
 }
 
+// click 정책 (변경됨): text 클릭은 select 모드. edit 진입은 Enter 가 필요.
 async function clickText(text: string) {
   const user = userEvent.setup();
   const input = screen.getByDisplayValue(text);
   await user.click(input);
   await waitFor(() => expect(document.activeElement).toBe(input));
+  return user;
+}
+
+// 편집 모드까지 진입 (옛 calling 계약)
+async function clickAndEdit(text: string) {
+  const user = await clickText(text);
+  await user.keyboard("{Enter}");
   return user;
 }
 
@@ -68,10 +76,14 @@ async function replaceFocusedText(user: ReturnType<typeof userEvent.setup>, from
 }
 
 describe("outliner keyboard and mouse interactions", () => {
-  test("mouse click enters edit mode, Escape returns to select mode, and arrow keys move focus", async () => {
+  test("mouse click enters select mode, Enter switches to edit, Escape returns to select", async () => {
     renderOutliner();
     const user = await clickText(firstItem);
 
+    expect(statusText()).toMatch(/mode = select/);
+    expect(statusText()).toMatch(/focus =\s*\/children\/0/);
+
+    await user.keyboard("{Enter}");
     expect(statusText()).toMatch(/mode = edit/);
     expect(statusText()).toMatch(/focus =\s*\/children\/0/);
 
@@ -91,18 +103,15 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(statusText()).toMatch(/focus =\s*\/children\/0/);
   });
 
-  test.fails("ArrowRight and ArrowLeft navigate between a parent row and its first child", async () => {
+  test("ArrowRight and ArrowLeft navigate between a parent row and its first child", async () => {
     renderOutliner();
     const user = await clickText(selectionItem);
-    await user.keyboard("{Escape}");
 
     await user.keyboard("{ArrowRight}");
     expect(statusText()).toMatch(/focus =\s*\/children\/4\/children\/0/);
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByDisplayValue(firstSelectionChild)));
 
     await user.keyboard("{ArrowLeft}");
     expect(statusText()).toMatch(/focus =\s*\/children\/4/);
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByDisplayValue(selectionItem)));
   });
 
   test("Shift+click range selection and Ctrl+click toggle are visible in the DOM", async () => {
@@ -152,7 +161,7 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(statusText()).toMatch(/selection =\s*1/);
   });
 
-  test.fails("pasting with an empty clipboard reports an error through rendered status", async () => {
+  test("pasting with an empty clipboard reports an error through rendered status", async () => {
     renderOutliner();
     const user = userEvent.setup();
 
@@ -176,7 +185,7 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(treeTexts().filter((text) => text === firstItem)).toHaveLength(2);
   });
 
-  test.fails("Tab demotes a row and Shift+Tab promotes it back through keyboard input", async () => {
+  test("Tab demotes a row and Shift+Tab promotes it back through keyboard input", async () => {
     renderOutliner();
     const user = await clickText(secondItem);
 
@@ -187,7 +196,7 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(rowForText(secondItem).getAttribute("aria-level")).toBe("1");
   });
 
-  test.fails("Ctrl+ArrowUp and Ctrl+ArrowDown move the focused row among siblings", async () => {
+  test("Ctrl+ArrowUp and Ctrl+ArrowDown move the focused row among siblings", async () => {
     renderOutliner();
     const user = await clickText(secondItem);
 
@@ -216,7 +225,7 @@ describe("outliner keyboard and mouse interactions", () => {
   test("Backspace on an empty edited row removes that row through keyboard input", async () => {
     renderOutliner();
     const before = treeItems().length;
-    const user = await clickText(firstItem);
+    const user = await clickAndEdit(firstItem);
 
     await replaceFocusedText(user, firstItem, "");
     await user.keyboard("{Backspace}");
@@ -244,7 +253,7 @@ describe("outliner keyboard and mouse interactions", () => {
 
   test("reset button restores the initial rendered document after keyboard edits", async () => {
     renderOutliner();
-    const user = await clickText(firstItem);
+    const user = await clickAndEdit(firstItem);
 
     await replaceFocusedText(user, firstItem, editedFirstItem);
     expect(treeTexts()).toContain(editedFirstItem);

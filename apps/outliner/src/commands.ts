@@ -59,18 +59,24 @@ export function demote(ctx: CommandContext): JsonResult {
   return ctx.ops.patch([{ op: "move", from: p, path: target }]);
 }
 
+// Outline 의 promote: row 를 자기 부모의 sibling 으로 끌어올린다.
+// path 형태: /children/i, /children/i/children/j, /children/i/children/j/children/k …
+// 마지막 2 segment ("children", index) 를 떼면 row 의 부모 OutlineNode pointer.
+// 그 부모를 그 부모의 부모 array 에 sibling 으로 넣는다.
 export function promote(ctx: CommandContext): JsonResult {
   const p = ctx.focus.value;
   if (p === null) return { ok: false, code: "path_not_found" };
-  const parent = parentOf(p);
-  if (parent === null || parent === "") {
+  const segs = p === "" ? [] : p.slice(1).split("/");
+  // depth 1 (= /children/i) 은 이미 top — promote 불가.
+  if (segs.length < 4) {
     return { ok: false, code: "path_not_found", reason: "already at root level" };
   }
-  const parentIdx = lastIndex(parent);
-  if (parentIdx === null) return { ok: false, code: "path_not_found" };
-  const parentParent = parentOf(parent);
-  if (parentParent === null) return { ok: false, code: "path_not_found" };
-  const target = `${parentParent}/${parentIdx + 1}`;
+  // 부모 OutlineNode 의 pointer + 그 OutlineNode 의 index.
+  const ownerSegs = segs.slice(0, -2);
+  const ownerIdx = Number(ownerSegs[ownerSegs.length - 1]);
+  if (!Number.isInteger(ownerIdx)) return { ok: false, code: "path_not_found" };
+  const ownerParent = "/" + ownerSegs.slice(0, -1).join("/");
+  const target = `${ownerParent}/${ownerIdx + 1}`;
   return ctx.ops.patch([{ op: "move", from: p, path: target }]);
 }
 
@@ -108,10 +114,12 @@ export function moveDown(ctx: CommandContext): JsonResult {
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null) return { ok: false, code: "path_not_found" };
-  const parent = parentOf(p);
-  if (parent === null) return { ok: false, code: "path_not_found" };
-  const parentNode = readNode(ctx.state, parent);
-  if (!parentNode || idx >= parentNode.children.length - 1) {
+  // OutlineNode 의 부모 = path 의 마지막 2 segment ("children", index) 제거.
+  const segs = p.slice(1).split("/");
+  const ownerPath = "/" + segs.slice(0, -2).join("/");
+  const owner = ownerPath === "/" ? "" : ownerPath;
+  const siblings = readChildren(ctx.state, owner);
+  if (idx >= siblings.length - 1) {
     return { ok: false, code: "path_not_found", reason: "already last" };
   }
   const target = siblingAt(p, idx + 1);
@@ -129,8 +137,8 @@ export function cut(ctx: CommandContext): void {
   if (targets.length === 0) return;
   if (targets.includes("")) return;
   const sorted = sortDfs(ctx, targets);
-  // 1) 클립보드에 deep clone 저장 (cut 후 원본은 사라지므로 copy 의미와 동등)
-  ctx.clipboard.copy(ctx.state, sorted);
+  // 1) 클립보드 mode = cut (paste 후 자동 비움 — Workflowy/Notion 표준)
+  ctx.clipboard.cut(ctx.state, sorted);
   // 2) 원본 row 즉시 제거 — selection 은 자동 규칙으로 nextSibling/prev/parent 로 회복
   const batch: JsonPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
   ctx.ops.patch(batch);

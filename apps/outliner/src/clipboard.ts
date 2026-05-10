@@ -89,19 +89,9 @@ export function useClipboard(): ClipboardApi {
         return { ok: false, code: "path_not_found", reason: "clipboard is empty" };
       }
       const targets = expandTargets(target, mode, cur.values.length);
-      let batch;
-      if (cur.mode === "copy") {
-        batch = cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: v }));
-      } else {
-        // cut: source 의 현 위치에서 target 으로 move.
-        // 단, source 가 target 보다 먼저 나오면 remove 시 target 인덱스가 한 칸 당겨지므로
-        // 일단 단순한 add(value) + remove(source) batch 로 처리.
-        // (Cut 후 paste 는 1회용 — 정확한 인덱스 보정은 후속 정밀화 대상.)
-        batch = [
-          ...cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: v })),
-          ...cur.sources.slice().reverse().map((s) => ({ op: "remove" as const, path: s })),
-        ];
-      }
+      // cmd.cut 이 원본을 이미 제거했으므로 paste 는 mode 무관 add 만.
+      // mode = cut 일 때만 paste 후 클립보드 비움 (1회용 — Workflowy / Notion 표준).
+      const batch = cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: v }));
       const r = ops.patch(batch);
       if (r.ok && cur.mode === "cut") setSnap(EMPTY);
       return r;

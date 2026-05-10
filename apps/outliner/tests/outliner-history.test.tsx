@@ -36,8 +36,11 @@ async function editFirstItemAndInsertSibling() {
 
   await user.click(firstInput);
   await waitFor(() => expect(document.activeElement).toBe(firstInput));
+  // click 정책 = select 모드 → 편집은 Enter 로 진입
+  await user.keyboard("{Enter}");
   await user.keyboard("{Backspace}".repeat(firstItem.length));
   await user.keyboard(editedFirstItem);
+  // edit 모드의 Enter = insert-sibling
   await user.keyboard("{Enter}");
 
   return user;

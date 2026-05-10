@@ -125,7 +125,7 @@ describe("outliner coverage — keyboard & mouse only", () => {
     expect(treeTexts()).not.toContain(secondItem);
     expect(treeTexts().length).toBe(before - 1);
     // clipboard 가 채워짐 (status 표시: "clipboard = copy 1")
-    expect(statusText()).toMatch(/clipboard =\s*copy\s*1/);
+    expect(statusText()).toMatch(/clipboard =\s*cut\s*1/);
   });
 
   test("Cmd+Shift+V pastes as child of the focused row", async () => {
