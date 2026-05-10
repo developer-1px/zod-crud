@@ -1,132 +1,94 @@
-# 선택, 포커스, 히스토리
+# Patterns
 
-이 페이지는 editor를 만들 때 필요한 두 가지를 설명합니다.
+이 페이지는 zod-crud를 실제 편집기처럼 쓰는 패턴을 보여줍니다. 핵심은 UI 이벤트를 `doc.ops`, `doc.focus`, `doc.selection`, `doc.history`에 연결하는 것입니다.
 
-- selection: 어떤 항목들이 선택되어 있는가
-- focus: 키보드 기준으로 활성인 항목은 무엇인가
+## 패턴 1. 리스트 편집기
 
-그리고 `useJson`의 undo/redo history도 함께 봅니다.
+리스트 편집기는 가장 흔한 시작점입니다.
 
-## 먼저 Pointer로 생각합니다
+| UI 동작 | 연결할 API |
+|---------|------------|
+| input 변경 | `doc.ops.replace(path, value)` |
+| 항목 추가 | `doc.ops.add("/items/-", item)` |
+| 항목 삭제 | `doc.ops.remove("/items/0")` |
+| 항목 이동 | `doc.ops.move(from, path)` |
+| undo | `doc.history.undo()` |
 
-zod-crud에서 선택과 포커스는 DOM node가 아니라 JSON Pointer입니다.
+리스트에서는 index가 바뀌기 쉽습니다. 그래서 selection/focus를 직접 숫자로 들고 있기보다 Pointer로 들고 있는 편이 안전합니다.
 
-```ts
-selection.toggle("/tasks/2");
-focus.set("/tasks/2");
-```
+## 패턴 2. 선택 가능한 리스트
 
-이렇게 해두면 UI를 어떻게 그리든 같은 모델을 쓸 수 있습니다. list, tree, grid, treegrid 모두 “JSON 안의 위치”를 기준으로 연결됩니다.
-
-## `useSelection`
-
-::source{path="packages/zod-crud/src/useSelection.ts" title="useSelection types" lines="9-31"}
-
-가장 단순한 사용법은 다음과 같습니다.
+여러 항목을 선택하려면 selection을 켭니다.
 
 ```ts
-const [json, ops] = useJson(Schema, initial);
-const selection = useSelection(ops, { mode: "multiple" });
-
-selection.toggle("/tasks/0");
-selection.has("/tasks/0");
-selection.clear();
-```
-
-mode는 세 가지입니다.
-
-| mode | 설명 |
-|------|------|
-| `single` | 하나만 선택합니다. 기본값입니다 |
-| `multiple` | 여러 Pointer를 선택할 수 있습니다 |
-| `extended` | anchor/focus를 사용한 range 선택에 맞춥니다 |
-
-`range(anchor, focus)`는 같은 배열 부모 안에 있는 인덱스 범위를 펼칩니다. 예를 들어 `/tasks/1`부터 `/tasks/3`까지 선택하면 `/tasks/1`, `/tasks/2`, `/tasks/3`이 선택됩니다.
-
-## `useFocus`
-
-::source{path="packages/zod-crud/src/useFocus.ts" title="useFocus types" lines="9-20"}
-
-focus는 하나만 존재합니다.
-
-```ts
-const focus = useFocus(ops);
-
-focus.set("/tasks/2");
-focus.clear();
-```
-
-`filter`를 주면 focus 가능한 Pointer를 제한할 수 있습니다.
-
-```ts
-const focus = useFocus(ops, {
-  filter(state, pointer) {
-    return pointer.startsWith("/tasks/");
-  },
+const doc = useJsonDocument(Schema, initial, {
+  selection: { mode: "multiple" },
 });
 ```
 
-`recover`를 주면 포커스된 항목이 삭제됐을 때 다음 위치를 직접 정할 수 있습니다.
+렌더링할 때는 각 항목이 선택됐는지 확인합니다.
+
+```tsx
+<li aria-selected={doc.selection?.has(`/items/${i}`)}>
+  {item.title}
+</li>
+```
+
+클릭하면 toggle합니다.
+
+```tsx
+onClick={() => doc.selection?.toggle(`/items/${i}`)}
+```
+
+## 패턴 3. 포커스가 있는 트리
+
+트리 편집기는 “현재 활성 노드”가 필요합니다. 이때 focus를 켭니다.
 
 ```ts
-const focus = useFocus(ops, {
-  recover(state, removed) {
-    return state.tasks.length > 0 ? "/tasks/0" : null;
-  },
+const doc = useJsonDocument(TreeSchema, initial, {
+  focus: { initial: "" },
 });
 ```
 
-## 자동 추적
+focus는 JSON 위치 하나입니다.
 
-selection과 focus의 가장 중요한 기능은 자동 추적입니다.
-
-```ts
-selection.set(["/tasks/2"]);
-focus.set("/tasks/2");
-
-ops.remove("/tasks/0");
+```tsx
+const active = doc.focus?.value;
 ```
 
-`/tasks/0`이 제거되면 원래 `/tasks/2`였던 항목은 `/tasks/1`이 됩니다. `useSelection`과 `useFocus`는 `ops.subscribe`를 통해 commit된 operation을 듣고 Pointer를 갱신합니다.
+키보드 이벤트는 UI 책임입니다. Enter, Tab, Backspace 같은 키를 어떤 편집 작업으로 바꿀지는 앱이 결정합니다.
 
-::source{path="packages/zod-crud/src/core/track.ts" title="trackPointer" lines="1-25"}
+## 패턴 4. Outliner
 
-low-level helper를 직접 쓸 수도 있습니다.
+Outliner 예제는 `useJsonDocument`의 정체성을 가장 잘 보여줍니다.
 
-```ts
-const next = trackPointer("/tasks/2", [
-  { op: "remove", path: "/tasks/0" },
-]);
-// "/tasks/1"
-```
+::source{path="apps/site/src/examples/Outliner.tsx" title="Outliner.tsx" lines="1-135"}
 
-## History
+여기서 볼 점은 세 가지입니다.
 
-`useJson`의 history는 opt-in입니다.
+1. 문서 값은 recursive JSON입니다.
+2. 키보드 이벤트는 `doc.ops.patch`나 `doc.ops.move`로 변환됩니다.
+3. focus와 history는 `doc` 안에서 함께 관리됩니다.
 
-```ts
-const [json, ops] = useJson(Schema, initial, { history: 50 });
-```
+## 패턴 5. Clipboard UI
 
-`history`를 생략하거나 `0`으로 두면 undo/redo 비용이 없습니다.
+현재 public API에 `useClipboard` hook은 없습니다. 하지만 clipboard UI를 만들 수 없다는 뜻은 아닙니다.
 
-| API | 설명 |
-|-----|------|
-| `ops.undo()` | 이전 상태로 되돌립니다 |
-| `ops.redo()` | 되돌린 작업을 다시 적용합니다 |
-| `ops.canUndo()` | undo 가능 여부 |
-| `ops.canRedo()` | redo 가능 여부 |
+복제와 이동은 이미 `doc.ops`로 표현됩니다.
 
-현재 구현은 되돌리기 단위를 root `replace` operation으로 저장합니다. 외부에서 보기에는 여전히 RFC 6902 operation입니다.
+| UI 이름 | 실제 작업 |
+|---------|-----------|
+| duplicate | `doc.ops.copy(from, path)` |
+| cut/move | `doc.ops.move(from, path)` |
+| paste batch | `doc.ops.patch([...])` |
 
-## Clipboard는 현재 public hook이 아닙니다
+즉 clipboard buffer는 앱이 들고 있고, 실제 문서 변경은 zod-crud의 안전한 operation으로 commit합니다.
 
-현재 public surface에는 `useClipboard`가 없습니다. 복제와 이동은 JSON Patch operation으로 직접 표현합니다.
+## 좋은 패턴
 
-| 하고 싶은 일 | 표현 |
-|--------------|------|
-| 복제 | `ops.copy("/tasks/2", "/tasks/-")` |
-| 이동 | `ops.move("/tasks/2", "/tasks/0")` |
-| 여러 작업으로 붙여넣기 | `ops.patch([...])` |
+- UI 이벤트는 앱에서 해석합니다.
+- 문서 변경은 `doc.ops`로만 합니다.
+- 선택/포커스는 JSON 위치로 저장합니다.
+- schema가 실패하면 화면에 실패를 보여줍니다.
 
-즉, clipboard UI는 애플리케이션이 만들고, 실제 데이터 변경은 RFC 6902 operation으로 보냅니다.
+이렇게 나누면 UI는 자유롭게 만들고, 편집 상태는 안전하게 유지할 수 있습니다.
