@@ -128,6 +128,57 @@ doc.commands.redo();
 
 `doc.ops.undo()`와 `doc.ops.redo()`도 같은 history stack을 사용합니다. `doc.history`는 실행 함수가 아니라 상태와 `mergeLast()`를 제공하는 표면입니다.
 
+## 실전 시나리오
+
+### Dict-record 의 한 키 쓰기
+
+`z.record(z.string(), V)` 스키마에서 키 한 개만 변경할 때는 **path 를 직접 가리키세요**. 전체 dict 를 spread 해 통째로 replace 하면 한 키 변경 의도가 “dict 전체 교체” history entry 가 됩니다.
+
+```ts
+// ✅ canonical — surgical, 한 path 만 history entry
+const writeCell = (k: string, v: string) => {
+  if (v === '' && cells[k] !== undefined) ops.remove(`/cells/${k}`);
+  else if (v !== '' && cells[k] === undefined) ops.add(`/cells/${k}`, v);
+  else if (v !== '' && cells[k] !== v) ops.replace(`/cells/${k}`, v);
+};
+
+// ❌ anti-pattern — 전체 dict spread 후 replace
+ops.replace('/cells', { ...cells, [k]: v });
+```
+
+dynamic record key 도 `as never` 없이 typecheck 통과합니다 (issue #52 회귀 가드 기준).
+
+### Drag / keystroke burst — undo entry 폭증 방지
+
+drag mousemove 마다 ops 를 호출하면 단일 동작이 100+ history entry 로 분할됩니다. 두 가지 정본 패턴:
+
+**Pattern A — local React state preview, drop 시 한 번만 commit (권장)**
+
+```tsx
+const [liveWidth, setLiveWidth] = useState<number | null>(null);
+
+const onMouseMove = (e) => setLiveWidth(start + (e.clientX - startX));
+const onMouseUp = () => {
+  if (liveWidth !== null) ops.replace('/colWidths/A', liveWidth);
+  setLiveWidth(null);
+};
+
+// 렌더: liveWidth ?? widths.A
+```
+
+transient UI state(드래그 미리보기) 와 committed model state 를 분리하는 표준 React 패턴. 한 번의 drop 이 단일 undo entry.
+
+**Pattern B — `history.mergeLast()` 로 burst 후 직전 entry 합치기**
+
+```ts
+ops.replace('/blocks/0/text', 'h');
+ops.replace('/blocks/0/text', 'hi');
+ops.replace('/blocks/0/text', 'hil');
+doc.history.mergeLast();  // 임의 횟수 반복 호출 가능 → 1 history step
+```
+
+키스트로크 burst, 자동완성 적용 등 commit 후에야 “합치는 게 맞다” 가 결정되는 경우. mergeLast 는 직전 두 entry 를 한 entry 로 합칩니다.
+
 ## 핵심 요약
 
 사용자에게 가까운 모델은 이것입니다.

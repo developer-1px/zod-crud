@@ -45,6 +45,20 @@ function App() {
 }
 ```
 
+### Dict-record 한 키 쓰기
+
+`z.record` 의 키 하나를 변경할 때는 path 를 직접 가리킵니다. 전체 dict 를 spread 해 replace 하면 history entry 가 dict 전체 교체로 기록됩니다.
+
+```ts
+if (v === '' && cells[k] !== undefined) ops.remove(`/cells/${k}`);
+else if (v !== '' && cells[k] === undefined) ops.add(`/cells/${k}`, v);
+else if (v !== '' && cells[k] !== v) ops.replace(`/cells/${k}`, v);
+```
+
+### Drag / keystroke burst — undo entry 합치기
+
+burst 입력으로 history 가 폭증하면 `doc.history.mergeLast()` 로 직전 두 entry 를 합치거나, drag/IME 같이 transient 한 입력은 local state 로 미리보기 후 drop/commit 시점에 한 번만 `ops` 호출합니다. 시나리오별 예제는 `docs/site/operations.md` 참조.
+
 ### Pure core (no React)
 
 ```ts
