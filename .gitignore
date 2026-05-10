@@ -4,3 +4,4 @@ dist-demo/
 packages/*/dist/
 apps/*/dist/
 *.tgz
+*.tsbuildinfo
