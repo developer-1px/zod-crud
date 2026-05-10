@@ -67,7 +67,10 @@ describe("outliner editor history", () => {
     expect(treeTexts()).toContain(editedFirstItem);
     expect(treeTexts()).toContain("");
 
-    await user.keyboard("{Control>}z{/Control}");
+    // 새 정책: 각 사용자 액션이 별 entry. 텍스트 편집은 같은 path 안에서 coalesce 됨.
+    // 텍스트 편집 + Enter (insert-sibling) 은 2 개 entry → 2 회 undo 필요.
+    await user.keyboard("{Control>}z{/Control}"); // insert-sibling 원복
+    await user.keyboard("{Control>}z{/Control}"); // 텍스트 편집 원복
 
     expect(treeTexts()).toContain(firstItem);
     expect(treeTexts()).not.toContain(editedFirstItem);
@@ -81,7 +84,10 @@ describe("outliner editor history", () => {
     renderOutliner();
     const user = await editFirstItemAndInsertSibling();
 
+    // 2 entry → 2 회 undo + 2 회 redo
     await user.keyboard("{Control>}z{/Control}");
+    await user.keyboard("{Control>}z{/Control}");
+    await user.keyboard("{Control>}{Shift>}z{/Shift}{/Control}");
     await user.keyboard("{Control>}{Shift>}z{/Shift}{/Control}");
 
     expect(treeTexts()).toContain(editedFirstItem);

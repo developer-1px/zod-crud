@@ -25,6 +25,12 @@ export interface JsonDocumentHistory {
   canRedo: boolean;
   undo: () => boolean;
   redo: () => boolean;
+  /**
+   * 최상단 두 entry 를 하나로 합친다 — 직전 dispatch 가 같은 사용자 동작의 일부였다고
+   * 판단했을 때 editor 가 호출. 정책 (시간·op 종류 등) 은 editor 책임.
+   * 합칠 entry 가 부족하거나 isRestoring 중이면 false 반환.
+   */
+  mergeLast: () => boolean;
 }
 
 export interface JsonDocument<T> {
@@ -34,8 +40,6 @@ export interface JsonDocument<T> {
   selection: SelectionState<T> | undefined;
   focus: FocusState<T> | undefined;
 }
-
-const COALESCE_MS = 500;
 
 interface SelectionSnap {
   values: ReadonlyArray<Pointer>;
@@ -79,7 +83,6 @@ export function useJsonDocument<S extends z.ZodType>(
   const historyLimit = options.history ?? 0;
   const undoStackRef = useRef<HistoryEntry[]>([]);
   const redoStackRef = useRef<HistoryEntry[]>([]);
-  const lastDispatchAtRef = useRef(0);
   const isRestoringRef = useRef(false);
 
   const focusRef = useRef(focusState);
@@ -93,28 +96,21 @@ export function useJsonDocument<S extends z.ZodType>(
     focus: selectionRef.current.focus,
   }), []);
 
+  // 매 dispatch = 1 entry. 시간·정책은 editor 책임 — `mergeLast()` 로 합치도록 노출.
   const recordHistory = useCallback((before: z.output<S>, ops: ReadonlyArray<JsonPatchOperation>) => {
     if (historyLimit <= 0 || isRestoringRef.current) return;
     const inv = computeInverses(before, ops);
     if (!inv.ok) return;
-    const now = Date.now();
     const stack = undoStackRef.current;
-    const last = stack[stack.length - 1];
-    if (last && now - lastDispatchAtRef.current < COALESCE_MS) {
-      last.forward.push(...ops);
-      last.inverse.unshift(...inv.inverses);
-    } else {
-      stack.push({
-        forward: [...ops],
-        inverse: inv.inverses,
-        focusBefore: focusRef.current.value,
-        selectionBefore: snapSelection(),
-        focusAfter: focusRef.current.value,
-        selectionAfter: snapSelection(),
-      });
-      if (stack.length > historyLimit) stack.shift();
-    }
-    lastDispatchAtRef.current = now;
+    stack.push({
+      forward: [...ops],
+      inverse: inv.inverses,
+      focusBefore: focusRef.current.value,
+      selectionBefore: snapSelection(),
+      focusAfter: focusRef.current.value,
+      selectionAfter: snapSelection(),
+    });
+    if (stack.length > historyLimit) stack.shift();
     redoStackRef.current = [];
   }, [historyLimit, snapSelection]);
 
@@ -173,7 +169,6 @@ export function useJsonDocument<S extends z.ZodType>(
         focusRef.current.set(e.focusBefore);
         selectionRef.current.set(e.selectionBefore.values);
         redoStackRef.current.push(e);
-        lastDispatchAtRef.current = 0;
         return true;
       },
       redo() {
@@ -189,7 +184,6 @@ export function useJsonDocument<S extends z.ZodType>(
         focusRef.current.set(e.focusAfter);
         selectionRef.current.set(e.selectionAfter.values);
         undoStackRef.current.push(e);
-        lastDispatchAtRef.current = 0;
         return true;
       },
       canUndo() { return undoStackRef.current.length > 0; },
@@ -202,12 +196,29 @@ export function useJsonDocument<S extends z.ZodType>(
     };
   }, [rawOps, recordHistory, snapSelection]);
 
+  const mergeLast = useCallback((): boolean => {
+    if (isRestoringRef.current) return false;
+    const stack = undoStackRef.current;
+    if (stack.length < 2) return false;
+    const top = stack.pop()!;
+    const prev = stack[stack.length - 1]!;
+    // forward 는 시간 순서대로 이어붙임. inverse 는 역순으로 prepend.
+    prev.forward.push(...top.forward);
+    prev.inverse = [...top.inverse, ...prev.inverse];
+    // axis 2 snapshot 은 prev 의 before 가 사용자 동작 시작점이므로 그대로 두고
+    // after 는 top 의 after 로 갱신.
+    prev.focusAfter = top.focusAfter;
+    prev.selectionAfter = top.selectionAfter;
+    return true;
+  }, []);
+
   return useMemo<JsonDocument<z.output<S>>>(() => {
     const history: JsonDocumentHistory = {
       get canUndo() { return ops.canUndo(); },
       get canRedo() { return ops.canRedo(); },
       undo: () => ops.undo(),
       redo: () => ops.redo(),
+      mergeLast,
     };
     return {
       value,
@@ -216,5 +227,5 @@ export function useJsonDocument<S extends z.ZodType>(
       selection: selectionEnabled ? selectionState : undefined,
       focus: focusEnabled ? focusState : undefined,
     };
-  }, [value, ops, selectionEnabled, selectionState, focusEnabled, focusState]);
+  }, [value, ops, selectionEnabled, selectionState, focusEnabled, focusState, mergeLast]);
 }

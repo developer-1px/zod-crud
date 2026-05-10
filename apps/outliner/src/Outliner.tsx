@@ -47,6 +47,20 @@ export function Outliner() {
   });
   const clipboard = useClipboard();
 
+  // 텍스트 편집 coalesce 정책 — UI 의 결정. zod-crud 는 시간을 모름.
+  // 같은 row 의 text 에 연속으로 글자가 입력될 때 (500ms 안) 한 undo 단위로 합친다.
+  const lastTextEditAtRef = useRef(0);
+  const lastTextEditPathRef = useRef<string | null>(null);
+  const TEXT_COALESCE_MS = 500;
+  const onTextEdit = useCallback((path: string) => {
+    const now = Date.now();
+    if (lastTextEditPathRef.current === path && now - lastTextEditAtRef.current < TEXT_COALESCE_MS) {
+      doc.history.mergeLast();
+    }
+    lastTextEditAtRef.current = now;
+    lastTextEditPathRef.current = path;
+  }, [doc.history]);
+
   // command 디스패치 — true 반환 = handled (preventDefault), false = not handled (DOM default 통과).
   const dispatch = useCallback((id: CommandId): boolean => {
     if (!doc.selection || !doc.focus) return false;
@@ -109,7 +123,27 @@ export function Outliner() {
     const id = findCommand(chord, mode);
     if (!id) return;
     const handled = dispatch(id);
-    if (handled) e.preventDefault();
+    if (handled) {
+      e.preventDefault();
+      e.stopPropagation(); // window-level fallback 의 중복 dispatch 차단
+    }
+  }, [mode, dispatch]);
+
+  // window-level fallback — focus 가 row 밖에 있을 때도 history 단축키가 동작하도록.
+  // 단, 텍스트 입력 중 (DOM 포커스가 입력 필드면) 은 row 의 onKeyDown 이 처리.
+  useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && target.closest('input, textarea, [contenteditable="true"]')) return;
+      if (e.isComposing || e.keyCode === 229) return;
+      const chord = eventToChord(e);
+      const id = findCommand(chord, mode);
+      if (!id) return;
+      const handled = dispatch(id);
+      if (handled) e.preventDefault();
+    }
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
   }, [mode, dispatch]);
 
   // 클릭 정책:
@@ -168,7 +202,7 @@ export function Outliner() {
         </span>
       </div>
 
-      <ul role="tree" aria-label="outline" aria-multiselectable className="tree">
+      <ul role="tree" aria-label="outline" aria-multiselectable className="tree" onKeyDown={onKeyDown} tabIndex={-1}>
         <OutlineRow
           node={doc.value}
           pointer=""
@@ -180,6 +214,7 @@ export function Outliner() {
           onClickBullet={onClickBullet}
           onKeyDown={onKeyDown}
           ops={doc.ops}
+          onTextEdit={onTextEdit}
         />
       </ul>
 
@@ -226,10 +261,11 @@ interface RowProps {
   onClickBullet: (e: React.MouseEvent, p: Pointer) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
   ops: ReturnType<typeof useJsonDocument<typeof OutlineSchema>>["ops"];
+  onTextEdit: (path: string) => void;
 }
 
 function OutlineRow(props: RowProps) {
-  const { node, pointer, depth, focus, selection, mode, onClickText, onClickBullet, onKeyDown, ops } = props;
+  const { node, pointer, depth, focus, selection, mode, onClickText, onClickBullet, onKeyDown, ops, onTextEdit } = props;
   const textPath = `${pointer}/text`;
   const isFocused = pointer === focus;
   const isSelected = selection.includes(pointer);
@@ -270,7 +306,7 @@ function OutlineRow(props: RowProps) {
             ref={ref}
             value={node.text}
             readOnly={!isEditing}
-            onChange={(e) => ops.patch([{ op: "replace", path: textPath, value: e.target.value }])}
+            onChange={(e) => { ops.patch([{ op: "replace", path: textPath, value: e.target.value }]); onTextEdit(textPath); }}
             onKeyDown={onKeyDown}
             onMouseDown={(e) => onClickText(e, pointer)}
             placeholder="(empty)"
@@ -282,7 +318,7 @@ function OutlineRow(props: RowProps) {
         <li role="presentation" className="root-title">
           <input
             value={node.text}
-            onChange={(e) => ops.patch([{ op: "replace", path: textPath, value: e.target.value }])}
+            onChange={(e) => { ops.patch([{ op: "replace", path: textPath, value: e.target.value }]); onTextEdit(textPath); }}
             className="text root-text"
           />
         </li>
@@ -300,6 +336,7 @@ function OutlineRow(props: RowProps) {
           onClickBullet={onClickBullet}
           onKeyDown={onKeyDown}
           ops={ops}
+          onTextEdit={onTextEdit}
         />
       ))}
     </>
