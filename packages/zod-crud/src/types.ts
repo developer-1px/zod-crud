@@ -26,7 +26,6 @@ export type {
   JsonCrudEvent,
   JsonCrudHistoryEntry,
   JsonCrudHistoryState,
-  JsonCrudOptionalValue,
   JsonCrudRevision,
   JsonCrudSerializableOperationFailure,
   JsonCrudSerializableOperationResult,
