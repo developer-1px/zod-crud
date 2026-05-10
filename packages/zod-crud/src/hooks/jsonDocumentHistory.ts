@@ -5,7 +5,7 @@ import type { MutableRefObject } from "react";
 
 import { computeInverses, type JsonPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { commit as historyCommit, type HistoryStack } from "../core/history/stack.js";
+import { commit as historyCommit, type HistoryStack } from "../core/history.js";
 import type { SelectionState } from "./useSelection.js";
 
 export interface SelectionSnap {

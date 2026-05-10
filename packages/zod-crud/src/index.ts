@@ -107,8 +107,8 @@ export {
   canUndo as historyCanUndo,
   canRedo as historyCanRedo,
   clear as historyClear,
-} from "./core/history/stack.js";
-export type { HistoryStack } from "./core/history/stack.js";
+} from "./core/history.js";
+export type { HistoryStack } from "./core/history.js";
 
 // verbs/ — 편집 어휘 composer (pure, headless 사용자용)
 // hooks/useJsonDocument 가 selection-aware sugar 로 wrapping (P3.5).

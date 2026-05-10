@@ -5,7 +5,7 @@ import { useCallback, useRef } from "react";
 import type * as z from "zod";
 
 import { applyPatch, computeInverses, type JsonPatchOperation, type JsonResult } from "../core/patch/index.js";
-import { handleResult, type ErrorPolicy, type JsonCrudOpLabel } from "./json-crud-error.js";
+import { handleResult, type ErrorPolicy, type JsonCrudOpLabel } from "./JsonCrudError.js";
 
 const COALESCE_MS = 500;
 

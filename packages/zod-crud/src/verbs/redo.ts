@@ -1,9 +1,9 @@
 // verbs/redo — Undo 기둥 (forward), RFC 6902 forward + history.forward.
-// pure composer. core/history/stack + core/patch wrapping.
+// pure composer. core/history + core/patch wrapping.
 
 import type { JsonPatchOperation } from "../core/patch/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
-import { forward as historyForward, type HistoryStack } from "../core/history/stack.js";
+import { forward as historyForward, type HistoryStack } from "../core/history.js";
 import type * as z from "zod";
 import type { UndoEntry, UndoNoop } from "./undo.js";
 

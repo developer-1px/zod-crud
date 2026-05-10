@@ -11,10 +11,10 @@ import {
 } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type { PointerOf, ValueAt } from "../core/pointer/types.js";
-import { handleResult, JsonCrudError, type ErrorPolicy } from "./json-crud-error.js";
-import { useHistoryDispatch } from "./use-history-dispatch.js";
+import { handleResult, JsonCrudError, type ErrorPolicy } from "./JsonCrudError.js";
+import { useHistoryDispatch } from "./useHistoryDispatch.js";
 
-export { JsonCrudError } from "./json-crud-error.js";
+export { JsonCrudError } from "./JsonCrudError.js";
 
 export interface UseJsonOptions {
   history?: number;

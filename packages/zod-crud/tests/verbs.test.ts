@@ -6,7 +6,7 @@ import { move } from "../src/verbs/move.js";
 import { undo } from "../src/verbs/undo.js";
 import { redo } from "../src/verbs/redo.js";
 import { select, EMPTY_SELECTION } from "../src/verbs/select.js";
-import { commit, emptyHistory } from "../src/core/history/stack.js";
+import { commit, emptyHistory } from "../src/core/history.js";
 import { computeInverses } from "../src/core/patch/index.js";
 
 const Schema = z.object({

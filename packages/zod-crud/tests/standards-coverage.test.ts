@@ -13,11 +13,11 @@ const expectedCoreFolders = [
   "jsonpath",    // RFC 9535
   "selection",   // W3C Selection + WAI-ARIA
   "schema",      // RFC 8927 + Zod
-  "history",     // RFC 6902 inverse + history stack
 ];
 
 const expectedCoreFiles = [
   "track.ts",    // RFC 6902 op 적용 후 Pointer follow (인프라)
+  "history.ts",  // RFC 6902 inverse + history stack (pure reducer)
 ];
 
 describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {

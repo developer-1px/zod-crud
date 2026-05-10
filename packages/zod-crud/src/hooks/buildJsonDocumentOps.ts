@@ -14,12 +14,12 @@ import {
   clear as historyClear,
   forward as historyForward,
   type HistoryStack,
-} from "../core/history/stack.js";
+} from "../core/history.js";
 import {
   recordHistoryEntry,
   snapSelection,
   type HistoryEntry,
-} from "./json-document-history.js";
+} from "./jsonDocumentHistory.js";
 
 export interface BuildJsonDocumentOpsArgs<T> {
   rawOps: JsonOps<T>;

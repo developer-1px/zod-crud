@@ -1,6 +1,6 @@
 // SPEC §5.10 — useJsonDocument facade.
 // 정체성 표면. 단일 진입점. data + selection + history 를 한 객체로 묶는다.
-// History 는 core/history/stack (pure reducer) 에 위임한다 (P2).
+// History 는 core/history (pure reducer) 에 위임한다 (P2).
 // DOM Selection 모델 — 별도 focus 축은 없다. 캐럿 = collapsed selection.
 
 import { useCallback, useMemo, useRef } from "react";
@@ -8,13 +8,13 @@ import type * as z from "zod";
 
 import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
-import { buildJsonDocumentOps } from "./json-document-ops.js";
-import { type HistoryEntry } from "./json-document-history.js";
+import { buildJsonDocumentOps } from "./buildJsonDocumentOps.js";
+import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
   emptyHistory,
   mergeLast as historyMergeLast,
   type HistoryStack,
-} from "../core/history/stack.js";
+} from "../core/history.js";
 
 export interface UseJsonDocumentOptions<T> {
   history?: number;
