@@ -531,6 +531,16 @@ export class JsonCrudError extends Error {
 - Lock / region / dirty tracking
 - Tree-shape 변형 (wrap/unwrap/indent/outdent/split/join — 이것들은 RFC 6902 op 조합으로 사용자가 직접 구성)
 
+### 8.1 표준 결단 (Phase 5 — 외부 표준과의 거리)
+
+| 표준 | 결단 | 이유 |
+|------|------|------|
+| **RFC 7396** JSON Merge Patch | ✅ **부분 지원** — `http.ts` 의 `parseMergePatch` (top-level 분해) + `applyMergePatch` (stateful merge, 정확) | server 응답 수신 path 의 표준 옵션. nested null 의미는 stateful path 로만 정확. §5.11 |
+| **RFC 9535** JSONPath (2024) | ❌ **명시적 비-목표** | (1) selection 은 `Pointer[]` 으로 표현 — query 가 필요하면 사용자가 traversal. (2) JSONPath 파서 = 추가 의존·DoS 표면·유지비. (3) Yjs·Automerge 등 비교 라이브러리도 채택 안 함 |
+| **CRDT / OT** (Yjs · Automerge) | ❌ **명시적 비-목표** (헌장 재확인) | (1) RFC 6902 op 는 sequential — commutative 보장 없음. CRDT/OT 변환 시 의미 보존 불가능한 케이스 다수. (2) 협업이 필요한 사용자는 Yjs/Automerge 를 별 substrate 로 두고, 그 결과 state 를 zod-crud 가 받는 path 가 자연 — 우리가 두 substrate 를 흡수하지 않음. (3) 30 년 락인 헌장과 충돌 — RFC 6902 위에 OT 를 얹으면 RFC 안의 의미를 우리가 변형해야 함 |
+
+세 결단은 SPEC outranks code 원칙에 따라 잠긴다 — 변경하려면 이 절을 먼저 갱신해야 한다.
+
 ## 8.5 라이브러리 책임 (정본 — §0.2)
 
 다음은 **본 라이브러리가 책임진다.** SPEC §0.2 의 Axis 2 헌장에 의해 락인됨.
