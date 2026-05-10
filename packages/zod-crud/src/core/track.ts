@@ -9,28 +9,58 @@ export function exists(state: unknown, pointer: Pointer): boolean {
   return readAt(state, parsePointer(pointer)).ok;
 }
 
-// SPEC §5.7 rule 1 / §5.8 rule 1 — applied ops 의 add/copy/move destination 첫 매치.
-// `/-` 는 after-state 의 array length-1 으로 resolve. root replace ("") 는 무시.
+// SPEC §5.7 rule 1 / §5.8 rule 1 — applied ops 의 add/copy/move destination 모두 수집.
+// 한 patch 에 여러 노드가 추가되면 모두 selection 범위가 된다 (잘라내기 2개 → 붙여넣기 → 2개 선택).
+//
+// `/-` 는 after-state 의 array 길이를 보고 resolve — 같은 parent 에 N 개 append 면
+// final index = arr.length - N + k (k=order). explicit path 는 후속 ops 의 index shift 만 반영.
+export function pickAutoTargets(
+  applied: ReadonlyArray<JsonPatchOperation>,
+  after: unknown,
+): Pointer[] {
+  type Raw =
+    | { kind: "explicit"; path: Pointer; opIndex: number }
+    | { kind: "append"; parent: string; opIndex: number };
+  const raw: Raw[] = [];
+  for (let i = 0; i < applied.length; i++) {
+    const op = applied[i]!;
+    let dest: string | null = null;
+    if (op.op === "add" || op.op === "copy" || op.op === "move") dest = op.path;
+    if (dest === null || dest === "") continue;
+    if (dest.endsWith("/-")) raw.push({ kind: "append", parent: dest.slice(0, -2), opIndex: i });
+    else raw.push({ kind: "explicit", path: dest, opIndex: i });
+  }
+
+  const appendsPerParent = new Map<string, number>();
+  for (const r of raw) if (r.kind === "append") appendsPerParent.set(r.parent, (appendsPerParent.get(r.parent) ?? 0) + 1);
+
+  const seenAppendOrder = new Map<string, number>();
+  const out: Pointer[] = [];
+  for (const r of raw) {
+    if (r.kind === "append") {
+      const total = appendsPerParent.get(r.parent)!;
+      const k = seenAppendOrder.get(r.parent) ?? 0;
+      seenAppendOrder.set(r.parent, k + 1);
+      const arr = readAt(after, parsePointer(r.parent));
+      if (!arr.ok || !Array.isArray(arr.value) || arr.value.length < total) continue;
+      const finalIdx = arr.value.length - total + k;
+      out.push(buildPointer([...parsePointer(r.parent), finalIdx]));
+    } else {
+      // explicit path — 이후 ops 의 index shift 반영
+      const tracked = trackPointer(r.path, applied.slice(r.opIndex + 1));
+      if (tracked !== null) out.push(tracked);
+    }
+  }
+  return out;
+}
+
+// 단수형 — 첫 매치만 필요한 호출자용 (현재 lost recovery fallback 등).
 export function pickAutoTarget(
   applied: ReadonlyArray<JsonPatchOperation>,
   after: unknown,
 ): Pointer | null {
-  for (const op of applied) {
-    let dest: Pointer | null = null;
-    if (op.op === "add" || op.op === "copy" || op.op === "move") dest = op.path;
-    if (dest === null) continue;
-    if (dest === "") continue;
-    if (dest.endsWith("/-")) {
-      const parent = dest.slice(0, -2);
-      const r = readAt(after, parsePointer(parent));
-      if (r.ok && Array.isArray(r.value) && r.value.length > 0) {
-        return buildPointer([...parsePointer(parent), r.value.length - 1]);
-      }
-      return null;
-    }
-    return dest;
-  }
-  return null;
+  const all = pickAutoTargets(applied, after);
+  return all.length > 0 ? all[0]! : null;
 }
 
 // SPEC §5.7 rule 2 / §5.8 rule 2 — lost pointer 복구: nextSibling → prevSibling → parent.

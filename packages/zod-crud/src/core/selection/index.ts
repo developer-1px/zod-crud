@@ -10,7 +10,7 @@
 //   ③ Index shift tracking  — 살아남은 형제 인덱스 자동 보정
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
-import { trackPointer, pickAutoTarget, recoverLostPointer, exists } from "../track.js";
+import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../track.js";
 import type { Pointer } from "../pointer/index.js";
 import type { JsonPatchOperation } from "../patch/index.js";
 import { expandRange } from "./range.js";
@@ -110,9 +110,15 @@ export function applySelectionAutoRules(
   after: unknown,
   mode: SelectionMode,
 ): SelectionSnap {
-  const autoTarget = pickAutoTarget(applied, after);
-  if (autoTarget !== null) {
-    return { ranges: limitMode(mode, [autoTarget]), anchor: autoTarget, focus: autoTarget };
+  // 패치 안의 모든 add/copy/move destination = 새 selection (diff 기반).
+  const autoTargets = pickAutoTargets(applied, after);
+  if (autoTargets.length > 0) {
+    const limited = limitMode(mode, autoTargets);
+    return {
+      ranges: limited,
+      anchor: limited[0] ?? null,
+      focus: limited[limited.length - 1] ?? null,
+    };
   }
   const trackOrRecover = (p: Pointer | null): Pointer | null => {
     if (p === null) return null;
