@@ -7,3 +7,4 @@ apps/*/coverage/
 *.tgz
 *.tsbuildinfo
 .claude/scheduled_tasks.lock
+.claude/*.local.md
