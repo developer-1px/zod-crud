@@ -2,7 +2,8 @@
 
 import { describe, expect, it } from "vitest";
 
-import { trackPointer, trackPointers, type JsonPatchOperation } from "../src/index.js";
+import { trackPointer, trackPointers } from "../src/core/track.js";
+import type { JsonPatchOperation } from "../src/index.js";
 
 describe("trackPointer — add", () => {
   it("shifts later siblings on insert", () => {
