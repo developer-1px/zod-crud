@@ -1,8 +1,8 @@
 # ADR 0001 — Axis 2: Editor abstractions on the RFC core
 
-**Status**: Accepted (2026-05-10)
+**Status**: Superseded by ADR-0002 (2026-05-10 — 어휘만 supersede, 결정 내용 보존)
 **Supersedes**: SPEC.md §8 (이전 버전 — selection/focus 비-목표 선언)
-**Superseded by**: —
+**Superseded by**: ADR-0002 (charter rewording — 편집 어휘 wrapper)
 
 ## Context
 
