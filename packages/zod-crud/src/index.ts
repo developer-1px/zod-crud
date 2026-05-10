@@ -84,3 +84,26 @@ export type { PatchRequest, ParseResult, ParseError } from "./sidecars/http.js";
 
 // JSON Schema bridge — RFC 8927 / draft-bhutton (core/schema/)
 export { toJSONSchema, fromJSONSchema } from "./core/schema/bridge.js";
+
+// core/history — pure undo/redo stack (P2)
+export {
+  emptyHistory,
+  commit as historyCommit,
+  back as historyBack,
+  forward as historyForward,
+  mergeLast as historyMergeLast,
+  canUndo as historyCanUndo,
+  canRedo as historyCanRedo,
+  clear as historyClear,
+} from "./core/history/stack.js";
+export type { HistoryStack } from "./core/history/stack.js";
+
+// verbs/ — 편집 어휘 composer (pure, headless 사용자용)
+// hooks/useJsonDocument 가 selection-aware sugar 로 wrapping (P3.5).
+export { select as selectVerb, trackSelection } from "./verbs/select.js";
+export { move as moveVerb } from "./verbs/move.js";
+export type { MoveResult, MoveError } from "./verbs/move.js";
+export { undo as undoVerb } from "./verbs/undo.js";
+export type { UndoEntry, UndoResult, UndoNoop } from "./verbs/undo.js";
+export { redo as redoVerb } from "./verbs/redo.js";
+export type { RedoResult } from "./verbs/redo.js";
