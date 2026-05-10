@@ -38,6 +38,10 @@ function productCollections() {
   return document.querySelectorAll(".block-productGrid");
 }
 
+function textBlocks() {
+  return document.querySelectorAll(".block-text");
+}
+
 function firstProductCollection() {
   const product = document.querySelector(".block-productGrid");
   if (!(product instanceof HTMLElement)) throw new Error("Missing product collection");
@@ -102,7 +106,10 @@ describe("mobile CMS usable editing surface", () => {
     expect(screen.queryByText("Eyebrow")).toBeNull();
     expect(screen.getByText("Cut Eyebrow. Selection moved to the closest remaining item.")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Hero action" })).toBeTruthy();
-    expect(writeTextSpy).toHaveBeenCalled();
+
+    await user.click(screen.getByText("Editorial content"));
+    await user.keyboard("{Control>}v{/Control}");
+    await waitFor(() => expect(textBlocks()).toHaveLength(1));
   });
 
   test("cuts an only child and falls back to its parent slot", async () => {
