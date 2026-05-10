@@ -24,7 +24,14 @@ export function Outliner() {
   const pushToast = useCallback((level: "error" | "info", text: string) => {
     const id = ++toastSeq;
     setErrors((prev) => [...prev, { id, level, text }]);
-    setTimeout(() => setErrors((prev) => prev.filter((m) => m.id !== id)), 2500);
+    // info 는 짧게 자동 사라짐. error 는 사용자 클릭 시까지 유지 (zod 메시지가 길어서 읽을 시간 필요).
+    if (level === "info") {
+      setTimeout(() => setErrors((prev) => prev.filter((m) => m.id !== id)), 2500);
+    }
+  }, []);
+
+  const dismissToast = useCallback((id: number) => {
+    setErrors((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
   const onError = useCallback((e: JsonCrudError) => {
@@ -190,7 +197,14 @@ export function Outliner() {
 
       <div className="toasts" role="status" aria-live="polite">
         {errors.map((m) => (
-          <div key={m.id} className={`toast toast-${m.level}`}>{m.text}</div>
+          <div
+            key={m.id}
+            className={`toast toast-${m.level}`}
+            onClick={() => dismissToast(m.id)}
+            title="클릭해서 닫기"
+          >
+            {m.text}
+          </div>
         ))}
       </div>
     </div>
