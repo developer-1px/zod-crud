@@ -323,13 +323,11 @@ Axis 1 op 적용 시 자동 추적: `add` 는 인덱스 shift, `remove` 는 casc
 ```ts
 export function useFocus<T>(
   ops: JsonOps<T>,
-  options?: UseFocusOptions<T>,
+  options?: UseFocusOptions,
 ): FocusState<T>;
 
-export interface UseFocusOptions<T> {
+export interface UseFocusOptions {
   initial?: Pointer | null;
-  filter?: (state: T, pointer: Pointer) => boolean;          // 후보 좌표 필터
-  recover?: (state: T, removed: Pointer) => Pointer | null;  // 제거 시 복구 위치 계산
 }
 
 export interface FocusState<T> {
@@ -338,6 +336,20 @@ export interface FocusState<T> {
   clear(): void;
 }
 ```
+
+**자동 규칙 두 가지** — 사용자 wiring 0.
+
+1. **Mutation auto-focus**: `applied` 안에 `add` / `copy` / `move` 가 있으면 destination 으로 자동
+   포커스 (paste · insert · move · 외부 patch 적용 등). `/-` (append) 는 actual index 로 resolve.
+   첫 번째 매치만 사용. root replace (`""`) 는 무시 — load/reset/undo-via-root-replace 의 의미는
+   "focus 를 강제하지 않음".
+2. **Lost focus recovery**: 현 focus 좌표가 op 후 사라지면 다음 순서로 복구한다.
+   1) nextSibling (same parent, same index — remove 시 뒤가 당겨져 그 자리)
+   2) prevSibling (`idx - 1`)
+   3) parent (root 면 `null`)
+
+수동 `set(pointer)` 은 위 규칙보다 우선한다 (사용자 의도 존중). filter / recover 콜백은 폐기 —
+규칙이 일관되어 콜백이 필요 없다.
 
 ### 5.9 Pointer tracking helpers (Axis 2 low-level)
 

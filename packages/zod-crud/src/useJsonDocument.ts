@@ -14,8 +14,9 @@ export interface UseJsonDocumentOptions<T> {
   strict?: boolean;
   onError?: (error: JsonCrudError) => void;
   selection?: boolean | UseSelectionOptions;
-  focus?: boolean | UseFocusOptions<T>;
+  focus?: boolean | UseFocusOptions;
 }
+void (0 as 0 satisfies 0); export type _UJDocOptT<T> = UseJsonDocumentOptions<T>;
 
 export interface JsonDocumentHistory {
   canUndo: boolean;

@@ -1,16 +1,26 @@
-// SPEC §5.8 — Focus state hook (Axis 2). 단일 활성 좌표.
-// aria-activedescendant 의 의미.
+// SPEC §5.8 — Focus state hook (Axis 2).
+// 두 가지 자동 규칙 (사용자 wiring 0):
+//   ① Mutation 발생 → 추가/이동된 좌표로 자동 포커스 (paste·insert·copy·move 등)
+//   ② Focus 좌표 사라짐 → nextSibling → prevSibling → parent 순으로 재이동
+//
+// 사용자가 set() 으로 명시 지정한 좌표는 위 규칙보다 우선한다 (수동 set 직후 1회).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { trackPointer } from "./core/track.js";
-import type { Pointer } from "./core/pointer.js";
+import {
+  parentPointer,
+  lastSegmentIndex,
+  withLastSegment,
+  parsePointer,
+  buildPointer,
+  type Pointer,
+} from "./core/pointer.js";
 import type { JsonOps } from "./useJson.js";
+import type { JsonPatchOperation } from "./core/patch.js";
 
-export interface UseFocusOptions<T> {
+export interface UseFocusOptions {
   initial?: Pointer | null;
-  filter?: (state: T, pointer: Pointer) => boolean;
-  recover?: (state: T, removed: Pointer) => Pointer | null;
 }
 
 export interface FocusState<T> {
@@ -19,42 +29,114 @@ export interface FocusState<T> {
   clear(): void;
 }
 
+// state 에서 pointer 위치의 값 읽기. exists 체크용.
+function readAtPointer(state: unknown, pointer: Pointer): { ok: true; value: unknown } | { ok: false } {
+  if (pointer === "") return { ok: true, value: state };
+  let cur: unknown = state;
+  for (const seg of parsePointer(pointer)) {
+    if (cur === null || typeof cur !== "object") return { ok: false };
+    if (Array.isArray(cur)) {
+      const idx = Number(seg);
+      if (!Number.isInteger(idx) || idx < 0 || idx >= cur.length) return { ok: false };
+      cur = cur[idx];
+    } else {
+      if (!Object.prototype.hasOwnProperty.call(cur, seg)) return { ok: false };
+      cur = (cur as Record<string, unknown>)[seg];
+    }
+  }
+  return { ok: true, value: cur };
+}
+
+// rule ① — applied ops 에서 새 좌표를 식별. add·copy·move 의 destination.
+// 첫 번째 매치를 반환. /- (append marker) 는 actual index 로 resolve.
+function autoFocusFrom(applied: ReadonlyArray<JsonPatchOperation>, after: unknown): Pointer | null {
+  for (const op of applied) {
+    let dest: Pointer | null = null;
+    if (op.op === "add" || op.op === "copy" || op.op === "move") {
+      dest = op.path;
+    }
+    if (dest === null) continue;
+    // root replace ("") 는 load/reset/undo-via-root-replace — auto-focus 하지 않음.
+    if (dest === "") continue;
+    // /- 를 actual index 로 resolve
+    if (dest.endsWith("/-")) {
+      const parent = dest.slice(0, -2);
+      const arr = readAtPointer(after, parent);
+      if (arr.ok && Array.isArray(arr.value) && arr.value.length > 0) {
+        return buildPointer([...parsePointer(parent), arr.value.length - 1]);
+      }
+      return null;
+    }
+    return dest;
+  }
+  return null;
+}
+
+// rule ② — focus 좌표 사라짐 시 복구: nextSibling → prevSibling → parent 순.
+// `lost` 는 op 적용 직전의 focus pointer. `after` 는 op 적용 후 state.
+function recoverLostFocus(lost: Pointer, applied: ReadonlyArray<JsonPatchOperation>, after: unknown): Pointer | null {
+  const idx = lastSegmentIndex(lost);
+  const parent = parentPointer(lost);
+  if (idx === null || parent === null) return null;
+
+  // 부모 자체도 op 영향을 받을 수 있으니 parent 도 트래킹
+  const trackedParent = trackPointer(parent, applied);
+  if (trackedParent === null) return null;
+
+  // nextSibling: same index (제거 후 뒤가 당겨졌으므로 idx 위치는 옛 idx+1)
+  const nextCandidate = withLastSegment(`${trackedParent}/${idx}`, idx);
+  if (nextCandidate !== null) {
+    if (readAtPointer(after, nextCandidate).ok) return nextCandidate;
+  }
+
+  // prevSibling: idx - 1
+  if (idx > 0) {
+    const prevCandidate = `${trackedParent}/${idx - 1}`;
+    if (readAtPointer(after, prevCandidate).ok) return prevCandidate;
+  }
+
+  // parent (root 면 null)
+  if (trackedParent === "") return null;
+  if (readAtPointer(after, trackedParent).ok) return trackedParent;
+
+  return null;
+}
+
 export function useFocus<T>(
   ops: JsonOps<T>,
-  options: UseFocusOptions<T> = {},
+  options: UseFocusOptions = {},
 ): FocusState<T> {
   const [value, setValue] = useState<Pointer | null>(options.initial ?? null);
+  const valueRef = useRef(value);
+  valueRef.current = value;
 
   useEffect(() => {
     return ops.subscribe((applied) => {
-      setValue((prev) => {
-        if (prev === null) return prev;
-        const next = trackPointer(prev, applied);
-        if (next === null) {
-          // 사라진 좌표 — recover 시도
-          if (options.recover) {
-            return options.recover(ops.state, prev);
-          }
-          return null;
-        }
-        if (options.filter && !options.filter(ops.state, next)) {
-          return null;
-        }
-        return next;
-      });
-    });
-  }, [ops, options.filter, options.recover]);
+      const prev = valueRef.current;
+      const after = ops.state;
 
-  const set = useCallback(
-    (pointer: Pointer | null) => {
-      if (pointer !== null && options.filter && !options.filter(ops.state, pointer)) {
+      // rule ① — 추가·복제·이동 발생 시 destination 으로 자동 포커스
+      const autoTarget = autoFocusFrom(applied, after);
+      if (autoTarget !== null) {
+        setValue(autoTarget);
         return;
       }
-      setValue(pointer);
-    },
-    [ops, options.filter],
-  );
 
+      // 추가가 없으면 기존 focus 추적 → 사라지면 rule ② 복구
+      if (prev === null) return;
+      const tracked = trackPointer(prev, applied);
+      if (tracked !== null && readAtPointer(after, tracked).ok) {
+        if (tracked !== prev) setValue(tracked);
+        return;
+      }
+
+      // rule ② — 사라졌으면 nextSibling → prevSibling → parent
+      const recovered = recoverLostFocus(prev, applied, after);
+      setValue(recovered);
+    });
+  }, [ops]);
+
+  const set = useCallback((pointer: Pointer | null) => setValue(pointer), []);
   const clear = useCallback(() => setValue(null), []);
 
   return useMemo<FocusState<T>>(

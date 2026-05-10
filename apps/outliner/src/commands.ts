@@ -31,6 +31,11 @@ function sortDfs(ctx: CommandContext, ps: Pointer[]): Pointer[] {
   return [...ps].sort((a, b) => comparePointer(ctx.state, a, b));
 }
 
+// 모든 mutation 후 focus 는 zod-crud useFocus 의 두 자동 규칙으로 처리됨:
+//   ① add/copy/move → destination 자동 포커스
+//   ② 사라지면 nextSibling → prevSibling → parent 복구
+// commands 는 op 만 발행하고 focus 를 명시 set 하지 않는다.
+
 export function insertSibling(ctx: CommandContext): JsonResult {
   const p = ctx.focus.value;
   if (p === null) return { ok: false, code: "path_not_found", reason: "no focus" };
@@ -39,9 +44,7 @@ export function insertSibling(ctx: CommandContext): JsonResult {
   const parent = parentOf(p);
   if (parent === null) return { ok: false, code: "path_not_found" };
   const insertAt = `${parent}/${idx + 1}`;
-  const r = ctx.ops.patch([{ op: "add", path: insertAt, value: EMPTY_NODE }]);
-  if (r.ok) ctx.focus.set(insertAt);
-  return r;
+  return ctx.ops.patch([{ op: "add", path: insertAt, value: EMPTY_NODE }]);
 }
 
 export function demote(ctx: CommandContext): JsonResult {
@@ -53,12 +56,7 @@ export function demote(ctx: CommandContext): JsonResult {
   }
   const prev = siblingAt(p, idx - 1);
   const target = `${prev}/children/-`;
-  const r = ctx.ops.patch([{ op: "move", from: p, path: target }]);
-  if (r.ok) {
-    const prevChildren = readChildren(ctx.state, prev);
-    ctx.focus.set(`${prev}/children/${prevChildren.length}`);
-  }
-  return r;
+  return ctx.ops.patch([{ op: "move", from: p, path: target }]);
 }
 
 export function promote(ctx: CommandContext): JsonResult {
@@ -73,35 +71,18 @@ export function promote(ctx: CommandContext): JsonResult {
   const parentParent = parentOf(parent);
   if (parentParent === null) return { ok: false, code: "path_not_found" };
   const target = `${parentParent}/${parentIdx + 1}`;
-  const r = ctx.ops.patch([{ op: "move", from: p, path: target }]);
-  if (r.ok) ctx.focus.set(target);
-  return r;
+  return ctx.ops.patch([{ op: "move", from: p, path: target }]);
 }
 
 export function remove(ctx: CommandContext): JsonResult {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
-
-  // root 제거 금지
   if (targets.includes("")) return { ok: false, code: "path_not_found", reason: "cannot remove root" };
 
-  // empty text 1개일 때만 자동 remove (Backspace UX). 그 외 사용자 명시 동작.
   const sorted = sortDfs(ctx, targets);
-  // 뒤에서부터 remove 해야 인덱스 안 깨짐
   const batch: JsonPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
   const r = ctx.ops.patch(batch);
-  if (r.ok) {
-    // focus 복구: 첫 target 의 prev sibling 또는 parent
-    const first = sorted[0];
-    if (first) {
-      const idx = lastIndex(first);
-      const parent = parentOf(first);
-      if (idx !== null && parent !== null) {
-        ctx.focus.set(idx > 0 ? siblingAt(first, idx - 1) : parent);
-      }
-    }
-    ctx.selection.clear();
-  }
+  if (r.ok) ctx.selection.clear();
   return r;
 }
 
@@ -121,9 +102,7 @@ export function moveUp(ctx: CommandContext): JsonResult {
     return { ok: false, code: "path_not_found", reason: "already first" };
   }
   const target = siblingAt(p, idx - 1);
-  const r = ctx.ops.patch([{ op: "move", from: p, path: target }]);
-  if (r.ok) ctx.focus.set(target);
-  return r;
+  return ctx.ops.patch([{ op: "move", from: p, path: target }]);
 }
 
 export function moveDown(ctx: CommandContext): JsonResult {
@@ -138,9 +117,7 @@ export function moveDown(ctx: CommandContext): JsonResult {
     return { ok: false, code: "path_not_found", reason: "already last" };
   }
   const target = siblingAt(p, idx + 1);
-  const r = ctx.ops.patch([{ op: "move", from: p, path: target }]);
-  if (r.ok) ctx.focus.set(target);
-  return r;
+  return ctx.ops.patch([{ op: "move", from: p, path: target }]);
 }
 
 export function copy(ctx: CommandContext): void {
