@@ -18,14 +18,13 @@ export function Outliner() {
   const { errors, pushToast, dismissToast, onError } = useToasts();
   const doc = useJsonDocument(OutlineSchema, SAMPLE, {
     history: 200, strict: false, onError,
-    selection: { mode: "extended" },
-    focus: { initial: "" },
+    selection: { mode: "extended", initial: [""] },
   });
   const clipboard = useClipboard();
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
-  const ctx = doc.selection && doc.focus
-    ? { state: doc.value, ops: doc.ops, selection: doc.selection, focus: doc.focus, clipboard }
+  const ctx = doc.selection
+    ? { state: doc.value, ops: doc.ops, selection: doc.selection, clipboard }
     : null;
   const dispatch = useDispatch({
     ctx, mode, setMode, pushToast,
@@ -42,7 +41,7 @@ export function Outliner() {
   }, [mode, dispatch]);
 
   useGlobalKey(mode, dispatch);
-  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, doc.focus, setMode);
+  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
 
   return (
     <div className="app">
@@ -57,8 +56,8 @@ export function Outliner() {
         <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
         <span className="status">
           mode = <code className={`mode mode-${mode}`}>{mode}</code>
-          {" · "}focus = <code>{doc.focus?.value ?? "—"}</code>
-          {" · "}selection = <code>{doc.selection?.values.length ?? 0}</code>
+          {" · "}focus = <code>{doc.selection?.focus ?? "—"}</code>
+          {" · "}selection = <code>{doc.selection?.ranges.length ?? 0}</code>
           {" · "}clipboard = <code>{clipboard.mode === "empty" ? "—" : `${clipboard.mode} ${clipboard.values.length}`}</code>
         </span>
       </div>
@@ -66,8 +65,8 @@ export function Outliner() {
       <ul role="tree" aria-label="outline" aria-multiselectable className="tree" onKeyDown={onKeyDown} tabIndex={-1}>
         <OutlineRow
           node={doc.value} pointer="" depth={0}
-          focus={doc.focus?.value ?? null}
-          selection={doc.selection?.values ?? []}
+          focus={doc.selection?.focus ?? null}
+          selection={doc.selection?.ranges ?? []}
           mode={mode}
           onClickText={onClickText} onClickBullet={onClickBullet}
           onKeyDown={onKeyDown} ops={doc.ops} onTextEdit={onTextEdit}

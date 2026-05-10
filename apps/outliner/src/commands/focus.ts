@@ -7,9 +7,10 @@ import {
 } from "../pointer-utils.js";
 import type { CommandContext } from "./context.js";
 
+// 화살표 nav = 캐럿 이동 = collapsed selection. focus·selection 둘 다 [target].
 function navigate(ctx: CommandContext, compute: (state: OutlineNode, f: Pointer | null) => Pointer | null) {
-  const target = compute(ctx.state, ctx.focus.value);
-  if (target !== null) ctx.focus.set(target);
+  const target = compute(ctx.state, ctx.selection.focus);
+  if (target !== null) ctx.selection.collapse(target);
 }
 
 export const focusPrev = (ctx: CommandContext) =>

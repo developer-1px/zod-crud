@@ -1,6 +1,6 @@
 // Command 들이 공유하는 ctx 형식 + 공용 헬퍼.
 
-import type { JsonOps, Pointer, SelectionState, FocusState } from "zod-crud";
+import type { JsonOps, Pointer, SelectionState } from "zod-crud";
 import type { OutlineNode } from "../schema.js";
 import type { ClipboardApi } from "../clipboard.js";
 import { comparePointer } from "../pointer-utils.js";
@@ -9,7 +9,6 @@ export interface CommandContext {
   state: OutlineNode;
   ops: JsonOps<OutlineNode>;
   selection: SelectionState<OutlineNode>;
-  focus: FocusState<OutlineNode>;
   clipboard: ClipboardApi;
 }
 
