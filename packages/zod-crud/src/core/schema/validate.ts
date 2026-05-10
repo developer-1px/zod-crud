@@ -4,9 +4,10 @@
 
 import type * as z from "zod";
 
+declare const process: { env?: { NODE_ENV?: string } } | undefined;
 const isDev =
   typeof process === "undefined" ||
-  process.env?.NODE_ENV !== "production";
+  process?.env?.NODE_ENV !== "production";
 
 export interface ValidateOk {
   ok: true;
