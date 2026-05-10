@@ -32,13 +32,13 @@ export function SidebarNav() {
       className="shrink-0 border-stone-200 bg-stone-50 text-sm border-b md:border-b-0 md:border-r md:h-screen md:w-56 md:overflow-y-auto"
     >
       <details ref={detailsRef} className="group flex flex-col gap-4 p-3 md:!block" open>
-        <summary className="cursor-pointer list-none rounded px-2 py-1 font-semibold text-stone-900 marker:hidden hover:bg-stone-200 md:hidden">
+        <summary className="cursor-pointer list-none px-2 py-1 font-semibold text-stone-900 marker:hidden hover:bg-stone-200 md:hidden">
           ☰ zod-crud
         </summary>
         <Link
           to="/"
           onClick={closeOnMobile}
-          className="hidden rounded px-2 py-1 font-semibold text-stone-900 hover:bg-stone-200 md:block"
+          className="hidden px-2 py-1 font-semibold text-stone-900 hover:bg-stone-200 md:block"
         >
           zod-crud
         </Link>
@@ -64,7 +64,7 @@ export function SidebarNav() {
                         params={e.params as never}
                         onClick={closeOnMobile}
                         aria-current={current ? "page" : undefined}
-                        className="block rounded px-2 py-1 text-stone-700 hover:bg-stone-200 hover:text-stone-900 aria-[current=page]:bg-stone-900 aria-[current=page]:text-stone-50"
+                        className="block !rounded-none !border-0 !bg-transparent px-2 py-1 text-stone-700 no-underline !shadow-none hover:!bg-stone-200 hover:text-stone-900 aria-[current=page]:!bg-stone-900 aria-[current=page]:text-stone-50"
                       >
                         {e.label}
                       </Link>

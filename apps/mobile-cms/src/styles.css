@@ -2,18 +2,17 @@
   box-sizing: border-box;
 }
 
-body {
-  margin: 0;
+.app-shell {
   background: #e7e8dd;
   color: #20231f;
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-input {
+.app-shell input {
   font: inherit;
 }
 
-::selection {
+.app-shell ::selection {
   background: #9fc5ff;
 }
 
@@ -57,14 +56,14 @@ input {
   color: #aeb8a3;
 }
 
-h1,
-h2,
-h3,
-p {
+.app-shell h1,
+.app-shell h2,
+.app-shell h3,
+.app-shell p {
   margin-top: 0;
 }
 
-h1 {
+.app-shell h1 {
   margin-bottom: 0;
   font-size: 28px;
 }
@@ -73,12 +72,12 @@ h1 {
   color: #fff;
 }
 
-h2 {
+.app-shell h2 {
   margin-bottom: 0;
   font-size: 22px;
 }
 
-h3 {
+.app-shell h3 {
   margin-bottom: 10px;
   font-size: 14px;
 }
@@ -145,7 +144,7 @@ h3 {
   font-size: 14px;
 }
 
-kbd {
+.app-shell kbd {
   display: inline-flex;
   align-items: center;
   min-height: 24px;
