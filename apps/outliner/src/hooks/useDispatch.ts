@@ -2,9 +2,9 @@
 // command 의 JsonResult 실패는 toast 로 surface.
 
 import { useCallback } from "react";
-import * as cmd from "../commands.js";
+import * as cmd from "../commands/index.js";
 import type { CommandId, Mode } from "../keymap.js";
-import type { CommandContext } from "../commands.js";
+import type { CommandContext } from "../commands/index.js";
 import { readNode } from "../pointer-utils.js";
 
 interface UseDispatchArgs {
