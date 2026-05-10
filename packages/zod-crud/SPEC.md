@@ -30,18 +30,21 @@ UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · syst
 ### 0.2 코드 위계 — 3-layer + sidecars
 
 ```
-hooks/      (얇은 React 어댑터 — verbs 를 React state 에 묶음)
+hooks/      얇은 React 어댑터. useJsonDocument 단일 facade.
+            verbs/* 위에 서서 6 verb method (cut/copy/paste/duplicate/find/replace) 노출.
    │ uses
-verbs/      (편집 어휘 composer — pure, React 무관, core 만 의존)
-   │ uses
-core/       (RFC 표준 substrate — pure, 1폴더 = 1표준)
-   │
-sidecars/   (횡단 관심사 — recorder / debug-log / http, 어떤 layer 에도 속하지 않음)
+verbs/      편집 어휘 composer (pure, React 무관). 1 파일 1 동사 = 10 verbs.
+   │ uses   verbs 끼리 import 금지 — 합성은 facade 에서.
+core/       RFC 표준 substrate (pure). 1 substrate = 1 단위 (폴더 또는 파일).
+   │       multi-file: pointer/, patch/, jsonpath/, selection/, schema/.
+   │       single-file: history.ts, track.ts (derived substrate).
+sidecars/   횡단 관심사 — 어떤 layer 에도 속하지 않음. 본체 데이터 흐름에 수평으로 hook.
+            recorder (commit stream 직렬화) / debug-log (trace) / http (RFC wire 변환).
 ```
 
 **의존 방향 (단방향):**
 - `core/*` → 외부 의존 0 (단 `core/schema/` 만 Zod 의존 허용)
-- `verbs/*` → `core/*` 만 의존. **verbs 끼리 import 금지 (lint rule)**
+- `verbs/*` → `core/*` 만 의존. **verbs 끼리 import 금지 (lint rule, type-only 예외)**
 - `hooks/*` → `verbs/*` + `core/*` + React API 만
 - `sidecars/*` → 자유. 단 위 3 layer 가 sidecars 에 의존 금지
 

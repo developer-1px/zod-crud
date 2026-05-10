@@ -2,21 +2,84 @@ import {
   createRootRoute,
   createRoute,
   createRouter,
+  Link,
   Outlet,
 } from "@tanstack/react-router";
-import { SidebarNav } from "./nav/SidebarNav";
-import { Landing } from "./routes/Landing";
 import { ApiReference } from "./routes/ApiReference";
 import { Examples } from "./routes/Examples";
 import { OutlinerPage } from "./routes/Outliner";
 import { MobileCmsPage } from "./routes/MobileCms";
 import { MarkdownDocPage } from "./docs/MarkdownDocPage";
-import { docsPagesBySlug, type DocsPage } from "./docs/docs-pages";
+import { docsPagesBySlug, type DocsPageSlug } from "./docs/docs-pages";
+
+type NavItem = { to: string; label: string };
+type NavGroup = { title: string; items: NavItem[] };
+
+const NAV: NavGroup[] = [
+  {
+    title: "Source",
+    items: [
+      { to: "/api", label: "API reference" },
+      { to: "/examples", label: "Examples" },
+    ],
+  },
+  {
+    title: "Demos",
+    items: [
+      { to: "/outliner", label: "Outliner" },
+      { to: "/mobile-cms", label: "Mobile CMS" },
+    ],
+  },
+  {
+    title: "Docs",
+    items: [
+      { to: "/docs/intro", label: "Overview" },
+      { to: "/docs/getting-started", label: "Quick Start" },
+      { to: "/docs/concepts", label: "useJsonDocument" },
+      { to: "/docs/operations", label: "Editor State" },
+      { to: "/docs/schema-safety", label: "Safety" },
+      { to: "/docs/clipboard-history", label: "Patterns" },
+      { to: "/docs/examples", label: "Lower-level Hooks" },
+      { to: "/docs/advanced", label: "Core & Design" },
+    ],
+  },
+];
+
+function Nav() {
+  return (
+    <nav
+      aria-label="Site navigation"
+      className="shrink-0 border-stone-200 text-sm border-b md:border-b-0 md:border-r md:h-screen md:w-52 md:overflow-y-auto"
+    >
+      <Link to="/" className="block px-4 py-3 font-mono text-stone-900 hover:bg-stone-100">
+        zod-crud
+      </Link>
+      {NAV.map((g) => (
+        <div key={g.title} className="px-2 pb-3">
+          <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+            {g.title}
+          </div>
+          {g.items.map((it) => (
+            <Link
+              key={it.to}
+              to={it.to as never}
+              className="block px-2 py-1 text-stone-700 no-underline hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-900 aria-[current=page]:text-stone-50"
+              activeOptions={{ exact: true }}
+              activeProps={{ "aria-current": "page" }}
+            >
+              {it.label}
+            </Link>
+          ))}
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 const rootRoute = createRootRoute({
   component: () => (
     <div className="flex w-screen flex-col md:h-screen md:flex-row md:overflow-hidden">
-      <SidebarNav />
+      <Nav />
       <div className="flex-1 md:overflow-auto">
         <Outlet />
       </div>
@@ -27,104 +90,27 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: Landing,
-  staticData: { palette: { label: "Overview", to: "/", category: "Start", order: 0 } },
-});
-
-const introRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/intro",
   component: () => <MarkdownDocPage page={docsPagesBySlug.intro} />,
-  staticData: { palette: docPalette(docsPagesBySlug.intro) },
 });
 
-const gettingStartedRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/getting-started",
-  component: () => <MarkdownDocPage page={docsPagesBySlug["getting-started"]} />,
-  staticData: { palette: docPalette(docsPagesBySlug["getting-started"]) },
-});
+function makeDocRoute(slug: DocsPageSlug) {
+  return createRoute({
+    getParentRoute: () => rootRoute,
+    path: `/docs/${slug}`,
+    component: () => <MarkdownDocPage page={docsPagesBySlug[slug]} />,
+  });
+}
 
-const conceptsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/concepts",
-  component: () => <MarkdownDocPage page={docsPagesBySlug.concepts} />,
-  staticData: { palette: docPalette(docsPagesBySlug.concepts) },
-});
+const docRoutes = (Object.keys(docsPagesBySlug) as DocsPageSlug[]).map(makeDocRoute);
 
-const schemaSafetyRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/schema-safety",
-  component: () => <MarkdownDocPage page={docsPagesBySlug["schema-safety"]} />,
-  staticData: { palette: docPalette(docsPagesBySlug["schema-safety"]) },
-});
-
-const operationsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/operations",
-  component: () => <MarkdownDocPage page={docsPagesBySlug.operations} />,
-  staticData: { palette: docPalette(docsPagesBySlug.operations) },
-});
-
-const clipboardHistoryRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/clipboard-history",
-  component: () => <MarkdownDocPage page={docsPagesBySlug["clipboard-history"]} />,
-  staticData: { palette: docPalette(docsPagesBySlug["clipboard-history"]) },
-});
-
-const examplesGuideRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/examples",
-  component: () => <MarkdownDocPage page={docsPagesBySlug.examples} />,
-  staticData: { palette: docPalette(docsPagesBySlug.examples) },
-});
-
-const advancedRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/docs/advanced",
-  component: () => <MarkdownDocPage page={docsPagesBySlug.advanced} />,
-  staticData: { palette: docPalette(docsPagesBySlug.advanced) },
-});
-
-const apiRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/api",
-  component: ApiReference,
-  staticData: { palette: { label: "API reference", to: "/api", category: "Reference", order: 5 } },
-});
-
-const examplesRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/examples",
-  component: Examples,
-  staticData: { palette: { label: "Examples", to: "/examples", category: "Reference", order: 6 } },
-});
-
-const outlinerRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/outliner",
-  component: OutlinerPage,
-  staticData: { palette: { label: "Outliner", to: "/outliner", category: "Reference editor", order: 30 } },
-});
-
-const mobileCmsRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/mobile-cms",
-  component: MobileCmsPage,
-  staticData: { palette: { label: "Mobile CMS", to: "/mobile-cms", category: "Reference editor", order: 31 } },
-});
+const apiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api", component: ApiReference });
+const examplesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/examples", component: Examples });
+const outlinerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/outliner", component: OutlinerPage });
+const mobileCmsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/mobile-cms", component: MobileCmsPage });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  introRoute,
-  gettingStartedRoute,
-  conceptsRoute,
-  schemaSafetyRoute,
-  operationsRoute,
-  clipboardHistoryRoute,
-  examplesGuideRoute,
-  advancedRoute,
+  ...docRoutes,
   apiRoute,
   examplesRoute,
   outlinerRoute,
@@ -138,23 +124,4 @@ export const router = createRouter({
 
 declare module "@tanstack/react-router" {
   interface Register { router: typeof router }
-  interface StaticDataRouteOption {
-    palette?: {
-      label: string;
-      to: string;
-      params?: Record<string, string>;
-      category?: string;
-      sub?: string;
-      order?: number;
-    };
-  }
-}
-
-function docPalette(page: DocsPage) {
-  return {
-    label: page.navLabel,
-    to: page.route,
-    category: "Docs",
-    order: page.order,
-  };
 }
