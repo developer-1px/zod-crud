@@ -9,6 +9,7 @@ import { ApiReference } from "./routes/ApiReference";
 import { Examples } from "./routes/Examples";
 import { OutlinerPage } from "./routes/Outliner";
 import { MobileCmsPage } from "./routes/MobileCms";
+import { ApiCollectionPage } from "./routes/ApiCollection";
 import { MarkdownDocPage } from "./docs/MarkdownDocPage";
 import { docsPagesBySlug, type DocsPageSlug } from "./docs/docs-pages";
 
@@ -28,6 +29,7 @@ const NAV: NavGroup[] = [
     items: [
       { to: "/outliner", label: "Outliner" },
       { to: "/mobile-cms", label: "Mobile CMS" },
+      { to: "/api-collection", label: "API collection" },
     ],
   },
   {
@@ -107,6 +109,7 @@ const apiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api", co
 const examplesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/examples", component: Examples });
 const outlinerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/outliner", component: OutlinerPage });
 const mobileCmsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/mobile-cms", component: MobileCmsPage });
+const apiCollectionRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api-collection", component: ApiCollectionPage });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -115,6 +118,7 @@ const routeTree = rootRoute.addChildren([
   examplesRoute,
   outlinerRoute,
   mobileCmsRoute,
+  apiCollectionRoute,
 ]);
 
 export const router = createRouter({

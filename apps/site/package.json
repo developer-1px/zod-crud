@@ -17,7 +17,8 @@
     "zod": "^4.0.0",
     "zod-crud": "^0.1.0",
     "@zod-crud/outliner": "*",
-    "@zod-crud/mobile-cms": "*"
+    "@zod-crud/mobile-cms": "*",
+    "@zod-crud/api-collection": "*"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
