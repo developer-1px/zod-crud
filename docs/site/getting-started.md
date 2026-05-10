@@ -41,8 +41,9 @@ const doc = useJsonDocument(Todo, {
 | 필드 | 지금 단계에서의 의미 |
 |------|----------------------|
 | `doc.value` | 현재 문서 |
-| `doc.ops` | 문서를 바꾸는 함수 묶음 |
-| `doc.history` | undo/redo |
+| `doc.ops` | JSON Pointer와 JSON Patch에 가까운 저수준 작업 |
+| `doc.commands` | 편집기 기능으로 쓰기 좋은 명령 묶음 |
+| `doc.history` | undo/redo 가능 여부 |
 
 ## 3. 화면에 값을 보여줍니다
 
@@ -84,11 +85,13 @@ const doc = useJsonDocument(Todo, initial, {
 });
 ```
 
+실제 undo/redo 실행은 `doc.ops.undo()` 또는 `doc.commands.undo()`로 합니다. `doc.history`는 버튼을 켜고 끄기 위한 상태 표면입니다.
+
 ```tsx
-<button onClick={doc.history.undo} disabled={!doc.history.canUndo}>
+<button onClick={doc.commands.undo} disabled={!doc.history.canUndo}>
   undo
 </button>
-<button onClick={doc.history.redo} disabled={!doc.history.canRedo}>
+<button onClick={doc.commands.redo} disabled={!doc.history.canRedo}>
   redo
 </button>
 ```
@@ -103,4 +106,4 @@ const doc = useJsonDocument(Todo, initial, {
 
 ## 다음에 읽을 것
 
-[useJsonDocument](/docs/concepts)에서 `doc.value`, `doc.ops`, `doc.history`, `doc.selection`을 하나씩 설명합니다.
+[useJsonDocument](/docs/concepts)에서 `doc.value`, `doc.ops`, `doc.commands`, `doc.can`, `doc.history`, `doc.selection`을 하나씩 설명합니다.

@@ -163,14 +163,14 @@ describe("stress — history depth & cycles", () => {
     // 모든 undo 풀기
     let safety = 200;
     while (result.current.history.canUndo && safety-- > 0) {
-      act(() => { result.current.history.undo(); });
+      act(() => { result.current.commands.undo(); });
     }
     expect(JSON.stringify(result.current.value)).toBe(initial);
 
     // 모든 redo 풀기 → afterAll 로 복귀
     safety = 200;
     while (result.current.history.canRedo && safety-- > 0) {
-      act(() => { result.current.history.redo(); });
+      act(() => { result.current.commands.redo(); });
     }
     expect(JSON.stringify(result.current.value)).toBe(afterAll);
   });
@@ -217,11 +217,11 @@ describe("stress — G1 JSON round-trip", () => {
     act(() => { result.current.ops.replace("/text" as never, "renamed" as never); });
 
     // undo → redo → undo 가 안전 (직렬화 깨지면 cycle 깨짐)
-    act(() => { result.current.history.undo(); });
+    act(() => { result.current.commands.undo(); });
     expect(result.current.value.text).toBe(SAMPLE.text);
-    act(() => { result.current.history.redo(); });
+    act(() => { result.current.commands.redo(); });
     expect(result.current.value.text).toBe("renamed");
-    act(() => { result.current.history.undo(); });
+    act(() => { result.current.commands.undo(); });
     expect(result.current.value.text).toBe(SAMPLE.text);
   });
 });

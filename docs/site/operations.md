@@ -2,7 +2,7 @@
 
 편집기는 단순히 값 하나만 들고 있지 않습니다. 사용자가 보고 있는 문서 값, 방금 한 편집, 선택된 항목, 캐럿, 되돌리기 기록이 함께 움직입니다.
 
-zod-crud는 이 묶음을 `doc` 객체로 다룹니다.
+zod-crud는 이 묶음을 `doc` 객체로 다룹니다. `doc.ops`는 JSON Patch에 가까운 저수준 표면이고, `doc.commands`는 제품 기능으로 바로 부르기 좋은 명령 표면입니다.
 
 ## 문서 값
 
@@ -16,7 +16,7 @@ doc.value;
 
 ## 편집 작업
 
-편집은 `doc.ops`로 합니다.
+기본 편집은 `doc.ops`로 합니다.
 
 ```ts
 doc.ops.replace("/title", "New title");
@@ -36,6 +36,29 @@ doc.ops.move("/items/2", "/items/0");
 | `copy` | 복제할 때 |
 | `test` | 바꾸기 전에 값이 맞는지 확인할 때 |
 | `patch` | 여러 작업을 한 번에 적용할 때 |
+
+## 명령 표면
+
+공식 편집 어휘는 `doc.commands`에 모입니다.
+
+```ts
+doc.commands.find("$..title");
+doc.commands.move("/items/2", "/items/0");
+doc.commands.duplicate("/items/0");
+doc.commands.cut("/items/1");
+doc.commands.copy("/items/1");
+doc.commands.paste(payload, "/items/-");
+doc.commands.undo();
+doc.commands.redo();
+```
+
+버튼을 만들 때는 `doc.can`으로 현재 state에서 가능한 작업인지 확인합니다.
+
+```tsx
+<button disabled={!doc.can.paste(payload, "/items/-")}>
+  paste
+</button>
+```
 
 ## 여러 작업을 한 번에 적용하기
 
@@ -91,17 +114,19 @@ doc.ops.remove("/items/0");
 history는 문서 편집을 되돌리고 다시 적용합니다.
 
 ```ts
-doc.history.undo();
-doc.history.redo();
+doc.commands.undo();
+doc.commands.redo();
 ```
 
 버튼에는 `canUndo`, `canRedo`를 연결합니다.
 
 ```tsx
-<button disabled={!doc.history.canUndo} onClick={doc.history.undo}>
+<button disabled={!doc.history.canUndo} onClick={doc.commands.undo}>
   undo
 </button>
 ```
+
+`doc.ops.undo()`와 `doc.ops.redo()`도 같은 history stack을 사용합니다. `doc.history`는 실행 함수가 아니라 상태와 `mergeLast()`를 제공하는 표면입니다.
 
 ## 핵심 요약
 
@@ -110,8 +135,10 @@ doc.history.redo();
 ```txt
 doc
 ├─ value      현재 문서
-├─ ops        문서를 바꾸는 방법
-├─ history    되돌리기
+├─ ops        JSON Patch에 가까운 저수준 작업
+├─ commands   제품 수준 편집 명령
+├─ can        명령 실행 가능 여부
+├─ history    되돌리기 가능 상태
 └─ selection  선택된 위치들. collapsed selection이면 현재 캐럿
 ```
 

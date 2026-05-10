@@ -10,7 +10,7 @@ useJsonDocument
 └─ useSelection   ← W3C Selection API. 캐럿 = collapsed selection
 ```
 
-`useJsonDocument`는 위 hook들을 하나의 `doc` 객체로 묶습니다. 반대로 낮은 레벨 hook을 직접 쓰면 상태 경계를 더 세밀하게 나눌 수 있습니다.
+`useJsonDocument`는 위 hook들과 commands/can/history wiring을 하나의 `doc` 객체로 묶습니다. 반대로 낮은 레벨 hook을 직접 쓰면 상태 경계를 더 세밀하게 나눌 수 있습니다.
 
 ## `useJson`
 
@@ -67,6 +67,7 @@ DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다. 
 | 처음 시작하는 앱 | `useJsonDocument` |
 | 값 편집만 필요한 작은 UI | `useJson` |
 | selection을 별도 provider로 분리 | `useJson` + `useSelection` |
+| 제품 수준 편집 명령이 필요함 | `useJsonDocument.commands` |
 | React 밖에서 patch만 적용 | `applyPatch` |
 
 처음에는 `useJsonDocument`로 시작하고, 실제로 분리할 이유가 생겼을 때 내려오면 됩니다.

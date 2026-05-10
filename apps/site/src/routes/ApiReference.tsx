@@ -24,7 +24,7 @@ function buildTree(paths: string[]): TreeNode {
   const root: TreeNode = { kind: "dir", name: "src", path: "", children: [] };
   for (const path of paths) {
     const segs = path.split("/");
-    let cursor = root;
+    let cursor: TreeNode = root;
     segs.forEach((seg, i) => {
       const isFile = i === segs.length - 1;
       if (cursor.kind !== "dir") return;
@@ -161,4 +161,3 @@ function basename(path: string): string {
   const i = path.lastIndexOf("/");
   return i === -1 ? path : path.slice(i + 1);
 }
-

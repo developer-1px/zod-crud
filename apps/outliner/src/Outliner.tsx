@@ -38,7 +38,7 @@ export function Outliner() {
     : null;
   const dispatch = useDispatch({
     ctx, mode, setMode, pushToast,
-    undo: doc.history.undo, redo: doc.history.redo,
+    undo: doc.commands.undo, redo: doc.commands.redo,
     toggleRecord,
     logger,
   });
@@ -63,8 +63,8 @@ export function Outliner() {
       </header>
 
       <div className="toolbar">
-        <button onClick={doc.history.undo} disabled={!doc.history.canUndo}>undo</button>
-        <button onClick={doc.history.redo} disabled={!doc.history.canRedo}>redo</button>
+        <button onClick={doc.commands.undo} disabled={!doc.history.canUndo}>undo</button>
+        <button onClick={doc.commands.redo} disabled={!doc.history.canRedo}>redo</button>
         <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
         {recorder.isRecording ? (
           <button

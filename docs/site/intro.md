@@ -48,8 +48,10 @@ const doc = useJsonDocument(Schema, initial, {
 | 필드 | 뜻 |
 |------|----|
 | `doc.value` | 현재 JSON 문서 값 |
-| `doc.ops` | schema gate를 통과해 문서를 바꾸는 작업 |
-| `doc.history` | undo/redo 상태와 명령 |
+| `doc.ops` | RFC 6902 기반 저수준 편집 작업 |
+| `doc.commands` | select, move, cut, paste, undo 같은 제품 수준 명령 |
+| `doc.can` | 현재 state에서 명령이 가능한지 확인하는 guard |
+| `doc.history` | undo/redo 가능 여부와 history 병합 |
 | `doc.selection` | 선택된 JSON Pointer 위치들 |
 
 ## Standards inside
@@ -62,6 +64,8 @@ zod-crud는 내부 표현을 임의 형식으로 만들지 않습니다.
 - **Zod schema**: commit 가능한 JSON 상태의 안전 경계
 
 편집 작업은 먼저 계산되고, 결과가 Zod schema를 통과할 때만 commit됩니다. 실패하면 기존 state는 유지됩니다.
+
+`doc.ops`는 이 표준을 직접 다루는 escape hatch이고, `doc.commands`는 공식 편집 어휘 10개를 한 namespace로 묶은 제품 표면입니다.
 
 ## What it is not
 

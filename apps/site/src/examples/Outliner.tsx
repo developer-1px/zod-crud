@@ -52,21 +52,21 @@ export function Outliner() {
   const doc = useJsonDocument(OutlineSchema, SAMPLE, {
     history: 200,
     strict: false,
-    focus: { initial: "" },
+    selection: { mode: "single", initial: [""] },
   });
-  const focus: Pointer | null = doc.focus?.value ?? null;
+  const focus: Pointer | null = doc.selection?.focus ?? null;
 
   // 키 매핑 (DOM 이벤트 → RFC 6902 op) — UI 책임.
   const onKey = (e: React.KeyboardEvent, p: Pointer): void => {
     const isMeta = e.metaKey || e.ctrlKey;
     if (isMeta && e.key === "z" && !e.shiftKey) {
       e.preventDefault();
-      doc.history.undo();
+      doc.commands.undo();
       return;
     }
     if (isMeta && (e.key === "z" && e.shiftKey || e.key === "y")) {
       e.preventDefault();
-      doc.history.redo();
+      doc.commands.redo();
       return;
     }
     if (e.key === "Enter" && !e.shiftKey) {
@@ -77,7 +77,7 @@ export function Outliner() {
       if (parent === null) return;
       const insertAt = `${parent}/${idx + 1}`;
       const r = doc.ops.patch([{ op: "add", path: insertAt, value: { text: "", children: [] } }]);
-      if (r.ok) doc.focus?.set(insertAt);
+      if (r.ok) doc.selection?.collapse(insertAt);
       return;
     }
     if (e.key === "Tab" && !e.shiftKey) {
@@ -89,7 +89,7 @@ export function Outliner() {
       const r = doc.ops.patch([{ op: "move", from: p, path: target }]);
       if (r.ok) {
         const prevChildren = readChildren(doc.value, prev);
-        doc.focus?.set(`${prev}/children/${prevChildren.length}`);
+        doc.selection?.collapse(`${prev}/children/${prevChildren.length}`);
       }
       return;
     }
@@ -104,7 +104,7 @@ export function Outliner() {
       const targetIdx = parentIdx + 1;
       const target = `${parentParent}/${targetIdx}`;
       const r = doc.ops.patch([{ op: "move", from: p, path: target }]);
-      if (r.ok) doc.focus?.set(target);
+      if (r.ok) doc.selection?.collapse(target);
       return;
     }
     if (e.key === "Backspace") {
@@ -116,7 +116,7 @@ export function Outliner() {
         if (idx === null || parent === null) return;
         const r = doc.ops.patch([{ op: "remove", path: p }]);
         if (r.ok) {
-          doc.focus?.set(idx > 0 ? siblingAt(p, idx - 1) : parent);
+          doc.selection?.collapse(idx > 0 ? siblingAt(p, idx - 1) : parent);
         }
       }
     }
@@ -125,13 +125,13 @@ export function Outliner() {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex gap-2 text-xs">
-        <button onClick={doc.history.undo} disabled={!doc.history.canUndo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
-        <button onClick={doc.history.redo} disabled={!doc.history.canRedo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
+        <button onClick={doc.commands.undo} disabled={!doc.history.canUndo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
+        <button onClick={doc.commands.redo} disabled={!doc.history.canRedo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
         <button onClick={() => doc.ops.reset()} className="rounded border border-stone-300 bg-white px-2 py-1">reset</button>
         <span className="ml-auto font-mono text-stone-500">focus = {focus ?? "—"}</span>
       </div>
       <ul role="tree" aria-label="outline" className="rounded border border-stone-200 bg-white p-2 font-mono text-sm">
-        <OutlineRow node={doc.value} pointer="" depth={0} focus={focus} setFocus={(p) => doc.focus?.set(p)} ops={doc.ops} onKey={onKey} />
+        <OutlineRow node={doc.value} pointer="" depth={0} focus={focus} setFocus={(p) => doc.selection?.collapse(p)} ops={doc.ops} onKey={onKey} />
       </ul>
     </div>
   );

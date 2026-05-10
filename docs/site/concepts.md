@@ -13,8 +13,10 @@ const doc = useJsonDocument(Schema, initial);
 | 필드 | 설명 |
 |------|------|
 | `doc.value` | 현재 문서 값 |
-| `doc.ops` | 문서를 바꾸는 작업 API |
-| `doc.history` | undo/redo API |
+| `doc.ops` | RFC 6902 6개 operation에 가까운 저수준 작업 API |
+| `doc.commands` | select, find, move, duplicate, replace, cut, copy, paste, undo, redo 명령 |
+| `doc.can` | 명령 실행 가능 여부를 계산하는 guard |
+| `doc.history` | undo/redo 가능 여부와 history 병합 API |
 | `doc.selection` | 선택 상태. 옵션을 켰을 때 사용 |
 
 ## `doc.value`
@@ -29,7 +31,7 @@ const doc = useJsonDocument(Schema, initial);
 
 ## `doc.ops`
 
-`doc.ops`는 문서를 바꾸는 함수들입니다.
+`doc.ops`는 JSON Patch에 가까운 저수준 작업입니다.
 
 ```ts
 doc.ops.replace("/title", "New title");
@@ -39,20 +41,40 @@ doc.ops.remove("/tasks/0");
 
 여기서 `"/title"`이나 `"/tasks/0"`은 문서 안의 위치입니다. 처음에는 파일 경로처럼 “어디를 바꿀지 적는 문자열”이라고 생각하면 됩니다.
 
+## `doc.commands`와 `doc.can`
+
+`doc.commands`는 공식 편집 어휘 10개를 제품 기능 이름으로 노출합니다.
+
+```ts
+doc.commands.find("$..title");
+doc.commands.move("/tasks/2", "/tasks/0");
+doc.commands.duplicate("/tasks/0");
+doc.commands.cut("/tasks/1");
+doc.commands.paste(payload, "/tasks/-");
+doc.commands.undo();
+```
+
+`doc.can`은 같은 변경이 현재 state에서 가능한지 미리 확인합니다. 내부적으로 dry apply와 schema 검증을 거치므로 버튼 disabled 상태를 만들 때 씁니다.
+
+```tsx
+<button disabled={!doc.can.move("/tasks/2", "/tasks/0")}>
+  move up
+</button>
+```
+
 ## `doc.history`
 
-history는 undo/redo를 담당합니다.
+history는 undo/redo 가능 여부와 history 병합을 제공합니다.
 
 ```tsx
 const doc = useJsonDocument(Schema, initial, { history: 100 });
 
-doc.history.undo();
-doc.history.redo();
 doc.history.canUndo;
 doc.history.canRedo;
+doc.history.mergeLast();
 ```
 
-history를 켜지 않으면 undo/redo 스택은 쌓이지 않습니다.
+실행은 `doc.ops.undo()` 또는 `doc.commands.undo()`로 합니다. history를 켜지 않으면 undo/redo 스택은 쌓이지 않습니다.
 
 ## `doc.selection`
 
@@ -94,7 +116,7 @@ doc.selection?.empty();
 | `history` | undo/redo 스택 크기 |
 | `strict` | 실패 시 throw할지 여부 |
 | `onError` | 실패했을 때 호출할 콜백 |
-| `selection` | 선택 상태 켜기와 설정 |
+| `selection` | 선택 상태 노출 여부와 설정 |
 
 ## 언제 낮은 레벨 hook을 쓰나요?
 
@@ -112,4 +134,4 @@ doc.selection?.empty();
 
 전체 구현보다 먼저 타입 표면만 보면 충분합니다.
 
-::source{path="packages/zod-crud/src/hooks/useJsonDocument.ts" title="useJsonDocument types" lines="12-37"}
+::source{path="packages/zod-crud/src/hooks/useJsonDocument.ts" title="useJsonDocument types" lines="21-49"}

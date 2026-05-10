@@ -12,7 +12,7 @@
 | 항목 추가 | `doc.ops.add("/items/-", item)` |
 | 항목 삭제 | `doc.ops.remove("/items/0")` |
 | 항목 이동 | `doc.ops.move(from, path)` |
-| undo | `doc.history.undo()` |
+| undo | `doc.commands.undo()` 또는 `doc.ops.undo()` |
 
 리스트에서는 index가 바뀌기 쉽습니다. 그래서 selection과 캐럿을 직접 숫자로 들고 있기보다 Pointer로 들고 있는 편이 안전합니다.
 
@@ -73,17 +73,19 @@ Outliner reference editor는 `useJsonDocument`의 정체성을 가장 잘 보여
 
 ## 패턴 5. Clipboard UI
 
-현재 public API에 `useClipboard` hook은 없습니다. 하지만 clipboard UI를 만들 수 없다는 뜻은 아닙니다.
+현재 public API에 `useClipboard` hook은 없습니다. 대신 `doc.commands`가 clipboard verb를 제공합니다.
 
-복제와 이동은 이미 `doc.ops`로 표현됩니다.
+복제와 이동은 `doc.commands`로 제품 어휘를 쓰거나, `doc.ops`로 JSON Patch를 직접 적용할 수 있습니다.
 
 | UI 이름 | 실제 작업 |
 |---------|-----------|
-| duplicate | `doc.ops.copy(from, path)` |
-| cut/move | `doc.ops.move(from, path)` |
-| paste batch | `doc.ops.patch([...])` |
+| duplicate | `doc.commands.duplicate(source)` |
+| cut | `doc.commands.cut(source)` |
+| copy | `doc.commands.copy(source)` |
+| paste | `doc.commands.paste(payload, target)` |
+| batch edit | `doc.ops.patch([...])` |
 
-즉 clipboard buffer는 앱이 들고 있고, 실제 문서 변경은 zod-crud의 안전한 operation으로 commit합니다.
+브라우저 clipboard buffer는 앱이 들고 있습니다. zod-crud는 JSON payload와 patch commit을 안전하게 다룹니다.
 
 ## 패턴 6. Session recording
 
@@ -105,7 +107,7 @@ Outliner reference editor는 이 패턴을 UI로 감싸서 Record/Stop 버튼과
 ## 좋은 패턴
 
 - UI 이벤트는 앱에서 해석합니다.
-- 문서 변경은 `doc.ops`로만 합니다.
+- 문서 변경은 `doc.commands` 또는 `doc.ops`로만 합니다.
 - 선택/캐럿은 JSON 위치로 저장합니다.
 - schema가 실패하면 화면에 실패를 보여줍니다.
 

@@ -98,8 +98,14 @@ zod-crud는 변경을 먼저 계산한 뒤, schema를 통과할 때만 commit합
 └─ useJsonDocument
    ├─ doc.value
    ├─ doc.ops
+   ├─ doc.commands
+   ├─ doc.can
    ├─ doc.history
    └─ doc.selection   ← W3C Selection. 캐럿 = collapsed
+
+Commands
+├─ buildCommands
+└─ buildCan
 
 낮은 레벨 hook
 ├─ useJson
