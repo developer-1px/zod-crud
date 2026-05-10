@@ -8,6 +8,12 @@ export type CommandId =
   | "promote"
   | "remove"
   | "select-all"
+  | "focus-prev"
+  | "focus-next"
+  | "focus-parent"
+  | "focus-first-child"
+  | "focus-first"
+  | "focus-last"
   | "extend-up"
   | "extend-down"
   | "move-up"
@@ -32,6 +38,12 @@ export const KEYMAP: ReadonlyArray<KeyBinding> = [
   { chord: "Shift+Tab",    command: "promote",        label: "Promote" },
   { chord: "Backspace",    command: "remove",         label: "Delete (when empty)" },
   { chord: "Mod+a",        command: "select-all",     label: "Select all" },
+  { chord: "ArrowUp",      command: "focus-prev",     label: "Focus previous row" },
+  { chord: "ArrowDown",    command: "focus-next",     label: "Focus next row" },
+  { chord: "ArrowLeft",    command: "focus-parent",   label: "Focus parent" },
+  { chord: "ArrowRight",   command: "focus-first-child", label: "Focus first child" },
+  { chord: "Home",         command: "focus-first",    label: "Focus first row" },
+  { chord: "End",          command: "focus-last",     label: "Focus last row" },
   { chord: "Shift+ArrowUp",   command: "extend-up",      label: "Extend selection up" },
   { chord: "Shift+ArrowDown", command: "extend-down",    label: "Extend selection down" },
   { chord: "Mod+ArrowUp",     command: "move-up",        label: "Move row up" },

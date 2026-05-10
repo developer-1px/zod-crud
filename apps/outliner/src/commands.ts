@@ -4,7 +4,11 @@
 import type { JsonOps, JsonPatchOperation, JsonResult, Pointer, SelectionState, FocusState } from "zod-crud";
 import type { OutlineNode } from "./schema.js";
 import { EMPTY_NODE } from "./schema.js";
-import { parentOf, lastIndex, siblingAt, readNode, readChildren, walkPointers, comparePointer } from "./pointer-utils.js";
+import {
+  parentOf, lastIndex, siblingAt, readNode, readChildren,
+  walkPointers, comparePointer,
+  nextVisible, prevVisible, firstVisible, lastVisible, firstChildOf,
+} from "./pointer-utils.js";
 import type { ClipboardApi, PasteMode } from "./clipboard.js";
 
 export interface CommandContext {
@@ -156,21 +160,67 @@ export function paste(ctx: CommandContext, mode: PasteMode): JsonResult {
   return ctx.clipboard.paste(target, mode, ctx.ops);
 }
 
-// extend selection by visible-order. 단순 형제 단위만 처리 (DFS 펼침은 후속 정밀화).
+// extend selection by visible(DFS) order — 형제 경계를 넘어 같은 위계 trail 로 펼침.
 export function extendSelection(ctx: CommandContext, dir: "up" | "down"): void {
   const f = ctx.focus.value;
   if (f === null) return;
-  const idx = lastIndex(f);
-  if (idx === null) return;
-  const parent = parentOf(f);
-  if (parent === null) return;
-  const parentNode = readNode(ctx.state, parent);
-  if (!parentNode) return;
-  const target = dir === "up"
-    ? (idx > 0 ? siblingAt(f, idx - 1) : null)
-    : (idx < parentNode.children.length - 1 ? siblingAt(f, idx + 1) : null);
+  const target = dir === "up" ? prevVisible(ctx.state, f) : nextVisible(ctx.state, f);
   if (!target) return;
   const anchor = ctx.selection.anchor ?? f;
   ctx.selection.range(anchor, target);
   ctx.focus.set(target);
+}
+
+// ── focus navigation (DFS visible order) ────────────────────────────────────
+
+export function focusPrev(ctx: CommandContext): void {
+  const f = ctx.focus.value;
+  if (f === null) {
+    const last = lastVisible(ctx.state);
+    if (last) ctx.focus.set(last);
+    return;
+  }
+  const target = prevVisible(ctx.state, f);
+  if (target) ctx.focus.set(target);
+}
+
+export function focusNext(ctx: CommandContext): void {
+  const f = ctx.focus.value;
+  if (f === null) {
+    const first = firstVisible(ctx.state);
+    if (first) ctx.focus.set(first);
+    return;
+  }
+  const target = nextVisible(ctx.state, f);
+  if (target) ctx.focus.set(target);
+}
+
+export function focusParent(ctx: CommandContext): void {
+  const f = ctx.focus.value;
+  if (f === null) return;
+  const parent = parentOf(f);
+  // root("") 으로의 이동은 막음 — root 는 편집 row 가 아님 (UI 정책).
+  if (parent === null || parent === "") return;
+  ctx.focus.set(parent);
+}
+
+export function focusFirstChild(ctx: CommandContext): void {
+  const f = ctx.focus.value;
+  if (f === null) {
+    const first = firstVisible(ctx.state);
+    if (first) ctx.focus.set(first);
+    return;
+  }
+  const child = firstChildOf(ctx.state, f);
+  if (child) ctx.focus.set(child);
+}
+
+export function focusFirst(ctx: CommandContext): void {
+  const first = firstVisible(ctx.state);
+  if (first) ctx.focus.set(first);
+}
+
+export function focusLast(ctx: CommandContext): void {
+  const last = lastVisible(ctx.state);
+  if (last) ctx.focus.set(last);
 }

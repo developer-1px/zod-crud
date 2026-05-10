@@ -27,6 +27,11 @@ export {
   escapeSegment,
   unescapeSegment,
   PointerSyntaxError,
+  parentPointer,
+  lastSegment,
+  lastSegmentIndex,
+  appendSegment,
+  withLastSegment,
 } from "./core/pointer.js";
 export type { Pointer } from "./core/pointer.js";
 export type { PointerOf, ValueAt } from "./core/path-types.js";

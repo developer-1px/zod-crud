@@ -41,12 +41,32 @@ type OutlineNode = { text: string; children: OutlineNode[] };
 DOM 이벤트는 `eventToChord` 로 정규화 → `findCommand(chord)` 로 lookup → `dispatch(id)`.
 chord 가 keymap 에 없으면 default 동작 통과 (텍스트 입력 등).
 
-## 3. Cursor (focus)
+## 3. Cursor (focus) + 키보드 navigation
 
 - 단일 활성 좌표 = `useFocus` value (Pointer | null).
 - `aria-activedescendant` 의미와 1:1.
 - 한 row 의 `<input>` 이 실제 DOM focus 를 가지는데, focus state 는 useFocus 가 별도 보관 →
-  RFC 6902 op 적용 후에도 자동 추적 (SPEC §0.2 (9)).
+  RFC 6902 op 적용 후에도 자동 추적 (zod-crud SPEC §0.2 (9)).
+
+### Navigation order — outliner-defined
+
+Visible navigation order = **DFS pre-order over `children` field**, root 제외.
+이 정의는 outliner 책임이며 zod-crud 는 모름 — child field 이름 ("children" / "items" / "blocks") 과
+visibility (collapse 상태 등) 는 editor 별 결정. zod-crud 는 path arithmetic 만 제공
+(`parentPointer` / `lastSegmentIndex` / `withLastSegment` ...).
+
+[`src/pointer-utils.ts`](./src/pointer-utils.ts) 의 `nextVisible` / `prevVisible` /
+`firstVisible` / `lastVisible` / `firstChildOf` 가 이 순서의 정본.
+
+| 키 | command | 동작 |
+|----|---------|------|
+| ArrowUp | focus-prev | DFS 직전 row |
+| ArrowDown | focus-next | DFS 직후 row |
+| ArrowLeft | focus-parent | parent row (root 까지는 안 감) |
+| ArrowRight | focus-first-child | 첫 자식 (없으면 무동작) |
+| Home | focus-first | DFS 첫 row |
+| End | focus-last | DFS 마지막 row |
+| Shift+ArrowUp/Down | extend-up/down | DFS 기반 selection range 확장 |
 
 ## 4. Multi-select
 

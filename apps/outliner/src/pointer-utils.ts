@@ -1,25 +1,13 @@
 // Outliner-local Pointer helpers. RFC 6901 위에서 outline 트리를 다루는 식별 함수들.
 
-import type { Pointer } from "zod-crud";
+import { parentPointer, lastSegmentIndex, withLastSegment, type Pointer } from "zod-crud";
 import type { OutlineNode } from "./schema.js";
 
-export function parentOf(p: Pointer): Pointer | null {
-  if (p === "") return null;
-  const i = p.lastIndexOf("/");
-  return i <= 0 ? "" : p.slice(0, i);
-}
-
-export function lastIndex(p: Pointer): number | null {
-  if (p === "") return null;
-  const i = p.lastIndexOf("/");
-  if (i < 0) return null;
-  const n = Number(p.slice(i + 1));
-  return Number.isInteger(n) ? n : null;
-}
-
+// Outliner-local 별칭 — zod-crud 의 path arithmetic 헬퍼를 짧은 이름으로.
+export const parentOf = parentPointer;
+export const lastIndex = lastSegmentIndex;
 export function siblingAt(p: Pointer, idx: number): Pointer {
-  const i = p.lastIndexOf("/");
-  return p.slice(0, i + 1) + String(idx);
+  return withLastSegment(p, idx) ?? p;
 }
 
 export function readNode(root: OutlineNode, pointer: Pointer): OutlineNode | null {
@@ -70,4 +58,45 @@ export function sharedArrayParent(a: Pointer, b: Pointer): Pointer | null {
   if (pa !== pb) return null;
   if (lastIndex(a) === null || lastIndex(b) === null) return null;
   return pa;
+}
+
+// DFS visible-order traversal — outliner 의 위/아래 한 칸 이동의 정의.
+// root 자신은 visible 에서 제외 (편집 row 가 아님).
+function flatVisible(root: OutlineNode): Pointer[] {
+  return [...walkPointers(root)].filter((p) => p !== "");
+}
+
+export function nextVisible(root: OutlineNode, pointer: Pointer): Pointer | null {
+  const arr = flatVisible(root);
+  if (arr.length === 0) return null;
+  if (pointer === "") return arr[0]!;
+  const i = arr.indexOf(pointer);
+  if (i < 0) return null;
+  return i + 1 < arr.length ? arr[i + 1]! : null;
+}
+
+export function prevVisible(root: OutlineNode, pointer: Pointer): Pointer | null {
+  const arr = flatVisible(root);
+  if (arr.length === 0) return null;
+  if (pointer === "") return null;
+  const i = arr.indexOf(pointer);
+  if (i <= 0) return null;
+  return arr[i - 1]!;
+}
+
+export function firstVisible(root: OutlineNode): Pointer | null {
+  for (const p of walkPointers(root)) if (p !== "") return p;
+  return null;
+}
+
+export function lastVisible(root: OutlineNode): Pointer | null {
+  let last: Pointer | null = null;
+  for (const p of walkPointers(root)) if (p !== "") last = p;
+  return last;
+}
+
+export function firstChildOf(root: OutlineNode, pointer: Pointer): Pointer | null {
+  const node = readNode(root, pointer);
+  if (!node || node.children.length === 0) return null;
+  return `${pointer}/children/0`;
 }

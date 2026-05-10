@@ -27,3 +27,42 @@ export function parsePointer(pointer: Pointer): string[] {
 export class PointerSyntaxError extends Error {
   override readonly name = "PointerSyntaxError";
 }
+
+// ── Path arithmetic (state-free, schema-free) ───────────────────────────────
+// SPEC §5.6. RFC 6901 위에서 순수 path 조작. state·schema 모름. 모든 editor 가 공유.
+
+/** Parent pointer. `""` (root) 는 `null`. `"/a"` → `""`, `"/a/b"` → `"/a"`. */
+export function parentPointer(pointer: Pointer): Pointer | null {
+  if (pointer === "") return null;
+  const i = pointer.lastIndexOf("/");
+  return i <= 0 ? "" : pointer.slice(0, i);
+}
+
+/** 마지막 segment (이스케이프 디코드된). `""` 또는 `null`. */
+export function lastSegment(pointer: Pointer): string | null {
+  if (pointer === "") return null;
+  const i = pointer.lastIndexOf("/");
+  if (i < 0) return null;
+  return unescapeSegment(pointer.slice(i + 1));
+}
+
+/** 마지막 segment 가 array index 면 그 정수, 아니면 `null` (record key 또는 root). */
+export function lastSegmentIndex(pointer: Pointer): number | null {
+  const seg = lastSegment(pointer);
+  if (seg === null) return null;
+  if (!/^(0|[1-9][0-9]*)$/.test(seg)) return null;
+  return Number(seg);
+}
+
+/** Pointer 끝에 segment 추가. `appendSegment("/a", 0)` → `"/a/0"`, escape 자동. */
+export function appendSegment(pointer: Pointer, seg: string | number): Pointer {
+  return pointer + "/" + escapeSegment(String(seg));
+}
+
+/** Pointer 의 마지막 segment 를 교체. root 면 `null`. */
+export function withLastSegment(pointer: Pointer, seg: string | number): Pointer | null {
+  if (pointer === "") return null;
+  const i = pointer.lastIndexOf("/");
+  if (i < 0) return null;
+  return pointer.slice(0, i + 1) + escapeSegment(String(seg));
+}

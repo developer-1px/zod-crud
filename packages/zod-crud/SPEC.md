@@ -271,12 +271,23 @@ export function safeParse<S extends z.ZodType>(
 ### 5.6 RFC 6901 Pointer 헬퍼 (low-level)
 
 ```ts
-export function parsePointer(pointer: Pointer): string[];   // 이스케이프 디코드된 segment 배열
+// Parse / build
+export function parsePointer(pointer: Pointer): string[];          // 이스케이프 디코드된 segment 배열
 export function buildPointer(segments: (string | number)[]): Pointer;
-export function escapeSegment(s: string): string;           // ~ → ~0, / → ~1
+export function escapeSegment(s: string): string;                  // ~ → ~0, / → ~1
+export function unescapeSegment(s: string): string;
+
+// Path arithmetic (state-free, schema-free)
+export function parentPointer(p: Pointer): Pointer | null;         // "/a/b" → "/a", "/a" → "", "" → null
+export function lastSegment(p: Pointer): string | null;
+export function lastSegmentIndex(p: Pointer): number | null;       // "/tasks/0" → 0, "/tasks/x" → null
+export function appendSegment(p: Pointer, seg: string | number): Pointer;
+export function withLastSegment(p: Pointer, seg: string | number): Pointer | null;
 ```
 
 내부 정본은 segment 배열이지만 **외부 API 전체가 Pointer string**이라 사용자는 이 헬퍼 없이도 라이브러리 사용 가능.
+
+Path arithmetic 은 모든 editor 가 공유하는 순수 path 조작. 이 5개 함수가 정본 — 사용자가 split/regex 로 직접 짜는 것을 막는다. **state·schema 모름** 이 핵심 — visible 순회·DFS·child field 같은 navigation order 는 user-defined (각 editor 의 spec 에서 정의).
 
 ### 5.7 `useSelection` — Selection state hook (Axis 2)
 

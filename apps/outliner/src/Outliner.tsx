@@ -54,6 +54,12 @@ export function Outliner() {
       case "promote":        cmd.promote(ctx); return;
       case "remove":         cmd.remove(ctx); return;
       case "select-all":     cmd.selectAll(ctx); return;
+      case "focus-prev":     cmd.focusPrev(ctx); return;
+      case "focus-next":     cmd.focusNext(ctx); return;
+      case "focus-parent":   cmd.focusParent(ctx); return;
+      case "focus-first-child": cmd.focusFirstChild(ctx); return;
+      case "focus-first":    cmd.focusFirst(ctx); return;
+      case "focus-last":     cmd.focusLast(ctx); return;
       case "extend-up":      cmd.extendSelection(ctx, "up"); return;
       case "extend-down":    cmd.extendSelection(ctx, "down"); return;
       case "move-up":        cmd.moveUp(ctx); return;
