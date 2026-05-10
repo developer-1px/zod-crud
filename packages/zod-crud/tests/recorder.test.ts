@@ -1,0 +1,66 @@
+// replayRecording — 세션 재생. useRecorder 자체는 React 환경 필요해 outliner 통합 테스트로.
+// 여기서는 Recording shape 로 replay 가 정확히 ops 를 재현하는지 확인.
+
+import { describe, expect, test } from "vitest";
+import { z } from "zod";
+import { applyPatch, replayRecording, type JsonOps, type Recording } from "../src/index.js";
+
+const Schema = z.object({ items: z.array(z.string()) });
+type S = z.infer<typeof Schema>;
+
+function makeOps(initial: S): JsonOps<S> {
+  let state: S = Schema.parse(initial);
+  const subs = new Set<(applied: any) => void>();
+  return {
+    get state() { return state; },
+    load(v) { state = Schema.parse(v); return { ok: true } as const; },
+    reset(v) { state = v ? Schema.parse(v) : state; },
+    patch(ops) {
+      const r = applyPatch(Schema, state, ops);
+      if (r.result.ok) { state = r.state; for (const s of subs) s(r.applied); }
+      return r.result;
+    },
+    add: () => ({ ok: true } as any), remove: () => ({ ok: true } as any),
+    replace: () => ({ ok: true } as any), move: () => ({ ok: true } as any),
+    copy: () => ({ ok: true } as any), test: () => ({ ok: true } as any),
+    undo: () => false, redo: () => false, canUndo: () => false, canRedo: () => false,
+    subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
+  };
+}
+
+describe("replayRecording", () => {
+  test("loads initial then applies steps in order", async () => {
+    const recording: Recording<S> = {
+      startedAt: 0,
+      initial: { items: [] },
+      steps: [
+        { ops: [{ op: "add", path: "/items/-", value: "a" }], at: 100 },
+        { ops: [{ op: "add", path: "/items/-", value: "b" }], at: 200 },
+        { ops: [{ op: "remove", path: "/items/0" }], at: 300 },
+      ],
+    };
+    const ops = makeOps({ items: ["x"] });
+    await replayRecording(recording, ops, { speed: Infinity });
+    expect(ops.state).toEqual({ items: ["b"] });
+  });
+
+  test("respects abort signal", async () => {
+    const recording: Recording<S> = {
+      startedAt: 0,
+      initial: { items: [] },
+      steps: Array.from({ length: 5 }, (_, i) => ({
+        ops: [{ op: "add", path: "/items/-", value: String(i) }],
+        at: i * 30,
+      })),
+    };
+    const ops = makeOps({ items: [] });
+    const ctrl = new AbortController();
+    const seen: number[] = [];
+    await replayRecording(recording, ops, {
+      speed: 1,
+      signal: ctrl.signal,
+      onStep: (i) => { seen.push(i); if (i === 1) ctrl.abort(); },
+    });
+    expect(seen.length).toBeLessThan(5);
+  });
+});

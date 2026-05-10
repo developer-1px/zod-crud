@@ -50,6 +50,10 @@ export type {
 
 export { trackPointer, trackPointers, pickAutoTarget, pickAutoTargets, recoverLostPointer } from "./core/track.js";
 
+// Session recording — 모든 commit 된 patch 를 timestamp 와 함께 직렬화 가능한 Recording 으로.
+export { useRecorder, replayRecording } from "./hooks/useRecorder.js";
+export type { Recording, RecordedStep, RecorderApi, ReplayOptions } from "./hooks/useRecorder.js";
+
 // pure selection — headless 사용자용 (React 무관). hooks/useSelection 가 이걸 wrapping.
 export {
   reduceSelection,
