@@ -9,10 +9,12 @@ export function MarkdownDocPage({ page }: { page: DocsPage }) {
   const blocks = useMemo(() => parseMarkdown(page.markdown), [page.markdown]);
 
   return (
-    <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 p-8">
+    <main className="mx-auto w-full max-w-3xl bg-white p-8">
+      <article className="prose-doc">
       {blocks.map((block, index) => (
         <MarkdownBlockView block={block} key={index} />
       ))}
+      </article>
     </main>
   );
 }
@@ -22,7 +24,7 @@ function MarkdownBlockView({ block }: { block: MarkdownBlock }) {
     return <SourceBlock block={block} />;
   }
 
-  return <article className="prose-doc">{renderProseBlock(block)}</article>;
+  return renderProseBlock(block);
 }
 
 function SourceBlock({ block }: { block: Extract<MarkdownBlock, { kind: "source" }> }) {
@@ -30,7 +32,7 @@ function SourceBlock({ block }: { block: Extract<MarkdownBlock, { kind: "source"
     const tab = resolveSourceReference(block.reference);
     const fixedHeight = block.reference.height !== undefined;
     return (
-      <div style={fixedHeight ? { height: block.reference.height } : undefined}>
+      <div className="source-block" style={fixedHeight ? { height: block.reference.height } : undefined}>
         <SourceTabs
           tabs={[tab]}
           filenamePrefix={sourcePrefix(block.reference.path)}
@@ -63,6 +65,15 @@ function renderProseBlock(block: Exclude<MarkdownBlock, { kind: "source" }>) {
         </pre>
       );
     case "list":
+      if (block.ordered) {
+        return (
+          <ol>
+            {block.items.map((item) => (
+              <li key={item}>{renderInline(item)}</li>
+            ))}
+          </ol>
+        );
+      }
       return (
         <ul>
           {block.items.map((item) => (
@@ -70,6 +81,31 @@ function renderProseBlock(block: Exclude<MarkdownBlock, { kind: "source" }>) {
           ))}
         </ul>
       );
+    case "table":
+      return (
+        <div className="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                {block.headers.map((header) => (
+                  <th key={header}>{renderInline(header)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {block.rows.map((row, rowIndex) => (
+                <tr key={rowIndex}>
+                  {block.headers.map((_, cellIndex) => (
+                    <td key={cellIndex}>{renderInline(row[cellIndex] ?? "")}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    case "blockquote":
+      return <blockquote>{renderInline(block.text)}</blockquote>;
   }
 }
 

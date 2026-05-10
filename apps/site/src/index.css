@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-html, body, #root { height: 100%; }
+html, body, #root { min-height: 100%; background: white; color: rgb(28 25 23); }
 html { scroll-behavior: smooth; }
 [hidden] { display: none !important; }
 
@@ -14,13 +14,18 @@ html { scroll-behavior: smooth; }
 
 /* docs prose — minimal typography for /docs/* pages, mirrored from ds. */
 .prose-doc { color: rgb(41 37 36); font-size: 0.95rem; line-height: 1.7; }
-.prose-doc h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.02em; color: rgb(28 25 23); margin: 0 0 1.5rem; }
-.prose-doc h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: -0.01em; color: rgb(28 25 23); margin: 2.5rem 0 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid rgb(231 229 228); }
-.prose-doc h3 { font-size: 1.125rem; font-weight: 600; color: rgb(28 25 23); margin: 2rem 0 0.75rem; }
+.prose-doc > :first-child { margin-top: 0; }
+.prose-doc > :last-child { margin-bottom: 0; }
+.prose-doc h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: 0; color: rgb(28 25 23); margin: 0 0 1.75rem; line-height: 1.15; }
+.prose-doc h2 { font-size: 1.5rem; font-weight: 700; letter-spacing: 0; color: rgb(28 25 23); margin: 2.75rem 0 0.875rem; padding-bottom: 0.45rem; border-bottom: 1px solid rgb(231 229 228); line-height: 1.25; }
+.prose-doc h3 { font-size: 1.125rem; font-weight: 600; color: rgb(28 25 23); margin: 2rem 0 0.625rem; line-height: 1.35; }
 .prose-doc p { margin: 0.75rem 0; }
-.prose-doc ul, .prose-doc ol { margin: 0.75rem 0; padding-left: 1.5rem; }
+.prose-doc ul, .prose-doc ol { margin: 0.75rem 0 1rem; padding-left: 1.5rem; }
+.prose-doc ul { list-style: disc; }
+.prose-doc ol { list-style: decimal; }
 .prose-doc li { margin: 0.25rem 0; }
 .prose-doc code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.875em; background: rgb(245 245 244); padding: 0.125em 0.375em; border-radius: 0.25rem; color: rgb(28 25 23); }
+.prose-doc h1 code, .prose-doc h2 code, .prose-doc h3 code { background: transparent; padding: 0; border-radius: 0; font-size: 0.95em; }
 .prose-doc pre { background: rgb(12 10 9); color: rgb(245 245 244); border-radius: 0.5rem; padding: 1rem 1.25rem; overflow-x: auto; margin: 1rem 0; font-size: 0.8125rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
 @media (min-width: 768px) { .prose-doc pre { white-space: pre; word-break: normal; } }
 .prose-doc pre code { background: transparent; color: inherit; padding: 0; font-size: inherit; }
@@ -28,3 +33,11 @@ html { scroll-behavior: smooth; }
 .prose-doc a:hover { text-decoration-color: rgb(28 25 23); }
 .prose-doc blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 3px solid rgb(168 162 158); color: rgb(87 83 78); background: rgb(250 250 249); }
 .prose-doc strong { font-weight: 600; color: rgb(28 25 23); }
+.prose-doc .source-block { margin: 1.25rem 0 1.5rem; }
+.prose-doc .source-block code { background: transparent; padding: 0; border-radius: 0; }
+.prose-doc .table-scroll { margin: 1rem 0 1.25rem; overflow-x: auto; border: 1px solid rgb(231 229 228); border-radius: 0.5rem; }
+.prose-doc table { width: 100%; border-collapse: collapse; font-size: 0.875rem; line-height: 1.55; }
+.prose-doc th { background: rgb(250 250 249); color: rgb(28 25 23); font-weight: 600; text-align: left; }
+.prose-doc th, .prose-doc td { border-bottom: 1px solid rgb(231 229 228); padding: 0.625rem 0.75rem; vertical-align: top; }
+.prose-doc tbody tr:last-child td { border-bottom: 0; }
+.prose-doc td code, .prose-doc th code { white-space: nowrap; }
