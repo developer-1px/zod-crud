@@ -12,8 +12,15 @@
 
 ## zod-crud library
 
-> Clipboard / cut atomicity / system clipboard 통합 항목은 Epic #15 의 P5 sub-issue 들 (#35 verbs/copy, #36 verbs/cut, #37 verbs/paste, #38 verbs/duplicate) 로 이전됨. `boundary` 정합 (ADR-0002) — system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체. 본 BACKLOG 에서 트래킹 제거.
-> silent fail 정책은 P4 (#31~#34) 의 schema preFlight gate 결과로 흡수.
+> Clipboard / cut atomicity / system clipboard 통합 항목은 Epic #15 의 P5 (#35-#38) 에서 closure. `boundary` 정합 (ADR-0002): system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체.
+> silent fail 정책은 P4 (#31-#34) 의 schema preFlight gate 결과로 흡수.
+
+## 미해결 (post-v0.7.0)
+
+- **RFC 9535 function extensions** — `length / count / match / search / value` (P6.4 deferred)
+- **IETF RFC 9535 conformance suite 통합** — 외부 suite 채택 (P6.5 deferred)
+- **10 verbs facade 메서드 통합** — useJsonDocument 에 `doc.cut() / doc.find()` 등 직접 메서드 노출 (현재는 `verbs/*` pure 함수로만)
+- **cross-field refinement 보호** — preFlight branch-only 의 보호 밖. 별도 ADR 검토
 
 ## SPEC drift
 
