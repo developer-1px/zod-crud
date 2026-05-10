@@ -9,6 +9,7 @@ import { Landing } from "./routes/Landing";
 import { ApiReference } from "./routes/ApiReference";
 import { Examples } from "./routes/Examples";
 import { OutlinerPage } from "./routes/Outliner";
+import { MobileCmsPage } from "./routes/MobileCms";
 import { MarkdownDocPage } from "./docs/MarkdownDocPage";
 import { docsPagesBySlug, type DocsPage } from "./docs/docs-pages";
 
@@ -107,6 +108,13 @@ const outlinerRoute = createRoute({
   staticData: { palette: { label: "Outliner", to: "/outliner", category: "Reference editor", order: 30 } },
 });
 
+const mobileCmsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/mobile-cms",
+  component: MobileCmsPage,
+  staticData: { palette: { label: "Mobile CMS", to: "/mobile-cms", category: "Reference editor", order: 31 } },
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   introRoute,
@@ -120,6 +128,7 @@ const routeTree = rootRoute.addChildren([
   apiRoute,
   examplesRoute,
   outlinerRoute,
+  mobileCmsRoute,
 ]);
 
 export const router = createRouter({

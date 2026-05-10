@@ -2,6 +2,10 @@
   "name": "@zod-crud/mobile-cms",
   "private": true,
   "type": "module",
+  "exports": {
+    ".": "./src/App.tsx",
+    "./styles.css": "./src/styles.css"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1",
     "build": "vite build",
