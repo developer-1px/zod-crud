@@ -2,8 +2,58 @@
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 
-import { parsePointer, buildPointer, isPrefix, type Pointer } from "./pointer.js";
+import { parsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer.js";
 import type { JsonPatchOperation } from "./patch.js";
+
+function exists(state: unknown, pointer: Pointer): boolean {
+  return readAt(state, parsePointer(pointer)).ok;
+}
+
+// SPEC §5.7 rule 1 / §5.8 rule 1 — applied ops 의 add/copy/move destination 첫 매치.
+// `/-` 는 after-state 의 array length-1 으로 resolve. root replace ("") 는 무시.
+export function pickAutoTarget(
+  applied: ReadonlyArray<JsonPatchOperation>,
+  after: unknown,
+): Pointer | null {
+  for (const op of applied) {
+    let dest: Pointer | null = null;
+    if (op.op === "add" || op.op === "copy" || op.op === "move") dest = op.path;
+    if (dest === null) continue;
+    if (dest === "") continue;
+    if (dest.endsWith("/-")) {
+      const parent = dest.slice(0, -2);
+      const r = readAt(after, parsePointer(parent));
+      if (r.ok && Array.isArray(r.value) && r.value.length > 0) {
+        return buildPointer([...parsePointer(parent), r.value.length - 1]);
+      }
+      return null;
+    }
+    return dest;
+  }
+  return null;
+}
+
+// SPEC §5.7 rule 2 / §5.8 rule 2 — lost pointer 복구: nextSibling → prevSibling → parent.
+export function recoverLostPointer(
+  lost: Pointer,
+  applied: ReadonlyArray<JsonPatchOperation>,
+  after: unknown,
+): Pointer | null {
+  const idx = lastSegmentIndex(lost);
+  const parent = parentPointer(lost);
+  if (idx === null || parent === null) return null;
+  const trackedParent = trackPointer(parent, applied);
+  if (trackedParent === null) return null;
+  const nextCandidate = withLastSegment(`${trackedParent}/${idx}`, idx);
+  if (nextCandidate !== null && exists(after, nextCandidate)) return nextCandidate;
+  if (idx > 0) {
+    const prevCandidate = `${trackedParent}/${idx - 1}`;
+    if (exists(after, prevCandidate)) return prevCandidate;
+  }
+  if (trackedParent === "") return null;
+  if (exists(after, trackedParent)) return trackedParent;
+  return null;
+}
 
 function isArrayIndex(seg: string): boolean {
   return /^(0|[1-9][0-9]*)$/.test(seg);

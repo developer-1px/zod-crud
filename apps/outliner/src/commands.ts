@@ -31,10 +31,10 @@ function sortDfs(ctx: CommandContext, ps: Pointer[]): Pointer[] {
   return [...ps].sort((a, b) => comparePointer(ctx.state, a, b));
 }
 
-// 모든 mutation 후 focus 는 zod-crud useFocus 의 두 자동 규칙으로 처리됨:
-//   ① add/copy/move → destination 자동 포커스
+// 모든 mutation 후 focus·selection 은 zod-crud 의 자동 규칙으로 처리됨 (SPEC §5.7 / §5.8):
+//   ① add/copy/move → destination 자동 포커스/선택
 //   ② 사라지면 nextSibling → prevSibling → parent 복구
-// commands 는 op 만 발행하고 focus 를 명시 set 하지 않는다.
+// commands 는 RFC 6902 op 만 발행한다 — focus/selection 을 명시 set/clear 하지 않는다.
 
 export function insertSibling(ctx: CommandContext): JsonResult {
   const p = ctx.focus.value;
@@ -44,9 +44,7 @@ export function insertSibling(ctx: CommandContext): JsonResult {
   const parent = parentOf(p);
   if (parent === null) return { ok: false, code: "path_not_found" };
   const insertAt = `${parent}/${idx + 1}`;
-  const r = ctx.ops.patch([{ op: "add", path: insertAt, value: EMPTY_NODE }]);
-  if (r.ok) ctx.selection.set([insertAt]);
-  return r;
+  return ctx.ops.patch([{ op: "add", path: insertAt, value: EMPTY_NODE }]);
 }
 
 export function demote(ctx: CommandContext): JsonResult {
@@ -83,9 +81,7 @@ export function remove(ctx: CommandContext): JsonResult {
 
   const sorted = sortDfs(ctx, targets);
   const batch: JsonPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
-  const r = ctx.ops.patch(batch);
-  if (r.ok) ctx.selection.clear();
-  return r;
+  return ctx.ops.patch(batch);
 }
 
 export function selectAll(ctx: CommandContext): void {
@@ -135,10 +131,9 @@ export function cut(ctx: CommandContext): void {
   const sorted = sortDfs(ctx, targets);
   // 1) 클립보드에 deep clone 저장 (cut 후 원본은 사라지므로 copy 의미와 동등)
   ctx.clipboard.copy(ctx.state, sorted);
-  // 2) 원본 row 즉시 제거 (Notion / Workflowy 동작)
+  // 2) 원본 row 즉시 제거 — selection 은 자동 규칙으로 nextSibling/prev/parent 로 회복
   const batch: JsonPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
-  const r = ctx.ops.patch(batch);
-  if (r.ok) ctx.selection.clear();
+  ctx.ops.patch(batch);
 }
 
 export function paste(ctx: CommandContext, mode: PasteMode): JsonResult {

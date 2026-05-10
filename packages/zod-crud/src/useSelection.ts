@@ -1,10 +1,11 @@
 // SPEC §5.7 — Selection state hook (Axis 2).
+// 정체성: "다음 명령의 작용 범위" (command scope). focus 와 같은 자동 규칙 4 개로 mutation 응답.
 // 모든 좌표 = RFC 6901 Pointer. 모든 상태 = JSON 직렬화. ARIA Listbox/Tree/Grid 어휘.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { trackPointers, trackPointer } from "./core/track.js";
-import type { Pointer } from "./core/pointer.js";
+import { trackPointer, pickAutoTarget, recoverLostPointer } from "./core/track.js";
+import { parsePointer, readAt, type Pointer } from "./core/pointer.js";
 import type { JsonOps } from "./useJson.js";
 
 export type SelectionMode = "single" | "multiple" | "extended";
@@ -35,6 +36,10 @@ interface InternalState {
 
 const EMPTY: InternalState = { values: [], anchor: null, focus: null };
 
+function exists(state: unknown, pointer: Pointer): boolean {
+  return readAt(state, parsePointer(pointer)).ok;
+}
+
 export function useSelection<T>(
   ops: JsonOps<T>,
   options: UseSelectionOptions = {},
@@ -50,13 +55,53 @@ export function useSelection<T>(
       : EMPTY,
   );
 
-  // op 적용 시 자동 추적: trackPointers 로 새 Pointer 계산
+  // SPEC §5.7 자동 규칙 4 개:
+  //   ① Mutation auto-select  — add/copy/move 발생 시 destination 으로 set([dest])
+  //   ② Lost recovery         — 사라진 항목은 nextSibling/prev/parent 로 복구
+  //   ③ Index shift tracking  — 살아남은 형제 인덱스 자동 보정 (trackPointers)
+  //   ④ Anchor tracking       — anchor 도 동일 규칙
   useEffect(() => {
     return ops.subscribe((applied) => {
+      const after = ops.state;
       setSnap((prev) => {
-        const nextValues = trackPointers(prev.values, applied);
-        const nextAnchor = prev.anchor === null ? null : trackPointer(prev.anchor, applied);
-        const nextFocus = prev.focus === null ? null : trackPointer(prev.focus, applied);
+        // rule ① — mutation 의 destination 이 새 selection (focus rule 1 과 동일 좌표)
+        const autoTarget = pickAutoTarget(applied, after);
+        if (autoTarget !== null) {
+          const limited = limitMode(mode, [autoTarget]);
+          return { values: limited, anchor: autoTarget, focus: autoTarget };
+        }
+
+        // rule ②③ — 항목별로 추적, 사라지면 복구
+        const nextValues: Pointer[] = [];
+        for (const p of prev.values) {
+          const tracked = trackPointer(p, applied);
+          if (tracked !== null && exists(after, tracked)) {
+            nextValues.push(tracked);
+            continue;
+          }
+          const recovered = recoverLostPointer(p, applied, after);
+          if (recovered !== null && !nextValues.includes(recovered)) {
+            nextValues.push(recovered);
+          }
+        }
+
+        // rule ④ — anchor 도 동일하게 추적/복구
+        const nextAnchor = prev.anchor === null
+          ? null
+          : (() => {
+              const t = trackPointer(prev.anchor, applied);
+              if (t !== null && exists(after, t)) return t;
+              return recoverLostPointer(prev.anchor, applied, after);
+            })();
+
+        const nextFocus = prev.focus === null
+          ? null
+          : (() => {
+              const t = trackPointer(prev.focus, applied);
+              if (t !== null && exists(after, t)) return t;
+              return recoverLostPointer(prev.focus, applied, after);
+            })();
+
         if (
           sameArray(nextValues, prev.values) &&
           nextAnchor === prev.anchor &&
@@ -67,7 +112,7 @@ export function useSelection<T>(
         return { values: nextValues, anchor: nextAnchor, focus: nextFocus };
       });
     });
-  }, [ops]);
+  }, [ops, mode]);
 
   const set = useCallback(
     (pointers: ReadonlyArray<Pointer>) => {

@@ -289,6 +289,19 @@ export function withLastSegment(p: Pointer, seg: string | number): Pointer | nul
 
 Path arithmetic 은 모든 editor 가 공유하는 순수 path 조작. 이 5개 함수가 정본 — 사용자가 split/regex 로 직접 짜는 것을 막는다. **state·schema 모름** 이 핵심 — visible 순회·DFS·child field 같은 navigation order 는 user-defined (각 editor 의 spec 에서 정의).
 
+### 5.6.5 Axis 2 정체성 — focus vs selection
+
+두 좌표는 **단일 차이축**으로 가른다:
+
+| 좌표 | 정체성 | 갯수 | ARIA 매핑 |
+|------|--------|------|-----------|
+| **`focus`** | 다음 키 입력의 **도착지** (input destination) | 0 또는 1 | `aria-activedescendant` |
+| **`selection`** | 다음 명령의 **작용 범위** (command scope) | 0..N | `aria-selected="true"` |
+
+갯수·시점·시각화는 이 차이에서 파생되는 속성이며 별도 정의축이 아니다. 두 좌표는 **독립**이지만, axis 1 mutation 에 대해 **동일한 자동 규칙으로 응답**해야 한다 (그래서 결과적으로 같은 destination 으로 같이 움직이는 경우가 많다).
+
+표준 근거: WAI-ARIA Authoring Practices (Listbox/Tree pattern) 가 정확히 이 두 개념을 분리. Figma·Notion·VSCode·Google Sheets 도 동일.
+
 ### 5.7 `useSelection` — Selection state hook (Axis 2)
 
 ```ts
@@ -316,7 +329,18 @@ export interface SelectionState<T> {
 }
 ```
 
-Axis 1 op 적용 시 자동 추적: `add` 는 인덱스 shift, `remove` 는 cascading drop, `move` 는 좌표 이동 (§0.2 (9)).
+**자동 규칙 네 가지** — 사용자 wiring 0. focus 의 두 규칙과 동일 어휘.
+
+1. **Mutation auto-select**: `applied` 안에 `add` / `copy` / `move` 가 있으면 destination 으로
+   `set([destination])`. 첫 번째 매치만 사용. `/-` 는 actual index 로 resolve. root replace (`""`) 는 무시.
+2. **Lost selection recovery**: selection 의 각 항목이 op 후 사라지면 nextSibling → prevSibling → parent
+   순으로 복구한다 (focus rule 2 와 동일 — 항목별로 적용). 다 사라지면 selection 은 `[]`.
+3. **Index shift tracking**: 살아남은 항목들의 형제 인덱스가 add/remove 로 밀리면 자동 보정 (`trackPointers`).
+4. **Anchor tracking**: extended 모드의 `anchor` 도 같은 규칙으로 추적/복구.
+
+수동 `set/add/remove/toggle/clear/range` 는 위 규칙보다 우선 (사용자 의도 존중).
+
+History 의미: axis 2 단독 변경(`set` 등 직접 호출)은 history 비대상. 단 `useJsonDocument` facade 는 axis 1 dispatch 시점에 selection 스냅샷을 같이 entry 에 캡처해 undo/redo 시 같이 원복한다.
 
 ### 5.8 `useFocus` — 단일 활성 좌표 hook (Axis 2)
 
@@ -350,6 +374,8 @@ export interface FocusState<T> {
 
 수동 `set(pointer)` 은 위 규칙보다 우선한다 (사용자 의도 존중). filter / recover 콜백은 폐기 —
 규칙이 일관되어 콜백이 필요 없다.
+
+History 의미: focus 단독 변경은 history 비대상. `useJsonDocument` facade 가 axis 1 dispatch 시점에 focus 스냅샷을 entry 에 같이 캡처해 undo/redo 시 같이 원복한다 (selection 과 동일).
 
 ### 5.9 Pointer tracking helpers (Axis 2 low-level)
 
