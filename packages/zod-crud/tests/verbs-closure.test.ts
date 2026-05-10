@@ -39,12 +39,15 @@ describe("verbs/ closure — 10 verbs ↔ 파일 1:1", () => {
     }
   });
 
-  test("public API 가 10 verbs 모두 *Verb suffix 로 노출", async () => {
-    const pkg = await import("../src/index.js");
+  test("Commands<T> interface 가 10 verbs 를 method 로 노출", async () => {
+    // *Verb suffix re-export 는 v0.10 에서 제거됨 (doubt sweep — 외부 사용 0).
+    // closure 는 이제 buildCommands 의 Commands<T> interface 로 검증.
+    const fs = await import("node:fs");
+    const src = fs.readFileSync(resolve(root, "src/commands/buildCommands.ts"), "utf-8");
     for (const v of expectedVerbs) {
-      const exportName = v + "Verb";
-      // selectVerb, moveVerb, ..., undoVerb, redoVerb
-      expect(exportName in pkg, `index.ts missing ${exportName} export`).toBe(true);
+      // method 시그니처 (ex. `cut(source: Pointer)`)
+      const reMethod = new RegExp(`^\\s*${v}\\s*\\(`, "m");
+      expect(reMethod.test(src), `Commands<T> missing method ${v}`).toBe(true);
     }
   });
 });
