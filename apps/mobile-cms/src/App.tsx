@@ -205,6 +205,31 @@ function removeNode(root: PageNode, nodeId: string): PageNode {
   return next;
 }
 
+function closestAfterRemoval(root: PageNode, nodeId: string): string {
+  for (const section of root.children) {
+    const direct = section.children.findIndex((child) => child.id === nodeId);
+    if (direct >= 0) {
+      return section.children[direct + 1]?.id ?? section.children[direct - 1]?.id ?? section.id;
+    }
+    const nested = closestInBlocks(section.children, nodeId);
+    if (nested) return nested;
+  }
+  return "section-hero";
+}
+
+function closestInBlocks(nodes: BlockNode[], nodeId: string): string | null {
+  for (const node of nodes) {
+    if (!node.children) continue;
+    const index = node.children.findIndex((child) => child.id === nodeId);
+    if (index >= 0) {
+      return node.children[index + 1]?.id ?? node.children[index - 1]?.id ?? node.id;
+    }
+    const nested = closestInBlocks(node.children, nodeId);
+    if (nested) return nested;
+  }
+  return null;
+}
+
 function removeFromBlocks(nodes: BlockNode[], nodeId: string): boolean {
   for (const node of nodes) {
     if (!node.children) continue;
@@ -322,9 +347,26 @@ export function App() {
       setMessage("Only design blocks can be deleted.");
       return;
     }
+    const nextSelectedId = closestAfterRemoval(page, target.id);
     setPage((current) => removeNode(current, target.id));
-    setSelectedId("section-hero");
+    setSelectedId(nextSelectedId);
     setMessage(`Deleted ${target.name}.`);
+  };
+
+  const cutSelected = () => {
+    const target = selected;
+    if (!target || target.kind === "page" || target.kind === "section") {
+      setMessage("Only design blocks can be cut.");
+      return;
+    }
+    const nextSelectedId = closestAfterRemoval(page, target.id);
+    setClipboard({ node: cloneNode(target), sourceId: target.id });
+    const payload = serializeBlock(target);
+    if (payload) void navigator.clipboard?.writeText(payload).catch(() => undefined);
+    setPage((current) => removeNode(current, target.id));
+    setPaletteSelection(null);
+    setSelectedId(nextSelectedId);
+    setMessage(`Cut ${target.name}. Selection moved to the closest remaining item.`);
   };
 
   const pasteFromSystemClipboard = async (target: CmsNode) => {
@@ -343,6 +385,12 @@ export function App() {
       if (paletteSelection) copy(paletteSelection.node);
       else if (selected) copy(selected);
       else setMessage("Select a design block before copying.");
+      return;
+    }
+
+    if (mod && key === "x") {
+      event.preventDefault();
+      cutSelected();
       return;
     }
 
@@ -577,6 +625,7 @@ function ShortcutList() {
     <div className="shortcut-card">
       <h3>Shortcuts</h3>
       <div><kbd>Cmd/Ctrl+C</kbd><span>Copy selected block or collection</span></div>
+      <div><kbd>Cmd/Ctrl+X</kbd><span>Cut selected block and keep nearby selection</span></div>
       <div><kbd>Cmd/Ctrl+V</kbd><span>Paste into selected schema slot</span></div>
       <div><kbd>Delete</kbd><span>Remove selected block</span></div>
       <div><kbd>R</kbd><span>Reset page</span></div>

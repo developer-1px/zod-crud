@@ -92,6 +92,30 @@ describe("mobile CMS usable editing surface", () => {
     expect(writeTextSpy).not.toHaveBeenCalled();
   });
 
+  test("cuts a block and moves selection to the nearest remaining neighbor", async () => {
+    renderCms();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByText("Eyebrow"));
+    await user.keyboard("{Control>}x{/Control}");
+
+    expect(screen.queryByText("Eyebrow")).toBeNull();
+    expect(screen.getByText("Cut Eyebrow. Selection moved to the closest remaining item.")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Hero action" })).toBeTruthy();
+    expect(writeTextSpy).toHaveBeenCalled();
+  });
+
+  test("cuts an only child and falls back to its parent slot", async () => {
+    renderCms();
+    const user = userEvent.setup();
+
+    await user.click(firstProductCollection());
+    await user.keyboard("{Control>}x{/Control}");
+
+    expect(productCollections()).toHaveLength(0);
+    expect(screen.getByRole("heading", { name: "Shop area" })).toBeTruthy();
+  });
+
   test("selecting and editing text does not trigger block copy paste shortcuts", async () => {
     renderCms();
     const user = userEvent.setup();
