@@ -10,43 +10,12 @@ import {
   type JsonResult,
 } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import type { PointerOf, ValueAt } from "../core/pointer/types.js";
 import { handleResult, JsonCrudError, type ErrorPolicy } from "../JsonCrudError.js";
 import { useHistoryDispatch } from "./useHistoryDispatch.js";
+import type { JsonOps, UseJsonOptions, JsonChangeListener } from "../jsonOps.js";
 
 export { JsonCrudError } from "../JsonCrudError.js";
-
-export interface UseJsonOptions {
-  history?: number;
-  strict?: boolean;
-  onError?: (error: JsonCrudError) => void;
-}
-
-export type JsonChangeListener = (applied: ReadonlyArray<JsonPatchOperation>) => void;
-
-export interface JsonOps<T> {
-  add<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
-  remove<P extends PointerOf<T>>(path: P): JsonResult;
-  replace<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
-  move<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JsonResult;
-  copy<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JsonResult;
-  test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
-
-  patch(operations: ReadonlyArray<JsonPatchOperation>): JsonResult;
-
-  undo(): boolean;
-  redo(): boolean;
-  canUndo(): boolean;
-  canRedo(): boolean;
-
-  load(value: T): JsonResult;
-  reset(value?: T): void;
-
-  /** SPEC §0.2 (9) — Axis 2 hook 들이 op 적용 알림을 받기 위한 구독. */
-  subscribe(listener: JsonChangeListener): () => void;
-  /** 현재 state 의 read-only snapshot. Axis 2 hook 의 filter/recover 콜백에서 사용. */
-  readonly state: T;
-}
+export type { JsonOps, UseJsonOptions, JsonChangeListener } from "../jsonOps.js";
 
 const ROOT_REPLACE = (value: unknown): JsonPatchOperation => ({ op: "replace", path: "", value });
 

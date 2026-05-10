@@ -5,7 +5,7 @@
 // undo/redo 는 ops.undo/redo (history stack 관리는 useJsonDocument 가 wiring).
 
 import type * as z from "zod";
-import type { JsonOps } from "../hooks/useJson.js";
+import type { JsonOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type {
   SelectionAction,

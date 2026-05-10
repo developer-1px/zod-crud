@@ -13,9 +13,9 @@ export type {
   UseJsonDocumentOptions,
 } from "./hooks/useJsonDocument.js";
 
-// === Boundary error ===
-export { JsonCrudError } from "./hooks/useJson.js";
-export type { JsonOps, UseJsonOptions } from "./hooks/useJson.js";
+// === Boundary error + ops contract ===
+export { JsonCrudError } from "./JsonCrudError.js";
+export type { JsonOps, UseJsonOptions } from "./jsonOps.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

@@ -10,6 +10,11 @@ export default defineConfig({
       "zod-crud": fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
     },
   },
-  server: { host: "127.0.0.1", port: 5183, strictPort: true },
+  server: {
+    host: "127.0.0.1",
+    port: 5183,
+    strictPort: true,
+    watch: { usePolling: true, interval: 300 },
+  },
   build: { outDir: "dist", emptyOutDir: true },
 });
