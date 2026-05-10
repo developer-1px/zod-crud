@@ -19,17 +19,23 @@ input {
 
 .app-shell {
   display: grid;
-  grid-template-columns: 280px minmax(360px, 1fr) 320px;
+  grid-template-columns: 260px minmax(360px, 1fr) 320px;
   min-height: 100vh;
 }
 
 .panel {
-  background: #f7f7ef;
+  background: #fbfbf6;
   border-right: 1px solid #d5d8c9;
-  padding: 22px;
+  padding: 20px;
+}
+
+.palette-panel {
+  background: #20231f;
+  color: #f7f7ef;
 }
 
 .inspector-panel {
+  background: #f7f7ef;
   border-right: 0;
   border-left: 1px solid #d5d8c9;
 }
@@ -47,6 +53,10 @@ input {
   text-transform: uppercase;
 }
 
+.palette-panel .eyebrow {
+  color: #aeb8a3;
+}
+
 h1,
 h2,
 h3,
@@ -57,6 +67,10 @@ p {
 h1 {
   margin-bottom: 0;
   font-size: 28px;
+}
+
+.palette-panel h1 {
+  color: #fff;
 }
 
 h2 {
@@ -71,7 +85,7 @@ h3 {
 
 .palette-list {
   display: grid;
-  gap: 8px;
+  gap: 2px;
 }
 
 .palette-item {
@@ -79,22 +93,29 @@ h3 {
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  min-height: 48px;
-  padding: 10px 12px;
+  min-height: 40px;
+  padding: 8px 10px;
   text-align: left;
-  border: 1px solid #d8dbc9;
-  border-radius: 6px;
-  background: #fff;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #f7f7ef;
   cursor: pointer;
 }
 
 .palette-item small {
-  color: #66705c;
+  color: #aeb8a3;
 }
 
 .palette-item:hover {
-  border-color: #6f8062;
-  background: #eef3e7;
+  border-color: #3a4037;
+  background: #2b2f29;
+}
+
+.palette-item.selected {
+  border-color: #78866f;
+  background: #343a31;
+  outline-color: transparent;
 }
 
 .phone-zone {
