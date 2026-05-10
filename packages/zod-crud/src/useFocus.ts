@@ -7,8 +7,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { trackPointer, pickAutoTarget, recoverLostPointer } from "./core/track.js";
-import { parsePointer, readAt, type Pointer } from "./core/pointer.js";
+import { trackPointer, pickAutoTarget, recoverLostPointer, exists } from "./core/track.js";
+import type { Pointer } from "./core/pointer.js";
 import type { JsonOps } from "./useJson.js";
 
 export interface UseFocusOptions {
@@ -19,10 +19,6 @@ export interface FocusState<T> {
   value: Pointer | null;
   set(pointer: Pointer | null): void;
   clear(): void;
-}
-
-function exists(state: unknown, pointer: Pointer): boolean {
-  return readAt(state, parsePointer(pointer)).ok;
 }
 
 export function useFocus<T>(

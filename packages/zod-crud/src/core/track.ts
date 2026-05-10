@@ -5,7 +5,7 @@
 import { parsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer.js";
 import type { JsonPatchOperation } from "./patch.js";
 
-function exists(state: unknown, pointer: Pointer): boolean {
+export function exists(state: unknown, pointer: Pointer): boolean {
   return readAt(state, parsePointer(pointer)).ok;
 }
 

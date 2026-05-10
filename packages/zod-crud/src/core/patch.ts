@@ -133,55 +133,42 @@ function withMutated(state: unknown, segments: string[], mutate: (parent: unknow
   return { state: next };
 }
 
-function setAtParent(parent: unknown, key: string, value: unknown): { value: unknown } | { error: ErrorCode; reason?: string } {
-  if (parent === null || parent === undefined || typeof parent !== "object") {
+type Verb = "set" | "replace" | "remove";
+
+// container mutation 정본. set/replace/remove 의 array vs object 분기 통합.
+function mutateContainer(
+  parent: unknown,
+  key: string,
+  verb: Verb,
+  value?: unknown,
+): { value: unknown } | { error: ErrorCode; reason?: string } {
+  if (parent === null || typeof parent !== "object") {
     return { error: "path_not_found", reason: "parent is not a container" };
   }
   if (Array.isArray(parent)) {
-    const arr = parent as unknown[];
-    if (key === "-") {
-      return { value: [...arr, value] };
+    if (verb === "set" && key === "-") return { value: [...parent, value] };
+    const idx = parseArrayIndex(key);
+    if (idx === null || idx === -1) return { error: "path_not_found", reason: `array index: ${key}` };
+    if (verb === "set") {
+      if (idx > parent.length) return { error: "path_not_found", reason: `out of range: ${key}` };
+      return { value: [...parent.slice(0, idx), value, ...parent.slice(idx)] };
     }
-    const idx = parseArrayIndex(key);
-    if (idx === null) return { error: "path_not_found", reason: `array index: ${key}` };
-    if (idx > arr.length) return { error: "path_not_found", reason: `array index out of range: ${key}` };
-    return { value: [...arr.slice(0, idx), value, ...arr.slice(idx)] };
+    if (idx >= parent.length) return { error: "path_not_found", reason: `array index: ${key}` };
+    if (verb === "replace") {
+      const next = parent.slice();
+      next[idx] = value;
+      return { value: next };
+    }
+    return { value: [...parent.slice(0, idx), ...parent.slice(idx + 1)] };
   }
-  return { value: { ...(parent as Record<string, unknown>), [key]: value } };
-}
-
-function replaceAtParent(parent: unknown, key: string, value: unknown): { value: unknown } | { error: ErrorCode; reason?: string } {
-  if (parent === null || parent === undefined || typeof parent !== "object") {
-    return { error: "path_not_found", reason: "parent is not a container" };
-  }
-  if (Array.isArray(parent)) {
-    const arr = parent as unknown[];
-    const idx = parseArrayIndex(key);
-    if (idx === null || idx === -1 || idx >= arr.length) return { error: "path_not_found", reason: `array index: ${key}` };
-    const next = arr.slice();
-    next[idx] = value;
-    return { value: next };
-  }
-  if (!Object.prototype.hasOwnProperty.call(parent, key)) {
+  // object
+  const obj = parent as Record<string, unknown>;
+  if (verb === "set") return { value: { ...obj, [key]: value } };
+  if (!Object.prototype.hasOwnProperty.call(obj, key)) {
     return { error: "path_not_found", reason: `object key: ${key}` };
   }
-  return { value: { ...(parent as Record<string, unknown>), [key]: value } };
-}
-
-function removeAtParent(parent: unknown, key: string): { value: unknown } | { error: ErrorCode; reason?: string } {
-  if (parent === null || parent === undefined || typeof parent !== "object") {
-    return { error: "path_not_found", reason: "parent is not a container" };
-  }
-  if (Array.isArray(parent)) {
-    const arr = parent as unknown[];
-    const idx = parseArrayIndex(key);
-    if (idx === null || idx === -1 || idx >= arr.length) return { error: "path_not_found", reason: `array index: ${key}` };
-    return { value: [...arr.slice(0, idx), ...arr.slice(idx + 1)] };
-  }
-  if (!Object.prototype.hasOwnProperty.call(parent, key)) {
-    return { error: "path_not_found", reason: `object key: ${key}` };
-  }
-  const { [key]: _, ...rest } = parent as Record<string, unknown>;
+  if (verb === "replace") return { value: { ...obj, [key]: value } };
+  const { [key]: _, ...rest } = obj;
   void _;
   return { value: rest };
 }
@@ -194,9 +181,16 @@ function attachPointer(
   e: { error: ErrorCode; reason?: string },
   pointer: Pointer,
 ): { error: ErrorCode; reason?: string; pointer: Pointer } {
-  return e.reason === undefined
-    ? { error: e.error, pointer }
-    : { error: e.error, reason: e.reason, pointer };
+  return { ...e, pointer };
+}
+
+// Pointer parse + invalid_pointer 에러 변환을 한 줄로.
+function parseSafe(p: Pointer): { ok: true; segs: string[] } | { error: ErrorCode; reason: string; pointer: Pointer } {
+  try { return { ok: true, segs: parsePointer(p) }; }
+  catch (e) {
+    if (e instanceof PointerSyntaxError) return { error: "invalid_pointer", reason: e.message, pointer: p };
+    throw e;
+  }
 }
 
 function applyOpRaw(state: unknown, op: JsonPatchOperation): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } {

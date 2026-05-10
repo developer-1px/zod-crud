@@ -4,8 +4,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { trackPointer, pickAutoTarget, recoverLostPointer } from "./core/track.js";
-import { parsePointer, readAt, type Pointer } from "./core/pointer.js";
+import { trackPointer, pickAutoTarget, recoverLostPointer, exists } from "./core/track.js";
+import type { Pointer } from "./core/pointer.js";
 import type { JsonOps } from "./useJson.js";
 
 export type SelectionMode = "single" | "multiple" | "extended";
@@ -36,10 +36,6 @@ interface InternalState {
 
 const EMPTY: InternalState = { values: [], anchor: null, focus: null };
 
-function exists(state: unknown, pointer: Pointer): boolean {
-  return readAt(state, parsePointer(pointer)).ok;
-}
-
 export function useSelection<T>(
   ops: JsonOps<T>,
   options: UseSelectionOptions = {},
@@ -63,52 +59,33 @@ export function useSelection<T>(
   useEffect(() => {
     return ops.subscribe((applied) => {
       const after = ops.state;
+      // 한 좌표를 추적 → 사라지면 복구. null 입력은 null 보존.
+      const trackOrRecover = (p: Pointer | null): Pointer | null => {
+        if (p === null) return null;
+        const t = trackPointer(p, applied);
+        if (t !== null && exists(after, t)) return t;
+        return recoverLostPointer(p, applied, after);
+      };
       setSnap((prev) => {
-        // rule ① — mutation 의 destination 이 새 selection (focus rule 1 과 동일 좌표)
+        // rule ① — mutation 의 destination 이 새 selection
         const autoTarget = pickAutoTarget(applied, after);
         if (autoTarget !== null) {
-          const limited = limitMode(mode, [autoTarget]);
-          return { values: limited, anchor: autoTarget, focus: autoTarget };
+          return { values: limitMode(mode, [autoTarget]), anchor: autoTarget, focus: autoTarget };
         }
-
-        // rule ②③ — 항목별로 추적, 사라지면 복구
+        // rule ②③ — 각 항목 추적/복구, 중복 제거
         const nextValues: Pointer[] = [];
         for (const p of prev.values) {
-          const tracked = trackPointer(p, applied);
-          if (tracked !== null && exists(after, tracked)) {
-            nextValues.push(tracked);
-            continue;
-          }
-          const recovered = recoverLostPointer(p, applied, after);
-          if (recovered !== null && !nextValues.includes(recovered)) {
-            nextValues.push(recovered);
-          }
+          const next = trackOrRecover(p);
+          if (next !== null && !nextValues.includes(next)) nextValues.push(next);
         }
-
-        // rule ④ — anchor 도 동일하게 추적/복구
-        const nextAnchor = prev.anchor === null
-          ? null
-          : (() => {
-              const t = trackPointer(prev.anchor, applied);
-              if (t !== null && exists(after, t)) return t;
-              return recoverLostPointer(prev.anchor, applied, after);
-            })();
-
-        const nextFocus = prev.focus === null
-          ? null
-          : (() => {
-              const t = trackPointer(prev.focus, applied);
-              if (t !== null && exists(after, t)) return t;
-              return recoverLostPointer(prev.focus, applied, after);
-            })();
-
+        // rule ④ — anchor·focus 도 동일 규칙
+        const nextAnchor = trackOrRecover(prev.anchor);
+        const nextFocus = trackOrRecover(prev.focus);
         if (
           sameArray(nextValues, prev.values) &&
           nextAnchor === prev.anchor &&
           nextFocus === prev.focus
-        ) {
-          return prev;
-        }
+        ) return prev;
         return { values: nextValues, anchor: nextAnchor, focus: nextFocus };
       });
     });
