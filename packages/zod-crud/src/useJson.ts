@@ -11,6 +11,7 @@ import {
   type JsonResult,
 } from "./core/patch.js";
 import type { Pointer } from "./core/pointer.js";
+import type { PointerOf, ValueAt } from "./core/path-types.js";
 
 export interface UseJsonOptions {
   history?: number;
@@ -19,12 +20,12 @@ export interface UseJsonOptions {
 }
 
 export interface JsonOps<T> {
-  add(path: Pointer, value: unknown): JsonResult;
-  remove(path: Pointer): JsonResult;
-  replace(path: Pointer, value: unknown): JsonResult;
-  move(from: Pointer, path: Pointer): JsonResult;
-  copy(from: Pointer, path: Pointer): JsonResult;
-  test(path: Pointer, value: unknown): JsonResult;
+  add<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
+  remove<P extends PointerOf<T>>(path: P): JsonResult;
+  replace<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
+  move<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JsonResult;
+  copy<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JsonResult;
+  test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
 
   patch(operations: ReadonlyArray<JsonPatchOperation>): JsonResult;
 

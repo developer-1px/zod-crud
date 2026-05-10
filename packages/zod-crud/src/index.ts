@@ -15,3 +15,6 @@ export {
   PointerSyntaxError,
 } from "./core/pointer.js";
 export type { Pointer } from "./core/pointer.js";
+export type { PointerOf, ValueAt } from "./core/path-types.js";
+
+export { serialize, parse, safeParse } from "./core/serialize.js";

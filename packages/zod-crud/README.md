@@ -1,24 +1,11 @@
 # zod-crud
 
-Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.
+A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and
+**RFC 6902 (JSON Patch)**. State, actions, and change records are 100%
+serializable JSON. The core is pure functions; React is confined to one hook.
 
-The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single source
-of truth — locked to RFC 6901 (JSON Pointer) and RFC 6902 (JSON Patch) for
-30-year forward compatibility. Code, docs, and tests defer to SPEC.md.
-
-The core idea is simple:
-
-```txt
-nested JSON
-  -> serialize()
-flat node table
-  -> CRUD / copy / paste / undo / redo
-  -> deserialize()
-nested JSON
-```
-
-Zod is used as the structural policy layer. A mutation is committed only when
-the target subtree matches the Zod schema at that JSON path.
+The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single
+source of truth and outranks code, docs, and tests on conflict.
 
 ## Install
 
@@ -26,203 +13,139 @@ the target subtree matches the Zod schema at that JSON path.
 npm install zod-crud zod
 ```
 
-`zod` is a peer dependency. `zod-crud` is ESM-only, so use `import` from Node
-ESM, TypeScript, or a bundler.
+`zod` is a peer dependency. `react >=18` is an optional peer dependency
+required only for `useJson`. The package is ESM-only.
 
-## When To Use It
+## React — `useJson`
 
-Use `zod-crud` when an app edits JSON as a document structure: nested menus,
-schema-aware admin data, settings trees, rule editors, JSON inspectors, or other
-interfaces where selection and mutation happen at object fields, array items,
-and primitive leaves.
-
-It is not a UI component, form library, JSON Schema renderer, persistence
-layer, or visual treegrid. Consumers own rendering and storage.
-
-## Safety Contract
-
-- Every committed document must pass the root Zod schema.
-- Zod parsed output must be JSON-identical to stored JSON. If Zod would strip,
-  coerce, transform, or add data to an already-stored candidate, the mutation is
-  rejected.
-- Failed operations leave document state, history, clipboard, and id allocation
-  unchanged.
-- Mutations return `OperationResult` instead of throwing for expected invalid
-  input. Read-only helpers may throw for malformed docs or invalid ids.
-
-## Model
-
-Every JSON value becomes one flat node:
-
-```ts
-type JsonDoc = {
-  rootId: string;
-  nodes: Record<string, JsonNode>;
-};
-
-type JsonNode = {
-  id: string;
-  type: "object" | "array" | "string" | "number" | "boolean" | "null";
-  parentId: string | null;
-  key: string | number | null;
-  children: string[];
-  value?: string | number | boolean | null;
-};
-```
-
-`key` is unified:
-
-- object child: field name
-- array child: numeric index
-- root: `null`
-
-## Usage
-
-```ts
+```tsx
 import * as z from "zod";
-import { createJsonCrud } from "zod-crud";
+import { useJson } from "zod-crud";
 
-type UiNode =
-  | { kind: "frame"; name: string; children: UiNode[] }
-  | { kind: "text"; text: string };
-
-const UiNodeSchema: z.ZodType<UiNode> = z.lazy(() =>
-  z.union([
-    z.object({
-      kind: z.literal("frame"),
-      name: z.string(),
-      children: z.array(UiNodeSchema),
-    }),
-    z.object({
-      kind: z.literal("text"),
-      text: z.string(),
-    }),
-  ]),
-);
-
-const editor = createJsonCrud(UiNodeSchema, {
-  kind: "frame",
-  name: "root",
-  children: [{ kind: "text", text: "hello" }],
-}, {
-  focusFilter: (doc, nodeId) => doc.nodes[nodeId]?.type === "object",
-  defaultFor: () => ({ kind: "text", text: "" }),
-});
-
-const rootId = editor.snapshot().rootId;
-const childrenId = editor.find(rootId, "children");
-const textNodeId = editor.find(childrenId!, 0);
-
-const unsubscribe = editor.subscribe(() => {
-  console.log(editor.snapshot());
-});
-
-editor.insertAfter(textNodeId!, { kind: "text", text: "next" });
-editor.appendChild(rootId, { kind: "text", text: "child" });
-
-editor.copy(textNodeId!);
-const pasteResult = editor.paste(rootId); // inserts into root.children if the item schema accepts it
-
-if (pasteResult.ok) {
-  console.log(pasteResult.focusNodeId); // root id of the pasted subtree
-  console.log(pasteResult.changes); // changed JsonDoc nodes only
-}
-
-editor.undo();
-const redoResult = editor.redo();
-
-if (redoResult.ok) {
-  console.log(redoResult.focusNodeId); // node an editor should focus
-  console.log(redoResult.changes); // inserts, updates, and deletes from core
-}
-
-const json = editor.toJson();
-unsubscribe();
-```
-
-## Serializable Engine State
-
-`createJsonCrudState(schema, initialValue)` creates the durable engine state
-without constructing a mutable editor instance. `dispatchJsonCrudCommand()`
-applies serializable commands to that state. The returned state is plain JSON
-data: it contains the flat document, allocator cursor, clipboard, history,
-locks, revision, and saved snapshot, but never the Zod schema, callbacks, or
-subscribers.
-
-```ts
-import * as z from "zod";
-import { createJsonCrudState, dispatchJsonCrudCommand } from "zod-crud";
-
-const schema = z.object({
+const Schema = z.object({
   title: z.string(),
+  tasks: z.array(z.object({ id: z.string(), done: z.boolean() })),
 });
 
-const state = createJsonCrudState(schema, {
-  title: "Draft",
-});
+export function App() {
+  const [json, ops] = useJson(Schema, { title: "", tasks: [] }, { history: 50 });
 
-const next = dispatchJsonCrudCommand(state, {
-  type: "update",
-  nodeId: state.doc.rootId,
-  value: { title: "Published" },
-}, {
-  schema,
-  childKeys: ["children"],
-});
-
-const restored = JSON.parse(JSON.stringify(next.state));
+  return (
+    <>
+      <input
+        value={json.title}
+        onChange={(e) => ops.replace("/title", e.target.value)}
+      />
+      <button
+        onClick={() =>
+          ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })
+        }
+      >
+        add task
+      </button>
+      <button onClick={ops.undo} disabled={!ops.canUndo()}>
+        undo
+      </button>
+      {json.tasks.map((t, i) => (
+        <div key={t.id}>
+          <input
+            type="checkbox"
+            checked={t.done}
+            onChange={(e) =>
+              ops.replace(`/tasks/${i}/done` as `/tasks/${number}/done`, e.target.checked)
+            }
+          />
+          <button onClick={() => ops.remove(`/tasks/${i}` as `/tasks/${number}`)}>
+            remove
+          </button>
+        </div>
+      ))}
+    </>
+  );
+}
 ```
 
-This is the migration path toward pure command dispatch, replayable history,
-and future collaboration adapters. The existing `createJsonCrud()` facade
-remains the compatibility API for current consumers.
+Every method on `ops` corresponds 1:1 to an RFC 6902 operation:
+`add`, `remove`, `replace`, `move`, `copy`, `test`, plus `patch` for batches.
+There is no `set`, `insert`, `delete`, `rename`, or `paste` — the standard
+six operations express every mutation.
 
-## API Reference
+## Pure core (no React)
 
-### `createJsonCrud(schema, initialValue, options?)`
+```ts
+import * as z from "zod";
+import { applyOperation, applyPatch } from "zod-crud";
 
-Options:
+const Schema = z.object({ title: z.string(), tags: z.array(z.string()) });
 
-- `childKeys?: string[]` controls object fields treated as child arrays for paste and append helpers. The default is `["children"]`.
-- `focusFilter?: (doc, candidateId) => boolean` filters core focus candidates before `OperationResult.focusNodeId` is returned.
-- `defaultFor?: (parentPath) => JsonValue` supplies a value when `create`, `insertBefore`, `insertAfter`, or `appendChild` is called without an explicit value.
+const initial = { title: "draft", tags: [] };
 
-### `crud.subscribe(notify)`
+const r = applyPatch(Schema, initial, [
+  { op: "add", path: "/tags/-", value: "docs" },
+  { op: "replace", path: "/title", value: "final" },
+]);
 
-Registers a listener called after committed document mutations, including
-`create`, `update`, `rename`, `delete`, `cut`, `paste`, `undo`, and `redo`.
-Clipboard-only `copy` operations do not notify because the document is unchanged.
-The return value unsubscribes the listener.
+if (r.result.ok) {
+  console.log(r.state); // { title: "final", tags: ["docs"] }
+}
+```
 
-### `crud.insertAfter(siblingId, value?)`
+Both `applyOperation` and `applyPatch` are pure. Same input, same output.
+No React, no instances, no global state. Use them anywhere — server,
+Worker, edge runtime, tests.
 
-Inserts into the sibling's array parent immediately after `siblingId`.
-When `value` is omitted, `defaultFor(parentPath)` is used first; if absent,
-the child schema is asked to parse `undefined`, which supports Zod defaults.
+## Serialization
 
-### `crud.insertBefore(siblingId, value?)`
+State, operations, and history records are pure JSON. There is nothing
+special to serialize — `JSON.stringify` works directly:
 
-Same as `insertAfter`, but inserts immediately before `siblingId`.
+```ts
+import { serialize, parse, safeParse } from "zod-crud";
 
-### `crud.appendChild(parentId, value?)`
+const json = serialize(state);                // string
+const restored = parse(Schema, json);         // throws on schema mismatch
+const safe = safeParse(Schema, json);         // returns { ok, ... }
+```
 
-Appends to an array node, or to an object node's child array field. Object child
-array fields are discovered from schema array fields, existing array children,
-and `childKeys`.
+Operations are also pure JSON, so they can be sent over the wire and
+applied on the server with any RFC 6902 implementation:
 
-## Current Scope
+```ts
+fetch("/api/save", {
+  method: "PATCH",
+  headers: { "Content-Type": "application/json-patch+json" },
+  body: JSON.stringify(operations),
+});
+```
 
-- `serialize()` / `deserialize()`
-- flat JSON node table
-- `create`, `update`, `rename`, `delete`, `deleteMany`
-- `insertBefore`, `insertAfter`, `appendChild`
-- `copy`, `copyMany`, `cut`, `cutMany`, `paste`
-- `canCopyMany`, `canCutMany`, `canDeleteMany`, `canPaste`
-- `undo`, `redo`
-- `subscribe`
-- `OperationResult.changes` for changed `JsonDoc` nodes from the operation delta
-- `OperationResult.focusNodeIds` for batch-created focus targets
-- `focusFilter` for domain-visible focus candidates
-- `defaultFor` and Zod defaults for omitted create values
-- recursive Zod object/array/union path validation
-- `children` convention for child paste, configurable via `childKeys`
+## API
+
+See [`SPEC.md`](./SPEC.md) §5 for the canonical surface. Briefly:
+
+| Export | Purpose |
+| --- | --- |
+| `useJson(schema, initial, options?)` | React hook (SPEC §5.1) |
+| `JsonOps<T>` | hook return type (SPEC §5.2) |
+| `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
+| `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
+| `JsonPatchOperation`, `JsonResult`, `ErrorCode` | RFC 6902 types (SPEC §3) |
+| `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
+| `parsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment` | RFC 6901 helpers (SPEC §5.6) |
+| `serialize`, `parse`, `safeParse` | JSON helpers (SPEC §5.5) |
+| `JsonCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
+
+## Guarantees
+
+The library always upholds the SPEC §7 invariants:
+
+- **G1** — `JSON.parse(JSON.stringify(state))` deeply equals `state`
+- **G2** — operations never mutate input state
+- **G3** — committed state always passes `schema.safeParse`
+- **G4** — `applyPatch` is interoperable with other RFC 6902 implementations
+- **G5** — pointers are interpreted exactly as RFC 6901
+- **G6** — `applyOperation`/`applyPatch` are pure
+- **G7** — history undo→redo round-trips
+- **G8** — batch failure leaves state unchanged
+
+These are exercised by `test/rfc6902.test.ts`, `test/guarantees.test.ts`,
+`test/serialize.test.ts`, and `test/pointer-types.test.ts`.

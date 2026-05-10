@@ -349,19 +349,31 @@ export class JsonCrudError extends Error {
 
 ---
 
-## 10. 마이그레이션 메모 (현재 → 정본)
+## 10. 마이그레이션 — 완료 (2026-05-10)
 
-기존 코드(`createJsonCrud`, NodeId 모델, locked-region, dirty, focus, select)는 이 정본 시점에서 **제거 대상**. 마이그레이션 wave:
+기존 NodeId 기반 코어(`createJsonCrud`, `document/`, `mutate/`, `schema/`,
+`history/`, `clipboard/`, `internal/`, `read/`, `state/`, `dirty.ts`,
+`focus.ts`, `locked-region.ts`, `result.ts`, `select.ts`, `subscribe.ts`,
+`types.ts`, `validation.ts`)는 **전부 제거됨**. 의존하던 앱
+(`apps/showcase`, `apps/nested-ui-lab`, `apps/site`)도 SPEC §8 비-목표
+영역이라 함께 제거됨.
 
-- **Wave 0 (현재)**: `useJson` + Pointer/Patch 기반 표면 신설, pure core 구현
-- **Wave 1**: `document/` 9 파일 → `core/doc.ts` 1 파일
-- **Wave 2**: `mutate/` 9 파일 → `core/apply/*` (RFC 6902 6 op 파일)
-- **Wave 3**: `schema/` 8 파일 → `core/schema.ts` 1 파일
-- **Wave 4**: `history/` 7 파일 → `core/history.ts` 1 파일 (JsonPatchOperation 스택)
-- **Wave 5**: `clipboard/` 9 파일 제거 (RFC 6902 batch로 표현됨 — 코어 책임 아님)
-- **Wave 6**: `createJsonCrud` 제거. public surface가 §5만 남음
+현재 `packages/zod-crud/src/` 구조:
 
-목표: 60 파일 / 5069 LOC → 약 15 파일 / 2000 LOC 미만.
+```
+index.ts              ─ public export (SPEC §5)
+useJson.ts            ─ React hook (SPEC §5.1·§5.2)
+core/
+  pointer.ts          ─ RFC 6901 (SPEC §5.6)
+  path-types.ts       ─ PointerOf<T>·ValueAt<T,P> (SPEC §5.4)
+  patch.ts            ─ RFC 6902 pure core (SPEC §5.3)
+  serialize.ts        ─ serialize/parse/safeParse (SPEC §5.5)
+```
+
+**파일 수: 60 → 6. LOC: 5069 → ~700.**
+
+향후 SPEC 개정은 ADR(`packages/zod-crud/adr/NNNN-title.md`) 절차를
+따른다 (§11).
 
 ---
 
