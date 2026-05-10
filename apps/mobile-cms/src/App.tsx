@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 
 type AtomKind = "text" | "button" | "image";
@@ -33,6 +33,7 @@ interface BlockNode extends BaseNode {
 
 type CmsNode = PageNode | SectionNode | BlockNode;
 type Clipboard = { node: CmsNode; sourceId: string } | null;
+type PaletteSelection = { source: "palette"; node: BlockNode } | null;
 
 const BlockSchema: z.ZodType<BlockNode> = z.lazy(() =>
   z.object({
@@ -190,6 +191,32 @@ function insertInto(root: PageNode, targetId: string, incoming: BlockNode): Page
   return PageSchema.parse(next);
 }
 
+function removeNode(root: PageNode, nodeId: string): PageNode {
+  const next = structuredClone(root) as PageNode;
+  for (const section of next.children) {
+    const direct = section.children.findIndex((child) => child.id === nodeId);
+    if (direct >= 0) {
+      section.children.splice(direct, 1);
+      return PageSchema.parse(next);
+    }
+    if (removeFromBlocks(section.children, nodeId)) return PageSchema.parse(next);
+  }
+  return next;
+}
+
+function removeFromBlocks(nodes: BlockNode[], nodeId: string): boolean {
+  for (const node of nodes) {
+    if (!node.children) continue;
+    const index = node.children.findIndex((child) => child.id === nodeId);
+    if (index >= 0) {
+      node.children.splice(index, 1);
+      return true;
+    }
+    if (removeFromBlocks(node.children, nodeId)) return true;
+  }
+  return false;
+}
+
 function updateProps(root: PageNode, nodeId: string, props: Record<string, string>): PageNode {
   const next = structuredClone(root) as PageNode;
   const node = findNode(next, nodeId);
@@ -204,8 +231,9 @@ function label(kind: string) {
 export function App() {
   const [page, setPage] = useState<PageNode>(initialPage);
   const [selectedId, setSelectedId] = useState("section-hero");
+  const [paletteSelection, setPaletteSelection] = useState<PaletteSelection>(null);
   const [clipboard, setClipboard] = useState<Clipboard>(null);
-  const [message, setMessage] = useState("Copy a block, then paste into a highlighted slot.");
+  const [message, setMessage] = useState("Select a block or design-system part. Use Ctrl/Cmd+C and Ctrl/Cmd+V.");
   const selected = useMemo(() => findNode(page, selectedId), [page, selectedId]);
 
   const copy = (node: CmsNode) => {
@@ -228,6 +256,73 @@ export function App() {
     setMessage(`Pasted ${clipboard.node.name} into ${target.name}.`);
   };
 
+  const selectCanvasNode = (id: string) => {
+    setPaletteSelection(null);
+    setSelectedId(id);
+  };
+
+  const selectPaletteNode = (node: BlockNode) => {
+    setPaletteSelection({ source: "palette", node });
+    setClipboard({ node: cloneNode(node), sourceId: node.id });
+    setMessage(`${node.name} is staged. Select a slot and press Ctrl/Cmd+V.`);
+  };
+
+  const resetPage = () => {
+    setPage(initialPage);
+    setSelectedId("section-hero");
+    setPaletteSelection(null);
+    setClipboard(null);
+    setMessage("Reset to the starter mobile page.");
+  };
+
+  const removeSelected = () => {
+    const target = selected;
+    if (!target || target.kind === "page" || target.kind === "section") {
+      setMessage("Only design blocks can be deleted.");
+      return;
+    }
+    setPage((current) => removeNode(current, target.id));
+    setSelectedId("section-hero");
+    setMessage(`Deleted ${target.name}.`);
+  };
+
+  const onShortcut = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") return;
+    const key = event.key.toLowerCase();
+    const mod = event.metaKey || event.ctrlKey;
+
+    if (mod && key === "c") {
+      event.preventDefault();
+      if (paletteSelection) copy(paletteSelection.node);
+      else if (selected && selected.kind !== "page") copy(selected);
+      else setMessage("Select a design block before copying.");
+      return;
+    }
+
+    if (mod && key === "v") {
+      event.preventDefault();
+      if (selected) pasteInto(selected);
+      return;
+    }
+
+    if (key === "delete" || key === "backspace") {
+      event.preventDefault();
+      removeSelected();
+      return;
+    }
+
+    if (key === "r") {
+      event.preventDefault();
+      resetPage();
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("keydown", onShortcut);
+    return () => window.removeEventListener("keydown", onShortcut);
+  });
+
   const updateSelectedProps = (props: Record<string, string>) => {
     if (!selected || selected.kind === "page" || selected.kind === "section") return;
     setPage((current) => updateProps(current, selected.id, props));
@@ -242,10 +337,23 @@ export function App() {
         </div>
         <div className="palette-list">
           {palette.map((item) => (
-            <button key={item.id} className="palette-item" onClick={() => copy(item)}>
+            <div
+              key={item.id}
+              role="option"
+              aria-selected={paletteSelection?.node.id === item.id}
+              tabIndex={0}
+              className={`palette-item ${paletteSelection?.node.id === item.id ? "selected" : ""}`}
+              onClick={() => selectPaletteNode(item)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" || event.key === " ") {
+                  event.preventDefault();
+                  selectPaletteNode(item);
+                }
+              }}
+            >
               <span>{item.name}</span>
               <small>{label(item.kind)}</small>
-            </button>
+            </div>
           ))}
         </div>
       </aside>
@@ -256,7 +364,7 @@ export function App() {
             <strong>{page.name}</strong>
             <span>{message}</span>
           </div>
-          <button onClick={() => setPage(initialPage)}>Reset</button>
+          <kbd>R reset</kbd>
         </div>
         <div className="phone-frame" aria-label="Mobile page preview">
           <div className="phone-screen">
@@ -266,9 +374,7 @@ export function App() {
                 section={section}
                 selectedId={selectedId}
                 clipboard={clipboard}
-                onSelect={setSelectedId}
-                onCopy={copy}
-                onPaste={pasteInto}
+                onSelect={selectCanvasNode}
               />
             ))}
           </div>
@@ -287,10 +393,7 @@ export function App() {
               {"sectionKind" in selected && <><span>Slot</span><strong>{label(selected.sectionKind)}</strong></>}
               <span>Clipboard</span><strong>{clipboard ? label(clipboard.node.kind) : "empty"}</strong>
             </div>
-            <div className="action-row">
-              <button onClick={() => copy(selected)} disabled={selected.kind === "page"}>Copy</button>
-              <button onClick={() => pasteInto(selected)}>Paste into</button>
-            </div>
+            <ShortcutList />
             {selected.kind !== "page" && selected.kind !== "section" && (
               <PropEditor node={selected} onChange={updateSelectedProps} />
             )}
@@ -307,8 +410,6 @@ function SectionView(props: {
   selectedId: string;
   clipboard: Clipboard;
   onSelect: (id: string) => void;
-  onCopy: (node: CmsNode) => void;
-  onPaste: (node: CmsNode) => void;
 }) {
   const verdict = props.clipboard ? canAccept(props.section, props.clipboard.node) : null;
   return (
@@ -318,7 +419,7 @@ function SectionView(props: {
     >
       <div className="section-label">
         <span>{props.section.name}</span>
-        <button onClick={(e) => { e.stopPropagation(); props.onPaste(props.section); }}>Paste</button>
+        <kbd>paste target</kbd>
       </div>
       {props.section.children.map((child) => (
         <BlockView
@@ -327,8 +428,6 @@ function SectionView(props: {
           selectedId={props.selectedId}
           clipboard={props.clipboard}
           onSelect={props.onSelect}
-          onCopy={props.onCopy}
-          onPaste={props.onPaste}
         />
       ))}
     </section>
@@ -340,8 +439,6 @@ function BlockView(props: {
   selectedId: string;
   clipboard: Clipboard;
   onSelect: (id: string) => void;
-  onCopy: (node: CmsNode) => void;
-  onPaste: (node: CmsNode) => void;
 }) {
   const { node } = props;
   const verdict = props.clipboard ? canAccept(node, props.clipboard.node) : null;
@@ -352,10 +449,7 @@ function BlockView(props: {
     >
       <div className="block-toolbar">
         <span>{node.name}</span>
-        <div>
-          <button onClick={(e) => { e.stopPropagation(); props.onCopy(node); }}>Copy</button>
-          <button onClick={(e) => { e.stopPropagation(); props.onPaste(node); }}>Paste</button>
-        </div>
+        <kbd>{verdict?.ok ? "Ctrl+V" : "Ctrl+C"}</kbd>
       </div>
       <BlockContent node={node} />
       {node.children && node.children.length > 0 && (
@@ -367,8 +461,6 @@ function BlockView(props: {
               selectedId={props.selectedId}
               clipboard={props.clipboard}
               onSelect={props.onSelect}
-              onCopy={props.onCopy}
-              onPaste={props.onPaste}
             />
           ))}
         </div>
@@ -383,7 +475,7 @@ function BlockContent({ node }: { node: BlockNode }) {
   if (node.kind === "ctaRow") return <div className="cta-row"><span>{node.props.label}</span></div>;
   if (node.kind === "productGrid") return <div className="grid-title">{node.props.title}</div>;
   if (node.kind === "articleList") return <div className="article-title">{node.props.title}</div>;
-  if (node.kind === "button") return <button className="preview-button">{node.props.label}</button>;
+  if (node.kind === "button") return <div className="preview-button">{node.props.label}</div>;
   if (node.kind === "image") return <div className="image-block" aria-label={node.props.alt} />;
   return <p className="text-block">{node.props.text}</p>;
 }
@@ -398,6 +490,18 @@ function PropEditor({ node, onChange }: { node: BlockNode; onChange: (props: Rec
           <input value={value} onChange={(e) => onChange({ ...node.props, [key]: e.target.value })} />
         </label>
       ))}
+    </div>
+  );
+}
+
+function ShortcutList() {
+  return (
+    <div className="shortcut-card">
+      <h3>Shortcuts</h3>
+      <div><kbd>Ctrl/Cmd+C</kbd><span>Copy selected block</span></div>
+      <div><kbd>Ctrl/Cmd+V</kbd><span>Paste into selected slot</span></div>
+      <div><kbd>Delete</kbd><span>Remove selected block</span></div>
+      <div><kbd>R</kbd><span>Reset page</span></div>
     </div>
   );
 }
