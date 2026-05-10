@@ -9,7 +9,7 @@ import {
   applyMergePatch,
   JSON_PATCH_MIME,
   MERGE_PATCH_MIME,
-} from "../src/http/index.js";
+} from "../src/sidecars/http.js";
 import { applyPatch } from "../src/core/patch/index.js";
 import { z } from "zod";
 

@@ -2,7 +2,7 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { toJSONSchema, fromJSONSchema } from "../src/schema/index.js";
+import { toJSONSchema, fromJSONSchema } from "../src/core/schema/bridge.js";
 import { applyPatch } from "../src/core/patch/index.js";
 
 describe("zod → JSON Schema (draft-2020-12)", () => {
