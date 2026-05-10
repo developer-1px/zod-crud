@@ -3,14 +3,18 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "scripts": {
-    "build": "npm run build -w zod-crud",
+    "dev": "npm run dev -w @zod-crud/site",
+    "build": "npm run build -w zod-crud && npm run build -w @zod-crud/site",
     "test": "npm test -w zod-crud",
-    "typecheck": "npm run typecheck -w zod-crud",
+    "typecheck": "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/site",
     "smoke:package": "npm run smoke:package -w zod-crud",
     "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package",
-    "pack:library": "npm pack -w zod-crud"
+    "pack:library": "npm pack -w zod-crud",
+    "site:dev": "npm run dev -w @zod-crud/site",
+    "site:build": "npm run build -w @zod-crud/site"
   }
 }
