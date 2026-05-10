@@ -45,9 +45,9 @@ export type SelectionAction =
 
 const isMulti = (m: SelectionMode) => m === "extended" || m === "multiple";
 
-function extentOf(mode: SelectionMode, anchor: Pointer, focus: Pointer): SelectionSnap {
+function extentOf(mode: SelectionMode, anchor: Pointer, focus: Pointer, state?: unknown): SelectionSnap {
   if (!isMulti(mode)) return { ranges: [focus], anchor: focus, focus };
-  return { ranges: expandRange(anchor, focus), anchor, focus };
+  return { ranges: expandRange(anchor, focus, state), anchor, focus };
 }
 
 function withAdded(prev: SelectionSnap, mode: SelectionMode, p: Pointer): SelectionSnap {
@@ -70,11 +70,12 @@ export function reduceSelection(
   prev: SelectionSnap,
   action: SelectionAction,
   mode: SelectionMode,
+  state?: unknown,
 ): SelectionSnap {
   switch (action.type) {
     case "collapse":         return { ranges: [action.pointer], anchor: action.pointer, focus: action.pointer };
-    case "setBaseAndExtent": return extentOf(mode, action.anchor, action.focus);
-    case "extend":           return extentOf(mode, prev.anchor ?? action.pointer, action.pointer);
+    case "setBaseAndExtent": return extentOf(mode, action.anchor, action.focus, state);
+    case "extend":           return extentOf(mode, prev.anchor ?? action.pointer, action.pointer, state);
     case "addRange":         return withAdded(prev, mode, action.pointer);
     case "removeRange":      return withRemoved(prev, action.pointer);
     case "toggleRange":      return prev.ranges.includes(action.pointer)

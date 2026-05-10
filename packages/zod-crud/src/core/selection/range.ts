@@ -1,23 +1,52 @@
-// 같은 부모 array 안에서만 [anchor..focus] 인덱스 범위 펼침. 그 외는 두 좌표만.
+// state-aware DFS range expansion. anchor 의 값 타입 (object/array/primitive) 과
+// 같은 종류의 좌표만 DFS pre-order 로 펼친다. 도메인 무관.
+//
+//   - anchor 값이 object  → 모든 object 위치 (트리 노드 모델)
+//   - anchor 값이 string  → 모든 string 위치 (flat list 모델)
+//   - 등등
+//
+// state 모르면 (또는 endpoint 가 그 type 집합에 없으면) [anchor, focus] 두 점만.
 
-import type { Pointer } from "../pointer/index.js";
+import { parsePointer, readAt, escapeSegment, type Pointer } from "../pointer/index.js";
 
-export function expandRange(anchor: Pointer, focus: Pointer): Pointer[] {
-  const aSeg = anchor.split("/");
-  const fSeg = focus.split("/");
-  if (aSeg.length !== fSeg.length || aSeg.length < 2) return uniq([anchor, focus]);
-  for (let i = 0; i < aSeg.length - 1; i++) if (aSeg[i] !== fSeg[i]) return uniq([anchor, focus]);
-  const aIdx = Number(aSeg[aSeg.length - 1]);
-  const fIdx = Number(fSeg[fSeg.length - 1]);
-  if (!Number.isInteger(aIdx) || !Number.isInteger(fIdx)) return uniq([anchor, focus]);
-  const lo = Math.min(aIdx, fIdx);
-  const hi = Math.max(aIdx, fIdx);
-  const parent = aSeg.slice(0, -1).join("/");
-  const out: Pointer[] = [];
-  for (let i = lo; i <= hi; i++) out.push(`${parent}/${i}`);
-  return out;
+type ValueKind = "null" | "object" | "array" | "string" | "number" | "boolean" | "undefined";
+
+function kindOf(v: unknown): ValueKind {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  return typeof v as ValueKind;
 }
 
-function uniq(arr: Pointer[]): Pointer[] {
-  return Array.from(new Set(arr));
+function* walkSameKind(state: unknown, refKind: ValueKind, base: Pointer = ""): Generator<Pointer> {
+  if (kindOf(state) === refKind) yield base;
+  if (state && typeof state === "object") {
+    if (Array.isArray(state)) {
+      for (let i = 0; i < state.length; i++) {
+        yield* walkSameKind(state[i], refKind, `${base}/${i}`);
+      }
+    } else {
+      for (const k of Object.keys(state as Record<string, unknown>)) {
+        yield* walkSameKind((state as Record<string, unknown>)[k], refKind, `${base}/${escapeSegment(k)}`);
+      }
+    }
+  }
+}
+
+// state 가 주어지면 anchor 와 같은 kind 의 좌표를 DFS 순서로 펼침. 없거나 endpoint 가
+// kind 집합 밖이면 [anchor, focus] (uniq) 로 fallback — 호출자가 별도 처리할 필요 없음.
+export function expandRange(anchor: Pointer, focus: Pointer, state?: unknown): Pointer[] {
+  if (state !== undefined) {
+    const a = readAt(state, parsePointer(anchor));
+    if (a.ok) {
+      const refKind = kindOf(a.value);
+      const arr = [...walkSameKind(state, refKind)];
+      const ia = arr.indexOf(anchor);
+      const ib = arr.indexOf(focus);
+      if (ia >= 0 && ib >= 0) {
+        const [lo, hi] = ia <= ib ? [ia, ib] : [ib, ia];
+        return arr.slice(lo, hi + 1);
+      }
+    }
+  }
+  return anchor === focus ? [anchor] : [anchor, focus];
 }

@@ -54,6 +54,7 @@ export function useSelection<T>(
       EMPTY_SELECTION,
       { type: "setBaseAndExtent", anchor: init[0]!, focus: init[init.length - 1]! },
       mode,
+      ops.state,
     );
   });
 
@@ -63,9 +64,10 @@ export function useSelection<T>(
     });
   }, [ops, mode]);
 
+  // dispatch 시 ops.state 를 전달 — reducer 의 setBaseAndExtent/extend 가 DFS 확장에 사용.
   const dispatch = useCallback(
-    (action: SelectionAction) => setSnap((prev) => reduceSelection(prev, action, mode)),
-    [mode],
+    (action: SelectionAction) => setSnap((prev) => reduceSelection(prev, action, mode, ops.state)),
+    [ops, mode],
   );
 
   return useMemo<SelectionState<T>>(() => ({
