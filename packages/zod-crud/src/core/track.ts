@@ -17,6 +17,34 @@ function isArrayIndex(seg: string): boolean {
   return /^(0|[1-9][0-9]*)$/.test(seg);
 }
 
+// at = parent + [pivotSeg]. target 이 같은 array 부모를 공유하고 그 위치의 인덱스가
+// 영향 받으면 새 segment 배열을 반환. 그렇지 않으면 null.
+//
+// add 의 경우 delta = +1 (pivot >= insert 위치는 한 칸 밀림).
+// remove 의 경우 delta = -1 (pivot > remove 위치는 한 칸 당겨짐).
+//
+// `at` 의 마지막 segment 가 array index 가 아니거나 "-" 이면 영향 없음.
+function shiftArraySibling(at: string[], target: string[], delta: 1 | -1): string[] | null {
+  if (at.length === 0) return null;
+  const pivotSeg = at[at.length - 1]!;
+  if (pivotSeg === "-") return null;
+  if (!isArrayIndex(pivotSeg)) return null;
+  const parent = at.slice(0, at.length - 1);
+  if (target.length < at.length) return null;
+  for (let i = 0; i < parent.length; i++) {
+    if (parent[i] !== target[i]) return null;
+  }
+  const targetIdxSeg = target[parent.length]!;
+  if (!isArrayIndex(targetIdxSeg)) return null;
+  const pivot = Number(pivotSeg);
+  const tIdx = Number(targetIdxSeg);
+  if (delta === 1 && tIdx < pivot) return null;
+  if (delta === -1 && tIdx <= pivot) return null;
+  const next = [...target];
+  next[parent.length] = String(tIdx + delta);
+  return next;
+}
+
 function sameArrayParent(a: string[], b: string[]): boolean {
   if (a.length === 0 || b.length === 0) return false;
   if (a.length !== b.length) return false;
@@ -37,76 +65,16 @@ function trackOne(pointer: Pointer, op: JsonPatchOperation): Pointer | null {
 
     case "add": {
       const at = parsePointer(op.path);
-      // append marker /-: 끝에 추가, 다른 pointer 영향 없음
-      if (at.length > 0 && at[at.length - 1] === "-") return pointer;
-
-      // 같은 부모 array 안에서 인덱스 shift
-      if (sameArrayParent(at, target)) {
-        const insertAt = Number(at[at.length - 1]);
-        const targetIdx = Number(target[target.length - 1]);
-        if (targetIdx >= insertAt) {
-          const next = [...target];
-          next[next.length - 1] = String(targetIdx + 1);
-          return buildPointer(next);
-        }
-      }
-      // 더 깊은 자식 영향: at 가 target 의 prefix 인 경우 인덱스 shift 전파
-      if (
-        at.length < target.length &&
-        startsWith(at.slice(0, -1), target) === false &&
-        startsWith(at.slice(0, at.length - 1), target.slice(0, at.length - 1))
-      ) {
-        // at = parent + [insertIdx], target = parent + [tIdx, ...rest]
-        const parent = at.slice(0, at.length - 1);
-        if (
-          startsWith(parent, target) &&
-          isArrayIndex(at[at.length - 1]!) &&
-          isArrayIndex(target[parent.length]!)
-        ) {
-          const insertAt = Number(at[at.length - 1]);
-          const targetIdx = Number(target[parent.length]);
-          if (targetIdx >= insertAt) {
-            const next = [...target];
-            next[parent.length] = String(targetIdx + 1);
-            return buildPointer(next);
-          }
-        }
-      }
-      return pointer;
+      const shifted = shiftArraySibling(at, target, 1);
+      return shifted ? buildPointer(shifted) : pointer;
     }
 
     case "remove": {
       const at = parsePointer(op.path);
       // 동일 또는 자손이면 drop
       if (startsWith(at, target)) return null;
-      // 같은 부모 array 안에서 인덱스 shift
-      if (sameArrayParent(at, target)) {
-        const removeAt = Number(at[at.length - 1]);
-        const targetIdx = Number(target[target.length - 1]);
-        if (targetIdx > removeAt) {
-          const next = [...target];
-          next[next.length - 1] = String(targetIdx - 1);
-          return buildPointer(next);
-        }
-      }
-      // 더 깊은 자식 영향
-      if (at.length < target.length) {
-        const parent = at.slice(0, at.length - 1);
-        if (
-          startsWith(parent, target) &&
-          isArrayIndex(at[at.length - 1]!) &&
-          isArrayIndex(target[parent.length]!)
-        ) {
-          const removeAt = Number(at[at.length - 1]);
-          const targetIdx = Number(target[parent.length]);
-          if (targetIdx > removeAt) {
-            const next = [...target];
-            next[parent.length] = String(targetIdx - 1);
-            return buildPointer(next);
-          }
-        }
-      }
-      return pointer;
+      const shifted = shiftArraySibling(at, target, -1);
+      return shifted ? buildPointer(shifted) : pointer;
     }
 
     case "replace": {

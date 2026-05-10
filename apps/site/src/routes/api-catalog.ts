@@ -13,6 +13,9 @@ const PATCH_SRC: ApiSource = { path: "core/patch.ts" };
 const POINTER_SRC: ApiSource = { path: "core/pointer.ts" };
 const SERIALIZE_SRC: ApiSource = { path: "core/serialize.ts" };
 const TYPES_SRC: ApiSource = { path: "core/path-types.ts" };
+const TRACK_SRC: ApiSource = { path: "core/track.ts" };
+const SELECTION_SRC: ApiSource = { path: "useSelection.ts" };
+const FOCUS_SRC: ApiSource = { path: "useFocus.ts" };
 
 const groups: ApiGroup[] = [
   {
@@ -68,6 +71,25 @@ const groups: ApiGroup[] = [
       { id: "serialize", call: "serialize(state)", sources: [SERIALIZE_SRC] },
       { id: "parse", call: "parse(schema, json)", sources: [SERIALIZE_SRC] },
       { id: "safeParse", call: "safeParse(schema, json)", sources: [SERIALIZE_SRC] },
+    ],
+  },
+  {
+    title: "Axis 2 — Selection",
+    apis: [
+      { id: "useSelection", call: "useSelection(ops, options?)", sources: [SELECTION_SRC, TRACK_SRC] },
+    ],
+  },
+  {
+    title: "Axis 2 — Focus",
+    apis: [
+      { id: "useFocus", call: "useFocus(ops, options?)", sources: [FOCUS_SRC, TRACK_SRC] },
+    ],
+  },
+  {
+    title: "Pointer tracking",
+    apis: [
+      { id: "trackPointer", call: "trackPointer(pointer, applied)", sources: [TRACK_SRC] },
+      { id: "trackPointers", call: "trackPointers(pointers, applied)", sources: [TRACK_SRC] },
     ],
   },
 ];

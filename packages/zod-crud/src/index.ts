@@ -36,12 +36,4 @@ export type {
 export { useFocus } from "./useFocus.js";
 export type { FocusState, UseFocusOptions } from "./useFocus.js";
 
-export { useClipboard } from "./useClipboard.js";
-export type {
-  ClipboardMode,
-  ClipboardSnapshot,
-  ClipboardState,
-  UseClipboardOptions,
-} from "./useClipboard.js";
-
 export { trackPointer, trackPointers } from "./core/track.js";

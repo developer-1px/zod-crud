@@ -2,7 +2,8 @@
 
 A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and
 **RFC 6902 (JSON Patch)**. State, actions, and change records are 100%
-serializable JSON. The core is pure functions; React is confined to one hook.
+serializable JSON. The core is pure functions; React hooks layer editor
+coordinates such as selection and focus on top of that RFC substrate.
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single
 source of truth and outranks code, docs, and tests on conflict.
@@ -14,7 +15,7 @@ npm install zod-crud zod
 ```
 
 `zod` is a peer dependency. `react >=18` is an optional peer dependency
-required only for `useJson`. The package is ESM-only.
+required only for React hooks. The package is ESM-only.
 
 ## React — `useJson`
 
@@ -69,6 +70,16 @@ Every method on `ops` corresponds 1:1 to an RFC 6902 operation:
 `add`, `remove`, `replace`, `move`, `copy`, `test`, plus `patch` for batches.
 There is no `set`, `insert`, `delete`, `rename`, or `paste` — the standard
 six operations express every mutation.
+
+`ops` also exposes `subscribe(listener)` and a read-only `state` snapshot so
+Axis 2 hooks can follow committed RFC 6902 operations.
+
+## React — editor coordinates
+
+`useSelection(ops, options?)` and `useFocus(ops, options?)` provide JSON
+Pointer-based editor coordinates. They do not render UI or handle DOM keyboard
+events; they track coordinates when RFC 6902 operations are committed through
+`useJson`.
 
 ## Pure core (no React)
 
@@ -126,9 +137,12 @@ See [`SPEC.md`](./SPEC.md) §5 for the canonical surface. Briefly:
 | --- | --- |
 | `useJson(schema, initial, options?)` | React hook (SPEC §5.1) |
 | `JsonOps<T>` | hook return type (SPEC §5.2) |
+| `useSelection(ops, options?)` | selection hook (SPEC §5.7) |
+| `useFocus(ops, options?)` | focus hook (SPEC §5.8) |
+| `trackPointer`, `trackPointers` | low-level pointer tracking helpers (SPEC §5.9) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
-| `JsonPatchOperation`, `JsonResult`, `ErrorCode` | RFC 6902 types (SPEC §3) |
+| `JsonPatchOperation`, `JsonResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `serialize`, `parse`, `safeParse` | JSON helpers (SPEC §5.5) |

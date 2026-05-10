@@ -13,6 +13,8 @@ export const ESSENTIAL_IDS = new Set<string>([
   "ops.patch",
   "applyOperation",
   "applyPatch",
+  "useSelection",
+  "useFocus",
 ]);
 
 export const COMMON_IDS = new Set<string>([

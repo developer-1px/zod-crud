@@ -6,7 +6,7 @@
 
 ## 0. 헌장 (Charter)
 
-zod-crud는 **Zod schema로 보호되는 JSON tree 라이브러리 + RFC 표준 위에 구축된 editor abstraction**이다. UI 렌더링·폼 라이브러리·DOM 이벤트는 아니다. tree 위 좌표(selection, focus, clipboard buffer)는 라이브러리 책임이다.
+zod-crud는 **Zod schema로 보호되는 JSON tree 라이브러리 + RFC 표준 위에 구축된 editor abstraction**이다. UI 렌더링·폼 라이브러리·DOM 이벤트는 아니다. tree 위 좌표(selection, focus)는 라이브러리 책임이다.
 
 ### 0.1 절대 원칙 — Axis 1 (Data Substrate)
 
@@ -22,11 +22,11 @@ zod-crud는 **Zod schema로 보호되는 JSON tree 라이브러리 + RFC 표준 
 
 Editor에서 쓰이는 tree 좌표는 라이브러리가 표준 어휘로 제공한다. UI 렌더링은 사용자 책임이지만 좌표 모델은 정본화한다.
 
-6. **모든 좌표 = RFC 6901 Pointer** — selection·focus·clipboard sources 모두 Pointer. `NodeId` 같은 내부 식별자 0.
-7. **모든 좌표 상태 = JSON 직렬화 가능** — selection·focus·clipboard buffer 모두 `JSON.stringify` round-trip. (collaborative cursor·SSR hydration·postMessage 무료)
+6. **모든 좌표 = RFC 6901 Pointer** — selection·focus 모두 Pointer. `NodeId` 같은 내부 식별자 0.
+7. **모든 좌표 상태 = JSON 직렬화 가능** — selection·focus state 모두 `JSON.stringify` round-trip. (collaborative cursor·SSR hydration·postMessage 무료)
 8. **WAI-ARIA 어휘 정합** — selection mode (`single`/`multiple`/`extended`), focus 단일 활성 좌표(`aria-activedescendant` 의미), per-item selected 상태(`aria-selected` 의미). ARIA 패턴(Listbox·Tree·Grid·TreeGrid)에서 정의된 의미만 차용한다.
 9. **자동 추적** — RFC 6902 op 적용 시 selection·focus 가 자동으로 추종한다 (이동·제거·삽입 따라 Pointer 갱신·소실). 사용자가 wiring 0.
-10. **Axis 2 hook 별도, opt-in** — `useSelection`·`useFocus`·`useClipboard` 는 별도 hook. 미사용 시 tree-shake 로 비용 0.
+10. **Axis 2 hook 별도, opt-in** — `useSelection`·`useFocus` 는 별도 hook. 미사용 시 tree-shake 로 비용 0.
 
 위 10개 원칙은 라이브러리 정체성이며 후속 결정의 기각 사유로 사용된다.
 
@@ -41,7 +41,7 @@ Editor에서 쓰이는 tree 좌표는 라이브러리가 표준 어휘로 제공
 | **RFC 6902** — JSON Patch | 변경 표현 | 절대 |
 | **ECMAScript** | 런타임 | 절대 |
 | Zod (semver-major 시 검토) | schema 검증 | 의존 라이브러리 |
-| React `>=18` (optional peer) | `useJson` 훅만 의존 | 옵셔널 |
+| React `>=18` (optional peer) | React hooks (`useJson`, Axis 2 hooks) | 옵셔널 |
 
 표준 외의 디팩토 관행(lodash dot path, RHF bracket path 등)은 **참조하지 않는다.** 호환 어댑터도 라이브러리 본체에 포함하지 않는다.
 
@@ -172,7 +172,7 @@ useJson(schema, initial, { history: number })  // 0이면 disabled
 
 ## 5. Public API
 
-### 5.1 `useJson` — React hook (유일한 React 진입점)
+### 5.1 `useJson` — core data React hook
 
 ```ts
 export function useJson<S extends z.ZodType>(
@@ -201,7 +201,7 @@ export interface JsonOps<T> {
   test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
 
   // RFC 6902 batch
-  patch(operations: JsonPatchOperation[]): JsonResult;
+  patch(operations: ReadonlyArray<JsonPatchOperation>): JsonResult;
 
   // history (opt-in)
   undo(): boolean;
@@ -212,7 +212,13 @@ export interface JsonOps<T> {
   // lifecycle
   load(value: T): JsonResult;
   reset(value?: T): void;
+
+  // Axis 2 coordination
+  subscribe(listener: JsonChangeListener): () => void;
+  readonly state: T;
 }
+
+export type JsonChangeListener = (applied: ReadonlyArray<JsonPatchOperation>) => void;
 ```
 
 ### 5.3 Pure core — `applyPatch` / `applyOperation`
@@ -222,19 +228,25 @@ export function applyOperation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   op: JsonPatchOperation,
-): { state: z.output<S>; result: JsonResult; applied: JsonPatchOperation[] };
+): ApplyResult<S>;
 
 export function applyPatch<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
-  ops: JsonPatchOperation[],
-): { state: z.output<S>; result: JsonResult; applied: JsonPatchOperation[] };
+  ops: ReadonlyArray<JsonPatchOperation>,
+): ApplyResult<S>;
+
+export interface ApplyResult<S extends z.ZodType> {
+  state: z.output<S>;
+  result: JsonResult;
+  applied: ReadonlyArray<JsonPatchOperation>;
+}
 ```
 
 순수함수. React 의존 0. 어떤 환경에서도 import 가능 (서버, Worker, 다른 framework).
 
 `applied` 는 실제로 commit 된 op 목록. 성공 시 입력 ops 와 동일, 실패 시 빈 배열 (G8 atomicity).
-Axis 2 hook 들은 이 배열을 보고 selection·focus·clipboard 를 자동 추적한다 (§0.2 (9)).
+Axis 2 hook 들은 이 배열을 `JsonOps.subscribe` 로 받아 selection·focus 를 자동 추적한다 (§0.2 (9)).
 
 ### 5.4 Pointer 타입 추론
 
@@ -276,7 +288,7 @@ export function useSelection<T>(
 
 export interface UseSelectionOptions {
   mode?: "single" | "multiple" | "extended";  // ARIA Listbox/Tree/Grid 어휘. 기본 "single"
-  initial?: Pointer[];
+  initial?: ReadonlyArray<Pointer>;
 }
 
 export interface SelectionState<T> {
@@ -284,7 +296,7 @@ export interface SelectionState<T> {
   anchor: Pointer | null;     // extended 모드의 range 시작점
   focus: Pointer | null;       // extended 모드의 range 끝점 (= 활성 좌표)
   has(pointer: Pointer): boolean;
-  set(pointers: Pointer[]): void;
+  set(pointers: ReadonlyArray<Pointer>): void;
   add(pointer: Pointer): void;
   remove(pointer: Pointer): void;
   toggle(pointer: Pointer): void;
@@ -316,40 +328,23 @@ export interface FocusState<T> {
 }
 ```
 
-### 5.9 `useClipboard` — copy / cut / paste hook (Axis 2)
+### 5.9 Pointer tracking helpers (Axis 2 low-level)
 
 ```ts
-export function useClipboard<T>(
-  ops: JsonOps<T>,
-  options?: UseClipboardOptions,
-): ClipboardState<T>;
+export function trackPointer(
+  pointer: Pointer,
+  applied: ReadonlyArray<JsonPatchOperation>,
+): Pointer | null;
 
-export interface UseClipboardOptions {
-  initial?: ClipboardSnapshot;
-}
-
-export type ClipboardMode = "empty" | "copy" | "cut";
-
-export interface ClipboardSnapshot {
-  mode: ClipboardMode;
-  values: ReadonlyArray<unknown>;
-  sources: ReadonlyArray<Pointer>;
-}
-
-export interface ClipboardState<T> extends ClipboardSnapshot {
-  copy(sources: ReadonlyArray<Pointer>): void;
-  cut(sources: ReadonlyArray<Pointer>): void;
-  paste(target: Pointer): JsonResult;
-  clear(): void;
-}
+export function trackPointers(
+  pointers: ReadonlyArray<Pointer>,
+  applied: ReadonlyArray<JsonPatchOperation>,
+): Pointer[];
 ```
 
-`paste` 의미:
-- `mode === "copy"` → `target` 위치에 `add` (sources 가 다중이면 batch)
-- `mode === "cut"` → sources 를 `move` 로 target 으로 이동. paste 후 `mode = "empty"` (1회용)
-- `target` 이 array 의 `/-` 이면 끝에 append, `/N` 이면 N 위치에 insert
-
-paste 가 RFC 6902 batch 로 표현되므로 G8 atomicity 그대로 보장.
+`useSelection`·`useFocus` 가 사용하는 low-level helper. RFC 6902 op 적용 후
+기존 Pointer 가 어디로 이동했는지 계산한다. 제거된 좌표는 `null` 또는 결과
+목록에서 제외된다.
 
 ---
 
@@ -431,8 +426,7 @@ export class JsonCrudError extends Error {
 
 - Selection model (Pointer 집합, single/multiple/extended 모드, anchor/focus, range 선택)
 - Focus model (단일 활성 좌표, filter/recover)
-- Clipboard model (copy/cut buffer + paste semantics, RFC 6902 batch 생성)
-- 좌표 자동 추적 (RFC 6902 op 적용 시 selection·focus·clipboard sources 가 추종)
+- 좌표 자동 추적 (RFC 6902 op 적용 시 selection·focus 가 추종)
 - 직렬화 (모든 좌표 상태가 JSON.stringify round-trip)
 
 ---
@@ -471,14 +465,18 @@ export class JsonCrudError extends Error {
 ```
 index.ts              ─ public export (SPEC §5)
 useJson.ts            ─ React hook (SPEC §5.1·§5.2)
+useSelection.ts       ─ selection hook (SPEC §5.7)
+useFocus.ts           ─ focus hook (SPEC §5.8)
 core/
   pointer.ts          ─ RFC 6901 (SPEC §5.6)
   path-types.ts       ─ PointerOf<T>·ValueAt<T,P> (SPEC §5.4)
   patch.ts            ─ RFC 6902 pure core (SPEC §5.3)
   serialize.ts        ─ serialize/parse/safeParse (SPEC §5.5)
+  track.ts            ─ Pointer tracking for Axis 2 hooks
 ```
 
-**파일 수: 60 → 6. LOC: 5069 → ~700.**
+Clipboard abstraction remains an Axis 2 candidate but is not part of the current
+public surface until implemented and exported.
 
 향후 SPEC 개정은 ADR(`packages/zod-crud/adr/NNNN-title.md`) 절차를
 따른다 (§11).
