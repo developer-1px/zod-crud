@@ -3,22 +3,14 @@
   "private": true,
   "type": "module",
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "packages/*"
   ],
   "scripts": {
     "build": "npm run build -w zod-crud",
-    "dev": "npm run dev -w @zod-crud/site",
-    "site:typecheck": "npm run typecheck -w @zod-crud/site",
-    "site:build": "npm run build -w @zod-crud/site",
-    "showcase:dev": "npm run dev -w @zod-crud/showcase",
-    "showcase:build": "npm run build -w @zod-crud/showcase",
-    "lab:dev": "npm run dev -w @zod-crud/nested-ui-lab",
-    "lab:build": "npm run build -w @zod-crud/nested-ui-lab",
     "test": "npm test -w zod-crud",
-    "typecheck": "npm run typecheck -w zod-crud && npm run site:typecheck && npm run typecheck -w @zod-crud/showcase && npm run typecheck -w @zod-crud/nested-ui-lab",
+    "typecheck": "npm run typecheck -w zod-crud",
     "smoke:package": "npm run smoke:package -w zod-crud",
-    "verify": "npm run typecheck && npm test && npm run build && npm run site:build && npm run showcase:build && npm run lab:build && npm run smoke:package",
+    "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package",
     "pack:library": "npm pack -w zod-crud"
   }
 }
