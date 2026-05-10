@@ -93,26 +93,13 @@ export { toJSONSchema, fromJSONSchema } from "./core/schema/bridge.js";
 export { preFlight } from "./core/schema/preFlight.js";
 export type { PreFlightOk, PreFlightErr, PreFlightResult } from "./core/schema/preFlight.js";
 
-// core/schema/validate — dev-only post-commit assertion (P4.3)
-export { validate as validateState } from "./core/schema/validate.js";
-export type { ValidateOk, ValidateErr, ValidateResult } from "./core/schema/validate.js";
-
-// core/history — pure undo/redo stack (P2)
-export {
-  emptyHistory,
-  commit as historyCommit,
-  back as historyBack,
-  forward as historyForward,
-  mergeLast as historyMergeLast,
-  canUndo as historyCanUndo,
-  canRedo as historyCanRedo,
-  clear as historyClear,
-} from "./core/history.js";
+// core/history — emptyHistory + HistoryStack type (verbs/undo + verbs/redo 의 type 인자)
+export { emptyHistory } from "./core/history.js";
 export type { HistoryStack } from "./core/history.js";
 
 // verbs/ — 편집 어휘 composer (pure, headless 사용자용)
-// hooks/useJsonDocument 가 selection-aware sugar 로 wrapping (P3.5).
-export { select as selectVerb, trackSelection } from "./verbs/select.js";
+// hooks/useJsonDocument.commands 가 흡수. headless 단일 verb 호출 시에만 직접 import.
+export { select as selectVerb } from "./verbs/select.js";
 export { move as moveVerb } from "./verbs/move.js";
 export type { MoveResult, MoveError } from "./verbs/move.js";
 export { undo as undoVerb } from "./verbs/undo.js";
@@ -120,24 +107,6 @@ export type { UndoEntry, UndoResult, UndoNoop } from "./verbs/undo.js";
 export { redo as redoVerb } from "./verbs/redo.js";
 export type { RedoResult } from "./verbs/redo.js";
 
-// core/jsonpath — RFC 9535 (P6.1~P6.4)
-export { parse as parseJsonPath, evaluate as evaluateJsonPath, query as queryJsonPath, queryMatches as queryJsonPathMatches, JSONPathSyntaxError } from "./core/jsonpath/index.js";
+// core/jsonpath — RFC 9535. JSONPathSyntaxError 만 외부 boundary (find verb 가 throw).
+export { JSONPathSyntaxError } from "./core/jsonpath/index.js";
 export type { Query as JSONPathQuery, Match as JSONPathMatch } from "./core/jsonpath/index.js";
-
-// Selection 기둥 verbs — find (P6.6)
-export { find as findVerb } from "./verbs/find.js";
-export type { FindOk, FindError } from "./verbs/find.js";
-
-// Edit 기둥 verbs — replace (P6.7)
-export { replace as replaceVerb } from "./verbs/replace.js";
-export type { ReplaceOk, ReplaceError } from "./verbs/replace.js";
-
-// Clipboard 기둥 verbs (P5)
-export { copy as copyVerb } from "./verbs/copy.js";
-export type { CopyOk, CopyError, CopyResult } from "./verbs/copy.js";
-export { cut as cutVerb } from "./verbs/cut.js";
-export type { CutOk, CutError } from "./verbs/cut.js";
-export { paste as pasteVerb } from "./verbs/paste.js";
-export type { PasteOk, PasteError, PasteMode } from "./verbs/paste.js";
-export { duplicate as duplicateVerb } from "./verbs/duplicate.js";
-export type { DuplicateOk, DuplicateError, DuplicateOpts } from "./verbs/duplicate.js";

@@ -66,8 +66,3 @@ export function canUndo<E>(stack: HistoryStack<E>): boolean {
 export function canRedo<E>(stack: HistoryStack<E>): boolean {
   return stack.redo.length > 0;
 }
-
-/** load/reset 시 사용. 스택 비움. */
-export function clear<E>(): HistoryStack<E> {
-  return { undo: [], redo: [] };
-}

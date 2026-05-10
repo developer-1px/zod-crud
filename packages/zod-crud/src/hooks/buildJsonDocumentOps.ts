@@ -11,7 +11,7 @@ import {
   back as historyBack,
   canRedo as historyCanRedo,
   canUndo as historyCanUndo,
-  clear as historyClear,
+  emptyHistory,
   forward as historyForward,
   type HistoryStack,
 } from "../core/history.js";
@@ -71,8 +71,8 @@ export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): Json
     redo: () => restore("redo"),
     canUndo: () => historyCanUndo(stackRef.current),
     canRedo: () => historyCanRedo(stackRef.current),
-    load: (v) => { stackRef.current = historyClear<HistoryEntry>(); return rawOps.load(v); },
-    reset: (v) => { stackRef.current = historyClear<HistoryEntry>(); rawOps.reset(v); },
+    load: (v) => { stackRef.current = emptyHistory<HistoryEntry>(); return rawOps.load(v); },
+    reset: (v) => { stackRef.current = emptyHistory<HistoryEntry>(); rawOps.reset(v); },
     subscribe: rawOps.subscribe,
     get state() { return rawOps.state; },
   };
