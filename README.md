@@ -44,8 +44,8 @@ if (!result.ok) {
 console.log(crud.toJson());
 ```
 
-Read the package guide in `packages/zod-crud/README.md` and the behavior
-contract in `packages/zod-crud/spec.md`.
+Read the package guide in `packages/zod-crud/README.md` and the canonical
+specification in `packages/zod-crud/SPEC.md` (RFC 6901 + RFC 6902 locked).
 
 ## When To Use It
 
@@ -80,7 +80,7 @@ Use `npm run dev` to run the documentation site locally, or
 
 ## Maintainer Notes
 
-- `packages/zod-crud/spec.md` is the source of truth for package behavior.
+- `packages/zod-crud/SPEC.md` is the canonical specification (RFC 6901 +
+  RFC 6902 locked). It outranks code, docs, and tests on conflict.
 - `packages/zod-crud/src/index.ts` is the public export surface.
-- `LLMS.md` is the compact guide for LLM-assisted coding and review.
 - `CONTRIBUTING.md` describes the change rules and verification checklist.

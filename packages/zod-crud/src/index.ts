@@ -1,6 +1,9 @@
 export {
   createJsonCrud,
 } from "./json-crud.js";
+
+export { useJson } from "./useJson.js";
+export type { JsonOps, JsonPath as JsonOpsPath, JsonResult, UseJsonOptions } from "./useJson.js";
 export {
   createJsonCrudState,
 } from "./state/json-crud-state.js";

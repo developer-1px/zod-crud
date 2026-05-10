@@ -2,9 +2,9 @@
 
 Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.
 
-The behavior contract lives in [`spec.md`](./spec.md). Treat it as the SSOT for
-operation semantics, Zod compatibility, and package readiness checks.
-LLM-oriented usage constraints live in [`LLMS.md`](./LLMS.md).
+The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single source
+of truth — locked to RFC 6901 (JSON Pointer) and RFC 6902 (JSON Patch) for
+30-year forward compatibility. Code, docs, and tests defer to SPEC.md.
 
 The core idea is simple:
 
