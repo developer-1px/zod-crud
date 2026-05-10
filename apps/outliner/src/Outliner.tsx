@@ -41,7 +41,7 @@ export function Outliner() {
   }, [mode, dispatch]);
 
   useGlobalKey(mode, dispatch);
-  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
+  const { onClickText, onClickBullet } = useClickPolicy(doc.value, doc.selection, setMode);
 
   return (
     <div className="app">

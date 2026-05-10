@@ -1,14 +1,17 @@
-// 클릭 정책 (W3C Selection 모델):
-//   shift+click  = setBaseAndExtent (range 확장, anchor 유지)
+// 클릭 정책 (W3C Selection 모델 + DFS 도메인 확장):
+//   shift+click  = anchor..p 사이 DFS visible 전체 선택 (nested/위계 무관)
 //   cmd/ctrl+click = toggleRange (multi-select 토글)
-//   click        = collapse (단일 캐럿 = collapsed selection)
+//   click        = collapse (단일 캐럿)
 
 import { useCallback } from "react";
 import type { Pointer, SelectionState } from "zod-crud";
+import type { OutlineNode } from "../schema.js";
 import type { Mode } from "../keymap.js";
+import { dfsRange } from "../pointer-utils.js";
 
-export function useClickPolicy<T>(
-  selection: SelectionState<T> | undefined,
+export function useClickPolicy(
+  state: OutlineNode,
+  selection: SelectionState<OutlineNode> | undefined,
   setMode: (m: Mode) => void,
 ) {
   const onClickText = useCallback((e: React.MouseEvent, p: Pointer) => {
@@ -17,7 +20,9 @@ export function useClickPolicy<T>(
     const meta = isMac ? e.metaKey : e.ctrlKey;
     if (e.shiftKey && selection.anchor) {
       e.preventDefault();
-      selection.setBaseAndExtent(selection.anchor, p);
+      const ranges = dfsRange(state, selection.anchor, p);
+      if (ranges.length > 0) selection.selectRanges(ranges, selection.anchor, p);
+      else selection.setBaseAndExtent(selection.anchor, p);
     } else if (meta) {
       e.preventDefault();
       selection.toggleRange(p);
@@ -25,7 +30,7 @@ export function useClickPolicy<T>(
       selection.collapse(p);
     }
     setMode("select");
-  }, [selection, setMode]);
+  }, [state, selection, setMode]);
 
   const onClickBullet = useCallback((e: React.MouseEvent, p: Pointer) => {
     if (!selection) return;

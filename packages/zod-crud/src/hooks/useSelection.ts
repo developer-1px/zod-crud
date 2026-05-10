@@ -36,6 +36,8 @@ export interface SelectionState<T> {
   addRange(pointer: Pointer): void;
   removeRange(pointer: Pointer): void;
   toggleRange(pointer: Pointer): void;
+  // 비표준 escape hatch — 도메인-aware range 확장 (DFS 등) 을 호출자가 계산해 넘긴다.
+  selectRanges(ranges: ReadonlyArray<Pointer>, anchor: Pointer | null, focus: Pointer | null): void;
   empty(): void;
   containsNode(pointer: Pointer): boolean;
 }
@@ -78,6 +80,7 @@ export function useSelection<T>(
     addRange: (pointer) => dispatch({ type: "addRange", pointer }),
     removeRange: (pointer) => dispatch({ type: "removeRange", pointer }),
     toggleRange: (pointer) => dispatch({ type: "toggleRange", pointer }),
+    selectRanges: (ranges, anchor, focus) => dispatch({ type: "selectRanges", ranges, anchor, focus }),
     empty: () => dispatch({ type: "empty" }),
     containsNode: (pointer) => snap.ranges.includes(pointer),
   }), [snap, dispatch]);

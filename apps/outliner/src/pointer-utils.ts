@@ -62,8 +62,19 @@ export function sharedArrayParent(a: Pointer, b: Pointer): Pointer | null {
 
 // DFS visible-order traversal — outliner 의 위/아래 한 칸 이동의 정의.
 // root 자신은 visible 에서 제외 (편집 row 가 아님).
-function flatVisible(root: OutlineNode): Pointer[] {
+export function flatVisible(root: OutlineNode): Pointer[] {
   return [...walkPointers(root)].filter((p) => p !== "");
+}
+
+// DFS 순서로 a..b 사이 (양 끝 포함) 모든 visible 좌표 반환. nested 깊이 무관.
+// a 또는 b 가 visible 에 없으면 빈 배열.
+export function dfsRange(root: OutlineNode, a: Pointer, b: Pointer): Pointer[] {
+  const arr = flatVisible(root);
+  const ia = arr.indexOf(a);
+  const ib = arr.indexOf(b);
+  if (ia < 0 || ib < 0) return [];
+  const [lo, hi] = ia <= ib ? [ia, ib] : [ib, ia];
+  return arr.slice(lo, hi + 1);
 }
 
 export function nextVisible(root: OutlineNode, pointer: Pointer): Pointer | null {

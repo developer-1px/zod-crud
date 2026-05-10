@@ -40,6 +40,7 @@ export type SelectionAction =
   | { type: "addRange"; pointer: Pointer }
   | { type: "removeRange"; pointer: Pointer }
   | { type: "toggleRange"; pointer: Pointer }
+  | { type: "selectRanges"; ranges: ReadonlyArray<Pointer>; anchor: Pointer | null; focus: Pointer | null }
   | { type: "empty" };
 
 const isMulti = (m: SelectionMode) => m === "extended" || m === "multiple";
@@ -79,6 +80,7 @@ export function reduceSelection(
     case "toggleRange":      return prev.ranges.includes(action.pointer)
                                ? withRemoved(prev, action.pointer)
                                : withAdded(prev, mode, action.pointer);
+    case "selectRanges":     return { ranges: limitMode(mode, action.ranges), anchor: action.anchor, focus: action.focus };
     case "empty":            return EMPTY_SELECTION;
   }
 }
