@@ -37,13 +37,30 @@ Editor에서 쓰이는 tree 좌표는 라이브러리가 표준 어휘로 제공
 | 표준 | 영역 | 규정력 |
 |------|------|--------|
 | **RFC 8259 / ECMA-404** — JSON | state·action·change 직렬화 | 절대 |
-| **RFC 6901** — JSON Pointer | path 표현 | 절대 |
-| **RFC 6902** — JSON Patch | 변경 표현 | 절대 |
+| **RFC 6901** — JSON Pointer (§6 URI fragment 포함) | path 표현 | 절대 |
+| **RFC 6902** — JSON Patch (conformance suite 100%) | 변경 표현 | 절대 |
+| **RFC 5789** — HTTP PATCH method | 서버 통신 | 옵셔널 (http.ts) |
+| **RFC 7396** — JSON Merge Patch | merge 의미 | 옵셔널 (http.ts) |
+| **JSON Schema draft-2020-12** | 외부 스펙 다리 | 옵셔널 (schema-bridge.ts) |
+| **WAI-ARIA** Listbox/Tree/Grid | selection·focus 어휘 | 절대 (Axis 2) |
 | **ECMAScript** | 런타임 | 절대 |
-| Zod (semver-major 시 검토) | schema 검증 | 의존 라이브러리 |
+| Zod 4 (semver-major 시 검토) | schema 검증 + JSON Schema 양방향 | 의존 라이브러리 |
 | React `>=18` (optional peer) | React hooks (`useJson`, Axis 2 hooks) | 옵셔널 |
 
 표준 외의 디팩토 관행(lodash dot path, RHF bracket path 등)은 **참조하지 않는다.** 호환 어댑터도 라이브러리 본체에 포함하지 않는다.
+
+### 1.1 JSON Schema 양방향 (외부 표준 다리)
+
+[`src/schema-bridge.ts`](./src/schema-bridge.ts) 가 zod 4 의 `toJSONSchema` / `fromJSONSchema` 를 re-export 한다. 외부 도구 (Ajv · OpenAPI · AsyncAPI · 코드젠) 가 받는 표면이 JSON Schema (draft-2020-12) 이므로 이 다리 없으면 우리 schema 가 zod 안에 갇힌다.
+
+```ts
+import { toJSONSchema, fromJSONSchema } from "zod-crud";
+
+const jsonSchema = toJSONSchema(myZodSchema);          // → JSON Schema draft-2020-12
+const restoredZod = fromJSONSchema(jsonSchemaFromAPI); // ← 서버 스펙 → 클라 검증
+```
+
+테스트: [`tests/schema-bridge.test.ts`](./tests/schema-bridge.test.ts) — round-trip 후 substrate 가 변환된 schema 로 mutation 검증까지 통과.
 
 ---
 

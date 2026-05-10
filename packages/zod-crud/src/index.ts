@@ -62,3 +62,6 @@ export {
   MERGE_PATCH_MIME,
 } from "./http.js";
 export type { PatchRequest, ParseResult, ParseError } from "./http.js";
+
+// JSON Schema bridge — RFC 8927 / draft-bhutton (SPEC §1.x)
+export { toJSONSchema, fromJSONSchema } from "./schema-bridge.js";
