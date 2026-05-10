@@ -6,7 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JsonPatchOperation } from "../core/patch/index.js";
-import type { JsonOps } from "./useJson.js";
+import type { JsonOps } from "../jsonOps.js";
 
 export interface RecordedStep {
   ops: ReadonlyArray<JsonPatchOperation>;

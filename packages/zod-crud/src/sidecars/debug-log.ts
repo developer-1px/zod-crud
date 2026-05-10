@@ -7,8 +7,8 @@
 // 자동 tap. timeline 은 download 가능한 JSON.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { JsonOps } from "./useJson.js";
-import type { SelectionState } from "./useSelection.js";
+import type { JsonOps } from "../jsonOps.js";
+import type { SelectionState } from "../hooks/useSelection.js";
 import type { JsonPatchOperation } from "../core/patch/index.js";
 
 export interface DebugEvent {

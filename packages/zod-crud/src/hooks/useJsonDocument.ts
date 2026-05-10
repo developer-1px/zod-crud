@@ -59,7 +59,7 @@ export function useJsonDocument<S extends z.ZodType>(
   initial: z.input<S>,
   options: UseJsonDocumentOptions<z.output<S>> = {},
 ): JsonDocument<z.output<S>> {
-  const useJsonOpts: UseJsonOptions = { history: 0 };
+  const useJsonOpts: UseJsonOptions = {};
   if (options.strict !== undefined) useJsonOpts.strict = options.strict;
   if (options.onError !== undefined) useJsonOpts.onError = options.onError;
 

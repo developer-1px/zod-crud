@@ -1,17 +1,18 @@
-// SPEC.md §5.1 — 유일한 React 진입점.
+// SPEC.md §5.1 — useJsonDocument 내부 substrate.
 // 코어는 src/core/patch.ts (pure). 이 파일은 useState + ops binding + Axis 2 subscribe.
+// undo/redo 는 상위 useJsonDocument 가 wrapping (여기서는 항상 false 반환 stub).
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import type * as z from "zod";
 
 import {
   applyOperation,
+  applyPatch,
   type JsonPatchOperation,
   type JsonResult,
 } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { handleResult, JsonCrudError, type ErrorPolicy } from "../JsonCrudError.js";
-import { useHistoryDispatch } from "./useHistoryDispatch.js";
 import type { JsonOps, UseJsonOptions, JsonChangeListener } from "../jsonOps.js";
 
 export { JsonCrudError } from "../JsonCrudError.js";
@@ -44,12 +45,15 @@ export function useJson<S extends z.ZodType>(
     for (const fn of listenersRef.current) fn(applied);
   }, []);
 
-  const history = useHistoryDispatch(schema, stateRef, setState, policyRef, options.history ?? 0);
-
   const ops = useMemo<JsonOps<z.output<S>>>(() => {
     const dispatch = (label: JsonPatchOperation | "patch", list: ReadonlyArray<JsonPatchOperation>): JsonResult => {
-      const { result, applied } = history.dispatch(label, list);
-      if (result.ok) notify(applied);
+      const before = stateRef.current;
+      const { state: next, result, applied } = applyPatch(schema, before, list);
+      if (!result.ok) return handleResult(policyRef.current, label, result);
+      if (next === before) return result;
+      stateRef.current = next;
+      setState(next);
+      notify(applied);
       return result;
     };
     const single = (op: JsonPatchOperation) => dispatch(op, [op]);
@@ -63,7 +67,6 @@ export function useJson<S extends z.ZodType>(
       }
       const next = parsed.data as z.output<S>;
       const replaceOp = ROOT_REPLACE(next);
-      history.clear();
       stateRef.current = next;
       setState(next);
       notify([replaceOp]);
@@ -71,31 +74,21 @@ export function useJson<S extends z.ZodType>(
     };
 
     return {
-      add(path, value) { return single({ op: "add", path, value }); },
-      remove(path) { return single({ op: "remove", path }); },
-      replace(path, value) { return single({ op: "replace", path, value }); },
-      move(from, path) { return single({ op: "move", from, path }); },
-      copy(from, path) { return single({ op: "copy", from, path }); },
+      add(path, value) { return single({ op: "add", path: path as Pointer, value }); },
+      remove(path) { return single({ op: "remove", path: path as Pointer }); },
+      replace(path, value) { return single({ op: "replace", path: path as Pointer, value }); },
+      move(from, path) { return single({ op: "move", from: from as Pointer, path: path as Pointer }); },
+      copy(from, path) { return single({ op: "copy", from: from as Pointer, path: path as Pointer }); },
       test(path, value) {
-        const r = applyOperation(schema, stateRef.current, { op: "test", path, value });
-        return handleResult(policyRef.current, { op: "test", path, value }, r.result);
+        const r = applyOperation(schema, stateRef.current, { op: "test", path: path as Pointer, value });
+        return handleResult(policyRef.current, { op: "test", path: path as Pointer, value }, r.result);
       },
       patch(operations) { return dispatch("patch", operations); },
 
-      undo() {
-        const out = history.applyEntry("undo");
-        if (!out) return false;
-        notify(out.applied);
-        return true;
-      },
-      redo() {
-        const out = history.applyEntry("redo");
-        if (!out) return false;
-        notify(out.applied);
-        return true;
-      },
-      canUndo: history.canUndo,
-      canRedo: history.canRedo,
+      undo() { return false },
+      redo() { return false },
+      canUndo() { return false },
+      canRedo() { return false },
 
       load(value) { return replaceRoot("load", value); },
       reset(value) { replaceRoot("reset", value ?? initialRef.current); },
@@ -106,7 +99,7 @@ export function useJson<S extends z.ZodType>(
       },
       get state() { return stateRef.current; },
     };
-  }, [schema, history, notify]);
+  }, [schema, notify]);
 
   return [state, ops];
 }

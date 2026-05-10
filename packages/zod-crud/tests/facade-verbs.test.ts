@@ -5,7 +5,7 @@ import * as z from "zod";
 
 import { buildCommands } from "../src/commands/buildCommands.js";
 import { buildCan } from "../src/commands/buildCan.js";
-import type { JsonOps } from "../src/hooks/useJson.js";
+import type { JsonOps } from "../src/jsonOps.js";
 import { applyPatch, type JsonPatchOperation } from "../src/core/patch/index.js";
 
 const Schema = z.object({

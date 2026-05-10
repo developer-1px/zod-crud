@@ -1,7 +1,7 @@
 // JsonCrudError + strict/onError policy 'handle'.
 // useJson 의 에러 처리 정책을 분리. boundary 표면 (index.ts 에서 re-export).
 
-import type { JsonPatchOperation, JsonResult } from "../core/patch/index.js";
+import type { JsonPatchOperation, JsonResult } from "./core/patch/index.js";
 
 export type JsonCrudOpLabel = JsonPatchOperation | "load" | "reset" | "patch";
 
