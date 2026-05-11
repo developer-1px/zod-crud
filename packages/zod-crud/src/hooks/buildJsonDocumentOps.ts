@@ -4,9 +4,11 @@
 import type { MutableRefObject } from "react";
 
 import type { JsonOps, JsonDocumentOps } from "../jsonOps.js";
+import { JsonCrudError } from "../JsonCrudError.js";
 import type { SelectionState } from "./useSelection.js";
 import type { JsonPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
+import { parsePointer, readAt } from "../core/pointer/index.js";
 import {
   back as historyBack,
   canRedo as historyCanRedo,
@@ -66,7 +68,24 @@ export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): Json
     move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
     copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
     test: rawOps.test,
+    set: (path, value) => {
+      // history 가 wrapping 된 patch 를 거치도록 분기 op 를 합성. rawOps.set 직접 호출 시 history 우회.
+      const p = path as Pointer;
+      const segs = parsePointer(p);
+      const cur = readAt(rawOps.state, segs);
+      if (value === undefined) {
+        if (!cur.ok) return { ok: true };
+        return patch([{ op: "remove", path: p }]);
+      }
+      if (!cur.ok) return patch([{ op: "add", path: p, value }]);
+      if (cur.value === value) return { ok: true };
+      return patch([{ op: "replace", path: p, value }]);
+    },
     patch,
+    apply: (operations) => {
+      const r = patch(operations);
+      if (!r.ok) throw new JsonCrudError("patch", r);
+    },
     undo: () => restore("undo"),
     redo: () => restore("redo"),
     canUndo: () => historyCanUndo(stackRef.current),

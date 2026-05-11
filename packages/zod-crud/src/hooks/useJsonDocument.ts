@@ -30,6 +30,8 @@ export interface UseJsonDocumentOptions<T> {
 export interface JsonDocumentHistory {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
+  readonly undoDepth: number;
+  readonly redoDepth: number;
   mergeLast(): boolean;
 }
 
@@ -108,6 +110,8 @@ export function useJsonDocument<S extends z.ZodType>(
     const history: JsonDocumentHistory = {
       get canUndo() { return ops.canUndo(); },
       get canRedo() { return ops.canRedo(); },
+      get undoDepth() { return stackRef.current.undo.length; },
+      get redoDepth() { return stackRef.current.redo.length; },
       mergeLast,
     };
     return {

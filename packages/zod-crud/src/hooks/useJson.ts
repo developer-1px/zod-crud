@@ -12,6 +12,7 @@ import {
   type JsonResult,
 } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
+import { parsePointer, readAt } from "../core/pointer/index.js";
 import { handleResult, JsonCrudError, type ErrorPolicy } from "../JsonCrudError.js";
 import type { JsonOps, UseJsonOptions, JsonChangeListener } from "../jsonOps.js";
 
@@ -83,7 +84,23 @@ export function useJson<S extends z.ZodType>(
         const r = applyOperation(schema, stateRef.current, { op: "test", path: path as Pointer, value });
         return handleResult(policyRef.current, { op: "test", path: path as Pointer, value }, r.result);
       },
+      set(path, value) {
+        const p = path as Pointer;
+        const segs = parsePointer(p);
+        const cur = readAt(stateRef.current, segs);
+        if (value === undefined) {
+          if (!cur.ok) return { ok: true };
+          return single({ op: "remove", path: p });
+        }
+        if (!cur.ok) return single({ op: "add", path: p, value });
+        if (cur.value === value) return { ok: true };
+        return single({ op: "replace", path: p, value });
+      },
       patch(operations) { return dispatch("patch", operations); },
+      apply(operations) {
+        const r = dispatch("patch", operations);
+        if (!r.ok) throw new JsonCrudError("patch", r);
+      },
 
       load(value) { return replaceRoot("load", value); },
       reset(value) { replaceRoot("reset", value ?? initialRef.current); },

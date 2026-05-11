@@ -29,7 +29,7 @@ export type JsonResult =
   | { ok: true }
   | { ok: false; code: ErrorCode; reason?: string; pointer?: Pointer };
 
-export interface ApplyResult<S extends z.ZodType> {
+export interface ApplyResult<S extends z.ZodTypeAny> {
   state: z.output<S>;
   result: JsonResult;
   applied: ReadonlyArray<JsonPatchOperation>;
@@ -44,7 +44,7 @@ const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JsonResult =
 };
 
 // 단일 op + schema 검증. applied 는 `/-` 가 적용 시점의 concrete index 로 정규화된 op.
-export function applyOperation<S extends z.ZodType>(
+export function applyOperation<S extends z.ZodTypeAny>(
   schema: S,
   state: z.output<S>,
   op: JsonPatchOperation,
@@ -60,7 +60,7 @@ export function applyOperation<S extends z.ZodType>(
 
 // Batch (RFC 6902 §3): atomic — 한 op 실패 시 전체 롤백. Schema 검증은 끝에서 1회.
 // applied 는 적용 시점 기준으로 `/-` 가 concrete index 로 정규화된 ops 의 누적.
-export function applyPatch<S extends z.ZodType>(
+export function applyPatch<S extends z.ZodTypeAny>(
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JsonPatchOperation>,
