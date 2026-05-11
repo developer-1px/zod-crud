@@ -15,6 +15,17 @@ export interface UseJsonOptions {
 
 export type JsonChangeListener = (applied: ReadonlyArray<JsonPatchOperation>) => void;
 
+// Internal — history controls. Public surface 은 doc.commands.undo / doc.can.undo / doc.history.
+// buildJsonDocumentOps 가 wrapping 한 ops 에만 존재. JsonOps (외부) 표면에는 노출하지 않는다.
+export interface HistoryControls {
+  undo(): boolean;
+  redo(): boolean;
+  canUndo(): boolean;
+  canRedo(): boolean;
+}
+
+export type JsonDocumentOps<T> = JsonOps<T> & HistoryControls;
+
 export interface JsonOps<T> {
   add<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
   remove<P extends PointerOf<T>>(path: P): JsonResult;
@@ -24,11 +35,6 @@ export interface JsonOps<T> {
   test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JsonResult;
 
   patch(operations: ReadonlyArray<JsonPatchOperation>): JsonResult;
-
-  undo(): boolean;
-  redo(): boolean;
-  canUndo(): boolean;
-  canRedo(): boolean;
 
   load(value: T): JsonResult;
   reset(value?: T): void;

@@ -1,6 +1,6 @@
 // SPEC.md §5.1 — useJsonDocument 내부 substrate.
 // 코어는 src/core/patch.ts (pure). 이 파일은 useState + ops binding + Axis 2 subscribe.
-// undo/redo 는 상위 useJsonDocument 가 wrapping (여기서는 항상 false 반환 stub).
+// undo/redo 는 JsonOps 의 책임이 아님 — doc.commands.undo / doc.can.undo / doc.history 가 정본 위치.
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import type * as z from "zod";
@@ -84,11 +84,6 @@ export function useJson<S extends z.ZodType>(
         return handleResult(policyRef.current, { op: "test", path: path as Pointer, value }, r.result);
       },
       patch(operations) { return dispatch("patch", operations); },
-
-      undo() { return false },
-      redo() { return false },
-      canUndo() { return false },
-      canRedo() { return false },
 
       load(value) { return replaceRoot("load", value); },
       reset(value) { replaceRoot("reset", value ?? initialRef.current); },

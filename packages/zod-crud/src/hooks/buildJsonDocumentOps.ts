@@ -3,7 +3,7 @@
 
 import type { MutableRefObject } from "react";
 
-import type { JsonOps } from "./useJson.js";
+import type { JsonOps, JsonDocumentOps } from "../jsonOps.js";
 import type { SelectionState } from "./useSelection.js";
 import type { JsonPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
@@ -29,7 +29,7 @@ export interface BuildJsonDocumentOpsArgs<T> {
   historyLimit: number;
 }
 
-export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): JsonOps<T> {
+export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): JsonDocumentOps<T> {
   const { rawOps, stackRef, isRestoringRef, selectionRef, historyLimit } = args;
 
   const patch: JsonOps<T>["patch"] = (operations) => {

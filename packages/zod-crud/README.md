@@ -24,11 +24,11 @@ npm install zod-crud zod
 `zod` is a peer dependency. `react >=18` is an optional peer dependency
 required only for React hooks. The package is ESM-only.
 
-## React — `useJson`
+## React — `useJsonDocument`
 
 ```tsx
 import * as z from "zod";
-import { useJson } from "zod-crud";
+import { useJsonDocument } from "zod-crud";
 
 const Schema = z.object({
   title: z.string(),
@@ -36,34 +36,34 @@ const Schema = z.object({
 });
 
 export function App() {
-  const [json, ops] = useJson(Schema, { title: "", tasks: [] }, { history: 50 });
+  const doc = useJsonDocument(Schema, { title: "", tasks: [] }, { history: 50 });
 
   return (
     <>
       <input
-        value={json.title}
-        onChange={(e) => ops.replace("/title", e.target.value)}
+        value={doc.value.title}
+        onChange={(e) => doc.ops.replace("/title", e.target.value)}
       />
       <button
         onClick={() =>
-          ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })
+          doc.ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })
         }
       >
         add task
       </button>
-      <button onClick={ops.undo} disabled={!ops.canUndo()}>
+      <button onClick={doc.commands.undo} disabled={!doc.can.undo}>
         undo
       </button>
-      {json.tasks.map((t, i) => (
+      {doc.value.tasks.map((t, i) => (
         <div key={t.id}>
           <input
             type="checkbox"
             checked={t.done}
             onChange={(e) =>
-              ops.replace(`/tasks/${i}/done` as `/tasks/${number}/done`, e.target.checked)
+              doc.ops.replace(`/tasks/${i}/done` as `/tasks/${number}/done`, e.target.checked)
             }
           />
-          <button onClick={() => ops.remove(`/tasks/${i}` as `/tasks/${number}`)}>
+          <button onClick={() => doc.ops.remove(`/tasks/${i}` as `/tasks/${number}`)}>
             remove
           </button>
         </div>
@@ -73,20 +73,23 @@ export function App() {
 }
 ```
 
-Every method on `ops` corresponds 1:1 to an RFC 6902 operation:
-`add`, `remove`, `replace`, `move`, `copy`, `test`, plus `patch` for batches.
-There is no `set`, `insert`, `delete`, `rename`, or `paste` — the standard
-six operations express every mutation.
+`useJsonDocument` returns a single facade with five surfaces:
 
-`ops` also exposes `subscribe(listener)` and a read-only `state` snapshot so
-Axis 2 hooks can follow committed RFC 6902 operations.
+| Surface | Purpose |
+| --- | --- |
+| `doc.value` | current schema-valid state (`T`) |
+| `doc.ops` | RFC 6902 escape hatch — `add`/`remove`/`replace`/`move`/`copy`/`test`/`patch` |
+| `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
+| `doc.can` | mutation guard predicates + `undo`/`redo` flags |
+| `doc.selection` | W3C-shaped selection coordinates (anchor/focus, JSON Pointer) |
+| `doc.history` | `canUndo`/`canRedo`/`mergeLast` flags |
 
-## React — editor coordinates
+Selection and history are first-class — they are not parallel hooks you wire
+up yourself. `commands.*` mutate through the history-aware path; `ops.*` is
+the low-level RFC 6902 escape hatch for fire-and-forget patches.
 
-`useSelection(ops, options?)` and `useFocus(ops, options?)` provide JSON
-Pointer-based editor coordinates. They do not render UI or handle DOM keyboard
-events; they track coordinates when RFC 6902 operations are committed through
-`useJson`.
+For lower-level composition (`useJson` + `useSelection`), see the
+[Lower-level Hooks](../../docs/site/examples.md) guide.
 
 ## Pure core (no React)
 
@@ -142,10 +145,11 @@ See [`SPEC.md`](./SPEC.md) §5 for the canonical surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `useJson(schema, initial, options?)` | React hook (SPEC §5.1) |
-| `JsonOps<T>` | hook return type (SPEC §5.2) |
-| `useSelection(ops, options?)` | selection hook (SPEC §5.7) |
-| `useFocus(ops, options?)` | focus hook (SPEC §5.8) |
+| `useJsonDocument(schema, initial, options?)` | React facade (SPEC §5.10) |
+| `JsonDocument<T>`, `JsonDocumentHistory`, `UseJsonDocumentOptions<T>` | facade types (SPEC §5.10) |
+| `useJson(schema, initial, options?)` | lower-level hook (SPEC §5.1) |
+| `JsonOps<T>` | low-level ops contract (SPEC §5.2) |
+| `useSelection(ops, options?)` | lower-level selection hook (SPEC §5.7) |
 | `trackPointer`, `trackPointers` | low-level pointer tracking helpers (SPEC §5.9) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |

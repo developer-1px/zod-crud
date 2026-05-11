@@ -6,7 +6,8 @@
 import { useCallback, useMemo, useRef } from "react";
 import type * as z from "zod";
 
-import { useJson, type JsonOps, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
+import { useJson, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
+import type { JsonOps, JsonDocumentOps } from "../jsonOps.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
 import { buildJsonDocumentOps } from "./buildJsonDocumentOps.js";
 import { buildCommands, type Commands } from "../commands/buildCommands.js";
@@ -79,7 +80,7 @@ export function useJsonDocument<S extends z.ZodType>(
   const selectionRef = useRef(selectionState);
   selectionRef.current = selectionState;
 
-  const ops = useMemo<JsonOps<z.output<S>>>(
+  const ops = useMemo<JsonDocumentOps<z.output<S>>>(
     () => buildJsonDocumentOps({ rawOps, stackRef, isRestoringRef, selectionRef, historyLimit }),
     [rawOps, historyLimit],
   );

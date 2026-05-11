@@ -100,11 +100,22 @@ describe("buildCommands — TipTap 식 commands group", () => {
     if (r.ok) expect(r.pointers).toEqual(["/items/0/id", "/items/1/id"]);
   });
 
-  test("commands.replace(query, value) — multi-pointer batch", () => {
+  test("commands.replace(path, value) — RFC 6901 Pointer (어휘 일관성)", () => {
     const ops = makeOps(initial);
     const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
-    const r = commands.replace("$.items[*].name", "renamed");
+    const r = commands.replace("/items/0/name", "renamed");
     expect(r.ok).toBe(true);
+    expect(ops.state.items[0]?.name).toBe("renamed");
+  });
+
+  test("commands.replace multi-match — find + ops.patch 합성", () => {
+    const ops = makeOps(initial);
+    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const found = commands.find("$.items[*].name");
+    expect(found.ok).toBe(true);
+    if (found.ok) {
+      ops.patch(found.pointers.map((path) => ({ op: "replace" as const, path, value: "renamed" })));
+    }
     expect(ops.state.items.every((i) => i.name === "renamed")).toBe(true);
   });
 });

@@ -5,7 +5,7 @@
 // undo/redo 는 ops.undo/redo (history stack 관리는 useJsonDocument 가 wiring).
 
 import type * as z from "zod";
-import type { JsonOps } from "../jsonOps.js";
+import type { JsonDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type {
   SelectionAction,
@@ -19,8 +19,7 @@ import { paste, type PasteOk, type PasteError, type PasteMode } from "../verbs/p
 import { duplicate, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, type MoveResult, type MoveError } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
-import { replace as replaceVerb, type ReplaceOk, type ReplaceError } from "../verbs/replace.js";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JsonPatchOperation, JsonResult } from "../core/patch/index.js";
 
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
@@ -28,7 +27,8 @@ export interface Commands<T> {
 
   move(from: Pointer, to: Pointer): MoveResult<T> | MoveError;
   duplicate(source: Pointer, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
-  replace(jsonpath: string, value: unknown): ReplaceOk<T> | ReplaceError;
+  // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
+  replace(path: Pointer, value: unknown): JsonResult;
 
   cut(source: Pointer): CutOk<T> | CutError;
   copy(source: Pointer): CopyOk | CopyError;
@@ -40,7 +40,7 @@ export interface Commands<T> {
 
 export interface BuildCommandsArgs<S extends z.ZodType> {
   schema: S;
-  ops: JsonOps<z.output<S>>;
+  ops: JsonDocumentOps<z.output<S>>;
   selectionRef: { current: SelectionSnap };
 }
 
@@ -76,8 +76,9 @@ export function buildCommands<S extends z.ZodType>(
     duplicate(source, opts) {
       return run(duplicate(schema, ops.state, source, opts));
     },
-    replace(jsonpath, value) {
-      return run(replaceVerb(schema, ops.state, jsonpath, value));
+    replace(path, value) {
+      // 다른 mutating verb 와 동일하게 ops.patch 경유 (history commit + listener notify).
+      return ops.patch([{ op: "replace", path, value }]);
     },
 
     cut(source) {
