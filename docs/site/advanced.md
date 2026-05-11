@@ -1,6 +1,6 @@
 # Core & Design
 
-여기부터는 zod-crud의 아래층입니다. 처음 사용하는 사람은 앞 문서만 읽어도 됩니다. 이 페이지는 “왜 이렇게 설계됐는가”와 “React 밖에서 어떻게 쓰는가”를 설명합니다.
+“왜 이렇게 설계됐는가”와 “React 밖에서 어떻게 쓰는가”.
 
 ## Core는 React를 모릅니다
 
@@ -25,7 +25,7 @@ const result = applyPatch(Schema, state, operations);
 | `"/items/0"` | `value.items[0]` |
 | `"/items/-"` | 배열 끝. add에서 사용 |
 
-사용자 표면에서는 “문서 안의 주소”로 이해하면 됩니다. core 관점에서는 RFC 6901 JSON Pointer입니다.
+RFC 6901 JSON Pointer.
 
 ::source{path="packages/zod-crud/src/core/pointer/index.ts" title="pointer helpers" lines="1-29"}
 
@@ -38,8 +38,6 @@ const result = applyPatch(Schema, state, operations);
 ```
 
 사용자 표면에서는 `doc.ops.replace("/title", "Next")`처럼 함수로 씁니다. core 관점에서는 RFC 6902 JSON Patch입니다.
-
-이 표준 형식 덕분에 변경 기록을 저장하거나 서버로 보낼 수 있습니다.
 
 ## Pointer tracking
 
@@ -117,5 +115,3 @@ Core
 ├─ tracking helpers
 └─ serialize / parse
 ```
-
-SPEC와 ADR은 이 설계를 더 엄격한 언어로 기록합니다.

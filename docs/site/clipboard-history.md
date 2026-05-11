@@ -1,12 +1,8 @@
 # UI Recipes — list / clipboard / history wiring
 
-이 페이지는 zod-crud 를 실제 편집기처럼 쓸 때의 UI 이벤트 연결 레시피입니다. 시나리오별 정본 카탈로그는 [Patterns](/docs/patterns), 거부한 기능 빈자리는 [Why Not](/docs/why-not).
-
-핵심은 UI 이벤트를 `doc.ops`, `doc.selection`, `doc.history`에 연결하는 것입니다.
+UI 이벤트를 `doc.ops`, `doc.selection`, `doc.history` 에 연결하는 레시피. 시나리오별 정본 카탈로그는 [Patterns](/docs/patterns), 거부한 기능 빈자리는 [Why Not](/docs/why-not).
 
 ## 패턴 1. 리스트 편집기
-
-리스트 편집기는 가장 흔한 시작점입니다.
 
 | UI 동작 | 연결할 API |
 |---------|------------|
@@ -62,9 +58,6 @@ const active = doc.selection?.focus;
 
 ## 패턴 4. Outliner
 
-Outliner reference editor는 `useJsonDocument`의 정체성을 가장 잘 보여줍니다. site의
-`/outliner` route는 `apps/outliner` workspace의 실제 컴포넌트를 그대로 렌더합니다.
-
 ::source{path="apps/site/src/routes/Outliner.tsx" title="Outliner route" lines="1-8"}
 
 여기서 볼 점은 세 가지입니다.
@@ -75,9 +68,7 @@ Outliner reference editor는 `useJsonDocument`의 정체성을 가장 잘 보여
 
 ## 패턴 5. Clipboard UI
 
-현재 public API에 `useClipboard` hook은 없습니다. 대신 `doc.commands`가 clipboard verb를 제공합니다.
-
-복제와 이동은 `doc.commands`로 제품 어휘를 쓰거나, `doc.ops`로 JSON Patch를 직접 적용할 수 있습니다.
+`doc.commands` 가 clipboard verb 를 제공합니다. `doc.ops` 로 JSON Patch 를 직접 적용해도 됩니다.
 
 | UI 이름 | 실제 작업 |
 |---------|-----------|
@@ -86,8 +77,6 @@ Outliner reference editor는 `useJsonDocument`의 정체성을 가장 잘 보여
 | copy | `doc.commands.copy(source)` |
 | paste | `doc.commands.paste(payload, target)` |
 | batch edit | `doc.ops.patch([...])` |
-
-브라우저 clipboard buffer는 앱이 들고 있습니다. zod-crud는 JSON payload와 patch commit을 안전하게 다룹니다.
 
 ## 패턴 6. Session recording
 
@@ -104,13 +93,9 @@ const recording = recorder.stop();
 await replayRecording(recording, doc.ops, { speed: 1 });
 ```
 
-Outliner reference editor는 이 패턴을 UI로 감싸서 Record/Stop 버튼과 `Mod+Shift+\` 토글 단축키를 제공합니다.
-
 ## 좋은 패턴
 
 - UI 이벤트는 앱에서 해석합니다.
 - 문서 변경은 `doc.commands` 또는 `doc.ops`로만 합니다.
 - 선택/캐럿은 JSON 위치로 저장합니다.
 - schema가 실패하면 화면에 실패를 보여줍니다.
-
-이렇게 나누면 UI는 자유롭게 만들고, 편집 상태는 안전하게 유지할 수 있습니다.

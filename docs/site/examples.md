@@ -1,6 +1,6 @@
 # Lower-level Hooks
 
-`useJsonDocument`가 기본 표면입니다. 하지만 필요하면 더 낮은 레벨 hook을 따로 조합할 수 있습니다.
+`useJsonDocument`가 기본 표면입니다. 필요하면 더 낮은 레벨 hook을 따로 조합할 수 있습니다.
 
 ## 전체 그림
 
@@ -29,8 +29,6 @@ const [value, ops] = useJson(Schema, initial, {
 | `value` | schema-valid JSON 값 |
 | `ops` | 편집 작업 API |
 
-selection이 필요 없고, 단순한 JSON 편집만 필요하면 `useJson`만으로 충분합니다.
-
 ::source{path="packages/zod-crud/src/hooks/useJson.ts" title="useJson" lines="21-46"}
 
 ## `useSelection`
@@ -58,7 +56,7 @@ selection.focus;                       // 현재 캐럿 위치 (= aria-activedes
 selection.isCollapsed;                 // true 면 캐럿 상태
 ```
 
-DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다. 이전에 분리됐던 `useFocus` 는 폐기되었고, 그 정보는 `selection.focus` 로 통합됩니다.
+DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다.
 
 ## 언제 lower-level hook을 쓰나요?
 
@@ -70,10 +68,6 @@ DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다. 
 | 제품 수준 편집 명령이 필요함 | `useJsonDocument.commands` |
 | React 밖에서 patch만 적용 | `applyPatch` |
 
-처음에는 `useJsonDocument`로 시작하고, 실제로 분리할 이유가 생겼을 때 내려오면 됩니다.
-
 ## 예제 읽기
-
-기존 작은 예제들은 낮은 레벨 API를 이해하는 데 도움이 됩니다.
 
 ::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx" lines="1-35"}

@@ -39,7 +39,7 @@ doc.ops.add("/tasks/-", { text: "new task", done: false });
 doc.ops.remove("/tasks/0");
 ```
 
-여기서 `"/title"`이나 `"/tasks/0"`은 문서 안의 위치입니다. 처음에는 파일 경로처럼 “어디를 바꿀지 적는 문자열”이라고 생각하면 됩니다.
+`"/title"`, `"/tasks/0"` 은 문서 안의 위치를 가리키는 JSON Pointer 입니다.
 
 ## `doc.commands`와 `doc.can`
 
@@ -120,18 +120,12 @@ doc.selection?.empty();
 
 ## 언제 낮은 레벨 hook을 쓰나요?
 
-대부분의 앱은 `useJsonDocument`로 시작하면 됩니다.
-
 낮은 레벨 hook은 이런 경우에 씁니다.
 
 - selection을 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
 - React 밖에서 core만 쓰고 싶을 때
 - document facade 없이 `useJson`만 가볍게 쓰고 싶을 때
 
-그 전까지는 `useJsonDocument`를 기본값으로 두는 편이 이 프로젝트의 의도에 맞습니다.
-
 ## 타입 표면
-
-전체 구현보다 먼저 타입 표면만 보면 충분합니다.
 
 ::source{path="packages/zod-crud/src/hooks/useJsonDocument.ts" title="useJsonDocument types" lines="21-49"}

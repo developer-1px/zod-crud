@@ -1,7 +1,5 @@
 # Safety
 
-zod-crud에서 안전하다는 말은 두 가지입니다.
-
 1. schema를 깨는 변경은 commit하지 않습니다.
 2. 실패한 변경은 문서 값, selection, history를 어중간하게 바꾸지 않습니다.
 
@@ -48,7 +46,7 @@ if (!result.ok) {
 
 ## strict와 onError
 
-입문 단계에서는 `strict: false`부터 쓰면 실패를 화면에 보여주기 쉽습니다.
+`strict: false` 이면 실패를 throw 없이 화면에 보여주기 쉽습니다.
 
 ```ts
 const doc = useJsonDocument(Schema, initial, {
@@ -68,8 +66,6 @@ const doc = useJsonDocument(Schema, initial, {
 ## 예제: 잘못된 값 거절하기
 
 ::source{path="apps/site/src/examples/RejectedDrift.tsx" title="RejectedDrift.tsx" lines="1-50"}
-
-이 예제의 핵심은 간단합니다.
 
 > 잘못된 값은 들어오려는 순간 거절되고, 기존 문서 값은 유지됩니다.
 

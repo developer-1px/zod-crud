@@ -12,7 +12,7 @@
 | **Undo** | `undo`, `redo` | RFC 6902 inverse + history stack |
 | **Find** | `find`, `replace`(string) | RFC 9535 JSONPath |
 
-10 verb closure 는 **정체성**. 외부에서 자주 요청되는 `upsert`, `transaction` 등은 정체성 침범 — [Why Not](/docs/why-not) 페이지에 거부 이유와 canonical 대안을 모았습니다.
+자주 요청되는 `upsert`, `transaction` 등 거부한 기능과 대안은 [Why Not](/docs/why-not).
 
 ## 30초 셋업
 
@@ -92,7 +92,3 @@ function Sheet() {
 ## LLM 사용자
 
 이 사이트의 정체성/패턴/anti-pattern 을 압축한 정본은 [`/llms.txt`](/llms.txt) 입니다. LLM 으로 zod-crud 를 쓸 때 한 파일로 가져갈 entry point.
-
-## 공식 계약
-
-`packages/zod-crud/SPEC.md` 가 정본 — 코드 · docs · 테스트보다 우선합니다.

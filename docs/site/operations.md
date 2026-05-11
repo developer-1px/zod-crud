@@ -1,8 +1,6 @@
 # Editor State
 
-편집기는 단순히 값 하나만 들고 있지 않습니다. 사용자가 보고 있는 문서 값, 방금 한 편집, 선택된 항목, 캐럿, 되돌리기 기록이 함께 움직입니다.
-
-zod-crud는 이 묶음을 `doc` 객체로 다룹니다. `doc.ops`는 JSON Patch에 가까운 저수준 표면이고, `doc.commands`는 제품 기능으로 바로 부르기 좋은 명령 표면입니다.
+`doc` 는 문서 값, 편집, selection, 캐럿, history 를 함께 들고 있는 객체입니다. `doc.ops` 는 JSON Patch 저수준 표면, `doc.commands` 는 제품 수준 명령 표면.
 
 ## 문서 값
 
@@ -24,8 +22,6 @@ doc.ops.add("/items/-", item);
 doc.ops.remove("/items/0");
 doc.ops.move("/items/2", "/items/0");
 ```
-
-입문 단계에서는 operation 이름을 이렇게 이해하면 됩니다.
 
 | 작업 | 언제 쓰나요? |
 |------|--------------|
@@ -72,7 +68,7 @@ doc.ops.patch([
 ]);
 ```
 
-중간에 하나라도 실패하면 전체가 취소됩니다. 이것을 atomic하다고 말합니다. 입문자 관점에서는 “반쯤만 바뀌는 일이 없다”고 이해하면 됩니다.
+중간에 하나라도 실패하면 전체가 취소됩니다 (atomic).
 
 ## 선택 상태
 
@@ -95,8 +91,6 @@ doc.selection?.collapse("/items/0");
 doc.selection?.empty();
 ```
 
-트리나 아웃라이너에서는 “현재 커서가 있는 노드”라고 생각하면 됩니다.
-
 ## 변경을 따라가는 좌표
 
 배열에서 `/items/0`을 삭제하면 원래 `/items/2`였던 항목은 `/items/1`이 됩니다. selection의 range, anchor, focus는 이런 변경을 자동으로 따라갑니다.
@@ -106,8 +100,6 @@ doc.selection?.collapse("/items/2");
 doc.ops.remove("/items/0");
 // selection.focus는 /items/1 쪽으로 이동
 ```
-
-이 동작 때문에 사용자는 매번 “삭제했으니 선택 index를 하나 줄여야 하나?” 같은 코드를 직접 쓰지 않아도 됩니다.
 
 ## 히스토리
 
@@ -133,19 +125,3 @@ doc.commands.redo();
 시나리오별 정본 코드(dict-record 한 키 쓰기, drag/burst undo, selection follow, clipboard, optimistic HTTP, headless, sidecar)는 **[Patterns](/docs/patterns)** 페이지에 모았습니다. "이걸 만들고 싶다" 의 답은 거기서.
 
 거부한 기능과 그 대안은 **[Why Not](/docs/why-not)** 페이지에.
-
-## 핵심 요약
-
-사용자에게 가까운 모델은 이것입니다.
-
-```txt
-doc
-├─ value      현재 문서
-├─ ops        JSON Patch에 가까운 저수준 작업
-├─ commands   제품 수준 편집 명령
-├─ can        명령 실행 가능 여부
-├─ history    되돌리기 가능 상태
-└─ selection  선택된 위치들. collapsed selection이면 현재 캐럿
-```
-
-내부에서 이것이 JSON Pointer와 JSON Patch로 표현된다는 사실은 나중에 알아도 됩니다.

@@ -2,8 +2,6 @@
 
 "X 를 만들고 싶다" → 거기에 맞는 canonical 코드. 베껴 쓸 수 있게 짧고 자족적으로.
 
-`Why Not` 페이지가 *거부한* 빈자리를 다룬다면, 이 페이지는 *우리가 의도한* 표현을 다룹니다.
-
 ---
 
 ## 1. Dict-record 한 키 쓰기
@@ -134,7 +132,7 @@ if (result.ok) commit(state);
 else log(result.violations);
 ```
 
-같은 schema · 같은 op 가 React UI / 테스트 / 서버에서 동일한 결과. `exactOptionalPropertyTypes: true` 에서도 generic 통과 (issue #55 회귀 가드).
+같은 schema · 같은 op 가 React UI / 테스트 / 서버에서 동일한 결과.
 
 ---
 
@@ -161,10 +159,4 @@ function App() {
 }
 ```
 
-sidecar 는 core 의 정상 흐름(ops.subscribe · history)을 *관찰만* 합니다. 본체 데이터 동작 영향 없음. 새 sidecar 가 필요하면 `recorder` / `debug-log` / `http` 의 패턴을 따라가세요.
-
----
-
-## 패턴 추가 제안
-
-여기 없는 시나리오에 대해 "이거 어떻게 하지" 가 떠오르면 issue 로 보고해주세요. 새 패턴이 자주 요청되면 카탈로그에 추가되고, 정체성 침범이면 [Why Not](/docs/why-not) 에 거부 이유가 추가됩니다.
+sidecar 는 core 의 정상 흐름(ops.subscribe · history)을 *관찰만* 합니다. 본체 데이터 동작 영향 없음.
