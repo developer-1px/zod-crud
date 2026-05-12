@@ -7,6 +7,7 @@
 
 // === Identity facade ===
 export { useJsonDocument } from "./hooks/useJsonDocument.js";
+export { useJsonSlice } from "./hooks/useJsonSlice.js";
 export type {
   JsonDocument,
   JsonDocumentHistory,
