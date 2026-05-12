@@ -76,5 +76,37 @@ export {
 } from "./sidecars/http.js";
 export type { ParseResult, ParseError } from "./sidecars/http.js";
 
+// === Clipboard verbs ===
+export {
+  copy,
+  toClipboardItems,
+  toMarkdown,
+  toTsv,
+} from "./verbs/copy.js";
+export type {
+  ClipboardItemMap,
+  ClipboardItemOptions,
+  CopyError,
+  CopyOk,
+  CopyResult,
+} from "./verbs/copy.js";
+export { paste } from "./verbs/paste.js";
+export type {
+  PasteDuMismatch,
+  PasteError,
+  PasteMode,
+  PasteOk,
+  PasteOptions,
+  RekeyContext,
+  RekeyOptions,
+  RekeyStrategy,
+} from "./verbs/paste.js";
+export { duplicate } from "./verbs/duplicate.js";
+export type {
+  DuplicateError,
+  DuplicateOk,
+  DuplicateOpts,
+} from "./verbs/duplicate.js";
+
 // === JSON Schema bridge — RFC 8927 / draft-bhutton ===
 export { toJSONSchema, fromJSONSchema } from "./core/schema/bridge.js";

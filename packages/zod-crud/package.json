@@ -38,6 +38,21 @@
       "development": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./verbs/copy": {
+      "development": "./src/verbs/copy.ts",
+      "types": "./dist/verbs/copy.d.ts",
+      "import": "./dist/verbs/copy.js"
+    },
+    "./verbs/duplicate": {
+      "development": "./src/verbs/duplicate.ts",
+      "types": "./dist/verbs/duplicate.d.ts",
+      "import": "./dist/verbs/duplicate.js"
+    },
+    "./verbs/paste": {
+      "development": "./src/verbs/paste.ts",
+      "types": "./dist/verbs/paste.d.ts",
+      "import": "./dist/verbs/paste.js"
     }
   },
   "scripts": {

@@ -8,10 +8,13 @@ import type { JsonPatchOperation } from "../core/patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, parsePointer } from "../core/pointer/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
+import { rekeyPayload, type RekeyOptions } from "./paste.js";
 
 export interface DuplicateOpts {
   /** object key 복제 시 새 key. 배열에서는 무시됨. */
   newKey?: string;
+  /** 복제 payload 안의 unique-like 필드 충돌을 새 값으로 바꾼다. 기본 off. */
+  rekey?: RekeyOptions;
 }
 
 export interface DuplicateOk<T> {
@@ -73,8 +76,13 @@ export function duplicate<S extends z.ZodType>(
     }
   }
 
-  // RFC 6902 copy op 으로 환원
-  const op: JsonPatchOperation = { op: "copy", from: source, path: target };
+  const sourceRead = readAt(state, parsePointer(source));
+  if (!sourceRead.ok) {
+    return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
+  }
+
+  const payload = rekeyPayload(sourceRead.value, state, opts.rekey);
+  const op: JsonPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };
   const r = preFlight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };

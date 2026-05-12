@@ -2,7 +2,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { copy } from "../src/verbs/copy.js";
+import { copy, toClipboardItems, toMarkdown, toTsv } from "../src/verbs/copy.js";
 import { cut } from "../src/verbs/cut.js";
 import { paste } from "../src/verbs/paste.js";
 import { duplicate } from "../src/verbs/duplicate.js";
@@ -33,6 +33,31 @@ describe("verbs/copy", () => {
   test("path_not_found 시 ok: false", () => {
     const r = copy(initial, "/items/99");
     expect(r.ok).toBe(false);
+  });
+
+  test("schema field order 로 TSV clipboard representation 생성", () => {
+    const payload = [
+      { name: "A", id: "a" },
+      { name: "B", id: "b" },
+    ];
+    expect(toTsv(payload, Schema.shape.items)).toBe("id\tname\na\tA\nb\tB");
+  });
+
+  test("clipboard item map 은 JSON + plain text TSV + optional HTML 을 함께 제공", () => {
+    const payload = [{ id: "a", name: "A" }];
+    const items = toClipboardItems(payload, Schema.shape.items, {
+      json: true,
+      tsv: true,
+      html: () => "<table></table>",
+    });
+    expect(items["application/json"]).toBe(JSON.stringify(payload));
+    expect(items["text/plain"]).toBe("id\tname\na\tA");
+    expect(items["text/tab-separated-values"]).toBe("id\tname\na\tA");
+    expect(items["text/html"]).toBe("<table></table>");
+  });
+
+  test("markdown table helper 도 schema field order 를 따른다", () => {
+    expect(toMarkdown([{ name: "A", id: "a" }], Schema.shape.items)).toBe("| id | name |\n| --- | --- |\n| a | A |");
   });
 });
 
@@ -75,6 +100,39 @@ describe("verbs/paste", () => {
     if (!r.ok) return;
     expect(r.next.items[0]).toEqual({ id: "z", name: "Z" });
   });
+
+  test("discriminated union branch mismatch 는 structured code 로 거부", () => {
+    const Section = z.discriminatedUnion("type", [
+      z.object({ type: z.literal("hero"), title: z.string() }),
+      z.object({ type: z.literal("features"), items: z.array(z.string()) }),
+    ]);
+    const Page = z.object({
+      hero: Section,
+      features: z.object({ type: z.literal("features"), items: z.array(z.string()) }),
+    });
+    const state = {
+      hero: { type: "hero", title: "Hi" },
+      features: { type: "features", items: [] },
+    };
+
+    const r = paste(Page, state, { type: "hero", title: "Wrong" }, "/features", "replace");
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.code).toBe("du_branch_mismatch");
+    if (r.code !== "du_branch_mismatch") return;
+    expect(r.source).toEqual({ discriminator: "type", value: "hero" });
+    expect(r.expected).toEqual({ discriminator: "type", allowed: ["features"] });
+  });
+
+  test("rekey option rewrites colliding payload fields before preFlight", () => {
+    const r = paste(Schema, initial, { id: "a", name: "A copy" }, "/items/-", "into", {
+      rekey: { fields: ["id"], strategy: "suffix" },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.next.items[2]).toEqual({ id: "a-copy", name: "A copy" });
+    expect(r.patch).toEqual([{ op: "add", path: "/items/-", value: { id: "a-copy", name: "A copy" } }]);
+  });
 });
 
 describe("verbs/duplicate", () => {
@@ -107,5 +165,15 @@ describe("verbs/duplicate", () => {
     });
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe("key_conflict");
+  });
+
+  test("rekey option rewrites duplicated array item collisions", () => {
+    const r = duplicate(Schema, initial, "/items/0", {
+      rekey: { fields: ["id"], strategy: "suffix" },
+    });
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.next.items[1]).toEqual({ id: "a-copy", name: "A" });
+    expect(r.patch).toEqual([{ op: "add", path: "/items/1", value: { id: "a-copy", name: "A" } }]);
   });
 });
