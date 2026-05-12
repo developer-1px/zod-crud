@@ -22,11 +22,11 @@ const METHOD_COLOR: Record<Request["method"], string> = {
 // pointer 한 개로 트리 안의 Item 을 가져온다 (보기·복사용).
 function getAt(root: { items: Item[] }, pointer: string): Item | null {
   if (!pointer) return null;
-  const segs = pointer.split("/").slice(1).map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"));
+  const segments = pointer.split("/").slice(1).map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"));
   let cur: unknown = root;
-  for (const s of segs) {
+  for (const segment of segments) {
     if (cur && typeof cur === "object") {
-      cur = (cur as Record<string, unknown>)[s];
+      cur = (cur as Record<string, unknown>)[segment];
     } else return null;
   }
   return cur as Item | null;
@@ -43,7 +43,7 @@ export function ApiCollection() {
     selection: { mode: "extended" },
   });
   const clipboardRef = useRef<Clipboard>(null);
-  const [pathExpr, setPathExpr] = useState("$..items[?(@.method=='POST')]");
+  const [jsonPathExpression, setJsonPathExpression] = useState("$..items[?(@.method=='POST')]");
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [toast, setToast] = useState<string>("");
 
@@ -73,34 +73,34 @@ export function ApiCollection() {
       flash(`JSONPath 오류: ${"reason" in r ? r.reason : "unknown"}`);
       return;
     }
-    const ptrs = r.matches.map((m) => m.pointer);
-    if (ptrs.length === 0) { flash("매칭 없음"); return; }
-    doc.selection?.selectRanges(ptrs, ptrs[0] ?? null, ptrs[ptrs.length - 1] ?? null);
-    flash(`${ptrs.length}개 매칭 — 선택됨`);
+    const pointers = r.matches.map((m) => m.pointer);
+    if (pointers.length === 0) { flash("매칭 없음"); return; }
+    doc.selection?.selectRanges(pointers, pointers[0] ?? null, pointers[pointers.length - 1] ?? null);
+    flash(`${pointers.length}개 매칭 — 선택됨`);
   }, [doc.commands, doc.selection, flash]);
 
   const selectByMethod = useCallback((method: Method) => {
     const expr = `$..items[?(@.method=='${method}')]`;
-    setPathExpr(expr);
+    setJsonPathExpression(expr);
     runQuery(expr);
   }, [runQuery]);
 
   const selectAllRequests = useCallback(() => {
     const expr = `$..items[?(@.kind=='request')]`;
-    setPathExpr(expr);
+    setJsonPathExpression(expr);
     runQuery(expr);
   }, [runQuery]);
 
   // ── bulk: 선택된 모든 request 에 X-Trace-Id 헤더 추가 (단일 patch) ───────
   const bulkAddTraceHeader = useCallback(() => {
     const requests = selectedItems
-      .map((it, i) => ({ it, ptr: selectedPointers[i]! }))
-      .filter((x): x is { it: Request; ptr: string } => x.it.kind === "request");
+      .map((it, i) => ({ it, pointer: selectedPointers[i]! }))
+      .filter((x): x is { it: Request; pointer: string } => x.it.kind === "request");
     if (requests.length === 0) { flash("선택된 request 가 없음"); return; }
     const traceHeader: Header = { key: "X-Trace-Id", value: "{{$randomUUID}}" };
-    const patch: JsonPatchOperation[] = requests.map(({ it, ptr }) => ({
+    const patch: JsonPatchOperation[] = requests.map(({ it, pointer }) => ({
       op: "replace",
-      path: `${ptr}/headers`,
+      path: `${pointer}/headers`,
       value: [...it.headers, traceHeader],
     }));
     doc.ops.patch(patch);
@@ -118,7 +118,7 @@ export function ApiCollection() {
     if (selectedItems.length === 0) { flash("선택 없음"); return; }
     clipboardRef.current = { kind: "items", items: selectedItems };
     // 역순 — 배열 인덱스 shift 방지.
-    const patch: JsonPatchOperation[] = sortPointersDesc(selectedPointers).map((ptr) => ({ op: "remove", path: ptr }));
+    const patch: JsonPatchOperation[] = sortPointersDesc(selectedPointers).map((pointer) => ({ op: "remove", path: pointer }));
     doc.ops.patch(patch);
     doc.selection?.empty();
     flash(`${selectedItems.length}개 잘라내기`);
@@ -215,13 +215,13 @@ export function ApiCollection() {
         <div style={S.queryBar}>
           <span style={S.toolbarLabel}>JSONPath</span>
           <input
-            value={pathExpr}
-            onChange={(e) => setPathExpr(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") runQuery(pathExpr); }}
+            value={jsonPathExpression}
+            onChange={(e) => setJsonPathExpression(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") runQuery(jsonPathExpression); }}
             style={S.input}
             spellCheck={false}
           />
-          <button onClick={() => runQuery(pathExpr)}>실행</button>
+          <button onClick={() => runQuery(jsonPathExpression)}>실행</button>
         </div>
       )}
 
@@ -229,7 +229,7 @@ export function ApiCollection() {
         <div style={S.left}>
           <Tree
             items={doc.value.items}
-            parentPtr=""
+            parentPointer=""
             selected={selectedPointers}
             onClickRow={onClickRow}
           />
@@ -239,9 +239,9 @@ export function ApiCollection() {
           {selectedPointers.length === 0 ? (
             <div style={S.muted}>선택 없음 — 행 클릭, Shift/Ctrl+Click, 또는 위 JSONPath 사용</div>
           ) : (
-            <ul style={S.ptrList}>
+            <ul style={S.pointerList}>
               {selectedPointers.map((p) => (
-                <li key={p}><code style={S.ptr}>{p}</code></li>
+                <li key={p}><code style={S.pointer}>{p}</code></li>
               ))}
             </ul>
           )}
@@ -264,22 +264,22 @@ export function ApiCollection() {
 // ── tree row ──────────────────────────────────────────────────────────────
 function Tree(props: {
   items: ReadonlyArray<Item>;
-  parentPtr: string;
+  parentPointer: string;
   selected: ReadonlyArray<string>;
   onClickRow: (pointer: string, e: React.MouseEvent) => void;
 }) {
   return (
     <ul style={S.tree}>
       {props.items.map((item, i) => {
-        const ptr = `${props.parentPtr}/items/${i}`;
-        const isSel = props.selected.includes(ptr);
+        const pointer = `${props.parentPointer}/items/${i}`;
+        const isSelected = props.selected.includes(pointer);
         return (
-          <li key={ptr}>
+          <li key={pointer}>
             <div
               role="treeitem"
-              aria-selected={isSel}
-              onClick={(e) => props.onClickRow(ptr, e)}
-              style={{ ...S.row, background: isSel ? "#dbeafe" : undefined }}
+              aria-selected={isSelected}
+              onClick={(e) => props.onClickRow(pointer, e)}
+              style={{ ...S.row, background: isSelected ? "#dbeafe" : undefined }}
             >
               {item.kind === "folder" ? (
                 <>
@@ -298,7 +298,7 @@ function Tree(props: {
               )}
             </div>
             {item.kind === "folder" && item.items.length > 0 && (
-              <Tree items={item.items} parentPtr={ptr} selected={props.selected} onClickRow={props.onClickRow} />
+              <Tree items={item.items} parentPointer={pointer} selected={props.selected} onClickRow={props.onClickRow} />
             )}
           </li>
         );
@@ -340,7 +340,7 @@ const S = {
   url: { fontFamily: "ui-monospace, monospace", fontSize: 12, color: "#444" } as React.CSSProperties,
   muted: { color: "#888", fontSize: 12 } as React.CSSProperties,
   muted2: { color: "#aaa", fontSize: 12 } as React.CSSProperties,
-  ptrList: { listStyle: "none", padding: 0, margin: 0, maxHeight: 180, overflow: "auto" } as React.CSSProperties,
-  ptr: { fontFamily: "ui-monospace, monospace", fontSize: 11, color: "#333" } as React.CSSProperties,
+  pointerList: { listStyle: "none", padding: 0, margin: 0, maxHeight: 180, overflow: "auto" } as React.CSSProperties,
+  pointer: { fontFamily: "ui-monospace, monospace", fontSize: 11, color: "#333" } as React.CSSProperties,
   toast: { position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#fff", padding: "8px 14px", borderRadius: 6, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" } as React.CSSProperties,
 };

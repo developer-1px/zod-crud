@@ -1,4 +1,4 @@
-// SPEC §5.7 — Selection state (Axis 2). 정체성: "다음 명령의 작용 범위" + 캐럿 위치.
+// SPEC §5.7 — Selection state. 정체성: "다음 명령의 작용 범위" + 캐럿 위치.
 // 순수 함수. React 무관. W3C Selection API 어휘.
 // DOM Selection 모델: collapsed selection (anchor === focus, ranges.length === 1) = 캐럿.
 //

@@ -1,5 +1,5 @@
 // commands/buildCommands — useJsonDocument.commands group (TipTap 식 디팩토).
-// 편집도구 어휘 10 verbs 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
+// 편집 어휘 10 verbs 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
 //
 // commands 는 mutation 시 ops.patch (history commit + listener notify) 를 거친다.
 // undo/redo 는 ops.undo/redo (history stack 관리는 useJsonDocument 가 wiring).
@@ -17,7 +17,7 @@ import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type CopyOk, type CopyError } from "../verbs/copy.js";
 import { paste, type PasteOk, type PasteError, type PasteMode } from "../verbs/paste.js";
 import { duplicate, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
-import { move as moveVerb, type MoveResult, type MoveError } from "../verbs/move.js";
+import { move as moveVerb, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import type { JsonPatchOperation, JsonResult } from "../core/patch/index.js";
 
@@ -25,7 +25,7 @@ export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   find(jsonpath: string): FindOk | FindError;
 
-  move(from: Pointer, to: Pointer): MoveResult<T> | MoveError;
+  move(from: Pointer, to: Pointer): MoveResult<T>;
   duplicate(source: Pointer, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
   replace(path: Pointer, value: unknown): JsonResult;

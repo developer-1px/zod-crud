@@ -1,5 +1,5 @@
 // SPEC.md §5.1 — useJsonDocument 내부 substrate.
-// 코어는 src/core/patch.ts (pure). 이 파일은 useState + ops binding + Axis 2 subscribe.
+// 코어는 core/patch/ (pure). 이 파일은 useState + ops binding + change subscription.
 // undo/redo 는 JsonOps 의 책임이 아님 — doc.commands.undo / doc.can.undo / doc.history 가 정본 위치.
 
 import { useCallback, useMemo, useRef, useState } from "react";
@@ -86,8 +86,8 @@ export function useJson<S extends z.ZodType>(
       },
       set(path, value) {
         const p = path as Pointer;
-        const segs = parsePointer(p);
-        const cur = readAt(stateRef.current, segs);
+        const segments = parsePointer(p);
+        const cur = readAt(stateRef.current, segments);
         if (value === undefined) {
           if (!cur.ok) return { ok: true };
           return single({ op: "remove", path: p });

@@ -71,8 +71,8 @@ export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): Json
     set: (path, value) => {
       // history 가 wrapping 된 patch 를 거치도록 분기 op 를 합성. rawOps.set 직접 호출 시 history 우회.
       const p = path as Pointer;
-      const segs = parsePointer(p);
-      const cur = readAt(rawOps.state, segs);
+      const segments = parsePointer(p);
+      const cur = readAt(rawOps.state, segments);
       if (value === undefined) {
         if (!cur.ok) return { ok: true };
         return patch([{ op: "remove", path: p }]);

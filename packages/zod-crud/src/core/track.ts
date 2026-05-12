@@ -1,4 +1,4 @@
-// SPEC §0.2 (9) — Axis 1 op 적용 시 Axis 2 좌표를 자동 추적한다.
+// SPEC §0.2 — RFC 6902 op 적용 시 Pointer 좌표를 자동 추적한다.
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 

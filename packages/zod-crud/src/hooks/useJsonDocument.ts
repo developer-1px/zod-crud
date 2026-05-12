@@ -50,7 +50,7 @@ export interface JsonDocumentHistory {
  * - history: { canUndo, canRedo, mergeLast } — read-only flags
  * - ops: RFC 6902 raw escape hatch (low-level)
  *
- * Editor command surface (TipTap 식 디팩토 — `commands` + `can` group):
+ * Command surface (TipTap 식 디팩토 — `commands` + `can` group):
  * - commands: 10 verb methods (select/find/move/duplicate/replace/cut/copy/paste/undo/redo)
  * - can: mutation guard predicates + stack flags
  */

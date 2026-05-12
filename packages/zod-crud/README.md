@@ -150,7 +150,7 @@ fetch("/api/save", {
 
 ## API
 
-See [`SPEC.md`](./SPEC.md) §5 for the canonical surface. Briefly:
+See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
@@ -159,7 +159,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the canonical surface. Briefly:
 | `useJson(schema, initial, options?)` | lower-level hook (SPEC §5.1) |
 | `JsonOps<T>` | low-level ops contract (SPEC §5.2) |
 | `useSelection(ops, options?)` | lower-level selection hook (SPEC §5.7) |
-| `trackPointer`, `trackPointers` | low-level pointer tracking helpers (SPEC §5.9) |
+| `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
 | `JsonPatchOperation`, `JsonResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |

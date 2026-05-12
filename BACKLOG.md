@@ -7,7 +7,7 @@
 - [ ] **apps/sheet — typed cell spreadsheet (validation 시연 reference editor)**
   - 목적: pre-flight (zod schema_violation) 의 "시끄러운 에러" 보장이 실제로 작동하는지 시각화. outliner 는 OutlineSchema refinement 부재로 위반 트리거 불가 → 별도 editor 필요.
   - schema 후보: cell 별 `number / email / url / date / regex` + `min/max` + cross-field `refine`.
-  - 부수 효과: axis 2 generalization 의 R3 (비연속 multi-select, rubber-band) 도 검증.
+  - 부수 효과: Selection model 의 비연속 multi-select, rubber-band 도 검증.
   - 기각 대안: outliner 에 억지 refinement 추가 — 정체성 오염되어 거부.
 
 ## zod-crud library
@@ -24,8 +24,7 @@
 
 ## SPEC drift
 
-- [ ] **outliner SPEC §2.5 갱신** — "click 텍스트 → edit" 가 실제로는 "click → select" 로 바뀜. SPEC outranks code 원칙에 따라 SPEC 갱신.
-- [ ] **zod-crud SPEC history 갱신** — useJsonDocument facade 가 history 를 owner. SPEC §5.1 의 useJson.history 기술 갱신.
+- [ ] **outliner SPEC §2.5 갱신** — "click 텍스트 → edit" 가 실제로는 "click → select" 로 바뀜. 코드 동작 기준으로 SPEC 갱신.
 - [ ] **SPEC §7 G8 의 시간 coalescing 의미 추가** — 500ms 창 내 dispatch 가 한 entry 로 묶이는 새 규칙 SPEC 명문화.
 
 ## 테스트

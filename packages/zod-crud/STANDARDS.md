@@ -53,7 +53,7 @@ commands/
 
 ## sidecars/ (횡단 관심사)
 
-3-layer (hooks/verbs/core) 어디에도 속하지 않는 횡단 관심사 박스. 각 sidecar 는 useJsonDocument 의 정상 흐름 (state · ops · selection · history) 에 **수평으로 hook 한다 (관찰만 또는 wire format 변환)**. 본체 데이터 동작에 영향을 주지 않는다.
+hooks/commands/verbs/core 어디에도 속하지 않는 횡단 관심사 박스. 각 sidecar 는 useJsonDocument 의 정상 흐름 (state · ops · selection · history) 에 **수평으로 hook 한다 (관찰만 또는 wire format 변환)**. 본체 데이터 동작에 영향을 주지 않는다.
 
 | Sidecar | 역할 | 횡단 대상 | 위치 |
 |---------|------|-----------|------|
@@ -70,7 +70,7 @@ sidecars/
 
 **진입 거부 규칙:**
 - `core/*` 진입 — 표준 RFC 또는 derived substrate 만. 임시/실용 휴리스틱 거부.
-- `sidecars/*` 진입 — transport / observability 외 거부. 비즈니스 로직 (verb 합성, schema gate) 은 본체 (core/verbs/hooks) 에서.
+- `sidecars/*` 진입 — transport / observability 외 거부. 비즈니스 로직 (verb 합성, schema gate) 은 본체 (commands/verbs/core/hooks) 에서.
 
 ## 자동 검증 (Phase 8)
 

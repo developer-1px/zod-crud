@@ -17,10 +17,10 @@ export function useJsonSlice<T, P extends string>(
   ops: JsonOps<T>,
   path: P,
 ): ValueAt<T, P> | undefined {
-  const segs = useMemo(() => parsePointer(path as Pointer), [path]);
+  const segments = useMemo(() => parsePointer(path as Pointer), [path]);
   const getSnapshot = useCallback((): ValueAt<T, P> | undefined => {
-    const r = readAt(ops.state, segs);
+    const r = readAt(ops.state, segments);
     return r.ok ? (r.value as ValueAt<T, P>) : undefined;
-  }, [ops, segs]);
+  }, [ops, segments]);
   return useSyncExternalStore(ops.subscribe, getSnapshot, getSnapshot);
 }

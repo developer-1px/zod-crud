@@ -4,15 +4,9 @@
 import type { MutableRefObject } from "react";
 
 import { computeInverses, type JsonPatchOperation } from "../core/patch/index.js";
-import type { Pointer } from "../core/pointer/index.js";
 import { commit as historyCommit, type HistoryStack } from "../core/history.js";
+import type { SelectionSnap } from "../core/selection/index.js";
 import type { SelectionState } from "./useSelection.js";
-
-export interface SelectionSnap {
-  ranges: ReadonlyArray<Pointer>;
-  anchor: Pointer | null;
-  focus: Pointer | null;
-}
 
 export interface HistoryEntry {
   forward: JsonPatchOperation[];

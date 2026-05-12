@@ -1,4 +1,4 @@
-// SPEC §5.7 — Selection state hook (Axis 2). pure 로직은 core/selection/.
+// SPEC §5.7 — Selection state hook. pure 로직은 core/selection/.
 // W3C Selection API 어휘. collapsed selection = 캐럿 (별도 focus 축 없음).
 
 import { useCallback, useEffect, useMemo, useState } from "react";

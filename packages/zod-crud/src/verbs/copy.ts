@@ -25,8 +25,8 @@ export type CopyResult = CopyOk | CopyError;
  * pure. state 는 변하지 않는다 (read-only).
  */
 export function copy(state: unknown, source: Pointer): CopyResult {
-  const segs = parsePointer(source);
-  const r = readAt(state, segs);
+  const segments = parsePointer(source);
+  const r = readAt(state, segments);
   if (!r.ok) {
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
   }

@@ -6,7 +6,7 @@ import { preFlight } from "../core/schema/preFlight.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type * as z from "zod";
 
-export interface MoveResult<T> {
+export interface MoveOk<T> {
   ok: true;
   next: T;
   patch: JsonPatchOperation[];
@@ -19,6 +19,8 @@ export interface MoveError {
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
+export type MoveResult<T> = MoveOk<T> | MoveError;
+
 /**
  * RFC 6902 `move` op. (schema, state, from, to) → preFlight gate → { next, patch }.
  * preFlight 거부 시 commit 하지 않음 — history 오염 0 (P4.4).
@@ -28,7 +30,7 @@ export function move<S extends z.ZodType>(
   state: z.output<S>,
   from: Pointer,
   to: Pointer,
-): MoveResult<z.output<S>> | MoveError {
+): MoveResult<z.output<S>> {
   const op: JsonPatchOperation = { op: "move", from, path: to };
   const r = preFlight(schema, state, [op]);
   if (!r.ok) {

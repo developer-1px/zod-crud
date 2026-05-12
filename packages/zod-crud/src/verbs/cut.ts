@@ -29,8 +29,8 @@ export function cut<S extends z.ZodType>(
   source: Pointer,
 ): CutOk<z.output<S>> | CutError {
   // 1) source 위치의 값을 payload 로 추출 (deep clone)
-  const segs = parsePointer(source);
-  const v = readAt(state, segs);
+  const segments = parsePointer(source);
+  const v = readAt(state, segments);
   if (!v.ok) {
     return { ok: false, code: "path_not_found", message: `cut source not found: ${source}` };
   }

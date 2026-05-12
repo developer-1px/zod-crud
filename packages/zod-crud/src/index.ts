@@ -1,6 +1,5 @@
-// zod-crud — canonical public surface.
-// 정본: SPEC.md §5. 변경 시 SPEC.md를 먼저 갱신할 것.
-// 어휘: ADR-0002 — 편집 어휘 wrapper. Axis 1/2 / "Editor abstractions" 어휘 폐기.
+// zod-crud — public surface.
+// 어휘: 편집 어휘 wrapper. 오래된 축/에디터 추상화 어휘는 쓰지 않는다.
 //
 // Single facade: useJsonDocument. 10 verbs 와 state 가 한 객체에 노출.
 // Headless 사용자 (외부 사용 ≥1): core/* 또는 verbs/* 직접 import.
@@ -41,6 +40,7 @@ export {
   withLastSegment,
 } from "./core/pointer/index.js";
 export type { Pointer } from "./core/pointer/index.js";
+export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 
 // === JSON serialize helpers ===
 export { serialize, parse, safeParse } from "./core/pointer/serialize.js";
