@@ -33,6 +33,12 @@ export interface JsonDocumentHistory {
   readonly undoDepth: number;
   readonly redoDepth: number;
   mergeLast(): boolean;
+  /**
+   * #56 — fn 내부의 모든 ops 를 한 history step 으로 collapse.
+   * 각 op 은 동기적으로 state 를 갱신하여 display sync 는 깨지지 않는다.
+   * fn 종료 후 mergeLast 를 반복 호출하여 단일 entry 로 압축.
+   */
+  transaction(fn: () => void): void;
 }
 
 /**
@@ -100,6 +106,14 @@ export function useJsonDocument<S extends z.ZodType>(
     return true;
   }, []);
 
+  const transaction = useCallback((fn: () => void): void => {
+    const depthBefore = stackRef.current.undo.length;
+    fn();
+    while (stackRef.current.undo.length > depthBefore + 1) {
+      if (!mergeLast()) break;
+    }
+  }, [mergeLast]);
+
   const commands = useMemo(
     () => buildCommands({ schema, ops, selectionRef }),
     [schema, ops],
@@ -113,6 +127,7 @@ export function useJsonDocument<S extends z.ZodType>(
       get undoDepth() { return stackRef.current.undo.length; },
       get redoDepth() { return stackRef.current.redo.length; },
       mergeLast,
+      transaction,
     };
     return {
       value,
@@ -122,5 +137,5 @@ export function useJsonDocument<S extends z.ZodType>(
       commands,
       can,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast, commands, can]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can]);
 }

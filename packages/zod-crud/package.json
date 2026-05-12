@@ -1,6 +1,6 @@
 {
   "name": "zod-crud",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.",
   "type": "module",
   "license": "MIT",
