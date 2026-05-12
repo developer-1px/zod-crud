@@ -24,6 +24,15 @@ npm install zod-crud zod
 `zod` is a peer dependency. `react >=18` is an optional peer dependency
 required only for React hooks. The package is ESM-only.
 
+> **단일 zod instance 필수.** monorepo / pnpm 환경에서 `zod-crud` 와 소비자가 서로 다른
+> `zod` 인스턴스를 보면 `useJsonDocument` 의 generic 추론이 `unknown` 으로 떨어진다
+> (`$ZodFunction / $ZodTypes` 심볼이 두 번 존재). 해결책:
+> - pnpm: `public-hoist-pattern[]=zod` 또는 `dedupe-peer-dependents=true`
+> - 그래도 해소 안 되면 소비자 `tsconfig.json` 에 paths alias 로 단일 경로 강제:
+>   ```json
+>   "paths": { "zod": ["./node_modules/zod"], "zod/*": ["./node_modules/zod/*"] }
+>   ```
+
 ## React — `useJsonDocument`
 
 ```tsx

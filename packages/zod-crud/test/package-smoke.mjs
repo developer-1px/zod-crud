@@ -60,6 +60,13 @@ try {
     throw new Error(`Packed tarball was not created: ${tarball}`);
   }
 
+  // #62 guard — published tarball 에 node_modules 가 포함되면 소비자 측 zod type 중복으로 generic 추론이 깨진다.
+  const packedFiles = (packResult.files ?? []).map((f) => f.path);
+  const offenders = packedFiles.filter((p) => p.includes("node_modules/"));
+  if (offenders.length > 0) {
+    throw new Error(`Tarball must not include node_modules: ${offenders.slice(0, 3).join(", ")}`);
+  }
+
   if (zodPackage === null) {
     throw new Error("Local zod dependency is missing. Run npm install first.");
   }
