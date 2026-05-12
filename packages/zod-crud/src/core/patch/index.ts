@@ -55,7 +55,8 @@ export function applyOperation<S extends z.ZodTypeAny>(
   if (normalized.op === "test") return { state, result: ok, applied: [normalized] };
   const parsed = schema.safeParse(r.state);
   if (!parsed.success) return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
-  return { state: parsed.data as z.output<S>, result: ok, applied: [normalized] };
+  // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 r.state 반환.
+  return { state: r.state as z.output<S>, result: ok, applied: [normalized] };
 }
 
 // Batch (RFC 6902 §3): atomic — 한 op 실패 시 전체 롤백. Schema 검증은 끝에서 1회.
@@ -82,5 +83,6 @@ export function applyPatch<S extends z.ZodTypeAny>(
   }
   const parsed = schema.safeParse(cur);
   if (!parsed.success) return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
-  return { state: parsed.data as z.output<S>, result: ok, applied: normalized };
+  // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 cur 반환.
+  return { state: cur as z.output<S>, result: ok, applied: normalized };
 }
