@@ -7,15 +7,20 @@
 // === Identity facade ===
 export { useJsonDocument } from "./hooks/useJsonDocument.js";
 export { useJsonSlice } from "./hooks/useJsonSlice.js";
+export { useDraft, useField } from "./hooks/useDraft.js";
 export type {
   JsonDocument,
   JsonDocumentHistory,
   UseJsonDocumentOptions,
 } from "./hooks/useJsonDocument.js";
+export type {
+  DraftFieldState,
+  DraftState,
+} from "./hooks/useDraft.js";
 
 // === Boundary error + ops contract ===
 export { JsonCrudError } from "./JsonCrudError.js";
-export type { JsonOps, UseJsonOptions } from "./jsonOps.js";
+export type { JsonLoadOptions, JsonOps, UseJsonOptions } from "./jsonOps.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

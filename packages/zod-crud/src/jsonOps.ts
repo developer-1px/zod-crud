@@ -15,6 +15,11 @@ export interface UseJsonOptions {
 
 export type JsonChangeListener = (applied: ReadonlyArray<JsonPatchOperation>) => void;
 
+export interface JsonLoadOptions {
+  /** Keep useJsonDocument history instead of treating load as a hard reset. */
+  preserveHistory?: boolean;
+}
+
 // Internal — history controls. Public surface 은 doc.commands.undo / doc.can.undo / doc.history.
 // buildJsonDocumentOps 가 wrapping 한 ops 에만 존재. JsonOps (외부) 표면에는 노출하지 않는다.
 export interface HistoryControls {
@@ -42,7 +47,7 @@ export interface JsonOps<T> {
   // fire-and-forget — schema 위반 등 실패 시 JsonCrudError throw. hot path (keystroke 등) 용.
   apply(operations: ReadonlyArray<JsonPatchOperation>): void;
 
-  load(value: T): JsonResult;
+  load(value: T, options?: JsonLoadOptions): JsonResult;
   reset(value?: T): void;
 
   subscribe(listener: JsonChangeListener): () => void;
