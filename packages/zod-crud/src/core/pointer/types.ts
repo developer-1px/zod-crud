@@ -20,6 +20,8 @@ export type PointerOf<T, D extends number = 5> =
   [D] extends [never] ? Pointer
   : T extends ReadonlyArray<infer U>
     ? "" | Join<`${ArrayIndex}` | "-", ""> | Join<`${ArrayIndex}`, PointerOf<U, Prev[D]>>
+  : string extends keyof T
+    ? "" | Join<string, ""> | Join<string, PointerOf<T[string], Prev[D]>>
   : T extends object
     ? "" | { [K in keyof T & string]: Join<EscapeSegment<K>, ""> | Join<EscapeSegment<K>, PointerOf<T[K], Prev[D]>> }[keyof T & string]
   : "";

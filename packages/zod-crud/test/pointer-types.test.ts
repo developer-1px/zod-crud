@@ -30,6 +30,15 @@ const _vNested: _ValueAtNested = "x";
 type _PointerIsString = Pointer extends string ? true : false;
 const _pStr: _PointerIsString = true;
 
+// #52 — Record<string, V> 동적 키도 PointerOf 가 수용해야 한다 (as never 없이).
+type Sheet = { cells: Record<string, string> };
+type _RecordDynamic = `/cells/${string}` extends PointerOf<Sheet> ? true : false;
+const _recordDyn: _RecordDynamic = true;
+
+type Settings = { config: Record<string, { value: number }> };
+type _RecordNested = `/config/${string}/value` extends PointerOf<Settings> ? true : false;
+const _recordNested: _RecordNested = true;
+
 describe("PointerOf / ValueAt (compile-time)", () => {
   it("loads at runtime", () => {
     expect(_validRoot).toBe(true);
@@ -40,5 +49,7 @@ describe("PointerOf / ValueAt (compile-time)", () => {
     expect(_vTitle).toBe("x");
     expect(_vNested).toBe("x");
     expect(_pStr).toBe(true);
+    expect(_recordDyn).toBe(true);
+    expect(_recordNested).toBe(true);
   });
 });
