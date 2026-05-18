@@ -8,7 +8,8 @@
       "DOM.Iterable"
     ],
     "noEmit": true,
-    "rootDir": "."
+    "rootDir": ".",
+    "skipLibCheck": true
   },
   "include": [
     "src/**/*.ts",
