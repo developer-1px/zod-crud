@@ -64,4 +64,31 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(spec).toContain("현재 코드 동작이 이긴다");
     expect(spec).toContain("RFC가 이긴다");
   });
+
+  test("README API table lists every SPEC §5.6 pointer helper", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
+    const section = spec.slice(
+      spec.indexOf("### 5.6 RFC 6901 Pointer 헬퍼"),
+      spec.indexOf("### 5.7 `useSelection`"),
+    );
+    const helpers = Array.from(section.matchAll(/export function (\w+)\(/g), (match) => match[1]);
+
+    expect(helpers).toEqual([
+      "parsePointer",
+      "tryParsePointer",
+      "buildPointer",
+      "escapeSegment",
+      "unescapeSegment",
+      "parentPointer",
+      "lastSegment",
+      "lastSegmentIndex",
+      "appendSegment",
+      "withLastSegment",
+    ]);
+
+    for (const helper of helpers) {
+      expect(readme, `README API table missing SPEC §5.6 helper: ${helper}`).toContain(`\`${helper}\``);
+    }
+  });
 });
