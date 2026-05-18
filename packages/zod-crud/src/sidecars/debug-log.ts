@@ -88,11 +88,14 @@ export function useDebugLog<T>(
 
   const stop = useCallback((): DebugLog<T> => {
     const s = startRef.current;
+    const events = cloneJson(eventsRef.current);
+    const initialState = cloneJson((s?.initial ?? ops.state) as T);
+    startRef.current = null;
     setEnabled(false);
     return {
       startedAt: s?.at ?? Date.now(),
-      initialState: cloneJson((s?.initial ?? ops.state) as T),
-      events: cloneJson(eventsRef.current),
+      initialState,
+      events,
     };
   }, [ops]);
 

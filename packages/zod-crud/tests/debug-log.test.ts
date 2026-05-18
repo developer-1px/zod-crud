@@ -80,6 +80,36 @@ describe("useDebugLog", () => {
       });
     }).toThrow(TypeError);
   });
+
+  test("stop 이후 manual log 를 무시하고 다시 start 할 수 있다", () => {
+    const hook = renderHook(() => useHarness());
+
+    act(() => {
+      hook.current.debug.start();
+      hook.current.debug.log("first");
+    });
+
+    let first: ReturnType<typeof hook.current.debug.stop> | undefined;
+    act(() => {
+      first = hook.current.debug.stop();
+    });
+    act(() => {
+      hook.current.debug.log("after-stop");
+    });
+    expect(hook.current.debug.events.map((event) => event.kind)).toEqual(["first"]);
+
+    act(() => {
+      hook.current.debug.start();
+      hook.current.debug.log("second");
+    });
+    let second: ReturnType<typeof hook.current.debug.stop> | undefined;
+    act(() => {
+      second = hook.current.debug.stop();
+    });
+
+    expect(first?.events.map((event) => event.kind)).toEqual(["first"]);
+    expect(second?.events.map((event) => event.kind)).toEqual(["second"]);
+  });
 });
 
 function useHarness() {
