@@ -20,6 +20,7 @@ export type {
 // === RFC 6901 — JSON Pointer ===
 export {
   parsePointer,
+  tryParsePointer,
   buildPointer,
   escapeSegment,
   unescapeSegment,

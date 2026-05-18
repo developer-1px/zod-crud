@@ -48,6 +48,14 @@ export function parsePointer(pointer: Pointer): string[] {
   return pointer.slice(1).split("/").map(unescapeSegment);
 }
 
+export function tryParsePointer(pointer: Pointer): string[] | null {
+  try {
+    return parsePointer(pointer);
+  } catch {
+    return null;
+  }
+}
+
 // RFC 3986 + 6901 §6: fragment 안에서 안전하지 않은 문자 percent-encode.
 // JSON Pointer 자체의 escape (~0, ~1) 는 이미 처리됐으므로 fragment 의 추가 제약만.
 function encodePointerForFragment(s: string): string {

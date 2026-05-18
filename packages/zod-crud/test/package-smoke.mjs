@@ -157,7 +157,7 @@ try {
     join(workspace, "smoke.mjs"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, parsePointer, buildPointer, find, replace, buildPatchRequest, parsePatchResponse, withIfMatch, JSON_PATCH_MIME } from "zod-crud";',
+      'import { applyOperation, applyPatch, parsePointer, tryParsePointer, buildPointer, find, replace, buildPatchRequest, parsePatchResponse, withIfMatch, JSON_PATCH_MIME } from "zod-crud";',
       'import { move } from "zod-crud/verbs/move";',
       'const schema = z.object({ name: z.string(), tags: z.array(z.string()) });',
       'const initial = { name: "ok", tags: [] };',
@@ -171,6 +171,8 @@ try {
       'if (!r2.result.ok) throw new Error("applyPatch failed");',
       'if (r2.state.tags.length !== 1) throw new Error("batch tags failed");',
       'if (parsePointer("/a/0").length !== 2) throw new Error("parsePointer failed");',
+      'if (tryParsePointer("/a/0")?.length !== 2) throw new Error("tryParsePointer valid failed");',
+      'if (tryParsePointer("a/0") !== null) throw new Error("tryParsePointer invalid failed");',
       'if (buildPointer(["a", 0]) !== "/a/0") throw new Error("buildPointer failed");',
       'if (!find(r2.state, "$.tags[0]").ok) throw new Error("find export failed");',
       'if (!replace(schema, r2.state, "$.name", "z").ok) throw new Error("replace export failed");',

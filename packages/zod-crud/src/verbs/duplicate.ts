@@ -5,7 +5,7 @@
 
 import type * as z from "zod";
 import type { JSONPatchOperation } from "../core/patch/index.js";
-import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, parsePointer } from "../core/pointer/index.js";
+import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../core/pointer/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import { tryRekeyPayload, type RekeyOptions } from "../core/schema/rekey.js";
@@ -49,7 +49,7 @@ export function duplicate<S extends z.ZodType>(
   if (parent === null) {
     return { ok: false, code: "invalid_pointer", message: "cannot duplicate root" };
   }
-  const parentSegs = safeParsePointer(parent);
+  const parentSegs = tryParsePointer(parent);
   if (parentSegs === null) {
     return { ok: false, code: "invalid_pointer", message: `invalid parent pointer: ${parent}` };
   }
@@ -86,7 +86,7 @@ export function duplicate<S extends z.ZodType>(
     }
   }
 
-  const sourceSegs = safeParsePointer(source);
+  const sourceSegs = tryParsePointer(source);
   if (sourceSegs === null) {
     return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
   }
@@ -104,14 +104,6 @@ export function duplicate<S extends z.ZodType>(
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
   return { ok: true, next: r.draft, patch: [op], duplicatedTo: target };
-}
-
-function safeParsePointer(pointer: Pointer): string[] | null {
-  try {
-    return parsePointer(pointer);
-  } catch {
-    return null;
-  }
 }
 
 /** unused helper hint to silence linter for lastSegment import — also useful in error messages. */

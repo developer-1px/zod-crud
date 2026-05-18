@@ -4,7 +4,7 @@
 
 import type { Pointer } from "../core/pointer/index.js";
 import { cloneJson, jsonSerializableError } from "../core/json.js";
-import { parsePointer, readAt } from "../core/pointer/index.js";
+import { readAt, tryParsePointer } from "../core/pointer/index.js";
 import { serialize } from "../core/pointer/serialize.js";
 import { getArrayElement, getObjectKeys } from "../core/schema/introspection.js";
 import type * as z from "zod";
@@ -38,7 +38,7 @@ export type ClipboardItemMap = Record<string, string>;
  * pure. state 는 변하지 않는다 (read-only).
  */
 export function copy(state: unknown, source: Pointer): CopyResult {
-  const segments = safeParsePointer(source);
+  const segments = tryParsePointer(source);
   if (segments === null) {
     return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
   }
@@ -52,14 +52,6 @@ export function copy(state: unknown, source: Pointer): CopyResult {
   }
   // deep clone via JSON round-trip — payload 가 외부 round-trip 후에도 정합한지 보장.
   return { ok: true, payload: cloneJson(r.value), source };
-}
-
-function safeParsePointer(pointer: Pointer): string[] | null {
-  try {
-    return parsePointer(pointer);
-  } catch {
-    return null;
-  }
 }
 
 export function toClipboardItems(payload: unknown, schema: z.ZodType, options: ClipboardItemOptions = {}): ClipboardItemMap {

@@ -1,6 +1,6 @@
 import type * as z from "zod";
 import type { Pointer } from "../pointer/index.js";
-import { parsePointer } from "../pointer/index.js";
+import { tryParsePointer } from "../pointer/index.js";
 
 type ZodDef = {
   type?: string;
@@ -59,12 +59,8 @@ export function getObjectLiteralValues(schema: z.ZodType, key: string): unknown[
 
 export function schemaAtPointer(schema: z.ZodType, pointer: Pointer, mode: "value" | "insert" = "value"): z.ZodType | null {
   let current: z.ZodType | null = schema;
-  let segments: string[];
-  try {
-    segments = parsePointer(pointer);
-  } catch {
-    return null;
-  }
+  const segments = tryParsePointer(pointer);
+  if (segments === null) return null;
 
   for (let i = 0; i < segments.length && current; i += 1) {
     const segment = segments[i];

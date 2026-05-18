@@ -6,7 +6,7 @@ import type * as z from "zod";
 import { cloneJson, jsonSerializableError } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { parsePointer, readAt } from "../core/pointer/index.js";
+import { readAt, tryParsePointer } from "../core/pointer/index.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 
 export interface CutOk<T> {
@@ -30,7 +30,7 @@ export function cut<S extends z.ZodType>(
   source: Pointer,
 ): CutOk<z.output<S>> | CutError {
   // 1) source 위치의 값을 payload 로 추출 (deep clone)
-  const segments = safeParsePointer(source);
+  const segments = tryParsePointer(source);
   if (segments === null) {
     return { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${source}` };
   }
@@ -53,12 +53,4 @@ export function cut<S extends z.ZodType>(
 
   // 3) atomic — payload + next + patch 동시 산출
   return { ok: true, next: r.draft, patch: [op], payload, source };
-}
-
-function safeParsePointer(pointer: Pointer): string[] | null {
-  try {
-    return parsePointer(pointer);
-  } catch {
-    return null;
-  }
 }

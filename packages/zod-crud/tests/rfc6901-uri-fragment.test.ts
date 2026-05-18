@@ -2,7 +2,7 @@
 // §6 의 4 개 예제 + edge case.
 
 import { describe, expect, test } from "vitest";
-import { buildPointer, parsePointer } from "../src/core/pointer/index.js";
+import { buildPointer, parsePointer, tryParsePointer } from "../src/core/pointer/index.js";
 
 describe("RFC 6901 §6 — URI fragment 형 Pointer", () => {
   // RFC 6901 §6 의 표준 예제 (§5 examples 가 fragment 형으로 인용됨)
@@ -62,5 +62,11 @@ describe("RFC 6901 §6 — URI fragment 형 Pointer", () => {
 
   test("잘못된 percent-encoding 은 PointerSyntaxError 로 거부", () => {
     expect(() => parsePointer("#/%E0%A4%A")).toThrow("Invalid JSON Pointer URI fragment encoding");
+  });
+
+  test("tryParsePointer 는 문법 오류를 null 로 반환", () => {
+    expect(tryParsePointer("#/%E0%A4%A")).toBeNull();
+    expect(tryParsePointer("foo")).toBeNull();
+    expect(tryParsePointer("#/foo")).toEqual(["foo"]);
   });
 });

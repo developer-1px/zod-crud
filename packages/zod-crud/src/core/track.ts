@@ -2,7 +2,7 @@
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 
-import { parsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer/index.js";
+import { parsePointer, tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer/index.js";
 import type { JSONPatchOperation } from "./patch/index.js";
 
 export function exists(state: unknown, pointer: Pointer): boolean {
@@ -111,14 +111,14 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
       return pointer;
 
     case "add": {
-      const at = safeParsePointer(op.path);
+      const at = tryParsePointer(op.path);
       if (at === null) return null;
       const shifted = shiftArraySibling(at, target, 1);
       return shifted ? buildPointer(shifted) : pointer;
     }
 
     case "remove": {
-      const at = safeParsePointer(op.path);
+      const at = tryParsePointer(op.path);
       if (at === null) return null;
       // 동일 또는 자손이면 drop
       if (isPrefix(at, target)) return null;
@@ -127,7 +127,7 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
     }
 
     case "replace": {
-      const at = safeParsePointer(op.path);
+      const at = tryParsePointer(op.path);
       if (at === null) return null;
       // 자손은 cascading drop (값이 통째로 교체됨)
       if (isPrefix(at, target) && at.length < target.length) return null;
@@ -136,8 +136,8 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
     }
 
     case "move": {
-      const from = safeParsePointer(op.from);
-      const to = safeParsePointer(op.path);
+      const from = tryParsePointer(op.from);
+      const to = tryParsePointer(op.path);
       if (from === null || to === null) return null;
       // from === target → to 로 이동
       if (from.length === target.length && isPrefix(from, target)) {
@@ -158,14 +158,6 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
       // copy 는 add 와 같은 영향 (target 위치에 새 노드)
       return trackOne(pointer, { op: "add", path: op.path, value: null });
     }
-  }
-}
-
-function safeParsePointer(pointer: Pointer): string[] | null {
-  try {
-    return parsePointer(pointer);
-  } catch {
-    return null;
   }
 }
 
