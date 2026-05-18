@@ -200,6 +200,25 @@ try {
   const typeScriptBin = existingTypeScriptBin();
   const reactPackage = existingReactPackage();
 
+  if (packResult.name !== packageJson.name) {
+    throw new Error(`Packed package name mismatch: ${packResult.name}`);
+  }
+  if (packResult.version !== packageJson.version) {
+    throw new Error(`Packed package version mismatch: ${packResult.version}`);
+  }
+  if (packResult.filename !== `${packageJson.name}-${packageJson.version}.tgz`) {
+    throw new Error(`Packed tarball filename mismatch: ${packResult.filename}`);
+  }
+  if (typeof packResult.integrity !== "string" || !packResult.integrity.startsWith("sha512-")) {
+    throw new Error(`Packed tarball must include sha512 integrity: ${packResult.integrity}`);
+  }
+  if (typeof packResult.size !== "number" || packResult.size <= 0) {
+    throw new Error(`Packed tarball must report a positive compressed size: ${packResult.size}`);
+  }
+  if (typeof packResult.unpackedSize !== "number" || packResult.unpackedSize <= packResult.size) {
+    throw new Error(`Packed tarball must report an unpacked size larger than compressed size: ${packResult.unpackedSize}`);
+  }
+
   if (!existsSync(tarball)) {
     throw new Error(`Packed tarball was not created: ${tarball}`);
   }
