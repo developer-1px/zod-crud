@@ -219,6 +219,31 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
+  test("README API table lists every public verb subpath", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));
+    const verbSubpaths = Object.keys((packageJson as { exports: Record<string, unknown> }).exports)
+      .filter((subpath) => subpath.startsWith("./verbs/"))
+      .map((subpath) => `zod-crud/${subpath.slice(2)}`)
+      .sort();
+
+    expect(verbSubpaths).toEqual([
+      "zod-crud/verbs/copy",
+      "zod-crud/verbs/cut",
+      "zod-crud/verbs/duplicate",
+      "zod-crud/verbs/find",
+      "zod-crud/verbs/move",
+      "zod-crud/verbs/paste",
+      "zod-crud/verbs/redo",
+      "zod-crud/verbs/replace",
+      "zod-crud/verbs/select",
+      "zod-crud/verbs/undo",
+    ]);
+    for (const subpath of verbSubpaths) {
+      expect(apiSection, `README API table missing verb subpath: ${subpath}`).toContain(`\`${subpath}\``);
+    }
+  });
+
   test("SPEC RFC 6902 conformance count matches vendored suite", () => {
     const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
     const cases = [...(tests as Array<{ disabled?: boolean }>), ...(specTests as Array<{ disabled?: boolean }>)];
