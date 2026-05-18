@@ -28,6 +28,7 @@ export interface PatchRequest {
  */
 export function buildPatchRequest(ops: ReadonlyArray<JSONPatchOperation>): PatchRequest {
   assertJsonSerializable(ops);
+  assertJsonPatchOperations(ops);
   return {
     method: "PATCH",
     headers: { "content-type": JSON_PATCH_MIME },
@@ -88,6 +89,13 @@ type PatchOpParseResult =
   | { ok: false; reason: string };
 
 const JSON_PATCH_OPS = new Set(["add", "remove", "replace", "move", "copy", "test"]);
+
+function assertJsonPatchOperations(ops: ReadonlyArray<JSONPatchOperation>): void {
+  for (let i = 0; i < ops.length; i++) {
+    const op = parseJsonPatchOperation(ops[i], i);
+    if (!op.ok) throw new TypeError(op.reason);
+  }
+}
 
 function parseJsonPatchOperation(value: unknown, index: number): PatchOpParseResult {
   const fail = (reason: string): PatchOpParseResult => ({ ok: false, reason: `json-patch op[${index}] ${reason}` });

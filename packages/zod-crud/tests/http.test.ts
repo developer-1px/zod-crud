@@ -28,6 +28,12 @@ describe("RFC 6902 over HTTP — request", () => {
     expect(() => buildPatchRequest([{ op: "add", path: "/a", value: undefined }])).toThrow(TypeError);
   });
 
+  test("buildPatchRequest 는 op shape 과 pointer 문법을 검증한다", () => {
+    expect(() => buildPatchRequest([{ op: "remove", path: "a" }])).toThrow(TypeError);
+    expect(() => buildPatchRequest([{ op: "add", path: "/a" } as never])).toThrow(TypeError);
+    expect(() => buildPatchRequest([{ op: "move", from: "a", path: "/b" }])).toThrow(TypeError);
+  });
+
   test("withIfMatch 가 RFC 5789 §2.4 conditional 헤더 추가", () => {
     const req = buildPatchRequest([]);
     const conditional = withIfMatch(req, '"abc123"');
