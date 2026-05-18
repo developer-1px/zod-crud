@@ -31,6 +31,26 @@ describe("core/schema/preFlight", () => {
     }
   });
 
+  test("violation paths are RFC 6901 escaped pointers", () => {
+    const EscapedKeySchema = z.object({
+      "a/b": z.object({
+        "c~d": z.number().min(0),
+      }),
+    });
+
+    const r = preFlight(EscapedKeySchema, { "a/b": { "c~d": 1 } }, [
+      { op: "replace", path: "/a~1b/c~0d", value: -1 },
+    ]);
+
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.violations).toContainEqual({
+        path: "/a~1b/c~0d",
+        message: expect.any(String),
+      });
+    }
+  });
+
   test("invalid path 는 err", () => {
     const r = preFlight(Schema, { count: 1, items: [] }, [
       { op: "replace", path: "/nonexistent", value: 0 },
@@ -52,6 +72,23 @@ describe("core/schema/validate", () => {
       expect(r.ok).toBe(true); // prod no-op
     } else {
       expect(r.ok).toBe(false);
+    }
+  });
+
+  test("dev assertion violation paths are RFC 6901 escaped pointers", () => {
+    const EscapedKeySchema = z.object({
+      "a/b": z.object({
+        "c~d": z.number().min(0),
+      }),
+    });
+
+    const r = validate(EscapedKeySchema, { "a/b": { "c~d": -1 } });
+
+    if (process.env.NODE_ENV === "production") {
+      expect(r.ok).toBe(true);
+    } else {
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.violations[0]?.path).toBe("/a~1b/c~0d");
     }
   });
 });

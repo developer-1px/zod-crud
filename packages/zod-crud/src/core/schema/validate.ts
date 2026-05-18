@@ -3,6 +3,7 @@
 // defensive guard. prod 빌드에서는 no-op.
 
 import type * as z from "zod";
+import { buildPointer } from "../pointer/index.js";
 
 declare const process: { env?: { NODE_ENV?: string } } | undefined;
 const isDev =
@@ -37,7 +38,7 @@ export function validate<S extends z.ZodType>(
     ok: false,
     message: "post-commit validate failed (dev assertion)",
     violations: parsed.error.issues.map((i) => ({
-      path: "/" + i.path.map(String).join("/"),
+      path: buildPointer(i.path.map(String)),
       message: i.message,
     })),
   };

@@ -8,6 +8,7 @@
 
 import * as z from "zod";
 import { applyPatch, type JSONPatchOperation, type ErrorCode } from "../patch/index.js";
+import { buildPointer } from "../pointer/index.js";
 
 export interface PreFlightOk<T> {
   ok: true;
@@ -60,7 +61,7 @@ function parseViolations(
     const issues = JSON.parse(result.reason);
     if (!Array.isArray(issues)) return [];
     return issues.map((i: { path?: unknown[]; message?: string }) => ({
-      path: "/" + (i.path ?? []).map(String).join("/"),
+      path: buildPointer((i.path ?? []).map(String)),
       message: i.message ?? "",
     }));
   } catch {
