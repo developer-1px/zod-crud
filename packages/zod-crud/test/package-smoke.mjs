@@ -105,6 +105,13 @@ function existingReactPackage() {
   ]);
 }
 
+function existingReactTypesPackage() {
+  return existingPath([
+    join(repoRoot, "node_modules", "@types", "react"),
+    join(repoRoot, "..", "..", "node_modules", "@types", "react"),
+  ]);
+}
+
 function existingPath(candidates) {
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
@@ -377,6 +384,7 @@ try {
   const zodPackage = existingZodPackage();
   const typeScriptBin = existingTypeScriptBin();
   const reactPackage = existingReactPackage();
+  const reactTypesPackage = existingReactTypesPackage();
 
   if (packResult.name !== packageJson.name) {
     throw new Error(`Packed package name mismatch: ${packResult.name}`);
@@ -567,6 +575,10 @@ try {
 
   if (reactPackage === null) {
     throw new Error("Local react dependency is missing. Run npm install first.");
+  }
+
+  if (reactTypesPackage === null) {
+    throw new Error("Local @types/react dependency is missing. Run npm install first.");
   }
 
   await writeFile(
@@ -794,6 +806,55 @@ try {
       'JSONCrudError satisfies typeof import("zod-crud").JSONCrudError;',
     ].join("\n"),
   );
+  await writeFile(
+    join(workspace, "readme-react-example.tsx"),
+    [
+      'import * as z from "zod";',
+      'import { useJSONDocument } from "zod-crud/react";',
+      '',
+      'const Schema = z.object({',
+      '  title: z.string(),',
+      '  tasks: z.array(z.object({ id: z.string(), done: z.boolean() })),',
+      '});',
+      '',
+      'export function App() {',
+      '  const doc = useJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });',
+      '',
+      '  return (',
+      '    <>',
+      '      <input',
+      '        value={doc.value.title}',
+      '        onChange={(e) => doc.ops.replace("/title", e.target.value)}',
+      '      />',
+      '      <button',
+      '        onClick={() =>',
+      '          doc.ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })',
+      '        }',
+      '      >',
+      '        add task',
+      '      </button>',
+      '      <button onClick={doc.commands.undo} disabled={!doc.can.undo}>',
+      '        undo',
+      '      </button>',
+      '      {doc.value.tasks.map((t, i) => (',
+      '        <div key={t.id}>',
+      '          <input',
+      '            type="checkbox"',
+      '            checked={t.done}',
+      '            onChange={(e) =>',
+      '              doc.ops.replace(`/tasks/${i}/done` as `/tasks/${number}/done`, e.target.checked)',
+      '            }',
+      '          />',
+      '          <button onClick={() => doc.ops.remove(`/tasks/${i}` as `/tasks/${number}`)}>',
+      '            remove',
+      '          </button>',
+      '        </div>',
+      '      ))}',
+      '    </>',
+      '  );',
+      '}',
+    ].join("\n"),
+  );
 
   await writeFile(
     join(workspace, "package.json"),
@@ -939,6 +1000,10 @@ try {
   if (!existsSync(join(workspace, "node_modules", "react"))) {
     await symlink(reactPackage, join(workspace, "node_modules", "react"), "dir");
   }
+  await mkdir(join(workspace, "node_modules", "@types"), { recursive: true });
+  if (!existsSync(join(workspace, "node_modules", "@types", "react"))) {
+    await symlink(reactTypesPackage, join(workspace, "node_modules", "@types", "react"), "dir");
+  }
 
   run("node", ["react-smoke.mjs"], workspace);
   run(
@@ -967,6 +1032,26 @@ try {
       "--target",
       "ES2022",
       "--module",
+      "NodeNext",
+      "--moduleResolution",
+      "NodeNext",
+      "--jsx",
+      "react-jsx",
+      "--strict",
+      "--exactOptionalPropertyTypes",
+      "--noUncheckedIndexedAccess",
+      "readme-react-example.tsx",
+    ],
+    workspace,
+  );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--target",
+      "ES2022",
+      "--module",
       "ESNext",
       "--moduleResolution",
       "Bundler",
@@ -974,6 +1059,26 @@ try {
       "--exactOptionalPropertyTypes",
       "--noUncheckedIndexedAccess",
       "react-smoke.ts",
+    ],
+    workspace,
+  );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--target",
+      "ES2022",
+      "--module",
+      "ESNext",
+      "--moduleResolution",
+      "Bundler",
+      "--jsx",
+      "react-jsx",
+      "--strict",
+      "--exactOptionalPropertyTypes",
+      "--noUncheckedIndexedAccess",
+      "readme-react-example.tsx",
     ],
     workspace,
   );
