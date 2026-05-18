@@ -18,6 +18,10 @@ describe("package exports", () => {
       expect(target.development, `${subpath} missing development condition`).toBeTruthy();
       expect(target.import, `${subpath} missing import condition`).toBeTruthy();
       expect(target.types, `${subpath} missing types condition`).toBeTruthy();
+      expect(
+        Object.keys(target)[0],
+        `${subpath} must list the types condition first for TypeScript resolver stability`,
+      ).toBe("types");
 
       expect(
         existsSync(resolve(root, target.development!.replace(/^\.\//, ""))),
