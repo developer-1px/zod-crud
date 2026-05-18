@@ -35,6 +35,12 @@ describe("verbs/copy", () => {
     expect(r.ok).toBe(false);
   });
 
+  test("non-JSON source 는 payload 손실 없이 거부", () => {
+    const r = copy({ item: { id: "a", dropped: undefined } }, "/item");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("not_serializable");
+  });
+
   test("schema field order 로 TSV clipboard representation 생성", () => {
     const payload = [
       { name: "A", id: "a" },
@@ -56,6 +62,10 @@ describe("verbs/copy", () => {
     expect(items["text/html"]).toBe("<table></table>");
   });
 
+  test("clipboard item map rejects non-JSON payloads", () => {
+    expect(() => toClipboardItems({ id: "a", dropped: undefined }, Schema.shape.items)).toThrow(TypeError);
+  });
+
   test("markdown table helper 도 schema field order 를 따른다", () => {
     expect(toMarkdown([{ name: "A", id: "a" }], Schema.shape.items)).toBe("| id | name |\n| --- | --- |\n| a | A |");
   });
@@ -75,6 +85,15 @@ describe("verbs/cut", () => {
     const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
     const r = cut(NonEmpty, { items: ["a", "b"] }, "/items/0");
     expect(r.ok).toBe(false); // 1개 남으면 min(2) 위반
+  });
+
+  test("non-JSON payload 는 cut 전에 거부", () => {
+    const Loose = z.object({ items: z.array(z.any()) });
+    const state = { items: [{ id: "a", dropped: undefined }] };
+    const r = cut(Loose, state, "/items/0");
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("not_serializable");
+    expect(state.items).toHaveLength(1);
   });
 });
 
@@ -132,6 +151,14 @@ describe("verbs/paste", () => {
     if (!r.ok) return;
     expect(r.next.items[2]).toEqual({ id: "a-copy", name: "A copy" });
     expect(r.patch).toEqual([{ op: "add", path: "/items/-", value: { id: "a-copy", name: "A copy" } }]);
+  });
+
+  test("rekey refuses non-JSON payloads before cloning can drop fields", () => {
+    expect(() =>
+      paste(Schema, initial, { id: "a", name: "A copy", dropped: undefined }, "/items/-", "into", {
+        rekey: { fields: ["id"], strategy: "suffix" },
+      }),
+    ).toThrow(TypeError);
   });
 });
 

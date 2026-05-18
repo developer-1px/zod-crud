@@ -3,7 +3,9 @@
 // system clipboard write 는 hooks 또는 사용자 코드에서 수행 (boundary: ADR-0002 §0.4).
 
 import type { Pointer } from "../core/pointer/index.js";
+import { cloneJson, jsonSerializableError } from "../core/json.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
+import { serialize } from "../core/pointer/serialize.js";
 import { getArrayElement, getObjectKeys } from "../core/schema/introspection.js";
 import type * as z from "zod";
 
@@ -16,7 +18,7 @@ export interface CopyOk {
 
 export interface CopyError {
   ok: false;
-  code: "path_not_found";
+  code: "path_not_found" | "not_serializable";
   message: string;
 }
 
@@ -41,8 +43,12 @@ export function copy(state: unknown, source: Pointer): CopyResult {
   if (!r.ok) {
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
   }
+  const jsonErr = jsonSerializableError(r.value);
+  if (jsonErr) {
+    return { ok: false, code: "not_serializable", message: jsonErr };
+  }
   // deep clone via JSON round-trip — payload 가 외부 round-trip 후에도 정합한지 보장.
-  return { ok: true, payload: JSON.parse(JSON.stringify(r.value)), source };
+  return { ok: true, payload: cloneJson(r.value), source };
 }
 
 export function toClipboardItems(payload: unknown, schema: z.ZodType, options: ClipboardItemOptions = {}): ClipboardItemMap {
@@ -50,12 +56,12 @@ export function toClipboardItems(payload: unknown, schema: z.ZodType, options: C
   const items: ClipboardItemMap = {};
   const tsv = options.tsv ? toTsv(payload, schema) : null;
 
-  if (includeJson) items["application/json"] = JSON.stringify(payload);
+  if (includeJson) items["application/json"] = serialize(payload);
   if (tsv !== null) items["text/tab-separated-values"] = tsv;
   const markdown = options.markdown ? toMarkdown(payload, schema) : null;
   if (markdown !== null) items["text/markdown"] = markdown;
   if (options.html) items["text/html"] = typeof options.html === "function" ? options.html(payload) : options.html;
-  items["text/plain"] = tsv ?? markdown ?? JSON.stringify(payload);
+  items["text/plain"] = tsv ?? markdown ?? serialize(payload);
 
   return items;
 }
@@ -74,7 +80,7 @@ export function toTsv(payload: unknown, schema: z.ZodType): string | null {
 
 export function toMarkdown(payload: unknown, schema: z.ZodType): string {
   const rows = normalizeRows(payload);
-  if (!rows) return `\`\`\`json\n${JSON.stringify(payload, null, 2)}\n\`\`\``;
+  if (!rows) return `\`\`\`json\n${JSON.stringify(JSON.parse(serialize(payload)), null, 2)}\n\`\`\``;
 
   const columns = getColumns(schema, rows);
   if (columns.length === 0) return "";
@@ -100,7 +106,7 @@ function getColumns(schema: z.ZodType, rows: Array<Record<string, unknown>>): st
 
 function formatTsvCell(value: unknown): string {
   if (value === null || value === undefined) return "";
-  const text = typeof value === "object" ? JSON.stringify(value) : String(value);
+  const text = typeof value === "object" ? serialize(value) : String(value);
   return text.replace(/\r?\n/g, " ");
 }
 

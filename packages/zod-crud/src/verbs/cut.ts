@@ -3,6 +3,7 @@
 // payload + remove 가 atomic. preFlight 거부 시 둘 다 안 일어남 — history 오염 0.
 
 import type * as z from "zod";
+import { cloneJson, jsonSerializableError } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
@@ -34,7 +35,11 @@ export function cut<S extends z.ZodType>(
   if (!v.ok) {
     return { ok: false, code: "path_not_found", message: `cut source not found: ${source}` };
   }
-  const payload = JSON.parse(JSON.stringify(v.value));
+  const jsonErr = jsonSerializableError(v.value);
+  if (jsonErr) {
+    return { ok: false, code: "not_serializable", message: jsonErr };
+  }
+  const payload = cloneJson(v.value);
 
   // 2) RFC 6902 remove patch 를 preFlight gate 통과시킨다
   const op: JSONPatchOperation = { op: "remove", path: source };

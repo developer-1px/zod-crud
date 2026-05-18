@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
 import type { JSONResult } from "../core/patch/index.js";
+import { cloneJson } from "../core/json.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
 import type { PointerOf, ValueAt } from "../core/pointer/types.js";
@@ -204,7 +205,7 @@ function readPointer(value: unknown, pointer: Pointer): unknown {
 }
 
 function deepClone<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+  return cloneJson(value);
 }
 
 function jsonEqual(a: unknown, b: unknown): boolean {

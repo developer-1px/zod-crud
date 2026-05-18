@@ -3,6 +3,7 @@
 // hooks/useJSONDocument 가 selection 을 자동 주입 (ADR-0002 §0.5).
 
 import type * as z from "zod";
+import { cloneJson } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
@@ -205,7 +206,7 @@ function walk(value: unknown, visit: (value: unknown) => void): void {
 }
 
 function deepClone(value: unknown): unknown {
-  return JSON.parse(JSON.stringify(value));
+  return cloneJson(value);
 }
 
 function isScalar(value: unknown): value is string | number | boolean {

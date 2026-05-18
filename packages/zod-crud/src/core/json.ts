@@ -48,3 +48,8 @@ export function assertJsonSerializable(value: unknown): void {
   const reason = jsonSerializableError(value);
   if (reason !== null) throw new TypeError(`Value is not JSON-serializable: ${reason}`);
 }
+
+export function cloneJson<T>(value: T): T {
+  assertJsonSerializable(value);
+  return JSON.parse(JSON.stringify(value)) as T;
+}
