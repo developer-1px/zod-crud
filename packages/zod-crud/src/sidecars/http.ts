@@ -138,6 +138,8 @@ function validatePointerSyntax(pointer: string): string | null {
  */
 export function parseMergePatch(patch: unknown, basePath: string): JSONPatchOperation[] {
   assertJsonSerializable(patch);
+  const basePathError = validatePointerSyntax(basePath);
+  if (basePathError) throw new TypeError(`basePath must be a JSON Pointer: ${basePathError}`);
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
     return [{ op: "replace", path: basePath, value: patch }];
   }

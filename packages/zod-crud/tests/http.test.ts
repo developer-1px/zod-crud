@@ -166,6 +166,13 @@ describe("RFC 7396 — merge-patch → 6902 변환", () => {
     ]);
   });
 
+  test("basePath 는 JSON Pointer 문법이어야 한다", () => {
+    expect(parseMergePatch({ title: "next" }, "/doc")).toEqual([
+      { op: "add", path: "/doc/title", value: "next" },
+    ]);
+    expect(() => parseMergePatch({ title: "next" }, "doc")).toThrow(TypeError);
+  });
+
   test("직접 호출도 비JSON merge patch 를 거부", () => {
     expect(() => parseMergePatch({ a: undefined }, "")).toThrow(TypeError);
     expect(() => applyMergePatch({ a: undefined }, { b: 1 })).toThrow(TypeError);
