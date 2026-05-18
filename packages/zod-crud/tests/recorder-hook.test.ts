@@ -79,6 +79,33 @@ describe("useRecorder", () => {
     expect(second?.steps).toHaveLength(1);
     expect(second?.steps[0]?.ops[0]).toEqual({ op: "replace", path: "/nested/count", value: 3 });
   });
+
+  test("recording 중 clear 는 steps 를 비우고 현재 state 를 새 initial snapshot 으로 삼는다", () => {
+    const hook = renderHook(() => useHarness());
+
+    act(() => {
+      hook.current.recorder.start();
+    });
+    act(() => {
+      hook.current.doc.ops.replace("/nested/count", 1);
+    });
+    act(() => {
+      hook.current.recorder.clear();
+    });
+    hook.current.doc.value.nested.count = 7;
+    act(() => {
+      hook.current.doc.ops.replace("/nested/count", 2);
+    });
+
+    let recording: ReturnType<typeof hook.current.recorder.stop> | undefined;
+    act(() => {
+      recording = hook.current.recorder.stop();
+    });
+
+    expect(recording?.initial).toEqual({ nested: { count: 1 } });
+    expect(recording?.steps).toHaveLength(1);
+    expect(recording?.steps[0]?.ops[0]).toEqual({ op: "replace", path: "/nested/count", value: 2 });
+  });
 });
 
 function useHarness() {
