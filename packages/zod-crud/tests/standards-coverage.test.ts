@@ -2,7 +2,7 @@
 // STANDARDS.md 의 표 ↔ src/core/ 디렉터리 일치 확인.
 import { describe, expect, test } from "vitest";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { resolve } from "node:path";
+import { posix, resolve } from "node:path";
 import packageJson from "../package.json" with { type: "json" };
 import tests from "./conformance/tests.json" with { type: "json" };
 import specTests from "./conformance/spec_tests.json" with { type: "json" };
@@ -253,17 +253,21 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(spec).toContain(`그중 ${disabled} 케이스는 suite 자체에서 disabled`);
   });
 
-  test("README package-local links resolve inside published files", () => {
-    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+  test("published Markdown package-local links resolve inside published files", () => {
     const publishedFiles = new Set((packageJson as { files: string[] }).files);
-    const links = Array.from(readme.matchAll(/\[[^\]]+\]\((\.\/[^)#]+)(?:#[^)]+)?\)/g), (match) => {
-      const link = match[1];
-      if (link === undefined) throw new Error("README package-local link capture failed");
-      return link.slice(2);
-    });
+    const markdownFiles = [...publishedFiles].filter((file) => file.endsWith(".md"));
 
-    for (const link of links) {
-      expect(publishedFiles, `README link must resolve in npm package files: ${link}`).toContain(link);
+    for (const file of markdownFiles) {
+      const source = readFileSync(resolve(root, file), "utf8");
+      const links = Array.from(source.matchAll(/\[[^\]]+\]\((\.\/[^)#]+)(?:#[^)]+)?\)/g), (match) => {
+        const link = match[1];
+        if (link === undefined) throw new Error(`${file} package-local link capture failed`);
+        return posix.normalize(posix.join(posix.dirname(file), link));
+      });
+
+      for (const link of links) {
+        expect(publishedFiles, `${file} link must resolve in npm package files: ${link}`).toContain(link);
+      }
     }
   });
 
