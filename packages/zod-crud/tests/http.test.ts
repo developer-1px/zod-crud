@@ -66,6 +66,17 @@ describe("RFC 6902 over HTTP — response (json-patch)", () => {
     });
   });
 
+  test("path 와 from 은 JSON Pointer 문법이어야 한다", () => {
+    expect(parsePatchResponse(JSON.stringify([{ op: "remove", path: "a" }]), JSON_PATCH_MIME)).toEqual({
+      ok: false,
+      reason: "json-patch op[0] invalid 'path': JSON Pointer must be empty or start with '/': \"a\"",
+    });
+    expect(parsePatchResponse(JSON.stringify([{ op: "move", from: "a", path: "/b" }]), JSON_PATCH_MIME)).toEqual({
+      ok: false,
+      reason: "json-patch op[0] invalid 'from': JSON Pointer must be empty or start with '/': \"a\"",
+    });
+  });
+
   test("invalid JSON body 거부", () => {
     const r = parsePatchResponse("not json", JSON_PATCH_MIME);
     expect(r.ok).toBe(false);

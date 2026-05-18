@@ -10,6 +10,7 @@
 // 사용자가 client 를 가지고 와서 wiring 한다.
 
 import type { JSONPatchOperation } from "../core/patch/index.js";
+import { parsePointer } from "../core/pointer/index.js";
 
 export const JSON_PATCH_MIME = "application/json-patch+json";    // RFC 6902 §6
 export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
@@ -94,6 +95,8 @@ function parseJsonPatchOperation(value: unknown, index: number): PatchOpParseRes
   const opName = op.op;
   if (typeof opName !== "string" || !JSON_PATCH_OPS.has(opName)) return fail(`has unrecognized op: ${String(opName)}`);
   if (typeof op.path !== "string") return fail("missing 'path'");
+  const pathError = validatePointerSyntax(op.path);
+  if (pathError) return fail(`invalid 'path': ${pathError}`);
 
   if ((opName === "add" || opName === "replace" || opName === "test") && !("value" in op)) {
     return fail(`missing 'value' for op '${opName}'`);
@@ -101,8 +104,21 @@ function parseJsonPatchOperation(value: unknown, index: number): PatchOpParseRes
   if ((opName === "move" || opName === "copy") && typeof op.from !== "string") {
     return fail(`missing 'from' for op '${opName}'`);
   }
+  if ((opName === "move" || opName === "copy") && typeof op.from === "string") {
+    const fromError = validatePointerSyntax(op.from);
+    if (fromError) return fail(`invalid 'from': ${fromError}`);
+  }
 
   return { ok: true, operation: op as JSONPatchOperation };
+}
+
+function validatePointerSyntax(pointer: string): string | null {
+  try {
+    parsePointer(pointer);
+    return null;
+  } catch (error) {
+    return error instanceof Error ? error.message : String(error);
+  }
 }
 
 /**
