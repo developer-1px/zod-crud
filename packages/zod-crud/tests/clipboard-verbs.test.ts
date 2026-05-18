@@ -1,5 +1,5 @@
 // P5 — Clipboard verbs 단위 테스트.
-import { describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
 import { copy, toClipboardItems, toMarkdown, toTsv } from "../src/verbs/copy.js";
@@ -19,6 +19,10 @@ const initial = {
   ],
   meta: { foo: "bar" },
 };
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("verbs/copy", () => {
   test("source 값을 deep-cloned payload 로 추출 + state 불변", () => {
@@ -159,6 +163,34 @@ describe("verbs/paste", () => {
         rekey: { fields: ["id"], strategy: "suffix" },
       }),
     ).toThrow(TypeError);
+  });
+
+  test("uuid rekey uses crypto.getRandomValues fallback without Math.random", () => {
+    vi.stubGlobal("crypto", {
+      getRandomValues: (bytes: Uint8Array) => {
+        bytes.fill(0x11);
+        return bytes;
+      },
+    });
+    const mathRandom = vi.spyOn(Math, "random");
+
+    const r = paste(Schema, initial, { id: "a", name: "A copy" }, "/items/-", "into", {
+      rekey: { fields: ["id"], strategy: "uuid" },
+    });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.next.items[2]).toEqual({ id: "11111111-1111-4111-9111-111111111111", name: "A copy" });
+    expect(mathRandom).not.toHaveBeenCalled();
+  });
+
+  test("uuid rekey fails explicitly when Web Crypto is unavailable", () => {
+    vi.stubGlobal("crypto", undefined);
+    expect(() =>
+      paste(Schema, initial, { id: "a", name: "A copy" }, "/items/-", "into", {
+        rekey: { fields: ["id"], strategy: "uuid" },
+      }),
+    ).toThrow("crypto.getRandomValues is required");
   });
 });
 
