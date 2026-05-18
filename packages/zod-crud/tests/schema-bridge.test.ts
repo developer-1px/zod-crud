@@ -61,12 +61,12 @@ describe("zod → JSON Schema (draft-2020-12)", () => {
 
 describe("JSON Schema → zod", () => {
   test("기본 object 변환 후 parse 동작", () => {
-    const js = {
+    const js: Parameters<typeof fromJSONSchema>[0] = {
       $schema: "https://json-schema.org/draft/2020-12/schema",
       type: "object",
       properties: { name: { type: "string" }, age: { type: "number" } },
       required: ["name", "age"],
-    } as const;
+    };
     const S = fromJSONSchema(js);
     expect(S.safeParse({ name: "alice", age: 30 }).success).toBe(true);
     expect(S.safeParse({ name: "alice" }).success).toBe(false); // age missing
@@ -74,11 +74,11 @@ describe("JSON Schema → zod", () => {
   });
 
   test("min/max constraint 보존", () => {
-    const js = {
+    const js: Parameters<typeof fromJSONSchema>[0] = {
       type: "object",
       properties: { name: { type: "string", minLength: 1, maxLength: 80 } },
       required: ["name"],
-    } as const;
+    };
     const S = fromJSONSchema(js);
     expect(S.safeParse({ name: "x" }).success).toBe(true);
     expect(S.safeParse({ name: "" }).success).toBe(false);

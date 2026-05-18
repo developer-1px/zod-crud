@@ -28,6 +28,7 @@
     "tests/recorder.test.ts",
     "tests/rfc6901-uri-fragment.test.ts",
     "tests/rfc6902-conformance.test.ts",
+    "tests/schema-bridge.test.ts",
     "tests/schema-gate.test.ts",
     "tests/standards-coverage.test.ts",
     "tests/verbs.test.ts",
