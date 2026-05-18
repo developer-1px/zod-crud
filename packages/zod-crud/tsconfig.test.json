@@ -19,6 +19,7 @@
     "test/**/*.ts",
     "tests/**/*.test-d.ts",
     "tests/clipboard-verbs.test.ts",
+    "tests/debug-log.test.ts",
     "tests/document-ops-restore.test.ts",
     "tests/facade-verbs.test.ts",
     "tests/http.test.ts",

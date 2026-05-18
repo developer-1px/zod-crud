@@ -7,6 +7,10 @@ import { z } from "zod";
 import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
 import { useDebugLog } from "../src/sidecars/debug-log.js";
 
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const Schema = z.object({
