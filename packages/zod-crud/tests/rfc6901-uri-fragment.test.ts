@@ -59,4 +59,8 @@ describe("RFC 6901 §6 — URI fragment 형 Pointer", () => {
   test("올바르지 않은 fragment 형식 거부", () => {
     expect(() => parsePointer("#foo")).toThrow();
   });
+
+  test("잘못된 percent-encoding 은 PointerSyntaxError 로 거부", () => {
+    expect(() => parsePointer("#/%E0%A4%A")).toThrow("Invalid JSON Pointer URI fragment encoding");
+  });
 });

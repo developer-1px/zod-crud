@@ -32,7 +32,15 @@ export function parsePointer(pointer: Pointer): string[] {
     if (pointer[1] !== "/") {
       throw new PointerSyntaxError(`JSON Pointer URI fragment must be '#' or start with '#/': ${JSON.stringify(pointer)}`);
     }
-    return decodeURIComponent(pointer.slice(2)).split("/").map(unescapeSegment);
+    try {
+      return decodeURIComponent(pointer.slice(2)).split("/").map(unescapeSegment);
+    } catch (error) {
+      throw new PointerSyntaxError(
+        error instanceof Error
+          ? `Invalid JSON Pointer URI fragment encoding: ${error.message}`
+          : "Invalid JSON Pointer URI fragment encoding",
+      );
+    }
   }
   if (pointer[0] !== "/") {
     throw new PointerSyntaxError(`JSON Pointer must be empty or start with '/': ${JSON.stringify(pointer)}`);

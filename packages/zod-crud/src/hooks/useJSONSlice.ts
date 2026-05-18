@@ -17,8 +17,15 @@ export function useJSONSlice<T, P extends string>(
   ops: JSONOps<T>,
   path: P,
 ): ValueAt<T, P> | undefined {
-  const segments = useMemo(() => parsePointer(path as Pointer), [path]);
+  const segments = useMemo(() => {
+    try {
+      return parsePointer(path as Pointer);
+    } catch {
+      return null;
+    }
+  }, [path]);
   const getSnapshot = useCallback((): ValueAt<T, P> | undefined => {
+    if (segments === null) return undefined;
     const r = readAt(ops.state, segments);
     return r.ok ? (r.value as ValueAt<T, P>) : undefined;
   }, [ops, segments]);
