@@ -182,6 +182,13 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useRecorder`, `RecorderApi<T>` from `zod-crud/react` | React recording hook (SPEC §5) |
 | `useDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
+| `computeInverses` | RFC 6902 inverse helper |
+| `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
+| `ClipboardItemMap`, `ClipboardItemOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `SelectionAction`, `SelectionSnap`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
+| `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
+| `EMPTY_SELECTION`, `SelectionMode`, `SelectionType` | selection primitives |
+| `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
+| `JSONLoadOptions`, `UseJSONOptions` | low-level ops options |
 
 ## Guarantees
 
