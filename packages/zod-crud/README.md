@@ -165,7 +165,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
 | `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
+| `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
+| `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |

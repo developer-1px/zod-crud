@@ -131,6 +131,33 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
+  test("README API table lists React entrypoint hook exports", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const reactSource = readFileSync(resolve(root, "src/react.ts"), "utf8");
+    const hooks = Array.from(
+      reactSource.matchAll(/^export \{ ([^}]+) \} from "\.\/hooks\//gm),
+      (match) => {
+        const exports = match[1];
+        if (exports === undefined) throw new Error("React hook export capture failed");
+        return exports.split(",").map((name) => name.trim());
+      },
+    ).flat().sort();
+
+    expect(hooks).toEqual([
+      "useDraft",
+      "useField",
+      "useJSON",
+      "useJSONDocument",
+      "useJSONSlice",
+      "useSelection",
+    ]);
+
+    const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));
+    for (const hook of hooks) {
+      expect(apiSection, `README API table missing React hook export: ${hook}`).toContain(`\`${hook}`);
+    }
+  });
+
   test("SPEC RFC 6902 conformance count matches vendored suite", () => {
     const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
     const cases = [...(tests as Array<{ disabled?: boolean }>), ...(specTests as Array<{ disabled?: boolean }>)];
