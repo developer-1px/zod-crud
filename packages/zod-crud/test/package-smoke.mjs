@@ -23,6 +23,8 @@ const rootPublicExports = publicExports(rootSource);
 const reactPublicExports = publicExports(reactSource);
 const rootTypeExports = rootPublicExports.filter((name) => !rootValueExports.includes(name));
 const reactTypeExports = reactPublicExports.filter((name) => !reactValueExports.includes(name));
+const rootTypeOnlyExports = typeOnlyExports(rootSource);
+const reactTypeOnlyExports = typeOnlyExports(reactSource);
 
 function run(command, args, cwd) {
   try {
@@ -138,6 +140,27 @@ function publicExports(source) {
       const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
       if (exportedName === undefined) {
         throw new Error(`Export name capture failed: ${part}`);
+      }
+      names.push(exportedName);
+    }
+  }
+
+  return [...new Set(names)].sort();
+}
+
+function typeOnlyExports(source) {
+  const names = [];
+  for (const match of source.matchAll(/^export type \{([\s\S]*?)\} from/gm)) {
+    const block = match[1];
+    if (block === undefined) {
+      throw new Error("Type export block capture failed");
+    }
+    for (const rawPart of block.split(",")) {
+      const part = rawPart.replace(/\/\/.*$/gm, "").trim();
+      if (part.length === 0) continue;
+      const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
+      if (exportedName === undefined) {
+        throw new Error(`Type export name capture failed: ${part}`);
       }
       names.push(exportedName);
     }
@@ -487,8 +510,12 @@ try {
       'import { applyOperation, applyPatch, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, replace, buildPatchRequest, parsePatchResponse, withIfMatch, parseMergePatch, applyMergePatch, JSON_PATCH_MIME, MERGE_PATCH_MIME, toJSONSchema, fromJSONSchema } from "zod-crud";',
       'import { move } from "zod-crud/verbs/move";',
       `const expectedRootValueExports = ${JSON.stringify(rootValueExports)};`,
+      `const expectedRootTypeOnlyExports = ${JSON.stringify(rootTypeOnlyExports)};`,
       'for (const name of expectedRootValueExports) {',
       '  if (!(name in zc)) throw new Error(`${name} root runtime export missing`);',
+      '}',
+      'for (const name of expectedRootTypeOnlyExports) {',
+      '  if (name in zc) throw new Error(`${name} type-only root export leaked at runtime`);',
       '}',
       'const schema = z.object({ name: z.string(), tags: z.array(z.string()) });',
       'const initial = { name: "ok", tags: [] };',
@@ -624,8 +651,12 @@ try {
       'import { useJSONDocument, useJSON, useSelection, useJSONSlice, useDraft, useField, useRecorder, replayRecording, useDebugLog } from "zod-crud/react";',
       'import { JSONCrudError } from "zod-crud/react";',
       `const expectedReactValueExports = ${JSON.stringify(reactValueExports)};`,
+      `const expectedReactTypeOnlyExports = ${JSON.stringify(reactTypeOnlyExports)};`,
       'for (const name of expectedReactValueExports) {',
       '  if (!(name in zcr)) throw new Error(`${name} react runtime export missing`);',
+      '}',
+      'for (const name of expectedReactTypeOnlyExports) {',
+      '  if (name in zcr) throw new Error(`${name} type-only react export leaked at runtime`);',
       '}',
       'if (typeof useJSONDocument !== "function") throw new Error("useJSONDocument export failed");',
       'if (typeof useJSON !== "function") throw new Error("useJSON export failed");',
