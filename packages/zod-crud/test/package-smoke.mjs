@@ -110,6 +110,15 @@ try {
       `Verb exports must match src/verbs/*.ts. exports=${exportedVerbs.join(",")} source=${verbNames.join(",")}`,
     );
   }
+  const verbImportLines = exportedVerbs.map((name) => {
+    if (name === "paste") {
+      return 'import { paste, type RekeyOptions, type RekeyResult } from "zod-crud/verbs/paste";';
+    }
+    return `import { ${name} } from "zod-crud/verbs/${name}";`;
+  });
+  const verbFunctionChecks = exportedVerbs.map((name) => `${name} satisfies Function;`);
+  const verbRuntimeImportLines = exportedVerbs.map((name) => `import { ${name} } from "zod-crud/verbs/${name}";`);
+  const verbRuntimeEntries = exportedVerbs.map((name) => `${name}`).join(", ");
 
   if (zodPackage === null) {
     throw new Error("Local zod dependency is missing. Run npm install first.");
@@ -154,26 +163,8 @@ try {
   await writeFile(
     join(workspace, "verbs-subpath-smoke.ts"),
     [
-      'import { copy } from "zod-crud/verbs/copy";',
-      'import { cut } from "zod-crud/verbs/cut";',
-      'import { duplicate } from "zod-crud/verbs/duplicate";',
-      'import { find } from "zod-crud/verbs/find";',
-      'import { move } from "zod-crud/verbs/move";',
-      'import { paste, type RekeyOptions, type RekeyResult } from "zod-crud/verbs/paste";',
-      'import { redo } from "zod-crud/verbs/redo";',
-      'import { replace } from "zod-crud/verbs/replace";',
-      'import { select } from "zod-crud/verbs/select";',
-      'import { undo } from "zod-crud/verbs/undo";',
-      'copy satisfies Function;',
-      'cut satisfies Function;',
-      'duplicate satisfies Function;',
-      'find satisfies Function;',
-      'move satisfies Function;',
-      'paste satisfies Function;',
-      'redo satisfies Function;',
-      'replace satisfies Function;',
-      'select satisfies Function;',
-      'undo satisfies Function;',
+      ...verbImportLines,
+      ...verbFunctionChecks,
       'const options: RekeyOptions = { fields: ["id"], strategy: "suffix" };',
       'options.fields satisfies string[];',
       'type RekeyFailure = Extract<RekeyResult, { ok: false }>;',
@@ -184,17 +175,8 @@ try {
   await writeFile(
     join(workspace, "verbs-subpath-smoke.mjs"),
     [
-      'import { copy } from "zod-crud/verbs/copy";',
-      'import { cut } from "zod-crud/verbs/cut";',
-      'import { duplicate } from "zod-crud/verbs/duplicate";',
-      'import { find } from "zod-crud/verbs/find";',
-      'import { move } from "zod-crud/verbs/move";',
-      'import { paste } from "zod-crud/verbs/paste";',
-      'import { redo } from "zod-crud/verbs/redo";',
-      'import { replace } from "zod-crud/verbs/replace";',
-      'import { select } from "zod-crud/verbs/select";',
-      'import { undo } from "zod-crud/verbs/undo";',
-      'const exports = { copy, cut, duplicate, find, move, paste, redo, replace, select, undo };',
+      ...verbRuntimeImportLines,
+      `const exports = { ${verbRuntimeEntries} };`,
       'for (const [name, value] of Object.entries(exports)) {',
       '  if (typeof value !== "function") throw new Error(`${name} subpath export failed`);',
       '}',
