@@ -27,6 +27,12 @@ describe("serialize / parse", () => {
     const r = safeParse(Schema, JSON.stringify({ title: "x", tasks: [] }));
     expect(r.ok).toBe(true);
   });
+
+  it("rejects non-JSON values instead of silently dropping data", () => {
+    expect(() => serialize({ ok: true, lost: undefined })).toThrow(TypeError);
+    expect(() => serialize(new Date("2026-05-18T00:00:00.000Z"))).toThrow(TypeError);
+    expect(() => serialize(Number.NaN)).toThrow(TypeError);
+  });
 });
 
 describe("G1 — JSON-only state after operations", () => {

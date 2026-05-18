@@ -1,6 +1,7 @@
 // applyOpRaw — RFC 6902 6 op 의 raw 적용 (schema 검증 없음). public 노출은 patch.ts.
 
 import { isPrefix, type Pointer } from "../pointer/index.js";
+import { jsonSerializableError } from "../json.js";
 import type { ErrorCode, JSONPatchOperation } from "./index.js";
 import {
   attachPointer,
@@ -30,9 +31,17 @@ function validateShape(op: JSONPatchOperation): { error: ErrorCode; reason: stri
   return null;
 }
 
+function validateSerializableOpValue(op: JSONPatchOperation): { error: ErrorCode; reason: string } | null {
+  if (op.op !== "add" && op.op !== "replace" && op.op !== "test") return null;
+  const reason = jsonSerializableError(op.value);
+  return reason === null ? null : { error: "not_serializable", reason };
+}
+
 export function applyOpRaw(state: unknown, op: JSONPatchOperation): RawResult {
   const shape = validateShape(op);
   if (shape) return shape;
+  const serializable = validateSerializableOpValue(op);
+  if (serializable) return serializable;
 
   const parsed = parseSafe(op.path);
   if ("error" in parsed) return parsed;

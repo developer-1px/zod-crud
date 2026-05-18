@@ -19,7 +19,7 @@ derived substrate (다른 RFC 위에 얹힌 것 — 예: history = RFC 6902 inve
 | **RFC 6901** — JSON Pointer | path 표현 (단일·정확) | `core/pointer/` | 절대 | 없음 |
 | **RFC 6902** — JSON Patch | 변경 표현 (6 op) | `core/patch/` | 절대 | 없음 |
 | **RFC 9535** — JSONPath | path 표현 (query·다중) | `core/jsonpath/` | 절대 | 없음 (자체 구현) |
-| **RFC 8259** — JSON | fragment 직렬화 | (`JSON.stringify` ECMAScript built-in) | 절대 | 없음 |
+| **RFC 8259** — JSON | JSON 값 경계 + 직렬화 | `core/json.ts` + `JSON.stringify` ECMAScript built-in | 절대 | 없음 |
 | **W3C Selection API** | selection 좌표 어휘 | `core/selection/` | 절대 | 없음 |
 | **WAI-ARIA APG** — Listbox / Tree / Grid / TreeGrid | selection mode · `aria-selected` 의미 | `core/selection/` (어휘만 차용) | 절대 | 없음 |
 | **RFC 8927 / draft-bhutton** — JSON Schema | schema 외부 다리 | `core/schema/` | 절대 | Zod |
@@ -37,6 +37,7 @@ core/
 ├── jsonpath/     RFC 9535     (Phase 6 신설)
 ├── selection/    W3C Selection + WAI-ARIA
 ├── schema/       RFC 8927 + Zod
+├── json.ts       RFC 8259 JSON 값 경계
 ├── history.ts    RFC 6902 inverse + history stack    (pure reducer, single-concept)
 └── track.ts      RFC 6902 op 적용 후 Pointer follow (인프라)
 ```

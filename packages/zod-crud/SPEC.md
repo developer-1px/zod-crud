@@ -247,15 +247,13 @@ type State<S extends z.ZodType> = z.output<S>;
 
 `JsonDoc`/`NodeId`/`nodes by id` 등 내부 표현은 **외부 노출 0**. 사용자는 `state` 자체를 plain JSON으로 받는다.
 
-### 4.2 직렬화 보증 (dev assert)
+### 4.2 직렬화 보증
 
 ```ts
-function assertSerializable(x: unknown, where: string): void {
-  // dev only. function·Symbol·undefined·BigInt·Map·Set·class instance 검출 시 throw
-}
+function assertSerializable(x: unknown, where: string): JSONResult;
 ```
 
-모든 op의 입력(`value`)과 출력(`state`)에 적용. production 빌드에서는 noop.
+모든 op의 입력(`value`)과 출력(`state`)에 적용. function·Symbol·undefined·BigInt·Map·Set·class instance·Date·NaN·Infinity·순환 참조·sparse array 는 JSON 이 아니므로 `not_serializable` 로 거부한다. production 빌드에서도 noop 이 아니다.
 
 ### 4.3 reset / load
 
@@ -358,13 +356,15 @@ export type ValueAt<T, P extends string> = ...;
 ### 5.5 직렬화 헬퍼
 
 ```ts
-export function serialize<T>(state: T): string;          // JSON.stringify thin wrapper
+export function serialize<T>(state: T): string;          // validates JSON, then JSON.stringify
 export function parse<S extends z.ZodType>(schema: S, json: string): z.output<S>;
 export function safeParse<S extends z.ZodType>(
   schema: S,
   json: string,
 ): { ok: true; state: z.output<S> } | { ok: false; error: z.ZodError };
 ```
+
+`serialize` 는 non-JSON 값이 있으면 `TypeError` 를 던진다. valid JSON 값에서는 `JSON.stringify` 와 동일하다.
 
 ### 5.6 RFC 6901 Pointer 헬퍼 (low-level)
 
@@ -477,7 +477,7 @@ export function applyMergePatch(target: unknown, patch: unknown): unknown;      
 | 2. Pointer parse | dispatch 시작 | RFC 6901 형식 위반 | `invalid_pointer` |
 | 3. Path resolve | dispatch 시작 | replace/remove/test 대상 없음, move 자기 자손으로 이동 | `path_not_found` / `move_into_self` |
 | 4. Schema validate | dispatch 후 (batch는 끝나고 1회) | Zod 검증 실패 | `schema_violation` |
-| 5. Serializability assert | dev only | non-JSON 값 진입 | `not_serializable` (throw) |
+| 5. Serializability assert | dispatch 전/후 | non-JSON 값 진입 | `not_serializable` |
 
 ### 6.2 `JSONResult`
 

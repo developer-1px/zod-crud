@@ -3,6 +3,7 @@
 // 구현 디테일: ./patch-internal · ./patch-apply · ./patch-inverse.
 
 import type * as z from "zod";
+import { jsonSerializableError } from "../json.js";
 import type { Pointer } from "../pointer/index.js";
 import { applyOpRaw } from "./apply.js";
 import { normalizeOp } from "./internal.js";
@@ -49,10 +50,14 @@ export function applyOperation<S extends z.ZodTypeAny>(
   state: z.output<S>,
   op: JSONPatchOperation,
 ): ApplyResult<S> {
+  const stateJsonErr = jsonSerializableError(state);
+  if (stateJsonErr) return { state, result: fail("not_serializable", stateJsonErr), applied: [] };
   const normalized = normalizeOp(op, state);
   const r = applyOpRaw(state, normalized);
   if ("error" in r) return { state, result: fail(r.error, r.reason, r.pointer), applied: [] };
   if (normalized.op === "test") return { state, result: ok, applied: [normalized] };
+  const jsonErr = jsonSerializableError(r.state);
+  if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
   const parsed = schema.safeParse(r.state);
   if (!parsed.success) return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 r.state 반환.
@@ -66,6 +71,8 @@ export function applyPatch<S extends z.ZodTypeAny>(
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S> {
+  const stateJsonErr = jsonSerializableError(state);
+  if (stateJsonErr) return { state, result: fail("not_serializable", stateJsonErr), applied: [] };
   let cur: unknown = state;
   const normalized: JSONPatchOperation[] = [];
   for (let i = 0; i < ops.length; i++) {
@@ -81,6 +88,8 @@ export function applyPatch<S extends z.ZodTypeAny>(
     }
     cur = r.state;
   }
+  const jsonErr = jsonSerializableError(cur);
+  if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
   const parsed = schema.safeParse(cur);
   if (!parsed.success) return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 cur 반환.

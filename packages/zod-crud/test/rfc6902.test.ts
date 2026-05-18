@@ -200,4 +200,56 @@ describe("Serializability (G1)", () => {
     ];
     expect(JSON.parse(JSON.stringify(ops))).toEqual(ops);
   });
+
+  it("rejects undefined values instead of silently dropping object keys", () => {
+    const initial = { ok: true };
+    const r = applyOperation(Any, initial, { op: "add", path: "/missing", value: undefined });
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
+
+  it("rejects non-plain objects such as Date", () => {
+    const initial = { at: null as unknown };
+    const r = applyOperation(Any, initial, { op: "replace", path: "/at", value: new Date("2026-05-18T00:00:00.000Z") });
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
+
+  it("rejects non-finite numbers", () => {
+    const initial = { n: 0 };
+    const r = applyOperation(Any, initial, { op: "replace", path: "/n", value: Number.NaN });
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
+
+  it("keeps batch atomic when a later op is not JSON-serializable", () => {
+    const initial = { items: [] as unknown[] };
+    const r = applyPatch(Any, initial, [
+      { op: "add", path: "/items/-", value: "ok" },
+      { op: "add", path: "/items/-", value: () => "bad" },
+    ]);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
+
+  it("rejects non-serializable input state before cloning can drop data", () => {
+    const initial = { keep: true, lost: undefined };
+    const r = applyOperation(Any, initial, { op: "add", path: "/next", value: true });
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
+
+  it("rejects circular input state before cloning can throw", () => {
+    const initial: { self?: unknown } = {};
+    initial.self = initial;
+    const r = applyPatch(Any, initial, [{ op: "add", path: "/ok", value: true }]);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
 });

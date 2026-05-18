@@ -16,6 +16,7 @@ const expectedCoreFolders = [
 ];
 
 const expectedCoreFiles = [
+  "json.ts",     // RFC 8259 JSON value boundary
   "track.ts",    // RFC 6902 op 적용 후 Pointer follow (인프라)
   "history.ts",  // RFC 6902 inverse + history stack (pure reducer)
 ];

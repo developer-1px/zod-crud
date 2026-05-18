@@ -137,6 +137,11 @@ const restored = parse(Schema, json);         // throws on schema mismatch
 const safe = safeParse(Schema, json);         // returns { ok, ... }
 ```
 
+`serialize` throws `TypeError` for non-JSON values such as `undefined`,
+functions, symbols, `BigInt`, `Date`, `NaN`, circular references, sparse
+arrays, and class instances. `applyOperation`/`applyPatch` reject the same
+values with `not_serializable`.
+
 Operations are also pure JSON, so they can be sent over the wire and
 applied on the server with any RFC 6902 implementation:
 
