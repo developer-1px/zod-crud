@@ -47,4 +47,10 @@ describe("package exports", () => {
       expect(packageJson.exports, `missing export: ./verbs/${verb}`).toHaveProperty(`./verbs/${verb}`);
     }
   });
+
+  test("package subpaths are limited to root, react, and public verbs", () => {
+    const expectedExports = [".", "./react", ...publicVerbFiles.map((verb) => `./verbs/${verb}`)].sort();
+
+    expect(Object.keys(packageJson.exports).sort()).toEqual(expectedExports);
+  });
 });
