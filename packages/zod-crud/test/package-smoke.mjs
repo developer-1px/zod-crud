@@ -21,6 +21,8 @@ const rootValueExports = valueExports(rootSource);
 const reactValueExports = valueExports(reactSource);
 const rootPublicExports = publicExports(rootSource);
 const reactPublicExports = publicExports(reactSource);
+const rootTypeExports = rootPublicExports.filter((name) => !rootValueExports.includes(name));
+const reactTypeExports = reactPublicExports.filter((name) => !reactValueExports.includes(name));
 
 function run(command, args, cwd) {
   try {
@@ -131,6 +133,16 @@ function assertDeclarationExports(declarationSource, expectedNames, label) {
       throw new Error(`${label} declaration export missing: ${name}`);
     }
   }
+}
+
+function namedImportLine(names, specifier, options = {}) {
+  if (names.length === 0) return null;
+  const { prefix = "", typeOnly = false } = options;
+  const keyword = typeOnly ? "import type" : "import";
+  const imports = names
+    .map((name) => prefix ? `${name} as ${prefix}${name}` : name)
+    .join(", ");
+  return `${keyword} { ${imports} } from "${specifier}";`;
 }
 
 async function sourceModulePaths(dir, prefix = "") {
@@ -426,6 +438,23 @@ try {
     ].join("\n"),
   );
   await writeFile(
+    join(workspace, "named-imports-smoke.ts"),
+    [
+      namedImportLine(rootValueExports, "zod-crud", { prefix: "RootValue_" }),
+      namedImportLine(rootTypeExports, "zod-crud", { prefix: "RootType_", typeOnly: true }),
+      namedImportLine(reactValueExports, "zod-crud/react", { prefix: "ReactValue_" }),
+      namedImportLine(reactTypeExports, "zod-crud/react", { prefix: "ReactType_", typeOnly: true }),
+      "const rootValues = {",
+      ...rootValueExports.map((name) => `  ${name}: RootValue_${name},`),
+      "};",
+      "const reactValues = {",
+      ...reactValueExports.map((name) => `  ${name}: ReactValue_${name},`),
+      "};",
+      "rootValues satisfies Record<string, unknown>;",
+      "reactValues satisfies Record<string, unknown>;",
+    ].filter((line) => line !== null).join("\n"),
+  );
+  await writeFile(
     join(workspace, "react-smoke.mjs"),
     [
       'import * as zcr from "zod-crud/react";',
@@ -538,6 +567,24 @@ try {
       "--exactOptionalPropertyTypes",
       "--noUncheckedIndexedAccess",
       "smoke.ts",
+    ],
+    workspace,
+  );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--target",
+      "ES2022",
+      "--module",
+      "NodeNext",
+      "--moduleResolution",
+      "NodeNext",
+      "--strict",
+      "--exactOptionalPropertyTypes",
+      "--noUncheckedIndexedAccess",
+      "named-imports-smoke.ts",
     ],
     workspace,
   );
