@@ -29,6 +29,13 @@ function existingTypeScriptBin() {
   ]);
 }
 
+function existingReactPackage() {
+  return existingPath([
+    join(repoRoot, "node_modules", "react"),
+    join(repoRoot, "..", "..", "node_modules", "react"),
+  ]);
+}
+
 function existingPath(candidates) {
   for (const candidate of candidates) {
     if (existsSync(candidate)) {
@@ -55,6 +62,7 @@ try {
     : join(workspace, packResult.filename);
   const zodPackage = existingZodPackage();
   const typeScriptBin = existingTypeScriptBin();
+  const reactPackage = existingReactPackage();
 
   if (!existsSync(tarball)) {
     throw new Error(`Packed tarball was not created: ${tarball}`);
@@ -73,6 +81,10 @@ try {
 
   if (typeScriptBin === null) {
     throw new Error("Local TypeScript dependency is missing. Run npm install first.");
+  }
+
+  if (reactPackage === null) {
+    throw new Error("Local react dependency is missing. Run npm install first.");
   }
 
   await writeFile(
@@ -118,6 +130,28 @@ try {
       'p satisfies string;',
     ].join("\n"),
   );
+  await writeFile(
+    join(workspace, "react-smoke.mjs"),
+    [
+      'import { useJSONDocument, useRecorder, replayRecording } from "zod-crud/react";',
+      'if (typeof useJSONDocument !== "function") throw new Error("useJSONDocument export failed");',
+      'if (typeof useRecorder !== "function") throw new Error("useRecorder export failed");',
+      'if (typeof replayRecording !== "function") throw new Error("replayRecording react export failed");',
+    ].join("\n"),
+  );
+  await writeFile(
+    join(workspace, "react-smoke.ts"),
+    [
+      'import * as z from "zod";',
+      'import { type JSONDocument, type JSONOps, useJSONDocument } from "zod-crud/react";',
+      'const Schema = z.object({ name: z.string() });',
+      'type Doc = JSONDocument<z.output<typeof Schema>>;',
+      'type Ops = JSONOps<z.output<typeof Schema>>;',
+      'useJSONDocument satisfies (schema: typeof Schema, initial: z.output<typeof Schema>) => Doc;',
+      'const _ops = null as unknown as Ops;',
+      '_ops.state.name satisfies string;',
+    ].join("\n"),
+  );
 
   await writeFile(
     join(workspace, "package.json"),
@@ -136,8 +170,12 @@ try {
   if (!existsSync(join(workspace, "node_modules", "zod"))) {
     await symlink(zodPackage, join(workspace, "node_modules", "zod"), "dir");
   }
+  if (!existsSync(join(workspace, "node_modules", "react"))) {
+    await symlink(reactPackage, join(workspace, "node_modules", "react"), "dir");
+  }
 
   run("node", ["smoke.mjs"], workspace);
+  run("node", ["react-smoke.mjs"], workspace);
   run(
     "node",
     [
@@ -151,6 +189,22 @@ try {
       "--moduleResolution",
       "NodeNext",
       "smoke.ts",
+    ],
+    workspace,
+  );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--skipLibCheck",
+      "--target",
+      "ES2022",
+      "--module",
+      "NodeNext",
+      "--moduleResolution",
+      "NodeNext",
+      "react-smoke.ts",
     ],
     workspace,
   );
