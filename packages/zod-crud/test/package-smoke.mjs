@@ -16,11 +16,32 @@ const verbNames = verbEntries
   .sort();
 
 function run(command, args, cwd) {
-  execFileSync(command, args, {
-    cwd,
-    env: { ...process.env, npm_config_cache: npmCache },
-    stdio: "pipe",
-  });
+  try {
+    execFileSync(command, args, {
+      cwd,
+      env: { ...process.env, npm_config_cache: npmCache },
+      stdio: "pipe",
+    });
+  } catch (error) {
+    throw new Error(formatCommandFailure(command, args, cwd, error), { cause: error });
+  }
+}
+
+function formatCommandFailure(command, args, cwd, error) {
+  const output = [];
+  output.push(`Command failed in package smoke: ${[command, ...args].join(" ")}`);
+  output.push(`cwd: ${cwd}`);
+  const stdout = bufferToString(error.stdout);
+  const stderr = bufferToString(error.stderr);
+  if (stdout) output.push(`stdout:\n${stdout}`);
+  if (stderr) output.push(`stderr:\n${stderr}`);
+  return output.join("\n\n");
+}
+
+function bufferToString(value) {
+  if (Buffer.isBuffer(value)) return value.toString("utf8").trim();
+  if (typeof value === "string") return value.trim();
+  return "";
 }
 
 function existingZodPackage() {
