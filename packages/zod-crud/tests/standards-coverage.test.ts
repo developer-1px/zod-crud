@@ -253,6 +253,48 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(pkg.scripts.verify).toBe("npm run typecheck && npm test && npm run build && npm run smoke:package");
   });
 
+  test("TypeScript configs keep publish emit and test typecheck boundaries intact", () => {
+    const buildConfig = JSON.parse(readFileSync(resolve(root, "tsconfig.json"), "utf8")) as {
+      compilerOptions: Record<string, unknown>;
+      include: string[];
+    };
+    const testConfig = JSON.parse(readFileSync(resolve(root, "tsconfig.test.json"), "utf8")) as {
+      extends?: string;
+      compilerOptions: Record<string, unknown>;
+      include: string[];
+    };
+
+    expect(buildConfig.compilerOptions).toMatchObject({
+      target: "ES2022",
+      module: "NodeNext",
+      moduleResolution: "NodeNext",
+      declaration: true,
+      declarationMap: false,
+      sourceMap: false,
+      strict: true,
+      exactOptionalPropertyTypes: true,
+      noUncheckedIndexedAccess: true,
+      rootDir: "src",
+      outDir: "dist",
+    });
+    expect(buildConfig.include).toEqual(["src/**/*.ts"]);
+
+    expect(testConfig.extends).toBe("./tsconfig.json");
+    expect(testConfig.compilerOptions).toMatchObject({
+      jsx: "react-jsx",
+      noEmit: true,
+      rootDir: ".",
+      skipLibCheck: true,
+    });
+    expect(testConfig.compilerOptions.types).toEqual(["node"]);
+    expect(testConfig.include).toEqual([
+      "src/**/*.ts",
+      "test/**/*.ts",
+      "tests/**/*.ts",
+      "vitest.config.ts",
+    ]);
+  });
+
   test("root verify script keeps workspace gates intact", () => {
     const monorepoPackageJson = JSON.parse(readFileSync(resolve(root, "..", "..", "package.json"), "utf8")) as {
       private?: boolean;
