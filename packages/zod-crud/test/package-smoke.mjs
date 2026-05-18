@@ -230,13 +230,14 @@ try {
   await writeFile(
     join(workspace, "react-smoke.mjs"),
     [
-      'import { useJSONDocument, useJSON, useSelection, useRecorder, replayRecording } from "zod-crud/react";',
+      'import { useJSONDocument, useJSON, useSelection, useRecorder, replayRecording, useDebugLog } from "zod-crud/react";',
       'import { JSONCrudError } from "zod-crud/react";',
       'if (typeof useJSONDocument !== "function") throw new Error("useJSONDocument export failed");',
       'if (typeof useJSON !== "function") throw new Error("useJSON export failed");',
       'if (typeof useSelection !== "function") throw new Error("useSelection export failed");',
       'if (typeof useRecorder !== "function") throw new Error("useRecorder export failed");',
       'if (typeof replayRecording !== "function") throw new Error("replayRecording react export failed");',
+      'if (typeof useDebugLog !== "function") throw new Error("useDebugLog export failed");',
       'if (typeof JSONCrudError !== "function") throw new Error("JSONCrudError react export failed");',
     ].join("\n"),
   );
@@ -244,17 +245,21 @@ try {
     join(workspace, "react-smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { JSONCrudError, type JSONDocument, type JSONOps, type SelectionState, useJSON, useJSONDocument } from "zod-crud/react";',
+      'import { JSONCrudError, type DebugLog, type DebugLogger, type JSONDocument, type JSONOps, type SelectionState, useDebugLog, useJSON, useJSONDocument } from "zod-crud/react";',
       'const Schema = z.object({ name: z.string() });',
       'type Doc = JSONDocument<z.output<typeof Schema>>;',
       'type Ops = JSONOps<z.output<typeof Schema>>;',
       'useJSONDocument satisfies (schema: typeof Schema, initial: z.output<typeof Schema>) => Doc;',
       'useJSON satisfies (schema: typeof Schema, initial: z.output<typeof Schema>) => [z.output<typeof Schema>, Ops];',
+      'useDebugLog satisfies (ops: Ops) => DebugLogger;',
       'const _selection = null as unknown as SelectionState<z.output<typeof Schema>>;',
       'const _ops = null as unknown as Ops;',
+      'const _log = null as unknown as DebugLog<z.output<typeof Schema>>;',
       '_selection.ranges satisfies readonly string[];',
       '_ops.state.name satisfies string;',
       '_ops.reset() satisfies import("zod-crud").JSONResult;',
+      '_log.initialState.name satisfies string;',
+      '_log.events[0]?.kind satisfies string | undefined;',
       'JSONCrudError satisfies typeof import("zod-crud").JSONCrudError;',
     ].join("\n"),
   );
