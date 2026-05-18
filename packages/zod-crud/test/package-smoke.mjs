@@ -93,12 +93,19 @@ try {
     if (conditions[0] !== "types") {
       throw new Error(`Export ${subpath} must list "types" before runtime conditions`);
     }
+    if (!conditions.includes("development")) {
+      throw new Error(`Export ${subpath} must include a development condition`);
+    }
     for (const condition of ["types", "import"]) {
       const target = exportMap[condition];
       const packedPath = target.replace(/^\.\//, "");
       if (!packedFiles.includes(packedPath)) {
         throw new Error(`Export ${subpath}.${condition} target is missing from tarball: ${target}`);
       }
+    }
+    const developmentTarget = exportMap.development;
+    if (!existsSync(join(repoRoot, developmentTarget.replace(/^\.\//, "")))) {
+      throw new Error(`Export ${subpath}.development target is missing from source: ${developmentTarget}`);
     }
   }
   const exportedVerbs = Object.keys(packageJson.exports)
