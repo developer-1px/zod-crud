@@ -24,6 +24,7 @@
     "tests/http.test.ts",
     "tests/issue-57-structural-sharing.test.ts",
     "tests/jsonpath.test.ts",
+    "tests/load-history.test.ts",
     "tests/package-exports.test.ts",
     "tests/recorder.test.ts",
     "tests/rfc6901-uri-fragment.test.ts",
