@@ -172,6 +172,11 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `serialize`, `parse`, `safeParse` | JSON helpers (SPEC §5.5) |
+| `buildPatchRequest`, `withIfMatch`, `parsePatchResponse` | HTTP PATCH wire helpers (SPEC §5.9) |
+| `PatchRequest`, `ParseResult`, `ParseError` | HTTP sidecar types (SPEC §5.9) |
+| `replayRecording`, `Recording<T>`, `RecordedStep`, `ReplayOptions` | replayable JSON recording sidecar (SPEC §5) |
+| `useRecorder`, `RecorderApi<T>` from `zod-crud/react` | React recording hook (SPEC §5) |
+| `useDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 
 ## Guarantees
