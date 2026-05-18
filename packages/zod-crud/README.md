@@ -167,7 +167,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
+| `SelectionState<T>`, `UseSelectionOptions` from `zod-crud/react` | React selection hook types |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
+| `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | draft/pending field types |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |

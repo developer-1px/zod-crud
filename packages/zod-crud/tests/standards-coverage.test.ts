@@ -158,6 +158,28 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
+  test("README API table lists every React entrypoint export", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const reactSource = readFileSync(resolve(root, "src/react.ts"), "utf8");
+    const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));
+    const exportBlocks = Array.from(reactSource.matchAll(/export(?: type)? \{([\s\S]*?)\} from/g), (match) => {
+      const block = match[1];
+      if (block === undefined) throw new Error("React export capture failed");
+      return block;
+    });
+    const exports = exportBlocks
+      .flatMap((block) => block.split(","))
+      .map((part) => part.replace(/\/\/.*$/gm, "").trim())
+      .filter(Boolean)
+      .map((part) => part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0])
+      .filter((name): name is string => name !== undefined)
+      .sort();
+
+    for (const name of exports) {
+      expect(apiSection, `README API table missing React export: ${name}`).toContain(`\`${name}`);
+    }
+  });
+
   test("README API table lists every root entrypoint export", () => {
     const readme = readFileSync(resolve(root, "README.md"), "utf8");
     const rootSource = readFileSync(resolve(root, "src/index.ts"), "utf8");
