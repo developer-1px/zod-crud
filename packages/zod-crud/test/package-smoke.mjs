@@ -211,6 +211,17 @@ async function sourceModulePaths(dir, prefix = "") {
   return paths.sort();
 }
 
+async function assertInstalledTextFiles(installedPackageRoot) {
+  const files = packageJson.files.filter((file) => file !== "dist");
+  for (const file of files) {
+    const source = await readFile(join(repoRoot, file), "utf8");
+    const installed = await readFile(join(installedPackageRoot, file), "utf8");
+    if (installed !== source) {
+      throw new Error(`Installed package text file differs from source: ${file}`);
+    }
+  }
+}
+
 try {
   const packOutput = execFileSync(
     "npm",
@@ -604,6 +615,7 @@ try {
   assertInstalledPackageJson(
     JSON.parse(await readFile(join(installedPackageRoot, "package.json"), "utf8")),
   );
+  await assertInstalledTextFiles(installedPackageRoot);
   assertDeclarationExports(
     await readFile(join(installedPackageRoot, "dist", "index.d.ts"), "utf8"),
     rootPublicExports,
