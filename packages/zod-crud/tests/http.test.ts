@@ -129,6 +129,24 @@ describe("RFC 7396 — merge-patch → 6902 변환", () => {
     expect(result).toEqual({ a: { c: 2 } });
   });
 
+  test("applyMergePatch 결과는 target 과 patch 입력에 alias 를 남기지 않는다", () => {
+    const target = { keep: { value: 1 } };
+    const patch = { nested: { value: 2 }, list: [1, 2] };
+    const result = applyMergePatch(target, patch) as {
+      keep: { value: number };
+      nested: { value: number };
+      list: number[];
+    };
+
+    expect(result.keep).not.toBe(target.keep);
+    expect(result.nested).not.toBe(patch.nested);
+    expect(result.list).not.toBe(patch.list);
+    patch.nested.value = 9;
+    patch.list.push(3);
+    expect(result.nested).toEqual({ value: 2 });
+    expect(result.list).toEqual([1, 2]);
+  });
+
   test("merge-patch via parsePatchResponse + apply round-trip", () => {
     const body = JSON.stringify({ name: "alice", age: null });
     const r = parsePatchResponse(body, MERGE_PATCH_MIME);

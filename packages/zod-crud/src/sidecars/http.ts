@@ -11,7 +11,7 @@
 
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import { parsePointer } from "../core/pointer/index.js";
-import { assertJsonSerializable } from "../core/json.js";
+import { assertJsonSerializable, cloneJson } from "../core/json.js";
 
 export const JSON_PATCH_MIME = "application/json-patch+json";    // RFC 6902 §6
 export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
@@ -157,18 +157,22 @@ export function parseMergePatch(patch: unknown, basePath: string): JSONPatchOper
 export function applyMergePatch(target: unknown, patch: unknown): unknown {
   assertJsonSerializable(target);
   assertJsonSerializable(patch);
+  return applyMergePatchUnchecked(target, patch);
+}
+
+function applyMergePatchUnchecked(target: unknown, patch: unknown): unknown {
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
-    return patch;
+    return cloneJson(patch);
   }
   const isTargetObject = target !== null && typeof target === "object" && !Array.isArray(target);
-  const out: Record<string, unknown> = isTargetObject ? { ...(target as Record<string, unknown>) } : {};
+  const out: Record<string, unknown> = isTargetObject ? cloneJson(target as Record<string, unknown>) : {};
   for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
     if (v === null) {
       delete out[k];
     } else if (typeof v === "object" && !Array.isArray(v)) {
-      out[k] = applyMergePatch(out[k], v);
+      out[k] = applyMergePatchUnchecked(out[k], v);
     } else {
-      out[k] = v;
+      out[k] = cloneJson(v);
     }
   }
   return out;
