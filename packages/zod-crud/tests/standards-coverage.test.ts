@@ -24,6 +24,23 @@ const expectedCoreFiles = [
   "history.ts",  // RFC 6902 inverse + history stack (pure reducer)
 ];
 
+function packageSourceFiles(dir: string, prefix = ""): string[] {
+  const entries = readdirSync(dir, { withFileTypes: true });
+  const paths: string[] = [];
+  for (const entry of entries) {
+    if (entry.name === "dist" || entry.name === "node_modules") continue;
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolutePath = resolve(dir, entry.name);
+    if (entry.isDirectory()) {
+      paths.push(...packageSourceFiles(absolutePath, relativePath));
+    } else if (entry.isFile()) {
+      paths.push(relativePath);
+    }
+  }
+
+  return paths.sort();
+}
+
 describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
   test("expected core/ 폴더가 모두 존재", () => {
     for (const dir of expectedCoreFolders) {
@@ -334,6 +351,26 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       "test/**/*.ts",
       "tests/**/*.ts",
       "vitest.config.ts",
+    ]);
+  });
+
+  test("test file layout stays covered by vitest and typecheck gates", () => {
+    const vitestConfig = readFileSync(resolve(root, "vitest.config.ts"), "utf8");
+    const files = packageSourceFiles(root);
+    const runtimeTests = files.filter((file) => file.endsWith(".test.ts"));
+    const typeOnlyTests = files.filter((file) => file.endsWith(".test-d.ts"));
+
+    expect(vitestConfig).toContain('include: ["test/**/*.test.ts", "tests/**/*.test.ts"]');
+    expect(runtimeTests.length).toBeGreaterThan(0);
+    for (const file of runtimeTests) {
+      expect(
+        file.startsWith("test/") || file.startsWith("tests/"),
+        `runtime test must live under a vitest include root: ${file}`,
+      ).toBe(true);
+    }
+    expect(typeOnlyTests).toEqual([
+      "tests/issue-52-record-pointer.test-d.ts",
+      "tests/issue-55-applypatch-strict.test-d.ts",
     ]);
   });
 
