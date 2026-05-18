@@ -157,7 +157,7 @@ try {
     join(workspace, "smoke.mjs"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, parsePointer, buildPointer, find, replace } from "zod-crud";',
+      'import { applyOperation, applyPatch, parsePointer, buildPointer, find, replace, buildPatchRequest, parsePatchResponse, withIfMatch, JSON_PATCH_MIME } from "zod-crud";',
       'import { move } from "zod-crud/verbs/move";',
       'const schema = z.object({ name: z.string(), tags: z.array(z.string()) });',
       'const initial = { name: "ok", tags: [] };',
@@ -175,6 +175,12 @@ try {
       'if (!find(r2.state, "$.tags[0]").ok) throw new Error("find export failed");',
       'if (!replace(schema, r2.state, "$.name", "z").ok) throw new Error("replace export failed");',
       'if (!move(schema, r2.state, "/tags/0", "/tags/0").ok) throw new Error("verb subpath export failed");',
+      'const req = buildPatchRequest([{ op: "replace", path: "/name", value: "http" }]);',
+      'if (req.headers["content-type"] !== JSON_PATCH_MIME) throw new Error("buildPatchRequest export failed");',
+      'const conditional = withIfMatch(req, "\\"etag\\"");',
+      'if (conditional.headers["if-match"] !== "\\"etag\\"") throw new Error("withIfMatch export failed");',
+      'const parsed = parsePatchResponse(req.body, JSON_PATCH_MIME);',
+      'if (!parsed.ok || parsed.ops[0]?.path !== "/name") throw new Error("parsePatchResponse export failed");',
     ].join("\n"),
   );
   await writeFile(
