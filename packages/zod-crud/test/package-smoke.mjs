@@ -7,10 +7,12 @@ import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = await mkdtemp(join(tmpdir(), "zod-crud-package-"));
+const npmCache = join(workspace, ".npm-cache");
 
 function run(command, args, cwd) {
   execFileSync(command, args, {
     cwd,
+    env: { ...process.env, npm_config_cache: npmCache },
     stdio: "pipe",
   });
 }
@@ -53,6 +55,7 @@ try {
     {
       cwd: repoRoot,
       encoding: "utf8",
+      env: { ...process.env, npm_config_cache: npmCache },
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
