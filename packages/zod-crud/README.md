@@ -99,7 +99,9 @@ up yourself. `commands.*` mutate through the history-aware path; `ops.*` is
 the low-level RFC 6902 escape hatch for fire-and-forget patches.
 
 For lower-level composition (`useJSON` + `useSelection`), see the
-[Lower-level Hooks](../../docs/site/examples.md) guide.
+[`useJSON`](./SPEC.md#51-usejson--data-hook) and
+[`useSelection`](./SPEC.md#57-useselection--selection-state-hook) contracts in
+SPEC.
 
 ## Pure core (no React)
 

@@ -3,6 +3,7 @@
 import { describe, expect, test } from "vitest";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import packageJson from "../package.json" with { type: "json" };
 import tests from "./conformance/tests.json" with { type: "json" };
 import specTests from "./conformance/spec_tests.json" with { type: "json" };
 
@@ -101,5 +102,15 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
 
     expect(spec).toContain(`합계 ${cases.length} 케이스`);
     expect(spec).toContain(`그중 ${disabled} 케이스는 suite 자체에서 disabled`);
+  });
+
+  test("README package-local links resolve inside published files", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const publishedFiles = new Set((packageJson as { files: string[] }).files);
+    const links = Array.from(readme.matchAll(/\[[^\]]+\]\((\.\/[^)#]+)(?:#[^)]+)?\)/g), (match) => match[1].slice(2));
+
+    for (const link of links) {
+      expect(publishedFiles, `README link must resolve in npm package files: ${link}`).toContain(link);
+    }
   });
 });
