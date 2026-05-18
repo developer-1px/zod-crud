@@ -253,6 +253,28 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(pkg.scripts.verify).toBe("npm run typecheck && npm test && npm run build && npm run smoke:package");
   });
 
+  test("root verify script keeps workspace gates intact", () => {
+    const monorepoPackageJson = JSON.parse(readFileSync(resolve(root, "..", "..", "package.json"), "utf8")) as {
+      private?: boolean;
+      workspaces?: string[];
+      scripts: Record<string, string>;
+    };
+
+    expect(monorepoPackageJson.private).toBe(true);
+    expect(monorepoPackageJson.workspaces).toEqual(["packages/*", "apps/*"]);
+    expect(monorepoPackageJson.scripts.test).toBe("npm test -w zod-crud");
+    expect(monorepoPackageJson.scripts.typecheck).toBe(
+      "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/site && npm run typecheck -w @zod-crud/outliner && npm run typecheck -w @zod-crud/mobile-cms",
+    );
+    expect(monorepoPackageJson.scripts.build).toBe(
+      "npm run build -w zod-crud && npm run build -w @zod-crud/site && npm run build -w @zod-crud/outliner && npm run build -w @zod-crud/mobile-cms",
+    );
+    expect(monorepoPackageJson.scripts["smoke:package"]).toBe("npm run smoke:package -w zod-crud");
+    expect(monorepoPackageJson.scripts.verify).toBe(
+      "npm run typecheck && npm test && npm run build && npm run smoke:package",
+    );
+  });
+
   test("CHANGELOG latest release matches package version", () => {
     const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
     const version = (packageJson as { version: string }).version;
