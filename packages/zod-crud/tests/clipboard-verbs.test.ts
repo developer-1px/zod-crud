@@ -158,11 +158,11 @@ describe("verbs/paste", () => {
   });
 
   test("rekey refuses non-JSON payloads before cloning can drop fields", () => {
-    expect(() =>
-      paste(Schema, initial, { id: "a", name: "A copy", dropped: undefined }, "/items/-", "into", {
-        rekey: { fields: ["id"], strategy: "suffix" },
-      }),
-    ).toThrow(TypeError);
+    const r = paste(Schema, initial, { id: "a", name: "A copy", dropped: undefined }, "/items/-", "into", {
+      rekey: { fields: ["id"], strategy: "suffix" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("not_serializable");
   });
 
   test("uuid rekey uses crypto.getRandomValues fallback without Math.random", () => {
@@ -184,13 +184,16 @@ describe("verbs/paste", () => {
     expect(mathRandom).not.toHaveBeenCalled();
   });
 
-  test("uuid rekey fails explicitly when Web Crypto is unavailable", () => {
+  test("uuid rekey returns structured error when Web Crypto is unavailable", () => {
     vi.stubGlobal("crypto", undefined);
-    expect(() =>
-      paste(Schema, initial, { id: "a", name: "A copy" }, "/items/-", "into", {
-        rekey: { fields: ["id"], strategy: "uuid" },
-      }),
-    ).toThrow("crypto.getRandomValues is required");
+    const r = paste(Schema, initial, { id: "a", name: "A copy" }, "/items/-", "into", {
+      rekey: { fields: ["id"], strategy: "uuid" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("rekey_failed");
+      expect(r.message).toContain("crypto.getRandomValues is required");
+    }
   });
 });
 
@@ -234,5 +237,14 @@ describe("verbs/duplicate", () => {
     if (!r.ok) return;
     expect(r.next.items[1]).toEqual({ id: "a-copy", name: "A" });
     expect(r.patch).toEqual([{ op: "add", path: "/items/1", value: { id: "a-copy", name: "A" } }]);
+  });
+
+  test("rekey errors are structured for duplicate", () => {
+    vi.stubGlobal("crypto", undefined);
+    const r = duplicate(Schema, initial, "/items/0", {
+      rekey: { fields: ["id"], strategy: "uuid" },
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("rekey_failed");
   });
 });

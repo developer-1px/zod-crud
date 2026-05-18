@@ -15,7 +15,7 @@ import type {
 import { select as selectVerb } from "../verbs/select.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type CopyOk, type CopyError } from "../verbs/copy.js";
-import { paste, type PasteOk, type PasteError, type PasteMode } from "../verbs/paste.js";
+import { paste, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode } from "../verbs/paste.js";
 import { duplicate, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
@@ -32,7 +32,7 @@ export interface Commands<T> {
 
   cut(source: Pointer): CutOk<T> | CutError;
   copy(source: Pointer): CopyOk | CopyError;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode): PasteOk<T> | PasteError;
+  paste(payload: unknown, target: Pointer, mode?: PasteMode): PasteOk<T> | PasteError | PasteDuMismatch;
 
   undo(): boolean;
   redo(): boolean;

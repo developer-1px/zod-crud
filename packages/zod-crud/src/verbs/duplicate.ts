@@ -8,7 +8,7 @@ import type { JSONPatchOperation } from "../core/patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, parsePointer } from "../core/pointer/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
-import { rekeyPayload, type RekeyOptions } from "./paste.js";
+import { tryRekeyPayload, type RekeyOptions } from "./paste.js";
 
 export interface DuplicateOpts {
   /** object key 복제 시 새 key. 배열에서는 무시됨. */
@@ -81,7 +81,9 @@ export function duplicate<S extends z.ZodType>(
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
   }
 
-  const payload = rekeyPayload(sourceRead.value, state, opts.rekey);
+  const rekeyed = tryRekeyPayload(sourceRead.value, state, opts.rekey);
+  if (!rekeyed.ok) return rekeyed;
+  const payload = rekeyed.payload;
   const op: JSONPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };
   const r = preFlight(schema, state, [op]);
   if (!r.ok) {

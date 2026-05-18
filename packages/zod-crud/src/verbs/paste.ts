@@ -49,6 +49,8 @@ export interface RekeyOptions {
   strategy: RekeyStrategy;
 }
 
+export type RekeyResult = { ok: true; payload: unknown } | PasteError;
+
 export function paste<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
@@ -57,7 +59,9 @@ export function paste<S extends z.ZodType>(
   mode: PasteMode = "into",
   options: PasteOptions = {},
 ): PasteOk<z.output<S>> | PasteError | PasteDuMismatch {
-  const nextPayload = rekeyPayload(payload, state, options.rekey);
+  const rekeyed = tryRekeyPayload(payload, state, options.rekey);
+  if (!rekeyed.ok) return rekeyed;
+  const nextPayload = rekeyed.payload;
   const mismatch = findDuMismatch(schema, nextPayload, target, mode);
   if (mismatch) return mismatch;
 
@@ -127,6 +131,23 @@ export function rekeyPayload(payload: unknown, state: unknown, options?: RekeyOp
   const next = deepClone(payload);
   rekeyValue(next, fieldSet, existing, options.strategy);
   return next;
+}
+
+export function tryRekeyPayload(payload: unknown, state: unknown, options?: RekeyOptions): RekeyResult {
+  try {
+    return { ok: true, payload: rekeyPayload(payload, state, options) };
+  } catch (error) {
+    return rekeyError(error);
+  }
+}
+
+function rekeyError(error: unknown): PasteError {
+  const message = error instanceof Error ? error.message : String(error);
+  return {
+    ok: false,
+    code: message.startsWith("Value is not JSON-serializable") ? "not_serializable" : "rekey_failed",
+    message,
+  };
 }
 
 function collectExistingValues(value: unknown, fields: ReadonlySet<string>): Map<string, Set<string>> {
