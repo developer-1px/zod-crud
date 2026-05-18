@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSONOps } from "../jsonOps.js";
 import type { SelectionState } from "../hooks/useSelection.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
+import { cloneJson } from "../core/json.js";
 
 export interface DebugEvent {
   t: number;                          // recording 시작 기준 ms
@@ -47,7 +48,7 @@ export function useDebugLog<T>(
   const log = useCallback((kind: string, data?: Record<string, unknown>) => {
     if (!startRef.current) return;
     const e: DebugEvent = { t: Date.now() - startRef.current.at, kind };
-    if (data !== undefined) e.data = data;
+    if (data !== undefined) e.data = cloneJson(data);
     eventsRef.current.push(e);
   }, []);
 
@@ -56,10 +57,10 @@ export function useDebugLog<T>(
   const lastStateRef = useRef<T | null>(null);
   useEffect(() => {
     if (!enabled) return;
-    lastStateRef.current = ops.state;
+    lastStateRef.current = cloneJson(ops.state);
     return ops.subscribe((applied) => {
       const before = lastStateRef.current;
-      const after = ops.state;
+      const after = cloneJson(ops.state);
       lastStateRef.current = after;
       log("commit", { applied: [...applied] as JSONPatchOperation[], before, after });
     });
@@ -79,7 +80,7 @@ export function useDebugLog<T>(
 
   const start = useCallback(() => {
     if (startRef.current) return;
-    startRef.current = { at: Date.now(), initial: ops.state };
+    startRef.current = { at: Date.now(), initial: cloneJson(ops.state) };
     eventsRef.current = [];
     setEnabled(true);
     force((n) => n + 1);
@@ -90,8 +91,8 @@ export function useDebugLog<T>(
     setEnabled(false);
     return {
       startedAt: s?.at ?? Date.now(),
-      initialState: (s?.initial ?? ops.state) as T,
-      events: [...eventsRef.current],
+      initialState: cloneJson((s?.initial ?? ops.state) as T),
+      events: cloneJson(eventsRef.current),
     };
   }, [ops]);
 
