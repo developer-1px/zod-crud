@@ -195,7 +195,7 @@ function markdownCodeBlockAfterHeading(source, heading, language) {
 }
 
 function markdownCodeBlocks(source, language) {
-  return Array.from(
+  const blocks = Array.from(
     source.matchAll(new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "g")),
     (match) => {
       const block = match[1];
@@ -203,6 +203,8 @@ function markdownCodeBlocks(source, language) {
       return block;
     },
   );
+  if (blocks.length === 0) throw new Error(`README has no ${language} code blocks`);
+  return blocks;
 }
 
 function assertDeclarationExports(declarationSource, expectedNames, label) {
@@ -832,7 +834,11 @@ try {
     markdownCodeBlockAfterHeading(readmeSource, "React — `useJSONDocument`", "tsx"),
   );
   const readmeTypeScriptExamplePaths = [];
-  for (const [index, block] of markdownCodeBlocks(readmeSource, "ts").entries()) {
+  const readmeTypeScriptExamples = markdownCodeBlocks(readmeSource, "ts");
+  if (readmeTypeScriptExamples.length !== 3) {
+    throw new Error(`README must keep exactly 3 TypeScript examples in package smoke: ${readmeTypeScriptExamples.length}`);
+  }
+  for (const [index, block] of readmeTypeScriptExamples.entries()) {
     const filename = `readme-typescript-example-${index + 1}.ts`;
     readmeTypeScriptExamplePaths.push(filename);
     await writeFile(join(workspace, filename), block);
