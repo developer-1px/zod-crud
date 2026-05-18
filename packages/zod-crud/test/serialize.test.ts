@@ -59,6 +59,26 @@ describe("serialize / parse", () => {
     expect(() => serialize(accessor)).toThrow(/accessor property/);
   });
 
+  it("rejects array properties that JSON.stringify would invoke or drop", () => {
+    const extra = [1, 2] as number[] & { extra?: number };
+    extra.extra = 3;
+
+    const hidden = [1, 2];
+    Object.defineProperty(hidden, "lost", { value: 3, enumerable: false });
+
+    const accessor = [1, 2];
+    Object.defineProperty(accessor, "0", {
+      enumerable: true,
+      get() {
+        return 1;
+      },
+    });
+
+    expect(() => serialize(extra)).toThrow(/non-index array property/);
+    expect(() => serialize(hidden)).toThrow(/non-index array property/);
+    expect(() => serialize(accessor)).toThrow(/accessor property/);
+  });
+
   it("reports JSON boundary errors with escaped RFC 6901 pointers", () => {
     expect(() => serialize({ "a/b": { "c~d": undefined } })).toThrow("/a~1b/c~0d: undefined is not JSON");
 

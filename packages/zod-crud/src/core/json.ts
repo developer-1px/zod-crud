@@ -22,6 +22,16 @@ export function jsonSerializableError(value: unknown): string | null {
     seen.add(obj);
 
     if (Array.isArray(v)) {
+      for (const key of Object.getOwnPropertyNames(v)) {
+        if (key === "length") continue;
+        const descriptor = Object.getOwnPropertyDescriptor(v, key);
+        if (!descriptor) continue;
+        const childPath = [...path, arrayPropertyPathSegment(key)];
+        if (!isArrayIndexKey(key)) return `${at(childPath)}: non-index array property is not JSON`;
+        if (!descriptor.enumerable) return `${at(childPath)}: non-enumerable property is not JSON`;
+        if ("get" in descriptor || "set" in descriptor) return `${at(childPath)}: accessor property is not JSON`;
+      }
+      if (Object.getOwnPropertySymbols(v).length > 0) return `${at(path)}: symbol keys are not JSON`;
       for (let i = 0; i < v.length; i++) {
         const childPath = [...path, i];
         if (!Object.prototype.hasOwnProperty.call(v, i)) return `${at(childPath)}: sparse array hole`;
@@ -55,6 +65,16 @@ export function jsonSerializableError(value: unknown): string | null {
   };
 
   return visit(value, []);
+}
+
+function isArrayIndexKey(key: string): boolean {
+  if (key === "") return false;
+  const index = Number(key);
+  return Number.isInteger(index) && index >= 0 && index < 2 ** 32 - 1 && String(index) === key;
+}
+
+function arrayPropertyPathSegment(key: string): string | number {
+  return isArrayIndexKey(key) ? Number(key) : key;
 }
 
 export function assertJsonSerializable(value: unknown): void {
