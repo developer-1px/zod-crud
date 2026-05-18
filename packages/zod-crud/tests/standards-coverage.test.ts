@@ -219,6 +219,18 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(pkg.keywords).toEqual(expect.arrayContaining(["zod", "json", "crud", "schema", "clipboard", "undo", "redo", "headless"]));
   });
 
+  test("package scripts keep build, prepack, typecheck, and smoke gates intact", () => {
+    const pkg = packageJson as { scripts: Record<string, string> };
+
+    expect(pkg.scripts.clean).toBe("rm -rf dist");
+    expect(pkg.scripts.build).toBe("npm run clean && tsc -p tsconfig.json");
+    expect(pkg.scripts.prepack).toBe("npm run build");
+    expect(pkg.scripts.typecheck).toBe("tsc -p tsconfig.test.json --noEmit");
+    expect(pkg.scripts.test).toBe("vitest run --config vitest.config.ts");
+    expect(pkg.scripts["smoke:package"]).toBe("node ./test/package-smoke.mjs");
+    expect(pkg.scripts.verify).toBe("npm run typecheck && npm test && npm run build && npm run smoke:package");
+  });
+
   test("CHANGELOG latest release matches package version", () => {
     const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
     const version = (packageJson as { version: string }).version;
