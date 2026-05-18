@@ -36,6 +36,26 @@ function run(command, args, cwd) {
   }
 }
 
+function expectCommandFailure(command, args, cwd, expectedText) {
+  try {
+    execFileSync(command, args, {
+      cwd,
+      env: { ...process.env, npm_config_cache: npmCache },
+      stdio: "pipe",
+    });
+  } catch (error) {
+    const stdout = bufferToString(error.stdout);
+    const stderr = bufferToString(error.stderr);
+    const output = `${stdout}\n${stderr}`;
+    if (!output.includes(expectedText)) {
+      throw new Error(formatCommandFailure(command, args, cwd, error), { cause: error });
+    }
+    return;
+  }
+
+  throw new Error(`Command unexpectedly succeeded in package smoke: ${[command, ...args].join(" ")}`);
+}
+
 function formatCommandFailure(command, args, cwd, error) {
   const output = [];
   output.push(`Command failed in package smoke: ${[command, ...args].join(" ")}`);
@@ -548,6 +568,15 @@ try {
   }
   if (existsSync(join(workspace, "node_modules", "react"))) {
     throw new Error("Root package smoke must run before React is installed so the root entrypoint stays headless");
+  }
+
+  for (const privateSubpath of ["dist/index.js", "dist/react.js", "src/index.ts", "sidecars/http"]) {
+    expectCommandFailure(
+      "node",
+      ["--input-type=module", "--eval", `await import("zod-crud/${privateSubpath}")`],
+      workspace,
+      "ERR_PACKAGE_PATH_NOT_EXPORTED",
+    );
   }
 
   run("node", ["smoke.mjs"], workspace);
