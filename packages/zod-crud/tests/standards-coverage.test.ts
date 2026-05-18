@@ -180,4 +180,12 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       expect(publishedFiles, `README link must resolve in npm package files: ${link}`).toContain(link);
     }
   });
+
+  test("CHANGELOG latest release matches package version", () => {
+    const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
+    const version = (packageJson as { version: string }).version;
+    const latestRelease = changelog.match(/^##\s+(\d+\.\d+\.\d+)\s+-\s+\d{4}-\d{2}-\d{2}$/m)?.[1];
+
+    expect(latestRelease, "CHANGELOG must start with a dated release entry").toBe(version);
+  });
 });
