@@ -310,7 +310,31 @@ try {
   }
 
   // #62 guard — published tarball 에 node_modules 가 포함되면 소비자 측 zod type 중복으로 generic 추론이 깨진다.
-  const packedFiles = (packResult.files ?? []).map((f) => f.path);
+  if (!Array.isArray(packResult.files) || packResult.files.length === 0) {
+    throw new Error("Packed tarball must report a non-empty files list");
+  }
+  if (packResult.entryCount !== packResult.files.length) {
+    throw new Error(`Packed tarball entryCount mismatch: ${packResult.entryCount} !== ${packResult.files.length}`);
+  }
+  if (!Array.isArray(packResult.bundled) || packResult.bundled.length !== 0) {
+    throw new Error(`Packed tarball must not bundle dependencies: ${JSON.stringify(packResult.bundled)}`);
+  }
+  const reportedUnpackedSize = packResult.files.reduce((total, file) => {
+    if (typeof file.path !== "string" || file.path.length === 0) {
+      throw new Error(`Packed file entry must include a path: ${JSON.stringify(file)}`);
+    }
+    if (typeof file.size !== "number" || file.size <= 0) {
+      throw new Error(`Packed file must report a positive size: ${file.path}`);
+    }
+    if (file.mode !== 0o644) {
+      throw new Error(`Packed file must use regular read/write file mode 0644: ${file.path}`);
+    }
+    return total + file.size;
+  }, 0);
+  if (reportedUnpackedSize !== packResult.unpackedSize) {
+    throw new Error(`Packed tarball unpackedSize mismatch: ${reportedUnpackedSize} !== ${packResult.unpackedSize}`);
+  }
+  const packedFiles = packResult.files.map((f) => f.path);
   const offenders = packedFiles.filter((p) => p.includes("node_modules/"));
   if (offenders.length > 0) {
     throw new Error(`Tarball must not include node_modules: ${offenders.slice(0, 3).join(", ")}`);
