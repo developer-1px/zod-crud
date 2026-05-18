@@ -508,7 +508,7 @@ export type ErrorCode =
 ```ts
 export class JSONCrudError extends Error {
   constructor(
-    public op: JSONPatchOperation | "load" | "reset" | "patch",
+    public op: JSONPatchOperation | "load" | "reset" | "patch" | "set",
     public result: Extract<JSONResult, { ok: false }>,
   );
 }
