@@ -138,7 +138,7 @@ try {
     join(workspace, "smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, type CutError, type DuplicateError, type JSONPatchOperation, type PasteError, type Pointer, type PreFlightErrorCode, type ReplaceError } from "zod-crud";',
+      'import { applyOperation, applyPatch, type CutError, type DuplicateError, type JSONPatchOperation, type PasteError, type Pointer, type PreFlightErrorCode, type RekeyResult, type ReplaceError } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',
       'r.state.name satisfies string;',
@@ -153,6 +153,9 @@ try {
       'cutError.code satisfies "path_not_found" | "not_serializable" | "invalid_pointer" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'declare const pasteError: PasteError;',
       'pasteError.code satisfies "not_serializable" | "rekey_failed" | "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
+      'type RootRekeyFailure = Extract<RekeyResult, { ok: false }>;',
+      'declare const rootRekeyCode: RootRekeyFailure["code"];',
+      'rootRekeyCode satisfies "not_serializable" | "rekey_failed";',
       'declare const duplicateError: DuplicateError;',
       'duplicateError.code satisfies "invalid_pointer" | "path_not_found" | "missing_new_key" | "key_conflict" | "not_serializable" | "rekey_failed" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'declare const replaceError: ReplaceError;',

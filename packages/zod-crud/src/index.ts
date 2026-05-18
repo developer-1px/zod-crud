@@ -85,6 +85,7 @@ export type {
   PasteOptions,
   RekeyContext,
   RekeyOptions,
+  RekeyResult,
   RekeyStrategy,
 } from "./verbs/paste.js";
 export { duplicate } from "./verbs/duplicate.js";
