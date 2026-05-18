@@ -254,9 +254,24 @@ function assertInstalledPackageJson(pkg) {
       throw new Error(`Installed package.json field mismatch: ${field}`);
     }
   }
-  for (const field of ["private", "workspaces", "bin", "dependencies"]) {
+  const forbiddenFields = [
+    "bin",
+    "config",
+    "dependencies",
+    "optionalDependencies",
+    "overrides",
+    "private",
+    "workspaces",
+  ];
+  for (const field of forbiddenFields) {
     if (pkg[field] !== undefined) {
       throw new Error(`Installed package.json must not include ${field}`);
+    }
+  }
+  const installLifecycleScripts = ["preinstall", "install", "postinstall", "prepare"];
+  for (const script of installLifecycleScripts) {
+    if (pkg.scripts?.[script] !== undefined) {
+      throw new Error(`Installed package.json must not include install lifecycle script: ${script}`);
     }
   }
 }
