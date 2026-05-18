@@ -90,6 +90,14 @@ try {
       throw new Error(`Tarball is missing required package file: ${required}`);
     }
   }
+  const allowedPackedRoots = new Set([...packageJson.files, "package.json"]);
+  const unexpectedPackedFiles = packedFiles.filter((file) => {
+    const [root] = file.split("/");
+    return !allowedPackedRoots.has(root);
+  });
+  if (unexpectedPackedFiles.length > 0) {
+    throw new Error(`Tarball includes unexpected files: ${unexpectedPackedFiles.slice(0, 3).join(", ")}`);
+  }
   if (packageJson.type !== "module") {
     throw new Error('Package must publish as ESM with "type": "module"');
   }
