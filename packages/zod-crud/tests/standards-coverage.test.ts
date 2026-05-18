@@ -258,6 +258,15 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(readme).toContain("The package is ESM-only");
   });
 
+  test("README copy-paste TypeScript examples declare their local inputs", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+
+    expect(readme).toContain('import * as z from "zod";\nimport { serialize, parse, safeParse } from "zod-crud";');
+    expect(readme).toContain('const Schema = z.object({ title: z.string() });');
+    expect(readme).toContain('const state = { title: "draft" };');
+    expect(readme).toContain('const operations = [{ op: "replace", path: "/title", value: "final" }];');
+  });
+
   test("package metadata keeps npm publication fields intact", () => {
     const pkg = packageJson as {
       name: string;

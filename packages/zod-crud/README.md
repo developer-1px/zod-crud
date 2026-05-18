@@ -133,7 +133,11 @@ State, operations, and history records are pure JSON. There is nothing
 special to serialize — `JSON.stringify` works directly:
 
 ```ts
+import * as z from "zod";
 import { serialize, parse, safeParse } from "zod-crud";
+
+const Schema = z.object({ title: z.string() });
+const state = { title: "draft" };
 
 const json = serialize(state);                // string
 const restored = parse(Schema, json);         // throws on schema mismatch
@@ -149,6 +153,8 @@ Operations are also pure JSON, so they can be sent over the wire and
 applied on the server with any RFC 6902 implementation:
 
 ```ts
+const operations = [{ op: "replace", path: "/title", value: "final" }];
+
 fetch("/api/save", {
   method: "PATCH",
   headers: { "Content-Type": "application/json-patch+json" },
