@@ -86,7 +86,17 @@ export function useJSON<S extends z.ZodType>(
       },
       set(path, value) {
         const p = path as Pointer;
-        const segments = parsePointer(p);
+        let segments: string[];
+        try {
+          segments = parsePointer(p);
+        } catch (error) {
+          return handleResult(policyRef.current, "set", {
+            ok: false,
+            code: "invalid_pointer",
+            reason: error instanceof Error ? error.message : "invalid JSON Pointer",
+            pointer: p,
+          });
+        }
         const cur = readAt(stateRef.current, segments);
         if (value === undefined) {
           if (!cur.ok) return { ok: true };

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import * as z from "zod";
@@ -77,6 +77,25 @@ describe("useJSONDocument ops.load history", () => {
     }
     expect(hook.current.value).toEqual({ name: "b" });
     expect(hook.current.history.canUndo).toBe(true);
+  });
+
+  test("set returns invalid_pointer through the error policy", () => {
+    const onError = vi.fn();
+    const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { strict: false, onError }));
+
+    let result: ReturnType<typeof hook.current.ops.set> | undefined;
+    act(() => {
+      result = hook.current.ops.set("name" as never, "b" as never);
+    });
+
+    expect(result).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "name" });
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError.mock.calls[0]?.[0]).toMatchObject({
+      name: "JSONCrudError",
+      op: "set",
+      result: { ok: false, code: "invalid_pointer", pointer: "name" },
+    });
+    expect(hook.current.value).toEqual({ name: "a" });
   });
 });
 
