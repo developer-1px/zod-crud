@@ -104,6 +104,22 @@ try {
   if (packageJson.sideEffects !== false) {
     throw new Error('Package must declare "sideEffects": false');
   }
+  if (packageJson.dependencies !== undefined && Object.keys(packageJson.dependencies).length > 0) {
+    throw new Error(`Package must not publish runtime dependencies: ${Object.keys(packageJson.dependencies).join(",")}`);
+  }
+  const expectedPeers = { react: ">=18", zod: "^4.0.0" };
+  if (JSON.stringify(packageJson.peerDependencies) !== JSON.stringify(expectedPeers)) {
+    throw new Error(
+      `Package peerDependencies must be ${JSON.stringify(expectedPeers)}: ${JSON.stringify(packageJson.peerDependencies)}`,
+    );
+  }
+  if (packageJson.peerDependenciesMeta?.react?.optional !== true) {
+    throw new Error("React peer dependency must be optional");
+  }
+  const unexpectedPeerMeta = Object.keys(packageJson.peerDependenciesMeta ?? {}).filter((name) => name !== "react");
+  if (unexpectedPeerMeta.length > 0) {
+    throw new Error(`Package has unexpected peer dependency metadata: ${unexpectedPeerMeta.join(",")}`);
+  }
   if (packageJson.main !== packageJson.exports["."].import) {
     throw new Error(`Package main must match root import export: ${packageJson.main}`);
   }
