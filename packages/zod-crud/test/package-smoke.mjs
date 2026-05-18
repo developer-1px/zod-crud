@@ -163,18 +163,20 @@ try {
     join(workspace, "react-smoke.mjs"),
     [
       'import { useJSONDocument, useJSON, useSelection, useRecorder, replayRecording } from "zod-crud/react";',
+      'import { JSONCrudError } from "zod-crud/react";',
       'if (typeof useJSONDocument !== "function") throw new Error("useJSONDocument export failed");',
       'if (typeof useJSON !== "function") throw new Error("useJSON export failed");',
       'if (typeof useSelection !== "function") throw new Error("useSelection export failed");',
       'if (typeof useRecorder !== "function") throw new Error("useRecorder export failed");',
       'if (typeof replayRecording !== "function") throw new Error("replayRecording react export failed");',
+      'if (typeof JSONCrudError !== "function") throw new Error("JSONCrudError react export failed");',
     ].join("\n"),
   );
   await writeFile(
     join(workspace, "react-smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { type JSONDocument, type JSONOps, type SelectionState, useJSON, useJSONDocument } from "zod-crud/react";',
+      'import { JSONCrudError, type JSONDocument, type JSONOps, type SelectionState, useJSON, useJSONDocument } from "zod-crud/react";',
       'const Schema = z.object({ name: z.string() });',
       'type Doc = JSONDocument<z.output<typeof Schema>>;',
       'type Ops = JSONOps<z.output<typeof Schema>>;',
@@ -185,6 +187,7 @@ try {
       '_selection.ranges satisfies readonly string[];',
       '_ops.state.name satisfies string;',
       '_ops.reset() satisfies import("zod-crud").JSONResult;',
+      'JSONCrudError satisfies typeof import("zod-crud").JSONCrudError;',
     ].join("\n"),
   );
 

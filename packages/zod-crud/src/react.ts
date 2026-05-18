@@ -40,4 +40,4 @@ export type {
   SelectionState,
   UseSelectionOptions,
 } from "./hooks/useSelection.js";
-export type { JSONCrudError } from "./JSONCrudError.js";
+export { JSONCrudError } from "./JSONCrudError.js";
