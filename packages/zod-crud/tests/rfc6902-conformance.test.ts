@@ -44,15 +44,12 @@ function canonical(v: unknown): unknown {
 const allCases: Case[] = [...(tests as Case[]), ...(specTests as Case[])];
 
 describe("RFC 6902 conformance — json-patch/json-patch-tests vendor", () => {
-  let passed = 0;
-  let failed = 0;
-  let disabled = 0;
+  const disabled = allCases.filter((c) => c.disabled).length;
 
   for (const [i, c] of allCases.entries()) {
     const label = `[${i}] ${c.comment ?? "(no comment)"}`;
     if (c.disabled) {
       test.skip(label, () => {});
-      disabled++;
       continue;
     }
     test(label, () => {
@@ -61,22 +58,19 @@ describe("RFC 6902 conformance — json-patch/json-patch-tests vendor", () => {
         // 성공 케이스
         expect(r.ok).toBe(true);
         if (r.ok) expect(deepEqual(r.result, c.expected)).toBe(true);
-        if (r.ok && deepEqual(r.result, c.expected)) passed++;
-        else failed++;
       } else if (c.error !== undefined) {
         // 실패 케이스 — 우리가 거부해야 함
         expect(r.ok).toBe(false);
-        if (!r.ok) passed++;
-        else failed++;
       } else {
         // expected 도 error 도 없음 — comment-only? skip
-        passed++;
+        expect(r.ok).toBe(true);
       }
     });
   }
 
-  test("conformance summary", () => {
-    // eslint-disable-next-line no-console
-    console.log(`RFC 6902 conformance: ${passed}/${allCases.length - disabled} passed (${disabled} disabled)`);
+  test("vendored suite size is intentional", () => {
+    expect(allCases).toHaveLength(112);
+    expect(allCases.length - disabled).toBe(108);
+    expect(disabled).toBe(4);
   });
 });

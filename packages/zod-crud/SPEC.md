@@ -226,7 +226,7 @@ RFC 6902 §3 batch semantics:
 
 ### 3.5 Conformance — RFC 6902 인증
 
-[`github.com/json-patch/json-patch-tests`](https://github.com/json-patch/json-patch-tests) 의 표준 suite (`tests.json` + `spec_tests.json`, 합계 163 케이스, 그중 4 케이스는 suite 자체에서 disabled) 를 vendor 해 매 빌드에 자동 검증한다.
+[`github.com/json-patch/json-patch-tests`](https://github.com/json-patch/json-patch-tests) 의 표준 suite (`tests.json` + `spec_tests.json`, 합계 112 케이스, 그중 4 케이스는 suite 자체에서 disabled) 를 vendor 해 매 빌드에 자동 검증한다.
 
 - 정본 위치: [`tests/conformance/`](./tests/conformance/)
 - Runner: [`tests/rfc6902-conformance.test.ts`](./tests/rfc6902-conformance.test.ts)
