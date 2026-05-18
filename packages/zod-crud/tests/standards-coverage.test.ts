@@ -3,6 +3,8 @@
 import { describe, expect, test } from "vitest";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
+import tests from "./conformance/tests.json" with { type: "json" };
+import specTests from "./conformance/spec_tests.json" with { type: "json" };
 
 const root = resolve(__dirname, "..");
 const corePath = resolve(root, "src/core");
@@ -90,5 +92,14 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     for (const helper of helpers) {
       expect(readme, `README API table missing SPEC §5.6 helper: ${helper}`).toContain(`\`${helper}\``);
     }
+  });
+
+  test("SPEC RFC 6902 conformance count matches vendored suite", () => {
+    const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
+    const cases = [...(tests as Array<{ disabled?: boolean }>), ...(specTests as Array<{ disabled?: boolean }>)];
+    const disabled = cases.filter((c) => c.disabled).length;
+
+    expect(spec).toContain(`합계 ${cases.length} 케이스`);
+    expect(spec).toContain(`그중 ${disabled} 케이스는 suite 자체에서 disabled`);
   });
 });
