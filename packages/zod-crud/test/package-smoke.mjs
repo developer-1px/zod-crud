@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = await mkdtemp(join(tmpdir(), "zod-crud-package-"));
 const npmCache = join(workspace, ".npm-cache");
+const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 
 function run(command, args, cwd) {
   execFileSync(command, args, {
@@ -80,6 +81,19 @@ try {
   for (const required of ["LICENSE", "README.md", "SPEC.md", "CHANGELOG.md", "package.json"]) {
     if (!packedFiles.includes(required)) {
       throw new Error(`Tarball is missing required package file: ${required}`);
+    }
+  }
+  for (const [subpath, exportMap] of Object.entries(packageJson.exports)) {
+    const conditions = Object.keys(exportMap);
+    if (conditions[0] !== "types") {
+      throw new Error(`Export ${subpath} must list "types" before runtime conditions`);
+    }
+    for (const condition of ["types", "import"]) {
+      const target = exportMap[condition];
+      const packedPath = target.replace(/^\.\//, "");
+      if (!packedFiles.includes(packedPath)) {
+        throw new Error(`Export ${subpath}.${condition} target is missing from tarball: ${target}`);
+      }
     }
   }
 
