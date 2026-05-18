@@ -194,6 +194,17 @@ function markdownCodeBlockAfterHeading(source, heading, language) {
   return match[1];
 }
 
+function markdownCodeBlocks(source, language) {
+  return Array.from(
+    source.matchAll(new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "g")),
+    (match) => {
+      const block = match[1];
+      if (block === undefined) throw new Error(`README ${language} code block capture failed`);
+      return block;
+    },
+  );
+}
+
 function assertDeclarationExports(declarationSource, expectedNames, label) {
   for (const name of expectedNames) {
     const exportNamePattern = new RegExp(`(^|[^A-Za-z0-9_$])${name}([^A-Za-z0-9_$]|$)`);
@@ -820,6 +831,12 @@ try {
     join(workspace, "readme-react-example.tsx"),
     markdownCodeBlockAfterHeading(readmeSource, "React — `useJSONDocument`", "tsx"),
   );
+  const readmeTypeScriptExamplePaths = [];
+  for (const [index, block] of markdownCodeBlocks(readmeSource, "ts").entries()) {
+    const filename = `readme-typescript-example-${index + 1}.ts`;
+    readmeTypeScriptExamplePaths.push(filename);
+    await writeFile(join(workspace, filename), block);
+  }
 
   await writeFile(
     join(workspace, "package.json"),
@@ -901,6 +918,7 @@ try {
       "--strict",
       "--exactOptionalPropertyTypes",
       "--noUncheckedIndexedAccess",
+      ...readmeTypeScriptExamplePaths,
       "smoke.ts",
     ],
     workspace,
@@ -955,6 +973,7 @@ try {
       "--strict",
       "--exactOptionalPropertyTypes",
       "--noUncheckedIndexedAccess",
+      ...readmeTypeScriptExamplePaths,
       "smoke.ts",
       "named-imports-smoke.ts",
       "verbs-subpath-smoke.ts",
