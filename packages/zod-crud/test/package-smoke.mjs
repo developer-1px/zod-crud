@@ -11,32 +11,29 @@ const npmCache = join(workspace, ".npm-cache");
 const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 const rootSource = await readFile(join(repoRoot, "src", "index.ts"), "utf8");
 const reactSource = await readFile(join(repoRoot, "src", "react.ts"), "utf8");
+const rootExports = extractExports(rootSource);
+const reactExports = extractExports(reactSource);
 const sourceModules = await sourceModulePaths(join(repoRoot, "src"));
 const verbEntries = await readdir(join(repoRoot, "src", "verbs"), { withFileTypes: true });
 const verbNames = verbEntries
   .filter((entry) => entry.isFile() && extname(entry.name) === ".ts")
   .map((entry) => basename(entry.name, ".ts"))
   .sort();
-const verbPublicExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
+const verbExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
   name,
-  publicExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
+  extractExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
 ])));
-const verbValueExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
-  name,
-  valueExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
-])));
-const verbTypeOnlyExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
-  name,
-  typeOnlyExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
-])));
-const rootValueExports = valueExports(rootSource);
-const reactValueExports = valueExports(reactSource);
-const rootPublicExports = publicExports(rootSource);
-const reactPublicExports = publicExports(reactSource);
+const verbPublicExports = mapExportNames(verbExports, "public");
+const verbValueExports = mapExportNames(verbExports, "value");
+const verbTypeOnlyExports = mapExportNames(verbExports, "typeOnly");
+const rootValueExports = rootExports.value;
+const reactValueExports = reactExports.value;
+const rootPublicExports = rootExports.public;
+const reactPublicExports = reactExports.public;
 const rootTypeExports = rootPublicExports.filter((name) => !rootValueExports.includes(name));
 const reactTypeExports = reactPublicExports.filter((name) => !reactValueExports.includes(name));
-const rootTypeOnlyExports = typeOnlyExports(rootSource);
-const reactTypeOnlyExports = typeOnlyExports(reactSource);
+const rootTypeOnlyExports = rootExports.typeOnly;
+const reactTypeOnlyExports = reactExports.typeOnly;
 
 function run(command, args, cwd) {
   try {
@@ -118,67 +115,52 @@ function existingPath(candidates) {
   return null;
 }
 
-function valueExports(source) {
-  const names = [];
-  for (const match of source.matchAll(/^export \{([\s\S]*?)\} from/gm)) {
-    const block = match[1];
+function extractExports(source) {
+  const value = [];
+  const typeOnly = [];
+
+  for (const match of source.matchAll(/^export( type)? \{([\s\S]*?)\} from/gm)) {
+    const isTypeOnly = match[1] !== undefined;
+    const block = match[2];
     if (block === undefined) {
       throw new Error("Export block capture failed");
     }
-    for (const rawPart of block.split(",")) {
-      const part = rawPart.replace(/\/\/.*$/gm, "").trim();
-      if (part.length === 0) continue;
-      const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
-      if (exportedName === undefined) {
-        throw new Error(`Export name capture failed: ${part}`);
-      }
-      names.push(exportedName);
+    const names = exportNames(block);
+    if (isTypeOnly) {
+      typeOnly.push(...names);
+    } else {
+      value.push(...names);
     }
   }
 
+  return {
+    public: uniqueSorted([...value, ...typeOnly]),
+    typeOnly: uniqueSorted(typeOnly),
+    value: uniqueSorted(value),
+  };
+}
+
+function exportNames(block) {
+  const names = [];
+  for (const rawPart of block.split(",")) {
+    const part = rawPart.replace(/\/\/.*$/gm, "").trim();
+    if (part.length === 0) continue;
+    const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
+    if (exportedName === undefined) {
+      throw new Error(`Export name capture failed: ${part}`);
+    }
+    names.push(exportedName);
+  }
+
+  return names;
+}
+
+function uniqueSorted(names) {
   return [...new Set(names)].sort();
 }
 
-function publicExports(source) {
-  const names = [];
-  for (const match of source.matchAll(/^export(?: type)? \{([\s\S]*?)\} from/gm)) {
-    const block = match[1];
-    if (block === undefined) {
-      throw new Error("Export block capture failed");
-    }
-    for (const rawPart of block.split(",")) {
-      const part = rawPart.replace(/\/\/.*$/gm, "").trim();
-      if (part.length === 0) continue;
-      const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
-      if (exportedName === undefined) {
-        throw new Error(`Export name capture failed: ${part}`);
-      }
-      names.push(exportedName);
-    }
-  }
-
-  return [...new Set(names)].sort();
-}
-
-function typeOnlyExports(source) {
-  const names = [];
-  for (const match of source.matchAll(/^export type \{([\s\S]*?)\} from/gm)) {
-    const block = match[1];
-    if (block === undefined) {
-      throw new Error("Type export block capture failed");
-    }
-    for (const rawPart of block.split(",")) {
-      const part = rawPart.replace(/\/\/.*$/gm, "").trim();
-      if (part.length === 0) continue;
-      const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
-      if (exportedName === undefined) {
-        throw new Error(`Type export name capture failed: ${part}`);
-      }
-      names.push(exportedName);
-    }
-  }
-
-  return [...new Set(names)].sort();
+function mapExportNames(exportsByModule, field) {
+  return Object.fromEntries(Object.entries(exportsByModule).map(([name, exports]) => [name, exports[field]]));
 }
 
 function assertDeclarationExports(declarationSource, expectedNames, label) {
