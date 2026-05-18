@@ -1,14 +1,19 @@
 import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, resolve } from "node:path";
+import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = await mkdtemp(join(tmpdir(), "zod-crud-package-"));
 const npmCache = join(workspace, ".npm-cache");
 const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
+const verbEntries = await readdir(join(repoRoot, "src", "verbs"), { withFileTypes: true });
+const verbNames = verbEntries
+  .filter((entry) => entry.isFile() && extname(entry.name) === ".ts")
+  .map((entry) => basename(entry.name, ".ts"))
+  .sort();
 
 function run(command, args, cwd) {
   execFileSync(command, args, {
@@ -95,6 +100,15 @@ try {
         throw new Error(`Export ${subpath}.${condition} target is missing from tarball: ${target}`);
       }
     }
+  }
+  const exportedVerbs = Object.keys(packageJson.exports)
+    .filter((subpath) => subpath.startsWith("./verbs/"))
+    .map((subpath) => subpath.slice("./verbs/".length))
+    .sort();
+  if (JSON.stringify(exportedVerbs) !== JSON.stringify(verbNames)) {
+    throw new Error(
+      `Verb exports must match src/verbs/*.ts. exports=${exportedVerbs.join(",")} source=${verbNames.join(",")}`,
+    );
   }
 
   if (zodPackage === null) {
