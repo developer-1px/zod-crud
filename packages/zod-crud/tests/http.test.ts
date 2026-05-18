@@ -34,6 +34,13 @@ describe("RFC 6902 over HTTP — request", () => {
     expect(() => buildPatchRequest([{ op: "move", from: "a", path: "/b" }])).toThrow(TypeError);
   });
 
+  test("buildPatchRequest 는 런타임에서도 JSON Patch array 만 허용한다", () => {
+    expect(() => buildPatchRequest({ op: "remove", path: "/a" } as never)).toThrow(TypeError);
+    const sparse = [] as unknown as Array<never>;
+    sparse.length = 1;
+    expect(() => buildPatchRequest(sparse)).toThrow(TypeError);
+  });
+
   test("withIfMatch 가 RFC 5789 §2.4 conditional 헤더 추가", () => {
     const req = buildPatchRequest([]);
     const conditional = withIfMatch(req, '"abc123"');

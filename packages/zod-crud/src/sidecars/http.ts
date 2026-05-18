@@ -91,7 +91,9 @@ type PatchOpParseResult =
 const JSON_PATCH_OPS = new Set(["add", "remove", "replace", "move", "copy", "test"]);
 
 function assertJsonPatchOperations(ops: ReadonlyArray<JSONPatchOperation>): void {
+  if (!Array.isArray(ops)) throw new TypeError("json-patch body must be an array");
   for (let i = 0; i < ops.length; i++) {
+    if (!(i in ops)) throw new TypeError(`json-patch op[${i}] must be an object`);
     const op = parseJsonPatchOperation(ops[i], i);
     if (!op.ok) throw new TypeError(op.reason);
   }
