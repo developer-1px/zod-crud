@@ -295,6 +295,8 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
   test("package metadata keeps npm publication fields intact", () => {
     const pkg = packageJson as {
       name: string;
+      version: string;
+      description: string;
       type: string;
       license: string;
       sideEffects: boolean;
@@ -307,10 +309,15 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       bugs?: { url?: string };
       keywords?: string[];
     };
+    const license = readFileSync(resolve(root, "LICENSE"), "utf8");
 
     expect(pkg.name).toBe("zod-crud");
+    expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(pkg.description).toBe("Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.");
     expect(pkg.type).toBe("module");
     expect(pkg.license).toBe("MIT");
+    expect(license).toContain("MIT License");
+    expect(license).toContain("Copyright (c) 2026 zod-crud contributors");
     expect(pkg.sideEffects).toBe(false);
     expect(pkg.main).toBe("./dist/index.js");
     expect(pkg.types).toBe("./dist/index.d.ts");
