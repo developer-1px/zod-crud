@@ -155,6 +155,51 @@ function assertDeclarationExports(declarationSource, expectedNames, label) {
   }
 }
 
+async function assertDeclarationSpecifiers(installedPackageRoot) {
+  const distRoot = join(installedPackageRoot, "dist");
+  const declarationPaths = await declarationModulePaths(distRoot);
+  const declarationSet = new Set(declarationPaths);
+  const allowedBareSpecifiers = new Set(["react", "zod"]);
+
+  for (const declarationPath of declarationPaths) {
+    const source = await readFile(join(distRoot, declarationPath), "utf8");
+    const specifiers = Array.from(
+      source.matchAll(/\b(?:from|import)\s*(?:\(\s*)?["']([^"']+)["']/g),
+      (match) => match[1],
+    );
+
+    for (const specifier of specifiers) {
+      if (specifier === undefined) throw new Error(`Declaration specifier capture failed: ${declarationPath}`);
+      if (specifier.startsWith(".")) {
+        const resolved = resolve(dirname(join(distRoot, declarationPath)), specifier)
+          .replace(/\.js$/, ".d.ts")
+          .slice(distRoot.length + 1);
+        if (!declarationSet.has(resolved)) {
+          throw new Error(`Declaration import does not resolve inside package: ${declarationPath} -> ${specifier}`);
+        }
+      } else if (!allowedBareSpecifiers.has(specifier)) {
+        throw new Error(`Declaration imports unexpected bare specifier: ${declarationPath} -> ${specifier}`);
+      }
+    }
+  }
+}
+
+async function declarationModulePaths(dir, prefix = "") {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const paths = [];
+  for (const entry of entries) {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolutePath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      paths.push(...await declarationModulePaths(absolutePath, relativePath));
+    } else if (entry.isFile() && entry.name.endsWith(".d.ts")) {
+      paths.push(relativePath);
+    }
+  }
+
+  return paths.sort();
+}
+
 function assertInstalledPackageJson(pkg) {
   const expectedFields = [
     "name",
@@ -622,6 +667,7 @@ try {
     reactPublicExports,
     "react",
   );
+  await assertDeclarationSpecifiers(installedPackageRoot);
 
   if (!existsSync(join(workspace, "node_modules", "zod"))) {
     await symlink(zodPackage, join(workspace, "node_modules", "zod"), "dir");
