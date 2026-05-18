@@ -145,7 +145,7 @@ describe("verbs/paste", () => {
       hero: Section,
       features: z.object({ type: z.literal("features"), items: z.array(z.string()) }),
     });
-    const state = {
+    const state: z.output<typeof Page> = {
       hero: { type: "hero", title: "Hi" },
       features: { type: "features", items: [] },
     };
