@@ -375,6 +375,7 @@ export function safeParse<S extends z.ZodType>(
 ```ts
 // Parse / build
 export function parsePointer(pointer: Pointer): string[];          // 이스케이프 디코드된 segment 배열
+export function tryParsePointer(pointer: Pointer): string[] | null; // parse 실패 시 null
 export function buildPointer(segments: (string | number)[]): Pointer;
 export function escapeSegment(s: string): string;                  // ~ → ~0, / → ~1
 export function unescapeSegment(s: string): string;
