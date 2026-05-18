@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useJsonDocument, type JsonResult } from "zod-crud";
+import { useJSONDocument, type JSONResult } from "zod-crud";
 
 // 의도적으로 까다로운 스키마: 빈 문자열 금지 + 상한 100.
 const Schema = z.object({
@@ -9,7 +9,7 @@ const Schema = z.object({
 });
 
 export function RejectedDrift() {
-  const { value: json, ops } = useJsonDocument(Schema, { count: 7, label: "ok" }, { strict: false });
+  const { value: json, ops } = useJSONDocument(Schema, { count: 7, label: "ok" }, { strict: false });
   const [draft, setDraft] = useState("999");
   const [reason, setReason] = useState<string | null>(null);
 
@@ -19,7 +19,7 @@ export function RejectedDrift() {
       setReason("not a finite number");
       return;
     }
-    const r: JsonResult = ops.replace("/count", next);
+    const r: JSONResult = ops.replace("/count", next);
     if (r.ok) setReason(null);
     else setReason(`rejected: ${r.code}${r.reason ? ` — ${r.reason}` : ""}`);
   };

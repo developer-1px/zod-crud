@@ -1,7 +1,7 @@
 // verbs/move — Edit 기둥, RFC 6902 move op.
 // pure composer. preFlight gate 통과 후 next + patch 산출.
 
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type * as z from "zod";
@@ -9,7 +9,7 @@ import type * as z from "zod";
 export interface MoveOk<T> {
   ok: true;
   next: T;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
 }
 
 export interface MoveError {
@@ -31,7 +31,7 @@ export function move<S extends z.ZodType>(
   from: Pointer,
   to: Pointer,
 ): MoveResult<z.output<S>> {
-  const op: JsonPatchOperation = { op: "move", from, path: to };
+  const op: JSONPatchOperation = { op: "move", from, path: to };
   const r = preFlight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };

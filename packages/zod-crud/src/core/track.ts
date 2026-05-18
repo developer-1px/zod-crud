@@ -3,7 +3,7 @@
 // 출력: 새 Pointer (또는 null = cascading drop)
 
 import { parsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer/index.js";
-import type { JsonPatchOperation } from "./patch/index.js";
+import type { JSONPatchOperation } from "./patch/index.js";
 
 export function exists(state: unknown, pointer: Pointer): boolean {
   return readAt(state, parsePointer(pointer)).ok;
@@ -13,7 +13,7 @@ export function exists(state: unknown, pointer: Pointer): boolean {
 // 단일 표준 모델: applyPatch 가 `/-` 를 concrete index 로 이미 정규화했으므로
 // 모든 op.path 는 적용 시점의 실제 위치. 이후 ops 의 index shift 는 trackPointer 가 처리.
 export function pickAutoTargets(
-  applied: ReadonlyArray<JsonPatchOperation>,
+  applied: ReadonlyArray<JSONPatchOperation>,
   _after: unknown,
 ): Pointer[] {
   const out: Pointer[] = [];
@@ -31,7 +31,7 @@ export function pickAutoTargets(
 // array container 는 좌표 의미가 없는 "항목 컨테이너" 라 fallback 시 건너뛰고 한 단계 더 climb.
 export function recoverLostPointer(
   lost: Pointer,
-  applied: ReadonlyArray<JsonPatchOperation>,
+  applied: ReadonlyArray<JSONPatchOperation>,
   after: unknown,
 ): Pointer | null {
   const idx = lastSegmentIndex(lost);
@@ -98,7 +98,7 @@ function sameArrayParent(a: string[], b: string[]): boolean {
 
 // 한 op 가 한 pointer 에 어떤 영향을 주는가.
 // null = pointer 자체가 cascading drop 됨.
-function trackOne(pointer: Pointer, op: JsonPatchOperation): Pointer | null {
+function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
   const target = parsePointer(pointer);
 
   switch (op.op) {
@@ -154,7 +154,7 @@ function trackOne(pointer: Pointer, op: JsonPatchOperation): Pointer | null {
 
 export function trackPointer(
   pointer: Pointer,
-  applied: ReadonlyArray<JsonPatchOperation>,
+  applied: ReadonlyArray<JSONPatchOperation>,
 ): Pointer | null {
   let cur: Pointer | null = pointer;
   for (const op of applied) {
@@ -169,7 +169,7 @@ export function trackPointer(
 
 export function trackPointers(
   pointers: ReadonlyArray<Pointer>,
-  applied: ReadonlyArray<JsonPatchOperation>,
+  applied: ReadonlyArray<JSONPatchOperation>,
 ): Pointer[] {
   const out: Pointer[] = [];
   for (const p of pointers) {

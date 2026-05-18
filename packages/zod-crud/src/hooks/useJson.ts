@@ -1,6 +1,6 @@
-// SPEC.md §5.1 — useJsonDocument 내부 substrate.
+// SPEC.md §5.1 — useJSONDocument 내부 substrate.
 // 코어는 core/patch/ (pure). 이 파일은 useState + ops binding + change subscription.
-// undo/redo 는 JsonOps 의 책임이 아님 — doc.commands.undo / doc.can.undo / doc.history 가 정본 위치.
+// undo/redo 는 JSONOps 의 책임이 아님 — doc.commands.undo / doc.can.undo / doc.history 가 정본 위치.
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import type * as z from "zod";
@@ -8,24 +8,24 @@ import type * as z from "zod";
 import {
   applyOperation,
   applyPatch,
-  type JsonPatchOperation,
-  type JsonResult,
+  type JSONPatchOperation,
+  type JSONResult,
 } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
-import { handleResult, JsonCrudError, type ErrorPolicy } from "../JsonCrudError.js";
-import type { JsonOps, UseJsonOptions, JsonChangeListener } from "../jsonOps.js";
+import { handleResult, JSONCrudError, type ErrorPolicy } from "../JSONCrudError.js";
+import type { JSONOps, UseJSONOptions, JSONChangeListener } from "../jsonOps.js";
 
-export { JsonCrudError } from "../JsonCrudError.js";
-export type { JsonOps, UseJsonOptions, JsonChangeListener } from "../jsonOps.js";
+export { JSONCrudError } from "../JSONCrudError.js";
+export type { JSONOps, UseJSONOptions, JSONChangeListener } from "../jsonOps.js";
 
-const ROOT_REPLACE = (value: unknown): JsonPatchOperation => ({ op: "replace", path: "", value });
+const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
 
-export function useJson<S extends z.ZodType>(
+export function useJSON<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
-  options: UseJsonOptions = {},
-): [z.output<S>, JsonOps<z.output<S>>] {
+  options: UseJSONOptions = {},
+): [z.output<S>, JSONOps<z.output<S>>] {
   const policyRef = useRef<ErrorPolicy>(options);
   policyRef.current = options;
 
@@ -40,14 +40,14 @@ export function useJson<S extends z.ZodType>(
   const stateRef = useRef(state);
   stateRef.current = state;
 
-  const listenersRef = useRef<Set<JsonChangeListener>>(new Set());
-  const notify = useCallback((applied: ReadonlyArray<JsonPatchOperation>) => {
+  const listenersRef = useRef<Set<JSONChangeListener>>(new Set());
+  const notify = useCallback((applied: ReadonlyArray<JSONPatchOperation>) => {
     if (applied.length === 0) return;
     for (const fn of listenersRef.current) fn(applied);
   }, []);
 
-  const ops = useMemo<JsonOps<z.output<S>>>(() => {
-    const dispatch = (label: JsonPatchOperation | "patch", list: ReadonlyArray<JsonPatchOperation>): JsonResult => {
+  const ops = useMemo<JSONOps<z.output<S>>>(() => {
+    const dispatch = (label: JSONPatchOperation | "patch", list: ReadonlyArray<JSONPatchOperation>): JSONResult => {
       const before = stateRef.current;
       const { state: next, result, applied } = applyPatch(schema, before, list);
       if (!result.ok) return handleResult(policyRef.current, label, result);
@@ -57,9 +57,9 @@ export function useJson<S extends z.ZodType>(
       notify(applied);
       return result;
     };
-    const single = (op: JsonPatchOperation) => dispatch(op, [op]);
+    const single = (op: JSONPatchOperation) => dispatch(op, [op]);
 
-    const replaceRoot = (label: "load" | "reset", value: unknown): JsonResult => {
+    const replaceRoot = (label: "load" | "reset", value: unknown): JSONResult => {
       const parsed = schema.safeParse(value);
       if (!parsed.success) {
         return handleResult(policyRef.current, label, {
@@ -99,7 +99,7 @@ export function useJson<S extends z.ZodType>(
       patch(operations) { return dispatch("patch", operations); },
       apply(operations) {
         const r = dispatch("patch", operations);
-        if (!r.ok) throw new JsonCrudError("patch", r);
+        if (!r.ok) throw new JSONCrudError("patch", r);
       },
 
       load(value) { return replaceRoot("load", value); },

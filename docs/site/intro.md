@@ -18,14 +18,14 @@
 
 ```tsx
 import * as z from 'zod';
-import { useJsonDocument } from 'zod-crud';
+import { useJSONDocument } from 'zod-crud';
 
 const Schema = z.object({
   cells: z.record(z.string(), z.string()),
 });
 
 function Sheet() {
-  const { value, ops, commands, can, history } = useJsonDocument(
+  const { value, ops, commands, can, history } = useJSONDocument(
     Schema,
     { cells: {} },
     { history: 100 }
@@ -84,7 +84,7 @@ function Sheet() {
 ## 다음 단계
 
 - **[Quick Start](/docs/getting-started)** — 첫 편집기 5분
-- **[useJsonDocument](/docs/concepts)** — facade 표면 깊이 보기
+- **[useJSONDocument](/docs/concepts)** — facade 표면 깊이 보기
 - **[Editor State](/docs/operations)** — ops/history/selection 표면 + 실전 시나리오
 - **[Why Not](/docs/why-not)** — 거부한 기능 빈자리 메우기
 - **[Core & Design](/docs/advanced)** — SPEC 기반 내부 계약

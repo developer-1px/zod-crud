@@ -24,23 +24,23 @@ zod-crud 의 정체성을 "FE 서비스가 매번 다시 만드는 편집 어휘
 
 ### Changed (breaking)
 
-- **Schema mandatory** — `useJsonDocument(schema, initial)` 의 schema 는 required (P4.1). 정체성의 "Zod 로 보호되는" 이 정의의 일부.
+- **Schema mandatory** — `useJSONDocument(schema, initial)` 의 schema 는 required (P4.1). 정체성의 "Zod 로 보호되는" 이 정의의 일부.
 - **mutating verbs** (move/cut/paste/duplicate/replace/undo/redo) 가 `core/schema/preFlight` gate 통과를 전제 — schema 위반 patch 는 commit 되지 않음 (history 오염 0).
-- **Public surface 축소**: `useJson`, `useSelection` 은 internal-only (useJsonDocument facade 가 흡수). 외부는 `useJsonDocument` 단일 진입점 사용 (P7).
+- **Public surface 축소**: `useJSON`, `useSelection` 은 internal-only (useJSONDocument facade 가 흡수). 외부는 `useJSONDocument` 단일 진입점 사용 (P7).
 - **어휘 정정**: "Editor abstractions" / "Axis 1·2" 폐기 (ADR-0002).
   - `Axis 2` 라벨 → `Selection 기둥` / `core/selection`
   - `Axis 1` 라벨 → `core/pointer` + `core/patch`
 
 ### Removed
 
-- `useJson` public export (internal 유지)
+- `useJSON` public export (internal 유지)
 - `useSelection` public export (internal 유지)
 
 ### Deferred (post-v0.7)
 
 - RFC 9535 function extensions (`length` / `count` / `match` / `search` / `value`) — P6.4
 - IETF RFC 9535 conformance suite 통합 — P6.5
-- 10 verbs 의 useJsonDocument facade 메서드 통합 (현재는 `verbs/*` pure 함수로만 노출)
+- 10 verbs 의 useJSONDocument facade 메서드 통합 (현재는 `verbs/*` pure 함수로만 노출)
 - v1.0 — 검증 누적 후 별도 ADR
 
 ### Phase log

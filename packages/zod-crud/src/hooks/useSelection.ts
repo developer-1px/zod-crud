@@ -15,7 +15,7 @@ import {
   type SelectionType,
 } from "../core/selection/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import type { JsonOps } from "./useJson.js";
+import type { JSONOps } from "./useJSON.js";
 
 export type { SelectionMode, SelectionType };
 
@@ -43,7 +43,7 @@ export interface SelectionState<T> {
 }
 
 export function useSelection<T>(
-  ops: JsonOps<T>,
+  ops: JSONOps<T>,
   options: UseSelectionOptions = {},
 ): SelectionState<T> {
   const mode: SelectionMode = options.mode ?? "single";

@@ -103,10 +103,10 @@ undo 가 px 단위로 100번 되돌아갑니다.
 ### Canonical 대안 — `strict: true` 한 번만 박기
 
 ```tsx
-const doc = useJsonDocument(Schema, initial, { strict: true });
+const doc = useJSONDocument(Schema, initial, { strict: true });
 
 // 이제 ops.patch / ops.add / ops.replace 등 모든 mutating 호출이
-// JsonResult 를 반환하지만 violation 시 JsonCrudError 를 throw 합니다.
+// JSONResult 를 반환하지만 violation 시 JSONCrudError 를 throw 합니다.
 ops.patch(operations);  // 결과 무시 가능 — fire-and-forget
 ```
 

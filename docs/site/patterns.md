@@ -60,7 +60,7 @@ doc.history.mergeLast();  // 직전 두 entry 를 한 entry 로 합침
 **Canonical**: zero-config — selection 은 ops.subscribe 로 commit 을 듣고 Pointer 를 자동 follow.
 
 ```ts
-const doc = useJsonDocument(Schema, initial, { selection: { mode: 'multiple' } });
+const doc = useJSONDocument(Schema, initial, { selection: { mode: 'multiple' } });
 
 doc.selection?.collapse('/items/2');
 doc.ops.remove('/items/0');
@@ -146,7 +146,7 @@ else log(result.violations);
 import { useRecorder, replayRecording } from 'zod-crud';
 
 function App() {
-  const doc = useJsonDocument(Schema, initial);
+  const doc = useJSONDocument(Schema, initial);
   const recorder = useRecorder(doc);
 
   return (

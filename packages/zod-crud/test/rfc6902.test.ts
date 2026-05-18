@@ -8,7 +8,7 @@ import {
   applyPatch,
   buildPointer,
   parsePointer,
-  type JsonPatchOperation,
+  type JSONPatchOperation,
 } from "../src/index.js";
 
 const Any = z.any();
@@ -128,7 +128,7 @@ describe("RFC 6902 — test", () => {
 describe("RFC 6902 — batch atomicity (G8)", () => {
   it("rolls back on mid-batch failure", () => {
     const initial = { a: 1, b: 2 };
-    const ops: JsonPatchOperation[] = [
+    const ops: JSONPatchOperation[] = [
       { op: "replace", path: "/a", value: 10 },
       { op: "remove", path: "/missing" },
     ];
@@ -170,7 +170,7 @@ describe("Immutability (G2)", () => {
 
 describe("Serializability (G1)", () => {
   it("operations and results round-trip through JSON", () => {
-    const ops: JsonPatchOperation[] = [
+    const ops: JSONPatchOperation[] = [
       { op: "add", path: "/x", value: 1 },
       { op: "move", from: "/x", path: "/y" },
     ];

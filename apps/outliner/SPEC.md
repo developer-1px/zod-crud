@@ -1,6 +1,6 @@
 # apps/outliner — Specification
 
-zod-crud 의 첫 번째 reference editor. `useJsonDocument` facade 와 outliner-local 모듈
+zod-crud 의 첫 번째 reference editor. `useJSONDocument` facade 와 outliner-local 모듈
 (`keymap`, `clipboard`, `commands`, `recorder UI`) 를 합쳐 6축(키보드 · cursor ·
 multi-select · clipboard · session recording · error) 을 모두 구현한 Workflowy/Roam 풍
 outliner.
@@ -13,7 +13,7 @@ outliner.
 
 ## 0. 헌장
 
-- zod-crud 가 제공하는 `useJsonDocument` facade 위에서만 동작한다.
+- zod-crud 가 제공하는 `useJSONDocument` facade 위에서만 동작한다.
 - 100% JSON 직렬화 (G1) — outliner 의 모든 상태 (selection · focus · clipboard buffer ·
   history) 가 `JSON.stringify` round-trip.
 - DOM 이벤트 → chord → command → RFC 6902 batch 의 단방향 흐름.
@@ -179,7 +179,7 @@ outliner UI 정책으로 감싼다.
 
 ## 7. Error UX
 
-- `useJsonDocument({ strict: false, onError })` 콜백으로 모든 실패가 흐름.
+- `useJSONDocument({ strict: false, onError })` 콜백으로 모든 실패가 흐름.
 - toast 로 2.5s 표시 (`<div role="status" aria-live="polite">`).
 - copy/cut 성공도 info toast 로 표시 (선택 개수 알림).
 - 위반 코드:
@@ -204,7 +204,7 @@ outliner UI 정책으로 감싼다.
 
 | 의존 | 이유 |
 |------|------|
-| `zod-crud` | useJsonDocument facade 와 RFC 6902 substrate |
+| `zod-crud` | useJSONDocument facade 와 RFC 6902 substrate |
 | `zod` | OutlineSchema 정의 |
 | `react >=18` | hook |
 

@@ -9,7 +9,7 @@ import { normalizeOp } from "./internal.js";
 
 export { computeInverses } from "./inverse.js";
 
-export type JsonPatchOperation =
+export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
   | { op: "remove";  path: Pointer }
   | { op: "replace"; path: Pointer; value: unknown }
@@ -25,18 +25,18 @@ export type ErrorCode =
   | "test_failed"
   | "not_serializable";
 
-export type JsonResult =
+export type JSONResult =
   | { ok: true }
   | { ok: false; code: ErrorCode; reason?: string; pointer?: Pointer };
 
 export interface ApplyResult<S extends z.ZodTypeAny> {
   state: z.output<S>;
-  result: JsonResult;
-  applied: ReadonlyArray<JsonPatchOperation>;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
 }
 
-const ok: JsonResult = { ok: true };
-const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JsonResult => {
+const ok: JSONResult = { ok: true };
+const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult => {
   const r: { ok: false; code: ErrorCode; reason?: string; pointer?: Pointer } = { ok: false, code };
   if (reason !== undefined) r.reason = reason;
   if (pointer !== undefined) r.pointer = pointer;
@@ -47,7 +47,7 @@ const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JsonResult =
 export function applyOperation<S extends z.ZodTypeAny>(
   schema: S,
   state: z.output<S>,
-  op: JsonPatchOperation,
+  op: JSONPatchOperation,
 ): ApplyResult<S> {
   const normalized = normalizeOp(op, state);
   const r = applyOpRaw(state, normalized);
@@ -64,10 +64,10 @@ export function applyOperation<S extends z.ZodTypeAny>(
 export function applyPatch<S extends z.ZodTypeAny>(
   schema: S,
   state: z.output<S>,
-  ops: ReadonlyArray<JsonPatchOperation>,
+  ops: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S> {
   let cur: unknown = state;
-  const normalized: JsonPatchOperation[] = [];
+  const normalized: JSONPatchOperation[] = [];
   for (let i = 0; i < ops.length; i++) {
     const n = normalizeOp(ops[i]!, cur);
     normalized.push(n);

@@ -2,7 +2,7 @@
 type: reference
 mode: defacto
 query: "zod-crud (FE 표준화 레이어 — 선택·편집·클립보드·되돌리기 4기둥 + RFC 9535 + Zod) 의 외부 대체재는 무엇인가"
-internalGap: "MEMORY 는 zod-crud 의 정체성·미션·구현 사실(자체 RFC 9535, 10 verbs, useJsonDocument facade)을 가졌으나, '같은 빈자리를 노리는 외부 라이브러리가 있는가'에 대한 외부 기준점이 없음"
+internalGap: "MEMORY 는 zod-crud 의 정체성·미션·구현 사실(자체 RFC 9535, 10 verbs, useJSONDocument facade)을 가졌으나, '같은 빈자리를 노리는 외부 라이브러리가 있는가'에 대한 외부 기준점이 없음"
 tags: [research, alternatives, jsonpath, json-tree, headless-editor]
 ---
 

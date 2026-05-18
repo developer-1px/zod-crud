@@ -1,11 +1,11 @@
 // debug log UI — 시작/정지/다운로드. zod-crud 의 useDebugLog 위에 outliner 정책.
 
 import { useCallback } from "react";
-import { useDebugLog, type DebugLog, type SelectionState, type JsonOps } from "zod-crud";
+import { useDebugLog, type DebugLog, type SelectionState, type JSONOps } from "zod-crud";
 import type { OutlineNode } from "../schema.js";
 
 export function useDebugUI(
-  ops: JsonOps<OutlineNode>,
+  ops: JSONOps<OutlineNode>,
   selection: SelectionState<OutlineNode> | undefined,
 ) {
   const dbg = useDebugLog<OutlineNode>(ops, selection);

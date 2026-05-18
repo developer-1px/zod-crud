@@ -43,7 +43,7 @@ core/
 
 ## commands/ (facade builders, pure)
 
-`useJsonDocument.commands` / `useJsonDocument.can` group 의 빌더. React 무관 — `hooks/` 에 없음 (셀프 점검 결과 분리, 2026-05-10).
+`useJSONDocument.commands` / `useJSONDocument.can` group 의 빌더. React 무관 — `hooks/` 에 없음 (셀프 점검 결과 분리, 2026-05-10).
 
 ```
 commands/
@@ -53,12 +53,12 @@ commands/
 
 ## sidecars/ (횡단 관심사)
 
-hooks/commands/verbs/core 어디에도 속하지 않는 횡단 관심사 박스. 각 sidecar 는 useJsonDocument 의 정상 흐름 (state · ops · selection · history) 에 **수평으로 hook 한다 (관찰만 또는 wire format 변환)**. 본체 데이터 동작에 영향을 주지 않는다.
+hooks/commands/verbs/core 어디에도 속하지 않는 횡단 관심사 박스. 각 sidecar 는 useJSONDocument 의 정상 흐름 (state · ops · selection · history) 에 **수평으로 hook 한다 (관찰만 또는 wire format 변환)**. 본체 데이터 동작에 영향을 주지 않는다.
 
 | Sidecar | 역할 | 횡단 대상 | 위치 |
 |---------|------|-----------|------|
-| `recorder` | commit 된 patch 를 timestamp 와 함께 Recording JSON 으로 직렬화. replay API 제공. | useJsonDocument 의 commit stream (ops.subscribe) | `sidecars/recorder.ts` |
-| `debug-log` | 입력 → dispatch → commit → selection 의 trace. 디버깅·재현용. | useJsonDocument 의 모든 단계 (cross-cutting) | `sidecars/debug-log.ts` |
+| `recorder` | commit 된 patch 를 timestamp 와 함께 Recording JSON 으로 직렬화. replay API 제공. | useJSONDocument 의 commit stream (ops.subscribe) | `sidecars/recorder.ts` |
+| `debug-log` | 입력 → dispatch → commit → selection 의 trace. 디버깅·재현용. | useJSONDocument 의 모든 단계 (cross-cutting) | `sidecars/debug-log.ts` |
 | `http` | RFC 5789/6902/7396 wire format 빌더 + 파서. 서버 transport 어댑터. | RFC 6902 patch 의 wire 변환 (ops 와 직교) | `sidecars/http.ts` |
 
 ```

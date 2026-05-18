@@ -1,10 +1,10 @@
-// Workflowy/Roam 풍 outliner — useJsonDocument facade 1개로 구현.
+// Workflowy/Roam 풍 outliner — useJSONDocument facade 1개로 구현.
 // schema = recursive { text, children: Self[] }. focus = 현재 활성 노드 Pointer.
 // 모든 키 동작이 RFC 6902 op 1~2 개로 표현되고, history·focus 가 facade 안에 있음.
 
 import { useEffect, useRef } from "react";
 import { z } from "zod";
-import { useJsonDocument, type Pointer } from "zod-crud";
+import { useJSONDocument, type Pointer } from "zod-crud";
 
 type OutlineNode = { text: string; children: OutlineNode[] };
 
@@ -49,7 +49,7 @@ function siblingAt(p: Pointer, idx: number): Pointer {
 }
 
 export function Outliner() {
-  const doc = useJsonDocument(OutlineSchema, SAMPLE, {
+  const doc = useJSONDocument(OutlineSchema, SAMPLE, {
     history: 200,
     strict: false,
     selection: { mode: "single", initial: [""] },
@@ -143,7 +143,7 @@ interface RowProps {
   depth: number;
   focus: Pointer | null;
   setFocus: (p: Pointer) => void;
-  ops: ReturnType<typeof useJsonDocument<typeof OutlineSchema>>["ops"];
+  ops: ReturnType<typeof useJSONDocument<typeof OutlineSchema>>["ops"];
   onKey: (e: React.KeyboardEvent, p: Pointer) => void;
 }
 

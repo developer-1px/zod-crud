@@ -1,5 +1,5 @@
 // chord → CommandId 디스패치. dispatch 가 true 면 caller 가 preventDefault.
-// command 의 JsonResult 실패는 toast 로 surface.
+// command 의 JSONResult 실패는 toast 로 surface.
 
 import { useCallback } from "react";
 import type { DebugLogger } from "zod-crud";

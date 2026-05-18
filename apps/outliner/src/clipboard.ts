@@ -2,7 +2,7 @@
 // 100% JSON 직렬화. paste 의미는 RFC 6902 batch 로 환원.
 
 import { useCallback, useState } from "react";
-import type { Pointer, JsonOps, JsonResult } from "zod-crud";
+import type { Pointer, JSONOps, JSONResult } from "zod-crud";
 import type { OutlineNode } from "./schema.js";
 import { readNode, parentOf, lastIndex } from "./pointer-utils.js";
 
@@ -22,7 +22,7 @@ export interface ClipboardApi {
   sources: ReadonlyArray<Pointer>;
   copy(state: OutlineNode, sources: ReadonlyArray<Pointer>): void;
   cut(state: OutlineNode, sources: ReadonlyArray<Pointer>): void;
-  paste(target: Pointer, mode: PasteMode, ops: JsonOps<OutlineNode>): JsonResult;
+  paste(target: Pointer, mode: PasteMode, ops: JSONOps<OutlineNode>): JSONResult;
   clear(): void;
 }
 
@@ -81,7 +81,7 @@ export function useClipboard(): ClipboardApi {
   }, []);
 
   const paste = useCallback(
-    (target: Pointer, mode: PasteMode, ops: JsonOps<OutlineNode>): JsonResult => {
+    (target: Pointer, mode: PasteMode, ops: JSONOps<OutlineNode>): JSONResult => {
       // closure 로 잡힌 snap 이 아니라 현재 state 를 읽어야 하지만,
       // setSnap 콜백 안에서 처리하기 위해 일단 snap 로 처리 후 cut 모드면 비움.
       const cur = snap;

@@ -1,23 +1,23 @@
 # Lower-level Hooks
 
-`useJsonDocument`가 기본 표면입니다. 필요하면 더 낮은 레벨 hook을 따로 조합할 수 있습니다.
+`useJSONDocument`가 기본 표면입니다. 필요하면 더 낮은 레벨 hook을 따로 조합할 수 있습니다.
 
 ## 전체 그림
 
 ```txt
-useJsonDocument
-├─ useJson
+useJSONDocument
+├─ useJSON
 └─ useSelection   ← W3C Selection API. 캐럿 = collapsed selection
 ```
 
-`useJsonDocument`는 위 hook들과 commands/can/history wiring을 하나의 `doc` 객체로 묶습니다. 반대로 낮은 레벨 hook을 직접 쓰면 상태 경계를 더 세밀하게 나눌 수 있습니다.
+`useJSONDocument`는 위 hook들과 commands/can/history wiring을 하나의 `doc` 객체로 묶습니다. 반대로 낮은 레벨 hook을 직접 쓰면 상태 경계를 더 세밀하게 나눌 수 있습니다.
 
-## `useJson`
+## `useJSON`
 
-`useJson`은 문서 값과 편집 작업만 제공합니다.
+`useJSON`은 문서 값과 편집 작업만 제공합니다.
 
 ```ts
-const [value, ops] = useJson(Schema, initial, {
+const [value, ops] = useJSON(Schema, initial, {
   history: 50,
 });
 ```
@@ -29,14 +29,14 @@ const [value, ops] = useJson(Schema, initial, {
 | `value` | schema-valid JSON 값 |
 | `ops` | 편집 작업 API |
 
-::source{path="packages/zod-crud/src/hooks/useJson.ts" title="useJson" lines="21-46"}
+::source{path="packages/zod-crud/src/hooks/useJSON.ts" title="useJSON" lines="21-46"}
 
 ## `useSelection`
 
 `useSelection`은 선택 상태만 담당합니다.
 
 ```ts
-const [value, ops] = useJson(Schema, initial);
+const [value, ops] = useJSON(Schema, initial);
 const selection = useSelection(ops, { mode: "multiple" });
 ```
 
@@ -62,10 +62,10 @@ DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다.
 
 | 상황 | 추천 |
 |------|------|
-| 처음 시작하는 앱 | `useJsonDocument` |
-| 값 편집만 필요한 작은 UI | `useJson` |
-| selection을 별도 provider로 분리 | `useJson` + `useSelection` |
-| 제품 수준 편집 명령이 필요함 | `useJsonDocument.commands` |
+| 처음 시작하는 앱 | `useJSONDocument` |
+| 값 편집만 필요한 작은 UI | `useJSON` |
+| selection을 별도 provider로 분리 | `useJSON` + `useSelection` |
+| 제품 수준 편집 명령이 필요함 | `useJSONDocument.commands` |
 | React 밖에서 patch만 적용 | `applyPatch` |
 
 ## 예제 읽기

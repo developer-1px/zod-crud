@@ -3,7 +3,7 @@
 // payload + remove 가 atomic. preFlight 거부 시 둘 다 안 일어남 — history 오염 0.
 
 import type * as z from "zod";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
@@ -11,7 +11,7 @@ import { preFlight } from "../core/schema/preFlight.js";
 export interface CutOk<T> {
   ok: true;
   next: T;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
   payload: unknown;
   source: Pointer;
 }
@@ -37,7 +37,7 @@ export function cut<S extends z.ZodType>(
   const payload = JSON.parse(JSON.stringify(v.value));
 
   // 2) RFC 6902 remove patch 를 preFlight gate 통과시킨다
-  const op: JsonPatchOperation = { op: "remove", path: source };
+  const op: JSONPatchOperation = { op: "remove", path: source };
   const r = preFlight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };

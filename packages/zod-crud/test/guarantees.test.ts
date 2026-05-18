@@ -8,7 +8,7 @@ import {
   applyOperation,
   applyPatch,
   serialize,
-  type JsonPatchOperation,
+  type JSONPatchOperation,
 } from "../src/index.js";
 
 const Any = z.any();
@@ -16,7 +16,7 @@ const Any = z.any();
 describe("G6 — purity", () => {
   it("same input always yields same output", () => {
     const state = { a: 1, b: [1, 2] };
-    const op: JsonPatchOperation = { op: "add", path: "/c", value: 3 };
+    const op: JSONPatchOperation = { op: "add", path: "/c", value: 3 };
     const r1 = applyOperation(Any, state, op);
     const r2 = applyOperation(Any, state, op);
     expect(r1.state).toEqual(r2.state);
@@ -25,27 +25,27 @@ describe("G6 — purity", () => {
 
   it("does not depend on Date or random", () => {
     const state = { x: 0 };
-    const op: JsonPatchOperation = { op: "replace", path: "/x", value: 1 };
+    const op: JSONPatchOperation = { op: "replace", path: "/x", value: 1 };
     const samples = Array.from({ length: 5 }, () => applyOperation(Any, state, op).state);
     samples.forEach((s) => expect(s).toEqual({ x: 1 }));
   });
 });
 
 describe("G7 — history round-trip", () => {
-  // useJson 훅의 history는 forward/inverse stack을 단일 root replace로 모델링한다.
+  // useJSON 훅의 history는 forward/inverse stack을 단일 root replace로 모델링한다.
   // 동일 모델을 applyPatch로 재현해 round-trip을 검증한다.
   it("undo then redo restores state via root replace", () => {
     const initial = { a: 1, b: [1, 2] };
-    const forward: JsonPatchOperation[] = [
+    const forward: JSONPatchOperation[] = [
       { op: "replace", path: "/a", value: 9 },
       { op: "add", path: "/b/-", value: 3 },
     ];
     const after = applyPatch(Any, initial, forward);
     expect(after.result.ok).toBe(true);
-    const inverse: JsonPatchOperation[] = [{ op: "replace", path: "", value: initial }];
+    const inverse: JSONPatchOperation[] = [{ op: "replace", path: "", value: initial }];
     const undone = applyPatch(Any, after.state, inverse);
     expect(undone.state).toEqual(initial);
-    const redoInverse: JsonPatchOperation[] = [{ op: "replace", path: "", value: after.state }];
+    const redoInverse: JSONPatchOperation[] = [{ op: "replace", path: "", value: after.state }];
     const redone = applyPatch(Any, undone.state, redoInverse);
     expect(redone.state).toEqual(after.state);
   });
@@ -54,7 +54,7 @@ describe("G7 — history round-trip", () => {
 describe("G1 — JSON-only state and patch", () => {
   it("operations and resulting state are pure JSON", () => {
     const state = { tasks: [] as { id: string; done: boolean }[] };
-    const ops: JsonPatchOperation[] = [
+    const ops: JSONPatchOperation[] = [
       { op: "add", path: "/tasks/-", value: { id: "a", done: false } },
       { op: "replace", path: "/tasks/0/done", value: true },
     ];

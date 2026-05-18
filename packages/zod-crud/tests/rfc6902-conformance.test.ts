@@ -3,14 +3,14 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { applyPatch, type JsonPatchOperation } from "../src/core/patch/index.js";
+import { applyPatch, type JSONPatchOperation } from "../src/core/patch/index.js";
 import tests from "./conformance/tests.json" with { type: "json" };
 import specTests from "./conformance/spec_tests.json" with { type: "json" };
 
 interface Case {
   comment?: string;
   doc: unknown;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
   expected?: unknown;
   error?: string;
   disabled?: boolean;

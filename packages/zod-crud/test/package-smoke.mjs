@@ -103,11 +103,11 @@ try {
     join(workspace, "smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, type JsonPatchOperation, type Pointer } from "zod-crud";',
+      'import { applyOperation, applyPatch, type JSONPatchOperation, type Pointer } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',
       'r.state.name satisfies string;',
-      'const ops: JsonPatchOperation[] = [{ op: "replace", path: "/name", value: "y" }];',
+      'const ops: JSONPatchOperation[] = [{ op: "replace", path: "/name", value: "y" }];',
       'const r2 = applyPatch(schema, { name: "ok" }, ops);',
       'r2.state.name satisfies string;',
       'const p: Pointer = "/name";',

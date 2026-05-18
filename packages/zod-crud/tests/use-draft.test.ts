@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import * as z from "zod";
 
 import { useDraft } from "../src/hooks/useDraft.js";
-import { useJsonDocument } from "../src/hooks/useJsonDocument.js";
+import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -90,7 +90,7 @@ describe("useDraft", () => {
 });
 
 function useHarness() {
-  const doc = useJsonDocument(Schema, { slug: "foo", title: "Title" }, { history: 10 });
+  const doc = useJSONDocument(Schema, { slug: "foo", title: "Title" }, { history: 10 });
   const draft = useDraft(doc);
   return { doc, draft };
 }

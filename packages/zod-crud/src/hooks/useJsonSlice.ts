@@ -7,14 +7,14 @@ import { useCallback, useMemo, useSyncExternalStore } from "react";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
 import type { ValueAt } from "../core/pointer/types.js";
-import type { JsonOps } from "../jsonOps.js";
+import type { JSONOps } from "../jsonOps.js";
 
 /**
  * 특정 pointer 의 값만 구독한다. 다른 path 변경 시 re-render 안 됨.
  * 경로가 없거나 path_not_found 면 undefined 반환.
  */
-export function useJsonSlice<T, P extends string>(
-  ops: JsonOps<T>,
+export function useJSONSlice<T, P extends string>(
+  ops: JSONOps<T>,
   path: P,
 ): ValueAt<T, P> | undefined {
   const segments = useMemo(() => parsePointer(path as Pointer), [path]);

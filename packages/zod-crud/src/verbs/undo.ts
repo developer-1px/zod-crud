@@ -1,20 +1,20 @@
 // verbs/undo — Undo 기둥, RFC 6902 inverse + history.back.
 // pure composer. core/history + core/patch wrapping.
 
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
 import { back as historyBack, type HistoryStack } from "../core/history.js";
 import type * as z from "zod";
 
 export interface UndoEntry {
-  forward: JsonPatchOperation[];
-  inverse: JsonPatchOperation[];
+  forward: JSONPatchOperation[];
+  inverse: JSONPatchOperation[];
 }
 
 export interface UndoResult<T, E extends UndoEntry> {
   ok: true;
   next: T;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
   nextStack: HistoryStack<E>;
   entry: E;
 }

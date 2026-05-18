@@ -1,12 +1,12 @@
 // 구조 변경 commands — insert/demote/promote/move/remove.
 // 모든 mutation 후 focus·selection 은 zod-crud 자동 규칙 (SPEC §5.7 / §5.8) 에 맡긴다.
 
-import { trackPointer, type JsonPatchOperation, type JsonResult, type Pointer } from "zod-crud";
+import { trackPointer, type JSONPatchOperation, type JSONResult, type Pointer } from "zod-crud";
 import { EMPTY_NODE } from "../schema.js";
 import { parentOf, lastIndex, siblingAt, readChildren } from "../pointer-utils.js";
 import { type CommandContext, targetsOf, sortDfs } from "./context.js";
 
-export function insertSibling(ctx: CommandContext): JsonResult {
+export function insertSibling(ctx: CommandContext): JSONResult {
   const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found", reason: "no focus" };
   const idx = lastIndex(p);
@@ -19,12 +19,12 @@ export function insertSibling(ctx: CommandContext): JsonResult {
 // 선택된 ROW 들을 DFS 정렬 후, 직전 ops 를 통과한 현재 위치를 trackPointer 로 따라가며
 // 각각 자기 prev sibling 의 children 끝에 append 한다. 결과: Workflowy 처럼
 // 모두 같은 prev sibling 아래의 형제로 들어감 (top-down 처리 + applyPatch 정규화 덕).
-export function demote(ctx: CommandContext): JsonResult {
+export function demote(ctx: CommandContext): JSONResult {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
   if (targets.includes("")) return { ok: false, code: "path_not_found", reason: "cannot demote root" };
   const sorted = sortDfs(ctx, targets);
-  const ops: JsonPatchOperation[] = [];
+  const ops: JSONPatchOperation[] = [];
   for (const orig of sorted) {
     const cur = trackPointer(orig, ops);
     if (cur === null) continue;
@@ -38,12 +38,12 @@ export function demote(ctx: CommandContext): JsonResult {
 // 선택된 row 들을 자기 부모의 다음 형제로 끌어올림. trail-siblings 모델 — promoted row
 // 뒤에 있던 형제들도 promoted 의 자식으로 따라와 visual reading 순서를 보존한다.
 // (Roam/Logseq 류; 글로 봤을 때 행 순서가 안 바뀜.)
-export function promote(ctx: CommandContext): JsonResult {
+export function promote(ctx: CommandContext): JSONResult {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
   if (targets.includes("")) return { ok: false, code: "path_not_found", reason: "cannot promote root" };
   const sorted = sortDfs(ctx, targets);
-  const ops: JsonPatchOperation[] = [];
+  const ops: JSONPatchOperation[] = [];
   for (const orig of sorted) {
     const cur = trackPointer(orig, ops);
     if (cur === null) continue;
@@ -82,15 +82,15 @@ export function promote(ctx: CommandContext): JsonResult {
   return ctx.ops.patch(ops);
 }
 
-export function remove(ctx: CommandContext): JsonResult {
+export function remove(ctx: CommandContext): JSONResult {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
   if (targets.includes("")) return { ok: false, code: "path_not_found", reason: "cannot remove root" };
-  const batch: JsonPatchOperation[] = sortDfs(ctx, targets).slice().reverse().map((p) => ({ op: "remove", path: p }));
+  const batch: JSONPatchOperation[] = sortDfs(ctx, targets).slice().reverse().map((p) => ({ op: "remove", path: p }));
   return ctx.ops.patch(batch);
 }
 
-export function moveUp(ctx: CommandContext): JsonResult {
+export function moveUp(ctx: CommandContext): JSONResult {
   const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
@@ -98,7 +98,7 @@ export function moveUp(ctx: CommandContext): JsonResult {
   return ctx.ops.patch([{ op: "move", from: p, path: siblingAt(p, idx - 1) }]);
 }
 
-export function moveDown(ctx: CommandContext): JsonResult {
+export function moveDown(ctx: CommandContext): JSONResult {
   const p = ctx.selection.focus;
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);

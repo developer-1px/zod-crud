@@ -4,7 +4,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import * as z from "zod";
 
-import { useJsonDocument } from "../src/hooks/useJsonDocument.js";
+import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -17,9 +17,9 @@ afterEach(() => {
   }
 });
 
-describe("useJsonDocument ops.load history", () => {
+describe("useJSONDocument ops.load history", () => {
   test("load keeps existing history only when preserveHistory is true", () => {
-    const hook = renderHook(() => useJsonDocument(Schema, { name: "a" }, { history: 10 }));
+    const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { history: 10 }));
 
     act(() => {
       hook.current.ops.replace("/name", "b");

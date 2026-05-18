@@ -3,12 +3,12 @@
 // `/${string}` 패턴이 자연스럽게 union 에 포함된다. `as never` 캐스팅 불필요.
 
 import * as z from "zod";
-import type { JsonOps } from "../src/jsonOps.js";
+import type { JSONOps } from "../src/jsonOps.js";
 
 const Schema = z.object({ cells: z.record(z.string(), z.string()) });
 type T = z.output<typeof Schema>;
 
-declare const ops: JsonOps<T>;
+declare const ops: JSONOps<T>;
 declare const sheet: T;
 
 const writeCell = (k: string, v: string) => {

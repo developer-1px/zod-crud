@@ -10,7 +10,7 @@ const rawDocs = import.meta.glob("../../../../docs/site/*.md", {
 const slugMeta = {
   "intro": { navLabel: "Overview", order: 101 },
   "getting-started": { navLabel: "Quick Start", order: 102 },
-  "concepts": { navLabel: "useJsonDocument", order: 103 },
+  "concepts": { navLabel: "useJSONDocument", order: 103 },
   "operations": { navLabel: "Editor State", order: 104 },
   "schema-safety": { navLabel: "Safety", order: 105 },
   "clipboard-history": { navLabel: "UI Recipes", order: 106 },

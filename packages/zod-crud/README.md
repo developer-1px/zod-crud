@@ -8,7 +8,7 @@ vocabulary becomes a **reusable standard layer**.
 
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
-`hooks/useJsonDocument` is a thin React adapter that injects selection.
+`hooks/useJSONDocument` is a thin React adapter that injects selection.
 `sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single
@@ -25,7 +25,7 @@ npm install zod-crud zod
 required only for React hooks. The package is ESM-only.
 
 > **단일 zod instance 필수.** monorepo / pnpm 환경에서 `zod-crud` 와 소비자가 서로 다른
-> `zod` 인스턴스를 보면 `useJsonDocument` 의 generic 추론이 `unknown` 으로 떨어진다
+> `zod` 인스턴스를 보면 `useJSONDocument` 의 generic 추론이 `unknown` 으로 떨어진다
 > (`$ZodFunction / $ZodTypes` 심볼이 두 번 존재). 해결책:
 > - pnpm: `public-hoist-pattern[]=zod` 또는 `dedupe-peer-dependents=true`
 > - 그래도 해소 안 되면 소비자 `tsconfig.json` 에 paths alias 로 단일 경로 강제:
@@ -33,11 +33,11 @@ required only for React hooks. The package is ESM-only.
 >   "paths": { "zod": ["./node_modules/zod"], "zod/*": ["./node_modules/zod/*"] }
 >   ```
 
-## React — `useJsonDocument`
+## React — `useJSONDocument`
 
 ```tsx
 import * as z from "zod";
-import { useJsonDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud";
 
 const Schema = z.object({
   title: z.string(),
@@ -45,7 +45,7 @@ const Schema = z.object({
 });
 
 export function App() {
-  const doc = useJsonDocument(Schema, { title: "", tasks: [] }, { history: 50 });
+  const doc = useJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
 
   return (
     <>
@@ -82,7 +82,7 @@ export function App() {
 }
 ```
 
-`useJsonDocument` returns a single facade with five surfaces:
+`useJSONDocument` returns a single facade with five surfaces:
 
 | Surface | Purpose |
 | --- | --- |
@@ -97,7 +97,7 @@ Selection and history are first-class — they are not parallel hooks you wire
 up yourself. `commands.*` mutate through the history-aware path; `ops.*` is
 the low-level RFC 6902 escape hatch for fire-and-forget patches.
 
-For lower-level composition (`useJson` + `useSelection`), see the
+For lower-level composition (`useJSON` + `useSelection`), see the
 [Lower-level Hooks](../../docs/site/examples.md) guide.
 
 ## Pure core (no React)
@@ -154,19 +154,19 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `useJsonDocument(schema, initial, options?)` | React facade (SPEC §5.10) |
-| `JsonDocument<T>`, `JsonDocumentHistory`, `UseJsonDocumentOptions<T>` | facade types (SPEC §5.10) |
-| `useJson(schema, initial, options?)` | lower-level hook (SPEC §5.1) |
-| `JsonOps<T>` | low-level ops contract (SPEC §5.2) |
+| `useJSONDocument(schema, initial, options?)` | React facade (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` | facade types (SPEC §5.10) |
+| `useJSON(schema, initial, options?)` | lower-level hook (SPEC §5.1) |
+| `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `useSelection(ops, options?)` | lower-level selection hook (SPEC §5.7) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
-| `JsonPatchOperation`, `JsonResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
+| `JSONPatchOperation`, `JSONResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `serialize`, `parse`, `safeParse` | JSON helpers (SPEC §5.5) |
-| `JsonCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
+| `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 
 ## Guarantees
 

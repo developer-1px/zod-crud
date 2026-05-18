@@ -1,9 +1,9 @@
 // verbs/paste — Clipboard 기둥. payload + target/mode → RFC 6902 add patch.
 // (schema, state, payload, target, mode) → { next, patch }.
-// hooks/useJsonDocument 가 selection 을 자동 주입 (ADR-0002 §0.5).
+// hooks/useJSONDocument 가 selection 을 자동 주입 (ADR-0002 §0.5).
 
 import type * as z from "zod";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
 import { getDiscriminatedUnionInfo, getObjectLiteralValues, schemaAtPointer } from "../core/schema/introspection.js";
@@ -13,7 +13,7 @@ export type PasteMode = "before" | "after" | "into" | "replace";
 export interface PasteOk<T> {
   ok: true;
   next: T;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
 }
 
 export interface PasteError {
@@ -212,7 +212,7 @@ function isScalar(value: unknown): value is string | number | boolean {
   return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
 }
 
-function buildPasteOp(payload: unknown, target: Pointer, mode: PasteMode): JsonPatchOperation {
+function buildPasteOp(payload: unknown, target: Pointer, mode: PasteMode): JSONPatchOperation {
   switch (mode) {
     case "replace":
       return { op: "replace", path: target, value: payload };

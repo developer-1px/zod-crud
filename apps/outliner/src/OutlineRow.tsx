@@ -2,7 +2,7 @@
 // keydown 은 props 로 받는다 — chord dispatcher 는 부모 책임.
 
 import { useEffect, useRef } from "react";
-import { useJsonDocument, type Pointer } from "zod-crud";
+import { useJSONDocument, type Pointer } from "zod-crud";
 import type { OutlineNode, OutlineSchema } from "./schema.js";
 import type { Mode } from "./keymap.js";
 
@@ -16,7 +16,7 @@ export interface RowProps {
   onClickText: (e: React.MouseEvent, p: Pointer) => void;
   onClickBullet: (e: React.MouseEvent, p: Pointer) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  ops: ReturnType<typeof useJsonDocument<typeof OutlineSchema>>["ops"];
+  ops: ReturnType<typeof useJSONDocument<typeof OutlineSchema>>["ops"];
   onTextEdit: (path: string) => void;
 }
 

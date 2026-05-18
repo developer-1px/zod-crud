@@ -1,7 +1,7 @@
 // applyOpRaw — RFC 6902 6 op 의 raw 적용 (schema 검증 없음). public 노출은 patch.ts.
 
 import { isPrefix, type Pointer } from "../pointer/index.js";
-import type { ErrorCode, JsonPatchOperation } from "./index.js";
+import type { ErrorCode, JSONPatchOperation } from "./index.js";
 import {
   attachPointer,
   deepClone,
@@ -16,7 +16,7 @@ export type RawResult = { state: unknown } | { error: ErrorCode; reason?: string
 
 const VALID_OPS = new Set(["add", "remove", "replace", "move", "copy", "test"]);
 
-function validateShape(op: JsonPatchOperation): { error: ErrorCode; reason: string } | null {
+function validateShape(op: JSONPatchOperation): { error: ErrorCode; reason: string } | null {
   if (!op || typeof op !== "object") return { error: "invalid_pointer", reason: "op must be object" };
   const opName = (op as { op: string }).op;
   if (!VALID_OPS.has(opName)) return { error: "invalid_pointer", reason: `unrecognized op: ${opName}` };
@@ -30,7 +30,7 @@ function validateShape(op: JsonPatchOperation): { error: ErrorCode; reason: stri
   return null;
 }
 
-export function applyOpRaw(state: unknown, op: JsonPatchOperation): RawResult {
+export function applyOpRaw(state: unknown, op: JSONPatchOperation): RawResult {
   const shape = validateShape(op);
   if (shape) return shape;
 

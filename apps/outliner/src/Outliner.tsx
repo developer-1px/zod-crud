@@ -1,8 +1,8 @@
 // Outliner — Workflowy 모델: select / edit mode 분리.
-// useJsonDocument facade + outliner-local clipboard·keymap·commands 를 hook 들로 묶음.
+// useJSONDocument facade + outliner-local clipboard·keymap·commands 를 hook 들로 묶음.
 
 import { useCallback, useState } from "react";
-import { useJsonDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud";
 import { OutlineSchema, SAMPLE } from "./schema.js";
 import { OutlineRow } from "./OutlineRow.js";
 import { eventToChord, findCommand, KEYMAP, type Mode } from "./keymap.js";
@@ -18,7 +18,7 @@ import { useDebugUI } from "./hooks/useDebugUI.js";
 export function Outliner() {
   const [mode, setMode] = useState<Mode>("select");
   const { errors, pushToast, dismissToast, onError } = useToasts();
-  const doc = useJsonDocument(OutlineSchema, SAMPLE, {
+  const doc = useJSONDocument(OutlineSchema, SAMPLE, {
     history: 200, strict: false, onError,
     selection: { mode: "extended", initial: [""] },
   });

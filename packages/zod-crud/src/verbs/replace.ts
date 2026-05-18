@@ -3,7 +3,7 @@
 // 단일 history commit 으로 전체 replace — undo 한 번에 전체 되돌림.
 
 import type * as z from "zod";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
 // note: verbs/* 끼리 import 금지 (lint rule). 여기서는 jsonpath 의 query 를 직접 호출.
@@ -13,7 +13,7 @@ import { JSONPathSyntaxError } from "../core/jsonpath/index.js";
 export interface ReplaceOk<T> {
   ok: true;
   next: T;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
   pointers: Pointer[];
 }
 
@@ -45,7 +45,7 @@ export function replace<S extends z.ZodType>(
   // multi-pointer: 모든 매칭에 RFC 6902 replace op 적용. 한 batch 로 atomic.
   // 깊은 path 부터 적용하여 얕은 path 변경이 깊은 path 를 invalidate 하지 않도록.
   const sorted = [...pointers].sort((a, b) => b.length - a.length);
-  const patch: JsonPatchOperation[] = sorted.map((p) => ({ op: "replace", path: p, value }));
+  const patch: JSONPatchOperation[] = sorted.map((p) => ({ op: "replace", path: p, value }));
   const r = preFlight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };

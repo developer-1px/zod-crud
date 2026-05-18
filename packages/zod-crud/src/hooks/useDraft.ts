@@ -1,25 +1,25 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 
-import type { JsonResult } from "../core/patch/index.js";
+import type { JSONResult } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
 import type { PointerOf, ValueAt } from "../core/pointer/types.js";
-import { JsonCrudError } from "../JsonCrudError.js";
-import type { JsonDocument } from "./useJsonDocument.js";
+import { JSONCrudError } from "../JSONCrudError.js";
+import type { JSONDocument } from "./useJSONDocument.js";
 
 export interface DraftFieldState<T> {
   pointer: Pointer;
   value: unknown;
   committed: unknown;
   attempted: unknown;
-  error: JsonResult | null;
+  error: JSONResult | null;
   dirty: boolean;
   touched: boolean;
   pending: boolean;
-  set(value: unknown): JsonResult;
-  commit(): JsonResult;
+  set(value: unknown): JSONResult;
+  commit(): JSONResult;
   discardAttempt(): void;
-  resetToBaseline(): JsonResult;
+  resetToBaseline(): JSONResult;
 }
 
 export interface DraftState<T> {
@@ -28,17 +28,17 @@ export interface DraftState<T> {
   pending: boolean;
   canSave: boolean;
   pendingPaths: Pointer[];
-  errors: ReadonlyMap<Pointer, JsonResult>;
+  errors: ReadonlyMap<Pointer, JSONResult>;
   field<P extends PointerOf<T>>(pointer: P): DraftFieldState<ValueAt<T, P>>;
   markSaved(): void;
   discardAttempts(): void;
-  resetToBaseline(): JsonResult;
+  resetToBaseline(): JSONResult;
   revalidate(): void;
 }
 
 interface Attempt {
   value: unknown;
-  error: JsonResult;
+  error: JSONResult;
 }
 
 interface DraftStore {
@@ -47,30 +47,30 @@ interface DraftStore {
 }
 
 type DraftAction =
-  | { type: "attempt"; pointer: Pointer; value: unknown; error: JsonResult }
+  | { type: "attempt"; pointer: Pointer; value: unknown; error: JSONResult }
   | { type: "accepted"; pointer: Pointer }
   | { type: "discard"; pointer: Pointer }
   | { type: "discardAll" }
   | { type: "replaceAttempts"; attempts: Map<Pointer, Attempt> };
 
-const ok: JsonResult = { ok: true };
+const ok: JSONResult = { ok: true };
 
-export function useDraft<T>(doc: JsonDocument<T>): DraftState<T> {
+export function useDraft<T>(doc: JSONDocument<T>): DraftState<T> {
   const baselineRef = useRef(deepClone(doc.value));
   const [store, dispatch] = useReducer(reduceDraftStore, undefined, emptyDraftStore);
   const storeRef = useRef(store);
   storeRef.current = store;
 
-  const applyField = useCallback((pointer: Pointer, value: unknown): JsonResult => {
+  const applyField = useCallback((pointer: Pointer, value: unknown): JSONResult => {
     try {
       return doc.ops.set(pointer as never, value as never);
     } catch (error) {
-      if (error instanceof JsonCrudError) return error.result;
+      if (error instanceof JSONCrudError) return error.result;
       throw error;
     }
   }, [doc.ops]);
 
-  const setField = useCallback((pointer: Pointer, value: unknown): JsonResult => {
+  const setField = useCallback((pointer: Pointer, value: unknown): JSONResult => {
     const result = applyField(pointer, value);
     if (result.ok) {
       dispatch({ type: "accepted", pointer });
@@ -103,7 +103,7 @@ export function useDraft<T>(doc: JsonDocument<T>): DraftState<T> {
     dispatch({ type: "discardAll" });
   }, []);
 
-  const resetToBaseline = useCallback((): JsonResult => {
+  const resetToBaseline = useCallback((): JSONResult => {
     dispatch({ type: "discardAll" });
     return doc.ops.load(deepClone(baselineRef.current), { preserveHistory: true });
   }, [doc.ops]);
@@ -138,7 +138,7 @@ export function useDraft<T>(doc: JsonDocument<T>): DraftState<T> {
   }, [applyField, doc.value, setField, store]);
 
   return useMemo<DraftState<T>>(() => {
-    const errors = new Map<Pointer, JsonResult>();
+    const errors = new Map<Pointer, JSONResult>();
     for (const [pointer, attempt] of store.attempts) errors.set(pointer, attempt.error);
     const dirty = !jsonEqual(doc.value, baselineRef.current);
     const pending = store.attempts.size > 0;
@@ -160,7 +160,7 @@ export function useDraft<T>(doc: JsonDocument<T>): DraftState<T> {
 }
 
 export function useField<T, P extends PointerOf<T>>(
-  doc: JsonDocument<T>,
+  doc: JSONDocument<T>,
   pointer: P,
 ): DraftFieldState<ValueAt<T, P>> {
   return useDraft(doc).field(pointer);

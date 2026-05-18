@@ -19,7 +19,7 @@ npm install zod-crud zod
 
 ```tsx
 import * as z from "zod";
-import { useJson } from "zod-crud";
+import { useJSON } from "zod-crud";
 
 const Schema = z.object({
   title: z.string(),
@@ -27,7 +27,7 @@ const Schema = z.object({
 });
 
 function App() {
-  const [json, ops] = useJson(Schema, { title: "", tasks: [] });
+  const [json, ops] = useJSON(Schema, { title: "", tasks: [] });
 
   return (
     <>

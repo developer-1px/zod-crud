@@ -10,7 +10,7 @@
 
 import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../track.js";
 import type { Pointer } from "../pointer/index.js";
-import type { JsonPatchOperation } from "../patch/index.js";
+import type { JSONPatchOperation } from "../patch/index.js";
 import { expandRange } from "./range.js";
 
 export type SelectionMode = "single" | "multiple" | "extended";
@@ -88,7 +88,7 @@ export function reduceSelection(
 
 export function applySelectionAutoRules(
   prev: SelectionSnap,
-  applied: ReadonlyArray<JsonPatchOperation>,
+  applied: ReadonlyArray<JSONPatchOperation>,
   after: unknown,
   mode: SelectionMode,
 ): SelectionSnap {

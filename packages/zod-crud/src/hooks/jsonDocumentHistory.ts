@@ -1,16 +1,16 @@
 // History entry + selection snapshot types and recordHistory helper
-// for useJsonDocument. Internal — not part of the public surface.
+// for useJSONDocument. Internal — not part of the public surface.
 
 import type { MutableRefObject } from "react";
 
-import { computeInverses, type JsonPatchOperation } from "../core/patch/index.js";
+import { computeInverses, type JSONPatchOperation } from "../core/patch/index.js";
 import { commit as historyCommit, type HistoryStack } from "../core/history.js";
 import type { SelectionSnap } from "../core/selection/index.js";
 import type { SelectionState } from "./useSelection.js";
 
 export interface HistoryEntry {
-  forward: JsonPatchOperation[];
-  inverse: JsonPatchOperation[];
+  forward: JSONPatchOperation[];
+  inverse: JSONPatchOperation[];
   selectionBefore: SelectionSnap;
   selectionAfter: SelectionSnap;
 }
@@ -26,7 +26,7 @@ export function snapSelection<T>(selection: SelectionState<T>): SelectionSnap {
 export function recordHistoryEntry<T>(
   stackRef: MutableRefObject<HistoryStack<HistoryEntry>>,
   before: T,
-  ops: ReadonlyArray<JsonPatchOperation>,
+  ops: ReadonlyArray<JSONPatchOperation>,
   selection: SelectionState<T>,
   limit: number,
 ): void {

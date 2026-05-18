@@ -5,11 +5,11 @@
 // JSON 직렬화: Recording 은 RFC 6902 ops + ms 타임스탬프만 담아 그대로 저장/로드 가능.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { JsonPatchOperation } from "../core/patch/index.js";
-import type { JsonOps } from "../jsonOps.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
+import type { JSONOps } from "../jsonOps.js";
 
 export interface RecordedStep {
-  ops: ReadonlyArray<JsonPatchOperation>;
+  ops: ReadonlyArray<JSONPatchOperation>;
   at: number; // recording 시작 시점부터 ms
 }
 
@@ -27,7 +27,7 @@ export interface RecorderApi<T> {
   clear(): void;
 }
 
-export function useRecorder<T>(ops: JsonOps<T>): RecorderApi<T> {
+export function useRecorder<T>(ops: JSONOps<T>): RecorderApi<T> {
   const [isRecording, setIsRecording] = useState(false);
   const [, force] = useState(0);
   const startRef = useRef<{ at: number; initial: T } | null>(null);
@@ -83,7 +83,7 @@ export interface ReplayOptions {
 // Recording 을 다른 ops 인스턴스에서 재생. ops.load 로 initial 복원 후 step 사이 delay.
 export async function replayRecording<T>(
   recording: Recording<T>,
-  ops: JsonOps<T>,
+  ops: JSONOps<T>,
   options: ReplayOptions = {},
 ): Promise<void> {
   const speed = options.speed ?? 1;

@@ -4,7 +4,7 @@
 // 의도적으로 단일 파일. UI 는 inline style — Tailwind/CSS 의존 없음.
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useJsonDocument, type JsonPatchOperation } from "zod-crud";
+import { useJSONDocument, type JSONPatchOperation } from "zod-crud";
 import { Collection, SAMPLE, type Item, type Folder, type Request, type Header, type Method } from "./schema.js";
 
 const ALL_METHODS: ReadonlyArray<Method> = ["GET", "POST", "PUT", "PATCH", "DELETE"];
@@ -38,7 +38,7 @@ function sortPointersDesc(pointers: readonly string[]): string[] {
 }
 
 export function ApiCollection() {
-  const doc = useJsonDocument(Collection, SAMPLE, {
+  const doc = useJSONDocument(Collection, SAMPLE, {
     history: 200,
     selection: { mode: "extended" },
   });
@@ -98,7 +98,7 @@ export function ApiCollection() {
       .filter((x): x is { it: Request; pointer: string } => x.it.kind === "request");
     if (requests.length === 0) { flash("선택된 request 가 없음"); return; }
     const traceHeader: Header = { key: "X-Trace-Id", value: "{{$randomUUID}}" };
-    const patch: JsonPatchOperation[] = requests.map(({ it, pointer }) => ({
+    const patch: JSONPatchOperation[] = requests.map(({ it, pointer }) => ({
       op: "replace",
       path: `${pointer}/headers`,
       value: [...it.headers, traceHeader],
@@ -118,7 +118,7 @@ export function ApiCollection() {
     if (selectedItems.length === 0) { flash("선택 없음"); return; }
     clipboardRef.current = { kind: "items", items: selectedItems };
     // 역순 — 배열 인덱스 shift 방지.
-    const patch: JsonPatchOperation[] = sortPointersDesc(selectedPointers).map((pointer) => ({ op: "remove", path: pointer }));
+    const patch: JSONPatchOperation[] = sortPointersDesc(selectedPointers).map((pointer) => ({ op: "remove", path: pointer }));
     doc.ops.patch(patch);
     doc.selection?.empty();
     flash(`${selectedItems.length}개 잘라내기`);
@@ -135,7 +135,7 @@ export function ApiCollection() {
     const targetFolder = targetPtr ? (getAt(doc.value, targetPtr) as Folder) : doc.value;
     const basePath = `${targetPtr}/items`;
     const startIdx = targetFolder.items.length;
-    const patch: JsonPatchOperation[] = cb.items.map((it, i) => ({
+    const patch: JSONPatchOperation[] = cb.items.map((it, i) => ({
       op: "add",
       path: `${basePath}/${startIdx + i}`,
       value: it,

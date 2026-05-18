@@ -24,7 +24,7 @@ doc.ops.replace("/count", 999); // 실패
 
 ## 실패는 결과로 확인합니다
 
-편집 작업은 `JsonResult`를 반환합니다.
+편집 작업은 `JSONResult`를 반환합니다.
 
 ```ts
 const result = doc.ops.replace("/count", 999);
@@ -49,7 +49,7 @@ if (!result.ok) {
 `strict: false` 이면 실패를 throw 없이 화면에 보여주기 쉽습니다.
 
 ```ts
-const doc = useJsonDocument(Schema, initial, {
+const doc = useJSONDocument(Schema, initial, {
   strict: false,
   onError(error) {
     console.log(error.result.code);
@@ -59,8 +59,8 @@ const doc = useJsonDocument(Schema, initial, {
 
 | 옵션 | 설명 |
 |------|------|
-| `strict: true` | 실패 시 `JsonCrudError`를 throw합니다 |
-| `strict: false` | throw하지 않고 `JsonResult`로 알려줍니다 |
+| `strict: true` | 실패 시 `JSONCrudError`를 throw합니다 |
+| `strict: false` | throw하지 않고 `JSONResult`로 알려줍니다 |
 | `onError` | 실패했을 때 항상 호출됩니다 |
 
 ## 예제: 잘못된 값 거절하기

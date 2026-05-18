@@ -6,8 +6,8 @@
 
 | 용어 | 의미 |
 |------|------|
-| `useJsonDocument` | React 진입점. `value`, `ops`, `selection`, `history`, `commands`, `can` 을 한 객체로 묶는 facade. |
-| `JsonDocument<T>` | `useJsonDocument` 반환 타입. |
+| `useJSONDocument` | React 진입점. `value`, `ops`, `selection`, `history`, `commands`, `can` 을 한 객체로 묶는 facade. |
+| `JSONDocument<T>` | `useJSONDocument` 반환 타입. |
 | 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 verbs 분류 기준. |
 | 10 verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |
 | hooks/commands/verbs/core | 현재 코드 위계. hooks 는 React, commands 는 facade builder, verbs 는 pure composer, core 는 RFC substrate. |
@@ -25,23 +25,23 @@
 | `buildPointer(segments)` | segment 배열을 Pointer 문자열로 변환. |
 | `escapeSegment` / `unescapeSegment` | RFC 6901 segment 이스케이프 helper. |
 | JSON Patch | RFC 6902 변경 표현. `add`, `remove`, `replace`, `move`, `copy`, `test` 6 op. |
-| `JsonPatchOperation` | RFC 6902 op discriminated union. |
-| `JsonResult` | op 실행 결과. `{ ok: true }` 또는 `{ ok: false, code, reason?, pointer? }`. |
+| `JSONPatchOperation` | RFC 6902 op discriminated union. |
+| `JSONResult` | op 실행 결과. `{ ok: true }` 또는 `{ ok: false, code, reason?, pointer? }`. |
 | JSONPath | RFC 9535 query 표현. `commands.find` 와 `core/jsonpath/` 의 substrate. |
 
 ## Ops
 
 | 용어 | 의미 |
 |------|------|
-| `JsonOps<T>` | `useJson` / `useJsonDocument.ops` 의 low-level ops 표면. RFC 6902 6 op, `set`, `patch`, `apply`, lifecycle, subscribe, state 를 제공. |
+| `JSONOps<T>` | `useJSON` / `useJSONDocument.ops` 의 low-level ops 표면. RFC 6902 6 op, `set`, `patch`, `apply`, lifecycle, subscribe, state 를 제공. |
 | `set(path, value)` | RFC 6902 op 는 아니며, add/replace/remove 를 idempotent 하게 합성하는 ops sugar. |
 | `patch(operations)` | RFC 6902 batch. 한 op 실패 시 전체 rollback. |
-| `apply(operations)` | 실패 시 `JsonCrudError` 를 throw 하는 fire-and-forget patch path. |
+| `apply(operations)` | 실패 시 `JSONCrudError` 를 throw 하는 fire-and-forget patch path. |
 | `load(value)` | 외부 JSON 을 schema 검증 후 state 로 교체. |
 | `reset(value?)` | initial 또는 인자 값으로 state 교체. |
 | `subscribe(listener)` | commit 된 patch 목록을 구독한다. Selection 자동 추적과 sidecars 가 사용한다. |
 | `state` | 현재 JSON state snapshot. |
-| `JsonChangeListener` | `(applied: ReadonlyArray<JsonPatchOperation>) => void`. |
+| `JSONChangeListener` | `(applied: ReadonlyArray<JSONPatchOperation>) => void`. |
 
 ## Selection
 
@@ -72,7 +72,7 @@
 
 | 용어 | 의미 |
 |------|------|
-| `JsonCrudError` | strict/apply path 에서 throw 되는 boundary error. |
+| `JSONCrudError` | strict/apply path 에서 throw 되는 boundary error. |
 | `invalid_pointer` | Pointer 형식 또는 array index 해석 실패. |
 | `path_not_found` | replace/remove/test 대상 또는 필요한 parent 가 없음. |
 | `move_into_self` | move 목적지가 from 의 자손인 경우. |

@@ -14,19 +14,19 @@ type Example = {
   blurb: string;
   filename: string;
   source: string;
-  Demo: () => ReactElement;
+  demo: () => ReactElement;
 };
 
 const examples: Example[] = [
-  { key: "basic", label: "Basic CRUD", blurb: "update primitives, render via subscribe.", filename: "BasicCrud.tsx", source: basicSrc, Demo: BasicCrud },
-  { key: "clipboard", label: "Clipboard + history", blurb: "copy / cut / paste over an array, undo · redo.", filename: "ClipboardArray.tsx", source: clipboardSrc, Demo: ClipboardArray },
-  { key: "reject", label: "Schema-rejected drift", blurb: "try a value the schema refuses — state stays untouched.", filename: "RejectedDrift.tsx", source: rejectSrc, Demo: RejectedDrift },
+  { key: "basic", label: "Basic CRUD", blurb: "update primitives, render via subscribe.", filename: "BasicCrud.tsx", source: basicSrc, demo: BasicCrud },
+  { key: "clipboard", label: "Clipboard + history", blurb: "copy / cut / paste over an array, undo · redo.", filename: "ClipboardArray.tsx", source: clipboardSrc, demo: ClipboardArray },
+  { key: "reject", label: "Schema-rejected drift", blurb: "try a value the schema refuses — state stays untouched.", filename: "RejectedDrift.tsx", source: rejectSrc, demo: RejectedDrift },
 ];
 
 export function Examples() {
   const [activeKey, setActiveKey] = useState<string>(examples[0]!.key);
   const active = examples.find((e) => e.key === activeKey)!;
-  const Demo = active.Demo;
+  const Demo = active.demo;
 
   return (
     <main className="flex h-full min-h-0 flex-col">

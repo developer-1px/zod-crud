@@ -3,12 +3,12 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { applyPatch, replayRecording, type JsonOps, type Recording } from "../src/index.js";
+import { applyPatch, replayRecording, type JSONOps, type Recording } from "../src/index.js";
 
 const Schema = z.object({ items: z.array(z.string()) });
 type S = z.infer<typeof Schema>;
 
-function makeOps(initial: S): JsonOps<S> {
+function makeOps(initial: S): JSONOps<S> {
   let state: S = Schema.parse(initial);
   const subs = new Set<(applied: any) => void>();
   return {

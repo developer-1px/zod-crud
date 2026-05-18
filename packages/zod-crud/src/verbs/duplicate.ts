@@ -4,7 +4,7 @@
 // 내부적으로 RFC 6902 copy op 으로 환원.
 
 import type * as z from "zod";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, parsePointer } from "../core/pointer/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight } from "../core/schema/preFlight.js";
@@ -20,7 +20,7 @@ export interface DuplicateOpts {
 export interface DuplicateOk<T> {
   ok: true;
   next: T;
-  patch: JsonPatchOperation[];
+  patch: JSONPatchOperation[];
   /** 복제 결과의 path. */
   duplicatedTo: Pointer;
 }
@@ -82,7 +82,7 @@ export function duplicate<S extends z.ZodType>(
   }
 
   const payload = rekeyPayload(sourceRead.value, state, opts.rekey);
-  const op: JsonPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };
+  const op: JSONPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };
   const r = preFlight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };

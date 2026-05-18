@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useJsonDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud";
 
 const Schema = z.object({
   title: z.string().min(1),
@@ -7,7 +7,7 @@ const Schema = z.object({
 });
 
 export function BasicCrud() {
-  const { value: json, ops } = useJsonDocument(Schema, { title: "draft", done: false });
+  const { value: json, ops } = useJSONDocument(Schema, { title: "draft", done: false });
 
   return (
     <div className="flex flex-col gap-2">

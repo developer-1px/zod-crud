@@ -7,9 +7,9 @@
 // 자동 tap. timeline 은 download 가능한 JSON.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { JsonOps } from "../jsonOps.js";
+import type { JSONOps } from "../jsonOps.js";
 import type { SelectionState } from "../hooks/useSelection.js";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 
 export interface DebugEvent {
   t: number;                          // recording 시작 기준 ms
@@ -36,7 +36,7 @@ export interface DebugLogApi<T> extends DebugLogger {
 }
 
 export function useDebugLog<T>(
-  ops: JsonOps<T>,
+  ops: JSONOps<T>,
   selection?: SelectionState<T>,
 ): DebugLogApi<T> {
   const [enabled, setEnabled] = useState(false);
@@ -61,7 +61,7 @@ export function useDebugLog<T>(
       const before = lastStateRef.current;
       const after = ops.state;
       lastStateRef.current = after;
-      log("commit", { applied: [...applied] as JsonPatchOperation[], before, after });
+      log("commit", { applied: [...applied] as JSONPatchOperation[], before, after });
     });
   }, [enabled, ops, log]);
 

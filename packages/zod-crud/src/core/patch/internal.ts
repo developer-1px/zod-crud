@@ -1,7 +1,7 @@
 // patch.ts 내부 헬퍼 — public API 아님. SPEC.md §3 의 RFC 6902 구현 디테일.
 
 import { parsePointer, readAt, type Pointer, PointerSyntaxError } from "../pointer/index.js";
-import type { ErrorCode, JsonPatchOperation } from "./index.js";
+import type { ErrorCode, JSONPatchOperation } from "./index.js";
 
 // RFC 6902 §4.1: `/-` 는 array append marker. 적용 시점의 array 길이로 concrete index 정규화.
 // 비-array 부모거나 path 가 `/-` 가 아니면 원본 path 유지.
@@ -15,14 +15,14 @@ export function resolveAppendPath(path: Pointer, before: unknown): Pointer {
 }
 
 // op 안의 `/-` (path 만; from 은 RFC 6902 상 array append 의미가 없음) 을 적용 시점 상태 기준으로 정규화.
-export function normalizeOp(op: JsonPatchOperation, before: unknown): JsonPatchOperation {
+export function normalizeOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation {
   if (op === null || typeof op !== "object") return op;
   if (op.op === "test" || op.op === "remove") return op;
   if (typeof (op as { path?: unknown }).path !== "string") return op;
   const path = resolveAppendPath(op.path, before);
   if (path === op.path) return op;
   if (op.op === "move" || op.op === "copy") return { op: op.op, from: op.from, path };
-  return { ...op, path } as JsonPatchOperation;
+  return { ...op, path } as JSONPatchOperation;
 }
 
 export type ContainerError = { error: ErrorCode; reason?: string };

@@ -1,32 +1,32 @@
 // zod-crud — public surface.
 // 어휘: 편집 어휘 wrapper. 오래된 축/에디터 추상화 어휘는 쓰지 않는다.
 //
-// Single facade: useJsonDocument. 10 verbs 와 state 가 한 객체에 노출.
+// Single facade: useJSONDocument. 10 verbs 와 state 가 한 객체에 노출.
 // Headless 사용자 (외부 사용 ≥1): core/* 또는 verbs/* 직접 import.
 
 // === Identity facade ===
-export { useJsonDocument } from "./hooks/useJsonDocument.js";
-export { useJsonSlice } from "./hooks/useJsonSlice.js";
+export { useJSONDocument } from "./hooks/useJSONDocument.js";
+export { useJSONSlice } from "./hooks/useJSONSlice.js";
 export { useDraft, useField } from "./hooks/useDraft.js";
 export type {
-  JsonDocument,
-  JsonDocumentHistory,
-  UseJsonDocumentOptions,
-} from "./hooks/useJsonDocument.js";
+  JSONDocument,
+  JSONDocumentHistory,
+  UseJSONDocumentOptions,
+} from "./hooks/useJSONDocument.js";
 export type {
   DraftFieldState,
   DraftState,
 } from "./hooks/useDraft.js";
 
 // === Boundary error + ops contract ===
-export { JsonCrudError } from "./JsonCrudError.js";
-export type { JsonLoadOptions, JsonOps, UseJsonOptions } from "./jsonOps.js";
+export { JSONCrudError } from "./JSONCrudError.js";
+export type { JSONLoadOptions, JSONOps, UseJSONOptions } from "./jsonOps.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";
 export type {
-  JsonPatchOperation,
-  JsonResult,
+  JSONPatchOperation,
+  JSONResult,
   ErrorCode,
   ApplyResult,
 } from "./core/patch/index.js";

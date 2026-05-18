@@ -1,12 +1,12 @@
-// 격차 1+2 해소 검증 — useJsonDocument facade 의 commands + can group (TipTap 식).
+// 격차 1+2 해소 검증 — useJSONDocument facade 의 commands + can group (TipTap 식).
 // React testing library 미사용 (노드 환경) — buildCommands + buildCan 직접 호출.
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { buildCommands } from "../src/commands/buildCommands.js";
 import { buildCan } from "../src/commands/buildCan.js";
-import type { JsonOps } from "../src/jsonOps.js";
-import { applyPatch, type JsonPatchOperation } from "../src/core/patch/index.js";
+import type { JSONOps } from "../src/jsonOps.js";
+import { applyPatch, type JSONPatchOperation } from "../src/core/patch/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -22,8 +22,8 @@ const initial: State = {
   meta: { foo: "bar" },
 };
 
-/** 테스트용 in-memory ops — useJson 없이 commands wiring 만 검증. */
-function makeOps(s0: State): JsonOps<State> {
+/** 테스트용 in-memory ops — useJSON 없이 commands wiring 만 검증. */
+function makeOps(s0: State): JSONOps<State> {
   let cur = s0;
   return {
     add: () => ({ ok: true }),
@@ -32,7 +32,7 @@ function makeOps(s0: State): JsonOps<State> {
     move: () => ({ ok: true }),
     copy: () => ({ ok: true }),
     test: () => ({ ok: true }),
-    patch(operations: ReadonlyArray<JsonPatchOperation>) {
+    patch(operations: ReadonlyArray<JSONPatchOperation>) {
       const r = applyPatch(Schema, cur, operations);
       if (r.result.ok) cur = r.state;
       return r.result;
@@ -131,7 +131,7 @@ describe("buildCan — TipTap 식 can group", () => {
     const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
     type S = z.output<typeof NonEmpty>;
     let cur: S = { items: ["a", "b"] };
-    const ops: JsonOps<S> = {
+    const ops: JSONOps<S> = {
       add: () => ({ ok: true }), remove: () => ({ ok: true }), replace: () => ({ ok: true }),
       move: () => ({ ok: true }), copy: () => ({ ok: true }), test: () => ({ ok: true }),
       patch(operations) { const r = applyPatch(NonEmpty, cur, operations); if (r.result.ok) cur = r.state; return r.result; },

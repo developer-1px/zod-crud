@@ -1,11 +1,11 @@
-// commands/buildCommands — useJsonDocument.commands group (TipTap 식 디팩토).
+// commands/buildCommands — useJSONDocument.commands group (TipTap 식 디팩토).
 // 편집 어휘 10 verbs 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
 //
 // commands 는 mutation 시 ops.patch (history commit + listener notify) 를 거친다.
-// undo/redo 는 ops.undo/redo (history stack 관리는 useJsonDocument 가 wiring).
+// undo/redo 는 ops.undo/redo (history stack 관리는 useJSONDocument 가 wiring).
 
 import type * as z from "zod";
-import type { JsonDocumentOps } from "../jsonOps.js";
+import type { JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type {
   SelectionAction,
@@ -19,7 +19,7 @@ import { paste, type PasteOk, type PasteError, type PasteMode } from "../verbs/p
 import { duplicate, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
-import type { JsonPatchOperation, JsonResult } from "../core/patch/index.js";
+import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
 
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
@@ -28,7 +28,7 @@ export interface Commands<T> {
   move(from: Pointer, to: Pointer): MoveResult<T>;
   duplicate(source: Pointer, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
-  replace(path: Pointer, value: unknown): JsonResult;
+  replace(path: Pointer, value: unknown): JSONResult;
 
   cut(source: Pointer): CutOk<T> | CutError;
   copy(source: Pointer): CopyOk | CopyError;
@@ -40,13 +40,13 @@ export interface Commands<T> {
 
 export interface BuildCommandsArgs<S extends z.ZodType> {
   schema: S;
-  ops: JsonDocumentOps<z.output<S>>;
+  ops: JSONDocumentOps<z.output<S>>;
   selectionRef: { current: SelectionSnap };
 }
 
 interface MutationResult<T> {
   ok: boolean;
-  patch?: ReadonlyArray<JsonPatchOperation>;
+  patch?: ReadonlyArray<JSONPatchOperation>;
 }
 
 export function buildCommands<S extends z.ZodType>(

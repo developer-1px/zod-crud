@@ -1,17 +1,17 @@
-// JsonCrudError + strict/onError policy 'handle'.
-// useJson 의 에러 처리 정책을 분리. boundary 표면 (index.ts 에서 re-export).
+// JSONCrudError + strict/onError policy 'handle'.
+// useJSON 의 에러 처리 정책을 분리. boundary 표면 (index.ts 에서 re-export).
 
-import type { JsonPatchOperation, JsonResult } from "./core/patch/index.js";
+import type { JSONPatchOperation, JSONResult } from "./core/patch/index.js";
 
-export type JsonCrudOpLabel = JsonPatchOperation | "load" | "reset" | "patch";
+export type JSONCrudOpLabel = JSONPatchOperation | "load" | "reset" | "patch";
 
-export class JsonCrudError extends Error {
-  override readonly name = "JsonCrudError";
+export class JSONCrudError extends Error {
+  override readonly name = "JSONCrudError";
   constructor(
-    public readonly op: JsonCrudOpLabel,
-    public readonly result: Extract<JsonResult, { ok: false }>,
+    public readonly op: JSONCrudOpLabel,
+    public readonly result: Extract<JSONResult, { ok: false }>,
   ) {
-    super(`useJson failed: ${result.code}${result.reason ? ` — ${result.reason}` : ""}`);
+    super(`useJSON failed: ${result.code}${result.reason ? ` — ${result.reason}` : ""}`);
   }
 }
 
@@ -26,22 +26,22 @@ const isProd = ((): boolean => {
 
 export interface ErrorPolicy {
   strict?: boolean;
-  onError?: (error: JsonCrudError) => void;
+  onError?: (error: JSONCrudError) => void;
 }
 
 /** strict 면 throw, 아니면 onError 콜 후 result 반환. */
 export function handleResult(
   policy: ErrorPolicy,
-  op: JsonCrudOpLabel,
-  result: JsonResult,
-): JsonResult {
+  op: JSONCrudOpLabel,
+  result: JSONResult,
+): JSONResult {
   if (result.ok) return result;
   const strict = policy.strict ?? !isProd;
   if (policy.onError) {
-    policy.onError(new JsonCrudError(op, result));
+    policy.onError(new JSONCrudError(op, result));
   }
   if (strict) {
-    throw new JsonCrudError(op, result);
+    throw new JSONCrudError(op, result);
   }
   return result;
 }

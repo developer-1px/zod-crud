@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useJsonDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud";
 
 const Schema = z.object({
   tags: z.array(z.string().min(1)),
 });
 
 export function ClipboardArray() {
-  const { value: json, ops } = useJsonDocument(
+  const { value: json, ops } = useJSONDocument(
     Schema,
     { tags: ["docs", "design", "ssot"] },
     { history: 50 },

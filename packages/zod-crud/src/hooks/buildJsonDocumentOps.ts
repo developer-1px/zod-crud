@@ -1,12 +1,12 @@
-// RFC 6902 op wrappers + undo/redo/restore + load/reset for useJsonDocument.
-// Pure builder: returns the ops object given the raw useJson ops and history refs.
+// RFC 6902 op wrappers + undo/redo/restore + load/reset for useJSONDocument.
+// Pure builder: returns the ops object given the raw useJSON ops and history refs.
 
 import type { MutableRefObject } from "react";
 
-import type { JsonOps, JsonDocumentOps } from "../jsonOps.js";
-import { JsonCrudError } from "../JsonCrudError.js";
+import type { JSONOps, JSONDocumentOps } from "../jsonOps.js";
+import { JSONCrudError } from "../JSONCrudError.js";
 import type { SelectionState } from "./useSelection.js";
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
 import {
@@ -23,18 +23,18 @@ import {
   type HistoryEntry,
 } from "./jsonDocumentHistory.js";
 
-export interface BuildJsonDocumentOpsArgs<T> {
-  rawOps: JsonOps<T>;
+export interface BuildJSONDocumentOpsArgs<T> {
+  rawOps: JSONOps<T>;
   stackRef: MutableRefObject<HistoryStack<HistoryEntry>>;
   isRestoringRef: MutableRefObject<boolean>;
   selectionRef: MutableRefObject<SelectionState<T>>;
   historyLimit: number;
 }
 
-export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): JsonDocumentOps<T> {
+export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSONDocumentOps<T> {
   const { rawOps, stackRef, isRestoringRef, selectionRef, historyLimit } = args;
 
-  const patch: JsonOps<T>["patch"] = (operations) => {
+  const patch: JSONOps<T>["patch"] = (operations) => {
     const before = rawOps.state;
     const r = rawOps.patch(operations);
     if (r.ok && historyLimit > 0 && !isRestoringRef.current) {
@@ -84,7 +84,7 @@ export function buildJsonDocumentOps<T>(args: BuildJsonDocumentOpsArgs<T>): Json
     patch,
     apply: (operations) => {
       const r = patch(operations);
-      if (!r.ok) throw new JsonCrudError("patch", r);
+      if (!r.ok) throw new JSONCrudError("patch", r);
     },
     undo: () => restore("undo"),
     redo: () => restore("redo"),

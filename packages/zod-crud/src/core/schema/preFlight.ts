@@ -7,7 +7,7 @@
 // API 표면은 branch-only contract 그대로 유지하므로 호출자 코드는 변경 없음.
 
 import * as z from "zod";
-import { applyPatch, type JsonPatchOperation, type ErrorCode } from "../patch/index.js";
+import { applyPatch, type JSONPatchOperation, type ErrorCode } from "../patch/index.js";
 
 export interface PreFlightOk<T> {
   ok: true;
@@ -33,7 +33,7 @@ export type PreFlightResult<T> = PreFlightOk<T> | PreFlightErr;
 export function preFlight<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
-  patch: ReadonlyArray<JsonPatchOperation>,
+  patch: ReadonlyArray<JSONPatchOperation>,
 ): PreFlightResult<z.output<S>> {
   const r = applyPatch(schema, state, patch);
   if (r.result.ok) {

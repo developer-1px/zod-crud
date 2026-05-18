@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { trackPointer, trackPointers } from "../src/core/track.js";
-import type { JsonPatchOperation } from "../src/index.js";
+import type { JSONPatchOperation } from "../src/index.js";
 
 describe("trackPointer — add", () => {
   it("shifts later siblings on insert", () => {
@@ -84,7 +84,7 @@ describe("trackPointer — root replace cascades drop", () => {
 
 describe("trackPointers — sequence", () => {
   it("applies multiple ops in order", () => {
-    const ops: JsonPatchOperation[] = [
+    const ops: JSONPatchOperation[] = [
       { op: "add", path: "/tasks/0", value: null },
       { op: "remove", path: "/tasks/2" },
     ];
@@ -93,7 +93,7 @@ describe("trackPointers — sequence", () => {
   });
 
   it("drops cascaded pointers", () => {
-    const ops: JsonPatchOperation[] = [{ op: "remove", path: "/tasks/0" }];
+    const ops: JSONPatchOperation[] = [{ op: "remove", path: "/tasks/0" }];
     expect(trackPointers(["/tasks/0", "/tasks/0/text", "/tasks/1"], ops)).toEqual(["/tasks/0"]);
   });
 });
@@ -103,7 +103,7 @@ describe("applyPatch — applied field", () => {
     const { applyPatch } = await import("../src/index.js");
     const z = await import("zod");
     const schema = z.z.any();
-    const ops: JsonPatchOperation[] = [
+    const ops: JSONPatchOperation[] = [
       { op: "add", path: "/x", value: 1 },
       { op: "replace", path: "/x", value: 2 },
     ];

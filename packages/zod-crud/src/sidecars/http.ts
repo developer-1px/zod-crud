@@ -1,7 +1,7 @@
 // SPEC §5 — HTTP transport for RFC 6902 patches.
 // 선택적 import. 트리쉐이킹 보장. 표면 = 4 개 함수.
 //
-//   parsePatchResponse  ─ 응답 body + content-type → JsonPatchOperation[]
+//   parsePatchResponse  ─ 응답 body + content-type → JSONPatchOperation[]
 //   buildPatchRequest   ─ ops → { headers, body }
 //   withIfMatch         ─ ETag 조건부 PATCH (RFC 5789 §2.4)
 //   parseMergePatch     ─ RFC 7396 merge-patch → RFC 6902 ops 변환
@@ -9,7 +9,7 @@
 // 외부 의존 0 — fetch / axios / 다른 client 와 직접 결합하지 않는다.
 // 사용자가 client 를 가지고 와서 wiring 한다.
 
-import type { JsonPatchOperation } from "../core/patch/index.js";
+import type { JSONPatchOperation } from "../core/patch/index.js";
 
 export const JSON_PATCH_MIME = "application/json-patch+json";    // RFC 6902 §6
 export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
@@ -24,7 +24,7 @@ export interface PatchRequest {
  * RFC 6902 §6 — `application/json-patch+json` 으로 직렬화된 PATCH 요청 build.
  * fetch / axios 등 client 의 옵션으로 spread 하면 된다.
  */
-export function buildPatchRequest(ops: ReadonlyArray<JsonPatchOperation>): PatchRequest {
+export function buildPatchRequest(ops: ReadonlyArray<JSONPatchOperation>): PatchRequest {
   return {
     method: "PATCH",
     headers: { "content-type": JSON_PATCH_MIME },
@@ -42,7 +42,7 @@ export function withIfMatch(req: PatchRequest, etag: string): PatchRequest {
 
 export interface ParseResult {
   ok: true;
-  ops: JsonPatchOperation[];
+  ops: JSONPatchOperation[];
 }
 
 export interface ParseError {
@@ -66,7 +66,7 @@ export function parsePatchResponse(body: string, contentType: string | null | un
   }
   if (ct === JSON_PATCH_MIME) {
     if (!Array.isArray(raw)) return { ok: false, reason: "json-patch body must be an array" };
-    return { ok: true, ops: raw as JsonPatchOperation[] };
+    return { ok: true, ops: raw as JSONPatchOperation[] };
   }
   if (ct === MERGE_PATCH_MIME) {
     return { ok: true, ops: parseMergePatch(raw, "") };
@@ -87,11 +87,11 @@ export function parsePatchResponse(body: string, contentType: string | null | un
  *      (RFC 7396 merge 는 stateful). nested merge 가 필요하면 `applyMergePatch`
  *      를 직접 사용한다.
  */
-export function parseMergePatch(patch: unknown, basePath: string): JsonPatchOperation[] {
+export function parseMergePatch(patch: unknown, basePath: string): JSONPatchOperation[] {
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
     return [{ op: "replace", path: basePath, value: patch }];
   }
-  const out: JsonPatchOperation[] = [];
+  const out: JSONPatchOperation[] = [];
   for (const [k, v] of Object.entries(patch as Record<string, unknown>)) {
     const path = `${basePath}/${escapeMergeKey(k)}`;
     if (v === null) out.push({ op: "remove", path });

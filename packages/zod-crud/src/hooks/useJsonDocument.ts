@@ -1,4 +1,4 @@
-// SPEC §5.10 — useJsonDocument facade.
+// SPEC §5.10 — useJSONDocument facade.
 // 정체성 표면. 단일 진입점. data + selection + history 를 한 객체로 묶는다.
 // History 는 core/history (pure reducer) 에 위임한다 (P2).
 // DOM Selection 모델 — 별도 focus 축은 없다. 캐럿 = collapsed selection.
@@ -6,10 +6,10 @@
 import { useCallback, useMemo, useRef } from "react";
 import type * as z from "zod";
 
-import { useJson, type UseJsonOptions, type JsonCrudError } from "./useJson.js";
-import type { JsonOps, JsonDocumentOps } from "../jsonOps.js";
+import { useJSON, type UseJSONOptions, type JSONCrudError } from "./useJSON.js";
+import type { JSONOps, JSONDocumentOps } from "../jsonOps.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
-import { buildJsonDocumentOps } from "./buildJsonDocumentOps.js";
+import { buildJSONDocumentOps } from "./buildJSONDocumentOps.js";
 import { buildCommands, type Commands } from "../commands/buildCommands.js";
 import { buildCan, type Can } from "../commands/buildCan.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
@@ -19,15 +19,15 @@ import {
   type HistoryStack,
 } from "../core/history.js";
 
-export interface UseJsonDocumentOptions<T> {
+export interface UseJSONDocumentOptions<T> {
   history?: number;
   strict?: boolean;
-  onError?: (error: JsonCrudError) => void;
+  onError?: (error: JSONCrudError) => void;
   selection?: boolean | UseSelectionOptions;
 }
 
 /** History state surface — undo/redo 는 commands.undo/redo 또는 직접 method 로. */
-export interface JsonDocumentHistory {
+export interface JSONDocumentHistory {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly undoDepth: number;
@@ -42,7 +42,7 @@ export interface JsonDocumentHistory {
 }
 
 /**
- * JsonDocument — 단일 facade. 4대 기둥 ↔ 10 verbs (ADR-0002).
+ * JSONDocument — 단일 facade. 4대 기둥 ↔ 10 verbs (ADR-0002).
  *
  * State surface (read-only data):
  * - value: T — current state
@@ -54,25 +54,25 @@ export interface JsonDocumentHistory {
  * - commands: 10 verb methods (select/find/move/duplicate/replace/cut/copy/paste/undo/redo)
  * - can: mutation guard predicates + stack flags
  */
-export interface JsonDocument<T> {
+export interface JSONDocument<T> {
   value: T;
   selection: SelectionState<T> | undefined;
-  history: JsonDocumentHistory;
-  ops: JsonOps<T>;
+  history: JSONDocumentHistory;
+  ops: JSONDocumentOps<T>;
   commands: Commands<T>;
   can: Can<T>;
 }
 
-export function useJsonDocument<S extends z.ZodType>(
+export function useJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
-  options: UseJsonDocumentOptions<z.output<S>> = {},
-): JsonDocument<z.output<S>> {
-  const useJsonOpts: UseJsonOptions = {};
+  options: UseJSONDocumentOptions<z.output<S>> = {},
+): JSONDocument<z.output<S>> {
+  const useJsonOpts: UseJSONOptions = {};
   if (options.strict !== undefined) useJsonOpts.strict = options.strict;
   if (options.onError !== undefined) useJsonOpts.onError = options.onError;
 
-  const [value, rawOps] = useJson(schema, initial, useJsonOpts);
+  const [value, rawOps] = useJSON(schema, initial, useJsonOpts);
 
   const selectionEnabled = options.selection !== undefined && options.selection !== false;
   const selectionOptions: UseSelectionOptions =
@@ -88,8 +88,8 @@ export function useJsonDocument<S extends z.ZodType>(
   const selectionRef = useRef(selectionState);
   selectionRef.current = selectionState;
 
-  const ops = useMemo<JsonDocumentOps<z.output<S>>>(
-    () => buildJsonDocumentOps({ rawOps, stackRef, isRestoringRef, selectionRef, historyLimit }),
+  const ops = useMemo<JSONDocumentOps<z.output<S>>>(
+    () => buildJSONDocumentOps({ rawOps, stackRef, isRestoringRef, selectionRef, historyLimit }),
     [rawOps, historyLimit],
   );
 
@@ -120,8 +120,8 @@ export function useJsonDocument<S extends z.ZodType>(
   );
   const can = useMemo(() => buildCan({ schema, ops }), [schema, ops]);
 
-  return useMemo<JsonDocument<z.output<S>>>(() => {
-    const history: JsonDocumentHistory = {
+  return useMemo<JSONDocument<z.output<S>>>(() => {
+    const history: JSONDocumentHistory = {
       get canUndo() { return ops.canUndo(); },
       get canRedo() { return ops.canRedo(); },
       get undoDepth() { return stackRef.current.undo.length; },

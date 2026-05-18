@@ -13,7 +13,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { z } from "zod";
 import { Outliner } from "../src/Outliner.js";
 import { OutlineSchema, SAMPLE } from "../src/schema.js";
-import { useJsonDocument, type JsonCrudError } from "zod-crud";
+import { useJSONDocument, type JSONCrudError } from "zod-crud";
 
 afterEach(cleanup);
 
@@ -39,9 +39,9 @@ async function clickRow(text: string) {
 
 describe("stress — pre-flight (zod schema_violation)", () => {
   test("ops.replace 의 값이 schema 모양과 어긋나면 거부 + onError", () => {
-    const errors: JsonCrudError[] = [];
+    const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
+      useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
 
     // text 자리에 number 주입 — schema 위반
@@ -56,9 +56,9 @@ describe("stress — pre-flight (zod schema_violation)", () => {
   });
 
   test("ops.load 가 schema 모양 어긋난 JSON 거부", () => {
-    const errors: JsonCrudError[] = [];
+    const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
+      useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
 
     act(() => {
@@ -75,9 +75,9 @@ describe("stress — pre-flight (zod schema_violation)", () => {
       children: z.array(z.never()),
     });
     const init = { text: "ok", children: [] };
-    const errors: JsonCrudError[] = [];
+    const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
-      useJsonDocument(TightSchema, init, { strict: false, onError: (e) => errors.push(e) })
+      useJSONDocument(TightSchema, init, { strict: false, onError: (e) => errors.push(e) })
     );
 
     act(() => {
@@ -91,9 +91,9 @@ describe("stress — pre-flight (zod schema_violation)", () => {
 
 describe("stress — G8 batch atomicity", () => {
   test("배치 중 한 op 실패 → 전체 롤백, state·history 불변", () => {
-    const errors: JsonCrudError[] = [];
+    const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { history: 50, strict: false, onError: (e) => errors.push(e) })
+      useJSONDocument(OutlineSchema, SAMPLE, { history: 50, strict: false, onError: (e) => errors.push(e) })
     );
     const before = JSON.stringify(result.current.value);
     const undoCountBefore = result.current.history.canUndo;
@@ -114,9 +114,9 @@ describe("stress — G8 batch atomicity", () => {
   });
 
   test("root 제거 시도는 거부 (RFC 6902 — root remove 금지)", () => {
-    const errors: JsonCrudError[] = [];
+    const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
+      useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
     const before = JSON.stringify(result.current.value);
 
@@ -129,9 +129,9 @@ describe("stress — G8 batch atomicity", () => {
   });
 
   test("자기 자신 자손으로 move → move_into_self 거부", () => {
-    const errors: JsonCrudError[] = [];
+    const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
+      useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
     const before = JSON.stringify(result.current.value);
 
@@ -147,7 +147,7 @@ describe("stress — G8 batch atomicity", () => {
 describe("stress — history depth & cycles", () => {
   test("100 회 dispatch + 100 회 undo + 100 회 redo 일관성", () => {
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { history: 200, strict: false })
+      useJSONDocument(OutlineSchema, SAMPLE, { history: 200, strict: false })
     );
 
     const initial = JSON.stringify(result.current.value);
@@ -177,7 +177,7 @@ describe("stress — history depth & cycles", () => {
 
   test("history limit 5 — 6 번째 entry 가 들어오면 가장 오래된 것 drop", () => {
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { history: 5, strict: false })
+      useJSONDocument(OutlineSchema, SAMPLE, { history: 5, strict: false })
     );
 
     // coalesce 회피를 위해 fake timer 가 필요. 대신 entry 사이를 다른 path 로 강제 분리는 못함.
@@ -194,7 +194,7 @@ describe("stress — history depth & cycles", () => {
 describe("stress — G1 JSON round-trip", () => {
   test("doc.value 와 ops.state 가 항상 JSON.stringify 가능", () => {
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { history: 10 })
+      useJSONDocument(OutlineSchema, SAMPLE, { history: 10 })
     );
 
     // 다양한 mutation 적용
@@ -212,7 +212,7 @@ describe("stress — G1 JSON round-trip", () => {
 
   test("history entry 의 forward/inverse 도 직렬화 가능 (G1)", () => {
     const { result } = renderHook(() =>
-      useJsonDocument(OutlineSchema, SAMPLE, { history: 10 })
+      useJSONDocument(OutlineSchema, SAMPLE, { history: 10 })
     );
     act(() => { result.current.ops.replace("/text" as never, "renamed" as never); });
 

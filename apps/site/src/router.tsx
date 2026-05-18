@@ -37,7 +37,7 @@ const NAV: NavGroup[] = [
     items: [
       { to: "/docs/intro", label: "Overview" },
       { to: "/docs/getting-started", label: "Quick Start" },
-      { to: "/docs/concepts", label: "useJsonDocument" },
+      { to: "/docs/concepts", label: "useJSONDocument" },
       { to: "/docs/operations", label: "Editor State" },
       { to: "/docs/schema-safety", label: "Safety" },
       { to: "/docs/clipboard-history", label: "Patterns" },
