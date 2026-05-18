@@ -1,4 +1,5 @@
 import type { JSONPatchOperation } from "../core/patch/index.js";
+import { JSONCrudError } from "../JSONCrudError.js";
 import type { JSONOps } from "../jsonOps.js";
 
 export interface RecordedStep {
@@ -24,7 +25,8 @@ export async function replayRecording<T>(
   options: ReplayOptions = {},
 ): Promise<void> {
   const speed = options.speed ?? 1;
-  ops.load(recording.initial);
+  const loadResult = ops.load(recording.initial);
+  if (!loadResult.ok) throw new JSONCrudError("load", loadResult);
   let prevAt = 0;
   for (let i = 0; i < recording.steps.length; i++) {
     if (options.signal?.aborted) return;
@@ -32,7 +34,8 @@ export async function replayRecording<T>(
     const delay = Number.isFinite(speed) ? Math.max(0, (step.at - prevAt) / speed) : 0;
     if (delay > 0) await new Promise((r) => setTimeout(r, delay));
     if (options.signal?.aborted) return;
-    ops.patch(step.ops);
+    const patchResult = ops.patch(step.ops);
+    if (!patchResult.ok) throw new JSONCrudError("patch", patchResult);
     options.onStep?.(i, recording.steps.length);
     prevAt = step.at;
   }

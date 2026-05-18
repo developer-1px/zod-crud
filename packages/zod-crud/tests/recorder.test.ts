@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { applyPatch, replayRecording, type JSONOps, type Recording } from "../src/index.js";
+import { applyPatch, JSONCrudError, replayRecording, type JSONOps, type Recording } from "../src/index.js";
 
 const Schema = z.object({ items: z.array(z.string()) });
 type S = z.infer<typeof Schema>;
@@ -13,8 +13,19 @@ function makeOps(initial: S): JSONOps<S> {
   const subs = new Set<(applied: any) => void>();
   return {
     get state() { return state; },
-    load(v) { state = Schema.parse(v); return { ok: true } as const; },
-    reset(v) { state = v ? Schema.parse(v) : state; return { ok: true } as const; },
+    load(v) {
+      const parsed = Schema.safeParse(v);
+      if (!parsed.success) return { ok: false, code: "schema_violation", reason: parsed.error.message } as const;
+      state = parsed.data;
+      return { ok: true } as const;
+    },
+    reset(v) {
+      if (!v) return { ok: true } as const;
+      const parsed = Schema.safeParse(v);
+      if (!parsed.success) return { ok: false, code: "schema_violation", reason: parsed.error.message } as const;
+      state = parsed.data;
+      return { ok: true } as const;
+    },
     patch(ops) {
       const r = applyPatch(Schema, state, ops);
       if (r.result.ok) { state = r.state; for (const s of subs) s(r.applied); }
@@ -62,5 +73,28 @@ describe("replayRecording", () => {
       onStep: (i) => { seen.push(i); if (i === 1) ctrl.abort(); },
     });
     expect(seen.length).toBeLessThan(5);
+  });
+
+  test("load 실패를 성공처럼 숨기지 않는다", async () => {
+    const recording: Recording<S> = {
+      startedAt: 0,
+      initial: { items: [1] } as never,
+      steps: [],
+    };
+    await expect(replayRecording(recording, makeOps({ items: [] }))).rejects.toBeInstanceOf(JSONCrudError);
+  });
+
+  test("patch 실패 시 onStep 호출 전에 중단한다", async () => {
+    const recording: Recording<S> = {
+      startedAt: 0,
+      initial: { items: [] },
+      steps: [{ ops: [{ op: "remove", path: "/items/0" }], at: 0 }],
+    };
+    const seen: number[] = [];
+    await expect(replayRecording(recording, makeOps({ items: [] }), {
+      speed: Infinity,
+      onStep: (i) => seen.push(i),
+    })).rejects.toBeInstanceOf(JSONCrudError);
+    expect(seen).toEqual([]);
   });
 });
