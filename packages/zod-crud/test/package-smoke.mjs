@@ -83,7 +83,9 @@ try {
   if (offenders.length > 0) {
     throw new Error(`Tarball must not include node_modules: ${offenders.slice(0, 3).join(", ")}`);
   }
-  for (const required of ["LICENSE", "README.md", "SPEC.md", "STANDARDS.md", "CHANGELOG.md", "package.json"]) {
+  const requiredPackageFiles = packageJson.files.filter((file) => file !== "dist");
+  requiredPackageFiles.push("package.json");
+  for (const required of requiredPackageFiles) {
     if (!packedFiles.includes(required)) {
       throw new Error(`Tarball is missing required package file: ${required}`);
     }
