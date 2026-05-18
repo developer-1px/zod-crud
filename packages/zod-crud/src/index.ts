@@ -1,22 +1,8 @@
 // zod-crud — public surface.
 // 어휘: 편집 어휘 wrapper. 오래된 축/에디터 추상화 어휘는 쓰지 않는다.
 //
-// Single facade: useJSONDocument. 10 verbs 와 state 가 한 객체에 노출.
-// Headless 사용자 (외부 사용 ≥1): core/* 또는 verbs/* 직접 import.
-
-// === Identity facade ===
-export { useJSONDocument } from "./hooks/useJSONDocument.js";
-export { useJSONSlice } from "./hooks/useJSONSlice.js";
-export { useDraft, useField } from "./hooks/useDraft.js";
-export type {
-  JSONDocument,
-  JSONDocumentHistory,
-  UseJSONDocumentOptions,
-} from "./hooks/useJSONDocument.js";
-export type {
-  DraftFieldState,
-  DraftState,
-} from "./hooks/useDraft.js";
+// Headless entrypoint. React APIs live under `zod-crud/react` so the optional
+// React peer is not required for pure JSON Patch / Pointer consumers.
 
 // === Boundary error + ops contract ===
 export { JSONCrudError } from "./JSONCrudError.js";
@@ -51,23 +37,18 @@ export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 export { serialize, parse, safeParse } from "./core/pointer/serialize.js";
 
 // === Selection — W3C Selection API 정합 ===
-export type {
-  SelectionMode,
-  SelectionType,
-  SelectionState,
-  UseSelectionOptions,
-} from "./hooks/useSelection.js";
+export type { SelectionMode, SelectionType } from "./core/selection/index.js";
 export { trackPointer } from "./core/track.js";
 export { EMPTY_SELECTION } from "./core/selection/index.js";
 
 // === Sidecars — 횡단 관심사 ===
-// Session recording.
-export { useRecorder, replayRecording } from "./sidecars/recorder.js";
-export type { Recording } from "./sidecars/recorder.js";
-
-// Debug log.
-export { useDebugLog } from "./sidecars/debug-log.js";
-export type { DebugLog, DebugLogger } from "./sidecars/debug-log.js";
+// React sidecar hooks live under `zod-crud/react`.
+export { replayRecording } from "./sidecars/replayRecording.js";
+export type {
+  RecordedStep,
+  Recording,
+  ReplayOptions,
+} from "./sidecars/replayRecording.js";
 
 // HTTP transport — RFC 5789 + 6902 + 7396 wire format.
 export {
@@ -112,6 +93,20 @@ export type {
   DuplicateOk,
   DuplicateOpts,
 } from "./verbs/duplicate.js";
+export { cut } from "./verbs/cut.js";
+export type { CutError, CutOk } from "./verbs/cut.js";
+export { find, queryPointers } from "./verbs/find.js";
+export type { FindError, FindOk } from "./verbs/find.js";
+export { move } from "./verbs/move.js";
+export type { MoveError, MoveOk, MoveResult } from "./verbs/move.js";
+export { redo } from "./verbs/redo.js";
+export type { RedoResult } from "./verbs/redo.js";
+export { replace } from "./verbs/replace.js";
+export type { ReplaceError, ReplaceOk } from "./verbs/replace.js";
+export { select } from "./verbs/select.js";
+export type { SelectionAction, SelectionSnap } from "./verbs/select.js";
+export { undo } from "./verbs/undo.js";
+export type { UndoEntry, UndoNoop, UndoResult } from "./verbs/undo.js";
 
 // === JSON Schema bridge — RFC 8927 / draft-bhutton ===
 export { toJSONSchema, fromJSONSchema } from "./core/schema/bridge.js";

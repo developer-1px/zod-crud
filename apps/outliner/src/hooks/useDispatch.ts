@@ -2,7 +2,7 @@
 // command 의 JSONResult 실패는 toast 로 surface.
 
 import { useCallback } from "react";
-import type { DebugLogger } from "zod-crud";
+import type { DebugLogger } from "zod-crud/react";
 import * as cmd from "../commands/index.js";
 import type { CommandId, Mode } from "../keymap.js";
 import type { CommandContext } from "../commands/index.js";

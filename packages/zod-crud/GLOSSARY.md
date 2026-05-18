@@ -6,7 +6,7 @@
 
 | 용어 | 의미 |
 |------|------|
-| `useJSONDocument` | React 진입점. `value`, `ops`, `selection`, `history`, `commands`, `can` 을 한 객체로 묶는 facade. |
+| `useJSONDocument` | `zod-crud/react` React 진입점. `value`, `ops`, `selection`, `history`, `commands`, `can` 을 한 객체로 묶는 facade. |
 | `JSONDocument<T>` | `useJSONDocument` 반환 타입. |
 | 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 verbs 분류 기준. |
 | 10 verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |

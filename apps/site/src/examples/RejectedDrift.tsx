@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useJSONDocument, type JSONResult } from "zod-crud";
+import { useJSONDocument, type JSONResult } from "zod-crud/react";
 
 // 의도적으로 까다로운 스키마: 빈 문자열 금지 + 상한 100.
 const Schema = z.object({

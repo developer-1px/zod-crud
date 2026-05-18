@@ -18,7 +18,7 @@
 
 ```tsx
 import * as z from 'zod';
-import { useJSONDocument } from 'zod-crud';
+import { useJSONDocument } from 'zod-crud/react';
 
 const Schema = z.object({
   cells: z.record(z.string(), z.string()),

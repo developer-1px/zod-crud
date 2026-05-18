@@ -22,7 +22,7 @@ const Todo = z.object({
 ## 2. `useJSONDocument`로 문서를 엽니다
 
 ```tsx
-import { useJSONDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud/react";
 
 const doc = useJSONDocument(Todo, {
   title: "write docs",

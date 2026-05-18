@@ -2,7 +2,8 @@
 
 A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and
 **RFC 6902 (JSON Patch)**. State, actions, and change records are 100%
-serializable JSON. The core is pure functions; React is confined to one hook.
+serializable JSON. The core is pure functions; React hooks live behind the
+`zod-crud/react` entrypoint.
 
 The contract is `packages/zod-crud/SPEC.md`. It is the single source of truth
 and outranks code, docs, and tests on conflict.
@@ -19,7 +20,7 @@ npm install zod-crud zod
 
 ```tsx
 import * as z from "zod";
-import { useJSON } from "zod-crud";
+import { useJSONDocument } from "zod-crud/react";
 
 const Schema = z.object({
   title: z.string(),
@@ -27,16 +28,16 @@ const Schema = z.object({
 });
 
 function App() {
-  const [json, ops] = useJSON(Schema, { title: "", tasks: [] });
+  const doc = useJSONDocument(Schema, { title: "", tasks: [] });
 
   return (
     <>
       <input
-        value={json.title}
-        onChange={(e) => ops.replace("/title", e.target.value)}
+        value={doc.value.title}
+        onChange={(e) => doc.ops.replace("/title", e.target.value)}
       />
       <button
-        onClick={() => ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })}
+        onClick={() => doc.ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })}
       >
         add task
       </button>

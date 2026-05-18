@@ -2,7 +2,7 @@
 // keydown 은 props 로 받는다 — chord dispatcher 는 부모 책임.
 
 import { useEffect, useRef } from "react";
-import { useJSONDocument, type Pointer } from "zod-crud";
+import { useJSONDocument, type Pointer } from "zod-crud/react";
 import type { OutlineNode, OutlineSchema } from "./schema.js";
 import type { Mode } from "./keymap.js";
 

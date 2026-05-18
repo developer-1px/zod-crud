@@ -22,10 +22,10 @@
 
 ```ts
 // 단일 facade — 90% 의 사용자
-import { useJsonDocument } from 'zod-crud'
+import { useJSONDocument } from 'zod-crud/react'
 
 // JsonOps 타입 (sub-hook 으로 ops 전파 시)
-import type { JsonOps } from 'zod-crud'
+import type { JSONOps } from 'zod-crud'
 
 // Pure core (no React)
 import { applyPatch, applyOperation, computeInverses } from 'zod-crud'
@@ -34,7 +34,7 @@ import { applyPatch, applyOperation, computeInverses } from 'zod-crud'
 import { parsePointer, buildPointer, serialize, parse } from 'zod-crud'
 
 // Sidecars (횡단 관심사 — core 영향 없음)
-import { useRecorder, useDebugLog } from 'zod-crud'
+import { useRecorder, useDebugLog } from 'zod-crud/react'
 
 // HTTP wire (RFC 5789 + 6902 + 7396)
 import { buildPatchRequest, parsePatchResponse, applyMergePatch } from 'zod-crud'

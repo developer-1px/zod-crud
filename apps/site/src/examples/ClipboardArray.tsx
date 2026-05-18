@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { z } from "zod";
-import { useJSONDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud/react";
 
 const Schema = z.object({
   tags: z.array(z.string().min(1)),

@@ -4,7 +4,7 @@
 
 import { useEffect, useRef } from "react";
 import { z } from "zod";
-import { useJSONDocument, type Pointer } from "zod-crud";
+import { useJSONDocument, type Pointer } from "zod-crud/react";
 
 type OutlineNode = { text: string; children: OutlineNode[] };
 

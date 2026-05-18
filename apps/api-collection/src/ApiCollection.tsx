@@ -4,7 +4,7 @@
 // 의도적으로 단일 파일. UI 는 inline style — Tailwind/CSS 의존 없음.
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { useJSONDocument, type JSONPatchOperation } from "zod-crud";
+import { useJSONDocument, type JSONPatchOperation } from "zod-crud/react";
 import { Collection, SAMPLE, type Item, type Folder, type Request, type Header, type Method } from "./schema.js";
 
 const ALL_METHODS: ReadonlyArray<Method> = ["GET", "POST", "PUT", "PATCH", "DELETE"];

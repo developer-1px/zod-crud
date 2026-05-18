@@ -83,7 +83,8 @@ try {
     join(workspace, "smoke.mjs"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, parsePointer, buildPointer } from "zod-crud";',
+      'import { applyOperation, applyPatch, parsePointer, buildPointer, find, replace } from "zod-crud";',
+      'import { move } from "zod-crud/verbs/move";',
       'const schema = z.object({ name: z.string(), tags: z.array(z.string()) });',
       'const initial = { name: "ok", tags: [] };',
       'const r = applyOperation(schema, initial, { op: "replace", path: "/name", value: "next" });',
@@ -97,6 +98,9 @@ try {
       'if (r2.state.tags.length !== 1) throw new Error("batch tags failed");',
       'if (parsePointer("/a/0").length !== 2) throw new Error("parsePointer failed");',
       'if (buildPointer(["a", 0]) !== "/a/0") throw new Error("buildPointer failed");',
+      'if (!find(r2.state, "$.tags[0]").ok) throw new Error("find export failed");',
+      'if (!replace(schema, r2.state, "$.name", "z").ok) throw new Error("replace export failed");',
+      'if (!move(schema, r2.state, "/tags/0", "/tags/0").ok) throw new Error("verb subpath export failed");',
     ].join("\n"),
   );
   await writeFile(

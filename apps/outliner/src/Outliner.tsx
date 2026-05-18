@@ -2,7 +2,7 @@
 // useJSONDocument facade + outliner-local clipboard·keymap·commands 를 hook 들로 묶음.
 
 import { useCallback, useState } from "react";
-import { useJSONDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud/react";
 import { OutlineSchema, SAMPLE } from "./schema.js";
 import { OutlineRow } from "./OutlineRow.js";
 import { eventToChord, findCommand, KEYMAP, type Mode } from "./keymap.js";

@@ -8,7 +8,7 @@ vocabulary becomes a **reusable standard layer**.
 
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
-`hooks/useJSONDocument` is a thin React adapter that injects selection.
+`zod-crud/react` exposes the thin React adapter that injects selection.
 `sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single
@@ -37,7 +37,7 @@ required only for React hooks. The package is ESM-only.
 
 ```tsx
 import * as z from "zod";
-import { useJSONDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud/react";
 
 const Schema = z.object({
   title: z.string(),
@@ -154,11 +154,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `useJSONDocument(schema, initial, options?)` | React facade (SPEC §5.10) |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` | facade types (SPEC §5.10) |
-| `useJSON(schema, initial, options?)` | lower-level hook (SPEC §5.1) |
+| `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
-| `useSelection(ops, options?)` | lower-level selection hook (SPEC §5.7) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |

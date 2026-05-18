@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { useJSONDocument } from "zod-crud";
+import { useJSONDocument } from "zod-crud/react";
 
 const Schema = z.object({
   title: z.string().min(1),

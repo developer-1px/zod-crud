@@ -13,7 +13,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { z } from "zod";
 import { Outliner } from "../src/Outliner.js";
 import { OutlineSchema, SAMPLE } from "../src/schema.js";
-import { useJSONDocument, type JSONCrudError } from "zod-crud";
+import { useJSONDocument, type JSONCrudError } from "zod-crud/react";
 
 afterEach(cleanup);
 

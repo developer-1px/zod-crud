@@ -143,7 +143,7 @@ else log(result.violations);
 **Canonical**:
 
 ```tsx
-import { useRecorder, replayRecording } from 'zod-crud';
+import { useRecorder, replayRecording } from 'zod-crud/react';
 
 function App() {
   const doc = useJSONDocument(Schema, initial);
