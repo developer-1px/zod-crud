@@ -97,8 +97,9 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
     canUndo: () => historyCanUndo(stackRef.current),
     canRedo: () => historyCanRedo(stackRef.current),
     load: (v, options) => {
-      if (!options?.preserveHistory) stackRef.current = emptyHistory<HistoryEntry>();
-      return rawOps.load(v);
+      const r = rawOps.load(v);
+      if (r.ok && !options?.preserveHistory) stackRef.current = emptyHistory<HistoryEntry>();
+      return r;
     },
     reset: (v) => { stackRef.current = emptyHistory<HistoryEntry>(); rawOps.reset(v); },
     subscribe: rawOps.subscribe,

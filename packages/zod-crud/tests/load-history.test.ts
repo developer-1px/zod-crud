@@ -36,6 +36,24 @@ describe("useJSONDocument ops.load history", () => {
     });
     expect(hook.current.history.canUndo).toBe(false);
   });
+
+  test("failed load preserves existing history", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { history: 10, strict: false }));
+
+    act(() => {
+      hook.current.ops.replace("/name", "b");
+    });
+    expect(hook.current.history.canUndo).toBe(true);
+
+    let result: ReturnType<typeof hook.current.ops.load> | undefined;
+    act(() => {
+      result = hook.current.ops.load({ name: 1 } as unknown as { name: string });
+    });
+
+    expect(result?.ok).toBe(false);
+    expect(hook.current.value).toEqual({ name: "b" });
+    expect(hook.current.history.canUndo).toBe(true);
+  });
 });
 
 function renderHook<T>(hook: () => T): { readonly current: T } {
