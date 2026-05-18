@@ -333,20 +333,16 @@ try {
   }
   for (const [subpath, exportMap] of Object.entries(packageJson.exports)) {
     const conditions = Object.keys(exportMap);
-    const expectedConditions = ["types", "development", "import"];
+    const expectedConditions = ["types", "import"];
     if (JSON.stringify(conditions) !== JSON.stringify(expectedConditions)) {
       throw new Error(`Export ${subpath} conditions must be ${expectedConditions.join(",")}: ${conditions.join(",")}`);
     }
-    for (const condition of ["types", "import"]) {
+    for (const condition of expectedConditions) {
       const target = exportMap[condition];
       const packedPath = target.replace(/^\.\//, "");
       if (!packedFiles.includes(packedPath)) {
         throw new Error(`Export ${subpath}.${condition} target is missing from tarball: ${target}`);
       }
-    }
-    const developmentTarget = exportMap.development;
-    if (!existsSync(join(repoRoot, developmentTarget.replace(/^\.\//, "")))) {
-      throw new Error(`Export ${subpath}.development target is missing from source: ${developmentTarget}`);
     }
   }
   const exportedVerbs = Object.keys(packageJson.exports)

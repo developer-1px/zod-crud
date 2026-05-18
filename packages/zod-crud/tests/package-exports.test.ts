@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 const root = resolve(__dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
-  exports: Record<string, { development?: string; import?: string; types?: string }>;
+  exports: Record<string, { import?: string; types?: string }>;
 };
 
 const publicVerbFiles = readdirSync(resolve(root, "src/verbs"))
@@ -18,15 +18,9 @@ describe("package exports", () => {
       expect(
         Object.keys(target),
         `${subpath} must expose exactly the supported export conditions`,
-      ).toEqual(["types", "development", "import"]);
-      expect(target.development, `${subpath} missing development condition`).toBeTruthy();
+      ).toEqual(["types", "import"]);
       expect(target.import, `${subpath} missing import condition`).toBeTruthy();
       expect(target.types, `${subpath} missing types condition`).toBeTruthy();
-
-      expect(
-        existsSync(resolve(root, target.development!.replace(/^\.\//, ""))),
-        `${subpath} development target does not exist: ${target.development}`,
-      ).toBe(true);
 
       const sourceFromImport = target.import!.replace(/^\.\//, "").replace(/^dist\//, "src/").replace(/\.js$/, ".ts");
       expect(

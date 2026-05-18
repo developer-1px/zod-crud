@@ -39,62 +39,50 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "development": "./src/index.ts",
       "import": "./dist/index.js"
     },
     "./react": {
       "types": "./dist/react.d.ts",
-      "development": "./src/react.ts",
       "import": "./dist/react.js"
     },
     "./verbs/copy": {
       "types": "./dist/verbs/copy.d.ts",
-      "development": "./src/verbs/copy.ts",
       "import": "./dist/verbs/copy.js"
     },
     "./verbs/duplicate": {
       "types": "./dist/verbs/duplicate.d.ts",
-      "development": "./src/verbs/duplicate.ts",
       "import": "./dist/verbs/duplicate.js"
     },
     "./verbs/paste": {
       "types": "./dist/verbs/paste.d.ts",
-      "development": "./src/verbs/paste.ts",
       "import": "./dist/verbs/paste.js"
     },
     "./verbs/cut": {
       "types": "./dist/verbs/cut.d.ts",
-      "development": "./src/verbs/cut.ts",
       "import": "./dist/verbs/cut.js"
     },
     "./verbs/find": {
       "types": "./dist/verbs/find.d.ts",
-      "development": "./src/verbs/find.ts",
       "import": "./dist/verbs/find.js"
     },
     "./verbs/move": {
       "types": "./dist/verbs/move.d.ts",
-      "development": "./src/verbs/move.ts",
       "import": "./dist/verbs/move.js"
     },
     "./verbs/redo": {
       "types": "./dist/verbs/redo.d.ts",
-      "development": "./src/verbs/redo.ts",
       "import": "./dist/verbs/redo.js"
     },
     "./verbs/replace": {
       "types": "./dist/verbs/replace.d.ts",
-      "development": "./src/verbs/replace.ts",
       "import": "./dist/verbs/replace.js"
     },
     "./verbs/select": {
       "types": "./dist/verbs/select.d.ts",
-      "development": "./src/verbs/select.ts",
       "import": "./dist/verbs/select.js"
     },
     "./verbs/undo": {
       "types": "./dist/verbs/undo.d.ts",
-      "development": "./src/verbs/undo.ts",
       "import": "./dist/verbs/undo.js"
     }
   },
