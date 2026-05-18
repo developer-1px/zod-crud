@@ -11,6 +11,7 @@
 
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import { parsePointer } from "../core/pointer/index.js";
+import { assertJsonSerializable } from "../core/json.js";
 
 export const JSON_PATCH_MIME = "application/json-patch+json";    // RFC 6902 §6
 export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
@@ -26,6 +27,7 @@ export interface PatchRequest {
  * fetch / axios 등 client 의 옵션으로 spread 하면 된다.
  */
 export function buildPatchRequest(ops: ReadonlyArray<JSONPatchOperation>): PatchRequest {
+  assertJsonSerializable(ops);
   return {
     method: "PATCH",
     headers: { "content-type": JSON_PATCH_MIME },

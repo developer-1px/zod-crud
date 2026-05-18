@@ -24,6 +24,10 @@ describe("RFC 6902 over HTTP — request", () => {
     expect(JSON.parse(req.body)).toEqual(ops);
   });
 
+  test("buildPatchRequest 는 비JSON op value 를 body 손실 전에 거부", () => {
+    expect(() => buildPatchRequest([{ op: "add", path: "/a", value: undefined }])).toThrow(TypeError);
+  });
+
   test("withIfMatch 가 RFC 5789 §2.4 conditional 헤더 추가", () => {
     const req = buildPatchRequest([]);
     const conditional = withIfMatch(req, '"abc123"');
