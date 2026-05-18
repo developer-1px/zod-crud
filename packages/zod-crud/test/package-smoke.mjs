@@ -102,11 +102,9 @@ try {
   }
   for (const [subpath, exportMap] of Object.entries(packageJson.exports)) {
     const conditions = Object.keys(exportMap);
-    if (conditions[0] !== "types") {
-      throw new Error(`Export ${subpath} must list "types" before runtime conditions`);
-    }
-    if (!conditions.includes("development")) {
-      throw new Error(`Export ${subpath} must include a development condition`);
+    const expectedConditions = ["types", "development", "import"];
+    if (JSON.stringify(conditions) !== JSON.stringify(expectedConditions)) {
+      throw new Error(`Export ${subpath} conditions must be ${expectedConditions.join(",")}: ${conditions.join(",")}`);
     }
     for (const condition of ["types", "import"]) {
       const target = exportMap[condition];
