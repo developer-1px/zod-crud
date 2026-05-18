@@ -18,6 +18,8 @@ const verbNames = verbEntries
   .sort();
 const rootValueExports = valueExports(rootSource);
 const reactValueExports = valueExports(reactSource);
+const rootPublicExports = publicExports(rootSource);
+const reactPublicExports = publicExports(reactSource);
 
 function run(command, args, cwd) {
   try {
@@ -98,6 +100,36 @@ function valueExports(source) {
   }
 
   return [...new Set(names)].sort();
+}
+
+function publicExports(source) {
+  const names = [];
+  for (const match of source.matchAll(/^export(?: type)? \{([\s\S]*?)\} from/gm)) {
+    const block = match[1];
+    if (block === undefined) {
+      throw new Error("Export block capture failed");
+    }
+    for (const rawPart of block.split(",")) {
+      const part = rawPart.replace(/\/\/.*$/gm, "").trim();
+      if (part.length === 0) continue;
+      const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
+      if (exportedName === undefined) {
+        throw new Error(`Export name capture failed: ${part}`);
+      }
+      names.push(exportedName);
+    }
+  }
+
+  return [...new Set(names)].sort();
+}
+
+function assertDeclarationExports(declarationSource, expectedNames, label) {
+  for (const name of expectedNames) {
+    const exportNamePattern = new RegExp(`(^|[^A-Za-z0-9_$])${name}([^A-Za-z0-9_$]|$)`);
+    if (!exportNamePattern.test(declarationSource)) {
+      throw new Error(`${label} declaration export missing: ${name}`);
+    }
+  }
 }
 
 try {
@@ -435,6 +467,17 @@ try {
 
   run("npm", ["install", "--legacy-peer-deps", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], workspace);
   await mkdir(join(workspace, "node_modules"), { recursive: true });
+  const installedPackageRoot = join(workspace, "node_modules", "zod-crud");
+  assertDeclarationExports(
+    await readFile(join(installedPackageRoot, "dist", "index.d.ts"), "utf8"),
+    rootPublicExports,
+    "root",
+  );
+  assertDeclarationExports(
+    await readFile(join(installedPackageRoot, "dist", "react.d.ts"), "utf8"),
+    reactPublicExports,
+    "react",
+  );
 
   if (!existsSync(join(workspace, "node_modules", "zod"))) {
     await symlink(zodPackage, join(workspace, "node_modules", "zod"), "dir");
