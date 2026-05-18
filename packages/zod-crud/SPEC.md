@@ -257,8 +257,8 @@ function assertSerializable(x: unknown, where: string): JSONResult;
 
 ### 4.3 reset / load
 
-- `load(value)` — 외부에서 받은 JSON을 schema 검증 후 state로 교체. 성공 시 history clear.
-- `reset(value?)` — initial 또는 인자 값으로 교체. 성공 시 history clear.
+- `load(value, options?)` — 외부에서 받은 JSON을 schema 검증 후 state로 교체. `useJSONDocument` 에서는 성공 시 기본적으로 history 를 비우며, `{ preserveHistory: true }` 를 넘기면 기존 history 를 유지한다. 실패 시 state 와 history 를 모두 유지한다.
+- `reset(value?)` — initial 또는 인자 값으로 교체. 성공 시 history 를 비운다. 실패 시 state 와 history 를 모두 유지한다.
 
 ### 4.4 History — `useJSONDocument` owner
 
@@ -306,7 +306,7 @@ export interface JSONOps<T> {
   set<P extends PointerOf<T>>(path: P, value: ValueAt<T, P> | undefined): JSONResult;
 
   // lifecycle
-  load(value: T): JSONResult;
+  load(value: T, options?: JSONLoadOptions): JSONResult;
   reset(value?: T): JSONResult;
 
   // change subscription
@@ -315,6 +315,10 @@ export interface JSONOps<T> {
 }
 
 export type JSONChangeListener = (applied: ReadonlyArray<JSONPatchOperation>) => void;
+
+export interface JSONLoadOptions {
+  preserveHistory?: boolean;
+}
 ```
 
 ### 5.3 Pure core — `applyPatch` / `applyOperation`
