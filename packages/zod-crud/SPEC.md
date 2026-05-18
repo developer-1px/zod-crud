@@ -470,6 +470,29 @@ export function applyMergePatch(target: unknown, patch: unknown): unknown;      
 
 테스트: [`tests/http.test.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/tests/http.test.ts) — RFC 7396 §2 의 표준 예제 + ETag conditional + content-type negotiation.
 
+### 5.10 `useJSONDocument` — 단일 React facade
+
+```ts
+export function useJSONDocument<S extends z.ZodType>(
+  schema: S,
+  initial: z.input<S>,
+  options?: UseJSONDocumentOptions<z.output<S>>,
+): JSONDocument<z.output<S>>;
+
+export interface JSONDocument<T> {
+  value: T;
+  selection: SelectionState<T> | undefined;
+  history: JSONDocumentHistory;
+  ops: JSONDocumentOps<T>;
+  commands: Commands<T>;
+  can: Can<T>;
+}
+```
+
+`zod-crud/react` 의 정체성 표면. data, selection, history, 10 verbs, guard predicates 를 한 객체로 묶는다.
+selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
+history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
+
 ---
 
 ## 6. 에러 — 시끄러움 4단
@@ -548,7 +571,7 @@ export class JSONCrudError extends Error {
 
 | 표준 | 결단 | 이유 |
 |------|------|------|
-| **RFC 7396** JSON Merge Patch | ✅ **부분 지원** — `http.ts` 의 `parseMergePatch` (top-level 분해) + `applyMergePatch` (stateful merge, 정확) | server 응답 수신 path 의 표준 옵션. nested null 의미는 stateful path 로만 정확. §5.11 |
+| **RFC 7396** JSON Merge Patch | ✅ **부분 지원** — `http.ts` 의 `parseMergePatch` (top-level 분해) + `applyMergePatch` (stateful merge, 정확) | server 응답 수신 path 의 표준 옵션. nested null 의미는 stateful path 로만 정확. §5.9 |
 | **CRDT / OT** (Yjs · Automerge) | ❌ **명시적 비-목표** (헌장 재확인) | (1) RFC 6902 op 는 sequential — commutative 보장 없음. CRDT/OT 변환 시 의미 보존 불가능한 케이스 다수. (2) 협업이 필요한 사용자는 Yjs/Automerge 를 별 substrate 로 두고, 그 결과 state 를 zod-crud 가 받는 path 가 자연 — 우리가 두 substrate 를 흡수하지 않음. (3) 30 년 락인 헌장과 충돌 — RFC 6902 위에 OT 를 얹으면 RFC 안의 의미를 우리가 변형해야 함 |
 
 변경하려면 먼저 현재 코드 동작을 확인한 뒤 이 절을 함께 갱신해야 한다.

@@ -253,6 +253,27 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(spec).toContain(`그중 ${disabled} 케이스는 suite 자체에서 disabled`);
   });
 
+  test("README and SPEC section references resolve to SPEC headings", () => {
+    const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const headings = new Set(
+      Array.from(spec.matchAll(/^#{2,3}\s+(\d+(?:\.\d+)?)\b/gm), (match) => {
+        const section = match[1];
+        if (section === undefined) throw new Error("SPEC heading capture failed");
+        return section;
+      }),
+    );
+    const references = Array.from(`${readme}\n${spec}`.matchAll(/SPEC §(\d+(?:\.\d+)?)/g), (match) => {
+      const section = match[1];
+      if (section === undefined) throw new Error("SPEC section reference capture failed");
+      return section;
+    });
+
+    for (const section of references) {
+      expect(headings, `SPEC §${section} reference must resolve to a heading`).toContain(section);
+    }
+  });
+
   test("published Markdown package-local links resolve inside published files", () => {
     const publishedFiles = new Set((packageJson as { files: string[] }).files);
     const markdownFiles = [...publishedFiles].filter((file) => file.endsWith(".md"));
