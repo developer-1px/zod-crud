@@ -60,7 +60,7 @@ export {
   JSON_PATCH_MIME,
   MERGE_PATCH_MIME,
 } from "./sidecars/http.js";
-export type { ParseResult, ParseError } from "./sidecars/http.js";
+export type { ParseResult, ParseError, PatchRequest } from "./sidecars/http.js";
 
 // === Clipboard verbs ===
 export {
