@@ -184,6 +184,7 @@ try {
       'const _ops = null as unknown as Ops;',
       '_selection.ranges satisfies readonly string[];',
       '_ops.state.name satisfies string;',
+      '_ops.reset() satisfies import("zod-crud").JSONResult;',
     ].join("\n"),
   );
 

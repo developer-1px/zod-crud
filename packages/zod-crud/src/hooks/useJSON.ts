@@ -103,7 +103,7 @@ export function useJSON<S extends z.ZodType>(
       },
 
       load(value) { return replaceRoot("load", value); },
-      reset(value) { replaceRoot("reset", value ?? initialRef.current); },
+      reset(value) { return replaceRoot("reset", value ?? initialRef.current); },
 
       subscribe(listener) {
         listenersRef.current.add(listener);

@@ -101,7 +101,11 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
       if (r.ok && !options?.preserveHistory) stackRef.current = emptyHistory<HistoryEntry>();
       return r;
     },
-    reset: (v) => { stackRef.current = emptyHistory<HistoryEntry>(); rawOps.reset(v); },
+    reset: (v) => {
+      const r = rawOps.reset(v);
+      if (r.ok) stackRef.current = emptyHistory<HistoryEntry>();
+      return r;
+    },
     subscribe: rawOps.subscribe,
     get state() { return rawOps.state; },
   };

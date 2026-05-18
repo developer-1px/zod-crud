@@ -48,7 +48,7 @@ export interface JSONOps<T> {
   apply(operations: ReadonlyArray<JSONPatchOperation>): void;
 
   load(value: T, options?: JSONLoadOptions): JSONResult;
-  reset(value?: T): void;
+  reset(value?: T): JSONResult;
 
   subscribe(listener: JSONChangeListener): () => void;
   readonly state: T;

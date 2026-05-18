@@ -257,8 +257,8 @@ function assertSerializable(x: unknown, where: string): JSONResult;
 
 ### 4.3 reset / load
 
-- `load(value)` — 외부에서 받은 JSON을 schema 검증 후 state로 교체. history는 clear.
-- `reset(value?)` — initial 또는 인자 값으로 교체. history clear.
+- `load(value)` — 외부에서 받은 JSON을 schema 검증 후 state로 교체. 성공 시 history clear.
+- `reset(value?)` — initial 또는 인자 값으로 교체. 성공 시 history clear.
 
 ### 4.4 History — `useJSONDocument` owner
 
@@ -307,7 +307,7 @@ export interface JSONOps<T> {
 
   // lifecycle
   load(value: T): JSONResult;
-  reset(value?: T): void;
+  reset(value?: T): JSONResult;
 
   // change subscription
   subscribe(listener: JSONChangeListener): () => void;

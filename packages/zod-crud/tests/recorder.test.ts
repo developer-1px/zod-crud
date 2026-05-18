@@ -14,7 +14,7 @@ function makeOps(initial: S): JSONOps<S> {
   return {
     get state() { return state; },
     load(v) { state = Schema.parse(v); return { ok: true } as const; },
-    reset(v) { state = v ? Schema.parse(v) : state; },
+    reset(v) { state = v ? Schema.parse(v) : state; return { ok: true } as const; },
     patch(ops) {
       const r = applyPatch(Schema, state, ops);
       if (r.result.ok) { state = r.state; for (const s of subs) s(r.applied); }

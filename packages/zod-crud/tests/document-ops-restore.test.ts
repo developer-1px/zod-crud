@@ -82,7 +82,7 @@ function baseOps(patch: (operations: ReadonlyArray<JSONPatchOperation>) => JSONR
     patch,
     apply: () => undefined,
     load: () => ({ ok: true }),
-    reset: () => undefined,
+    reset: () => ({ ok: true }),
     subscribe: () => () => undefined,
     state: { name: "old" },
   };
