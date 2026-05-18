@@ -404,6 +404,9 @@ try {
   if (!existsSync(join(workspace, "node_modules", "zod"))) {
     await symlink(zodPackage, join(workspace, "node_modules", "zod"), "dir");
   }
+  if (existsSync(join(workspace, "node_modules", "react"))) {
+    throw new Error("Root package smoke must run before React is installed so the root entrypoint stays headless");
+  }
 
   run("node", ["smoke.mjs"], workspace);
   run("node", ["verbs-subpath-smoke.mjs"], workspace);
