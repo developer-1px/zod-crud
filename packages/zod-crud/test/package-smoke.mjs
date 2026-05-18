@@ -841,19 +841,21 @@ try {
     markdownCodeBlockAfterHeading(readmeSource, "React — `useJSONDocument`", "tsx"),
   );
   const readmeTypeScriptExamplePaths = [];
-  const readmeTypeScriptExamples = [
-    ...markdownCodeBlocksAfterHeading(readmeSource, "Pure core (no React)", "ts"),
-    ...markdownCodeBlocksAfterHeading(readmeSource, "Serialization", "ts"),
-  ];
-  if (readmeTypeScriptExamples.length !== 3) {
-    throw new Error(`README package smoke must cover 1 pure core and 2 serialization TypeScript examples: ${readmeTypeScriptExamples.length}`);
+  const readmePureCoreExamples = markdownCodeBlocksAfterHeading(readmeSource, "Pure core (no React)", "ts");
+  const readmeSerializationExamples = markdownCodeBlocksAfterHeading(readmeSource, "Serialization", "ts");
+  if (readmePureCoreExamples.length !== 1 || readmeSerializationExamples.length !== 2) {
+    throw new Error(
+      `README package smoke must cover 1 pure core and 2 serialization TypeScript examples: pure=${readmePureCoreExamples.length} serialization=${readmeSerializationExamples.length}`,
+    );
   }
+  const readmeTypeScriptExamples = [...readmePureCoreExamples, ...readmeSerializationExamples];
   for (const [index, block] of readmeTypeScriptExamples.entries()) {
     const filename = `readme-typescript-example-${index + 1}.ts`;
     readmeTypeScriptExamplePaths.push(filename);
     await writeFile(join(workspace, filename), block);
   }
-  const [readmePureCoreExample, readmeSerializationExample] = readmeTypeScriptExamples;
+  const [readmePureCoreExample] = readmePureCoreExamples;
+  const [readmeSerializationExample] = readmeSerializationExamples;
   if (readmePureCoreExample === undefined || readmeSerializationExample === undefined) {
     throw new Error("README runtime examples missing from package smoke");
   }
