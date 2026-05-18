@@ -19,7 +19,7 @@ export interface CutOk<T> {
 
 export interface CutError {
   ok: false;
-  code: "path_not_found" | "not_serializable" | PreFlightErrorCode;
+  code: "invalid_pointer" | "path_not_found" | "not_serializable" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -30,7 +30,10 @@ export function cut<S extends z.ZodType>(
   source: Pointer,
 ): CutOk<z.output<S>> | CutError {
   // 1) source 위치의 값을 payload 로 추출 (deep clone)
-  const segments = parsePointer(source);
+  const segments = safeParsePointer(source);
+  if (segments === null) {
+    return { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${source}` };
+  }
   const v = readAt(state, segments);
   if (!v.ok) {
     return { ok: false, code: "path_not_found", message: `cut source not found: ${source}` };
@@ -50,4 +53,12 @@ export function cut<S extends z.ZodType>(
 
   // 3) atomic — payload + next + patch 동시 산출
   return { ok: true, next: r.draft, patch: [op], payload, source };
+}
+
+function safeParsePointer(pointer: Pointer): string[] | null {
+  try {
+    return parsePointer(pointer);
+  } catch {
+    return null;
+  }
 }

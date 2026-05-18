@@ -18,7 +18,7 @@ export interface CopyOk {
 
 export interface CopyError {
   ok: false;
-  code: "path_not_found" | "not_serializable";
+  code: "invalid_pointer" | "path_not_found" | "not_serializable";
   message: string;
 }
 
@@ -38,7 +38,10 @@ export type ClipboardItemMap = Record<string, string>;
  * pure. state 는 변하지 않는다 (read-only).
  */
 export function copy(state: unknown, source: Pointer): CopyResult {
-  const segments = parsePointer(source);
+  const segments = safeParsePointer(source);
+  if (segments === null) {
+    return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
+  }
   const r = readAt(state, segments);
   if (!r.ok) {
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
@@ -49,6 +52,14 @@ export function copy(state: unknown, source: Pointer): CopyResult {
   }
   // deep clone via JSON round-trip — payload 가 외부 round-trip 후에도 정합한지 보장.
   return { ok: true, payload: cloneJson(r.value), source };
+}
+
+function safeParsePointer(pointer: Pointer): string[] | null {
+  try {
+    return parsePointer(pointer);
+  } catch {
+    return null;
+  }
 }
 
 export function toClipboardItems(payload: unknown, schema: z.ZodType, options: ClipboardItemOptions = {}): ClipboardItemMap {

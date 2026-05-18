@@ -39,6 +39,12 @@ describe("verbs/copy", () => {
     expect(r.ok).toBe(false);
   });
 
+  test("invalid source pointer returns structured error", () => {
+    const r = copy(initial, "items/0" as never);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("invalid_pointer");
+  });
+
   test("non-JSON source 는 payload 손실 없이 거부", () => {
     const r = copy({ item: { id: "a", dropped: undefined } }, "/item");
     expect(r.ok).toBe(false);
@@ -98,6 +104,12 @@ describe("verbs/cut", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe("not_serializable");
     expect(state.items).toHaveLength(1);
+  });
+
+  test("invalid source pointer returns structured error", () => {
+    const r = cut(Schema, initial, "items/0" as never);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("invalid_pointer");
   });
 });
 
@@ -219,6 +231,12 @@ describe("verbs/duplicate", () => {
     const r = duplicate(Schema, initial, "/meta/foo");
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe("missing_new_key");
+  });
+
+  test("invalid source pointer returns structured error", () => {
+    const r = duplicate(Schema, initial, "items/0" as never);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("invalid_pointer");
   });
 
   test("object newKey 명시 시 RFC 6902 copy 로 환원", () => {

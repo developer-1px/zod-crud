@@ -49,7 +49,10 @@ export function duplicate<S extends z.ZodType>(
   if (parent === null) {
     return { ok: false, code: "invalid_pointer", message: "cannot duplicate root" };
   }
-  const parentSegs = parsePointer(parent);
+  const parentSegs = safeParsePointer(parent);
+  if (parentSegs === null) {
+    return { ok: false, code: "invalid_pointer", message: `invalid parent pointer: ${parent}` };
+  }
   const parentRead = readAt(state, parentSegs);
   if (!parentRead.ok) {
     return { ok: false, code: "path_not_found", message: `parent not found: ${parent}` };
@@ -83,7 +86,11 @@ export function duplicate<S extends z.ZodType>(
     }
   }
 
-  const sourceRead = readAt(state, parsePointer(source));
+  const sourceSegs = safeParsePointer(source);
+  if (sourceSegs === null) {
+    return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
+  }
+  const sourceRead = readAt(state, sourceSegs);
   if (!sourceRead.ok) {
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
   }
@@ -97,6 +104,14 @@ export function duplicate<S extends z.ZodType>(
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
   return { ok: true, next: r.draft, patch: [op], duplicatedTo: target };
+}
+
+function safeParsePointer(pointer: Pointer): string[] | null {
+  try {
+    return parsePointer(pointer);
+  } catch {
+    return null;
+  }
 }
 
 /** unused helper hint to silence linter for lastSegment import — also useful in error messages. */
