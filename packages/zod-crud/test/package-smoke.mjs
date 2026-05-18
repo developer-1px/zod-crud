@@ -211,7 +211,7 @@ try {
     join(workspace, "smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, type CutError, type DuplicateError, type JSONPatchOperation, type ParseError, type ParseResult, type PasteError, type PatchRequest, type Pointer, type PreFlightErrorCode, type RekeyResult, type ReplaceError } from "zod-crud";',
+      'import { applyOperation, applyPatch, tryParsePointer, type CutError, type DuplicateError, type JSONPatchOperation, type ParseError, type ParseResult, type PasteError, type PatchRequest, type Pointer, type PreFlightErrorCode, type RekeyResult, type ReplaceError } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',
       'r.state.name satisfies string;',
@@ -220,6 +220,8 @@ try {
       'r2.state.name satisfies string;',
       'const p: Pointer = "/name";',
       'p satisfies string;',
+      'const parsedPointer = tryParsePointer(p);',
+      'parsedPointer satisfies string[] | null;',
       'const req: PatchRequest = { method: "PATCH", headers: { "content-type": "application/json-patch+json" }, body: "[]" };',
       'req.headers satisfies Record<string, string>;',
       'declare const parseResult: ParseResult | ParseError;',
