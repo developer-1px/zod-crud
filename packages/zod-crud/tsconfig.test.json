@@ -23,6 +23,7 @@
     "tests/issue-57-structural-sharing.test.ts",
     "tests/jsonpath.test.ts",
     "tests/package-exports.test.ts",
+    "tests/recorder.test.ts",
     "tests/rfc6901-uri-fragment.test.ts",
     "tests/rfc6902-conformance.test.ts",
     "tests/schema-gate.test.ts",

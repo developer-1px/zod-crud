@@ -31,10 +31,19 @@ function makeOps(initial: S): JSONOps<S> {
       if (r.result.ok) { state = r.state; for (const s of subs) s(r.applied); }
       return r.result;
     },
-    add: () => ({ ok: true } as any), remove: () => ({ ok: true } as any),
-    replace: () => ({ ok: true } as any), move: () => ({ ok: true } as any),
-    copy: () => ({ ok: true } as any), test: () => ({ ok: true } as any),
-    undo: () => false, redo: () => false, canUndo: () => false, canRedo: () => false,
+    add: () => ({ ok: true }),
+    remove: () => ({ ok: true }),
+    replace: () => ({ ok: true }),
+    move: () => ({ ok: true }),
+    copy: () => ({ ok: true }),
+    test: () => ({ ok: true }),
+    set: () => ({ ok: true }),
+    apply: (ops) => {
+      const r = applyPatch(Schema, state, ops);
+      if (!r.result.ok) throw new JSONCrudError("patch", r.result);
+      state = r.state;
+      for (const s of subs) s(r.applied);
+    },
     subscribe(fn) { subs.add(fn); return () => subs.delete(fn); },
   };
 }
