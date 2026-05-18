@@ -53,4 +53,13 @@ describe("package exports", () => {
 
     expect(Object.keys(packageJson.exports).sort()).toEqual(expectedExports);
   });
+
+  test("root entrypoint stays headless and does not re-export React modules", () => {
+    const rootSource = readFileSync(resolve(root, "src/index.ts"), "utf8");
+
+    expect(rootSource).not.toMatch(/from "\.\/react\.js"/);
+    expect(rootSource).not.toMatch(/from "\.\/hooks\//);
+    expect(rootSource).not.toMatch(/from "\.\/sidecars\/(?:debug-log|recorder)\.js"/);
+    expect(rootSource).not.toMatch(/from "react"/);
+  });
 });
