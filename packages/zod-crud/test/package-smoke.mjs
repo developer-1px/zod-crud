@@ -17,6 +17,10 @@ const verbNames = verbEntries
   .filter((entry) => entry.isFile() && extname(entry.name) === ".ts")
   .map((entry) => basename(entry.name, ".ts"))
   .sort();
+const verbPublicExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
+  name,
+  publicExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
+])));
 const rootValueExports = valueExports(rootSource);
 const reactValueExports = valueExports(reactSource);
 const rootPublicExports = publicExports(rootSource);
@@ -740,6 +744,13 @@ try {
     reactPublicExports,
     "react",
   );
+  for (const [verb, expectedExports] of Object.entries(verbPublicExports)) {
+    assertDeclarationExports(
+      await readFile(join(installedPackageRoot, "dist", "verbs", `${verb}.d.ts`), "utf8"),
+      expectedExports,
+      `verbs/${verb}`,
+    );
+  }
   await assertDeclarationSpecifiers(installedPackageRoot);
 
   if (!existsSync(join(workspace, "node_modules", "zod"))) {
