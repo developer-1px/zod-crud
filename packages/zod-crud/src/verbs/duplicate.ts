@@ -8,7 +8,7 @@ import type { JSONPatchOperation } from "../core/patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, parsePointer } from "../core/pointer/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
-import { tryRekeyPayload, type RekeyOptions } from "./paste.js";
+import { tryRekeyPayload, type RekeyOptions } from "../core/schema/rekey.js";
 
 export interface DuplicateOpts {
   /** object key 복제 시 새 key. 배열에서는 무시됨. */

@@ -50,4 +50,15 @@ describe("verbs/ closure — 10 verbs ↔ 파일 1:1", () => {
       expect(reMethod.test(src), `Commands<T> missing method ${v}`).toBe(true);
     }
   });
+
+  test("verbs/ modules do not runtime-import other verbs", async () => {
+    const fs = await import("node:fs");
+    for (const f of expectedVerbs.map((v) => `${v}.ts`)) {
+      const src = fs.readFileSync(resolve(verbsPath, f), "utf-8");
+      expect(
+        /^import\s+(?!type\b)[^;]+from\s+["']\.\/[^"']+["']/m.test(src),
+        `verbs/${f} must not runtime-import another verb`,
+      ).toBe(false);
+    }
+  });
 });

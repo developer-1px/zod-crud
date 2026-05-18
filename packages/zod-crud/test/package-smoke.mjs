@@ -124,6 +124,17 @@ try {
     ].join("\n"),
   );
   await writeFile(
+    join(workspace, "paste-subpath-smoke.ts"),
+    [
+      'import type { RekeyOptions, RekeyResult } from "zod-crud/verbs/paste";',
+      'const options: RekeyOptions = { fields: ["id"], strategy: "suffix" };',
+      'options.fields satisfies string[];',
+      'type RekeyFailure = Extract<RekeyResult, { ok: false }>;',
+      'declare const code: RekeyFailure["code"];',
+      'code satisfies "not_serializable" | "rekey_failed";',
+    ].join("\n"),
+  );
+  await writeFile(
     join(workspace, "smoke.ts"),
     [
       'import * as z from "zod";',
@@ -207,6 +218,21 @@ try {
       "--moduleResolution",
       "NodeNext",
       "smoke.ts",
+    ],
+    workspace,
+  );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--target",
+      "ES2022",
+      "--module",
+      "NodeNext",
+      "--moduleResolution",
+      "NodeNext",
+      "paste-subpath-smoke.ts",
     ],
     workspace,
   );
