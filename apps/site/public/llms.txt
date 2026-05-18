@@ -1,6 +1,6 @@
 # zod-crud
 
-> A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and **RFC 6902 (JSON Patch)**. State, actions, and change records are 100% serializable JSON. Pure-function core; React confined to one hook.
+> A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and **RFC 6902 (JSON Patch)**. State, actions, and change records are 100% serializable JSON. Pure-function core; React hooks live under `zod-crud/react`.
 
 ## Identity (정체성 한 줄)
 
@@ -16,7 +16,7 @@
 | **Undo** | `undo`, `redo` |
 | **Find** | `find`, `replace`(string 의미) |
 
-10 verb closure 는 정체성. 11번째 verb 추가는 정체성 영향. RFC 6902 의 6 op(add/remove/replace/move/copy/test) 는 verbs 의 substrate — `JsonOps` 표면에서 `add/remove/replace` 로 노출.
+10 verb closure 는 정체성. 11번째 verb 추가는 정체성 영향. RFC 6902 의 6 op(add/remove/replace/move/copy/test) 는 verbs 의 substrate — `JSONOps` 표면에서 `add/remove/replace` 로 노출.
 
 ## Public surface (canonical entry points)
 
@@ -24,7 +24,7 @@
 // 단일 facade — 90% 의 사용자
 import { useJSONDocument } from 'zod-crud/react'
 
-// JsonOps 타입 (sub-hook 으로 ops 전파 시)
+// JSONOps 타입 (sub-hook 으로 ops 전파 시)
 import type { JSONOps } from 'zod-crud'
 
 // Pure core (no React)
@@ -52,7 +52,7 @@ const Schema = z.object({
   notes: z.record(z.string(), z.string()),
 })
 
-const { value, ops, commands, can, history, selection } = useJsonDocument(
+const { value, ops, commands, can, history, selection } = useJSONDocument(
   Schema,
   initialState,
   { history: 100 }
