@@ -21,6 +21,8 @@ describe("package exports", () => {
       ).toEqual(["types", "import"]);
       expect(target.import, `${subpath} missing import condition`).toBeTruthy();
       expect(target.types, `${subpath} missing types condition`).toBeTruthy();
+      expect(target.import, `${subpath} import target must point to built ESM`).toMatch(/^\.\/dist\/.+\.js$/);
+      expect(target.types, `${subpath} types target must point to built declarations`).toMatch(/^\.\/dist\/.+\.d\.ts$/);
 
       const sourceFromImport = target.import!.replace(/^\.\//, "").replace(/^dist\//, "src/").replace(/\.js$/, ".ts");
       expect(

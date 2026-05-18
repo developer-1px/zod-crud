@@ -354,6 +354,24 @@ try {
   if (unexpectedPackedFiles.length > 0) {
     throw new Error(`Tarball includes unexpected files: ${unexpectedPackedFiles.slice(0, 3).join(", ")}`);
   }
+  const developmentArtifacts = packedFiles.filter((file) => {
+    const name = basename(file);
+    if (file.endsWith(".d.ts")) return false;
+    return (
+      file.endsWith(".ts") ||
+      file.endsWith(".tsx") ||
+      file.endsWith(".map") ||
+      name.endsWith(".test.js") ||
+      name.endsWith(".test.ts") ||
+      name.endsWith(".test-d.ts") ||
+      name === "tsconfig.json" ||
+      name.startsWith("tsconfig.") ||
+      name === "vitest.config.ts"
+    );
+  });
+  if (developmentArtifacts.length > 0) {
+    throw new Error(`Tarball includes development artifacts: ${developmentArtifacts.slice(0, 3).join(", ")}`);
+  }
   const expectedDistArtifacts = sourceModules.flatMap((sourcePath) => {
     const distPath = `dist/${sourcePath.slice(0, -".ts".length)}`;
     return [`${distPath}.js`, `${distPath}.d.ts`];
