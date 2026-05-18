@@ -43,6 +43,21 @@ describe("serialize / parse", () => {
     expect(() => serialize(new Date("2026-05-18T00:00:00.000Z"))).toThrow(TypeError);
     expect(() => serialize(Number.NaN)).toThrow(TypeError);
   });
+
+  it("rejects object properties that JSON.stringify would invoke or drop", () => {
+    const hidden = { ok: true };
+    Object.defineProperty(hidden, "lost", { value: 1, enumerable: false });
+
+    const accessor = {
+      ok: true,
+      get computed() {
+        return 1;
+      },
+    };
+
+    expect(() => serialize(hidden)).toThrow(/non-enumerable property/);
+    expect(() => serialize(accessor)).toThrow(/accessor property/);
+  });
 });
 
 describe("G1 — JSON-only state after operations", () => {

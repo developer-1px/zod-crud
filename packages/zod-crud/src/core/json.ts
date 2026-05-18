@@ -34,6 +34,14 @@ export function jsonSerializableError(value: unknown): string | null {
 
     if (Object.getOwnPropertySymbols(v).length > 0) return `${path}: symbol keys are not JSON`;
 
+    for (const key of Object.getOwnPropertyNames(v)) {
+      const descriptor = Object.getOwnPropertyDescriptor(v, key);
+      if (!descriptor) continue;
+      const childPath = path === "" ? `/${key}` : `${path}/${key}`;
+      if (!descriptor.enumerable) return `${childPath}: non-enumerable property is not JSON`;
+      if ("get" in descriptor || "set" in descriptor) return `${childPath}: accessor property is not JSON`;
+    }
+
     for (const key of Object.keys(v as Record<string, unknown>)) {
       const err = visit((v as Record<string, unknown>)[key], path === "" ? `/${key}` : `${path}/${key}`);
       if (err) return err;
