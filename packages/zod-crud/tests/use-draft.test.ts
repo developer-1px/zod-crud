@@ -58,6 +58,26 @@ describe("useDraft", () => {
     expect(hook.current.doc.value.meta).toEqual({ label: "Old" });
   });
 
+  test("invalid field pointer is represented as a field error", () => {
+    const hook = renderHook(() => useHarness());
+
+    const field = hook.current.draft.field("slug" as never);
+    expect(field.value).toBeUndefined();
+    expect(field.committed).toBeUndefined();
+    expect(field.error).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "slug" });
+    expect(field.commit()).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "slug" });
+
+    act(() => {
+      field.set("bar");
+    });
+
+    const attempted = hook.current.draft.field("slug" as never);
+    expect(attempted.value).toBe("bar");
+    expect(attempted.pending).toBe(true);
+    expect(attempted.error).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "slug" });
+    expect(hook.current.doc.value.slug).toBe("foo");
+  });
+
   test("valid set commits, clears pending, and markSaved refreshes dirty baseline", () => {
     const hook = renderHook(() => useHarness());
 

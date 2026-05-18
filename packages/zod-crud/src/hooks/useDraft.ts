@@ -111,8 +111,11 @@ export function useDraft<T>(doc: JSONDocument<T>): DraftState<T> {
 
   const makeField = useCallback(<P extends PointerOf<T>>(pointer: P): DraftFieldState<ValueAt<T, P>> => {
     const p = pointer as Pointer;
-    const committed = readPointer(doc.value, p);
-    const baseline = readPointer(baselineRef.current, p);
+    const committedRead = readPointer(doc.value, p);
+    const baselineRead = readPointer(baselineRef.current, p);
+    const pointerError = committedRead.ok ? (baselineRead.ok ? null : baselineRead.error) : committedRead.error;
+    const committed = committedRead.ok ? committedRead.value : undefined;
+    const baseline = baselineRead.ok ? baselineRead.value : undefined;
     const attempt = store.attempts.get(p);
     const touched = store.touched.has(p);
 
@@ -121,12 +124,13 @@ export function useDraft<T>(doc: JSONDocument<T>): DraftState<T> {
       value: attempt ? attempt.value : committed,
       committed,
       attempted: attempt?.value,
-      error: attempt?.error ?? null,
+      error: attempt?.error ?? pointerError,
       dirty: !jsonEqual(committed, baseline),
       touched,
       pending: Boolean(attempt),
       set: (value) => setField(p, value),
       commit: () => {
+        if (pointerError) return pointerError;
         if (!attempt) return ok;
         return setField(p, attempt.value);
       },
@@ -199,9 +203,23 @@ function emptyDraftStore(): DraftStore {
   return { attempts: new Map(), touched: new Set() };
 }
 
-function readPointer(value: unknown, pointer: Pointer): unknown {
-  const r = readAt(value, parsePointer(pointer));
-  return r.ok ? r.value : undefined;
+function readPointer(value: unknown, pointer: Pointer):
+  | { ok: true; value: unknown }
+  | { ok: false; error: JSONResult } {
+  try {
+    const r = readAt(value, parsePointer(pointer));
+    return { ok: true, value: r.ok ? r.value : undefined };
+  } catch (error) {
+    return {
+      ok: false,
+      error: {
+        ok: false,
+        code: "invalid_pointer",
+        reason: error instanceof Error ? error.message : "invalid JSON Pointer",
+        pointer,
+      },
+    };
+  }
 }
 
 function deepClone<T>(value: T): T {
