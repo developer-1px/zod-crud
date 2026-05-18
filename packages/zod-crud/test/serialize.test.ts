@@ -23,6 +23,16 @@ describe("serialize / parse", () => {
     expect(r.ok).toBe(false);
   });
 
+  it("safeParse returns a ZodError on invalid JSON even when schema accepts undefined", () => {
+    const r = safeParse(z.any(), "{");
+
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.error).toBeInstanceOf(z.ZodError);
+      expect(r.error.issues[0]?.code).toBe("custom");
+    }
+  });
+
   it("safeParse returns ok on valid JSON", () => {
     const r = safeParse(Schema, JSON.stringify({ title: "x", tasks: [] }));
     expect(r.ok).toBe(true);
