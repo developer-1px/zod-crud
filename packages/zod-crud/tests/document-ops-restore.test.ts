@@ -4,6 +4,7 @@ import type { HistoryStack } from "../src/core/history.js";
 import type { JSONPatchOperation, JSONResult } from "../src/core/patch/index.js";
 import { buildJSONDocumentOps } from "../src/hooks/buildJSONDocumentOps.js";
 import type { HistoryEntry } from "../src/hooks/jsonDocumentHistory.js";
+import type { SelectionState } from "../src/hooks/useSelection.js";
 import type { JSONOps } from "../src/jsonOps.js";
 
 describe("buildJSONDocumentOps restore", () => {
@@ -88,12 +89,21 @@ function baseOps(patch: (operations: ReadonlyArray<JSONPatchOperation>) => JSONR
   };
 }
 
-function selectionStub() {
+function selectionStub(): SelectionState<{ name: string }> {
   return {
     ranges: [],
     anchor: null,
     focus: null,
+    isCollapsed: false,
+    type: "None",
+    collapse: () => undefined,
     setBaseAndExtent: () => undefined,
+    extend: () => undefined,
+    addRange: () => undefined,
+    removeRange: () => undefined,
+    toggleRange: () => undefined,
+    selectRanges: () => undefined,
     empty: () => undefined,
+    containsNode: () => false,
   };
 }
