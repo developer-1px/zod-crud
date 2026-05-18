@@ -132,6 +132,20 @@ function extractExports(source) {
       value.push(...names);
     }
   }
+  for (const match of source.matchAll(/^export\s+(interface|type)\s+([A-Za-z_$][\w$]*)/gm)) {
+    const name = match[2];
+    if (name === undefined) {
+      throw new Error("Type declaration export capture failed");
+    }
+    typeOnly.push(name);
+  }
+  for (const match of source.matchAll(/^export\s+(class|const|function)\s+([A-Za-z_$][\w$]*)/gm)) {
+    const name = match[2];
+    if (name === undefined) {
+      throw new Error("Value declaration export capture failed");
+    }
+    value.push(name);
+  }
 
   return {
     public: uniqueSorted([...value, ...typeOnly]),
