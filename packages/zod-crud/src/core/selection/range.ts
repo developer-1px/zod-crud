@@ -7,7 +7,7 @@
 //
 // state 모르면 (또는 endpoint 가 그 type 집합에 없으면) [anchor, focus] 두 점만.
 
-import { parsePointer, readAt, escapeSegment, type Pointer } from "../pointer/index.js";
+import { readAt, escapeSegment, tryParsePointer, type Pointer } from "../pointer/index.js";
 
 type ValueKind = "null" | "object" | "array" | "string" | "number" | "boolean" | "undefined";
 
@@ -36,12 +36,8 @@ function* walkSameKind(state: unknown, refKind: ValueKind, base: Pointer = ""): 
 // kind 집합 밖이면 [anchor, focus] (uniq) 로 fallback — 호출자가 별도 처리할 필요 없음.
 export function expandRange(anchor: Pointer, focus: Pointer, state?: unknown): Pointer[] {
   if (state !== undefined) {
-    let a: ReturnType<typeof readAt>;
-    try {
-      a = readAt(state, parsePointer(anchor));
-    } catch {
-      a = { ok: false };
-    }
+    const segments = tryParsePointer(anchor);
+    const a: ReturnType<typeof readAt> = segments === null ? { ok: false } : readAt(state, segments);
     if (a.ok) {
       const refKind = kindOf(a.value);
       const arr = [...walkSameKind(state, refKind)];

@@ -2,11 +2,12 @@
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 
-import { parsePointer, tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer/index.js";
+import { tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "./pointer/index.js";
 import type { JSONPatchOperation } from "./patch/index.js";
 
 export function exists(state: unknown, pointer: Pointer): boolean {
-  return readAt(state, parsePointer(pointer)).ok;
+  const segments = tryParsePointer(pointer);
+  return segments !== null && readAt(state, segments).ok;
 }
 
 // SPEC §5.7 rule 1 / §5.8 rule 1 — applied ops 의 add/copy/move destination 모두 수집.
@@ -48,7 +49,9 @@ export function recoverLostPointer(
   // array container 를 건너뛰며 가장 가까운 non-array ancestor 로 fallback.
   let cur: Pointer | null = trackedParent;
   while (cur !== null && cur !== "") {
-    const r = readAt(after, parsePointer(cur));
+    const segments = tryParsePointer(cur);
+    if (segments === null) return null;
+    const r = readAt(after, segments);
     if (r.ok && !Array.isArray(r.value)) return cur;
     cur = parentPointer(cur);
   }
@@ -99,12 +102,8 @@ function sameArrayParent(a: string[], b: string[]): boolean {
 // 한 op 가 한 pointer 에 어떤 영향을 주는가.
 // null = pointer 자체가 cascading drop 됨.
 function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
-  let target: string[];
-  try {
-    target = parsePointer(pointer);
-  } catch {
-    return null;
-  }
+  const target = tryParsePointer(pointer);
+  if (target === null) return null;
 
   switch (op.op) {
     case "test":

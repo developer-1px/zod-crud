@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import type { JSONResult } from "../core/patch/index.js";
 import { cloneJson } from "../core/json.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { parsePointer, readAt } from "../core/pointer/index.js";
+import { readAt, tryParsePointer } from "../core/pointer/index.js";
 import type { PointerOf, ValueAt } from "../core/pointer/types.js";
 import { JSONCrudError } from "../JSONCrudError.js";
 import type { JSONDocument } from "./useJSONDocument.js";
@@ -206,20 +206,20 @@ function emptyDraftStore(): DraftStore {
 function readPointer(value: unknown, pointer: Pointer):
   | { ok: true; value: unknown }
   | { ok: false; error: JSONResult } {
-  try {
-    const r = readAt(value, parsePointer(pointer));
-    return { ok: true, value: r.ok ? r.value : undefined };
-  } catch (error) {
+  const segments = tryParsePointer(pointer);
+  if (segments === null) {
     return {
       ok: false,
       error: {
         ok: false,
         code: "invalid_pointer",
-        reason: error instanceof Error ? error.message : "invalid JSON Pointer",
+        reason: "invalid JSON Pointer",
         pointer,
       },
     };
   }
+  const r = readAt(value, segments);
+  return { ok: true, value: r.ok ? r.value : undefined };
 }
 
 function deepClone<T>(value: T): T {

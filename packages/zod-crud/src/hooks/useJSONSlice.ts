@@ -5,7 +5,7 @@
 import { useCallback, useMemo, useSyncExternalStore } from "react";
 
 import type { Pointer } from "../core/pointer/index.js";
-import { parsePointer, readAt } from "../core/pointer/index.js";
+import { readAt, tryParsePointer } from "../core/pointer/index.js";
 import type { ValueAt } from "../core/pointer/types.js";
 import type { JSONOps } from "../jsonOps.js";
 
@@ -17,13 +17,7 @@ export function useJSONSlice<T, P extends string>(
   ops: JSONOps<T>,
   path: P,
 ): ValueAt<T, P> | undefined {
-  const segments = useMemo(() => {
-    try {
-      return parsePointer(path as Pointer);
-    } catch {
-      return null;
-    }
-  }, [path]);
+  const segments = useMemo(() => tryParsePointer(path as Pointer), [path]);
   const getSnapshot = useCallback((): ValueAt<T, P> | undefined => {
     if (segments === null) return undefined;
     const r = readAt(ops.state, segments);
