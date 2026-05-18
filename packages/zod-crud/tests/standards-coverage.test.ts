@@ -347,6 +347,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(pkg.scripts.clean).toBe("rm -rf dist");
     expect(pkg.scripts.build).toBe("npm run clean && tsc -p tsconfig.json");
     expect(pkg.scripts.prepack).toBe("npm run build");
+    expect(pkg.scripts.prepublishOnly).toBe("npm run verify");
     expect(pkg.scripts.typecheck).toBe("tsc -p tsconfig.test.json --noEmit");
     expect(pkg.scripts.test).toBe("vitest run --config vitest.config.ts");
     expect(pkg.scripts["smoke:package"]).toBe("node ./test/package-smoke.mjs");

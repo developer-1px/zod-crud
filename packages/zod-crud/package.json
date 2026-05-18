@@ -90,6 +90,7 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc -p tsconfig.json",
     "prepack": "npm run build",
+    "prepublishOnly": "npm run verify",
     "smoke:package": "node ./test/package-smoke.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc -p tsconfig.test.json --noEmit",
