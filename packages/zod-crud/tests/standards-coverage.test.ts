@@ -244,7 +244,13 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
   test("package metadata keeps npm publication fields intact", () => {
     const pkg = packageJson as {
       name: string;
+      type: string;
       license: string;
+      sideEffects: boolean;
+      main: string;
+      types: string;
+      files?: string[];
+      exports?: Record<string, { import?: string; types?: string }>;
       homepage: string;
       repository?: { type?: string; url?: string; directory?: string };
       bugs?: { url?: string };
@@ -252,7 +258,21 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     };
 
     expect(pkg.name).toBe("zod-crud");
+    expect(pkg.type).toBe("module");
     expect(pkg.license).toBe("MIT");
+    expect(pkg.sideEffects).toBe(false);
+    expect(pkg.main).toBe("./dist/index.js");
+    expect(pkg.types).toBe("./dist/index.d.ts");
+    expect(pkg.files).toEqual([
+      "dist",
+      "README.md",
+      "SPEC.md",
+      "STANDARDS.md",
+      "CHANGELOG.md",
+      "LICENSE",
+    ]);
+    expect(pkg.exports?.["."]?.import).toBe(pkg.main);
+    expect(pkg.exports?.["."]?.types).toBe(pkg.types);
     expect(pkg.homepage).toBe("https://developer-1px.github.io/zod-crud/");
     expect(pkg.repository).toEqual({
       type: "git",
