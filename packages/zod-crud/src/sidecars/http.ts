@@ -137,6 +137,7 @@ function validatePointerSyntax(pointer: string): string | null {
  *      를 직접 사용한다.
  */
 export function parseMergePatch(patch: unknown, basePath: string): JSONPatchOperation[] {
+  assertJsonSerializable(patch);
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
     return [{ op: "replace", path: basePath, value: patch }];
   }
@@ -154,6 +155,8 @@ export function parseMergePatch(patch: unknown, basePath: string): JSONPatchOper
  * Pure: target 미변경, 새 객체 반환.
  */
 export function applyMergePatch(target: unknown, patch: unknown): unknown {
+  assertJsonSerializable(target);
+  assertJsonSerializable(patch);
   if (patch === null || typeof patch !== "object" || Array.isArray(patch)) {
     return patch;
   }

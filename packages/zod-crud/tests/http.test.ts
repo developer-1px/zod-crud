@@ -147,4 +147,10 @@ describe("RFC 7396 — merge-patch → 6902 변환", () => {
       { op: "add", path: "/c~0d", value: 2 },
     ]);
   });
+
+  test("직접 호출도 비JSON merge patch 를 거부", () => {
+    expect(() => parseMergePatch({ a: undefined }, "")).toThrow(TypeError);
+    expect(() => applyMergePatch({ a: undefined }, { b: 1 })).toThrow(TypeError);
+    expect(() => applyMergePatch({}, { a: undefined })).toThrow(TypeError);
+  });
 });
