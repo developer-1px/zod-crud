@@ -868,6 +868,26 @@ try {
     ],
     workspace,
   );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--target",
+      "ES2022",
+      "--module",
+      "ESNext",
+      "--moduleResolution",
+      "Bundler",
+      "--strict",
+      "--exactOptionalPropertyTypes",
+      "--noUncheckedIndexedAccess",
+      "smoke.ts",
+      "named-imports-smoke.ts",
+      "verbs-subpath-smoke.ts",
+    ],
+    workspace,
+  );
 
   if (!existsSync(join(workspace, "node_modules", "react"))) {
     await symlink(reactPackage, join(workspace, "node_modules", "react"), "dir");
@@ -885,6 +905,24 @@ try {
       "NodeNext",
       "--moduleResolution",
       "NodeNext",
+      "--strict",
+      "--exactOptionalPropertyTypes",
+      "--noUncheckedIndexedAccess",
+      "react-smoke.ts",
+    ],
+    workspace,
+  );
+  run(
+    "node",
+    [
+      typeScriptBin,
+      "--noEmit",
+      "--target",
+      "ES2022",
+      "--module",
+      "ESNext",
+      "--moduleResolution",
+      "Bundler",
       "--strict",
       "--exactOptionalPropertyTypes",
       "--noUncheckedIndexedAccess",
