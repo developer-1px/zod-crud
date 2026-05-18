@@ -77,7 +77,7 @@ export function useDraft<T>(doc: JSONDocument<T>): DraftState<T> {
       dispatch({ type: "accepted", pointer });
       return result;
     }
-    dispatch({ type: "attempt", pointer, value, error: result });
+    dispatch({ type: "attempt", pointer, value: cloneAttemptValue(value), error: result });
     return result;
   }, [applyField]);
 
@@ -206,6 +206,14 @@ function readPointer(value: unknown, pointer: Pointer): unknown {
 
 function deepClone<T>(value: T): T {
   return cloneJson(value);
+}
+
+function cloneAttemptValue(value: unknown): unknown {
+  try {
+    return cloneJson(value);
+  } catch {
+    return value;
+  }
 }
 
 function jsonEqual(a: unknown, b: unknown): boolean {

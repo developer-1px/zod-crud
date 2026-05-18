@@ -12,6 +12,9 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 const Schema = z.object({
   slug: z.string().min(1),
   title: z.string(),
+  meta: z.object({
+    label: z.string().min(3),
+  }),
 });
 
 type HookResult = ReturnType<typeof useHarness>;
@@ -40,6 +43,19 @@ describe("useDraft", () => {
     expect(hook.current.doc.value.slug).toBe("foo");
     expect(hook.current.draft.pending).toBe(true);
     expect(hook.current.draft.canSave).toBe(false);
+  });
+
+  test("invalid object attempts are snapshotted", () => {
+    const hook = renderHook(() => useHarness());
+    const attempted = { label: "x" };
+
+    act(() => {
+      hook.current.draft.field("/meta").set(attempted);
+    });
+    attempted.label = "mutated";
+
+    expect(hook.current.draft.field("/meta").value).toEqual({ label: "x" });
+    expect(hook.current.doc.value.meta).toEqual({ label: "Old" });
   });
 
   test("valid set commits, clears pending, and markSaved refreshes dirty baseline", () => {
@@ -84,13 +100,13 @@ describe("useDraft", () => {
       hook.current.draft.resetToBaseline();
     });
 
-    expect(hook.current.doc.value).toEqual({ slug: "foo", title: "Title" });
+    expect(hook.current.doc.value).toEqual({ slug: "foo", title: "Title", meta: { label: "Old" } });
     expect(hook.current.draft.dirty).toBe(false);
   });
 });
 
 function useHarness() {
-  const doc = useJSONDocument(Schema, { slug: "foo", title: "Title" }, { history: 10 });
+  const doc = useJSONDocument(Schema, { slug: "foo", title: "Title", meta: { label: "Old" } }, { history: 10 });
   const draft = useDraft(doc);
   return { doc, draft };
 }
