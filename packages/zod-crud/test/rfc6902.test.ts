@@ -126,6 +126,24 @@ describe("RFC 6902 — test", () => {
 });
 
 describe("RFC 6902 — batch atomicity (G8)", () => {
+  it("rejects non-array patch input at runtime", () => {
+    const initial = { a: 1 };
+    const r = applyPatch(Any, initial, { op: "replace", path: "/a", value: 2 } as never);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("invalid_pointer");
+    expect(r.state).toBe(initial);
+  });
+
+  it("rejects sparse patch arrays at runtime", () => {
+    const initial = { a: 1 };
+    const ops = [] as unknown as JSONPatchOperation[];
+    ops.length = 1;
+    const r = applyPatch(Any, initial, ops);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("invalid_pointer");
+    expect(r.state).toBe(initial);
+  });
+
   it("rolls back on mid-batch failure", () => {
     const initial = { a: 1, b: 2 };
     const ops: JSONPatchOperation[] = [

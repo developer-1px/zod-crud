@@ -73,9 +73,15 @@ export function applyPatch<S extends z.ZodTypeAny>(
 ): ApplyResult<S> {
   const stateJsonErr = jsonSerializableError(state);
   if (stateJsonErr) return { state, result: fail("not_serializable", stateJsonErr), applied: [] };
+  if (!Array.isArray(ops)) {
+    return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
+  }
   let cur: unknown = state;
   const normalized: JSONPatchOperation[] = [];
   for (let i = 0; i < ops.length; i++) {
+    if (!(i in ops)) {
+      return { state, result: fail("invalid_pointer", `op[${i}]: op must be object`), applied: [] };
+    }
     const n = normalizeOp(ops[i]!, cur);
     normalized.push(n);
     const r = applyOpRaw(cur, n);
