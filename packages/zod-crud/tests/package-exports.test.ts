@@ -15,13 +15,13 @@ const publicVerbFiles = readdirSync(resolve(root, "src/verbs"))
 describe("package exports", () => {
   test("every export points at existing source, dist js, and dist type paths", () => {
     for (const [subpath, target] of Object.entries(packageJson.exports)) {
+      expect(
+        Object.keys(target),
+        `${subpath} must expose exactly the supported export conditions`,
+      ).toEqual(["types", "development", "import"]);
       expect(target.development, `${subpath} missing development condition`).toBeTruthy();
       expect(target.import, `${subpath} missing import condition`).toBeTruthy();
       expect(target.types, `${subpath} missing types condition`).toBeTruthy();
-      expect(
-        Object.keys(target)[0],
-        `${subpath} must list the types condition first for TypeScript resolver stability`,
-      ).toBe("types");
 
       expect(
         existsSync(resolve(root, target.development!.replace(/^\.\//, ""))),
