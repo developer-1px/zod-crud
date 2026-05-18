@@ -168,6 +168,30 @@ describe("Immutability (G2)", () => {
   });
 });
 
+describe("Object safety", () => {
+  it("treats __proto__ as data without mutating Object.prototype", () => {
+    const r = applyOperation(Any, {}, { op: "add", path: "/__proto__", value: { polluted: true } });
+    expect(r.result.ok).toBe(true);
+    expect(Object.prototype).not.toHaveProperty("polluted");
+    expect(Object.prototype.hasOwnProperty.call(r.state, "__proto__")).toBe(true);
+    expect((r.state as Record<string, unknown>).__proto__).toEqual({ polluted: true });
+  });
+
+  it("rejects inherited constructor traversal without mutating Object.prototype", () => {
+    const r = applyOperation(Any, {}, { op: "add", path: "/constructor/prototype/polluted", value: true });
+    expect(r.result.ok).toBe(false);
+    expect(Object.prototype).not.toHaveProperty("polluted");
+  });
+
+  it("keeps own constructor keys as data", () => {
+    const state = { constructor: { prototype: {} } };
+    const r = applyOperation(Any, state, { op: "add", path: "/constructor/prototype/polluted", value: true });
+    expect(r.result.ok).toBe(true);
+    expect(Object.prototype).not.toHaveProperty("polluted");
+    expect(r.state).toEqual({ constructor: { prototype: { polluted: true } } });
+  });
+});
+
 describe("Serializability (G1)", () => {
   it("operations and results round-trip through JSON", () => {
     const ops: JSONPatchOperation[] = [
