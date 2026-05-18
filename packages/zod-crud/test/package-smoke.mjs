@@ -9,6 +9,7 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const workspace = await mkdtemp(join(tmpdir(), "zod-crud-package-"));
 const npmCache = join(workspace, ".npm-cache");
 const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
+const readmeSource = await readFile(join(repoRoot, "README.md"), "utf8");
 const rootSource = await readFile(join(repoRoot, "src", "index.ts"), "utf8");
 const reactSource = await readFile(join(repoRoot, "src", "react.ts"), "utf8");
 const rootExports = extractExports(rootSource);
@@ -182,6 +183,15 @@ function uniqueSorted(names) {
 
 function mapExportNames(exportsByModule, field) {
   return Object.fromEntries(Object.entries(exportsByModule).map(([name, exports]) => [name, exports[field]]));
+}
+
+function markdownCodeBlockAfterHeading(source, heading, language) {
+  const headingIndex = source.indexOf(`## ${heading}`);
+  if (headingIndex === -1) throw new Error(`README heading missing: ${heading}`);
+  const rest = source.slice(headingIndex);
+  const match = rest.match(new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``));
+  if (!match?.[1]) throw new Error(`README ${heading} ${language} code block missing`);
+  return match[1];
 }
 
 function assertDeclarationExports(declarationSource, expectedNames, label) {
@@ -808,52 +818,7 @@ try {
   );
   await writeFile(
     join(workspace, "readme-react-example.tsx"),
-    [
-      'import * as z from "zod";',
-      'import { useJSONDocument } from "zod-crud/react";',
-      '',
-      'const Schema = z.object({',
-      '  title: z.string(),',
-      '  tasks: z.array(z.object({ id: z.string(), done: z.boolean() })),',
-      '});',
-      '',
-      'export function App() {',
-      '  const doc = useJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });',
-      '',
-      '  return (',
-      '    <>',
-      '      <input',
-      '        value={doc.value.title}',
-      '        onChange={(e) => doc.ops.replace("/title", e.target.value)}',
-      '      />',
-      '      <button',
-      '        onClick={() =>',
-      '          doc.ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })',
-      '        }',
-      '      >',
-      '        add task',
-      '      </button>',
-      '      <button onClick={doc.commands.undo} disabled={!doc.can.undo}>',
-      '        undo',
-      '      </button>',
-      '      {doc.value.tasks.map((t, i) => (',
-      '        <div key={t.id}>',
-      '          <input',
-      '            type="checkbox"',
-      '            checked={t.done}',
-      '            onChange={(e) =>',
-      '              doc.ops.replace(`/tasks/${i}/done` as `/tasks/${number}/done`, e.target.checked)',
-      '            }',
-      '          />',
-      '          <button onClick={() => doc.ops.remove(`/tasks/${i}` as `/tasks/${number}`)}>',
-      '            remove',
-      '          </button>',
-      '        </div>',
-      '      ))}',
-      '    </>',
-      '  );',
-      '}',
-    ].join("\n"),
+    markdownCodeBlockAfterHeading(readmeSource, "React — `useJSONDocument`", "tsx"),
   );
 
   await writeFile(
