@@ -181,6 +181,22 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
+  test("README install section matches peer dependency contract", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const pkg = packageJson as {
+      peerDependencies: Record<string, string>;
+      peerDependenciesMeta?: Record<string, { optional?: boolean }>;
+    };
+
+    expect(pkg.peerDependencies).toEqual({ react: ">=18", zod: "^4.0.0" });
+    expect(pkg.peerDependenciesMeta?.react?.optional).toBe(true);
+    expect(readme).toContain("npm install zod-crud zod");
+    expect(readme).toContain("`zod` is a peer dependency");
+    expect(readme).toContain("`react >=18` is an optional peer dependency");
+    expect(readme).toContain("required only for React hooks");
+    expect(readme).toContain("The package is ESM-only");
+  });
+
   test("CHANGELOG latest release matches package version", () => {
     const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
     const version = (packageJson as { version: string }).version;
