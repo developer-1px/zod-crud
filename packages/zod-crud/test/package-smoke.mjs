@@ -21,6 +21,14 @@ const verbPublicExports = Object.fromEntries(await Promise.all(verbNames.map(asy
   name,
   publicExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
 ])));
+const verbValueExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
+  name,
+  valueExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
+])));
+const verbTypeOnlyExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
+  name,
+  typeOnlyExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
+])));
 const rootValueExports = valueExports(rootSource);
 const reactValueExports = valueExports(reactSource);
 const rootPublicExports = publicExports(rootSource);
@@ -488,6 +496,8 @@ try {
   ];
   const verbFunctionChecks = exportedVerbs.map((name) => `${name} satisfies Function;`);
   const verbRuntimeImportLines = exportedVerbs.map((name) => `import { ${name} } from "zod-crud/verbs/${name}";`);
+  const verbRuntimeNamespaceImportLines = exportedVerbs.map((name) => `import * as ${name}Ns from "zod-crud/verbs/${name}";`);
+  const verbRuntimeNamespaces = exportedVerbs.map((name) => `  ${name}: ${name}Ns,`);
   const verbRuntimeEntries = exportedVerbs.map((name) => `${name}`).join(", ");
 
   if (zodPackage === null) {
@@ -582,9 +592,21 @@ try {
     join(workspace, "verbs-subpath-smoke.mjs"),
     [
       ...verbRuntimeImportLines,
-      `const exports = { ${verbRuntimeEntries} };`,
-      'for (const [name, value] of Object.entries(exports)) {',
+      ...verbRuntimeNamespaceImportLines,
+      `const verbNamespaces = {\n${verbRuntimeNamespaces.join("\n")}\n};`,
+      `const expectedVerbValueExports = ${JSON.stringify(verbValueExports)};`,
+      `const expectedVerbTypeOnlyExports = ${JSON.stringify(verbTypeOnlyExports)};`,
+      `const verbFunctions = { ${verbRuntimeEntries} };`,
+      'for (const [name, value] of Object.entries(verbFunctions)) {',
       '  if (typeof value !== "function") throw new Error(`${name} subpath export failed`);',
+      '}',
+      'for (const [verb, namespace] of Object.entries(verbNamespaces)) {',
+      '  for (const name of expectedVerbValueExports[verb] ?? []) {',
+      '    if (!(name in namespace)) throw new Error(`${verb}.${name} runtime export missing`);',
+      '  }',
+      '  for (const name of expectedVerbTypeOnlyExports[verb] ?? []) {',
+      '    if (name in namespace) throw new Error(`${verb}.${name} type-only export leaked at runtime`);',
+      '  }',
       '}',
     ].join("\n"),
   );
