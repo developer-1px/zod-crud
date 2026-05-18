@@ -6,6 +6,7 @@ import { move } from "../src/verbs/move.js";
 import { undo } from "../src/verbs/undo.js";
 import { redo } from "../src/verbs/redo.js";
 import { select, EMPTY_SELECTION } from "../src/verbs/select.js";
+import { reduceSelection } from "../src/core/selection/index.js";
 import { commit, emptyHistory } from "../src/core/history.js";
 import { computeInverses } from "../src/core/patch/index.js";
 
@@ -73,5 +74,17 @@ describe("verbs/select", () => {
     expect(s.ranges).toEqual(["/items/0"]);
     expect(s.anchor).toBe("/items/0");
     expect(s.focus).toBe("/items/0");
+  });
+
+  test("extended range falls back to endpoints when pointer is invalid", () => {
+    const s = reduceSelection(
+      EMPTY_SELECTION,
+      { type: "setBaseAndExtent", anchor: "items/0" as never, focus: "/items/1" },
+      "extended",
+      initial,
+    );
+    expect(s.ranges).toEqual(["items/0", "/items/1"]);
+    expect(s.anchor).toBe("items/0");
+    expect(s.focus).toBe("/items/1");
   });
 });

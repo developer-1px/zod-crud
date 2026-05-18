@@ -36,7 +36,12 @@ function* walkSameKind(state: unknown, refKind: ValueKind, base: Pointer = ""): 
 // kind 집합 밖이면 [anchor, focus] (uniq) 로 fallback — 호출자가 별도 처리할 필요 없음.
 export function expandRange(anchor: Pointer, focus: Pointer, state?: unknown): Pointer[] {
   if (state !== undefined) {
-    const a = readAt(state, parsePointer(anchor));
+    let a: ReturnType<typeof readAt>;
+    try {
+      a = readAt(state, parsePointer(anchor));
+    } catch {
+      a = { ok: false };
+    }
     if (a.ok) {
       const refKind = kindOf(a.value);
       const arr = [...walkSameKind(state, refKind)];

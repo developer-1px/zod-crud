@@ -75,6 +75,20 @@ describe("trackPointer — copy", () => {
   });
 });
 
+describe("trackPointer — invalid pointers", () => {
+  it("returns null for an invalid tracked pointer", () => {
+    expect(trackPointer("tasks/0", [{ op: "add", path: "/tasks/0", value: null }])).toBeNull();
+  });
+
+  it("returns null for an invalid operation pointer", () => {
+    expect(trackPointer("/tasks/0", [{ op: "add", path: "tasks/0", value: null }])).toBeNull();
+  });
+
+  it("drops invalid pointers in batch tracking", () => {
+    expect(trackPointers(["/tasks/0", "tasks/1"], [{ op: "add", path: "/tasks/2", value: null }])).toEqual(["/tasks/0"]);
+  });
+});
+
 describe("trackPointer — root replace cascades drop", () => {
   it("drops everything when root is replaced", () => {
     expect(trackPointer("/anything", [{ op: "replace", path: "", value: null }])).toBeNull();

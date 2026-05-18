@@ -99,20 +99,27 @@ function sameArrayParent(a: string[], b: string[]): boolean {
 // 한 op 가 한 pointer 에 어떤 영향을 주는가.
 // null = pointer 자체가 cascading drop 됨.
 function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
-  const target = parsePointer(pointer);
+  let target: string[];
+  try {
+    target = parsePointer(pointer);
+  } catch {
+    return null;
+  }
 
   switch (op.op) {
     case "test":
       return pointer;
 
     case "add": {
-      const at = parsePointer(op.path);
+      const at = safeParsePointer(op.path);
+      if (at === null) return null;
       const shifted = shiftArraySibling(at, target, 1);
       return shifted ? buildPointer(shifted) : pointer;
     }
 
     case "remove": {
-      const at = parsePointer(op.path);
+      const at = safeParsePointer(op.path);
+      if (at === null) return null;
       // 동일 또는 자손이면 drop
       if (isPrefix(at, target)) return null;
       const shifted = shiftArraySibling(at, target, -1);
@@ -120,7 +127,8 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
     }
 
     case "replace": {
-      const at = parsePointer(op.path);
+      const at = safeParsePointer(op.path);
+      if (at === null) return null;
       // 자손은 cascading drop (값이 통째로 교체됨)
       if (isPrefix(at, target) && at.length < target.length) return null;
       // 동일 위치는 유지 (값만 바뀐 것)
@@ -128,8 +136,9 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
     }
 
     case "move": {
-      const from = parsePointer(op.from);
-      const to = parsePointer(op.path);
+      const from = safeParsePointer(op.from);
+      const to = safeParsePointer(op.path);
+      if (from === null || to === null) return null;
       // from === target → to 로 이동
       if (from.length === target.length && isPrefix(from, target)) {
         return op.path;
@@ -149,6 +158,14 @@ function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {
       // copy 는 add 와 같은 영향 (target 위치에 새 노드)
       return trackOne(pointer, { op: "add", path: op.path, value: null });
     }
+  }
+}
+
+function safeParsePointer(pointer: Pointer): string[] | null {
+  try {
+    return parsePointer(pointer);
+  } catch {
+    return null;
   }
 }
 
