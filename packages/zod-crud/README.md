@@ -11,9 +11,10 @@ pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
 `zod-crud/react` exposes the thin React adapter that injects selection.
 `sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
-The behavior contract lives in [`SPEC.md`](./SPEC.md). It is the single
-source of truth and outranks code, docs, and tests on conflict. The
-RFC ↔ `core/*` 1:1 mapping is in [`STANDARDS.md`](./STANDARDS.md).
+The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
+code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
+conflicts with an RFC, in which case the RFC wins. The RFC ↔ `core/*` 1:1
+mapping is in [`STANDARDS.md`](./STANDARDS.md).
 
 ## Install
 

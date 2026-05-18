@@ -1,7 +1,7 @@
 // P8.1 — RFC ↔ core/* 1:1 매핑 자동 검증.
 // STANDARDS.md 의 표 ↔ src/core/ 디렉터리 일치 확인.
 import { describe, expect, test } from "vitest";
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(__dirname, "..");
@@ -51,5 +51,17 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
         ).toBe(true);
       }
     }
+  });
+
+  test("README conflict policy matches SPEC §11", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
+
+    expect(readme).not.toContain("outranks code");
+    expect(readme).toContain("SPEC §11 applies");
+    expect(readme).toContain("code behavior wins unless it");
+    expect(readme).toContain("conflicts with an RFC");
+    expect(spec).toContain("현재 코드 동작이 이긴다");
+    expect(spec).toContain("RFC가 이긴다");
   });
 });
