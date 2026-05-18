@@ -183,7 +183,7 @@ try {
     join(workspace, "smoke.mjs"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, replace, buildPatchRequest, parsePatchResponse, withIfMatch, JSON_PATCH_MIME } from "zod-crud";',
+      'import { applyOperation, applyPatch, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, replace, buildPatchRequest, parsePatchResponse, withIfMatch, parseMergePatch, applyMergePatch, JSON_PATCH_MIME, MERGE_PATCH_MIME, toJSONSchema, fromJSONSchema } from "zod-crud";',
       'import { move } from "zod-crud/verbs/move";',
       'const schema = z.object({ name: z.string(), tags: z.array(z.string()) });',
       'const initial = { name: "ok", tags: [] };',
@@ -214,6 +214,16 @@ try {
       'if (conditional.headers["if-match"] !== "\\"etag\\"") throw new Error("withIfMatch export failed");',
       'const parsed = parsePatchResponse(req.body, JSON_PATCH_MIME);',
       'if (!parsed.ok || parsed.ops[0]?.path !== "/name") throw new Error("parsePatchResponse export failed");',
+      'const mergeOps = parseMergePatch({ name: "merged", gone: null }, "");',
+      'if (mergeOps.length !== 2 || mergeOps[0]?.path !== "/name") throw new Error("parseMergePatch export failed");',
+      'const merged = applyMergePatch({ name: "old", meta: { keep: true, drop: true } }, { meta: { drop: null } });',
+      'if (merged.meta.drop !== undefined || merged.meta.keep !== true) throw new Error("applyMergePatch export failed");',
+      'const mergeParsed = parsePatchResponse("{\\"name\\":\\"merged\\"}", MERGE_PATCH_MIME);',
+      'if (!mergeParsed.ok || mergeParsed.ops[0]?.op !== "add") throw new Error("merge patch response export failed");',
+      'const jsonSchema = toJSONSchema(schema);',
+      'if (jsonSchema.type !== "object") throw new Error("toJSONSchema export failed");',
+      'const restoredSchema = fromJSONSchema(jsonSchema);',
+      'if (!restoredSchema.safeParse(initial).success) throw new Error("fromJSONSchema export failed");',
     ].join("\n"),
   );
   await writeFile(
