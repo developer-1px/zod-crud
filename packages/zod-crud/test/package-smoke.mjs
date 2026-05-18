@@ -186,24 +186,31 @@ function mapExportNames(exportsByModule, field) {
 }
 
 function markdownCodeBlockAfterHeading(source, heading, language) {
-  const headingIndex = source.indexOf(`## ${heading}`);
-  if (headingIndex === -1) throw new Error(`README heading missing: ${heading}`);
-  const rest = source.slice(headingIndex);
+  const rest = markdownSection(source, heading);
   const match = rest.match(new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``));
   if (!match?.[1]) throw new Error(`README ${heading} ${language} code block missing`);
   return match[1];
 }
 
-function markdownCodeBlocks(source, language) {
+function markdownSection(source, heading) {
+  const headingIndex = source.indexOf(`## ${heading}`);
+  if (headingIndex === -1) throw new Error(`README heading missing: ${heading}`);
+  const rest = source.slice(headingIndex);
+  const nextHeadingIndex = rest.slice(1).search(/\n## /);
+  return nextHeadingIndex === -1 ? rest : rest.slice(0, nextHeadingIndex + 1);
+}
+
+function markdownCodeBlocksAfterHeading(source, heading, language) {
+  const section = markdownSection(source, heading);
   const blocks = Array.from(
-    source.matchAll(new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "g")),
+    section.matchAll(new RegExp(`\`\`\`${language}\\n([\\s\\S]*?)\\n\`\`\``, "g")),
     (match) => {
       const block = match[1];
-      if (block === undefined) throw new Error(`README ${language} code block capture failed`);
+      if (block === undefined) throw new Error(`README ${heading} ${language} code block capture failed`);
       return block;
     },
   );
-  if (blocks.length === 0) throw new Error(`README has no ${language} code blocks`);
+  if (blocks.length === 0) throw new Error(`README ${heading} has no ${language} code blocks`);
   return blocks;
 }
 
@@ -834,9 +841,12 @@ try {
     markdownCodeBlockAfterHeading(readmeSource, "React — `useJSONDocument`", "tsx"),
   );
   const readmeTypeScriptExamplePaths = [];
-  const readmeTypeScriptExamples = markdownCodeBlocks(readmeSource, "ts");
+  const readmeTypeScriptExamples = [
+    ...markdownCodeBlocksAfterHeading(readmeSource, "Pure core (no React)", "ts"),
+    ...markdownCodeBlocksAfterHeading(readmeSource, "Serialization", "ts"),
+  ];
   if (readmeTypeScriptExamples.length !== 3) {
-    throw new Error(`README must keep exactly 3 TypeScript examples in package smoke: ${readmeTypeScriptExamples.length}`);
+    throw new Error(`README package smoke must cover 1 pure core and 2 serialization TypeScript examples: ${readmeTypeScriptExamples.length}`);
   }
   for (const [index, block] of readmeTypeScriptExamples.entries()) {
     const filename = `readme-typescript-example-${index + 1}.ts`;
