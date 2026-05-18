@@ -197,6 +197,28 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(readme).toContain("The package is ESM-only");
   });
 
+  test("package metadata keeps npm publication fields intact", () => {
+    const pkg = packageJson as {
+      name: string;
+      license: string;
+      homepage: string;
+      repository?: { type?: string; url?: string; directory?: string };
+      bugs?: { url?: string };
+      keywords?: string[];
+    };
+
+    expect(pkg.name).toBe("zod-crud");
+    expect(pkg.license).toBe("MIT");
+    expect(pkg.homepage).toBe("https://developer-1px.github.io/zod-crud/");
+    expect(pkg.repository).toEqual({
+      type: "git",
+      url: "git+https://github.com/developer-1px/zod-crud.git",
+      directory: "packages/zod-crud",
+    });
+    expect(pkg.bugs?.url).toBe("https://github.com/developer-1px/zod-crud/issues");
+    expect(pkg.keywords).toEqual(expect.arrayContaining(["zod", "json", "crud", "schema", "clipboard", "undo", "redo", "headless"]));
+  });
+
   test("CHANGELOG latest release matches package version", () => {
     const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
     const version = (packageJson as { version: string }).version;
