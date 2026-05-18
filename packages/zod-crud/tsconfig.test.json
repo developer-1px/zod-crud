@@ -7,6 +7,9 @@
       "DOM",
       "DOM.Iterable"
     ],
+    "types": [
+      "node"
+    ],
     "noEmit": true,
     "rootDir": ".",
     "skipLibCheck": true
@@ -15,6 +18,9 @@
     "src/**/*.ts",
     "test/**/*.ts",
     "tests/**/*.test-d.ts",
+    "tests/package-exports.test.ts",
+    "tests/standards-coverage.test.ts",
+    "tests/verbs-closure.test.ts",
     "vitest.config.ts"
   ]
 }

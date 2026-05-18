@@ -107,7 +107,11 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
   test("README package-local links resolve inside published files", () => {
     const readme = readFileSync(resolve(root, "README.md"), "utf8");
     const publishedFiles = new Set((packageJson as { files: string[] }).files);
-    const links = Array.from(readme.matchAll(/\[[^\]]+\]\((\.\/[^)#]+)(?:#[^)]+)?\)/g), (match) => match[1].slice(2));
+    const links = Array.from(readme.matchAll(/\[[^\]]+\]\((\.\/[^)#]+)(?:#[^)]+)?\)/g), (match) => {
+      const link = match[1];
+      if (link === undefined) throw new Error("README package-local link capture failed");
+      return link.slice(2);
+    });
 
     for (const link of links) {
       expect(publishedFiles, `README link must resolve in npm package files: ${link}`).toContain(link);
