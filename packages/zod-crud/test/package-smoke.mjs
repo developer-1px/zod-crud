@@ -853,6 +853,27 @@ try {
     readmeTypeScriptExamplePaths.push(filename);
     await writeFile(join(workspace, filename), block);
   }
+  const [readmePureCoreExample, readmeSerializationExample] = readmeTypeScriptExamples;
+  if (readmePureCoreExample === undefined || readmeSerializationExample === undefined) {
+    throw new Error("README runtime examples missing from package smoke");
+  }
+  await writeFile(
+    join(workspace, "readme-pure-core-example.mjs"),
+    [
+      readmePureCoreExample,
+      'if (!r.result.ok) throw new Error("README pure core example did not apply");',
+      'if (r.state.title !== "final" || r.state.tags[0] !== "docs") throw new Error("README pure core example state mismatch");',
+    ].join("\n"),
+  );
+  await writeFile(
+    join(workspace, "readme-serialization-example.mjs"),
+    [
+      readmeSerializationExample,
+      'if (json !== JSON.stringify(state)) throw new Error("README serialization example JSON mismatch");',
+      'if (restored.title !== "draft") throw new Error("README serialization example parse mismatch");',
+      'if (!safe.ok || safe.state.title !== "draft") throw new Error("README serialization example safeParse mismatch");',
+    ].join("\n"),
+  );
 
   await writeFile(
     join(workspace, "package.json"),
@@ -920,6 +941,8 @@ try {
 
   run("node", ["smoke.mjs"], workspace);
   run("node", ["verbs-subpath-smoke.mjs"], workspace);
+  run("node", ["readme-pure-core-example.mjs"], workspace);
+  run("node", ["readme-serialization-example.mjs"], workspace);
   run(
     "node",
     [
