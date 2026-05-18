@@ -63,7 +63,7 @@ export function useJSON<S extends z.ZodType>(
       const parsed = schema.safeParse(value);
       if (!parsed.success) {
         return handleResult(policyRef.current, label, {
-          ok: false, code: "schema_violation", reason: parsed.error.message,
+          ok: false, code: "schema_violation", reason: JSON.stringify(parsed.error.issues),
         });
       }
       const next = parsed.data as z.output<S>;

@@ -51,6 +51,9 @@ describe("useJSONDocument ops.load history", () => {
     });
 
     expect(result?.ok).toBe(false);
+    if (result && !result.ok) {
+      expect(JSON.parse(result.reason ?? "")[0]?.path).toEqual(["name"]);
+    }
     expect(hook.current.value).toEqual({ name: "b" });
     expect(hook.current.history.canUndo).toBe(true);
   });
@@ -69,6 +72,9 @@ describe("useJSONDocument ops.load history", () => {
     });
 
     expect(result?.ok).toBe(false);
+    if (result && !result.ok) {
+      expect(JSON.parse(result.reason ?? "")[0]?.path).toEqual(["name"]);
+    }
     expect(hook.current.value).toEqual({ name: "b" });
     expect(hook.current.history.canUndo).toBe(true);
   });
