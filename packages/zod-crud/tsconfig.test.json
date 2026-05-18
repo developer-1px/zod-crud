@@ -34,6 +34,7 @@
     "tests/schema-gate.test.ts",
     "tests/standards-coverage.test.ts",
     "tests/use-draft.test.ts",
+    "tests/use-json-slice.test.ts",
     "tests/verbs.test.ts",
     "tests/verbs-closure.test.ts",
     "vitest.config.ts"

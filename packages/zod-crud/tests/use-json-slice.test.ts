@@ -7,6 +7,10 @@ import * as z from "zod";
 import { useJSON } from "../src/hooks/useJSON.js";
 import { useJSONSlice } from "../src/hooks/useJSONSlice.js";
 
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const Schema = z.object({
@@ -49,9 +53,10 @@ function renderHook<T>(hook: () => T): { readonly current: T } {
   const root = createRoot(host);
   roots.push(root);
 
-  const result: { current?: T } = {};
+  const result: { current?: T; rendered: boolean } = { rendered: false };
   function Component() {
     result.current = hook();
+    result.rendered = true;
     return null;
   }
 
@@ -61,6 +66,7 @@ function renderHook<T>(hook: () => T): { readonly current: T } {
 
   return {
     get current() {
+      if (!result.rendered) throw new Error("hook did not render");
       return result.current as T;
     },
   };
