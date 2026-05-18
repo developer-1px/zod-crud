@@ -155,6 +155,36 @@ function assertDeclarationExports(declarationSource, expectedNames, label) {
   }
 }
 
+function assertInstalledPackageJson(pkg) {
+  const expectedFields = [
+    "name",
+    "version",
+    "description",
+    "type",
+    "license",
+    "sideEffects",
+    "main",
+    "types",
+    "homepage",
+    "repository",
+    "bugs",
+    "keywords",
+    "exports",
+    "peerDependencies",
+    "peerDependenciesMeta",
+  ];
+  for (const field of expectedFields) {
+    if (JSON.stringify(pkg[field]) !== JSON.stringify(packageJson[field])) {
+      throw new Error(`Installed package.json field mismatch: ${field}`);
+    }
+  }
+  for (const field of ["private", "workspaces", "bin", "dependencies"]) {
+    if (pkg[field] !== undefined) {
+      throw new Error(`Installed package.json must not include ${field}`);
+    }
+  }
+}
+
 function namedImportLine(names, specifier, options = {}) {
   if (names.length === 0) return null;
   const { prefix = "", typeOnly = false } = options;
@@ -571,6 +601,9 @@ try {
   run("npm", ["install", "--legacy-peer-deps", "--ignore-scripts", "--no-audit", "--no-fund", "--no-package-lock"], workspace);
   await mkdir(join(workspace, "node_modules"), { recursive: true });
   const installedPackageRoot = join(workspace, "node_modules", "zod-crud");
+  assertInstalledPackageJson(
+    JSON.parse(await readFile(join(installedPackageRoot, "package.json"), "utf8")),
+  );
   assertDeclarationExports(
     await readFile(join(installedPackageRoot, "dist", "index.d.ts"), "utf8"),
     rootPublicExports,
