@@ -43,6 +43,7 @@ const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult =
   if (pointer !== undefined) r.pointer = pointer;
   return r;
 };
+const zodIssuesReason = (error: z.ZodError): string => JSON.stringify(error.issues);
 
 // 단일 op + schema 검증. applied 는 `/-` 가 적용 시점의 concrete index 로 정규화된 op.
 export function applyOperation<S extends z.ZodTypeAny>(
@@ -61,7 +62,7 @@ export function applyOperation<S extends z.ZodTypeAny>(
   const jsonErr = jsonSerializableError(r.state);
   if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
   const parsed = schema.safeParse(r.state);
-  if (!parsed.success) return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
+  if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 r.state 반환.
   return { state: r.state as z.output<S>, result: ok, applied: [normalized] };
 }
@@ -107,7 +108,7 @@ export function applyPatch<S extends z.ZodTypeAny>(
   const jsonErr = jsonSerializableError(cur);
   if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
   const parsed = schema.safeParse(cur);
-  if (!parsed.success) return { state, result: fail("schema_violation", parsed.error.message), applied: [] };
+  if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 cur 반환.
   return { state: cur as z.output<S>, result: ok, applied: normalized };
 }

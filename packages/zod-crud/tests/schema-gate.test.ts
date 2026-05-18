@@ -27,7 +27,10 @@ describe("core/schema/preFlight", () => {
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.code).toBe("schema_violation");
-      expect(r.violations.length).toBeGreaterThan(0);
+      expect(r.violations).toContainEqual({
+        path: "/count",
+        message: "Too small: expected number to be >=0",
+      });
     }
   });
 
