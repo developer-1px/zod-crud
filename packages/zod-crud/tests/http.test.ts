@@ -51,6 +51,21 @@ describe("RFC 6902 over HTTP — response (json-patch)", () => {
     expect(r.ok).toBe(false);
   });
 
+  test("각 op shape 이 RFC 6902 필수 필드를 만족해야 한다", () => {
+    expect(parsePatchResponse(JSON.stringify([{ op: "add", value: 1 }]), JSON_PATCH_MIME)).toEqual({
+      ok: false,
+      reason: "json-patch op[0] missing 'path'",
+    });
+    expect(parsePatchResponse(JSON.stringify([{ op: "add", path: "/a" }]), JSON_PATCH_MIME)).toEqual({
+      ok: false,
+      reason: "json-patch op[0] missing 'value' for op 'add'",
+    });
+    expect(parsePatchResponse(JSON.stringify([{ op: "move", path: "/a" }]), JSON_PATCH_MIME)).toEqual({
+      ok: false,
+      reason: "json-patch op[0] missing 'from' for op 'move'",
+    });
+  });
+
   test("invalid JSON body 거부", () => {
     const r = parsePatchResponse("not json", JSON_PATCH_MIME);
     expect(r.ok).toBe(false);

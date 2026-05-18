@@ -66,12 +66,43 @@ export function parsePatchResponse(body: string, contentType: string | null | un
   }
   if (ct === JSON_PATCH_MIME) {
     if (!Array.isArray(raw)) return { ok: false, reason: "json-patch body must be an array" };
-    return { ok: true, ops: raw as JSONPatchOperation[] };
+    const ops: JSONPatchOperation[] = [];
+    for (let i = 0; i < raw.length; i++) {
+      const op = parseJsonPatchOperation(raw[i], i);
+      if (!op.ok) return op;
+      ops.push(op.operation);
+    }
+    return { ok: true, ops };
   }
   if (ct === MERGE_PATCH_MIME) {
     return { ok: true, ops: parseMergePatch(raw, "") };
   }
   return { ok: false, reason: `unsupported content-type: ${contentType}` };
+}
+
+type PatchOpParseResult =
+  | { ok: true; operation: JSONPatchOperation }
+  | { ok: false; reason: string };
+
+const JSON_PATCH_OPS = new Set(["add", "remove", "replace", "move", "copy", "test"]);
+
+function parseJsonPatchOperation(value: unknown, index: number): PatchOpParseResult {
+  const fail = (reason: string): PatchOpParseResult => ({ ok: false, reason: `json-patch op[${index}] ${reason}` });
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return fail("must be an object");
+
+  const op = value as Record<string, unknown>;
+  const opName = op.op;
+  if (typeof opName !== "string" || !JSON_PATCH_OPS.has(opName)) return fail(`has unrecognized op: ${String(opName)}`);
+  if (typeof op.path !== "string") return fail("missing 'path'");
+
+  if ((opName === "add" || opName === "replace" || opName === "test") && !("value" in op)) {
+    return fail(`missing 'value' for op '${opName}'`);
+  }
+  if ((opName === "move" || opName === "copy") && typeof op.from !== "string") {
+    return fail(`missing 'from' for op '${opName}'`);
+  }
+
+  return { ok: true, operation: op as JSONPatchOperation };
 }
 
 /**
