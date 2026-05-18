@@ -27,8 +27,9 @@ npm run site:build
 - Read `SPEC.md` §0.1 (Absolute Principles) before any behavior change. The
   five principles (JSON-only state, RFC 6901 path, RFC 6902 op, pure core,
   React-only-in-hook) are not negotiable per-PR.
-- Keep the public package surface in `packages/zod-crud/src/index.ts` small
-  and intentional. It must match `SPEC.md` §5.
+- Keep the public package surfaces in `packages/zod-crud/src/index.ts` and
+  `packages/zod-crud/src/react.ts` small and intentional. They must match
+  `SPEC.md` §5.
 - Do not introduce convenience aliases for RFC 6902 op names (`set`, `insert`,
   `delete`, `rename`, `update`, `appendChild`, `paste` are forbidden).
 - Path arguments are RFC 6901 JSON Pointer strings only. Dotted, bracket, and

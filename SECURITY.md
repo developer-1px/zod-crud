@@ -22,5 +22,6 @@ when they show one of these outcomes:
 - A failed operation mutates document state, history, clipboard, or id
   allocation.
 - A committed document can violate the root Zod schema.
-- A malformed `JsonDoc` causes prototype mutation during deserialization.
+- Malformed JSON-compatible input causes prototype mutation or unexpected
+  object shape changes during parse, patch, copy, paste, or schema bridging.
 - Published package contents include unexpected files or secrets.
