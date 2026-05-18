@@ -124,14 +124,52 @@ try {
     ].join("\n"),
   );
   await writeFile(
-    join(workspace, "paste-subpath-smoke.ts"),
+    join(workspace, "verbs-subpath-smoke.ts"),
     [
-      'import type { RekeyOptions, RekeyResult } from "zod-crud/verbs/paste";',
+      'import { copy } from "zod-crud/verbs/copy";',
+      'import { cut } from "zod-crud/verbs/cut";',
+      'import { duplicate } from "zod-crud/verbs/duplicate";',
+      'import { find } from "zod-crud/verbs/find";',
+      'import { move } from "zod-crud/verbs/move";',
+      'import { paste, type RekeyOptions, type RekeyResult } from "zod-crud/verbs/paste";',
+      'import { redo } from "zod-crud/verbs/redo";',
+      'import { replace } from "zod-crud/verbs/replace";',
+      'import { select } from "zod-crud/verbs/select";',
+      'import { undo } from "zod-crud/verbs/undo";',
+      'copy satisfies Function;',
+      'cut satisfies Function;',
+      'duplicate satisfies Function;',
+      'find satisfies Function;',
+      'move satisfies Function;',
+      'paste satisfies Function;',
+      'redo satisfies Function;',
+      'replace satisfies Function;',
+      'select satisfies Function;',
+      'undo satisfies Function;',
       'const options: RekeyOptions = { fields: ["id"], strategy: "suffix" };',
       'options.fields satisfies string[];',
       'type RekeyFailure = Extract<RekeyResult, { ok: false }>;',
       'declare const code: RekeyFailure["code"];',
       'code satisfies "not_serializable" | "rekey_failed";',
+    ].join("\n"),
+  );
+  await writeFile(
+    join(workspace, "verbs-subpath-smoke.mjs"),
+    [
+      'import { copy } from "zod-crud/verbs/copy";',
+      'import { cut } from "zod-crud/verbs/cut";',
+      'import { duplicate } from "zod-crud/verbs/duplicate";',
+      'import { find } from "zod-crud/verbs/find";',
+      'import { move } from "zod-crud/verbs/move";',
+      'import { paste } from "zod-crud/verbs/paste";',
+      'import { redo } from "zod-crud/verbs/redo";',
+      'import { replace } from "zod-crud/verbs/replace";',
+      'import { select } from "zod-crud/verbs/select";',
+      'import { undo } from "zod-crud/verbs/undo";',
+      'const exports = { copy, cut, duplicate, find, move, paste, redo, replace, select, undo };',
+      'for (const [name, value] of Object.entries(exports)) {',
+      '  if (typeof value !== "function") throw new Error(`${name} subpath export failed`);',
+      '}',
     ].join("\n"),
   );
   await writeFile(
@@ -213,6 +251,7 @@ try {
   }
 
   run("node", ["smoke.mjs"], workspace);
+  run("node", ["verbs-subpath-smoke.mjs"], workspace);
   run(
     "node",
     [
@@ -239,7 +278,7 @@ try {
       "NodeNext",
       "--moduleResolution",
       "NodeNext",
-      "paste-subpath-smoke.ts",
+      "verbs-subpath-smoke.ts",
     ],
     workspace,
   );
