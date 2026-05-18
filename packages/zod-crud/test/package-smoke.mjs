@@ -194,10 +194,7 @@ async function assertDeclarationSpecifiers(installedPackageRoot) {
 
   for (const declarationPath of declarationPaths) {
     const source = await readFile(join(distRoot, declarationPath), "utf8");
-    const specifiers = Array.from(
-      source.matchAll(/\b(?:from|import)\s*(?:\(\s*)?["']([^"']+)["']/g),
-      (match) => match[1],
-    );
+    const specifiers = moduleSpecifiers(source);
 
     for (const specifier of specifiers) {
       if (specifier === undefined) throw new Error(`Declaration specifier capture failed: ${declarationPath}`);
@@ -215,6 +212,38 @@ async function assertDeclarationSpecifiers(installedPackageRoot) {
   }
 }
 
+async function assertRuntimeSpecifiers(installedPackageRoot) {
+  const distRoot = join(installedPackageRoot, "dist");
+  const runtimePaths = await runtimeModulePaths(distRoot);
+  const runtimeSet = new Set(runtimePaths);
+  const allowedBareSpecifiers = new Set(["react", "zod"]);
+
+  for (const runtimePath of runtimePaths) {
+    const source = await readFile(join(distRoot, runtimePath), "utf8");
+    const specifiers = moduleSpecifiers(source);
+
+    for (const specifier of specifiers) {
+      if (specifier === undefined) throw new Error(`Runtime specifier capture failed: ${runtimePath}`);
+      if (specifier.startsWith(".")) {
+        const resolved = resolve(dirname(join(distRoot, runtimePath)), specifier)
+          .slice(distRoot.length + 1);
+        if (!runtimeSet.has(resolved)) {
+          throw new Error(`Runtime import does not resolve inside package: ${runtimePath} -> ${specifier}`);
+        }
+      } else if (!allowedBareSpecifiers.has(specifier)) {
+        throw new Error(`Runtime imports unexpected bare specifier: ${runtimePath} -> ${specifier}`);
+      }
+    }
+  }
+}
+
+function moduleSpecifiers(source) {
+  return [
+    ...Array.from(source.matchAll(/\b(?:import|export)\s+[^;"']*\s+from\s+["']([^"']+)["']/g), (match) => match[1]),
+    ...Array.from(source.matchAll(/\bimport\s+["']([^"']+)["']/g), (match) => match[1]),
+  ];
+}
+
 async function declarationModulePaths(dir, prefix = "") {
   const entries = await readdir(dir, { withFileTypes: true });
   const paths = [];
@@ -224,6 +253,22 @@ async function declarationModulePaths(dir, prefix = "") {
     if (entry.isDirectory()) {
       paths.push(...await declarationModulePaths(absolutePath, relativePath));
     } else if (entry.isFile() && entry.name.endsWith(".d.ts")) {
+      paths.push(relativePath);
+    }
+  }
+
+  return paths.sort();
+}
+
+async function runtimeModulePaths(dir, prefix = "") {
+  const entries = await readdir(dir, { withFileTypes: true });
+  const paths = [];
+  for (const entry of entries) {
+    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
+    const absolutePath = join(dir, entry.name);
+    if (entry.isDirectory()) {
+      paths.push(...await runtimeModulePaths(absolutePath, relativePath));
+    } else if (entry.isFile() && entry.name.endsWith(".js")) {
       paths.push(relativePath);
     }
   }
@@ -786,6 +831,7 @@ try {
     );
   }
   await assertDeclarationSpecifiers(installedPackageRoot);
+  await assertRuntimeSpecifiers(installedPackageRoot);
 
   if (!existsSync(join(workspace, "node_modules", "zod"))) {
     await symlink(zodPackage, join(workspace, "node_modules", "zod"), "dir");
