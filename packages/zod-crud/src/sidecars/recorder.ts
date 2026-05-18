@@ -6,6 +6,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSONOps } from "../jsonOps.js";
+import { cloneJson } from "../core/json.js";
 import type { RecordedStep, Recording } from "./replayRecording.js";
 export { replayRecording } from "./replayRecording.js";
 export type { RecordedStep, Recording, ReplayOptions } from "./replayRecording.js";
@@ -29,31 +30,34 @@ export function useRecorder<T>(ops: JSONOps<T>): RecorderApi<T> {
     return ops.subscribe((applied) => {
       const start = startRef.current;
       if (!start) return;
-      stepsRef.current.push({ ops: [...applied], at: Date.now() - start.at });
+      stepsRef.current.push({ ops: cloneJson([...applied]), at: Date.now() - start.at });
       force((n) => n + 1);
     });
   }, [isRecording, ops]);
 
   const start = useCallback(() => {
     if (isRecording) return;
-    startRef.current = { at: Date.now(), initial: ops.state };
+    startRef.current = { at: Date.now(), initial: cloneJson(ops.state) };
     stepsRef.current = [];
     setIsRecording(true);
   }, [isRecording, ops]);
 
   const stop = useCallback((): Recording<T> => {
-    setIsRecording(false);
     const start = startRef.current;
+    const initial = cloneJson((start?.initial ?? ops.state) as T);
+    const steps = cloneJson(stepsRef.current);
+    startRef.current = null;
+    setIsRecording(false);
     return {
       startedAt: start?.at ?? Date.now(),
-      initial: (start?.initial ?? ops.state) as T,
-      steps: [...stepsRef.current],
+      initial,
+      steps,
     };
   }, [ops]);
 
   const clear = useCallback(() => {
     stepsRef.current = [];
-    if (startRef.current) startRef.current = { at: Date.now(), initial: ops.state };
+    if (startRef.current) startRef.current = { at: Date.now(), initial: cloneJson(ops.state) };
     force((n) => n + 1);
   }, [ops]);
 
