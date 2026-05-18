@@ -51,8 +51,14 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
     const e = popped.entry;
     if (direction === "undo") e.selectionAfter = snapSelection(selectionRef.current);
     isRestoringRef.current = true;
-    const r = rawOps.patch(direction === "undo" ? e.inverse : e.forward);
-    isRestoringRef.current = false;
+    let r: ReturnType<JSONOps<T>["patch"]>;
+    try {
+      r = rawOps.patch(direction === "undo" ? e.inverse : e.forward);
+    } catch {
+      return false;
+    } finally {
+      isRestoringRef.current = false;
+    }
     if (!r.ok) return false; // 스택 갱신 안 함 — 원상태 유지
     stackRef.current = popped.next;
     const t = direction === "undo" ? e.selectionBefore : e.selectionAfter;
