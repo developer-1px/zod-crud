@@ -5,7 +5,7 @@
 import type * as z from "zod";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { preFlight } from "../core/schema/preFlight.js";
+import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 // note: verbs/* 끼리 import 금지 (lint rule). 여기서는 jsonpath 의 query 를 직접 호출.
 import { query as jsonpathQuery } from "../core/jsonpath/index.js";
 import { JSONPathSyntaxError } from "../core/jsonpath/index.js";
@@ -19,7 +19,7 @@ export interface ReplaceOk<T> {
 
 export interface ReplaceError {
   ok: false;
-  code: string;
+  code: "syntax_error" | "empty_match" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }

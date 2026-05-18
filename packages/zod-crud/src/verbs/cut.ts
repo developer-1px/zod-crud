@@ -7,7 +7,7 @@ import { cloneJson, jsonSerializableError } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
-import { preFlight } from "../core/schema/preFlight.js";
+import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 
 export interface CutOk<T> {
   ok: true;
@@ -19,7 +19,7 @@ export interface CutOk<T> {
 
 export interface CutError {
   ok: false;
-  code: string;
+  code: "path_not_found" | "not_serializable" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }

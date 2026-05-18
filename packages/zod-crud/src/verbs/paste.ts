@@ -6,7 +6,7 @@ import type * as z from "zod";
 import { cloneJson } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { preFlight } from "../core/schema/preFlight.js";
+import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import { getDiscriminatedUnionInfo, getObjectLiteralValues, schemaAtPointer } from "../core/schema/introspection.js";
 
 export type PasteMode = "before" | "after" | "into" | "replace";
@@ -19,7 +19,7 @@ export interface PasteOk<T> {
 
 export interface PasteError {
   ok: false;
-  code: string;
+  code: "not_serializable" | "rekey_failed" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }

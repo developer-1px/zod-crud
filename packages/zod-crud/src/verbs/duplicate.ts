@@ -7,7 +7,7 @@ import type * as z from "zod";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, parsePointer } from "../core/pointer/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { preFlight } from "../core/schema/preFlight.js";
+import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import { tryRekeyPayload, type RekeyOptions } from "./paste.js";
 
 export interface DuplicateOpts {
@@ -27,7 +27,14 @@ export interface DuplicateOk<T> {
 
 export interface DuplicateError {
   ok: false;
-  code: string;
+  code:
+    | "invalid_pointer"
+    | "path_not_found"
+    | "missing_new_key"
+    | "key_conflict"
+    | "not_serializable"
+    | "rekey_failed"
+    | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }

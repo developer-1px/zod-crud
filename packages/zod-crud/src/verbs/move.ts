@@ -2,7 +2,7 @@
 // pure composer. preFlight gate 통과 후 next + patch 산출.
 
 import type { JSONPatchOperation } from "../core/patch/index.js";
-import { preFlight } from "../core/schema/preFlight.js";
+import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type * as z from "zod";
 
@@ -14,7 +14,7 @@ export interface MoveOk<T> {
 
 export interface MoveError {
   ok: false;
-  code: string;
+  code: PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }

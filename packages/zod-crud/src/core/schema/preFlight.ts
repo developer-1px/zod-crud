@@ -14,9 +14,11 @@ export interface PreFlightOk<T> {
   draft: T;
 }
 
+export type PreFlightErrorCode = ErrorCode | "preFlight_failed";
+
 export interface PreFlightErr {
   ok: false;
-  code: ErrorCode | "preFlight_failed";
+  code: PreFlightErrorCode;
   message: string;
   violations: ReadonlyArray<{ path: string; message: string }>;
 }
