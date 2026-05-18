@@ -700,7 +700,17 @@ try {
     throw new Error("Root package smoke must run before React is installed so the root entrypoint stays headless");
   }
 
-  for (const privateSubpath of ["dist/index.js", "dist/react.js", "src/index.ts", "sidecars/http"]) {
+  const privateSubpaths = [
+    "package.json",
+    "dist/index.js",
+    "dist/react.js",
+    "src/index.ts",
+    "core/patch",
+    "hooks/useJSON",
+    "sidecars/http",
+    "verbs",
+  ];
+  for (const privateSubpath of privateSubpaths) {
     expectCommandFailure(
       "node",
       ["--input-type=module", "--eval", `await import("zod-crud/${privateSubpath}")`],
