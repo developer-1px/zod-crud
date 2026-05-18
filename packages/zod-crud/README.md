@@ -88,7 +88,7 @@ export function App() {
 | Surface | Purpose |
 | --- | --- |
 | `doc.value` | current schema-valid state (`T`) |
-| `doc.ops` | RFC 6902 escape hatch — `add`/`remove`/`replace`/`move`/`copy`/`test`/`patch` |
+| `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe` |
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
 | `doc.can` | mutation guard predicates + `undo`/`redo` flags |
 | `doc.selection` | W3C-shaped selection coordinates (anchor/focus, JSON Pointer) |

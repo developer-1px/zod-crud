@@ -95,6 +95,42 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
+  test("README doc.ops row lists every JSONOps member", () => {
+    const readme = readFileSync(resolve(root, "README.md"), "utf8");
+    const jsonOpsSource = readFileSync(resolve(root, "src/jsonOps.ts"), "utf8");
+    const interfaceBody = jsonOpsSource.slice(
+      jsonOpsSource.indexOf("export interface JSONOps<T>"),
+      jsonOpsSource.indexOf("\n}", jsonOpsSource.indexOf("export interface JSONOps<T>")),
+    );
+    const methods = Array.from(interfaceBody.matchAll(/^\s{2}(\w+)[(<]/gm), (match) => match[1]);
+    const readonlyProperties = Array.from(interfaceBody.matchAll(/^\s{2}readonly\s+(\w+):/gm), (match) => match[1]);
+    const members = [...readonlyProperties, ...methods].sort();
+
+    expect(members).toEqual([
+      "add",
+      "apply",
+      "copy",
+      "load",
+      "move",
+      "patch",
+      "remove",
+      "replace",
+      "reset",
+      "set",
+      "state",
+      "subscribe",
+      "test",
+    ]);
+
+    const opsRow = readme
+      .split("\n")
+      .find((line) => line.startsWith("| `doc.ops` |"));
+    expect(opsRow, "README must document doc.ops").toBeTruthy();
+    for (const member of members) {
+      expect(opsRow, `README doc.ops row missing JSONOps member: ${member}`).toContain(`\`${member}\``);
+    }
+  });
+
   test("SPEC RFC 6902 conformance count matches vendored suite", () => {
     const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
     const cases = [...(tests as Array<{ disabled?: boolean }>), ...(specTests as Array<{ disabled?: boolean }>)];
