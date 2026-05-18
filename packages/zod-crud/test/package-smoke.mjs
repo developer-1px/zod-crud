@@ -88,6 +88,18 @@ try {
       throw new Error(`Tarball is missing required package file: ${required}`);
     }
   }
+  if (packageJson.type !== "module") {
+    throw new Error('Package must publish as ESM with "type": "module"');
+  }
+  if (packageJson.sideEffects !== false) {
+    throw new Error('Package must declare "sideEffects": false');
+  }
+  if (packageJson.main !== packageJson.exports["."].import) {
+    throw new Error(`Package main must match root import export: ${packageJson.main}`);
+  }
+  if (packageJson.types !== packageJson.exports["."].types) {
+    throw new Error(`Package types must match root types export: ${packageJson.types}`);
+  }
   for (const [subpath, exportMap] of Object.entries(packageJson.exports)) {
     const conditions = Object.keys(exportMap);
     if (conditions[0] !== "types") {
