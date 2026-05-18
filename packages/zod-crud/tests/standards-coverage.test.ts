@@ -446,11 +446,15 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
   test("root verify script keeps workspace gates intact", () => {
     const monorepoPackageJson = JSON.parse(readFileSync(resolve(root, "..", "..", "package.json"), "utf8")) as {
       private?: boolean;
+      description?: string;
       workspaces?: string[];
       scripts: Record<string, string>;
     };
 
     expect(monorepoPackageJson.private).toBe(true);
+    expect(monorepoPackageJson.description).toBe(
+      "A Zod-guarded JSON tree library locked to RFC 6901 and RFC 6902. State, actions, and change records are serializable JSON; React adapters live behind a separate entrypoint.",
+    );
     expect(monorepoPackageJson.workspaces).toEqual(["packages/*", "apps/*"]);
     expect(monorepoPackageJson.scripts.test).toBe("npm test -w zod-crud");
     expect(monorepoPackageJson.scripts.typecheck).toBe(

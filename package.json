@@ -22,7 +22,7 @@
     "mobile-cms:build": "npm run build -w @zod-crud/mobile-cms"
   },
   "version": "1.0.0",
-  "description": "A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and **RFC 6902 (JSON Patch)**. State, actions, and change records are 100% serializable JSON. The core is pure functions; React is confined to one hook.",
+  "description": "A Zod-guarded JSON tree library locked to RFC 6901 and RFC 6902. State, actions, and change records are serializable JSON; React adapters live behind a separate entrypoint.",
   "main": "index.js",
   "directories": {
     "doc": "docs"
