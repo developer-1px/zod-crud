@@ -16,6 +16,10 @@
   "bugs": {
     "url": "https://github.com/developer-1px/zod-crud/issues"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "keywords": [
     "zod",
     "json",

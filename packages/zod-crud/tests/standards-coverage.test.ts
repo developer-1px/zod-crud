@@ -311,6 +311,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       homepage: string;
       repository?: { type?: string; url?: string; directory?: string };
       bugs?: { url?: string };
+      publishConfig?: { access?: string; provenance?: boolean };
       keywords?: string[];
     };
     const license = readFileSync(resolve(root, "LICENSE"), "utf8");
@@ -342,6 +343,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       directory: "packages/zod-crud",
     });
     expect(pkg.bugs?.url).toBe("https://github.com/developer-1px/zod-crud/issues");
+    expect(pkg.publishConfig).toEqual({ access: "public", provenance: true });
     expect(pkg.keywords).toEqual(expect.arrayContaining(["zod", "json", "crud", "schema", "clipboard", "undo", "redo", "headless"]));
   });
 

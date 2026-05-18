@@ -244,6 +244,7 @@ function assertInstalledPackageJson(pkg) {
     "homepage",
     "repository",
     "bugs",
+    "publishConfig",
     "keywords",
     "exports",
     "peerDependencies",
