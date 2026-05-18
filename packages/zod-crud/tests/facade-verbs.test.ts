@@ -5,8 +5,9 @@ import * as z from "zod";
 
 import { buildCommands } from "../src/commands/buildCommands.js";
 import { buildCan } from "../src/commands/buildCan.js";
-import type { JSONOps } from "../src/jsonOps.js";
+import type { JSONDocumentOps } from "../src/jsonOps.js";
 import { applyPatch, type JSONPatchOperation } from "../src/core/patch/index.js";
+import { JSONCrudError } from "../src/JSONCrudError.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -23,7 +24,7 @@ const initial: State = {
 };
 
 /** 테스트용 in-memory ops — useJSON 없이 commands wiring 만 검증. */
-function makeOps(s0: State): JSONOps<State> {
+function makeOps(s0: State): JSONDocumentOps<State> {
   let cur = s0;
   return {
     add: () => ({ ok: true }),
@@ -32,17 +33,23 @@ function makeOps(s0: State): JSONOps<State> {
     move: () => ({ ok: true }),
     copy: () => ({ ok: true }),
     test: () => ({ ok: true }),
+    set: () => ({ ok: true }),
     patch(operations: ReadonlyArray<JSONPatchOperation>) {
       const r = applyPatch(Schema, cur, operations);
       if (r.result.ok) cur = r.state;
       return r.result;
+    },
+    apply(operations) {
+      const r = applyPatch(Schema, cur, operations);
+      if (!r.result.ok) throw new JSONCrudError("patch", r.result);
+      cur = r.state;
     },
     undo: () => false,
     redo: () => false,
     canUndo: () => false,
     canRedo: () => false,
     load: () => ({ ok: true }),
-    reset: () => {},
+    reset: () => ({ ok: true }),
     subscribe: () => () => {},
     get state() { return cur; },
   };
@@ -131,12 +138,18 @@ describe("buildCan — TipTap 식 can group", () => {
     const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
     type S = z.output<typeof NonEmpty>;
     let cur: S = { items: ["a", "b"] };
-    const ops: JSONOps<S> = {
+    const ops: JSONDocumentOps<S> = {
       add: () => ({ ok: true }), remove: () => ({ ok: true }), replace: () => ({ ok: true }),
       move: () => ({ ok: true }), copy: () => ({ ok: true }), test: () => ({ ok: true }),
+      set: () => ({ ok: true }),
       patch(operations) { const r = applyPatch(NonEmpty, cur, operations); if (r.result.ok) cur = r.state; return r.result; },
+      apply(operations) {
+        const r = applyPatch(NonEmpty, cur, operations);
+        if (!r.result.ok) throw new JSONCrudError("patch", r.result);
+        cur = r.state;
+      },
       undo: () => false, redo: () => false, canUndo: () => false, canRedo: () => false,
-      load: () => ({ ok: true }), reset: () => {}, subscribe: () => () => {},
+      load: () => ({ ok: true }), reset: () => ({ ok: true }), subscribe: () => () => {},
       get state() { return cur; },
     };
     const can = buildCan({ schema: NonEmpty, ops });

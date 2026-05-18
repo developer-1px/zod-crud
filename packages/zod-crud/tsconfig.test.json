@@ -19,6 +19,7 @@
     "test/**/*.ts",
     "tests/**/*.test-d.ts",
     "tests/document-ops-restore.test.ts",
+    "tests/facade-verbs.test.ts",
     "tests/http.test.ts",
     "tests/issue-57-structural-sharing.test.ts",
     "tests/jsonpath.test.ts",
