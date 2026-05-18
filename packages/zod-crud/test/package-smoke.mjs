@@ -127,7 +127,7 @@ try {
     join(workspace, "smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { applyOperation, applyPatch, type CutError, type DuplicateError, type JSONPatchOperation, type PasteError, type Pointer, type ReplaceError } from "zod-crud";',
+      'import { applyOperation, applyPatch, type CutError, type DuplicateError, type JSONPatchOperation, type PasteError, type Pointer, type PreFlightErrorCode, type ReplaceError } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',
       'r.state.name satisfies string;',
@@ -136,6 +136,8 @@ try {
       'r2.state.name satisfies string;',
       'const p: Pointer = "/name";',
       'p satisfies string;',
+      'declare const preFlightCode: PreFlightErrorCode;',
+      'preFlightCode satisfies "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "not_serializable" | "preFlight_failed";',
       'declare const cutError: CutError;',
       'cutError.code satisfies "path_not_found" | "not_serializable" | "invalid_pointer" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'declare const pasteError: PasteError;',

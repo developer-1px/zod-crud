@@ -110,3 +110,4 @@ export type { UndoEntry, UndoNoop, UndoResult } from "./verbs/undo.js";
 
 // === JSON Schema bridge — RFC 8927 / draft-bhutton ===
 export { toJSONSchema, fromJSONSchema } from "./core/schema/bridge.js";
+export type { PreFlightErrorCode } from "./core/schema/preFlight.js";
