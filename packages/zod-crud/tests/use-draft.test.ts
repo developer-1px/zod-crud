@@ -7,6 +7,10 @@ import * as z from "zod";
 import { useDraft } from "../src/hooks/useDraft.js";
 import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
 
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean;
+}
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
 const Schema = z.object({
