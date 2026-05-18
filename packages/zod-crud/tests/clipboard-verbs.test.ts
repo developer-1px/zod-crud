@@ -147,6 +147,14 @@ describe("verbs/paste", () => {
     expect(r.expected).toEqual({ discriminator: "type", allowed: ["features"] });
   });
 
+  test("invalid target pointer is handled by preFlight, not schema introspection throw", () => {
+    const r = paste(Schema, initial, { id: "c", name: "C" }, "items/0" as never, "replace");
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("invalid_pointer");
+    }
+  });
+
   test("rekey option rewrites colliding payload fields before preFlight", () => {
     const r = paste(Schema, initial, { id: "a", name: "A copy" }, "/items/-", "into", {
       rekey: { fields: ["id"], strategy: "suffix" },

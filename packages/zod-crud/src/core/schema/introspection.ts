@@ -59,7 +59,12 @@ export function getObjectLiteralValues(schema: z.ZodType, key: string): unknown[
 
 export function schemaAtPointer(schema: z.ZodType, pointer: Pointer, mode: "value" | "insert" = "value"): z.ZodType | null {
   let current: z.ZodType | null = schema;
-  const segments = parsePointer(pointer);
+  let segments: string[];
+  try {
+    segments = parsePointer(pointer);
+  } catch {
+    return null;
+  }
 
   for (let i = 0; i < segments.length && current; i += 1) {
     const segment = segments[i];
