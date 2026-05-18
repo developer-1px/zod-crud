@@ -190,7 +190,6 @@ try {
     [
       typeScriptBin,
       "--noEmit",
-      "--skipLibCheck",
       "--target",
       "ES2022",
       "--module",
@@ -212,7 +211,6 @@ try {
     [
       typeScriptBin,
       "--noEmit",
-      "--skipLibCheck",
       "--target",
       "ES2022",
       "--module",
