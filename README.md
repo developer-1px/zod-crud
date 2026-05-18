@@ -85,5 +85,5 @@ npm run verify
 ## Maintainer Notes
 
 - `packages/zod-crud/SPEC.md` is the canonical specification.
-- `packages/zod-crud/src/index.ts` is the public export surface (SPEC §5).
+- `packages/zod-crud/src/index.ts` and `packages/zod-crud/src/react.ts` are the public export surfaces (SPEC §5).
 - `CONTRIBUTING.md` describes the change rules and verification checklist.

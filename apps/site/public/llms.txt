@@ -40,7 +40,7 @@ import { useRecorder, useDebugLog } from 'zod-crud/react'
 import { buildPatchRequest, parsePatchResponse, applyMergePatch } from 'zod-crud'
 ```
 
-전체 export 는 `packages/zod-crud/src/index.ts`. **목록 외 internal 경로 import 금지**.
+공개 entrypoint 는 `packages/zod-crud/src/index.ts` (`zod-crud`) 와 `packages/zod-crud/src/react.ts` (`zod-crud/react`). **목록 외 internal 경로 import 금지**.
 
 ## Canonical Patterns
 
@@ -112,7 +112,7 @@ const { state, result, inverses } = applyPatch(Schema, prev, [
 
 1. **전체 dict spread + replace** — 위 §Canonical Patterns #2 참조
 2. **drag/burst 마다 ops 호출 후 undo 폭증 방치** — local state 또는 `mergeLast` 필요
-3. **internal 경로 import** — `zod-crud/src/...` 또는 `zod-crud/dist/...` 모두 금지. `index.ts` 의 export 만 안정
+3. **internal 경로 import** — `zod-crud/src/...` 또는 `zod-crud/dist/...` 모두 금지. `zod-crud` / `zod-crud/react` / 명시된 subpath export 만 안정
 4. **editor / 편집기 어휘로 라이브러리 자기 묘사** — JSON tree 라이브러리. wrapper. 편집기 아님
 
 ## SemVer 정책

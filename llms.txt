@@ -1,6 +1,6 @@
 # zod-crud
 
-> A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and **RFC 6902 (JSON Patch)**. State, actions, and change records are 100% serializable JSON. Pure-function core; React confined to one hook.
+> A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and **RFC 6902 (JSON Patch)**. State, actions, and change records are 100% serializable JSON. Pure-function core; React hooks live under `zod-crud/react`.
 
 ## Identity (정체성 한 줄)
 
@@ -16,16 +16,16 @@
 | **Undo** | `undo`, `redo` |
 | **Find** | `find`, `replace`(string 의미) |
 
-10 verb closure 는 정체성. 11번째 verb 추가는 정체성 영향. RFC 6902 의 6 op(add/remove/replace/move/copy/test) 는 verbs 의 substrate — `JsonOps` 표면에서 `add/remove/replace` 로 노출.
+10 verb closure 는 정체성. 11번째 verb 추가는 정체성 영향. RFC 6902 의 6 op(add/remove/replace/move/copy/test) 는 verbs 의 substrate — `JSONOps` 표면에서 `add/remove/replace` 로 노출.
 
 ## Public surface (canonical entry points)
 
 ```ts
 // 단일 facade — 90% 의 사용자
-import { useJsonDocument } from 'zod-crud'
+import { useJSONDocument } from 'zod-crud/react'
 
-// JsonOps 타입 (sub-hook 으로 ops 전파 시)
-import type { JsonOps } from 'zod-crud'
+// JSONOps 타입 (sub-hook 으로 ops 전파 시)
+import type { JSONOps } from 'zod-crud'
 
 // Pure core (no React)
 import { applyPatch, applyOperation, computeInverses } from 'zod-crud'
@@ -34,13 +34,13 @@ import { applyPatch, applyOperation, computeInverses } from 'zod-crud'
 import { parsePointer, buildPointer, serialize, parse } from 'zod-crud'
 
 // Sidecars (횡단 관심사 — core 영향 없음)
-import { useRecorder, useDebugLog } from 'zod-crud'
+import { useRecorder, useDebugLog } from 'zod-crud/react'
 
 // HTTP wire (RFC 5789 + 6902 + 7396)
 import { buildPatchRequest, parsePatchResponse, applyMergePatch } from 'zod-crud'
 ```
 
-전체 export 는 `packages/zod-crud/src/index.ts`. **목록 외 internal 경로 import 금지**.
+공개 entrypoint 는 `packages/zod-crud/src/index.ts` (`zod-crud`) 와 `packages/zod-crud/src/react.ts` (`zod-crud/react`). **목록 외 internal 경로 import 금지**.
 
 ## Canonical Patterns
 
@@ -52,7 +52,7 @@ const Schema = z.object({
   notes: z.record(z.string(), z.string()),
 })
 
-const { value, ops, commands, can, history, selection } = useJsonDocument(
+const { value, ops, commands, can, history, selection } = useJSONDocument(
   Schema,
   initialState,
   { history: 100 }
@@ -112,7 +112,7 @@ const { state, result, inverses } = applyPatch(Schema, prev, [
 
 1. **전체 dict spread + replace** — 위 §Canonical Patterns #2 참조
 2. **drag/burst 마다 ops 호출 후 undo 폭증 방치** — local state 또는 `mergeLast` 필요
-3. **internal 경로 import** — `zod-crud/src/...` 또는 `zod-crud/dist/...` 모두 금지. `index.ts` 의 export 만 안정
+3. **internal 경로 import** — `zod-crud/src/...` 또는 `zod-crud/dist/...` 모두 금지. `zod-crud` / `zod-crud/react` / 명시된 subpath export 만 안정
 4. **editor / 편집기 어휘로 라이브러리 자기 묘사** — JSON tree 라이브러리. wrapper. 편집기 아님
 
 ## SemVer 정책
