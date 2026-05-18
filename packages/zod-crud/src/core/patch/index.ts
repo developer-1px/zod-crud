@@ -5,7 +5,7 @@
 import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
 import type { Pointer } from "../pointer/index.js";
-import { applyOpRaw } from "./apply.js";
+import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeOp } from "./internal.js";
 
 export { computeInverses } from "./inverse.js";
@@ -52,6 +52,8 @@ export function applyOperation<S extends z.ZodTypeAny>(
 ): ApplyResult<S> {
   const stateJsonErr = jsonSerializableError(state);
   if (stateJsonErr) return { state, result: fail("not_serializable", stateJsonErr), applied: [] };
+  const shape = validateOperationShape(op);
+  if (shape) return { state, result: fail(shape.error, shape.reason), applied: [] };
   const normalized = normalizeOp(op, state);
   const r = applyOpRaw(state, normalized);
   if ("error" in r) return { state, result: fail(r.error, r.reason, r.pointer), applied: [] };
@@ -81,6 +83,14 @@ export function applyPatch<S extends z.ZodTypeAny>(
   for (let i = 0; i < ops.length; i++) {
     if (!(i in ops)) {
       return { state, result: fail("invalid_pointer", `op[${i}]: op must be object`), applied: [] };
+    }
+    const shape = validateOperationShape(ops[i]!);
+    if (shape) {
+      return {
+        state,
+        result: fail(shape.error, `op[${i}]: ${shape.reason}`),
+        applied: [],
+      };
     }
     const n = normalizeOp(ops[i]!, cur);
     normalized.push(n);

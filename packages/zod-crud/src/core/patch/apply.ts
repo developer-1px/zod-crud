@@ -17,7 +17,7 @@ export type RawResult = { state: unknown } | { error: ErrorCode; reason?: string
 
 const VALID_OPS = new Set(["add", "remove", "replace", "move", "copy", "test"]);
 
-function validateShape(op: JSONPatchOperation): { error: ErrorCode; reason: string } | null {
+export function validateOperationShape(op: JSONPatchOperation): { error: ErrorCode; reason: string } | null {
   if (!op || typeof op !== "object") return { error: "invalid_pointer", reason: "op must be object" };
   const opName = (op as { op: string }).op;
   if (!VALID_OPS.has(opName)) return { error: "invalid_pointer", reason: `unrecognized op: ${opName}` };
@@ -38,7 +38,7 @@ function validateSerializableOpValue(op: JSONPatchOperation): { error: ErrorCode
 }
 
 export function applyOpRaw(state: unknown, op: JSONPatchOperation): RawResult {
-  const shape = validateShape(op);
+  const shape = validateOperationShape(op);
   if (shape) return shape;
   const serializable = validateSerializableOpValue(op);
   if (serializable) return serializable;

@@ -14,6 +14,14 @@ import {
 const Any = z.any();
 
 describe("RFC 6901 — JSON Pointer", () => {
+  it("rejects malformed single operation input at runtime", () => {
+    const initial = { x: 1 };
+    const r = applyOperation(Any, initial, null as never);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("invalid_pointer");
+    expect(r.state).toBe(initial);
+  });
+
   it("parses canonical examples from RFC 6901 §5", () => {
     expect(parsePointer("")).toEqual([]);
     expect(parsePointer("/foo")).toEqual(["foo"]);
@@ -141,6 +149,20 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     const r = applyPatch(Any, initial, ops);
     expect(r.result.ok).toBe(false);
     if (!r.result.ok) expect(r.result.code).toBe("invalid_pointer");
+    expect(r.state).toBe(initial);
+  });
+
+  it("rejects malformed patch elements before applying earlier ops", () => {
+    const initial = { a: 1 };
+    const r = applyPatch(Any, initial, [
+      { op: "replace", path: "/a", value: 2 },
+      null as never,
+    ]);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) {
+      expect(r.result.code).toBe("invalid_pointer");
+      expect(r.result.reason).toBe("op[1]: op must be object");
+    }
     expect(r.state).toBe(initial);
   });
 
