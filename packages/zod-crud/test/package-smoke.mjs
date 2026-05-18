@@ -159,6 +159,18 @@ try {
     }
     return `import { ${name} } from "zod-crud/verbs/${name}";`;
   });
+  const verbTypeImportLines = [
+    'import type { ClipboardItemMap, ClipboardItemOptions, CopyError, CopyOk, CopyResult } from "zod-crud/verbs/copy";',
+    'import type { CutError, CutOk } from "zod-crud/verbs/cut";',
+    'import type { DuplicateError, DuplicateOk, DuplicateOpts } from "zod-crud/verbs/duplicate";',
+    'import type { FindError, FindOk } from "zod-crud/verbs/find";',
+    'import type { MoveError, MoveOk, MoveResult } from "zod-crud/verbs/move";',
+    'import type { PasteDuMismatch, PasteError, PasteMode, PasteOk, PasteOptions, RekeyContext, RekeyStrategy } from "zod-crud/verbs/paste";',
+    'import type { RedoResult } from "zod-crud/verbs/redo";',
+    'import type { ReplaceError, ReplaceOk } from "zod-crud/verbs/replace";',
+    'import type { SelectionAction, SelectionMode, SelectionSnap } from "zod-crud/verbs/select";',
+    'import type { UndoEntry, UndoNoop, UndoResult } from "zod-crud/verbs/undo";',
+  ];
   const verbFunctionChecks = exportedVerbs.map((name) => `${name} satisfies Function;`);
   const verbRuntimeImportLines = exportedVerbs.map((name) => `import { ${name} } from "zod-crud/verbs/${name}";`);
   const verbRuntimeEntries = exportedVerbs.map((name) => `${name}`).join(", ");
@@ -230,7 +242,11 @@ try {
     join(workspace, "verbs-subpath-smoke.ts"),
     [
       ...verbImportLines,
+      ...verbTypeImportLines,
       ...verbFunctionChecks,
+      'type VerbSubpathTypes = [ClipboardItemMap, ClipboardItemOptions, CopyError, CopyOk, CopyResult, CutError, CutOk<{ name: string }>, DuplicateError, DuplicateOk<{ name: string }>, DuplicateOpts, FindError, FindOk, MoveError, MoveOk<{ name: string }>, MoveResult<{ name: string }>, PasteDuMismatch, PasteError, PasteMode, PasteOk<{ name: string }>, PasteOptions, RedoResult<{ name: string }, UndoEntry>, ReplaceError, ReplaceOk<{ name: string }>, SelectionAction, SelectionMode, SelectionSnap, UndoEntry, UndoNoop, UndoResult<{ name: string }, UndoEntry>, RekeyContext, RekeyStrategy];',
+      'declare const verbSubpathTypes: VerbSubpathTypes;',
+      'verbSubpathTypes satisfies readonly unknown[];',
       'const options: RekeyOptions = { fields: ["id"], strategy: "suffix" };',
       'options.fields satisfies string[];',
       'type RekeyFailure = Extract<RekeyResult, { ok: false }>;',
