@@ -58,6 +58,15 @@ describe("serialize / parse", () => {
     expect(() => serialize(hidden)).toThrow(/non-enumerable property/);
     expect(() => serialize(accessor)).toThrow(/accessor property/);
   });
+
+  it("reports JSON boundary errors with escaped RFC 6901 pointers", () => {
+    expect(() => serialize({ "a/b": { "c~d": undefined } })).toThrow("/a~1b/c~0d: undefined is not JSON");
+
+    const hidden = { "a/b": {} };
+    Object.defineProperty(hidden["a/b"], "c~d", { value: 1, enumerable: false });
+
+    expect(() => serialize(hidden)).toThrow("/a~1b/c~0d: non-enumerable property is not JSON");
+  });
 });
 
 describe("G1 — JSON-only state after operations", () => {

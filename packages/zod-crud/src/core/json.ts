@@ -1,26 +1,31 @@
 // Internal JSON boundary helpers. Public state/actions must stay plain JSON.
 
+import { buildPointer } from "./pointer/index.js";
+
 export function jsonSerializableError(value: unknown): string | null {
   const seen = new WeakSet<object>();
 
-  const visit = (v: unknown, path: string): string | null => {
+  const at = (path: ReadonlyArray<string | number>): string => buildPointer(path);
+
+  const visit = (v: unknown, path: ReadonlyArray<string | number>): string | null => {
     if (v === null) return null;
     const t = typeof v;
     if (t === "string" || t === "boolean") return null;
-    if (t === "number") return Number.isFinite(v) ? null : `${path}: non-finite number`;
+    if (t === "number") return Number.isFinite(v) ? null : `${at(path)}: non-finite number`;
     if (t === "undefined" || t === "function" || t === "symbol" || t === "bigint") {
-      return `${path}: ${t} is not JSON`;
+      return `${at(path)}: ${t} is not JSON`;
     }
     if (t !== "object") return null;
 
     const obj = v as object;
-    if (seen.has(obj)) return `${path}: circular reference`;
+    if (seen.has(obj)) return `${at(path)}: circular reference`;
     seen.add(obj);
 
     if (Array.isArray(v)) {
       for (let i = 0; i < v.length; i++) {
-        if (!Object.prototype.hasOwnProperty.call(v, i)) return `${path}/${i}: sparse array hole`;
-        const err = visit(v[i], `${path}/${i}`);
+        const childPath = [...path, i];
+        if (!Object.prototype.hasOwnProperty.call(v, i)) return `${at(childPath)}: sparse array hole`;
+        const err = visit(v[i], childPath);
         if (err) return err;
       }
       return null;
@@ -29,27 +34,27 @@ export function jsonSerializableError(value: unknown): string | null {
     const proto = Object.getPrototypeOf(v);
     if (proto !== Object.prototype && proto !== null) {
       const name = proto?.constructor?.name ?? "unknown";
-      return `${path}: non-plain object (${name})`;
+      return `${at(path)}: non-plain object (${name})`;
     }
 
-    if (Object.getOwnPropertySymbols(v).length > 0) return `${path}: symbol keys are not JSON`;
+    if (Object.getOwnPropertySymbols(v).length > 0) return `${at(path)}: symbol keys are not JSON`;
 
     for (const key of Object.getOwnPropertyNames(v)) {
       const descriptor = Object.getOwnPropertyDescriptor(v, key);
       if (!descriptor) continue;
-      const childPath = path === "" ? `/${key}` : `${path}/${key}`;
-      if (!descriptor.enumerable) return `${childPath}: non-enumerable property is not JSON`;
-      if ("get" in descriptor || "set" in descriptor) return `${childPath}: accessor property is not JSON`;
+      const childPath = [...path, key];
+      if (!descriptor.enumerable) return `${at(childPath)}: non-enumerable property is not JSON`;
+      if ("get" in descriptor || "set" in descriptor) return `${at(childPath)}: accessor property is not JSON`;
     }
 
     for (const key of Object.keys(v as Record<string, unknown>)) {
-      const err = visit((v as Record<string, unknown>)[key], path === "" ? `/${key}` : `${path}/${key}`);
+      const err = visit((v as Record<string, unknown>)[key], [...path, key]);
       if (err) return err;
     }
     return null;
   };
 
-  return visit(value, "");
+  return visit(value, []);
 }
 
 export function assertJsonSerializable(value: unknown): void {
