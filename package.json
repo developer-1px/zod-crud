@@ -13,7 +13,7 @@
     "typecheck": "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/site && npm run typecheck -w @zod-crud/outliner && npm run typecheck -w @zod-crud/mobile-cms",
     "smoke:package": "npm run smoke:package -w zod-crud",
     "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package",
-    "pack:library": "npm pack -w zod-crud",
+    "pack:library": "npm pack -w zod-crud --cache ./.npm-cache",
     "site:dev": "npm run dev -w @zod-crud/site",
     "site:build": "npm run build -w @zod-crud/site",
     "outliner:dev": "npm run dev -w @zod-crud/outliner",

@@ -433,7 +433,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       "npm run build -w zod-crud && npm run build -w @zod-crud/site && npm run build -w @zod-crud/outliner && npm run build -w @zod-crud/mobile-cms",
     );
     expect(monorepoPackageJson.scripts["smoke:package"]).toBe("npm run smoke:package -w zod-crud");
-    expect(monorepoPackageJson.scripts["pack:library"]).toBe("npm pack -w zod-crud");
+    expect(monorepoPackageJson.scripts["pack:library"]).toBe("npm pack -w zod-crud --cache ./.npm-cache");
     expect(monorepoPackageJson.scripts.verify).toBe(
       "npm run typecheck && npm test && npm run build && npm run smoke:package",
     );
