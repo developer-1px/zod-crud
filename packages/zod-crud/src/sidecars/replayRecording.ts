@@ -1,7 +1,8 @@
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { SelectionSnap } from "../core/selection/index.js";
+import { cloneJson } from "../core/json.js";
 import { JSONCrudError } from "../JSONCrudError.js";
-import type { JSONOps } from "../jsonOps.js";
+import type { JSONChangeMetadata, JSONOps } from "../jsonOps.js";
 
 export interface RecordedStep {
   ops: ReadonlyArray<JSONPatchOperation>;
@@ -17,6 +18,23 @@ export interface Recording<T> {
   startedAt: number;
   initial: T;
   steps: RecordedStep[];
+}
+
+export interface RecorderApi<T> {
+  readonly isRecording: boolean;
+  readonly steps: ReadonlyArray<RecordedStep>;
+  start(): void;
+  stop(): Recording<T>;
+  clear(): void;
+}
+
+export interface HeadlessRecorderApi<T> extends RecorderApi<T> {
+  dispose(): void;
+}
+
+export interface CreateRecorderOptions {
+  now?: () => number;
+  onChange?: () => void;
 }
 
 export interface ReplaySelectionTarget {
@@ -35,6 +53,77 @@ export interface ReplayOptions {
   signal?: AbortSignal;
   onStep?: (index: number, total: number) => void;
   selection?: ReplaySelectionTarget | null | false;
+}
+
+export function createRecorder<T>(
+  ops: JSONOps<T>,
+  options: CreateRecorderOptions = {},
+): HeadlessRecorderApi<T> {
+  const now = options.now ?? Date.now;
+  let startedAt: number | null = null;
+  let initial: T | null = null;
+  let steps: RecordedStep[] = [];
+  let unsubscribe: (() => void) | null = null;
+
+  const emit = (): void => {
+    options.onChange?.();
+  };
+  const stopListening = (): void => {
+    unsubscribe?.();
+    unsubscribe = null;
+  };
+  const listen = (): void => {
+    if (unsubscribe) return;
+    unsubscribe = ops.subscribe((applied, metadata) => {
+      if (startedAt === null) return;
+      steps.push({
+        ops: cloneJson([...applied]),
+        at: now() - startedAt,
+        ...cloneMetadata(metadata),
+      });
+      emit();
+    });
+  };
+
+  return {
+    get isRecording() { return startedAt !== null; },
+    get steps() { return cloneJson(steps); },
+    start() {
+      if (startedAt !== null) return;
+      startedAt = now();
+      initial = cloneJson(ops.state);
+      steps = [];
+      listen();
+      emit();
+    },
+    stop() {
+      const at = startedAt ?? now();
+      const out: Recording<T> = {
+        startedAt: at,
+        initial: cloneJson((initial ?? ops.state) as T),
+        steps: cloneJson(steps),
+      };
+      startedAt = null;
+      initial = null;
+      stopListening();
+      emit();
+      return out;
+    },
+    clear() {
+      steps = [];
+      if (startedAt !== null) {
+        startedAt = now();
+        initial = cloneJson(ops.state);
+      }
+      emit();
+    },
+    dispose() {
+      startedAt = null;
+      initial = null;
+      stopListening();
+      emit();
+    },
+  };
 }
 
 export async function replayRecording<T>(
@@ -76,4 +165,15 @@ function resolveReplayTarget<T>(
 
 function isReplayDocumentTarget<T>(target: ReplayTarget<T>): target is ReplayDocumentTarget<T> {
   return typeof (target as ReplayDocumentTarget<T>).ops?.patch === "function";
+}
+
+function cloneMetadata(metadata: JSONChangeMetadata | undefined): Partial<RecordedStep> {
+  if (!metadata) return {};
+  const out: Partial<RecordedStep> = {};
+  if (metadata.label !== undefined) out.label = metadata.label;
+  if (metadata.origin !== undefined) out.origin = metadata.origin;
+  if (metadata.mergeKey !== undefined) out.mergeKey = metadata.mergeKey;
+  if (metadata.selectionBefore !== undefined) out.selectionBefore = cloneJson(metadata.selectionBefore);
+  if (metadata.selectionAfter !== undefined) out.selectionAfter = cloneJson(metadata.selectionAfter);
+  return out;
 }

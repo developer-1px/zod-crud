@@ -375,6 +375,8 @@ Rules:
 - Time-based coalescing remains app/sidecar policy.
 - Core may store `mergeKey`, but must not own timers.
 - Recording sidecars preserve history metadata when present.
+- Recording can be produced headlessly with `createRecorder(ops)`; React
+  `useRecorder` is a facade over it.
 
 Acceptance evidence:
 
@@ -436,6 +438,8 @@ interface RecordedStep {
 Rules:
 
 - Recording is still JSON.
+- Recording can be produced headlessly with `createRecorder(ops)`; React
+  `useRecorder` is a facade over it.
 - Replay accepts either `JSONOps<T>` for state-only replay or a document facade
   target for state + selection replay.
 - Replay restores `selectionBefore` before the first step and `selectionAfter`

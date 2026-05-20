@@ -121,9 +121,12 @@ export {
 
 // === Sidecars — 횡단 관심사 ===
 // React sidecar hooks live under `zod-crud/react`.
-export { replayRecording } from "./sidecars/replayRecording.js";
+export { createRecorder, replayRecording } from "./sidecars/replayRecording.js";
 export type {
+  CreateRecorderOptions,
+  HeadlessRecorderApi,
   RecordedStep,
+  RecorderApi,
   Recording,
   ReplayDocumentTarget,
   ReplayOptions,

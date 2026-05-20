@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { applyPatch, createJSONDocument, JSONCrudError, replayRecording, type JSONOps, type Recording } from "../src/index.js";
+import { applyPatch, createJSONDocument, createRecorder, JSONCrudError, replayRecording, type JSONOps, type Recording } from "../src/index.js";
 
 const Schema = z.object({ items: z.array(z.string()) });
 type S = z.infer<typeof Schema>;
@@ -49,6 +49,32 @@ function makeOps(initial: S): JSONOps<S> {
 }
 
 describe("replayRecording", () => {
+  test("createRecorder records headless document steps with selection metadata", () => {
+    const doc = createJSONDocument(Schema, { items: ["a", "b"] }, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+    const recorder = createRecorder(doc.ops);
+
+    recorder.start();
+    doc.ops.replace("/items/0", "A");
+    const recording = recorder.stop();
+    recorder.dispose();
+
+    expect(recording.initial).toEqual({ items: ["a", "b"] });
+    expect(recording.steps).toHaveLength(1);
+    expect(recording.steps[0]).toMatchObject({
+      ops: [{ op: "replace", path: "/items/0", value: "A" }],
+      selectionBefore: {
+        selectedPointers: ["/items/0"],
+      },
+      selectionAfter: {
+        selectedPointers: ["/items/0"],
+      },
+    });
+    expect(JSON.parse(JSON.stringify(recording))).toEqual(recording);
+  });
+
   test("loads initial then applies steps in order", async () => {
     const recording: Recording<S> = {
       startedAt: 0,

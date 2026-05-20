@@ -50,8 +50,10 @@ export type {
   DraftState,
 } from "./hooks/useDraft.js";
 
-export { useRecorder, replayRecording } from "./sidecars/recorder.js";
+export { createRecorder, useRecorder, replayRecording } from "./sidecars/recorder.js";
 export type {
+  CreateRecorderOptions,
+  HeadlessRecorderApi,
   RecordedStep,
   RecorderApi,
   Recording,
