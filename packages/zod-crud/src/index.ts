@@ -14,6 +14,17 @@ export type {
   JSONOps,
   UseJSONOptions,
 } from "./jsonOps.js";
+export {
+  EMPTY_HISTORY,
+  emptyHistory,
+  back as historyBack,
+  canRedo as historyCanRedo,
+  canUndo as historyCanUndo,
+  commit as historyCommit,
+  forward as historyForward,
+  mergeLast as historyMergeLast,
+} from "./core/history.js";
+export type { HistoryStack } from "./core/history.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";

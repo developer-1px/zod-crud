@@ -213,6 +213,9 @@ Use `createRecorder(doc.ops)` for headless recording and
 `useRecorder` and `useDebugLog` are React facades over the same sidecars.
 `replayRecording(recording, doc)` restores recorded selection metadata when it
 is present; pass `doc.ops` for state-only replay.
+For lower-level composition, `emptyHistory`, `historyCommit`, `historyBack`,
+`historyForward`, and `historyMergeLast` expose the same pure stack reducer that
+document history uses.
 
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
@@ -302,6 +305,8 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createDraft(doc, options?)` | headless draft/pending field state over a document facade |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
 | `DraftState<T>`, `DraftFieldState<T>`, `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` from `zod-crud/react` | draft/pending field types |
+| `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
+| `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` from `zod-crud/react` | same headless history primitives re-exported from the React entrypoint |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |

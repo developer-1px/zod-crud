@@ -380,6 +380,11 @@ interface JSONDocumentHistory {
 }
 ```
 
+Standalone lower-level composition uses `emptyHistory`, `historyCommit`,
+`historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, and
+`historyCanRedo`; these are the same pure reducer primitives used by document
+history.
+
 Rules:
 
 - Time-based coalescing remains app/sidecar policy.

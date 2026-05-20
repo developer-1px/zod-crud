@@ -605,6 +605,7 @@ check 는 state, selection, clipboard, history 를 바꾸지 않는 dry-run guar
 read/query helpers 는 현재 state 를 Pointer/JSONPath 로 읽고, JSONPath query 는 value 가 아니라 Pointer[] 로 환원한다.
 schema introspection 은 serializable description/kind/accepts 결과를 제공하며 Zod 객체를 public API 로 노출하지 않는다.
 history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
+Standalone composition 은 `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo` 로 같은 순수 reducer 를 직접 쓴다. `HistoryStack<E>` 는 `{ undo, redo }` 로 이루어진 JSON 직렬화 가능한 스택 shape 이며, React entrypoint 는 이 primitive 를 재수출할 뿐 별도 history model 을 만들지 않는다.
 `transaction({ label, origin, mergeKey }, fn)` metadata 는 history entry 와 recorder step 에 JSON 으로 보존된다.
 `createRecorder(doc.ops)` 는 headless recorder 이며, React `useRecorder` 는 같은 recorder 의 facade 이다.
 `createDebugLog(doc.ops, doc.selection)` 은 headless diagnostic timeline 이며,
