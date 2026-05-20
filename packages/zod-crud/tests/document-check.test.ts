@@ -174,6 +174,33 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.replace("A1")).toBe(false);
   });
 
+  test("selection cursor and scope checks report UI action availability without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "extended", initial: ["/items/0"] },
+    });
+
+    expect(doc.check.moveCursor("next", { points: ["/items/0", "/items/1"] })).toEqual({ ok: true });
+    expect(doc.can.moveCursor("next", { points: ["/items/0", "/items/1"] })).toBe(true);
+    expect(doc.check.extendCursor("next", { points: ["/items/0", "/items/1"] })).toEqual({ ok: true });
+    expect(doc.can.extendCursor("next", { points: ["/items/0", "/items/1"] })).toBe(true);
+    expect(doc.check.selectScope({ points: ["/items/1", "/items/0"] })).toEqual({ ok: true });
+    expect(doc.can.selectScope({ points: ["/items/1", "/items/0"] })).toBe(true);
+    expect(doc.selection?.primaryPointer).toBe("/items/0");
+
+    expect(doc.check.moveCursor("next", { points: ["/items/0"] })).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+      pointer: "/items/0",
+    });
+    expect(doc.can.moveCursor("next", { points: ["/items/0"] })).toBe(false);
+    expect(doc.check.selectScope({ points: [] })).toMatchObject({
+      ok: false,
+      code: "empty_scope",
+    });
+    expect(doc.can.selectScope({ points: [] })).toBe(false);
+    expect(doc.selection?.primaryPointer).toBe("/items/0");
+  });
+
   test("reports discriminated union paste mismatch before mutation", () => {
     const BlockSchema = z.object({
       blocks: z.array(z.discriminatedUnion("kind", [

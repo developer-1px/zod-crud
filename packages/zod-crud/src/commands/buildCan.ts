@@ -7,12 +7,20 @@
 
 import type * as z from "zod";
 import type { Pointer } from "../core/pointer/index.js";
+import type {
+  SelectionCursorDirection,
+  SelectionCursorOptions,
+  SelectionScopeOptions,
+} from "../core/selection/index.js";
 import type { PasteMode, PasteOptions } from "../verbs/paste.js";
 import type { DuplicateOpts } from "../verbs/duplicate.js";
 import type { ClipboardSource } from "../verbs/copy.js";
 import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 
 export interface Can<T> {
+  selectScope(options?: SelectionScopeOptions): boolean;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): boolean;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): boolean;
   move(fromOrTo: Pointer, to?: Pointer): boolean;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
   replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
@@ -38,6 +46,9 @@ export type CreateCanOptions<S extends z.ZodType> = BuildCanArgs<S>;
 export function buildCan<S extends z.ZodType>(args: CreateCanOptions<S>): Can<z.output<S>> {
   const check = args.check ?? buildCheck(args);
   return {
+    selectScope(options) { return check.selectScope(options).ok; },
+    moveCursor(direction, options) { return check.moveCursor(direction, options).ok; },
+    extendCursor(direction, options) { return check.extendCursor(direction, options).ok; },
     move(fromOrTo, maybeTo) {
       return arguments.length >= 2
         ? check.move(fromOrTo, maybeTo).ok

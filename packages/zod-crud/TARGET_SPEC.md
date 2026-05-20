@@ -152,6 +152,8 @@ type CheckResult =
         | "missing_new_key"
         | "key_conflict"
         | "empty_selection"
+        | "empty_scope"
+        | "cursor_boundary"
         | "empty_stack"
         | "apply_failed";
       reason?: string;
@@ -160,6 +162,9 @@ type CheckResult =
     };
 
 interface Check<T> {
+  selectScope(options?: SelectionScopeOptions): CheckResult;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
@@ -183,12 +188,16 @@ Rules:
 - `can.x(...) === check.x(...).ok`.
 - `check` must not mutate document state, selection, clipboard, or history.
 - `check` reports the same code family the actual command would produce.
+- Selection cursor and scope checks guard `commands.moveCursor`,
+  `commands.extendCursor`, and `commands.selectScope`; boundary failures use
+  `cursor_boundary`, and empty scope failures use `empty_scope`.
 
 Acceptance evidence:
 
 - Headless tests in `tests/document-check.test.ts` cover schema violation,
   invalid pointer, path missing, discriminated union paste mismatch, undo/redo
-  unavailable, dry-run immutability, and `can === check.ok`.
+  unavailable, selection cursor/scope availability, dry-run immutability, and
+  `can === check.ok`.
 - React facade tests in `tests/document-clipboard-react.test.ts` prove the same
   check surface exists through `useJSONDocument`.
 
@@ -366,6 +375,9 @@ interface SelectionState<T> {
 keyboard-style cursor movement using the same cursor traversal options.
 `commands.selectScope` uses the document's configured selection mode to expose
 Ctrl+A/select-visible selection through the command namespace.
+`check.moveCursor` / `can.moveCursor`, `check.extendCursor` /
+`can.extendCursor`, and `check.selectScope` / `can.selectScope` expose the
+same availability checks without mutating selection.
 `selectionRanges[primaryIndex]` is the primary command range. Pointer-only
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,

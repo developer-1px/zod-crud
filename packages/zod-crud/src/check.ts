@@ -9,7 +9,17 @@ import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
-import { primaryPointer, selectedSource, type SelectionSnap } from "./core/selection/index.js";
+import {
+  EMPTY_SELECTION,
+  primaryPointer,
+  resolveSelectionCursor,
+  resolveSelectionScope,
+  selectedSource,
+  type SelectionCursorDirection,
+  type SelectionCursorOptions,
+  type SelectionScopeOptions,
+  type SelectionSnap,
+} from "./core/selection/index.js";
 
 export type CheckErrorCode =
   | ErrorCode
@@ -19,6 +29,8 @@ export type CheckErrorCode =
   | "missing_new_key"
   | "key_conflict"
   | "empty_selection"
+  | "empty_scope"
+  | "cursor_boundary"
   | "empty_stack"
   | "apply_failed";
 
@@ -38,6 +50,9 @@ export type CheckResult =
     };
 
 export interface Check<T> {
+  selectScope(options?: SelectionScopeOptions): CheckResult;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
@@ -70,7 +85,7 @@ type CheckableResult =
       code: CheckErrorCode;
       message?: string;
       reason?: string;
-      pointer?: Pointer;
+      pointer?: Pointer | null;
       violations?: ReadonlyArray<CheckViolation>;
     };
 
@@ -86,8 +101,18 @@ export function buildCheck<S extends z.ZodType>(
     target ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
   const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
     source ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
+  const selectionState = (): SelectionSnap => selectionRef?.current ?? EMPTY_SELECTION;
 
   return {
+    selectScope(options) {
+      return toCheckResult(resolveSelectionScope(ops.state, options));
+    },
+    moveCursor(direction, options) {
+      return toCheckResult(resolveSelectionCursor(selectionState(), direction, ops.state, options));
+    },
+    extendCursor(direction, options) {
+      return toCheckResult(resolveSelectionCursor(selectionState(), direction, ops.state, options));
+    },
     move(fromOrTo, maybeTo) {
       const args = resolveMoveArgs(fromOrTo, maybeTo, arguments.length >= 2);
       const source = primarySourceOrSelection(args.from);
@@ -148,7 +173,7 @@ function toCheckResult(result: CheckableResult): CheckResult {
   };
   const reason = result.reason ?? result.message;
   if (reason !== undefined) out.reason = reason;
-  if (result.pointer !== undefined) out.pointer = result.pointer;
+  if (result.pointer !== undefined && result.pointer !== null) out.pointer = result.pointer;
   if (result.violations !== undefined) out.violations = result.violations;
   return out;
 }

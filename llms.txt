@@ -63,8 +63,8 @@ document surface:
 | `doc.value` | current schema-valid JSON value |
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
 | `doc.commands` | 10 verb command namespace; `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
-| `doc.can` | command guard namespace |
-| `doc.check` | explainable dry-run guard namespace; `can.x(...) === check.x(...).ok` |
+| `doc.can` | command and selection guard namespace |
+| `doc.check` | explainable dry-run guard namespace for commands and selection movement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
@@ -207,7 +207,13 @@ history.
 ```ts
 const result = doc.check.replace("/items/0/name", value);
 if (!result.ok && result.code === "schema_violation") show(result.violations);
+
+const cursor = doc.check.moveCursor("next", { points: visiblePoints });
+const all = doc.check.selectScope({ points: visiblePoints });
 ```
+
+`moveCursor` / `extendCursor` failures report `cursor_boundary`; `selectScope`
+with no selectable points reports `empty_scope`.
 
 ### Read / Query
 

@@ -69,9 +69,11 @@ doc.commands.undo();
 only adds render lifecycle. Selection uses headless `JSONPoint` coordinates, so
 item selection and text carets share one JSON editing model. Clipboard is a
 headless JSON fragment buffer; system clipboard calls remain user code. `check`
-is the explainable dry-run guard behind `can`. `at`/`exists`/`query`/`entries`
-provide pointer and JSONPath reads without React. `schema` exposes serializable
-path introspection without making Zod internals the public API.
+is the explainable dry-run guard behind `can`, including selection cursor and
+scope guards (`moveCursor`, `extendCursor`, `selectScope`) for keyboard and
+select-visible UI. `at`/`exists`/`query`/`entries` provide pointer and JSONPath
+reads without React. `schema` exposes serializable path introspection without
+making Zod internals the public API.
 Selection-backed facade commands can omit the current source or target:
 `copy`/`cut` use `selectedSource`, `move`/`duplicate` use `primaryPointer` as
 source, and `replace`/`paste` use `primaryPointer` as target.

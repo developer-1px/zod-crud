@@ -97,8 +97,8 @@ export function App() {
 | `doc.value` | current schema-valid state (`T`) |
 | `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
-| `doc.can` | mutation guard predicates + `undo`/`redo` flags |
-| `doc.check` | explainable dry-run guard results; `can.x(...) === check.x(...).ok` |
+| `doc.can` | mutation and selection guard predicates + `undo`/`redo` flags |
+| `doc.check` | explainable dry-run guard results for commands and selection movement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
 | `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
@@ -163,11 +163,16 @@ provide the same cursor logic for standalone headless composition.
 `doc.commands.moveCursor(direction, options?)` and
 `doc.commands.extendCursor(direction, options?)` expose keyboard-style cursor
 movement through the document command namespace.
+`doc.check.moveCursor` / `doc.can.moveCursor` and `doc.check.extendCursor` /
+`doc.can.extendCursor` answer whether the same cursor movement is available
+without mutating selection; boundary failures return `cursor_boundary`.
 `doc.selection.selectScope(options?)` and `selectSelectionScope(...)` build a
 whole selection from the same `scope` or visible `points` options, covering
 Ctrl+A/select-visible flows without React.
 `doc.commands.selectScope(options?)` exposes the same flow through the document
 command namespace.
+`doc.check.selectScope` / `doc.can.selectScope` guard that flow; an empty
+scope returns `empty_scope`.
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `SelectionRange`, so disjoint multi-range selection and offset/edge carets are
 headless from initialization. Facade-level
@@ -220,6 +225,9 @@ DOM/system clipboard integration remains user code.
 `doc.check` is headless dry-run validation for commands and patches. It returns
 the same success/failure family the command would hit, without mutating value,
 selection, clipboard, or history.
+It also guards selection cursor and scope commands (`moveCursor`,
+`extendCursor`, `selectScope`) so keyboard and select-visible UI can use
+`can.x(...) === check.x(...).ok` before dispatch.
 The schema gate dry-applies the patch and runs whole-document
 `schema.safeParse`, so cross-field `.refine` / `.superRefine` violations are
 rejected before commit.

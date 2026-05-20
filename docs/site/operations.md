@@ -48,12 +48,19 @@ doc.commands.undo();
 doc.commands.redo();
 ```
 
-버튼을 만들 때는 `doc.can`으로 현재 state에서 가능한 작업인지 확인합니다.
+버튼을 만들 때는 `doc.can`으로 현재 state에서 가능한 작업인지 확인합니다. 실패 이유가 필요하면 같은 호출을 `doc.check`로 실행합니다.
 
 ```tsx
 <button disabled={!doc.can.paste(payload, "/items/-")}>
   paste
 </button>
+```
+
+selection cursor와 scope도 mutation 없이 확인할 수 있습니다.
+
+```ts
+doc.can.moveCursor("next", { points: visiblePoints });
+doc.check.selectScope({ points: visiblePoints });
 ```
 
 ## 여러 작업을 한 번에 적용하기
@@ -77,6 +84,7 @@ selection은 사용자가 선택한 JSON 위치들입니다.
 ```ts
 doc.selection?.setBaseAndExtent("/items/0", "/items/1");
 doc.selection?.toggleRange("/items/2");
+doc.selection?.selectScope({ points: visiblePoints });
 doc.selection?.empty();
 ```
 

@@ -71,6 +71,14 @@ describe("headless command/check/can factories", () => {
       pointer: "/items/0",
     });
     expect(selection.selectionRanges).toEqual([{ anchor: "/items/1", focus: "/items/0" }]);
+
+    expect(check.moveCursor("next", { points: ["/items/1", "/items/0"] })).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+    });
+    expect(can.moveCursor("next", { points: ["/items/1", "/items/0"] })).toBe(false);
+    expect(check.selectScope({ points: ["/items/1"] })).toEqual({ ok: true });
+    expect(can.selectScope({ points: ["/items/1"] })).toBe(true);
   });
 
   test("createCommands can be used without a selection ref when callers pass explicit pointers", () => {
