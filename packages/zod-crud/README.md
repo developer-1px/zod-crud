@@ -168,9 +168,10 @@ selection target when the target is omitted; a mode-only call such as
 `commands.paste(payload, "after")` uses that same target.
 String caret offsets are clamped to the current string length when state is
 available, including after document edits that keep the same Pointer alive.
-Selection getters and `doc.selection.snapshot()` return value snapshots, so
-callers can store or mutate returned `JSONPoint` objects without corrupting the
-live headless selection state.
+Selection getters, `doc.selection.snapshot()`, and `doc.selection.toJSON()`
+return value snapshots, so callers can store or mutate returned `JSONPoint`
+objects without corrupting the live headless selection state.
+`JSON.stringify(doc.selection)` emits that same snapshot.
 `doc.commands.select(action)` defaults to the document's configured selection
 mode, so headless and React facades preserve the same multi-select behavior.
 

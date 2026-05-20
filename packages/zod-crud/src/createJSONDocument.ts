@@ -100,6 +100,7 @@ export interface SelectionState<T> extends SelectionSnap {
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
+  toJSON(): SelectionSnap;
 }
 
 export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
@@ -224,6 +225,7 @@ export function createJSONDocument<S extends z.ZodType>(
     isSelected(pointer) { return isSelected(selectionSnap, pointer); },
     containsNode(pointer) { return isSelected(selectionSnap, pointer); },
     snapshot() { return snapSelection(); },
+    toJSON() { return snapSelection(); },
   };
 
   const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {

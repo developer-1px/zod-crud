@@ -128,5 +128,13 @@ function selectionStub(): SelectionState<{ name: string }> {
       anchor: null,
       focus: null,
     }),
+    toJSON: () => ({
+      ranges: [],
+      selectedPointers: [],
+      selectionRanges: [],
+      primaryIndex: -1,
+      anchor: null,
+      focus: null,
+    }),
   };
 }

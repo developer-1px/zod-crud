@@ -439,6 +439,17 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
   });
 
+  test("selection serializes to its snapshot", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    doc.selection?.collapse({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    expect(doc.selection?.toJSON()).toEqual(doc.selection?.snapshot());
+    expect(JSON.parse(JSON.stringify(doc.selection))).toEqual(doc.selection?.snapshot());
+  });
+
   test("selection primaryPointer can drive headless clipboard commands", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single", initial: ["/items/1"] },

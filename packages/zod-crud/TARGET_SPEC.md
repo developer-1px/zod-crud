@@ -290,6 +290,7 @@ interface SelectionState<T> {
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
+  toJSON(): SelectionSnap;
 }
 ```
 
@@ -320,8 +321,10 @@ their target argument is omitted; mode-only calls such as
 `selectedCount` and `hasSelection` are item-selection projection helpers for
 rendering and command guards. `isSelected(pointer)` is the per-item selected
 predicate; `containsNode(pointer)` remains an exact selected-pointer alias.
-Selection getters and `snapshot()` expose value snapshots: returned
-arrays/ranges/JSONPoint objects are safe to store or mutate outside the engine.
+Selection getters, `snapshot()`, and `toJSON()` expose value snapshots:
+returned arrays/ranges/JSONPoint objects are safe to store or mutate outside
+the engine. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap`
+as `doc.selection.snapshot()`.
 
 Rules:
 

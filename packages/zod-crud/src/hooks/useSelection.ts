@@ -83,6 +83,7 @@ export interface SelectionState<T> {
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
+  toJSON(): SelectionSnap;
 }
 
 export function useSelection<T>(
@@ -173,6 +174,7 @@ export function useSelection<T>(
     isSelected: (pointer) => isSelected(snapRef.current, pointer),
     containsNode: (pointer) => isSelected(snapRef.current, pointer),
     snapshot: () => selectionSnapshot(snapRef.current),
+    toJSON: () => selectionSnapshot(snapRef.current),
   }), [dispatch]);
 }
 

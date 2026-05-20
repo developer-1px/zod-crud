@@ -167,6 +167,19 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
   });
 
+  test("selection serializes to its snapshot through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    }));
+
+    act(() => {
+      hook.current.selection?.collapse({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    });
+
+    expect(hook.current.selection?.toJSON()).toEqual(hook.current.selection?.snapshot());
+    expect(JSON.parse(JSON.stringify(hook.current.selection))).toEqual(hook.current.selection?.snapshot());
+  });
+
   test("selectRanges dedupes repeated ranges through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },
