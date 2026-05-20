@@ -1,8 +1,8 @@
-// commands/buildCommands — useJSONDocument.commands group (TipTap 식 디팩토).
+// commands/buildCommands — JSONDocument.commands group (TipTap 식 디팩토).
 // 편집 어휘 10 verbs 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
 //
 // commands 는 mutation 시 ops.patch (history commit + listener notify) 를 거친다.
-// undo/redo 는 ops.undo/redo (history stack 관리는 useJSONDocument 가 wiring).
+// undo/redo 는 ops.undo/redo (history stack 관리는 createJSONDocument 가 wiring).
 
 import type * as z from "zod";
 import type { JSONDocumentOps } from "../jsonOps.js";

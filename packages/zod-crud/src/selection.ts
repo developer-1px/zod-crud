@@ -9,14 +9,17 @@ import {
   applySelectionAutoRules,
   caretPoint,
   caretPointer,
+  extendSelectionCursor,
   focusPointer,
   hasSelection,
   isCollapsed,
   isSelected,
+  moveSelectionCursor,
   primaryPointer,
   primaryRange,
   rangeCount,
   reduceSelection,
+  resolveSelectionCursor,
   restoreSelection,
   selectedCount,
   selectedSource,
@@ -24,6 +27,11 @@ import {
   selectionType,
   type JSONPoint,
   type SelectionAction,
+  type SelectionCursorDirection,
+  type SelectionCursorErrorCode,
+  type SelectionCursorOptions,
+  type SelectionCursorResult,
+  type SelectionCursorTarget,
   type SelectionMode,
   type SelectionRange,
   type SelectionRangeInput,
@@ -35,6 +43,11 @@ import {
 export type {
   JSONPoint,
   SelectionAction,
+  SelectionCursorDirection,
+  SelectionCursorErrorCode,
+  SelectionCursorOptions,
+  SelectionCursorResult,
+  SelectionCursorTarget,
   SelectionMode,
   SelectionRange,
   SelectionRangeInput,
@@ -76,6 +89,9 @@ export interface SelectionState<T> extends SelectionSnap {
   addRange(pointOrRange: JSONPoint | SelectionRange): void;
   removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   selectRanges(
     ranges: ReadonlyArray<SelectionRangeInput>,
     anchor?: JSONPoint | null,
@@ -161,6 +177,22 @@ export function createSelection<T>(
       dispatch(isSelectionRange(pointOrRange)
         ? { type: "toggleRange", range: pointOrRange }
         : { type: "toggleRange", point: pointOrRange });
+    },
+    moveCursor(direction, cursorOptions) {
+      const result = moveSelectionCursor(snap, direction, mode, ops.state, cursorOptions);
+      if (result.ok) setSnap(result.selection);
+      return result;
+    },
+    extendCursor(direction, cursorOptions) {
+      const result = extendSelectionCursor(snap, direction, mode, ops.state, cursorOptions);
+      if (result.ok) setSnap(result.selection);
+      return result;
+    },
+    resolveCursor(direction, cursorOptions) {
+      const result = resolveSelectionCursor(snap, direction, ops.state, cursorOptions);
+      return result.ok
+        ? { ...result, selection: selectionSnapshot(snap) }
+        : { ...result, selection: selectionSnapshot(snap) };
     },
     selectRanges(ranges, anchor, focus, primaryIndex) {
       dispatch({

@@ -1,4 +1,4 @@
-// commands/buildCan — useJSONDocument.can group (TipTap 식 디팩토).
+// commands/buildCan — JSONDocument.can group (TipTap 식 디팩토).
 // 각 mutation 가 현재 state 에서 성공할지 boolean 으로 반환.
 // preFlight gate 까지 거쳐 정확한 답 산출 (UI 가드 용도).
 //

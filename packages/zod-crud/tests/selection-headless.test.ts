@@ -1,7 +1,14 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument, createSelection } from "../src/index.js";
+import {
+  EMPTY_SELECTION,
+  createJSONDocument,
+  createSelection,
+  extendSelectionCursor,
+  moveSelectionCursor,
+  resolveSelectionCursor,
+} from "../src/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -16,6 +23,87 @@ const initial: z.output<typeof Schema> = {
 };
 
 describe("createSelection", () => {
+  test("moves and extends a headless cursor through JSON source order", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, { mode: "extended" });
+    const changes: unknown[] = [];
+    selection.subscribe((snapshot, previous) => {
+      changes.push({ snapshot, previous });
+    });
+
+    expect(selection.moveCursor("first", { scope: "/items", includeScope: false })).toMatchObject({
+      ok: true,
+      pointer: "/items/0",
+      previousPointer: null,
+    });
+    expect(selection.caretPointer).toBe("/items/0");
+
+    expect(selection.moveCursor("next", { scope: "/items", includeScope: false })).toMatchObject({
+      ok: true,
+      pointer: "/items/0/id",
+      previousPointer: "/items/0",
+    });
+    expect(selection.caretPointer).toBe("/items/0/id");
+
+    expect(selection.extendCursor("next", { scope: "/items", includeScope: false })).toMatchObject({
+      ok: true,
+      pointer: "/items/0/name",
+      previousPointer: "/items/0/id",
+    });
+    expect(selection.selectionRanges).toEqual([{ anchor: "/items/0/id", focus: "/items/0/name" }]);
+    expect(selection.selectedPointers).toEqual(["/items/0/id", "/items/0/name"]);
+
+    expect(selection.resolveCursor("last", { scope: "/items", includeScope: false })).toMatchObject({
+      ok: true,
+      pointer: "/items/2/name",
+      previousPointer: "/items/0/name",
+    });
+    expect(selection.focusPointer).toBe("/items/0/name");
+
+    expect(changes).toHaveLength(3);
+  });
+
+  test("cursor helpers are pure and report scope/boundary failures", () => {
+    const first = moveSelectionCursor(
+      EMPTY_SELECTION,
+      "first",
+      "single",
+      initial,
+      { scope: "/items", includeScope: false },
+    );
+    expect(first).toMatchObject({ ok: true, pointer: "/items/0" });
+    if (!first.ok) throw new Error(first.reason);
+
+    const next = moveSelectionCursor(first.selection, "next", "single", initial, { scope: "/items" });
+    expect(next).toMatchObject({ ok: true, pointer: "/items/0/id" });
+    if (!next.ok) throw new Error(next.reason);
+
+    const extended = extendSelectionCursor(next.selection, "last", "extended", initial, { scope: "/items" });
+    expect(extended).toMatchObject({ ok: true, pointer: "/items/2/name" });
+    if (!extended.ok) throw new Error(extended.reason);
+    expect(extended.selection.selectionRanges).toEqual([{ anchor: "/items/0/id", focus: "/items/2/name" }]);
+
+    const boundary = moveSelectionCursor(extended.selection, "next", "single", initial, { scope: "/items" });
+    expect(boundary).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+      pointer: "/items/2/name",
+    });
+    if (boundary.ok) throw new Error("expected boundary");
+    expect(boundary.selection).toEqual(extended.selection);
+
+    expect(resolveSelectionCursor(EMPTY_SELECTION, "first", initial, { scope: "items" })).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      pointer: "items",
+    });
+    expect(resolveSelectionCursor(EMPTY_SELECTION, "first", initial, { scope: "/missing" })).toMatchObject({
+      ok: false,
+      code: "path_not_found",
+      pointer: "/missing",
+    });
+  });
+
   test("provides headless multi-selection and caret tracking over JSON ops", () => {
     const doc = createJSONDocument(Schema, initial);
     const selection = createSelection(doc.ops, {

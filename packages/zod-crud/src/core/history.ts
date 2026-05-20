@@ -1,5 +1,5 @@
 // core/history — pure undo/redo stack reducer (P2.1).
-// React 무관. useJSONDocument 가 이걸 wrapping 한다 (P2.2).
+// React 무관. createJSONDocument 가 이걸 wrapping 하고 useJSONDocument 는 그 facade 다.
 //
 // HistoryStack<E> 는 (undo, redo) 두 스택의 짝. E 는 entry 타입 (forward + inverse +
 // 추가 메타데이터). selection snapshot 같은 ancillary 데이터는 entry 안에 사용자가

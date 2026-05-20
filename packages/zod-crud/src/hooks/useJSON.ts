@@ -1,4 +1,4 @@
-// SPEC.md §5.1 — useJSONDocument 내부 substrate.
+// SPEC.md §5.1 — low-level React facade.
 // React facade over the headless createJSON state owner.
 // undo/redo 는 JSONOps 의 책임이 아님 — doc.commands.undo / doc.can.undo / doc.history 가 정본 위치.
 

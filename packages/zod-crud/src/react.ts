@@ -125,6 +125,35 @@ export {
   mergeLast as historyMergeLast,
 } from "./core/history.js";
 export type { HistoryStack } from "./core/history.js";
+export {
+  EMPTY_SELECTION,
+  anchorPointer,
+  caretPoint,
+  caretPointer,
+  extendSelectionCursor,
+  focusPointer,
+  hasSelection,
+  isCollapsed,
+  isSelected,
+  moveSelectionCursor,
+  pointPointer,
+  primaryPointer,
+  primaryRange,
+  rangeCount,
+  restoreSelection,
+  resolveSelectionCursor,
+  selectedCount,
+  selectedSource,
+  selectionSnapshot,
+  selectionType,
+} from "./core/selection/index.js";
+export type {
+  SelectionAction,
+  SelectionAffinity,
+  SelectionEdge,
+  SelectionSnap,
+} from "./core/selection/index.js";
+export { trackPointer } from "./core/track.js";
 export type {
   JSONPatchOperation,
   JSONResult,
@@ -136,6 +165,11 @@ export type {
   CreateSelectionOptions,
   HeadlessSelectionState,
   SelectionChangeListener,
+  SelectionCursorDirection,
+  SelectionCursorErrorCode,
+  SelectionCursorOptions,
+  SelectionCursorResult,
+  SelectionCursorTarget,
   SelectionMode,
   JSONPoint,
   SelectionRange,

@@ -9,7 +9,7 @@
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
 import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../track.js";
-import { readAt, tryParsePointer, type Pointer } from "../pointer/index.js";
+import { appendSegment, readAt, tryParsePointer, type Pointer } from "../pointer/index.js";
 import type { JSONPatchOperation } from "../patch/index.js";
 import { expandRange } from "./range.js";
 
@@ -17,6 +17,12 @@ export type SelectionMode = "single" | "multiple" | "extended";
 export type SelectionType = "None" | "Caret" | "Range";
 export type SelectionEdge = "before" | "after";
 export type SelectionAffinity = "forward" | "backward";
+export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
+export type SelectionCursorErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "empty_scope"
+  | "cursor_boundary";
 
 export interface JSONPointObject {
   path: Pointer;
@@ -34,6 +40,37 @@ export interface SelectionRange {
 
 export type SelectionRangeInput = JSONPoint | SelectionRange;
 export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
+
+export interface SelectionCursorOptions {
+  /** Pointer subtree used as the traversal root. Defaults to the document root. */
+  scope?: Pointer;
+  /** Include the scope pointer itself in traversal. Defaults to true. */
+  includeScope?: boolean;
+  /** Wrap next/previous at scope edges. Defaults to false. */
+  wrap?: boolean;
+}
+
+export type SelectionCursorResult =
+  | {
+      ok: true;
+      direction: SelectionCursorDirection;
+      pointer: Pointer;
+      point: JSONPoint;
+      previousPointer: Pointer | null;
+      selection: SelectionSnap;
+    }
+  | {
+      ok: false;
+      direction: SelectionCursorDirection;
+      code: SelectionCursorErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      selection: SelectionSnap;
+    };
+
+export type SelectionCursorTarget =
+  | Omit<Extract<SelectionCursorResult, { ok: true }>, "selection">
+  | Omit<Extract<SelectionCursorResult, { ok: false }>, "selection">;
 
 export interface SelectionSnap {
   /**
@@ -214,6 +251,96 @@ export function reduceSelection(
   }
 }
 
+export function moveSelectionCursor(
+  prev: SelectionSnap,
+  direction: SelectionCursorDirection,
+  mode: SelectionMode,
+  state: unknown,
+  options: SelectionCursorOptions = {},
+): SelectionCursorResult {
+  const target = resolveSelectionCursor(prev, direction, state, options);
+  if (!target.ok) return { ...target, selection: selectionSnapshot(prev) };
+  const selection = reduceSelection(prev, { type: "collapse", point: target.point }, mode, state);
+  return {
+    ok: true,
+    direction,
+    pointer: target.pointer,
+    point: target.point,
+    previousPointer: target.previousPointer,
+    selection,
+  };
+}
+
+export function extendSelectionCursor(
+  prev: SelectionSnap,
+  direction: SelectionCursorDirection,
+  mode: SelectionMode,
+  state: unknown,
+  options: SelectionCursorOptions = {},
+): SelectionCursorResult {
+  const target = resolveSelectionCursor(prev, direction, state, options);
+  if (!target.ok) return { ...target, selection: selectionSnapshot(prev) };
+  const selection = reduceSelection(prev, { type: "extend", point: target.point }, mode, state);
+  return {
+    ok: true,
+    direction,
+    pointer: target.pointer,
+    point: target.point,
+    previousPointer: target.previousPointer,
+    selection,
+  };
+}
+
+export function resolveSelectionCursor(
+  current: SelectionSnap,
+  direction: SelectionCursorDirection,
+  state: unknown,
+  options: SelectionCursorOptions = {},
+): SelectionCursorTarget {
+  const scope = options.scope ?? "";
+  const scoped = scopedPointers(state, scope, options.includeScope ?? true);
+  if (!scoped.ok) {
+    return {
+      ok: false,
+      direction,
+      code: scoped.code,
+      reason: scoped.reason,
+      pointer: scope,
+    };
+  }
+  if (scoped.pointers.length === 0) {
+    return {
+      ok: false,
+      direction,
+      code: "empty_scope",
+      reason: `cursor scope is empty: ${scope}`,
+      pointer: scope,
+    };
+  }
+
+  const previousPointer = primaryPointer(current);
+  const previousIndex = previousPointer === null ? -1 : scoped.pointers.indexOf(previousPointer);
+  const targetIndex = cursorTargetIndex(direction, previousIndex, scoped.pointers.length, options.wrap === true);
+  if (targetIndex === null) {
+    return {
+      ok: false,
+      direction,
+      code: "cursor_boundary",
+      reason: `cursor is at ${direction === "next" ? "last" : "first"} pointer in scope: ${scope}`,
+      pointer: previousPointer,
+    };
+  }
+
+  const pointer = scoped.pointers[targetIndex]!;
+  return {
+    ok: true,
+    direction,
+    pointer,
+    point: pointer,
+    previousPointer,
+  };
+}
+
 export function applySelectionAutoRules(
   prev: SelectionSnap,
   applied: ReadonlyArray<JSONPatchOperation>,
@@ -381,6 +508,59 @@ function clonePoint(point: JSONPoint): JSONPoint {
   return typeof point === "string" ? point : { ...point };
 }
 
+function scopedPointers(
+  state: unknown,
+  scope: Pointer,
+  includeScope: boolean,
+): { ok: true; pointers: Pointer[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string } {
+  const segments = tryParsePointer(scope);
+  if (segments === null) {
+    return { ok: false, code: "invalid_pointer", reason: `invalid cursor scope pointer: ${scope}` };
+  }
+  const value = readAt(state, segments);
+  if (!value.ok) {
+    return { ok: false, code: "path_not_found", reason: `cursor scope not found: ${scope}` };
+  }
+  const pointers = collectPointers(value.value, scope);
+  return { ok: true, pointers: includeScope ? pointers : pointers.slice(1) };
+}
+
+function collectPointers(value: unknown, base: Pointer): Pointer[] {
+  const pointers: Pointer[] = [base];
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i += 1) {
+      pointers.push(...collectPointers(value[i], appendSegment(base, i)));
+    }
+  } else if (isObjectRecord(value)) {
+    for (const key of Object.keys(value)) {
+      pointers.push(...collectPointers(value[key], appendSegment(base, key)));
+    }
+  }
+  return pointers;
+}
+
+function cursorTargetIndex(
+  direction: SelectionCursorDirection,
+  previousIndex: number,
+  length: number,
+  wrap: boolean,
+): number | null {
+  switch (direction) {
+    case "first":
+      return 0;
+    case "last":
+      return length - 1;
+    case "next":
+      if (previousIndex < 0) return 0;
+      if (previousIndex < length - 1) return previousIndex + 1;
+      return wrap ? 0 : null;
+    case "previous":
+      if (previousIndex < 0) return length - 1;
+      if (previousIndex > 0) return previousIndex - 1;
+      return wrap ? length - 1 : null;
+  }
+}
+
 function collectSelectedPointers(ranges: ReadonlyArray<SelectionRange>, state?: unknown): Pointer[] {
   const out: Pointer[] = [];
   for (const range of ranges) {
@@ -406,6 +586,10 @@ function selectionInputMatches(candidate: SelectionRange, input: JSONPoint | Sel
 
 function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
   return typeof input === "object" && "anchor" in input && "focus" in input;
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 function sameRange(left: SelectionRange, right: SelectionRange): boolean {

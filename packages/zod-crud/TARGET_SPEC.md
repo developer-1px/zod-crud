@@ -260,6 +260,37 @@ interface SelectionRange {
 }
 
 type SelectionSource = Pointer | ReadonlyArray<Pointer>;
+type SelectionCursorDirection = "first" | "previous" | "next" | "last";
+
+interface SelectionCursorOptions {
+  scope?: Pointer;
+  includeScope?: boolean;
+  wrap?: boolean;
+}
+
+type SelectionCursorErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "empty_scope"
+  | "cursor_boundary";
+
+type SelectionCursorResult =
+  | {
+      ok: true;
+      direction: SelectionCursorDirection;
+      pointer: Pointer;
+      point: JSONPoint;
+      previousPointer: Pointer | null;
+      selection: SelectionSnap;
+    }
+  | {
+      ok: false;
+      direction: SelectionCursorDirection;
+      code: SelectionCursorErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      selection: SelectionSnap;
+    };
 
 interface SelectionState<T> {
   readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
@@ -287,6 +318,9 @@ interface SelectionState<T> {
   addRange(pointOrRange: JSONPoint | SelectionRange): void;
   removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   selectRanges(
     ranges: ReadonlyArray<JSONPoint | SelectionRange>,
     anchor?: JSONPoint | null,
@@ -311,6 +345,10 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `{ anchor, focus }` ranges, so apps can seed disjoint multi-range selection and
 offset/edge carets without React.
+`moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
+are pure headless helpers over a `SelectionSnap` plus current JSON state.
+They use JSON source-order DFS within `scope`; app-specific visible order stays
+user code layered above the engine.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.
@@ -352,11 +390,16 @@ Rules:
   not mutate live selection state.
 - RFC 6902 mutation drives automatic path tracking. Offset/edge/affinity are
   preserved when the underlying `path` tracks to a new Pointer.
+- Cursor movement is source-order and state-based. It reports
+  `cursor_boundary` instead of mutating when next/previous would leave scope
+  and `wrap` is false.
 
 Acceptance evidence:
 
 - `tests/verbs.test.ts` covers Pointer selection, JSONPoint caret, and multiple
   independent ranges.
+- `tests/selection-headless.test.ts` covers pure cursor helpers and
+  `createSelection` cursor movement/extension.
 - `tests/create-json-document.test.ts` covers `commands.select` mutation and
   JSONPoint path tracking through document patches.
 

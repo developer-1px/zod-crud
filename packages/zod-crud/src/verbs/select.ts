@@ -3,8 +3,16 @@
 
 import {
   reduceSelection as coreReduce,
+  extendSelectionCursor,
+  moveSelectionCursor,
+  resolveSelectionCursor,
   type SelectionAction,
   type JSONPoint,
+  type SelectionCursorDirection,
+  type SelectionCursorErrorCode,
+  type SelectionCursorOptions,
+  type SelectionCursorResult,
+  type SelectionCursorTarget,
   type SelectionMode,
   type SelectionRange,
   type SelectionRangeInput,
@@ -23,4 +31,18 @@ export function select(
 }
 
 export { EMPTY_SELECTION };
-export type { JSONPoint, SelectionAction, SelectionMode, SelectionRange, SelectionRangeInput, SelectionSnap, Pointer };
+export { extendSelectionCursor, moveSelectionCursor, resolveSelectionCursor };
+export type {
+  JSONPoint,
+  SelectionAction,
+  SelectionCursorDirection,
+  SelectionCursorErrorCode,
+  SelectionCursorOptions,
+  SelectionCursorResult,
+  SelectionCursorTarget,
+  SelectionMode,
+  SelectionRange,
+  SelectionRangeInput,
+  SelectionSnap,
+  Pointer,
+};
