@@ -86,12 +86,15 @@ function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer
       return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${item}` };
     }
 
+    const duplicate = parsedSources.some((existing) => sameSegments(existing, segments));
+    if (duplicate) continue;
+
     const covered = parsedSources.some((existing) => existing.length < segments.length && isPrefix(existing, segments));
     if (covered) continue;
 
     for (let i = parsedSources.length - 1; i >= 0; i -= 1) {
       const existing = parsedSources[i]!;
-      if (segments.length <= existing.length && isPrefix(segments, existing)) {
+      if (segments.length < existing.length && isPrefix(segments, existing)) {
         parsedSources.splice(i, 1);
         sources.splice(i, 1);
       }
@@ -104,6 +107,10 @@ function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer
     return { ok: false, code: "empty_selection", message: "copy source selection is empty" };
   }
   return { ok: true, sources };
+}
+
+function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
+  return left.length === right.length && isPrefix(left, right);
 }
 
 export function toClipboardItems(payload: unknown, schema: z.ZodType, options: ClipboardItemOptions = {}): ClipboardItemMap {

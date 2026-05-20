@@ -57,6 +57,18 @@ describe("verbs/copy", () => {
     expect(r.sources).toEqual(["/items/0"]);
   });
 
+  test("duplicate sources are ignored without changing first-source order", () => {
+    const r = copy(initial, ["/items/0", "/items/1", "/items/0"]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toEqual([
+      { id: "a", name: "A" },
+      { id: "b", name: "B" },
+    ]);
+    expect(r.source).toBe("/items/0");
+    expect(r.sources).toEqual(["/items/0", "/items/1"]);
+  });
+
   test("empty selectedPointers 배열은 structured error", () => {
     const r = copy(initial, []);
     expect(r.ok).toBe(false);
@@ -157,6 +169,24 @@ describe("verbs/cut", () => {
     expect(r.sources).toEqual(["/items/0"]);
     expect(r.patch).toEqual([{ op: "remove", path: "/items/0" }]);
     expect(r.next.items).toEqual([{ id: "b", name: "B" }]);
+  });
+
+  test("duplicate cut sources are ignored without changing payload order", () => {
+    const r = cut(Schema, initial, ["/items/0", "/items/1", "/items/0"]);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toEqual([
+      { id: "a", name: "A" },
+      { id: "b", name: "B" },
+    ]);
+    expect(r.source).toBe("/items/0");
+    expect(r.sources).toEqual(["/items/0", "/items/1"]);
+    expect(r.patch).toEqual([
+      { op: "remove", path: "/items/1" },
+      { op: "remove", path: "/items/0" },
+    ]);
+    expect(r.next.items).toEqual([]);
   });
 
   test("multi cut schema 위반 시 payload/patch commit 후보를 거부한다", () => {
