@@ -94,6 +94,8 @@ describe("doc.check — explainable dry-run guard", () => {
 
     expect(doc.check.copy()).toMatchObject({ ok: false, code: "empty_selection" });
     expect(doc.can.copy()).toBe(false);
+    expect(doc.check.cut()).toMatchObject({ ok: false, code: "empty_selection" });
+    expect(doc.can.cut()).toBe(false);
   });
 
   test("duplicate checks default to current primary selection without mutation", () => {

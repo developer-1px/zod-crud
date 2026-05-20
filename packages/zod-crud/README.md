@@ -152,7 +152,8 @@ null/single/multi source projection accepted by `copy` / `cut`.
 headless from initialization. Facade-level
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
-`can.cut()` default to the current selection when the source is omitted.
+`can.cut()` default to the current selection when the source is omitted and
+return `empty_selection` when that selection is empty.
 Facade-level `commands.move(to)`, `check.move(to)`, and `can.move(to)` default
 to the primary selection source when the source is omitted; the target remains
 an explicit Pointer.

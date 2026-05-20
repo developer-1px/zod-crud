@@ -82,8 +82,8 @@ export function buildCommands<S extends z.ZodType>(
     if (r.ok && r.patch) ops.patch(r.patch);
     return r;
   };
-  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource =>
-    source ?? selectedSource(selectionRef.current) ?? [];
+  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
+    source ?? selectedSource(selectionRef.current);
   const targetOrSelection = (target?: Pointer): Pointer | null =>
     target ?? primaryPointer(selectionRef.current);
   const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
@@ -123,10 +123,16 @@ export function buildCommands<S extends z.ZodType>(
     },
 
     cut(source) {
-      return run(cut(schema, ops.state, sourceOrSelection(source)));
+      const resolved = sourceOrSelection(source);
+      return resolved === null
+        ? emptyCutSource()
+        : run(cut(schema, ops.state, resolved));
     },
     copy(source) {
-      return copy(ops.state, sourceOrSelection(source));
+      const resolved = sourceOrSelection(source);
+      return resolved === null
+        ? emptyCopySource()
+        : copy(ops.state, resolved);
     },
     paste(payload, targetOrMode, modeOrOptions, maybeOptions) {
       const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
@@ -154,6 +160,22 @@ function emptyMoveSource(): MoveError {
     ok: false,
     code: "empty_selection",
     message: "move source selection is empty",
+  };
+}
+
+function emptyCutSource(): CutError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "cut source selection is empty",
+  };
+}
+
+function emptyCopySource(): CopyError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "copy source selection is empty",
   };
 }
 

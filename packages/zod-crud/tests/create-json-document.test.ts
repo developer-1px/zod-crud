@@ -566,6 +566,26 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value.items).toEqual([]);
   });
 
+  test("commands copy and cut report empty selection when source is omitted", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single" },
+    });
+
+    expect(doc.commands.copy()).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "copy source selection is empty",
+    });
+    expect(doc.commands.cut()).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "cut source selection is empty",
+    });
+    expect(doc.value).toEqual(initial);
+    expect(doc.history.undoDepth).toBe(0);
+  });
+
   test("doc.clipboard copy and cut default to the current selection source", () => {
     const copyDoc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
@@ -597,6 +617,31 @@ describe("createJSONDocument — headless facade", () => {
       source: "/items/0",
       sources: ["/items/0"],
     });
+  });
+
+  test("doc.clipboard copy and cut report empty selection when source is omitted", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single" },
+    });
+
+    expect(doc.clipboard.copy()).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "copy source selection is empty",
+    });
+    expect(doc.clipboard.cut()).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "cut source selection is empty",
+    });
+    expect(doc.clipboard.read()).toEqual({
+      ok: false,
+      code: "empty_clipboard",
+      message: "clipboard is empty",
+    });
+    expect(doc.value).toEqual(initial);
+    expect(doc.history.undoDepth).toBe(0);
   });
 
   test("commands duplicate defaults to the current primary selection source", () => {

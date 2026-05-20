@@ -104,8 +104,8 @@ export function createClipboardState<S extends z.ZodType>(
   });
   const bufferSchema = (source: Pointer | null): z.ZodType =>
     source === null ? schema : (schemaAtPointer(schema, source) ?? schema);
-  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource =>
-    source ?? getSelectionSource?.() ?? [];
+  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
+    source ?? getSelectionSource?.() ?? null;
   const targetOrSelection = (target?: Pointer): Pointer | null =>
     target ?? getSelectionTarget?.() ?? null;
   const writeSources = (options: ClipboardWriteOptions): ClipboardWriteSourcesResult => {
@@ -166,7 +166,9 @@ export function createClipboardState<S extends z.ZodType>(
     },
 
     copy(source) {
-      const result = copy(getState(), sourceOrSelection(source));
+      const resolved = sourceOrSelection(source);
+      if (resolved === null) return emptyCopySource();
+      const result = copy(getState(), resolved);
       if (result.ok) {
         setBuffer({
           payload: result.payload,
@@ -179,7 +181,9 @@ export function createClipboardState<S extends z.ZodType>(
     },
 
     cut(source) {
-      const result = cut(schema, getState(), sourceOrSelection(source));
+      const resolved = sourceOrSelection(source);
+      if (resolved === null) return emptyCutSource();
+      const result = cut(schema, getState(), resolved);
       if (!result.ok) return result;
       const patchResult = ops.patch(result.patch);
       if (!patchResult.ok) {
@@ -223,5 +227,21 @@ export function createClipboardState<S extends z.ZodType>(
     toItems(options) {
       return buffer ? toClipboardItems(buffer.payload, buffer.schema, options) : {};
     },
+  };
+}
+
+function emptyCopySource(): CopyError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "copy source selection is empty",
+  };
+}
+
+function emptyCutSource(): CutError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "cut source selection is empty",
   };
 }
