@@ -66,12 +66,26 @@ export function selectionType(s: SelectionSnap): SelectionType {
   return isCollapsed(s) ? "Caret" : "Range";
 }
 
+export function pointPointer(point: JSONPoint): Pointer {
+  return pointPath(point);
+}
+
 export function primaryRange(s: SelectionSnap): SelectionRange | null {
   return s.selectionRanges[s.primaryIndex] ?? null;
 }
 
 export function caretPoint(s: SelectionSnap): JSONPoint | null {
   return isCollapsed(s) ? s.focus : null;
+}
+
+export function primaryPointer(s: SelectionSnap): Pointer | null {
+  const range = primaryRange(s);
+  return range ? pointPath(range.focus) : null;
+}
+
+export function caretPointer(s: SelectionSnap): Pointer | null {
+  const caret = caretPoint(s);
+  return caret ? pointPath(caret) : null;
 }
 
 export type SelectionAction =

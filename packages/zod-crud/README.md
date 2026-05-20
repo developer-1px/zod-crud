@@ -141,7 +141,8 @@ carets use the same core model. `doc.selection.selectionRanges` is the source
 of truth for caret/range shape; `doc.selection.selectedPointers` is the
 item-selection projection for list/tree/grid UIs.
 `doc.selection.primaryRange` exposes the active range and `doc.selection.caret`
-exposes the collapsed cursor point.
+exposes the collapsed cursor point. `primaryPointer` and `caretPointer` are the
+Pointer projections to pass into Pointer-based commands.
 `doc.commands.select(action)` defaults to the document's configured selection
 mode, so headless and React facades preserve the same multi-select behavior.
 
@@ -266,7 +267,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
 | `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionSnap`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `caretPoint`, `isCollapsed`, `primaryRange`, `selectionType`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `caretPoint`, `caretPointer`, `isCollapsed`, `pointPointer`, `primaryPointer`, `primaryRange`, `selectionType`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

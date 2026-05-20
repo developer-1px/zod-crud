@@ -16,9 +16,11 @@ import {
 import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
 import {
   applySelectionAutoRules,
+  caretPointer,
   caretPoint,
   EMPTY_SELECTION,
   isCollapsed,
+  primaryPointer,
   primaryRange,
   reduceSelection,
   selectionType,
@@ -63,7 +65,9 @@ export interface SelectionState<T> extends SelectionSnap {
   readonly isCollapsed: boolean;
   readonly type: SelectionType;
   readonly primaryRange: SelectionRange | null;
+  readonly primaryPointer: Pointer | null;
   readonly caret: JSONPoint | null;
+  readonly caretPointer: Pointer | null;
   collapse(point: JSONPoint): void;
   setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
   extend(point: JSONPoint): void;
@@ -163,7 +167,9 @@ export function createJSONDocument<S extends z.ZodType>(
     get selectionRanges() { return selectionSnap.selectionRanges; },
     get primaryIndex() { return selectionSnap.primaryIndex; },
     get primaryRange() { return primaryRange(selectionSnap); },
+    get primaryPointer() { return primaryPointer(selectionSnap); },
     get caret() { return caretPoint(selectionSnap); },
+    get caretPointer() { return caretPointer(selectionSnap); },
     get anchor() { return selectionSnap.anchor; },
     get focus() { return selectionSnap.focus; },
     get isCollapsed() { return isCollapsed(selectionSnap); },

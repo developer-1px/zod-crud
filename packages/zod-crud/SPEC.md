@@ -457,7 +457,9 @@ export interface SelectionState<T> {
   selectionRanges: ReadonlyArray<SelectionRange>;
   primaryIndex: number;
   primaryRange: SelectionRange | null; // selectionRanges[primaryIndex] 편의 getter
+  primaryPointer: Pointer | null;      // primaryRange.focus 의 Pointer
   caret: JSONPoint | null;             // collapsed selection 의 focus. range/none 이면 null
+  caretPointer: Pointer | null;        // caret 의 Pointer
   anchor: JSONPoint | null;     // primary range 시작점
   focus: JSONPoint | null;      // primary range 끝점. DOM Selection API 의 focus 와 동일 의미.
   isCollapsed: boolean;
@@ -480,7 +482,7 @@ export interface SelectionState<T> {
 ```
 
 `anchor` / `focus` 는 W3C Selection API 의 좌표 이름이다. `selectionRanges[primaryIndex]` 가 키보드 입력·paste·format command 의 주 작용 범위다.
-`primaryRange` 는 그 주 작용 범위를 직접 반환하는 편의 getter 다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다.
+`primaryRange` 는 그 주 작용 범위를 직접 반환하는 편의 getter 다. `primaryPointer` 는 그 범위의 focus path 이며 `copy` / `cut` / `replace` 같은 Pointer 기반 명령으로 연결하기 위한 값이다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. `caretPointer` 는 caret 의 path 이다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다.
 
 **자동 규칙 네 가지** — 사용자 wiring 0.
 
