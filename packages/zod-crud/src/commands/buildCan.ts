@@ -12,6 +12,7 @@ import type {
   SelectionCursorDirection,
   SelectionCursorOptions,
   SelectionScopeOptions,
+  SelectionSource,
 } from "../core/selection/index.js";
 import type {
   SelectionTextDeleteOptions,
@@ -20,7 +21,6 @@ import type {
 import type { PasteMode, PasteOptions } from "../verbs/paste.js";
 import type { DuplicateOpts } from "../verbs/duplicate.js";
 import type { ClipboardSource } from "../verbs/copy.js";
-import type { RemoveSource } from "../verbs/remove.js";
 import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 
 export interface Can<T> {
@@ -30,7 +30,7 @@ export interface Can<T> {
   find(jsonpath: string): boolean;
   move(fromOrTo: Pointer, to?: Pointer): boolean;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
-  remove(source?: RemoveSource): boolean;
+  remove(source?: SelectionSource): boolean;
   replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
   replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): boolean;
   deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): boolean;

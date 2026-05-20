@@ -133,12 +133,12 @@ string-leaf text edits with optional `label`, `origin`, and `mergeKey`
 metadata; `doc.check.replaceText` / `doc.can.replaceText` and
 `doc.check.deleteText` / `doc.can.deleteText` dry-run the same plan.
 
-## 11 Verbs
+## 10 Verbs
 
 | Pillar | Verbs |
 | --- | --- |
 | Selection | `select`, `find` |
-| Edit | `move`, `duplicate`, `remove`, `replace` |
+| Edit | `move`, `duplicate`, `replace` |
 | Clipboard | `cut`, `copy`, `paste` |
 | Undo | `undo`, `redo` |
 

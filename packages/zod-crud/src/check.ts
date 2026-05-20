@@ -1,7 +1,9 @@
 import type * as z from "zod";
 
 import type { JSONPatchOperation, ErrorCode } from "./core/patch/index.js";
+import { removeSourcesPatch } from "./core/patch/removeSources.js";
 import type { Pointer } from "./core/pointer/index.js";
+import type { PointerSourceError } from "./core/pointer/sourceSet.js";
 import { preFlight, type PreFlightErrorCode } from "./core/schema/preFlight.js";
 import type { HistoryTransactionOptions, JSONDocumentOps } from "./jsonOps.js";
 import { copy, type ClipboardSource } from "./verbs/copy.js";
@@ -11,7 +13,6 @@ import { find } from "./verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import { replace as replaceVerb } from "./verbs/replace.js";
-import { remove as removeVerb, type RemoveSource } from "./verbs/remove.js";
 import {
   deleteSelectionText,
   replaceSelectionText,
@@ -28,6 +29,7 @@ import {
   type SelectionCursorDirection,
   type SelectionCursorOptions,
   type SelectionScopeOptions,
+  type SelectionSource,
   type SelectionSnap,
 } from "./core/selection/index.js";
 
@@ -69,7 +71,7 @@ export interface Check<T> {
   find(jsonpath: string): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
-  remove(source?: RemoveSource): CheckResult;
+  remove(source?: SelectionSource): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
   deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;
@@ -149,7 +151,11 @@ export function buildCheck<S extends z.ZodType>(
     },
     remove(source) {
       const resolved = sourceOrSelection(source);
-      return resolved === null ? emptySelection("remove source selection is empty") : toCheckResult(removeVerb(schema, ops.state, resolved));
+      if (resolved === null) return emptySelection("remove source selection is empty");
+      const planned = removeSourcesPatch(resolved);
+      return planned.ok
+        ? toCheckResult(preFlight(schema, ops.state, planned.patch))
+        : toCheckResult(pointerSourceCheckError(planned, "remove"));
     },
     replace(pathOrValue, maybeValue) {
       const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
@@ -231,6 +237,12 @@ function emptySelection(reason: string): CheckResult {
     code: "empty_selection",
     reason,
   };
+}
+
+function pointerSourceCheckError(error: PointerSourceError, label: string): CheckableResult {
+  return error.code === "invalid_pointer"
+    ? { ok: false, code: "invalid_pointer", reason: `invalid ${label} source pointer: ${error.pointer}`, pointer: error.pointer }
+    : { ok: false, code: "empty_selection", reason: `${label} source selection is empty` };
 }
 
 function resolveReplaceArgs(

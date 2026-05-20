@@ -1013,7 +1013,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.commands.remove()).toEqual({
       ok: false,
       code: "empty_selection",
-      message: "remove source selection is empty",
+      reason: "remove source selection is empty",
     });
     expect(doc.value).toEqual(initial);
     expect(doc.history.undoDepth).toBe(0);

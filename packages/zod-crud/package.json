@@ -74,10 +74,6 @@
       "types": "./dist/verbs/move.d.ts",
       "import": "./dist/verbs/move.js"
     },
-    "./verbs/remove": {
-      "types": "./dist/verbs/remove.d.ts",
-      "import": "./dist/verbs/remove.js"
-    },
     "./verbs/redo": {
       "types": "./dist/verbs/redo.d.ts",
       "import": "./dist/verbs/redo.js"

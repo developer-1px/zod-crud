@@ -25,6 +25,7 @@ import type {
   SelectionRange,
   SelectionScopeOptions,
   SelectionScopeResult,
+  SelectionSource,
   SelectionSnap,
 } from "../core/selection/index.js";
 import { select as selectVerb } from "../verbs/select.js";
@@ -35,8 +36,9 @@ import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError,
 import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import { replace as replaceVerb, type ReplaceOk, type ReplaceError } from "../verbs/replace.js";
-import { remove as removeVerb, type RemoveError, type RemoveOk, type RemoveSource } from "../verbs/remove.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
+import { removeSourcesPatch } from "../core/patch/removeSources.js";
+import type { PointerSourceError } from "../core/pointer/sourceSet.js";
 import {
   deleteSelectionText,
   replaceSelectionText,
@@ -63,6 +65,16 @@ export type DeleteTextCommandResult =
 export type ReplaceTextCommandOptions = SelectionTextEditOptions & HistoryTransactionOptions;
 export type DeleteTextCommandOptions = SelectionTextDeleteOptions & HistoryTransactionOptions;
 
+export type RemoveCommandResult =
+  | {
+      ok: true;
+      patch: JSONPatchOperation[];
+      source: Pointer;
+      sources: ReadonlyArray<Pointer>;
+    }
+  | Extract<JSONResult, { ok: false }>
+  | { ok: false; code: "empty_selection"; reason: string };
+
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
@@ -72,7 +84,7 @@ export interface Commands<T> {
 
   move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
-  remove(source?: RemoveSource): RemoveOk<T> | RemoveError;
+  remove(source?: SelectionSource): RemoveCommandResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult<T>;
   replaceText(replacement: string, options?: ReplaceTextCommandOptions): ReplaceTextCommandResult;
   deleteText(options?: DeleteTextCommandOptions): DeleteTextCommandResult;
@@ -186,9 +198,11 @@ export function buildCommands<S extends z.ZodType>(
     },
     remove(source) {
       const resolved = sourceOrSelection(source);
-      return resolved === null
-        ? emptyRemoveSource()
-        : run(removeVerb(schema, ops.state, resolved));
+      if (resolved === null) return emptyRemoveSource();
+      const planned = removeSourcesPatch(resolved);
+      if (!planned.ok) return removeSourceError(planned);
+      const patched = ops.patch(planned.patch);
+      return patched.ok ? planned : patched;
     },
     replace(pathOrValue, maybeValue) {
       // 다른 mutating verb 와 동일하게 ops.patch 경유 (history commit + listener notify).
@@ -300,12 +314,18 @@ function emptyReplaceTarget(): ReplaceCommandResult {
   };
 }
 
-function emptyRemoveSource(): RemoveError {
+function emptyRemoveSource(): RemoveCommandResult {
   return {
     ok: false,
     code: "empty_selection",
-    message: "remove source selection is empty",
+    reason: "remove source selection is empty",
   };
+}
+
+function removeSourceError(error: PointerSourceError): RemoveCommandResult {
+  return error.code === "invalid_pointer"
+    ? { ok: false, code: "invalid_pointer", reason: `invalid remove source pointer: ${error.pointer}`, pointer: error.pointer }
+    : emptyRemoveSource();
 }
 
 function emptyDuplicateSource(): DuplicateError {

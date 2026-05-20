@@ -4,7 +4,6 @@ import * as z from "zod";
 
 import { copy, toClipboardItems, toMarkdown, toTsv } from "../src/verbs/copy.js";
 import { cut } from "../src/verbs/cut.js";
-import { remove } from "../src/verbs/remove.js";
 import { paste } from "../src/verbs/paste.js";
 import { duplicate } from "../src/verbs/duplicate.js";
 
@@ -240,57 +239,6 @@ describe("verbs/cut", () => {
       expect(r.code).toBe("invalid_pointer");
       expect(r.message).toContain("items/1");
     }
-  });
-});
-
-describe("verbs/remove", () => {
-  test("structural remove returns only patch and next state", () => {
-    const r = remove(Schema, initial, "/items/0");
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.next.items).toEqual([{ id: "b", name: "B" }]);
-    expect(r.patch).toEqual([{ op: "remove", path: "/items/0" }]);
-    expect(r.source).toBe("/items/0");
-    expect(r.sources).toEqual(["/items/0"]);
-    expect("payload" in r).toBe(false);
-  });
-
-  test("multi-source remove normalizes sources and avoids array index shift", () => {
-    const state = {
-      items: [
-        { id: "a", name: "A" },
-        { id: "b", name: "B" },
-        { id: "c", name: "C" },
-      ],
-      meta: { foo: "bar" },
-    };
-
-    const r = remove(Schema, state, ["/items/0/name", "/items/0", "/items/1"]);
-
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.sources).toEqual(["/items/0", "/items/1"]);
-    expect(r.patch).toEqual([
-      { op: "remove", path: "/items/1" },
-      { op: "remove", path: "/items/0" },
-    ]);
-    expect(r.next.items).toEqual([{ id: "c", name: "C" }]);
-  });
-
-  test("schema violations reject structural remove before commit", () => {
-    const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
-    const r = remove(NonEmpty, { items: ["a", "b"] }, "/items/0");
-
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.code).toBe("schema_violation");
-  });
-
-  test("empty and invalid remove sources return structured errors", () => {
-    expect(remove(Schema, initial, [])).toMatchObject({ ok: false, code: "empty_selection" });
-    expect(remove(Schema, initial, "items/0" as never)).toMatchObject({
-      ok: false,
-      code: "invalid_pointer",
-    });
   });
 });
 

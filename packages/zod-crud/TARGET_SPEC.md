@@ -92,7 +92,6 @@ also includes a headless JSON clipboard buffer.
 
 ```ts
 type ClipboardSource = Pointer | ReadonlyArray<Pointer>;
-type RemoveSource = Pointer | ReadonlyArray<Pointer>;
 
 type ClipboardReadOk = {
   ok: true;
@@ -174,7 +173,7 @@ interface Check<T> {
   find(jsonpath: string): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
-  remove(source?: RemoveSource): CheckResult;
+  remove(source?: SelectionSource): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
   deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;

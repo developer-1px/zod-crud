@@ -1,18 +1,18 @@
 # Why Not — 거부한 기능 빈자리 메우기
 
-자주 요청되지만 4기둥(Selection / Edit / Clipboard / Undo) × 11 verbs closure 안에서 표현 가능하기에 추가하지 않은 verb 와 canonical 대안.
+자주 요청되지만 4기둥(Selection / Edit / Clipboard / Undo) × 10 verbs closure 안에서 표현 가능하기에 추가하지 않은 verb 와 canonical 대안.
 
 ## Why no `upsert` verb?
 
 ### 거부 이유
 
-`set` / `upsert` 는 4기둥 ↔ 11 verbs closure 의 어느 칸에도 귀속되지 않습니다.
+`set` / `upsert` 는 4기둥 ↔ 10 verbs closure 의 어느 칸에도 귀속되지 않습니다.
 
 - Edit 기둥의 `replace` 는 "있는 것 교체" 의미
 - `upsert` 는 "있으면 교체 / 없으면 추가 / undefined 면 제거" — 세 분기의 합성
 - RFC 6902 에도 단일 op 가 없음
 
-12번째 verb 로 승격하려면 정체성 한 줄이 흔들립니다. **`add / remove / replace` 의 분기 합성** 으로 충분히 표현 가능합니다.
+11번째 verb 로 승격하려면 정체성 한 줄이 흔들립니다. **`add / remove / replace` 의 분기 합성** 으로 충분히 표현 가능합니다.
 
 ### Canonical 대안 — dict-record 한 키 쓰기
 

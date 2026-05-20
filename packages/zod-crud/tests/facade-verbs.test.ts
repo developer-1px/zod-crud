@@ -88,6 +88,41 @@ describe("buildCommands — TipTap 식 commands group", () => {
     expect(ops.state.items).toHaveLength(1);
   });
 
+  test("commands.remove(source[]) normalizes sources and avoids array index shift", () => {
+    const ops = makeOps({
+      items: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+        { id: "c", name: "C" },
+      ],
+      meta: { foo: "bar" },
+    });
+    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const r = commands.remove(["/items/0/name", "/items/0", "/items/1"]);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.sources).toEqual(["/items/0", "/items/1"]);
+    expect(r.patch).toEqual([
+      { op: "remove", path: "/items/1" },
+      { op: "remove", path: "/items/0" },
+    ]);
+    expect("payload" in r).toBe(false);
+    expect(ops.state.items).toEqual([{ id: "c", name: "C" }]);
+  });
+
+  test("commands.remove(source) reports invalid pointers before mutation", () => {
+    const ops = makeOps(initial);
+    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+
+    expect(commands.remove("items/0" as never)).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      pointer: "items/0",
+    });
+    expect(ops.state).toEqual(initial);
+  });
+
   test("commands.paste(payload, target, mode)", () => {
     const ops = makeOps(initial);
     const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });

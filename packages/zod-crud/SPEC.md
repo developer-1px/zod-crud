@@ -9,24 +9,24 @@
 ### 0.0 정체성 (정본 한 줄)
 
 zod-crud 의 비전은 **모든 FE 편집은 JSON 편집이다** 이다. zod-crud 는 FE 서비스가 매번 다시 만드는 편집 어휘
-(select / move / remove / cut / copy / paste / duplicate / undo / redo / find / replace) 를 JSON 표준
+(select / move / cut / copy / paste / duplicate / undo / redo / find / replace) 를 JSON 표준
 (RFC 6901 Pointer · 6902 Patch · 9535 JSONPath · W3C Selection · RFC 8927+Zod) 과 매핑하여
 재사용 가능한 표준 레이어로 정립한 headless JSON editing engine 이다.
 
 UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · system clipboard 호출 · 시각적 selection 표시는 본체가 아니다. JSON 데이터 편집만 본체.
 
-### 0.1 4대 기둥 ↔ 11 verbs ↔ RFC 매핑 (closure 검증 표)
+### 0.1 4대 기둥 ↔ 10 verbs ↔ RFC 매핑 (closure 검증 표)
 
-11 verbs 가 4대 기둥 위에 닫힌다 (closure). 새 verb 후보가 등장하면 이 표 어느 칸에 귀속되는지로 본체 진입 여부를 판정한다.
+10 verbs 가 4대 기둥 위에 닫힌다 (closure). 새 verb 후보가 등장하면 이 표 어느 칸에 귀속되는지로 본체 진입 여부를 판정한다.
 
 | 기둥 | verbs | RFC/표준 substrate |
 |------|-------|---------------------|
 | **Selection** (어디) | select, find | RFC 6901 + W3C Selection / RFC 9535 |
-| **Edit** (뭐를) | move, duplicate, remove, replace | RFC 6902 (move/copy/remove/replace op + 합성) |
+| **Edit** (뭐를) | move, duplicate, replace | RFC 6902 (move/copy/replace op + 합성) |
 | **Clipboard** (외부 round-trip) | cut, copy, paste | RFC 6902 (remove/add) + RFC 8259 fragment 직렬화 |
 | **Undo** (되돌림) | undo, redo | RFC 6902 inverse + history stack |
 
-= 2 + 4 + 3 + 2 = **11 verbs**.
+= 2 + 3 + 3 + 2 = **10 verbs**.
 
 합성 동사 (cut = copy⊗remove, replace = find⊗patch, duplicate = copy⊗paste) 는 **결과 기둥** 에 귀속. 합성 별도 행 두지 않는다 (표가 흐려짐).
 
@@ -42,7 +42,7 @@ commands/   facade builders (pure). buildCommands → Commands<T> (edit command 
 check.ts    buildCheck → Check<T> (explainable dry-run guard namespace). React 무관.
 read.ts     buildReadFacade → at/exists/query/entries. React 무관.
 schema.ts   createSchemaState → schema introspection facade. React 무관.
-verbs/      편집 어휘 composer (pure, React 무관). 1 파일 1 동사 = 11 verbs.
+verbs/      편집 어휘 composer (pure, React 무관). 1 파일 1 동사 = 10 verbs.
    │ uses   verbs 끼리 import 금지 — 합성은 commands/ 또는 document facade 에서.
 core/       RFC 표준 substrate (pure). 1 substrate = 1 단위 (폴더 또는 파일).
    │       multi-file: pointer/, patch/, jsonpath/, selection/, schema/.
@@ -960,7 +960,7 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 ```
 
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
-React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 11 verbs plus selection/text helpers, boolean guard predicates, explainable dry-run checks, schema introspection, `commit`, read/query helpers 를 한 객체로 묶는다.
+React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs plus selection/remove/text helpers, boolean guard predicates, explainable dry-run checks, schema introspection, `commit`, read/query helpers 를 한 객체로 묶는다.
 React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다. `useJSON` 은 headless `createJSON` 의 React facade 이고, `useSelection` 은 headless `createSelection` 의 React facade 이고, `useDraft` / `useField` 는 headless `createDraft` 의 React facade 다.
 `createCommands(args)`, `createCheck(args)`, `createCan(args)` 는 document facade 가 쓰는 selection-aware command, dry-run, boolean guard 조합기를 standalone headless API 로 노출한다. React entrypoint 는 같은 factory 를 재수출할 뿐 별도 command model 을 만들지 않는다.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.

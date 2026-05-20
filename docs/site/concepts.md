@@ -69,7 +69,7 @@ doc.commit(
 
 ## `doc.commands`와 `doc.can`
 
-`doc.commands`는 공식 편집 어휘 11개를 제품 기능 이름으로 노출합니다.
+`doc.commands`는 공식 편집 어휘 10개와 selection 기반 helper를 제품 기능 이름으로 노출합니다.
 
 ```ts
 doc.commands.find("$..title");

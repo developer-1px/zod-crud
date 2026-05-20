@@ -242,7 +242,6 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       "zod-crud/verbs/move",
       "zod-crud/verbs/paste",
       "zod-crud/verbs/redo",
-      "zod-crud/verbs/remove",
       "zod-crud/verbs/replace",
       "zod-crud/verbs/select",
       "zod-crud/verbs/undo",

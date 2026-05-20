@@ -39,6 +39,7 @@ export type {
   CreateCommandsOptions,
   DeleteTextCommandOptions,
   DeleteTextCommandResult,
+  RemoveCommandResult,
   ReplaceCommandResult,
   ReplaceTextCommandOptions,
   ReplaceTextCommandResult,
