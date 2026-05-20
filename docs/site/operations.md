@@ -48,12 +48,17 @@ doc.commands.undo();
 doc.commands.redo();
 ```
 
-버튼을 만들 때는 `doc.can`으로 현재 state에서 가능한 작업인지 확인합니다. 실패 이유가 필요하면 같은 호출을 `doc.check`로 실행합니다.
+버튼을 만들 때는 `doc.can`으로 현재 state에서 가능한 작업인지 확인합니다. `find`는 JSONPath syntax를 확인하고, 실패 이유가 필요하면 같은 호출을 `doc.check`로 실행합니다.
 
 ```tsx
 <button disabled={!doc.can.paste(payload, "/items/-")}>
   paste
 </button>
+```
+
+```ts
+doc.can.find("$..title");
+doc.check.find("$.items[");
 ```
 
 selection cursor와 scope도 mutation 없이 확인할 수 있습니다.

@@ -7,6 +7,7 @@ import type { JSONDocumentOps } from "./jsonOps.js";
 import { copy, type ClipboardSource } from "./verbs/copy.js";
 import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
+import { find } from "./verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import {
@@ -31,6 +32,7 @@ export type CheckErrorCode =
   | "empty_selection"
   | "empty_scope"
   | "cursor_boundary"
+  | "syntax_error"
   | "empty_stack"
   | "apply_failed";
 
@@ -53,6 +55,7 @@ export interface Check<T> {
   selectScope(options?: SelectionScopeOptions): CheckResult;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
+  find(jsonpath: string): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
@@ -112,6 +115,9 @@ export function buildCheck<S extends z.ZodType>(
     },
     extendCursor(direction, options) {
       return toCheckResult(resolveSelectionCursor(selectionState(), direction, ops.state, options));
+    },
+    find(jsonpath) {
+      return toCheckResult(find(ops.state, jsonpath));
     },
     move(fromOrTo, maybeTo) {
       const args = resolveMoveArgs(fromOrTo, maybeTo, arguments.length >= 2);

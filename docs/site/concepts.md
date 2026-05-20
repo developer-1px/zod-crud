@@ -54,12 +54,17 @@ doc.commands.paste(payload, "/tasks/-");
 doc.commands.undo();
 ```
 
-`doc.can`은 같은 변경이 현재 state에서 가능한지 미리 확인합니다. 내부적으로 dry apply와 schema 검증을 거치므로 버튼 disabled 상태를 만들 때 씁니다. `doc.check`는 같은 답에 실패 코드와 이유를 붙여 돌려줍니다.
+`doc.can`은 같은 변경이 현재 state에서 가능한지 미리 확인합니다. 내부적으로 dry apply와 schema 검증을 거치므로 버튼 disabled 상태를 만들 때 씁니다. `find` 같은 읽기 command는 JSONPath syntax를 확인합니다. `doc.check`는 같은 답에 실패 코드와 이유를 붙여 돌려줍니다.
 
 ```tsx
 <button disabled={!doc.can.move("/tasks/2", "/tasks/0")}>
   move up
 </button>
+```
+
+```ts
+doc.can.find("$.tasks[*].title");
+doc.check.find("$.tasks["); // syntax_error
 ```
 
 selection cursor도 같은 guard를 씁니다.

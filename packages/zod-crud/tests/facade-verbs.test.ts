@@ -164,6 +164,13 @@ describe("buildCan — TipTap 식 can group", () => {
     expect(can.move("/items/99", "/items/0")).toBe(false); // path 없음
   });
 
+  test("can.find(query) — JSONPath syntax guard", () => {
+    const ops = makeOps(initial);
+    const can = buildCan({ schema: Schema, ops });
+    expect(can.find("$.items[*].id")).toBe(true);
+    expect(can.find("$.items[")).toBe(false);
+  });
+
   test("can.copy(source) — path 존재 확인", () => {
     const ops = makeOps(initial);
     const can = buildCan({ schema: Schema, ops });

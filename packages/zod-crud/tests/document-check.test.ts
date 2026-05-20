@@ -22,12 +22,17 @@ describe("doc.check — explainable dry-run guard", () => {
     const invalidReplace = doc.check.replace("/items/0/name", 1);
     const missingCopy = doc.check.copy("/items/99");
     const invalidPointer = doc.check.patch([{ op: "replace", path: "items/0/name", value: "X" }]);
+    const invalidFind = doc.check.find("$.items[");
 
     expect(invalidReplace).toMatchObject({ ok: false, code: "schema_violation" });
     expect(invalidReplace.ok).toBe(doc.can.replace("/items/0/name", 1));
     expect(missingCopy).toMatchObject({ ok: false, code: "path_not_found" });
     expect(missingCopy.ok).toBe(doc.can.copy("/items/99"));
     expect(invalidPointer).toMatchObject({ ok: false, code: "invalid_pointer" });
+    expect(doc.check.find("$.items[*].id")).toEqual({ ok: true });
+    expect(doc.can.find("$.items[*].id")).toBe(true);
+    expect(invalidFind).toMatchObject({ ok: false, code: "syntax_error" });
+    expect(invalidFind.ok).toBe(doc.can.find("$.items["));
   });
 
   test("reports cross-field refinement failures without mutation", () => {

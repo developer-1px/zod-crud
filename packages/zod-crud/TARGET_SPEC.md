@@ -154,6 +154,7 @@ type CheckResult =
         | "empty_selection"
         | "empty_scope"
         | "cursor_boundary"
+        | "syntax_error"
         | "empty_stack"
         | "apply_failed";
       reason?: string;
@@ -165,6 +166,7 @@ interface Check<T> {
   selectScope(options?: SelectionScopeOptions): CheckResult;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
+  find(jsonpath: string): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
@@ -188,6 +190,8 @@ Rules:
 - `can.x(...) === check.x(...).ok`.
 - `check` must not mutate document state, selection, clipboard, or history.
 - `check` reports the same code family the actual command would produce.
+- `check.find(jsonpath)` validates JSONPath syntax without mutating state;
+  syntax failures use `syntax_error`.
 - Selection cursor and scope checks guard `commands.moveCursor`,
   `commands.extendCursor`, and `commands.selectScope`; boundary failures use
   `cursor_boundary`, and empty scope failures use `empty_scope`.
@@ -196,8 +200,8 @@ Acceptance evidence:
 
 - Headless tests in `tests/document-check.test.ts` cover schema violation,
   invalid pointer, path missing, discriminated union paste mismatch, undo/redo
-  unavailable, selection cursor/scope availability, dry-run immutability, and
-  `can === check.ok`.
+  unavailable, JSONPath find syntax, selection cursor/scope availability,
+  dry-run immutability, and `can === check.ok`.
 - React facade tests in `tests/document-clipboard-react.test.ts` prove the same
   check surface exists through `useJSONDocument`.
 

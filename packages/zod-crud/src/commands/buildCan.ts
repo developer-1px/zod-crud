@@ -1,6 +1,6 @@
 // commands/buildCan — JSONDocument.can group (TipTap 식 디팩토).
-// 각 mutation 가 현재 state 에서 성공할지 boolean 으로 반환.
-// preFlight gate 까지 거쳐 정확한 답 산출 (UI 가드 용도).
+// 각 command / selection action 이 현재 state 에서 성공할지 boolean 으로 반환.
+// mutating command 는 preFlight gate 까지 거쳐 정확한 답 산출 (UI 가드 용도).
 //
 // 비용 주의: 각 can 호출이 dry-apply + zod.safeParse. UI 에서 매 render 호출 시
 // useMemo / useDeferredValue 로 캐싱 권장. canUndo/canRedo 는 stack 길이 검사라 저비용.
@@ -21,6 +21,7 @@ export interface Can<T> {
   selectScope(options?: SelectionScopeOptions): boolean;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): boolean;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): boolean;
+  find(jsonpath: string): boolean;
   move(fromOrTo: Pointer, to?: Pointer): boolean;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
   replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
@@ -49,6 +50,7 @@ export function buildCan<S extends z.ZodType>(args: CreateCanOptions<S>): Can<z.
     selectScope(options) { return check.selectScope(options).ok; },
     moveCursor(direction, options) { return check.moveCursor(direction, options).ok; },
     extendCursor(direction, options) { return check.extendCursor(direction, options).ok; },
+    find(jsonpath) { return check.find(jsonpath).ok; },
     move(fromOrTo, maybeTo) {
       return arguments.length >= 2
         ? check.move(fromOrTo, maybeTo).ok

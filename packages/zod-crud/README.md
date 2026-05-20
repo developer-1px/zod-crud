@@ -97,8 +97,8 @@ export function App() {
 | `doc.value` | current schema-valid state (`T`) |
 | `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
-| `doc.can` | mutation and selection guard predicates + `undo`/`redo` flags |
-| `doc.check` | explainable dry-run guard results for commands and selection movement; `can.x(...) === check.x(...).ok` |
+| `doc.can` | mutation, JSONPath find, and selection guard predicates + `undo`/`redo` flags |
+| `doc.check` | explainable dry-run guard results for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
 | `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
@@ -225,6 +225,8 @@ DOM/system clipboard integration remains user code.
 `doc.check` is headless dry-run validation for commands and patches. It returns
 the same success/failure family the command would hit, without mutating value,
 selection, clipboard, or history.
+`doc.check.find(jsonpath)` and `doc.can.find(jsonpath)` validate JSONPath
+syntax without running a mutation; syntax failures return `syntax_error`.
 It also guards selection cursor and scope commands (`moveCursor`,
 `extendCursor`, `selectScope`) so keyboard and select-visible UI can use
 `can.x(...) === check.x(...).ok` before dispatch.
