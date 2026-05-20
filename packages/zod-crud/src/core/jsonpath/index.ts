@@ -3,7 +3,7 @@
 //   ✓ $ root, .name / ['name'] / [n] / [start:end:step] / *
 //   ✓ .. descendant
 //   ✓ filter [?<expr>] — comparisons (==/!=/</<=/>/>=) + logical (&&/||/!) + exists
-//   ✗ function extensions (length/count/match/search/value) — P6.4 별도
+//   ✓ RFC 9535 function extensions — length/count/match/search/value
 //
 // API:
 //   parse(query) → Query AST

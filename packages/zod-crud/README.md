@@ -149,7 +149,8 @@ the same success/failure family the command would hit, without mutating value,
 selection, clipboard, or history.
 
 `doc.at`, `doc.exists`, `doc.query`, and `doc.entries` are headless read helpers
-over the current document value. JSONPath queries return pointers, not values.
+over the current document value. JSONPath queries return pointers, not values,
+and support RFC 9535 function extensions (`length`/`count`/`match`/`search`/`value`).
 
 History metadata is serializable. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user

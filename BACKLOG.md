@@ -22,7 +22,6 @@
 
 ## 미해결 (post-v0.12.0)
 
-- **RFC 9535 function extensions** — `length / count / match / search / value` (P6.4 deferred)
 - **IETF RFC 9535 conformance suite 통합** — 외부 suite 채택 (P6.5 deferred)
 - **cross-field refinement 보호** — preFlight branch-only 의 보호 밖. 별도 ADR 검토
 

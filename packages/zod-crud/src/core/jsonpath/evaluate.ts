@@ -1,7 +1,7 @@
 // core/jsonpath/evaluate — Query AST + JSON 입력 → Match[] (Pointer + value).
 // RFC 9535 §2 의 normalized 의미. Pointer 는 RFC 6901.
 
-import type { Query, Segment, Selector, FilterExpr, Comparable, SingularPath, Match } from "./types.js";
+import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./types.js";
 
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
@@ -109,7 +109,7 @@ function applySelector(sel: Selector, m: Match, root: unknown): Match[] {
 
 function evalFilter(expr: FilterExpr, current: Match, root: unknown): boolean {
   if (expr.kind === "exists") {
-    return resolveSingularPath(expr.path, current, root).found;
+    return resolveFilterQuery(expr.path, current, root).length > 0;
   }
   if (expr.kind === "compare") {
     const l = resolveComparable(expr.left, current, root);
@@ -124,6 +124,7 @@ function evalFilter(expr: FilterExpr, current: Match, root: unknown): boolean {
       case ">=": return (l as number) >= (r as number);
     }
   }
+  if (expr.kind === "function") return resolveFunctionAsLogical(expr.fn, current, root);
   if (expr.kind === "and") return expr.children.every((c) => evalFilter(c, current, root));
   if (expr.kind === "or") return expr.children.some((c) => evalFilter(c, current, root));
   if (expr.kind === "not") return !evalFilter(expr.child, current, root);
@@ -132,31 +133,105 @@ function evalFilter(expr: FilterExpr, current: Match, root: unknown): boolean {
 
 function resolveComparable(c: Comparable, current: Match, root: unknown): unknown {
   if (c.kind === "literal") return c.value;
-  const r = resolveSingularPath(c.path, current, root);
-  return r.found ? r.value : undefined;
+  if (c.kind === "function") return resolveFunctionAsValue(c.fn, current, root);
+  const matches = resolveFilterQuery(c.path, current, root);
+  return matches.length === 1 ? matches[0]?.value : undefined;
 }
 
-function resolveSingularPath(p: SingularPath, current: Match, root: unknown): { found: boolean; value?: unknown } {
-  let cur: unknown = p.root === "@" ? current.value : root;
-  for (const seg of p.segments) {
-    if (cur === null || typeof cur !== "object") return { found: false };
-    if (seg.kind === "name") {
-      if (Array.isArray(cur)) return { found: false };
-      const obj = cur as Record<string, unknown>;
-      if (!Object.prototype.hasOwnProperty.call(obj, seg.name)) return { found: false };
-      cur = obj[seg.name];
-    } else {
-      if (!Array.isArray(cur)) return { found: false };
-      const idx = seg.index < 0 ? cur.length + seg.index : seg.index;
-      if (idx < 0 || idx >= cur.length) return { found: false };
-      cur = cur[idx];
-    }
+function resolveFilterQuery(path: FilterQuery, current: Match, root: unknown): Match[] {
+  let cur: Match[] = [path.root === "@" ? current : { pointer: "", value: root }];
+  for (const seg of path.segments) {
+    const next: Match[] = [];
+    for (const match of cur) next.push(...applySegment(seg, match, root));
+    cur = next;
   }
-  return { found: true, value: cur };
+  return cur;
+}
+
+function resolveFunctionAsLogical(fn: FunctionExpr, current: Match, root: unknown): boolean {
+  const result = resolveFunction(fn, current, root);
+  return result.kind === "logical" ? result.value : false;
+}
+
+function resolveFunctionAsValue(fn: FunctionExpr, current: Match, root: unknown): unknown {
+  const result = resolveFunction(fn, current, root);
+  return result.kind === "value" ? result.value : undefined;
+}
+
+type FunctionResult =
+  | { kind: "value"; value: unknown }
+  | { kind: "logical"; value: boolean }
+  | { kind: "nodes"; value: Match[] }
+  | { kind: "nothing" };
+
+function resolveFunction(fn: FunctionExpr, current: Match, root: unknown): FunctionResult {
+  switch (fn.name) {
+    case "length": {
+      if (fn.args.length !== 1) return { kind: "nothing" };
+      const value = resolveValueArg(fn.args[0]!, current, root);
+      const length = jsonLength(value);
+      return length === undefined ? { kind: "nothing" } : { kind: "value", value: length };
+    }
+    case "count": {
+      if (fn.args.length !== 1) return { kind: "nothing" };
+      return { kind: "value", value: resolveNodesArg(fn.args[0]!, current, root).length };
+    }
+    case "match":
+    case "search": {
+      if (fn.args.length !== 2) return { kind: "logical", value: false };
+      const input = resolveValueArg(fn.args[0]!, current, root);
+      const pattern = resolveValueArg(fn.args[1]!, current, root);
+      if (typeof input !== "string" || typeof pattern !== "string") return { kind: "logical", value: false };
+      return { kind: "logical", value: regexTest(input, pattern, fn.name === "match") };
+    }
+    case "value": {
+      if (fn.args.length !== 1) return { kind: "nothing" };
+      const nodes = resolveNodesArg(fn.args[0]!, current, root);
+      return nodes.length === 1 ? { kind: "value", value: nodes[0]?.value } : { kind: "nothing" };
+    }
+    default:
+      return { kind: "nothing" };
+  }
+}
+
+function resolveValueArg(arg: Comparable, current: Match, root: unknown): unknown {
+  if (arg.kind === "literal") return arg.value;
+  if (arg.kind === "function") {
+    const result = resolveFunction(arg.fn, current, root);
+    if (result.kind === "value" || result.kind === "logical") return result.value;
+    if (result.kind === "nodes") return result.value.length === 1 ? result.value[0]?.value : undefined;
+    return undefined;
+  }
+  const nodes = resolveFilterQuery(arg.path, current, root);
+  return nodes.length === 1 ? nodes[0]?.value : undefined;
+}
+
+function resolveNodesArg(arg: Comparable, current: Match, root: unknown): Match[] {
+  if (arg.kind === "path") return resolveFilterQuery(arg.path, current, root);
+  if (arg.kind === "function") {
+    const result = resolveFunction(arg.fn, current, root);
+    return result.kind === "nodes" ? result.value : [];
+  }
+  return [];
+}
+
+function jsonLength(value: unknown): number | undefined {
+  if (typeof value === "string") return Array.from(value).length;
+  if (Array.isArray(value)) return value.length;
+  if (value !== null && typeof value === "object") return Object.keys(value as Record<string, unknown>).length;
+  return undefined;
+}
+
+function regexTest(input: string, pattern: string, full: boolean): boolean {
+  try {
+    const re = new RegExp(full ? `^(?:${pattern})$` : pattern, "u");
+    return re.test(input);
+  } catch {
+    return false;
+  }
 }
 
 /** 외부 helper — Match[] → Pointer[] (verbs/find 가 사용). */
 export function matchPointers(matches: Match[]): string[] {
   return matches.map((m) => m.pointer);
 }
-

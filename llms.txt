@@ -87,6 +87,9 @@ be expressed through `useJSONDocument`, it should also be expressible through
 `test`, `patch`, `apply`, plus lifecycle helpers. New convenience verbs should
 not be added unless they change the 4-pillar closure.
 
+JSONPath follows RFC 9535 selectors and filter function extensions:
+`length`, `count`, `match`, `search`, and `value`.
+
 ## Canonical Patterns
 
 ### React facade

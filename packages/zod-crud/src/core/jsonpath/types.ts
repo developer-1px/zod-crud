@@ -21,10 +21,11 @@ export type Selector =
   | { kind: "wildcard" }
   | { kind: "filter"; expr: FilterExpr };
 
-/** Filter expression — RFC 9535 §2.3.5. 1차 구현은 limited subset. */
+/** Filter expression — RFC 9535 §2.3.5. */
 export type FilterExpr =
-  | { kind: "exists"; path: SingularPath }
+  | { kind: "exists"; path: FilterQuery }
   | { kind: "compare"; op: CompareOp; left: Comparable; right: Comparable }
+  | { kind: "function"; fn: FunctionExpr }
   | { kind: "and"; children: FilterExpr[] }
   | { kind: "or"; children: FilterExpr[] }
   | { kind: "not"; child: FilterExpr };
@@ -33,13 +34,21 @@ export type CompareOp = "==" | "!=" | "<" | "<=" | ">" | ">=";
 
 export type Comparable =
   | { kind: "literal"; value: string | number | boolean | null }
-  | { kind: "path"; path: SingularPath };
+  | { kind: "path"; path: FilterQuery }
+  | { kind: "function"; fn: FunctionExpr };
 
-/** SingularPath — `@.foo.bar` 또는 `$.x`. limited subset. */
-export interface SingularPath {
+/** FilterQuery — `@.foo`, `@.*.author`, `$..color` 등 filter 내부 query. */
+export interface FilterQuery {
   root: "@" | "$";
-  segments: Array<{ kind: "name"; name: string } | { kind: "index"; index: number }>;
+  segments: Segment[];
 }
+
+export interface FunctionExpr {
+  name: string;
+  args: FunctionArgument[];
+}
+
+export type FunctionArgument = Comparable;
 
 /** evaluate 결과 — query 가 매칭한 location 들의 Pointer + value. */
 export interface Match {

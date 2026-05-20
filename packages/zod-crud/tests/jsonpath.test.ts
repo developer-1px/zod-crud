@@ -9,10 +9,10 @@ import { replace } from "../src/verbs/replace.js";
 const data = {
   store: {
     book: [
-      { category: "ref", price: 8.95, title: "A" },
-      { category: "fic", price: 12.99, title: "B" },
-      { category: "fic", price: 8.99, title: "C" },
-      { category: "ref", price: 22.99, title: "D" },
+      { category: "ref", price: 8.95, title: "A", authors: ["Ann"] },
+      { category: "fic", price: 12.99, title: "Book", authors: ["Bob", "Bea"] },
+      { category: "fic", price: 8.99, title: "C", authors: [] },
+      { category: "ref", price: 22.99, title: "Delta", authors: ["Dan"] },
     ],
     bicycle: { color: "red", price: 19.95 },
   },
@@ -68,6 +68,36 @@ describe("core/jsonpath — selectors", () => {
 
   test("filter exists", () => {
     expect(query("$.store.book[?@.title]", data)).toHaveLength(4);
+  });
+
+  test("RFC 9535 function extensions — length", () => {
+    expect(query("$.store.book[?length(@.title) > 1]", data)).toEqual([
+      "/store/book/1",
+      "/store/book/3",
+    ]);
+  });
+
+  test("RFC 9535 function extensions — count", () => {
+    expect(query("$.store.book[?count(@.authors[*]) == 2]", data)).toEqual([
+      "/store/book/1",
+    ]);
+  });
+
+  test("RFC 9535 function extensions — match and search", () => {
+    expect(query("$.store.book[?match(@.title, '[A-Z]')]", data)).toEqual([
+      "/store/book/0",
+      "/store/book/2",
+    ]);
+    expect(query("$.store.book[?search(@.title, 'elt')]", data)).toEqual([
+      "/store/book/3",
+    ]);
+  });
+
+  test("RFC 9535 function extensions — value", () => {
+    expect(query("$.store.book[?value(@.authors[0]) == 'Ann']", data)).toEqual([
+      "/store/book/0",
+    ]);
+    expect(query("$.store.book[?value(@.authors[*]) == 'Bob']", data)).toEqual([]);
   });
 });
 

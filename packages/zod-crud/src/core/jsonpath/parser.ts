@@ -1,7 +1,7 @@
 // core/jsonpath/parser — Token[] -> Query AST (RFC 9535).
-// 1차 구현 범위: name / index / slice / wildcard / descendant / 기본 filter.
+// 구현 범위: name / index / slice / wildcard / descendant / filter + RFC 9535 function extensions.
 
-import type { Query, Segment, Selector, FilterExpr, Comparable, SingularPath, CompareOp } from "./types.js";
+import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, CompareOp, FunctionExpr } from "./types.js";
 import { tokenize, JSONPathSyntaxError, type Token } from "./tokenizer.js";
 
 export function parse(src: string): Query {
@@ -133,6 +133,7 @@ class Parser {
       return { kind: "compare", op: t.kind as CompareOp, left, right };
     }
     if (left.kind === "path") return { kind: "exists", path: left.path };
+    if (left.kind === "function") return { kind: "function", fn: left.fn };
     throw new JSONPathSyntaxError(`literal alone is not a filter expr`, t.pos);
   }
 
@@ -144,30 +145,36 @@ class Parser {
     if (t.kind === "false") { this.next(); return { kind: "literal", value: false }; }
     if (t.kind === "null") { this.next(); return { kind: "literal", value: null }; }
     if (t.kind === "@" || t.kind === "$") {
-      const path = this.parseSingularPath();
+      const path = this.parseFilterQuery();
       return { kind: "path", path };
+    }
+    if (t.kind === "name" && this.peek(1).kind === "(") {
+      return { kind: "function", fn: this.parseFunction() };
     }
     throw new JSONPathSyntaxError(`expected literal or path, got ${t.kind}`, t.pos);
   }
 
-  parseSingularPath(): SingularPath {
+  parseFilterQuery(): FilterQuery {
     const root = this.next().kind as "@" | "$";
-    const segments: SingularPath["segments"] = [];
-    while (true) {
-      if (this.peek().kind === ".") {
-        this.next();
-        const t = this.next();
-        if (t.kind === "name") segments.push({ kind: "name", name: String(t.value) });
-        else throw new JSONPathSyntaxError(`expected name after .`, t.pos);
-      } else if (this.peek().kind === "[") {
-        this.next();
-        const t = this.next();
-        if (t.kind === "string") segments.push({ kind: "name", name: String(t.value) });
-        else if (t.kind === "number") segments.push({ kind: "index", index: Number(t.value) });
-        else throw new JSONPathSyntaxError(`expected string or number in [...]`, t.pos);
-        this.consume("]");
-      } else break;
+    const segments: FilterQuery["segments"] = [];
+    while (this.peek().kind === "." || this.peek().kind === ".." || this.peek().kind === "[") {
+      segments.push(this.parseSegment());
     }
     return { root, segments };
+  }
+
+  parseFunction(): FunctionExpr {
+    const name = String(this.consume("name").value);
+    this.consume("(");
+    const args: Comparable[] = [];
+    if (this.peek().kind !== ")") {
+      args.push(this.parseComparable());
+      while (this.peek().kind === ",") {
+        this.next();
+        args.push(this.parseComparable());
+      }
+    }
+    this.consume(")");
+    return { name, args };
   }
 }
