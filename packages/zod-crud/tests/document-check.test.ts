@@ -134,6 +134,25 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.paste({ id: "x", name: "X" })).toBe(false);
   });
 
+  test("replace checks default to current selection target without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single", initial: ["/items/0/name"] },
+    });
+
+    expect(doc.check.replace("A1")).toEqual({ ok: true });
+    expect(doc.can.replace("A1")).toBe(true);
+    expect(doc.value).toEqual(initial);
+
+    doc.selection?.empty();
+
+    expect(doc.check.replace("A1")).toMatchObject({
+      ok: false,
+      code: "empty_selection",
+      reason: "replace target selection is empty",
+    });
+    expect(doc.can.replace("A1")).toBe(false);
+  });
+
   test("reports discriminated union paste mismatch before mutation", () => {
     const BlockSchema = z.object({
       blocks: z.array(z.discriminatedUnion("kind", [

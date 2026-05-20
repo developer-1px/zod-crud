@@ -15,7 +15,7 @@ import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 export interface Can<T> {
   move(from: Pointer, to: Pointer): boolean;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
-  replace(path: Pointer, value: unknown): boolean;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
   cut(source?: ClipboardSource): boolean;
   paste(
     payload: unknown,
@@ -38,7 +38,11 @@ export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.outp
   return {
     move(from, to) { return check.move(from, to).ok; },
     duplicate(source, opts) { return check.duplicate(source, opts).ok; },
-    replace(path, value) { return check.replace(path, value).ok; },
+    replace(pathOrValue, maybeValue) {
+      return arguments.length >= 2
+        ? check.replace(pathOrValue, maybeValue).ok
+        : check.replace(pathOrValue).ok;
+    },
     cut(source) { return check.cut(source).ok; },
     paste(payload, target, mode = "into", options = {}) { return check.paste(payload, target, mode, options).ok; },
     copy(source) { return check.copy(source).ok; },

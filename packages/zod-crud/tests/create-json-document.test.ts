@@ -91,6 +91,34 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value).toEqual(initial);
   });
 
+  test("commands replace defaults to the current selection target", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0/name"] },
+    });
+
+    const replaced = doc.commands.replace("A1");
+
+    expect(replaced.ok).toBe(true);
+    expect(doc.value.items[0]?.name).toBe("A1");
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("commands replace reports empty selection when target is omitted", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    const replaced = doc.commands.replace("A1");
+
+    expect(replaced).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "replace target selection is empty",
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
   test("doc.clipboard copies, pastes, and exposes serializable items", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

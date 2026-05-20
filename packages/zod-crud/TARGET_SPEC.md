@@ -159,7 +159,7 @@ type CheckResult =
 interface Check<T> {
   move(from: Pointer, to: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
-  replace(path: Pointer, value: unknown): CheckResult;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -305,6 +305,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 Document-facade `commands.duplicate()`, `check.duplicate()`, and
 `can.duplicate()` use `primaryPointer` when their source argument is omitted;
 opts-only calls such as `commands.duplicate({ newKey })` use that same source.
+Document-facade `commands.replace(value)`, `check.replace(value)`, and
+`can.replace(value)` use `primaryPointer` when their path argument is omitted.
 Document-facade `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` use `primaryPointer` when
 their target argument is omitted; mode-only calls such as

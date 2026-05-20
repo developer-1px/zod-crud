@@ -24,6 +24,10 @@ import { move as moveVerb, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
 
+export type ReplaceCommandResult =
+  | JSONResult
+  | { ok: false; code: "empty_selection"; reason: string };
+
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   find(jsonpath: string): FindOk | FindError;
@@ -31,7 +35,7 @@ export interface Commands<T> {
   move(from: Pointer, to: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
-  replace(path: Pointer, value: unknown): JSONResult;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult;
 
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   copy(source?: ClipboardSource): CopyOk | CopyError;
@@ -105,9 +109,13 @@ export function buildCommands<S extends z.ZodType>(
         ? emptyDuplicateSource()
         : run(duplicate(schema, ops.state, source, args.opts));
     },
-    replace(path, value) {
+    replace(pathOrValue, maybeValue) {
       // 다른 mutating verb 와 동일하게 ops.patch 경유 (history commit + listener notify).
-      return ops.patch([{ op: "replace", path, value }]);
+      const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
+      const target = targetOrSelection(args.target);
+      return target === null
+        ? emptyReplaceTarget()
+        : ops.patch([{ op: "replace", path: target, value: args.value }]);
     },
 
     cut(source) {
@@ -137,10 +145,28 @@ function emptyPasteTarget(): PasteError {
   };
 }
 
+function emptyReplaceTarget(): ReplaceCommandResult {
+  return {
+    ok: false,
+    code: "empty_selection",
+    reason: "replace target selection is empty",
+  };
+}
+
 function emptyDuplicateSource(): DuplicateError {
   return {
     ok: false,
     code: "empty_selection",
     message: "duplicate source selection is empty",
   };
+}
+
+function resolveReplaceArgs(
+  pathOrValue: Pointer | unknown,
+  value: unknown,
+  hasValueArg: boolean,
+): { target?: Pointer; value: unknown } {
+  return hasValueArg
+    ? { target: pathOrValue as Pointer, value }
+    : { value: pathOrValue };
 }

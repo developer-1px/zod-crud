@@ -208,6 +208,20 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.history.undoDepth).toBe(1);
   });
 
+  test("commands replace defaults to current selection target through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0/name"] },
+    }));
+
+    act(() => {
+      hook.current.commands.replace("A1");
+    });
+
+    expect(hook.current.value.items[0]?.name).toBe("A1");
+    expect(hook.current.history.undoDepth).toBe(1);
+  });
+
   test("commands duplicate defaults to current primary selection through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       history: 10,

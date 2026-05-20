@@ -40,7 +40,7 @@ export type CheckResult =
 export interface Check<T> {
   move(from: Pointer, to: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
-  replace(path: Pointer, value: unknown): CheckResult;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -96,8 +96,12 @@ export function buildCheck<S extends z.ZodType>(
         ? emptySelection("duplicate source selection is empty")
         : toCheckResult(duplicate(schema, ops.state, source, args.opts));
     },
-    replace(path, value) {
-      return toCheckResult(preFlight(schema, ops.state, [{ op: "replace", path, value }]));
+    replace(pathOrValue, maybeValue) {
+      const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
+      const target = targetOrSelection(args.target);
+      return target === null
+        ? emptySelection("replace target selection is empty")
+        : toCheckResult(preFlight(schema, ops.state, [{ op: "replace", path: target, value: args.value }]));
     },
     cut(source) {
       const resolved = sourceOrSelection(source);
@@ -155,4 +159,14 @@ function emptySelection(reason: string): CheckResult {
     code: "empty_selection",
     reason,
   };
+}
+
+function resolveReplaceArgs(
+  pathOrValue: Pointer | unknown,
+  value: unknown,
+  hasValueArg: boolean,
+): { target?: Pointer; value: unknown } {
+  return hasValueArg
+    ? { target: pathOrValue as Pointer, value }
+    : { value: pathOrValue };
 }
