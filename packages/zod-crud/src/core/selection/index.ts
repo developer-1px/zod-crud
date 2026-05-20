@@ -238,9 +238,10 @@ function snapFromRanges(
   mode: SelectionMode,
   state?: unknown,
 ): SelectionSnap {
-  const selectionRanges = limitMode(mode, input);
+  const normalized = normalizeRanges(input, primaryIndex, mode);
+  const selectionRanges = normalized.ranges;
   if (selectionRanges.length === 0) return EMPTY_SELECTION;
-  const nextPrimary = clampPrimaryIndex(primaryIndex, selectionRanges.length);
+  const nextPrimary = normalized.primaryIndex;
   const primary = selectionRanges[nextPrimary]!;
   const selectedPointers = collectSelectedPointers(selectionRanges, state);
   return {
@@ -251,6 +252,32 @@ function snapFromRanges(
     anchor: primary.anchor,
     focus: primary.focus,
   };
+}
+
+function normalizeRanges(
+  input: ReadonlyArray<SelectionRange>,
+  primaryIndex: number,
+  mode: SelectionMode,
+): { ranges: SelectionRange[]; primaryIndex: number } {
+  if (mode === "single") {
+    const ranges = input.length > 0 ? [input[input.length - 1]!] : [];
+    return { ranges, primaryIndex: ranges.length > 0 ? 0 : -1 };
+  }
+
+  const originalPrimary = clampPrimaryIndex(primaryIndex, input.length);
+  const ranges: SelectionRange[] = [];
+  let nextPrimary = -1;
+  for (let i = 0; i < input.length; i += 1) {
+    const range = input[i]!;
+    const existing = ranges.findIndex((candidate) => sameRange(candidate, range));
+    if (existing >= 0) {
+      if (i === originalPrimary) nextPrimary = existing;
+      continue;
+    }
+    if (i === originalPrimary) nextPrimary = ranges.length;
+    ranges.push(range);
+  }
+  return { ranges, primaryIndex: nextPrimary >= 0 ? nextPrimary : clampPrimaryIndex(originalPrimary, ranges.length) };
 }
 
 function collapsedRange(point: JSONPoint): SelectionRange {
@@ -279,11 +306,6 @@ function clampPrimaryIndex(index: number, length: number): number {
   if (length <= 0) return -1;
   if (!Number.isFinite(index)) return length - 1;
   return Math.min(Math.max(Math.trunc(index), 0), length - 1);
-}
-
-function limitMode(mode: SelectionMode, ranges: ReadonlyArray<SelectionRange>): SelectionRange[] {
-  if (mode === "single") return ranges.length > 0 ? [ranges[ranges.length - 1]!] : [];
-  return [...ranges];
 }
 
 function selectionInputMatches(candidate: SelectionRange, input: JSONPoint | SelectionRange, selectedPointers: ReadonlyArray<Pointer>): boolean {

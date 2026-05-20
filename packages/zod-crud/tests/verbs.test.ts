@@ -117,6 +117,23 @@ describe("verbs/select", () => {
     expect(caretPointer(second)).toBe(null);
   });
 
+  test("selectRanges dedupes ranges while preserving primary range intent", () => {
+    const s = select(EMPTY_SELECTION, {
+      type: "selectRanges",
+      ranges: ["/items/0", "/items/1", "/items/0"],
+      primaryIndex: 2,
+    }, "multiple");
+
+    expect(s.selectedPointers).toEqual(["/items/0", "/items/1"]);
+    expect(s.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      { anchor: "/items/1", focus: "/items/1" },
+    ]);
+    expect(s.primaryIndex).toBe(0);
+    expect(primaryRange(s)).toEqual({ anchor: "/items/0", focus: "/items/0" });
+    expect(primaryPointer(s)).toBe("/items/0");
+  });
+
   test("extended range falls back to endpoints when pointer is invalid", () => {
     const s = reduceSelection(
       EMPTY_SELECTION,
