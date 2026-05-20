@@ -1,10 +1,15 @@
 import { useState } from "react";
-import { z } from "zod";
+import { z } from "zod/mini";
+import type { ZodType } from "zod";
 import { useJSONDocument } from "zod-crud/react";
 
+type ClipboardArrayValue = {
+  tags: string[];
+};
+
 const Schema = z.object({
-  tags: z.array(z.string().min(1)),
-});
+  tags: z.array(z.string().check(z.minLength(1))),
+}) as unknown as ZodType<ClipboardArrayValue, ClipboardArrayValue>;
 
 export const playground = {
   id: "clipboard-array",

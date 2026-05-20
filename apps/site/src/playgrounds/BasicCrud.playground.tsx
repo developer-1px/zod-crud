@@ -1,10 +1,16 @@
-import { z } from "zod";
+import { z } from "zod/mini";
+import type { ZodType } from "zod";
 import { useJSONDocument } from "zod-crud/react";
 
+type BasicCrudValue = {
+  title: string;
+  done: boolean;
+};
+
 const Schema = z.object({
-  title: z.string().min(1),
+  title: z.string().check(z.minLength(1)),
   done: z.boolean(),
-});
+}) as unknown as ZodType<BasicCrudValue, BasicCrudValue>;
 
 export const playground = {
   id: "basic-crud",

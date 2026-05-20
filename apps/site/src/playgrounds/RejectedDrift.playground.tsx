@@ -1,12 +1,18 @@
 import { useState } from "react";
-import { z } from "zod";
+import { z } from "zod/mini";
+import type { ZodType } from "zod";
 import type { JSONResult } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
 
+type RejectedDriftValue = {
+  count: number;
+  label: string;
+};
+
 const Schema = z.object({
-  count: z.number().int().min(0).max(100),
-  label: z.string().min(1),
-});
+  count: z.number().check(z.int(), z.minimum(0), z.maximum(100)),
+  label: z.string().check(z.minLength(1)),
+}) as unknown as ZodType<RejectedDriftValue, RejectedDriftValue>;
 
 export const playground = {
   id: "rejected-drift",
