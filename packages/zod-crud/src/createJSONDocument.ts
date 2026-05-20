@@ -5,6 +5,7 @@ import type * as z from "zod";
 
 import { buildCan, type Can } from "./commands/buildCan.js";
 import { buildCommands, type Commands } from "./commands/buildCommands.js";
+import { buildCheck, type Check } from "./check.js";
 import {
   applyOperation,
   applyPatch,
@@ -91,6 +92,7 @@ export interface JSONDocument<T> {
   readonly ops: JSONDocumentOps<T>;
   readonly commands: Commands<T>;
   readonly can: Can<T>;
+  readonly check: Check<T>;
   readonly clipboard: ClipboardState<T>;
 }
 
@@ -371,7 +373,8 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const selectionRef = { get current() { return selectionState; } };
   const commands = buildCommands({ schema, ops, selectionRef });
-  const can = buildCan({ schema, ops });
+  const check = buildCheck({ schema, ops });
+  const can = buildCan({ schema, ops, check });
   const clipboard = createClipboardState({ schema, getState: () => state, ops });
 
   return {
@@ -381,6 +384,7 @@ export function createJSONDocument<S extends z.ZodType>(
     ops,
     commands,
     can,
+    check,
     clipboard,
   };
 }

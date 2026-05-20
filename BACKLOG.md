@@ -18,10 +18,9 @@
 
 목표 API 확장 순서:
 
-1. explainable guard (`doc.check`)
-2. read/query facade (`doc.at`, `doc.exists`, `doc.query`, `doc.entries`)
-3. history metadata
-4. schema introspection facade
+1. read/query facade (`doc.at`, `doc.exists`, `doc.query`, `doc.entries`)
+2. history metadata
+3. schema introspection facade
 
 ## 미해결 (post-v0.12.0)
 

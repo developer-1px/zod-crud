@@ -62,6 +62,7 @@ document surface:
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
 | `doc.commands` | 10 verb command namespace |
 | `doc.can` | command guard namespace |
+| `doc.check` | explainable dry-run guard namespace; `can.x(...) === check.x(...).ok` |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast()`, `transaction(fn)` |
 | `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth and `selectedPointers` is the item-selection projection |
 | `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut`/`paste` mutate through the same document facade while system clipboard calls stay user code |
@@ -145,6 +146,17 @@ const copied = doc.commands.copy("/items/0");
 if (copied.ok) {
   doc.commands.paste(copied.payload, "/items/-");
 }
+```
+
+### Check
+
+Use `doc.check` when UI or agent code needs the same answer as `doc.can` plus
+the failure code and reason. It does not mutate value, selection, clipboard, or
+history.
+
+```ts
+const result = doc.check.replace("/items/0/name", value);
+if (!result.ok && result.code === "schema_violation") show(result.violations);
 ```
 
 ### Burst edits

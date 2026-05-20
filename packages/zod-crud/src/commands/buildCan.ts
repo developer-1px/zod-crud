@@ -7,13 +7,9 @@
 
 import type * as z from "zod";
 import type { Pointer } from "../core/pointer/index.js";
-import { cut } from "../verbs/cut.js";
-import { copy } from "../verbs/copy.js";
-import { paste, type PasteMode } from "../verbs/paste.js";
-import { duplicate, type DuplicateOpts } from "../verbs/duplicate.js";
-import { move as moveVerb } from "../verbs/move.js";
-import { preFlight } from "../core/schema/preFlight.js";
-import type { BuildCommandsArgs } from "./buildCommands.js";
+import type { PasteMode } from "../verbs/paste.js";
+import type { DuplicateOpts } from "../verbs/duplicate.js";
+import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 
 export interface Can<T> {
   move(from: Pointer, to: Pointer): boolean;
@@ -27,19 +23,21 @@ export interface Can<T> {
   readonly redo: boolean;
 }
 
-export type BuildCanArgs<S extends z.ZodType> = Pick<BuildCommandsArgs<S>, "schema" | "ops">;
+export interface BuildCanArgs<S extends z.ZodType> extends BuildCheckArgs<S> {
+  check?: Check<z.output<S>>;
+}
 
 export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.output<S>> {
-  const { schema, ops } = args;
+  const check = args.check ?? buildCheck(args);
   return {
-    move(from, to) { return moveVerb(schema, ops.state, from, to).ok; },
-    duplicate(source, opts) { return duplicate(schema, ops.state, source, opts).ok; },
-    replace(path, value) { return preFlight(schema, ops.state, [{ op: "replace", path, value }]).ok; },
-    cut(source) { return cut(schema, ops.state, source).ok; },
-    paste(payload, target, mode = "into") { return paste(schema, ops.state, payload, target, mode).ok; },
-    copy(source) { return copy(ops.state, source).ok; },
+    move(from, to) { return check.move(from, to).ok; },
+    duplicate(source, opts) { return check.duplicate(source, opts).ok; },
+    replace(path, value) { return check.replace(path, value).ok; },
+    cut(source) { return check.cut(source).ok; },
+    paste(payload, target, mode = "into") { return check.paste(payload, target, mode).ok; },
+    copy(source) { return check.copy(source).ok; },
 
-    get undo() { return ops.canUndo(); },
-    get redo() { return ops.canRedo(); },
+    get undo() { return check.undo.ok; },
+    get redo() { return check.redo.ok; },
   };
 }

@@ -89,7 +89,7 @@ export function App() {
 }
 ```
 
-`useJSONDocument` returns a single facade with seven surfaces:
+`useJSONDocument` returns a single facade with eight surfaces:
 
 | Surface | Purpose |
 | --- | --- |
@@ -97,6 +97,7 @@ export function App() {
 | `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
 | `doc.can` | mutation guard predicates + `undo`/`redo` flags |
+| `doc.check` | explainable dry-run guard results; `can.x(...) === check.x(...).ok` |
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
 | `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
 | `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast()`, `transaction(fn)` |
@@ -127,7 +128,7 @@ doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` intentionally share the same
-`value`/`ops`/`commands`/`can`/`selection`/`clipboard`/`history` surface. React
+`value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface. React
 owns render lifecycle only; core owns JSON editing.
 
 Selection is headless. `JSONPoint` is either a JSON Pointer string or
@@ -138,6 +139,10 @@ item-selection projection for list/tree/grid UIs.
 
 Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata; DOM/system clipboard integration remains user code.
+
+`doc.check` is headless dry-run validation for commands and patches. It returns
+the same success/failure family the command would hit, without mutating value,
+selection, clipboard, or history.
 
 For lower-level composition (`useJSON` + `useSelection`), see the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
@@ -209,10 +214,10 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`selection`/`clipboard`/`history` surface as `useJSONDocument` |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>` | shared headless facade types |
+| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface as `useJSONDocument` |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |

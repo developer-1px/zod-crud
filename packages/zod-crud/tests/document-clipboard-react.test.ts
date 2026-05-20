@@ -72,6 +72,22 @@ describe("useJSONDocument doc.clipboard", () => {
   });
 });
 
+describe("useJSONDocument doc.check", () => {
+  test("exposes the same dry-run guard as the headless facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, { history: 10 }));
+
+    let failed: ReturnType<typeof hook.current.check.replace> | undefined;
+    act(() => {
+      failed = hook.current.check.replace("/items/0/name", 1);
+    });
+
+    expect(failed).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(failed?.ok).toBe(hook.current.can.replace("/items/0/name", 1));
+    expect(hook.current.value).toEqual(initial);
+    expect(hook.current.history.undoDepth).toBe(0);
+  });
+});
+
 function renderHook<T>(hook: () => T): { readonly current: T } {
   const host = document.createElement("div");
   document.body.appendChild(host);

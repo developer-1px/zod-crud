@@ -65,10 +65,11 @@ doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` expose the same
-`value`/`ops`/`commands`/`can`/`selection`/`clipboard`/`history` surface; React
+`value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface; React
 only adds render lifecycle. Selection uses headless `JSONPoint` coordinates, so
 item selection and text carets share one JSON editing model. Clipboard is a
-headless JSON fragment buffer; system clipboard calls remain user code.
+headless JSON fragment buffer; system clipboard calls remain user code. `check`
+is the explainable dry-run guard behind `can`.
 
 ### Dict-record 한 키 쓰기
 

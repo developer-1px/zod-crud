@@ -126,7 +126,15 @@ type CheckResult =
   | { ok: true }
   | {
       ok: false;
-      code: ErrorCode | PreFlightErrorCode | "du_branch_mismatch" | "rekey_failed";
+      code:
+        | ErrorCode
+        | PreFlightErrorCode
+        | "du_branch_mismatch"
+        | "rekey_failed"
+        | "missing_new_key"
+        | "key_conflict"
+        | "empty_stack"
+        | "apply_failed";
       reason?: string;
       pointer?: Pointer;
       violations?: ReadonlyArray<{ path: string; message: string }>;
@@ -154,8 +162,11 @@ Rules:
 
 Acceptance evidence:
 
-- Tests cover schema violation, invalid pointer, path missing, discriminated
-  union paste mismatch, and undo/redo unavailable.
+- Headless tests in `tests/document-check.test.ts` cover schema violation,
+  invalid pointer, path missing, discriminated union paste mismatch, undo/redo
+  unavailable, dry-run immutability, and `can === check.ok`.
+- React facade tests in `tests/document-clipboard-react.test.ts` prove the same
+  check surface exists through `useJSONDocument`.
 
 ## 5. Read / Query Subsystem
 
@@ -353,21 +364,20 @@ Rules:
 
 Acceptance evidence:
 
-- Tests prove old recordings without metadata still replay.
-- Tests prove new recordings preserve metadata and optional selection snaps.
+- Headless tests in `tests/document-check.test.ts` cover schema violation,
+  invalid pointer, path missing, discriminated union paste mismatch, undo/redo
+  unavailable, dry-run immutability, and `can === check.ok`.
+- React facade tests in `tests/document-clipboard-react.test.ts` prove the same
+  check surface exists through `useJSONDocument`.
 
 ## 10. Issue Slices
 
 Implementation should proceed in this order:
 
-1. **Check facade**
-   - Add `doc.check`.
-   - Define `can === check.ok` invariant.
-
-2. **Read/query facade**
+1. **Read/query facade**
    - Add `doc.at`, `doc.exists`, `doc.query`, `doc.entries`.
 
-3. **History metadata**
+2. **History metadata**
    - Add transaction options and merge metadata.
    - Preserve metadata in recordings.
 

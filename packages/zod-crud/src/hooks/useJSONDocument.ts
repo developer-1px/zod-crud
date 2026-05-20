@@ -12,6 +12,7 @@ import { useSelection, type SelectionState, type UseSelectionOptions } from "./u
 import { buildJSONDocumentOps } from "./buildJSONDocumentOps.js";
 import { buildCommands, type Commands } from "../commands/buildCommands.js";
 import { buildCan, type Can } from "../commands/buildCan.js";
+import { buildCheck, type Check } from "../check.js";
 import { createClipboardState, type ClipboardState } from "../clipboard.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
@@ -54,6 +55,7 @@ export interface JSONDocumentHistory {
  * Command surface (TipTap 식 디팩토 — `commands` + `can` group):
  * - commands: 10 verb methods (select/find/move/duplicate/replace/cut/copy/paste/undo/redo)
  * - can: mutation guard predicates + stack flags
+ * - check: explainable dry-run guard results
  */
 export interface JSONDocument<T> {
   value: T;
@@ -62,6 +64,7 @@ export interface JSONDocument<T> {
   ops: JSONDocumentOps<T>;
   commands: Commands<T>;
   can: Can<T>;
+  check: Check<T>;
   clipboard: ClipboardState<T>;
 }
 
@@ -120,7 +123,8 @@ export function useJSONDocument<S extends z.ZodType>(
     () => buildCommands({ schema, ops, selectionRef }),
     [schema, ops],
   );
-  const can = useMemo(() => buildCan({ schema, ops }), [schema, ops]);
+  const check = useMemo(() => buildCheck({ schema, ops }), [schema, ops]);
+  const can = useMemo(() => buildCan({ schema, ops, check }), [schema, ops, check]);
   const [, bumpClipboardVersion] = useReducer((version: number) => version + 1, 0);
   const clipboard = useMemo(
     () => createClipboardState({ schema, getState: () => ops.state, ops, onChange: bumpClipboardVersion }),
@@ -143,7 +147,8 @@ export function useJSONDocument<S extends z.ZodType>(
       ops,
       commands,
       can,
+      check,
       clipboard,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, clipboard]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, check, clipboard]);
 }

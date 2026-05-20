@@ -25,6 +25,12 @@ export type {
   ClipboardState,
   ClipboardWriteOptions,
 } from "./clipboard.js";
+export type {
+  Check,
+  CheckErrorCode,
+  CheckResult,
+  CheckViolation,
+} from "./check.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

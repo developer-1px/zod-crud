@@ -20,6 +20,12 @@ export type {
   ClipboardWriteOptions,
 } from "./clipboard.js";
 export type {
+  Check,
+  CheckErrorCode,
+  CheckResult,
+  CheckViolation,
+} from "./check.js";
+export type {
   DraftFieldState,
   DraftState,
 } from "./hooks/useDraft.js";
