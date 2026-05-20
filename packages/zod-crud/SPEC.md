@@ -446,7 +446,7 @@ export function withLastSegment(p: Pointer, seg: string | number): Pointer | nul
 
 내부 정본은 segment 배열이지만 **외부 API 전체가 Pointer string**이라 사용자는 이 헬퍼 없이도 라이브러리 사용 가능.
 
-Path arithmetic 은 모든 editor 가 공유하는 순수 path 조작. 이 5개 함수가 정본 — 사용자가 split/regex 로 직접 짜는 것을 막는다. **state·schema 모름** 이 핵심이다. JSON source-order cursor 이동은 selection subsystem 이 state 기반으로 제공하고, app-specific visible order 는 `SelectionCursorOptions.points` 로 주입한다.
+Path arithmetic 은 모든 editor 가 공유하는 순수 path 조작. 이 5개 함수가 정본 — 사용자가 split/regex 로 직접 짜는 것을 막는다. **state·schema 모름** 이 핵심이다. JSON source-order cursor 이동은 selection subsystem 이 state 기반으로 제공하고, find-driven order 는 `SelectionCursorOptions.query`, app-specific visible order 는 `SelectionCursorOptions.points` 로 주입한다.
 
 ### 5.7 `useSelection` — Selection state hook
 
@@ -500,6 +500,7 @@ export type SelectionCursorErrorCode =
 
 export interface SelectionCursorOptions {
   points?: ReadonlyArray<JSONPoint>; // explicit visible/virtual traversal order
+  query?: string;        // RFC 9535 JSONPath result order. points 가 있으면 무시.
   scope?: Pointer;        // traversal root. 기본 document root.
   includeScope?: boolean; // scope pointer 포함 여부. 기본 true.
   wrap?: boolean;         // next/previous boundary wrap. 기본 false.
@@ -508,10 +509,12 @@ export interface SelectionCursorOptions {
 export type SelectionScopeErrorCode =
   | "invalid_pointer"
   | "path_not_found"
+  | "syntax_error"
   | "empty_scope";
 
 export interface SelectionScopeOptions {
   points?: ReadonlyArray<JSONPoint>; // explicit visible/virtual selection order
+  query?: string;        // RFC 9535 JSONPath result order. points 가 있으면 무시.
   scope?: Pointer;        // selection root. 기본 document root.
   includeScope?: boolean; // scope pointer 포함 여부. 기본 true.
   primaryIndex?: number;  // 기본: 마지막 point
@@ -647,8 +650,8 @@ export interface HeadlessSelectionState<T> extends SelectionState<T> {
 `selection.subscribe(listener)` 는 manual selection action 과 JSON op tracking 후의
 `SelectionSnap` 전이를 JSON snapshot 으로 발행한다.
 `anchor` / `focus` 는 W3C Selection API 의 좌표 이름이다. `selectionRanges[primaryIndex]` 가 키보드 입력·paste·format command 의 주 작용 범위다.
-`moveSelectionCursor` / `extendSelectionCursor` 는 current selection snapshot 과 current JSON state 를 받아 cursor 를 이동하거나 확장한 다음 next `SelectionSnap` 을 반환하는 pure helper 다. `resolveSelectionCursor` 는 mutation 없이 다음 target 만 계산한다. 기본 traversal 은 `scope` 안의 JSON source-order DFS 다. `points` 를 넘기면 필터링/접힘/가상화/검색 결과처럼 앱이 계산한 visible `JSONPoint[]` 순서를 그대로 사용하며 `scope` traversal 은 건너뛴다. `includeScope` 는 root 포함 여부, `wrap` 은 boundary wrap 여부다. `SelectionState.moveCursor` / `extendCursor` / `resolveCursor` 는 같은 로직을 state owner 위에서 실행한다.
-`selectSelectionScope` 는 같은 traversal options 로 Ctrl+A/select-visible 같은 전체 선택 snapshot 을 만든다. `resolveSelectionScope` 는 mutation 없이 선택될 points 만 계산한다. `SelectionState.selectScope` / `resolveScope` 는 같은 로직을 state owner 위에서 실행한다.
+`moveSelectionCursor` / `extendSelectionCursor` 는 current selection snapshot 과 current JSON state 를 받아 cursor 를 이동하거나 확장한 다음 next `SelectionSnap` 을 반환하는 pure helper 다. `resolveSelectionCursor` 는 mutation 없이 다음 target 만 계산한다. 기본 traversal 은 `scope` 안의 JSON source-order DFS 다. `query` 를 넘기면 RFC 9535 JSONPath 결과 Pointer[] 순서를 쓰고, `points` 를 넘기면 필터링/접힘/가상화/검색 결과처럼 앱이 계산한 visible `JSONPoint[]` 순서를 그대로 사용하며 `query` / `scope` traversal 은 건너뛴다. `includeScope` 는 root 포함 여부, `wrap` 은 boundary wrap 여부다. `SelectionState.moveCursor` / `extendCursor` / `resolveCursor` 는 같은 로직을 state owner 위에서 실행한다.
+`selectSelectionScope` 는 같은 traversal options 로 Ctrl+A/select-visible 같은 전체 선택 snapshot 을 만든다. `query` 로 find 결과 전체를 바로 selection 으로 환원할 수 있고, `resolveSelectionScope` 는 mutation 없이 선택될 points 만 계산한다. `SelectionState.selectScope` / `resolveScope` 는 같은 로직을 state owner 위에서 실행한다.
 `rangeCount` 는 `selectionRanges.length`, `selectedCount` 는 `selectedPointers.length`, `hasSelection` 은 `selectedCount > 0` 이다. `isSelected(pointer)` 는 list/tree/grid 렌더링의 per-item selected predicate 이고, `containsNode(pointer)` 는 같은 exact selected-pointer 검사의 호환 alias 다. `primaryRange` 는 주 작용 범위를 직접 반환하는 편의 getter 다. `anchorPointer` / `focusPointer` / `primaryPointer` / `caretPointer` 는 JSONPoint 를 Pointer 기반 명령으로 연결하기 위한 projection 이다. `primaryPointer` 는 primary range 의 focus path 다. `UseSelectionOptions.initial` 과 `selectRanges` 는 `JSONPoint` 또는 `{ anchor, focus }` range 를 받으므로 초기 상태부터 disjoint multi-range 와 offset/edge caret 을 표현할 수 있다. `selectedSource` 는 selection 이 없으면 `null`, 단일 선택이면 `Pointer`, 다중 선택이면 `Pointer[]` 이다. document facade 의 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, `can.copy()` / `can.cut()` 은 source 인자가 생략되면 `selectedSource` 를 사용하고, selection 이 비어 있으면 `empty_selection` 을 반환한다. `commands.move(to)`, `check.move(to)`, `can.move(to)` 는 source 인자가 생략되면 `primaryPointer` 를 source 로 사용하며, target 은 명시 Pointer 로 받는다. `commands.duplicate()`, `check.duplicate()`, `can.duplicate()` 은 source 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.duplicate({ newKey })` 는 선택된 object member 를 새 key 로 복제한다. `commands.replace(value)`, `check.replace(value)`, `can.replace(value)` 는 path 인자가 생략되면 `primaryPointer` 를 사용한다. `commands.paste(payload)`, `doc.clipboard.paste()`, `check.paste(payload)`, `can.paste(payload)` 은 target 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.paste(payload, "after")` 같은 mode-only 호출도 같은 target 을 사용한다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. string value 위의 caret offset 은 state 가 있으면 현재 string 길이 안으로 clamp 되고, 같은 Pointer 가 살아남는 문서 편집 후에도 다시 clamp 된다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다. `selection` getter, `primaryRange`, `caret`, `snapshot()`, and `toJSON()` expose value snapshots: returned arrays/ranges/JSONPoint objects may be stored or mutated by callers without mutating live selection state. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap` as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores that wire-safe snapshot.
 
 **자동 규칙 네 가지** — 사용자 wiring 0.

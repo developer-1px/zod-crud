@@ -349,7 +349,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.caretPointer).toBe(null);
   });
 
-  test("commands.selectScope mutates document selection from visible points", () => {
+  test("commands.selectScope mutates document selection from visible points or JSONPath query", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },
     });
@@ -359,6 +359,12 @@ describe("createJSONDocument — headless facade", () => {
     expect(selected).toMatchObject({ ok: true, points: ["/items/1", "/items/0"] });
     expect(doc.selection?.selectedPointers).toEqual(["/items/1", "/items/0"]);
     expect(doc.selection?.primaryPointer).toBe("/items/1");
+
+    const found = doc.commands.selectScope({ query: "$.items[*].name" });
+
+    expect(found).toMatchObject({ ok: true, points: ["/items/0/name", "/items/1/name"] });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0/name", "/items/1/name"]);
+    expect(doc.selection?.primaryPointer).toBe("/items/1/name");
   });
 
   test("commands move and extend cursor mutate document selection", () => {
@@ -378,6 +384,15 @@ describe("createJSONDocument — headless facade", () => {
     });
     expect(doc.selection?.selectionRanges).toEqual([{ anchor: "/items/1", focus: "/items/0" }]);
     expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
+
+    expect(doc.commands.moveCursor("first", { query: "$.items[*].id" })).toMatchObject({
+      ok: true,
+      pointer: "/items/0/id",
+    });
+    expect(doc.commands.moveCursor("next", { query: "$.items[*].id" })).toMatchObject({
+      ok: true,
+      pointer: "/items/1/id",
+    });
   });
 
   test("selection selectRanges dedupes repeated ranges", () => {

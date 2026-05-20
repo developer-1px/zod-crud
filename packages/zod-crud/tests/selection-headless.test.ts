@@ -156,6 +156,39 @@ describe("createSelection", () => {
     });
   });
 
+  test("cursor helpers accept JSONPath query order", () => {
+    const first = moveSelectionCursor(
+      EMPTY_SELECTION,
+      "first",
+      "single",
+      initial,
+      { query: "$.items[*].name" },
+    );
+    expect(first).toMatchObject({ ok: true, pointer: "/items/0/name" });
+    if (!first.ok) throw new Error(first.reason);
+
+    const next = moveSelectionCursor(first.selection, "next", "single", initial, {
+      query: "$.items[*].name",
+    });
+    expect(next).toMatchObject({
+      ok: true,
+      pointer: "/items/1/name",
+      previousPointer: "/items/0/name",
+    });
+
+    expect(resolveSelectionCursor(EMPTY_SELECTION, "first", initial, { query: "$.items[" })).toMatchObject({
+      ok: false,
+      code: "syntax_error",
+      pointer: null,
+    });
+    expect(resolveSelectionCursor(EMPTY_SELECTION, "first", initial, { query: "$.missing[*]" })).toMatchObject({
+      ok: false,
+      code: "empty_scope",
+      reason: "cursor query matched no points: $.missing[*]",
+      pointer: null,
+    });
+  });
+
   test("selects a headless scope or explicit visible point set", () => {
     const scoped = selectSelectionScope(
       EMPTY_SELECTION,
@@ -189,6 +222,28 @@ describe("createSelection", () => {
     if (!visible.ok) throw new Error(visible.reason);
     expect(visible.selection.selectedPointers).toEqual(["/items/2", "/items/0"]);
     expect(primaryPointer(visible.selection)).toBe("/items/2");
+
+    const found = selectSelectionScope(
+      EMPTY_SELECTION,
+      "multiple",
+      initial,
+      { query: "$.items[*].id" },
+    );
+    expect(found).toMatchObject({ ok: true, points: ["/items/0/id", "/items/1/id", "/items/2/id"] });
+    if (!found.ok) throw new Error(found.reason);
+    expect(found.selection.selectedPointers).toEqual(["/items/0/id", "/items/1/id", "/items/2/id"]);
+
+    expect(resolveSelectionScope(initial, { query: "$.items[" })).toMatchObject({
+      ok: false,
+      code: "syntax_error",
+      pointer: null,
+    });
+    expect(resolveSelectionScope(initial, { query: "$.missing[*]" })).toMatchObject({
+      ok: false,
+      code: "empty_scope",
+      reason: "selection query matched no points: $.missing[*]",
+      pointer: null,
+    });
 
     expect(resolveSelectionScope(initial, { points: [] })).toMatchObject({
       ok: false,

@@ -66,6 +66,7 @@ selection cursor와 scope도 mutation 없이 확인할 수 있습니다.
 ```ts
 doc.can.moveCursor("next", { points: visiblePoints });
 doc.check.selectScope({ points: visiblePoints });
+doc.can.selectScope({ query: "$.items[*].title" });
 ```
 
 ## 여러 작업을 한 번에 적용하기
@@ -90,6 +91,7 @@ selection은 사용자가 선택한 JSON 위치들입니다.
 doc.selection?.setBaseAndExtent("/items/0", "/items/1");
 doc.selection?.toggleRange("/items/2");
 doc.selection?.selectScope({ points: visiblePoints });
+doc.selection?.selectScope({ query: "$.items[*].title" });
 doc.selection?.empty();
 ```
 

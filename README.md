@@ -71,9 +71,11 @@ item selection and text carets share one JSON editing model. Clipboard is a
 headless JSON fragment buffer; system clipboard calls remain user code. `check`
 is the explainable dry-run guard behind `can`, including JSONPath find syntax
 checks and selection cursor/scope guards (`moveCursor`, `extendCursor`,
-`selectScope`) for keyboard and select-visible UI. `at`/`exists`/`query`/
-`entries` provide pointer and JSONPath reads without React. `schema` exposes
-serializable path introspection without making Zod internals the public API.
+`selectScope`) for keyboard and select-visible UI. Selection cursor/scope
+options can use `query` to traverse or select JSONPath find results.
+`at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
+React. `schema` exposes serializable path introspection without making Zod
+internals the public API.
 Selection-backed facade commands can omit the current source or target:
 `copy`/`cut` use `selectedSource`, `move`/`duplicate` use `primaryPointer` as
 source, and `replace`/`paste` use `primaryPointer` as target.

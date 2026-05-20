@@ -155,9 +155,11 @@ projections needed by scalar Pointer commands; `selectedSource` is the
 null/single/multi source projection accepted by `copy` / `cut`.
 `doc.selection.moveCursor(direction, options?)` and
 `doc.selection.extendCursor(direction, options?)` move or extend selection in
-JSON source-order within an optional `scope`; pass `points` to use a filtered,
-folded, virtualized, or otherwise app-visible `JSONPoint[]` order. `resolveCursor`
-computes the next target without mutating. The pure helpers
+JSON source-order within an optional `scope`; pass `query` to use RFC 9535
+JSONPath results, or `points` to use a filtered, folded, virtualized, or
+otherwise app-visible `JSONPoint[]` order. `points` takes precedence over
+`query`, and both bypass `scope` traversal. `resolveCursor` computes the next
+target without mutating. The pure helpers
 `moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
 provide the same cursor logic for standalone headless composition.
 `doc.commands.moveCursor(direction, options?)` and
@@ -167,8 +169,8 @@ movement through the document command namespace.
 `doc.can.extendCursor` answer whether the same cursor movement is available
 without mutating selection; boundary failures return `cursor_boundary`.
 `doc.selection.selectScope(options?)` and `selectSelectionScope(...)` build a
-whole selection from the same `scope` or visible `points` options, covering
-Ctrl+A/select-visible flows without React.
+whole selection from the same `scope`, `query`, or visible `points` options,
+covering Ctrl+A/select-visible and select-find-results flows without React.
 `doc.commands.selectScope(options?)` exposes the same flow through the document
 command namespace.
 `doc.check.selectScope` / `doc.can.selectScope` guard that flow; an empty

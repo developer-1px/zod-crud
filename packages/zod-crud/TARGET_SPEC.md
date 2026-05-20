@@ -277,6 +277,7 @@ type SelectionCursorDirection = "first" | "previous" | "next" | "last";
 
 interface SelectionCursorOptions {
   points?: ReadonlyArray<JSONPoint>;
+  query?: string;
   scope?: Pointer;
   includeScope?: boolean;
   wrap?: boolean;
@@ -284,6 +285,7 @@ interface SelectionCursorOptions {
 
 interface SelectionScopeOptions {
   points?: ReadonlyArray<JSONPoint>;
+  query?: string;
   scope?: Pointer;
   includeScope?: boolean;
   primaryIndex?: number;
@@ -292,6 +294,7 @@ interface SelectionScopeOptions {
 type SelectionCursorErrorCode =
   | "invalid_pointer"
   | "path_not_found"
+  | "syntax_error"
   | "empty_scope"
   | "cursor_boundary";
 
@@ -321,7 +324,7 @@ type SelectionScopeResult =
     }
   | {
       ok: false;
-      code: "invalid_pointer" | "path_not_found" | "empty_scope";
+      code: "invalid_pointer" | "path_not_found" | "syntax_error" | "empty_scope";
       reason: string;
       pointer: Pointer | null;
       selection: SelectionSnap;
@@ -392,9 +395,12 @@ offset/edge carets without React.
 `moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
 are pure headless helpers over a `SelectionSnap` plus current JSON state.
 They use JSON source-order DFS within `scope` by default, or explicit
-`points` for filtered, folded, virtualized, or otherwise app-visible order.
+`query` JSONPath results for find-driven order, or explicit `points` for
+filtered, folded, virtualized, or otherwise app-visible order. `points` takes
+precedence over `query`, and both bypass `scope` traversal.
 `selectSelectionScope` and `resolveSelectionScope` use the same traversal
-options for Ctrl+A/select-visible style selection without requiring React.
+options for Ctrl+A/select-visible style selection without requiring React; this
+includes selecting all JSONPath find results through `query`.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.
@@ -441,15 +447,18 @@ Rules:
   and `wrap` is false.
 - Explicit cursor `points` preserve `JSONPoint` offsets/edges/affinity, so text
   cursor positions and item cursor positions use the same engine path.
+- Cursor and scope `query` options use RFC 9535 JSONPath and report
+  `syntax_error` without mutating selection when the query is invalid.
 
 Acceptance evidence:
 
 - `tests/verbs.test.ts` covers Pointer selection, JSONPoint caret, and multiple
   independent ranges.
-- `tests/selection-headless.test.ts` covers pure cursor helpers and
-  `createSelection` cursor movement/extension.
-- `tests/create-json-document.test.ts` covers `commands.select` mutation and
-  JSONPoint path tracking through document patches.
+- `tests/selection-headless.test.ts` covers pure cursor helpers, query-driven
+  cursor/scope traversal, and `createSelection` cursor movement/extension.
+- `tests/create-json-document.test.ts` covers `commands.select` mutation,
+  `commands.selectScope({ query })`, and JSONPoint path tracking through
+  document patches.
 
 ## 7. History Subsystem
 

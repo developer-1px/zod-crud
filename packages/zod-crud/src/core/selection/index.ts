@@ -9,6 +9,7 @@
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
 import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../track.js";
+import { JSONPathSyntaxError, queryMatches } from "../jsonpath/index.js";
 import { appendSegment, readAt, tryParsePointer, type Pointer } from "../pointer/index.js";
 import type { JSONPatchOperation } from "../patch/index.js";
 import { expandRange } from "./range.js";
@@ -21,11 +22,13 @@ export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
 export type SelectionCursorErrorCode =
   | "invalid_pointer"
   | "path_not_found"
+  | "syntax_error"
   | "empty_scope"
   | "cursor_boundary";
 export type SelectionScopeErrorCode =
   | "invalid_pointer"
   | "path_not_found"
+  | "syntax_error"
   | "empty_scope";
 
 export interface JSONPointObject {
@@ -52,6 +55,11 @@ export interface SelectionCursorOptions {
    * used.
    */
   points?: ReadonlyArray<JSONPoint>;
+  /**
+   * JSONPath query used as traversal order. Use this to move through find
+   * results without precomputing `points`. Ignored when `points` is present.
+   */
+  query?: string;
   /** Pointer subtree used as the traversal root. Defaults to the document root. */
   scope?: Pointer;
   /** Include the scope pointer itself in traversal. Defaults to true. */
@@ -66,6 +74,11 @@ export interface SelectionScopeOptions {
    * virtualized, or otherwise app-visible items.
    */
   points?: ReadonlyArray<JSONPoint>;
+  /**
+   * JSONPath query used as selection order. Use this for select-all over find
+   * results without precomputing `points`. Ignored when `points` is present.
+   */
+  query?: string;
   /** Pointer subtree used as the selection root. Defaults to the document root. */
   scope?: Pointer;
   /** Include the scope pointer itself. Defaults to true. */
@@ -234,10 +247,8 @@ export function selectSelectionScope(
     return {
       ok: false,
       code: "empty_scope",
-      reason: options.points !== undefined
-        ? "selection points are empty"
-        : `selection scope is empty: ${options.scope ?? ""}`,
-      pointer: options.scope ?? "",
+      reason: emptyTraversalReason("selection", options),
+      pointer: emptyTraversalPointer(options),
       selection: selectionSnapshot(prev),
     };
   }
@@ -260,10 +271,8 @@ export function resolveSelectionScope(
     return {
       ok: false,
       code: "empty_scope",
-      reason: options.points !== undefined
-        ? "selection points are empty"
-        : `selection scope is empty: ${options.scope ?? ""}`,
-      pointer: options.scope ?? "",
+      reason: emptyTraversalReason("selection", options),
+      pointer: emptyTraversalPointer(options),
     };
   }
   return { ok: true, points: points.points.map(clonePoint) };
@@ -397,15 +406,12 @@ export function resolveSelectionCursor(
     };
   }
   if (points.points.length === 0) {
-    const scope = options.scope ?? "";
     return {
       ok: false,
       direction,
       code: "empty_scope",
-      reason: options.points !== undefined
-        ? "cursor points are empty"
-        : `cursor scope is empty: ${scope}`,
-      pointer: scope,
+      reason: emptyTraversalReason("cursor", options),
+      pointer: emptyTraversalPointer(options),
     };
   }
 
@@ -606,9 +612,12 @@ function clonePoint(point: JSONPoint): JSONPoint {
 function cursorPoints(
   state: unknown,
   options: SelectionCursorOptions,
-): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer | null } {
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found" | "syntax_error"; reason: string; pointer: Pointer | null } {
   if (options.points !== undefined) {
     return explicitCursorPoints(options.points);
+  }
+  if (options.query !== undefined) {
+    return queryCursorPoints(state, options.query);
   }
 
   return scopedCursorPoints(state, options.scope ?? "", options.includeScope ?? true);
@@ -617,9 +626,12 @@ function cursorPoints(
 function selectionPoints(
   state: unknown,
   options: SelectionScopeOptions,
-): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer | null } {
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found" | "syntax_error"; reason: string; pointer: Pointer | null } {
   if (options.points !== undefined) {
     return explicitCursorPoints(options.points);
+  }
+  if (options.query !== undefined) {
+    return queryCursorPoints(state, options.query);
   }
 
   return scopedCursorPoints(state, options.scope ?? "", options.includeScope ?? true);
@@ -637,6 +649,35 @@ function explicitCursorPoints(
     if (!out.some((candidate) => samePoint(candidate, point))) out.push(clonePoint(point));
   }
   return { ok: true, points: out };
+}
+
+function queryCursorPoints(
+  state: unknown,
+  jsonpath: string,
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "syntax_error"; reason: string; pointer: Pointer | null } {
+  try {
+    return explicitCursorPoints(queryMatches(jsonpath, state).map((match) => match.pointer));
+  } catch (error) {
+    if (error instanceof JSONPathSyntaxError) {
+      return { ok: false, code: "syntax_error", reason: error.message, pointer: null };
+    }
+    throw error;
+  }
+}
+
+function emptyTraversalReason(
+  kind: "cursor" | "selection",
+  options: SelectionCursorOptions | SelectionScopeOptions,
+): string {
+  if (options.points !== undefined) return `${kind} points are empty`;
+  if (options.query !== undefined) return `${kind} query matched no points: ${options.query}`;
+  return `${kind} scope is empty: ${options.scope ?? ""}`;
+}
+
+function emptyTraversalPointer(
+  options: SelectionCursorOptions | SelectionScopeOptions,
+): Pointer | null {
+  return options.query !== undefined ? null : options.scope ?? "";
 }
 
 function scopedCursorPoints(

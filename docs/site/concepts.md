@@ -75,6 +75,13 @@ selection cursor도 같은 guard를 씁니다.
 </button>
 ```
 
+`query`를 넘기면 find 결과를 바로 selection traversal로 씁니다.
+
+```ts
+doc.selection?.selectScope({ query: "$.tasks[?@.done == false]" });
+doc.commands.moveCursor("first", { query: "$.tasks[*].title" });
+```
+
 ## `doc.history`
 
 history는 undo/redo 가능 여부와 history 병합을 제공합니다.
@@ -124,6 +131,7 @@ const doc = useJSONDocument(Schema, initial, {
 doc.selection?.collapse("/tasks/1");
 doc.selection?.empty();
 doc.selection?.moveCursor("next", { points: visiblePoints });
+doc.selection?.selectScope({ query: "$.tasks[*].title" });
 ```
 
 항목이 이동하거나 삭제되면 selection의 `anchor`와 `focus`는 변경을 따라갑니다.

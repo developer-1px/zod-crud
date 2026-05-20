@@ -190,6 +190,8 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.extendCursor("next", { points: ["/items/0", "/items/1"] })).toBe(true);
     expect(doc.check.selectScope({ points: ["/items/1", "/items/0"] })).toEqual({ ok: true });
     expect(doc.can.selectScope({ points: ["/items/1", "/items/0"] })).toBe(true);
+    expect(doc.check.selectScope({ query: "$.items[*].name" })).toEqual({ ok: true });
+    expect(doc.can.selectScope({ query: "$.items[*].name" })).toBe(true);
     expect(doc.selection?.primaryPointer).toBe("/items/0");
 
     expect(doc.check.moveCursor("next", { points: ["/items/0"] })).toMatchObject({
@@ -203,6 +205,11 @@ describe("doc.check — explainable dry-run guard", () => {
       code: "empty_scope",
     });
     expect(doc.can.selectScope({ points: [] })).toBe(false);
+    expect(doc.check.selectScope({ query: "$.items[" })).toMatchObject({
+      ok: false,
+      code: "syntax_error",
+    });
+    expect(doc.can.selectScope({ query: "$.items[" })).toBe(false);
     expect(doc.selection?.primaryPointer).toBe("/items/0");
   });
 
