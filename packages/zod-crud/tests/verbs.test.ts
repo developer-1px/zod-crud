@@ -6,7 +6,7 @@ import { move } from "../src/verbs/move.js";
 import { undo } from "../src/verbs/undo.js";
 import { redo } from "../src/verbs/redo.js";
 import { select, EMPTY_SELECTION } from "../src/verbs/select.js";
-import { reduceSelection } from "../src/core/selection/index.js";
+import { caretPoint, primaryRange, reduceSelection } from "../src/core/selection/index.js";
 import { commit, emptyHistory } from "../src/core/history.js";
 import { computeInverses } from "../src/core/patch/index.js";
 
@@ -77,6 +77,8 @@ describe("verbs/select", () => {
     expect(s.primaryIndex).toBe(0);
     expect(s.anchor).toBe("/items/0");
     expect(s.focus).toBe("/items/0");
+    expect(primaryRange(s)).toEqual({ anchor: "/items/0", focus: "/items/0" });
+    expect(caretPoint(s)).toBe("/items/0");
   });
 
   test("JSONPoint caret preserves text offset separately from selected pointer", () => {
@@ -88,6 +90,8 @@ describe("verbs/select", () => {
     expect(s.selectionRanges).toEqual([{ anchor: point, focus: point }]);
     expect(s.anchor).toEqual(point);
     expect(s.focus).toEqual(point);
+    expect(primaryRange(s)).toEqual({ anchor: point, focus: point });
+    expect(caretPoint(s)).toEqual(point);
   });
 
   test("multiple mode stores independent ranges and primary range", () => {
@@ -102,6 +106,8 @@ describe("verbs/select", () => {
     expect(second.primaryIndex).toBe(1);
     expect(second.anchor).toBe("/items/1/name");
     expect(second.focus).toBe("/items/1/name");
+    expect(primaryRange(second)).toEqual({ anchor: "/items/1/name", focus: "/items/1/name" });
+    expect(caretPoint(second)).toBe(null);
   });
 
   test("extended range falls back to endpoints when pointer is invalid", () => {

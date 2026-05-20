@@ -67,7 +67,7 @@ document surface:
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth and `selectedPointers` is the item-selection projection |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `primaryRange` is the active range, `caret` is the collapsed cursor point, and `selectedPointers` is the item-selection projection |
 | `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut`/`paste` mutate through the same document facade while system clipboard calls stay user code |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can

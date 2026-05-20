@@ -147,6 +147,8 @@ describe("createJSONDocument — headless facade", () => {
     expect(selected.selectedPointers).toEqual(["/items/0"]);
     expect(doc.selection?.selectedPointers).toEqual(["/items/0"]);
     expect(doc.selection?.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
+    expect(doc.selection?.primaryRange).toEqual({ anchor: "/items/0", focus: "/items/0" });
+    expect(doc.selection?.caret).toBe("/items/0");
 
     doc.commands.select({ type: "addRange", pointer: "/items/1" });
 
@@ -156,6 +158,8 @@ describe("createJSONDocument — headless facade", () => {
       { anchor: "/items/1", focus: "/items/1" },
     ]);
     expect(doc.selection?.primaryIndex).toBe(1);
+    expect(doc.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
+    expect(doc.selection?.caret).toBe(null);
   });
 
   test("JSONPoint caret tracks pointer movement while preserving offset", () => {
@@ -169,6 +173,7 @@ describe("createJSONDocument — headless facade", () => {
 
     expect(doc.selection?.anchor).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(doc.selection?.focus).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
   });
 

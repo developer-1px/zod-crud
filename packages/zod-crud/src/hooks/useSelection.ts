@@ -7,7 +7,9 @@ import {
   EMPTY_SELECTION,
   reduceSelection,
   applySelectionAutoRules,
+  caretPoint,
   isCollapsed,
+  primaryRange,
   selectionType,
   type SelectionSnap,
   type SelectionMode,
@@ -31,6 +33,8 @@ export interface SelectionState<T> {
   selectedPointers: ReadonlyArray<Pointer>;
   selectionRanges: ReadonlyArray<SelectionRange>;
   primaryIndex: number;
+  primaryRange: SelectionRange | null;
+  caret: JSONPoint | null;
   anchor: JSONPoint | null;
   focus: JSONPoint | null;
   isCollapsed: boolean;
@@ -93,6 +97,8 @@ export function useSelection<T>(
     get selectedPointers() { return snapRef.current.selectedPointers; },
     get selectionRanges() { return snapRef.current.selectionRanges; },
     get primaryIndex() { return snapRef.current.primaryIndex; },
+    get primaryRange() { return primaryRange(snapRef.current); },
+    get caret() { return caretPoint(snapRef.current); },
     get anchor() { return snapRef.current.anchor; },
     get focus() { return snapRef.current.focus; },
     get isCollapsed() { return isCollapsed(snapRef.current); },

@@ -97,7 +97,7 @@ export type {
   SelectionType,
 } from "./core/selection/index.js";
 export { trackPointer } from "./core/track.js";
-export { EMPTY_SELECTION } from "./core/selection/index.js";
+export { EMPTY_SELECTION, caretPoint, isCollapsed, primaryRange, selectionType } from "./core/selection/index.js";
 
 // === Sidecars — 횡단 관심사 ===
 // React sidecar hooks live under `zod-crud/react`.

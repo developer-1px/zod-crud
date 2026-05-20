@@ -66,6 +66,14 @@ export function selectionType(s: SelectionSnap): SelectionType {
   return isCollapsed(s) ? "Caret" : "Range";
 }
 
+export function primaryRange(s: SelectionSnap): SelectionRange | null {
+  return s.selectionRanges[s.primaryIndex] ?? null;
+}
+
+export function caretPoint(s: SelectionSnap): JSONPoint | null {
+  return isCollapsed(s) ? s.focus : null;
+}
+
 export type SelectionAction =
   | { type: "collapse"; pointer: Pointer }
   | { type: "collapse"; point: JSONPoint }

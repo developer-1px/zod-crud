@@ -96,6 +96,8 @@ function selectionStub(): SelectionState<{ name: string }> {
     selectedPointers: [],
     selectionRanges: [],
     primaryIndex: -1,
+    primaryRange: null,
+    caret: null,
     anchor: null,
     focus: null,
     isCollapsed: false,
