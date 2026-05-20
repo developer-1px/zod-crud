@@ -75,7 +75,28 @@ export function tokenize(src: string): Token[] {
     if (c === "-" || (c >= "0" && c <= "9")) {
       let j = i;
       if (src[j] === "-") j++;
+      if (j >= src.length || src[j]! < "0" || src[j]! > "9") {
+        throw new JSONPathSyntaxError("invalid number", start);
+      }
+      if (src[j] === "0" && src[j + 1] !== undefined && src[j + 1]! >= "0" && src[j + 1]! <= "9") {
+        throw new JSONPathSyntaxError("invalid number", start);
+      }
       while (j < src.length && src[j]! >= "0" && src[j]! <= "9") j++;
+      if (src[j] === ".") {
+        j++;
+        if (j >= src.length || src[j]! < "0" || src[j]! > "9") {
+          throw new JSONPathSyntaxError("invalid number", start);
+        }
+        while (j < src.length && src[j]! >= "0" && src[j]! <= "9") j++;
+      }
+      if (src[j] === "e" || src[j] === "E") {
+        j++;
+        if (src[j] === "+" || src[j] === "-") j++;
+        if (j >= src.length || src[j]! < "0" || src[j]! > "9") {
+          throw new JSONPathSyntaxError("invalid number", start);
+        }
+        while (j < src.length && src[j]! >= "0" && src[j]! <= "9") j++;
+      }
       const num = Number(src.slice(i, j));
       out.push({ kind: "number", value: num, pos: start });
       i = j;

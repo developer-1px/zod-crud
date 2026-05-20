@@ -5,6 +5,9 @@ import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, Com
 import { tokenize, JSONPathSyntaxError, type Token } from "./tokenizer.js";
 
 export function parse(src: string): Query {
+  if (/^\s|\s$/.test(src)) {
+    throw new JSONPathSyntaxError("leading or trailing whitespace", 0);
+  }
   const tokens = tokenize(src);
   const p = new Parser(tokens);
   p.consume("$");
@@ -62,6 +65,7 @@ class Parser {
     const t = this.next();
     if (t.kind === "*") return { kind: "wildcard" };
     if (t.kind === "name") return { kind: "name", name: String(t.value) };
+    if (t.kind === "true" || t.kind === "false" || t.kind === "null") return { kind: "name", name: t.kind };
     throw new JSONPathSyntaxError(`expected name or *, got ${t.kind}`, t.pos);
   }
 
@@ -88,11 +92,11 @@ class Parser {
       // index 또는 slice
       let start: number | null = null, end: number | null = null, step = 1;
       let parts = 0;
-      if (t.kind === "number") { start = Number(t.value); this.next(); parts = 1; }
+      if (t.kind === "number") { start = this.readInteger(this.next()); parts = 1; }
       if (this.peek().kind === ":") {
         this.next();
-        if (this.peek().kind === "number") { end = Number(this.next().value); }
-        if (this.peek().kind === ":") { this.next(); if (this.peek().kind === "number") step = Number(this.next().value); }
+        if (this.peek().kind === "number") { end = this.readInteger(this.next()); }
+        if (this.peek().kind === ":") { this.next(); if (this.peek().kind === "number") step = this.readInteger(this.next()); }
         return { kind: "slice", start, end, step };
       }
       if (parts === 1) return { kind: "index", index: start! };
@@ -130,6 +134,9 @@ class Parser {
     if (["==", "!=", "<", "<=", ">", ">="].includes(t.kind)) {
       this.next();
       const right = this.parseComparable();
+      if ((left.kind === "path" && !isSingularQuery(left.path)) || (right.kind === "path" && !isSingularQuery(right.path))) {
+        throw new JSONPathSyntaxError("comparison operands must be singular queries", t.pos);
+      }
       return { kind: "compare", op: t.kind as CompareOp, left, right };
     }
     if (left.kind === "path") return { kind: "exists", path: left.path };
@@ -177,4 +184,18 @@ class Parser {
     this.consume(")");
     return { name, args };
   }
+
+  readInteger(token: Token): number {
+    const value = Number(token.value);
+    if (!Number.isInteger(value)) throw new JSONPathSyntaxError("expected integer", token.pos);
+    return value;
+  }
+}
+
+function isSingularQuery(path: FilterQuery): boolean {
+  return path.segments.every((segment) =>
+    segment.kind === "child"
+    && segment.selectors.length === 1
+    && (segment.selectors[0]?.kind === "name" || segment.selectors[0]?.kind === "index")
+  );
 }

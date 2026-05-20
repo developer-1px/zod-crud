@@ -114,10 +114,9 @@ function evalFilter(expr: FilterExpr, current: Match, root: unknown): boolean {
   if (expr.kind === "compare") {
     const l = resolveComparable(expr.left, current, root);
     const r = resolveComparable(expr.right, current, root);
-    if (l === undefined || r === undefined) return false;
     switch (expr.op) {
-      case "==": return l === r;
-      case "!=": return l !== r;
+      case "==": return jsonEqual(l, r);
+      case "!=": return !jsonEqual(l, r);
       case "<": return (l as number) < (r as number);
       case "<=": return (l as number) <= (r as number);
       case ">": return (l as number) > (r as number);
@@ -135,7 +134,7 @@ function resolveComparable(c: Comparable, current: Match, root: unknown): unknow
   if (c.kind === "literal") return c.value;
   if (c.kind === "function") return resolveFunctionAsValue(c.fn, current, root);
   const matches = resolveFilterQuery(c.path, current, root);
-  return matches.length === 1 ? matches[0]?.value : undefined;
+  return matches.length === 1 ? matches[0]?.value : NOTHING;
 }
 
 function resolveFilterQuery(path: FilterQuery, current: Match, root: unknown): Match[] {
@@ -229,6 +228,27 @@ function regexTest(input: string, pattern: string, full: boolean): boolean {
   } catch {
     return false;
   }
+}
+
+const NOTHING = Symbol("JSONPath Nothing");
+
+function jsonEqual(left: unknown, right: unknown): boolean {
+  if (left === NOTHING || right === NOTHING) return left === right;
+  if (Object.is(left, right)) return true;
+  if (Array.isArray(left) && Array.isArray(right)) {
+    return left.length === right.length && left.every((value, index) => jsonEqual(value, right[index]));
+  }
+  if (isRecord(left) && isRecord(right)) {
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    return leftKeys.length === rightKeys.length
+      && leftKeys.every((key) => Object.prototype.hasOwnProperty.call(right, key) && jsonEqual(left[key], right[key]));
+  }
+  return false;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** 외부 helper — Match[] → Pointer[] (verbs/find 가 사용). */
