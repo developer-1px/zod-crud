@@ -6,7 +6,7 @@
 //   ⑤ 좌표 추적   대량 mutation 후 focus·selection 정합
 //   ⑥ 빠른 입력   500ms time-coalesce 경계
 
-import { cleanup, render, screen, within, act } from "@testing-library/react";
+import { cleanup, render, screen, within, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
@@ -262,6 +262,7 @@ describe("stress — outliner UI keyboard rapid sequences", () => {
     render(<Outliner />);
     const user = await clickRow(firstItem);
     await user.keyboard("{Enter}"); // edit 모드 진입
+    await waitFor(() => expect((screen.getByDisplayValue(firstItem) as HTMLInputElement).readOnly).toBe(false));
 
     // 빠르게 글자 N 개 삭제
     await user.keyboard("{Backspace}{Backspace}{Backspace}{Backspace}{Backspace}");

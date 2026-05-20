@@ -2,8 +2,9 @@
 
 `zod-crud` is a Zod-guarded JSON tree library. The canonical specification
 lives in `packages/zod-crud/SPEC.md`. It is locked to **RFC 6901 (JSON Pointer)**
-and **RFC 6902 (JSON Patch)** for 30-year forward compatibility. SPEC.md
-outranks code, docs, and tests on conflict.
+and **RFC 6902 (JSON Patch)** for 30-year forward compatibility. The SPEC
+describes current package behavior; on conflict, code behavior wins unless it
+conflicts with an RFC, in which case the RFC wins.
 
 ## Local Setup
 

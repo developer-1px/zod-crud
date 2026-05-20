@@ -5,8 +5,9 @@ A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and
 serializable JSON. The core is pure functions; React hooks live behind the
 `zod-crud/react` entrypoint.
 
-The contract is `packages/zod-crud/SPEC.md`. It is the single source of truth
-and outranks code, docs, and tests on conflict.
+The behavior contract lives in `packages/zod-crud/SPEC.md`. It describes the
+current package behavior; on conflict, code behavior wins unless it conflicts
+with an RFC, in which case the RFC wins.
 
 ## Package
 

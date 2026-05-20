@@ -4,6 +4,7 @@ import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
 
 const firstItem = "Enter — insert sibling after focus";
+const secondItem = "Tab — demote (move into prev sibling)";
 const editedFirstItem = "Edited first item";
 
 afterEach(() => {
@@ -38,10 +39,13 @@ async function editFirstItemAndInsertSibling() {
   await waitFor(() => expect(document.activeElement).toBe(firstInput));
   // click 정책 = select 모드 → 편집은 Enter 로 진입
   await user.keyboard("{Enter}");
+  await waitFor(() => expect((firstInput as HTMLInputElement).readOnly).toBe(false));
   await user.keyboard("{Backspace}".repeat(firstItem.length));
   await user.keyboard(editedFirstItem);
+  await waitFor(() => expect((firstInput as HTMLInputElement).value).toBe(editedFirstItem));
   // edit 모드의 Enter = insert-sibling
   await user.keyboard("{Enter}");
+  await waitFor(() => expect(treeTexts()).toContain(""));
 
   return user;
 }
@@ -49,8 +53,11 @@ async function editFirstItemAndInsertSibling() {
 describe("outliner editor history", () => {
   test("keeps DOM selection, aria-selected, and selection count aligned after keyboard structure edits", async () => {
     renderOutliner();
-    const user = await editFirstItemAndInsertSibling();
+    const user = userEvent.setup();
+    const secondInput = screen.getByDisplayValue(secondItem);
 
+    await user.click(secondInput);
+    await waitFor(() => expect(document.activeElement).toBe(secondInput));
     expect(statusText()).toMatch(/selection =\s*1/);
     expect(selectedRows()).toHaveLength(1);
 

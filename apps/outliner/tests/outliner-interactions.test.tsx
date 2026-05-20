@@ -66,13 +66,17 @@ async function clickText(text: string) {
 // 편집 모드까지 진입 (옛 calling 계약)
 async function clickAndEdit(text: string) {
   const user = await clickText(text);
+  const input = screen.getByDisplayValue(text) as HTMLInputElement;
   await user.keyboard("{Enter}");
+  await waitFor(() => expect(input.readOnly).toBe(false));
   return user;
 }
 
 async function replaceFocusedText(user: ReturnType<typeof userEvent.setup>, from: string, to: string) {
+  const input = document.activeElement as HTMLInputElement;
   await user.keyboard("{Backspace}".repeat(from.length));
   if (to !== "") await user.keyboard(to);
+  await waitFor(() => expect(input.value).toBe(to));
 }
 
 describe("outliner keyboard and mouse interactions", () => {

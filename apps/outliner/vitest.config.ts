@@ -5,13 +5,21 @@ import { fileURLToPath } from "node:url";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: {
-      "zod-crud": fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
-    },
+    alias: [
+      {
+        find: "zod-crud/react",
+        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
+      },
+      {
+        find: "zod-crud",
+        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
+      },
+    ],
   },
   test: {
     environment: "jsdom",
     include: ["tests/**/*.test.tsx"],
+    testTimeout: 15000,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

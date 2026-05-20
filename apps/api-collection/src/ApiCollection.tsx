@@ -149,52 +149,24 @@ export function ApiCollection() {
     <div style={S.root}>
       <header style={S.header}>
         <h1 style={S.h1}>zod-crud · API collection</h1>
-        <p style={S.lede}>
-          <strong>왜 Postman 류인가</strong> — 폴더·요청이 임의 깊이로 중첩되고, 사용자가
-          여러 요청을 가로질러 선택·복사·일괄수정·되돌리기를 모두 자연스럽게 기대하는 도메인.
-          rich-text 도 form 도 아닌, "임의 JSON 트리에서 4기둥이 한꺼번에 필요한" 가장 깔끔한 빈자리다.
-        </p>
-        <details style={S.details}>
-          <summary style={S.summary}>이 데모가 zod-crud 의 무엇을 증명하는가 ▾</summary>
-          <ul style={S.proofList}>
-            <li><strong>임의 JSON 트리</strong> — TipTap·Slate·Lexical 은 rich text 만, rjsf·Formily 는 form 만. 여기는 folder ⊃ folder ⊃ request 를 Zod 재귀 schema 로 표현 (<code>schema.ts</code>).</li>
-            <li><strong>Selection 기둥 (RFC 6901 + W3C Selection)</strong> — Click / Shift+Click range / Cmd+Click toggle. 좌표는 모두 JSON Pointer.</li>
-            <li><strong>Edit 기둥 (RFC 6902)</strong> — bulk 일괄 수정도 단일 <code>ops.patch([...])</code>. listener·history·undo 가 한 단위로 처리.</li>
-            <li><strong>Clipboard 기둥</strong> — 서로 다른 폴더 사이 request 이동 — 텍스트 에디터로는 불가능.</li>
-            <li><strong>Undo 기둥</strong> — bulk 동작 한 번 = undo 한 번. 200 step history.</li>
-            <li><strong>RFC 9535 JSONPath</strong> — <code>$..items[?(@.method=='POST')]</code> 한 줄로 모든 POST 요청 일괄 선택. 다른 라이브러리는 직접 트리 순회 필요.</li>
-            <li><strong>Zod 가 도큐먼트를 정의</strong> — 정적 타입 + 런타임 검증 동시. preFlight 가 잘못된 patch 를 commit 전에 막는다.</li>
-          </ul>
-        </details>
-        <details style={S.details}>
-          <summary style={S.summary}>시도해볼 시나리오 — 각 동작이 무엇을 건드리는가 ▾</summary>
-          <ol style={S.tryList}>
-            <li><em>Auth 폴더의 "Login" 클릭 → Shift+Click "Me"</em> — 3개 range select (W3C Selection extend).</li>
-            <li><em>Cmd+Click 으로 Users/Create 추가</em> — 비연속 toggle.</li>
-            <li><em>copy → Billing 폴더 클릭 → paste</em> — request 가 폴더 간 이동 (RFC 6902 add).</li>
-            <li><em>filter 줄에서 <strong>POST</strong> 칩 클릭</em> — 트리 가로질러 모든 POST 요청 한번에 선택. 내부적으로 <code>$..items[?(@.method=='POST')]</code> 가 실행됨 (advanced 토글로 확인).</li>
-            <li><em>+ X-Trace-Id (선택 일괄)</em> — 매치된 모든 request 에 헤더 일괄 추가. 단일 patch · 단일 undo step.</li>
-            <li><em>undo 한 번</em> — bulk 가 한 step 으로 묶였는지 확인.</li>
-            <li><em>DELETE 칩 클릭 → cut → 다른 폴더 paste</em> — 위험 동작들을 한 폴더로 격리.</li>
-          </ol>
-        </details>
+        <div style={S.tag}>JSON Pointer tree editor</div>
       </header>
 
       <div style={S.toolbar}>
-        <span style={S.toolbarLabel} title="Undo 기둥">history</span>
-        <button onClick={() => doc.commands.undo()} disabled={!doc.history.canUndo} title="bulk 동작도 1 step 으로 묶임">undo</button>
+        <span style={S.toolbarLabel}>history</span>
+        <button onClick={() => doc.commands.undo()} disabled={!doc.history.canUndo}>undo</button>
         <button onClick={() => doc.commands.redo()} disabled={!doc.history.canRedo}>redo</button>
         <span style={S.sep} />
-        <span style={S.toolbarLabel} title="Clipboard 기둥 — 트리 간 이동">clipboard</span>
+        <span style={S.toolbarLabel}>clipboard</span>
         <button onClick={copy} disabled={selectedItems.length === 0}>copy ({selectedItems.length})</button>
         <button onClick={cut} disabled={selectedItems.length === 0}>cut</button>
-        <button onClick={paste} title="선택된 첫 폴더(없으면 root) 에 추가">paste →</button>
+        <button onClick={paste}>paste</button>
         <span style={S.sep} />
         <button onClick={() => doc.ops.reset()}>reset</button>
       </div>
 
       <div style={S.queryBar}>
-        <span style={S.toolbarLabel} title="RFC 9535 JSONPath 가 트리를 가로지르는 일괄 선택을 한 줄로">filter</span>
+        <span style={S.toolbarLabel}>filter</span>
         {ALL_METHODS.map((m) => (
           <button key={m} onClick={() => selectByMethod(m)} style={{ ...S.chip, color: METHOD_COLOR[m], borderColor: METHOD_COLOR[m] }}>
             {m}
@@ -203,7 +175,7 @@ export function ApiCollection() {
         <button onClick={selectAllRequests} style={S.chip}>모든 request</button>
         <button onClick={() => doc.selection?.empty()} style={S.chip}>해제</button>
         <span style={S.sep} />
-        <button onClick={bulkAddTraceHeader} disabled={selectedItems.length === 0} title="선택된 모든 request 에 X-Trace-Id 일괄 추가 — 단일 patch · 단일 undo step">
+        <button onClick={bulkAddTraceHeader} disabled={selectedItems.length === 0}>
           + X-Trace-Id (선택 일괄)
         </button>
         <button onClick={() => setShowAdvanced((v) => !v)} style={S.linkBtn}>
@@ -313,11 +285,6 @@ const S = {
   header: { marginBottom: 12 } as React.CSSProperties,
   h1: { margin: 0, fontSize: 22 } as React.CSSProperties,
   tag: { fontSize: 12, color: "#666", marginTop: 4 } as React.CSSProperties,
-  lede: { fontSize: 14, color: "#333", lineHeight: 1.55, margin: "8px 0 12px", maxWidth: 760 } as React.CSSProperties,
-  details: { fontSize: 13, marginBottom: 8, background: "#f8f8f6", border: "1px solid #eee", borderRadius: 6, padding: "6px 12px" } as React.CSSProperties,
-  summary: { cursor: "pointer", fontWeight: 600, padding: "2px 0", color: "#444" } as React.CSSProperties,
-  proofList: { margin: "8px 0 6px", paddingLeft: 22, lineHeight: 1.6, color: "#333" } as React.CSSProperties,
-  tryList: { margin: "8px 0 6px", paddingLeft: 22, lineHeight: 1.7, color: "#333" } as React.CSSProperties,
   toolbar: { display: "flex", gap: 6, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
   jsonpathBar: { display: "flex", gap: 6, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
   queryBar: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,

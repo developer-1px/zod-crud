@@ -59,40 +59,12 @@ export function Outliner() {
     <div className="app">
       <header>
         <h1>zod-crud outliner</h1>
-        <div className="tag">Workflowy 모델 · select mode ↔ edit mode</div>
       </header>
 
       <div className="toolbar">
         <button onClick={doc.commands.undo} disabled={!doc.history.canUndo}>undo</button>
         <button onClick={doc.commands.redo} disabled={!doc.history.canRedo}>redo</button>
         <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
-        {recorder.isRecording ? (
-          <button
-            onClick={() => recorder.stopAndShare()}
-            title="녹화 종료 + JSON 다운로드 (버그 제보용)"
-            style={{ color: "#c33", fontWeight: 600 }}
-          >
-            ■ 정지 ({recorder.stepCount})
-          </button>
-        ) : (
-          <button onClick={recorder.start} title="이 시점부터 모든 패치 녹화">● 녹화</button>
-        )}
-        <button onClick={recorder.loadAndReplay} disabled={recorder.replaying} title="JSON 녹화 재생">
-          {recorder.replaying ? "재생중…" : "↻ 재생"}
-        </button>
-        {debug.enabled ? (
-          <button
-            onClick={() => debug.stopAndShare()}
-            title="debug log 종료 + JSON 다운로드"
-            style={{ color: "#06c", fontWeight: 600 }}
-          >
-            🐛 정지 ({debug.eventCount})
-          </button>
-        ) : (
-          <button onClick={debug.start} title="입력·dispatch·commit·selection 모든 trace 기록">
-            🐛 디버그
-          </button>
-        )}
         <span className="status">
           mode = <code className={`mode mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focus ?? "—"}</code>
@@ -111,6 +83,37 @@ export function Outliner() {
           onKeyDown={onKeyDown} ops={doc.ops} onTextEdit={onTextEdit}
         />
       </ul>
+
+      <details className="dev-tools">
+        <summary>dev</summary>
+        {recorder.isRecording ? (
+          <button
+            onClick={() => recorder.stopAndShare()}
+            title="Stop recording and download JSON"
+            style={{ color: "#c33", fontWeight: 600 }}
+          >
+            stop record ({recorder.stepCount})
+          </button>
+        ) : (
+          <button onClick={recorder.start} title="Record patches from this state">record</button>
+        )}
+        <button onClick={recorder.loadAndReplay} disabled={recorder.replaying} title="Replay JSON recording">
+          {recorder.replaying ? "replaying" : "replay"}
+        </button>
+        {debug.enabled ? (
+          <button
+            onClick={() => debug.stopAndShare()}
+            title="Stop debug log and download JSON"
+            style={{ color: "#06c", fontWeight: 600 }}
+          >
+            stop debug ({debug.eventCount})
+          </button>
+        ) : (
+          <button onClick={debug.start} title="Record input, dispatch, commit, and selection traces">
+            debug
+          </button>
+        )}
+      </details>
 
       <details className="keymap">
         <summary>Keymap ({KEYMAP.length} bindings)</summary>

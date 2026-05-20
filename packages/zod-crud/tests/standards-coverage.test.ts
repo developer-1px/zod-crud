@@ -463,12 +463,14 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       "A Zod-guarded JSON tree library locked to RFC 6901 and RFC 6902. State, actions, and change records are serializable JSON; React adapters live behind a separate entrypoint.",
     );
     expect(monorepoPackageJson.workspaces).toEqual(["packages/*", "apps/*"]);
-    expect(monorepoPackageJson.scripts.test).toBe("npm test -w zod-crud");
+    expect(monorepoPackageJson.scripts.test).toBe(
+      "npm test -w zod-crud && npm test -w @zod-crud/outliner && npm test -w @zod-crud/mobile-cms",
+    );
     expect(monorepoPackageJson.scripts.typecheck).toBe(
-      "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/site && npm run typecheck -w @zod-crud/outliner && npm run typecheck -w @zod-crud/mobile-cms",
+      "npm run typecheck -w zod-crud && npm run typecheck -w @zod-crud/api-collection && npm run typecheck -w @zod-crud/outliner && npm run typecheck -w @zod-crud/mobile-cms && npm run typecheck -w @zod-crud/site",
     );
     expect(monorepoPackageJson.scripts.build).toBe(
-      "npm run build -w zod-crud && npm run build -w @zod-crud/site && npm run build -w @zod-crud/outliner && npm run build -w @zod-crud/mobile-cms",
+      "npm run build -w zod-crud && npm run build -w @zod-crud/api-collection && npm run build -w @zod-crud/outliner && npm run build -w @zod-crud/mobile-cms && npm run build -w @zod-crud/site",
     );
     expect(monorepoPackageJson.scripts["smoke:package"]).toBe("npm run smoke:package -w zod-crud");
     expect(monorepoPackageJson.scripts["pack:library"]).toBe("npm pack -w zod-crud --cache ./.npm-cache");

@@ -6,7 +6,7 @@
 //   ③ Index shift tracking  살아남은 형제 인덱스 자동 보정
 //   ④ Anchor tracking       extended 모드 anchor 도 동일 규칙
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/Outliner.js";
@@ -57,7 +57,9 @@ describe("useSelection auto-rules — outliner scenarios", () => {
 
     // Enter (select → edit) 후 한 번 더 Enter (edit → insert-sibling).
     // edit 모드에서 텍스트 입력 없이 Enter 만 → 빈 sibling 이 /children/1 에 삽입.
-    await user.keyboard("{Enter}{Enter}");
+    await user.keyboard("{Enter}");
+    await waitFor(() => expect((screen.getByDisplayValue(firstItem) as HTMLInputElement).readOnly).toBe(false));
+    await user.keyboard("{Enter}");
 
     // 자동 규칙 ① — 새로 추가된 /children/1 (= 빈 row) 이 단일 selection.
     expect(statusText()).toMatch(/selection =\s*1/);
