@@ -12,6 +12,11 @@ import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import { replace as replaceVerb } from "./verbs/replace.js";
 import {
+  replaceSelectionText,
+  type SelectionTextEditErrorCode,
+  type SelectionTextEditOptions,
+} from "./core/selection/textEdit.js";
+import {
   EMPTY_SELECTION,
   primaryPointer,
   resolveSelectionCursor,
@@ -26,6 +31,7 @@ import {
 export type CheckErrorCode =
   | ErrorCode
   | PreFlightErrorCode
+  | SelectionTextEditErrorCode
   | "du_branch_mismatch"
   | "rekey_failed"
   | "missing_new_key"
@@ -61,6 +67,7 @@ export interface Check<T> {
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
+  replaceText(replacement: string, options?: SelectionTextEditOptions): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -144,6 +151,12 @@ export function buildCheck<S extends z.ZodType>(
       return target === null
         ? emptySelection("replace target selection is empty")
         : toCheckResult(preFlight(schema, ops.state, [{ op: "replace", path: target, value: args.value }]));
+    },
+    replaceText(replacement, textOptions) {
+      const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
+      return planned.ok
+        ? toCheckResult(preFlight(schema, ops.state, planned.patch))
+        : toCheckResult(planned);
     },
     cut(source) {
       const resolved = sourceOrSelection(source);

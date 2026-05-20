@@ -75,6 +75,7 @@ export type {
   Commands,
   CreateCommandsOptions,
   ReplaceCommandResult,
+  ReplaceTextCommandResult,
 } from "./commands/buildCommands.js";
 export { createCan } from "./commands/buildCan.js";
 export type {

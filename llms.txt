@@ -63,9 +63,9 @@ document surface:
 | `doc.value` | current schema-valid JSON value |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
-| `doc.commands` | 10 verb command namespace; `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
+| `doc.commands` | edit command namespace; `replaceText(replacement, options?)` commits selection text edits, `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
 | `doc.can` | command, JSONPath find, and selection guard namespace |
-| `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
+| `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, selection movement, and selection text replacement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
 | `doc.commit` | apply an RFC 6902 patch plus optional final `SelectionAction | SelectionSnap` as one history entry |
 | `doc.at` / `doc.exists` | pointer read helpers |
@@ -101,7 +101,8 @@ non-string offset domains.
 Use `selectionTextEdits` / `doc.selection.textEdits(replacement)` to turn
 selection into ordered pointer-local edit plans. Use `replaceSelectionText` /
 `doc.selection.textPatch(replacement)` for JSON string leaves; it returns patch
-plus final selection for `doc.commit`.
+plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)`
+when the string-leaf edit should commit through document history directly.
 Use `createCommands(args)`, `createCheck(args)`, and `createCan(args)` for
 standalone headless command, dry-run, and boolean guard facades; React
 re-exports the same factories without adding a separate command model.
@@ -123,6 +124,9 @@ Use `createDraft(doc)` for standalone headless draft/pending field state;
 `doc.commands.selectScope(options?)` default to the document's configured
 selection mode, so headless and React facades preserve the same multi-select
 behavior and the full `SelectionSnap`, including `context`.
+`doc.commands.replaceText(replacement, options?)` uses that same `SelectionSnap`
+to commit JSON string-leaf text edits; `doc.check.replaceText` and
+`doc.can.replaceText` dry-run the same plan.
 
 ## 10 Verbs
 

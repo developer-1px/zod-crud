@@ -97,7 +97,7 @@ export function App() {
 | `doc.value` | current schema-valid state (`T`) |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
-| `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
+| `doc.commands` | edit commands plus selection/text helpers (`replaceText`, cursor movement, select scope) |
 | `doc.can` | mutation, JSONPath find, and selection guard predicates + `undo`/`redo` flags |
 | `doc.check` | explainable dry-run guard results for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
@@ -200,7 +200,8 @@ turn the current selection into ordered pointer-local replacement spans without
 mutating state. `doc.selection.textPatch(replacement, options?)` and
 `replaceSelectionText(...)` build RFC 6902 `replace` patches plus the final
 collapsed selection for JSON string leaves; multi-pointer rich-text/block edits
-use the edit plan and app-specific patching.
+use the edit plan and app-specific patching. `doc.commands.replaceText(...)`
+commits that string-leaf patch through document history and final selection.
 `doc.commands.selectScope(options?)` exposes the same flow through the document
 command namespace.
 `doc.check.selectScope` / `doc.can.selectScope` guard that flow; an empty
@@ -224,6 +225,10 @@ omitted. With an explicit JSONPath string, `commands.replace(jsonpath, value)`
 commits an atomic multi-match replace; `check.replace(jsonpath, value)` and
 `can.replace(jsonpath, value)` dry-run the same batch and report `empty_match`
 when the query matches nothing.
+Facade-level `commands.replaceText(replacement, options?)`,
+`check.replaceText(replacement, options?)`, and
+`can.replaceText(replacement, options?)` use the full selection range model for
+JSON string-leaf text edits.
 Facade-level `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` default to the primary
 selection target when the target is omitted; a mode-only call such as
@@ -279,8 +284,9 @@ selection, clipboard, or history.
 `doc.check.find(jsonpath)` and `doc.can.find(jsonpath)` validate JSONPath
 syntax without running a mutation; syntax failures return `syntax_error`.
 It also guards selection cursor and scope commands (`moveCursor`,
-`extendCursor`, `selectScope`) so keyboard and select-visible UI can use
-`can.x(...) === check.x(...).ok` before dispatch.
+`extendCursor`, `selectScope`) and string-leaf text replacement
+(`replaceText`) so keyboard and select-visible UI can use `can.x(...) ===
+check.x(...).ok` before dispatch.
 The schema gate dry-applies the patch and runs whole-document
 `schema.safeParse`, so cross-field `.refine` / `.superRefine` violations are
 rejected before commit.
@@ -385,14 +391,14 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `JSONState<T>`, `HeadlessJSONState<T>`, `CreateJSONOptions`, `JSONChangeListener`, `JSONOps<T>`, `UseJSONOptions` | low-level JSON state and ops types |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
 | `createCommands(args)`, `createCheck(args)`, `createCan(args)` | standalone headless command, dry-run, and boolean guard facades over `JSONDocumentOps` plus optional selection state |
-| `Commands<T>`, `Can<T>`, `CommandSelectionState`, `CreateCommandsOptions<S>`, `CreateCheckOptions<S>`, `CreateCanOptions<S>`, `ReplaceCommandResult` | standalone command/check/can composition types |
+| `Commands<T>`, `Can<T>`, `CommandSelectionState`, `CreateCommandsOptions<S>`, `CreateCheckOptions<S>`, `CreateCanOptions<S>`, `ReplaceCommandResult`, `ReplaceTextCommandResult` | standalone command/check/can composition types |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
 | `createJSON(schema, initial, options?)` from `zod-crud/react` | same headless low-level JSON state owner re-exported from the React entrypoint |
 | `createCommands(args)`, `createCheck(args)`, `createCan(args)` from `zod-crud/react` | same headless command/check/can factories re-exported from the React entrypoint |
 | `createClipboard(args)` from `zod-crud/react` | same headless clipboard factory re-exported from the React entrypoint; no React clipboard hook |
-| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `ReplaceTextCommandResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |

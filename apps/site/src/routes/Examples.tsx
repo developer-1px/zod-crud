@@ -4,9 +4,9 @@ import { BasicCrud } from "../examples/BasicCrud";
 import { ClipboardArray } from "../examples/ClipboardArray";
 import { RejectedDrift } from "../examples/RejectedDrift";
 
-import basicSrc from "../examples/BasicCrud.tsx?raw";
-import clipboardSrc from "../examples/ClipboardArray.tsx?raw";
-import rejectSrc from "../examples/RejectedDrift.tsx?raw";
+import basicSrc from "../playgrounds/BasicCrud.playground.tsx?raw";
+import clipboardSrc from "../playgrounds/ClipboardArray.playground.tsx?raw";
+import rejectSrc from "../playgrounds/RejectedDrift.playground.tsx?raw";
 
 type Example = {
   key: string;
@@ -18,9 +18,9 @@ type Example = {
 };
 
 const examples: Example[] = [
-  { key: "basic", label: "Basic CRUD", blurb: "update primitives, render via subscribe.", filename: "BasicCrud.tsx", source: basicSrc, demo: BasicCrud },
-  { key: "clipboard", label: "Clipboard + history", blurb: "copy / cut / paste over an array, undo · redo.", filename: "ClipboardArray.tsx", source: clipboardSrc, demo: ClipboardArray },
-  { key: "reject", label: "Schema-rejected drift", blurb: "try a value the schema refuses — state stays untouched.", filename: "RejectedDrift.tsx", source: rejectSrc, demo: RejectedDrift },
+  { key: "basic", label: "Basic CRUD", blurb: "update primitives, render via subscribe.", filename: "BasicCrud.playground.tsx", source: basicSrc, demo: BasicCrud },
+  { key: "clipboard", label: "Clipboard + history", blurb: "copy / cut / paste over an array, undo · redo.", filename: "ClipboardArray.playground.tsx", source: clipboardSrc, demo: ClipboardArray },
+  { key: "reject", label: "Schema-rejected drift", blurb: "try a value the schema refuses — state stays untouched.", filename: "RejectedDrift.playground.tsx", source: rejectSrc, demo: RejectedDrift },
 ];
 
 export function Examples() {
@@ -67,7 +67,7 @@ export function Examples() {
             <SourceTabs
               key={active.key}
               tabs={[{ key: active.key, label: active.filename, filename: active.filename, source: active.source }]}
-              filenamePrefix="apps/site/src/examples/"
+              filenamePrefix="apps/site/src/playgrounds/"
             />
           </div>
         </section>

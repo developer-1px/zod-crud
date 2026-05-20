@@ -1,5 +1,5 @@
 // commands/buildCommands — JSONDocument.commands group (TipTap 식 디팩토).
-// 편집 어휘 10 verbs 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
+// 편집 verbs 와 selection/text helpers 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
 //
 // commands 는 mutation 시 ops.patch (history commit + listener notify) 를 거친다.
 // undo/redo 는 ops.undo/redo (history stack 관리는 createJSONDocument 가 wiring).
@@ -36,12 +36,21 @@ import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } fr
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import { replace as replaceVerb, type ReplaceOk, type ReplaceError } from "../verbs/replace.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
+import {
+  replaceSelectionText,
+  type ReplaceSelectionTextResult,
+  type SelectionTextEditOptions,
+} from "../core/selection/textEdit.js";
 
 export type ReplaceCommandResult<T = unknown> =
   | JSONResult
   | ReplaceOk<T>
   | ReplaceError
   | { ok: false; code: "empty_selection"; reason: string };
+
+export type ReplaceTextCommandResult =
+  | ReplaceSelectionTextResult
+  | Extract<JSONResult, { ok: false }>;
 
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
@@ -53,6 +62,7 @@ export interface Commands<T> {
   move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult<T>;
+  replaceText(replacement: string, options?: SelectionTextEditOptions): ReplaceTextCommandResult;
 
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   copy(source?: ClipboardSource): CopyOk | CopyError;
@@ -171,6 +181,14 @@ export function buildCommands<S extends z.ZodType>(
       return target === null
         ? emptyReplaceTarget()
         : ops.patch([{ op: "replace", path: target, value: args.value }]);
+    },
+    replaceText(replacement, textOptions) {
+      const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
+      if (!planned.ok) return planned;
+      const patched = ops.patch(planned.patch, { selectionAfter: planned.selection });
+      if (!patched.ok) return patched;
+      applySelection(planned.selection);
+      return planned;
     },
 
     cut(source) {

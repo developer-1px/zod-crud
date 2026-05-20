@@ -149,6 +149,7 @@ type CheckResult =
       code:
         | ErrorCode
         | PreFlightErrorCode
+        | SelectionTextEditErrorCode
         | "du_branch_mismatch"
         | "rekey_failed"
         | "missing_new_key"
@@ -173,6 +174,7 @@ interface Check<T> {
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
+  replaceText(replacement: string, options?: SelectionTextEditOptions): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -540,9 +542,12 @@ interface SelectionState<T> {
 keyboard-style cursor movement using the same cursor traversal options.
 `commands.selectScope` uses the document's configured selection mode to expose
 Ctrl+A/select-visible selection through the command namespace.
+`commands.replaceText(replacement, options?)` commits JSON string-leaf text edits
+from the current `SelectionSnap` through document history.
 `check.moveCursor` / `can.moveCursor`, `check.extendCursor` /
-`can.extendCursor`, and `check.selectScope` / `can.selectScope` expose the
-same availability checks without mutating selection.
+`can.extendCursor`, `check.selectScope` / `can.selectScope`, and
+`check.replaceText` / `can.replaceText` expose the same availability checks
+without mutating selection.
 `selectionRanges[primaryIndex]` is the primary command range. Pointer-only
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,
@@ -574,7 +579,8 @@ offsets from current state; apps can provide `getLength` for non-string offset
 domains. `selectionTextEdits` turns selection into ordered pointer-local text
 edit plans. `replaceSelectionText` builds RFC 6902 `replace` patches plus final
 collapsed selection for JSON string leaves; multi-pointer rich-text/block edits
-use the edit plan and app-specific patching. `SelectionState` exposes the same
+use the edit plan and app-specific patching. `commands.replaceText(...)` commits
+the string-leaf patch and final selection directly. `SelectionState` exposes the same
 behavior as `orderPrimaryRange(options?)`, `orderRanges(options?)`,
 `spansForPointer(pointer, options?)`, `textEdits(replacement, options?)`, and
 `textPatch(replacement, options?)`.
@@ -598,6 +604,10 @@ Document-facade `commands.replace(value)`, `check.replace(value)`, and
 When the explicit first argument is a JSONPath string, `commands.replace`
 commits the pure `replace` verb's atomic multi-match batch, and `check.replace`
 / `can.replace` dry-run that same batch; no matches report `empty_match`.
+Document-facade `commands.replaceText(replacement, options?)`,
+`check.replaceText(replacement, options?)`, and
+`can.replaceText(replacement, options?)` use the full selection range model for
+JSON string-leaf text edits.
 Document-facade `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` use `primaryPointer` when
 their target argument is omitted; mode-only calls such as

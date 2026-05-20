@@ -120,6 +120,71 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.undoDepth).toBe(1);
   });
 
+  test("commands replaceText commits string selection edits with final caret", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: {
+        mode: "extended",
+        initial: [{
+          anchor: { path: "/items/0/name", offset: 0 },
+          focus: { path: "/items/0/name", offset: 1 },
+        }],
+        context: { marks: ["bold"] },
+      },
+    });
+
+    expect(doc.check.replaceText("AX")).toEqual({ ok: true });
+    expect(doc.can.replaceText("AX")).toBe(true);
+
+    const replaced = doc.commands.replaceText("AX");
+
+    expect(replaced).toMatchObject({
+      ok: true,
+      patch: [{ op: "replace", path: "/items/0/name", value: "AX" }],
+      selection: {
+        focus: { path: "/items/0/name", offset: 2 },
+        context: { marks: ["bold"] },
+      },
+    });
+    expect(doc.value.items[0]?.name).toBe("AX");
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 2 });
+    expect(doc.selection?.context).toEqual({ marks: ["bold"] });
+    expect(doc.history.undoDepth).toBe(1);
+
+    expect(doc.commands.undo()).toBe(true);
+    expect(doc.value.items[0]?.name).toBe("A");
+    expect(doc.selection?.selectionRanges).toEqual([{
+      anchor: { path: "/items/0/name", offset: 0 },
+      focus: { path: "/items/0/name", offset: 1 },
+    }]);
+    expect(doc.selection?.context).toEqual({ marks: ["bold"] });
+  });
+
+  test("commands replaceText reports selection planning failures without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: {
+        mode: "extended",
+        initial: [{
+          anchor: { path: "/items/0/name", offset: 0 },
+          focus: { path: "/items/1/name", offset: 1 },
+        }],
+      },
+    });
+
+    expect(doc.commands.replaceText("X")).toMatchObject({
+      ok: false,
+      code: "multi_pointer_range",
+      pointer: "/items/0/name",
+    });
+    expect(doc.check.replaceText("X")).toMatchObject({
+      ok: false,
+      code: "multi_pointer_range",
+      pointer: "/items/0/name",
+    });
+    expect(doc.can.replaceText("X")).toBe(false);
+    expect(doc.value).toEqual(initial);
+  });
+
   test("commands replace accepts JSONPath multi-match and commits one history entry", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
