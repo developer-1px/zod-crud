@@ -14,7 +14,7 @@ import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 
 export interface Can<T> {
   move(from: Pointer, to: Pointer): boolean;
-  duplicate(source: Pointer, opts?: DuplicateOpts): boolean;
+  duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
   replace(path: Pointer, value: unknown): boolean;
   cut(source?: ClipboardSource): boolean;
   paste(

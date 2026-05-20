@@ -747,7 +747,7 @@ try {
       'declare const rootRekeyCode: RootRekeyFailure["code"];',
       'rootRekeyCode satisfies "not_serializable" | "rekey_failed";',
       'declare const duplicateError: DuplicateError;',
-      'duplicateError.code satisfies "invalid_pointer" | "path_not_found" | "missing_new_key" | "key_conflict" | "not_serializable" | "rekey_failed" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
+      'duplicateError.code satisfies "empty_selection" | "invalid_pointer" | "path_not_found" | "missing_new_key" | "key_conflict" | "not_serializable" | "rekey_failed" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'declare const replaceError: ReplaceError;',
       'replaceError.code satisfies "syntax_error" | "empty_match" | "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "not_serializable" | "preFlight_failed";',
     ].join("\n"),

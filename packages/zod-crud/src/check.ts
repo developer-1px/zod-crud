@@ -6,7 +6,7 @@ import { preFlight, type PreFlightErrorCode } from "./core/schema/preFlight.js";
 import type { JSONDocumentOps } from "./jsonOps.js";
 import { copy, type ClipboardSource } from "./verbs/copy.js";
 import { cut } from "./verbs/cut.js";
-import { duplicate, type DuplicateOpts } from "./verbs/duplicate.js";
+import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
 import { move as moveVerb } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import { primaryPointer, selectedSource, type SelectionSnap } from "./core/selection/index.js";
@@ -39,7 +39,7 @@ export type CheckResult =
 
 export interface Check<T> {
   move(from: Pointer, to: Pointer): CheckResult;
-  duplicate(source: Pointer, opts?: DuplicateOpts): CheckResult;
+  duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(path: Pointer, value: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
@@ -82,13 +82,19 @@ export function buildCheck<S extends z.ZodType>(
     source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
   const targetOrSelection = (target?: Pointer): Pointer | null =>
     target ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
+  const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
+    source ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
 
   return {
     move(from, to) {
       return toCheckResult(moveVerb(schema, ops.state, from, to));
     },
-    duplicate(source, opts) {
-      return toCheckResult(duplicate(schema, ops.state, source, opts));
+    duplicate(sourceOrOpts, opts) {
+      const args = resolveDuplicateArgs(sourceOrOpts, opts);
+      const source = primarySourceOrSelection(args.source);
+      return source === null
+        ? emptySelection("duplicate source selection is empty")
+        : toCheckResult(duplicate(schema, ops.state, source, args.opts));
     },
     replace(path, value) {
       return toCheckResult(preFlight(schema, ops.state, [{ op: "replace", path, value }]));

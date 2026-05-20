@@ -19,7 +19,7 @@ import { select as selectVerb } from "../verbs/select.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type ClipboardSource, type CopyOk, type CopyError } from "../verbs/copy.js";
 import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode, type PasteOptions } from "../verbs/paste.js";
-import { duplicate, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
+import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
@@ -29,7 +29,7 @@ export interface Commands<T> {
   find(jsonpath: string): FindOk | FindError;
 
   move(from: Pointer, to: Pointer): MoveResult<T>;
-  duplicate(source: Pointer, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
+  duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
   replace(path: Pointer, value: unknown): JSONResult;
 
@@ -82,6 +82,8 @@ export function buildCommands<S extends z.ZodType>(
     source ?? selectedSource(selectionRef.current) ?? [];
   const targetOrSelection = (target?: Pointer): Pointer | null =>
     target ?? primaryPointer(selectionRef.current);
+  const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
+    source ?? primaryPointer(selectionRef.current);
 
   return {
     select(action, mode = selectionMode) {
@@ -96,8 +98,12 @@ export function buildCommands<S extends z.ZodType>(
     move(from, to) {
       return run(moveVerb(schema, ops.state, from, to));
     },
-    duplicate(source, opts) {
-      return run(duplicate(schema, ops.state, source, opts));
+    duplicate(sourceOrOpts, maybeOpts) {
+      const args = resolveDuplicateArgs(sourceOrOpts, maybeOpts);
+      const source = primarySourceOrSelection(args.source);
+      return source === null
+        ? emptyDuplicateSource()
+        : run(duplicate(schema, ops.state, source, args.opts));
     },
     replace(path, value) {
       // 다른 mutating verb 와 동일하게 ops.patch 경유 (history commit + listener notify).
@@ -128,5 +134,13 @@ function emptyPasteTarget(): PasteError {
     ok: false,
     code: "empty_selection",
     message: "paste target selection is empty",
+  };
+}
+
+function emptyDuplicateSource(): DuplicateError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "duplicate source selection is empty",
   };
 }

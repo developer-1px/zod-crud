@@ -28,6 +28,7 @@ export interface DuplicateOk<T> {
 export interface DuplicateError {
   ok: false;
   code:
+    | "empty_selection"
     | "invalid_pointer"
     | "path_not_found"
     | "missing_new_key"
@@ -37,6 +38,20 @@ export interface DuplicateError {
     | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
+}
+
+export interface ResolvedDuplicateArgs {
+  source?: Pointer;
+  opts: DuplicateOpts;
+}
+
+export function resolveDuplicateArgs(
+  sourceOrOpts?: Pointer | DuplicateOpts,
+  opts: DuplicateOpts = {},
+): ResolvedDuplicateArgs {
+  return typeof sourceOrOpts === "string"
+    ? { source: sourceOrOpts, opts }
+    : { opts: sourceOrOpts ?? {} };
 }
 
 export function duplicate<S extends z.ZodType>(

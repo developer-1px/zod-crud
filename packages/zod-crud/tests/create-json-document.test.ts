@@ -472,6 +472,52 @@ describe("createJSONDocument — headless facade", () => {
     });
   });
 
+  test("commands duplicate defaults to the current primary selection source", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    const duplicated = doc.commands.duplicate();
+
+    expect(duplicated).toMatchObject({
+      ok: true,
+      duplicatedTo: "/items/1",
+    });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a", "b"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("commands duplicate accepts opts-only calls for selected object keys", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/meta/foo"] },
+    });
+
+    const duplicated = doc.commands.duplicate({ newKey: "baz" });
+
+    expect(duplicated).toMatchObject({
+      ok: true,
+      duplicatedTo: "/meta/baz",
+    });
+    expect(doc.value.meta).toEqual({ foo: "bar", baz: "bar" });
+  });
+
+  test("commands duplicate reports empty selection when source is omitted", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    const duplicated = doc.commands.duplicate();
+
+    expect(duplicated).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "duplicate source selection is empty",
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
   test("multi-source cut recovers selection without duplicate ranges", () => {
     const doc = createJSONDocument(Schema, {
       items: [

@@ -150,6 +150,9 @@ null/single/multi source projection accepted by `copy` / `cut`. Facade-level
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
 `can.cut()` default to the current selection when the source is omitted.
+Facade-level `commands.duplicate()`, `check.duplicate()`, and
+`can.duplicate()` default to the primary selection source when the source is
+omitted; `commands.duplicate({ newKey })` duplicates a selected object member.
 Facade-level `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` default to the primary
 selection target when the target is omitted; a mode-only call such as
