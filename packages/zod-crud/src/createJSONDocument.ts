@@ -23,6 +23,7 @@ import {
   focusPointer,
   hasSelection,
   isCollapsed,
+  isSelected,
   primaryPointer,
   primaryRange,
   rangeCount,
@@ -94,6 +95,7 @@ export interface SelectionState<T> extends SelectionSnap {
     primaryIndex?: number,
   ): void;
   empty(): void;
+  isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
 }
 
@@ -223,7 +225,8 @@ export function createJSONDocument<S extends z.ZodType>(
       });
     },
     empty() { dispatchSelection({ type: "empty" }); },
-    containsNode(pointer) { return selectionSnap.selectedPointers.includes(pointer); },
+    isSelected(pointer) { return isSelected(selectionSnap, pointer); },
+    containsNode(pointer) { return isSelected(selectionSnap, pointer); },
   };
 
   const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {

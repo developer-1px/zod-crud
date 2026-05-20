@@ -196,6 +196,10 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.rangeCount).toBe(2);
     expect(doc.selection?.selectedCount).toBe(2);
     expect(doc.selection?.hasSelection).toBe(true);
+    expect(doc.selection?.isSelected("/items/0")).toBe(true);
+    expect(doc.selection?.isSelected("/items/1")).toBe(true);
+    expect(doc.selection?.isSelected("/meta/foo")).toBe(false);
+    expect(doc.selection?.containsNode("/items/0")).toBe(true);
     expect(doc.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
     expect(doc.selection?.anchorPointer).toBe("/items/1");
     expect(doc.selection?.focusPointer).toBe("/items/1");
@@ -235,6 +239,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.rangeCount).toBe(1);
     expect(doc.selection?.selectedCount).toBe(1);
     expect(doc.selection?.hasSelection).toBe(true);
+    expect(doc.selection?.isSelected("/items/0/name")).toBe(true);
     expect(doc.selection?.anchorPointer).toBe("/items/0/name");
     expect(doc.selection?.focusPointer).toBe("/items/0/name");
     expect(doc.selection?.selectedSource).toBe("/items/0/name");

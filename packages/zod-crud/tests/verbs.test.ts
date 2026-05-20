@@ -13,6 +13,7 @@ import {
   focusPointer,
   hasSelection,
   pointPointer,
+  isSelected,
   primaryPointer,
   primaryRange,
   rangeCount,
@@ -93,6 +94,8 @@ describe("verbs/select", () => {
     expect(rangeCount(s)).toBe(1);
     expect(selectedCount(s)).toBe(1);
     expect(hasSelection(s)).toBe(true);
+    expect(isSelected(s, "/items/0")).toBe(true);
+    expect(isSelected(s, "/items/1")).toBe(false);
     expect(primaryRange(s)).toEqual({ anchor: "/items/0", focus: "/items/0" });
     expect(anchorPointer(s)).toBe("/items/0");
     expect(focusPointer(s)).toBe("/items/0");
@@ -153,6 +156,9 @@ describe("verbs/select", () => {
     expect(rangeCount(second)).toBe(2);
     expect(selectedCount(second)).toBe(2);
     expect(hasSelection(second)).toBe(true);
+    expect(isSelected(second, "/items/0")).toBe(true);
+    expect(isSelected(second, "/items/1/name")).toBe(true);
+    expect(isSelected(second, "/items/2")).toBe(false);
     expect(primaryRange(second)).toEqual({ anchor: "/items/1/name", focus: "/items/1/name" });
     expect(anchorPointer(second)).toBe("/items/1/name");
     expect(focusPointer(second)).toBe("/items/1/name");
@@ -195,6 +201,7 @@ describe("verbs/select", () => {
     expect(rangeCount(EMPTY_SELECTION)).toBe(0);
     expect(selectedCount(EMPTY_SELECTION)).toBe(0);
     expect(hasSelection(EMPTY_SELECTION)).toBe(false);
+    expect(isSelected(EMPTY_SELECTION, "/items/0")).toBe(false);
     expect(selectedSource(EMPTY_SELECTION)).toBe(null);
   });
 });

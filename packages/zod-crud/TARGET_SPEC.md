@@ -278,6 +278,7 @@ interface SelectionState<T> {
     primaryIndex?: number,
   ): void;
   empty(): void;
+  isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
 }
 ```
@@ -290,7 +291,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `selectedSource` is `null | Pointer | Pointer[]` and can be passed to `copy` /
 `cut` after a null check.
 `selectedCount` and `hasSelection` are item-selection projection helpers for
-rendering and command guards.
+rendering and command guards. `isSelected(pointer)` is the per-item selected
+predicate; `containsNode(pointer)` remains an exact selected-pointer alias.
 
 Rules:
 

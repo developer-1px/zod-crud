@@ -142,10 +142,11 @@ of truth for caret/range shape; `doc.selection.selectedPointers` is the
 item-selection projection for list/tree/grid UIs.
 `doc.selection.primaryRange` exposes the active range and `doc.selection.caret`
 exposes the collapsed cursor point. `rangeCount`, `selectedCount`, and
-`hasSelection` expose selection cardinality. `anchorPointer`, `focusPointer`,
-`primaryPointer`, and `caretPointer` expose the Pointer projections needed by
-scalar Pointer commands; `selectedSource` is the null/single/multi source
-projection accepted by `copy` / `cut`.
+`hasSelection` expose selection cardinality, and `isSelected(pointer)` is the
+per-item selected predicate for list/tree/grid rendering. `anchorPointer`,
+`focusPointer`, `primaryPointer`, and `caretPointer` expose the Pointer
+projections needed by scalar Pointer commands; `selectedSource` is the
+null/single/multi source projection accepted by `copy` / `cut`.
 String caret offsets are clamped to the current string length when state is
 available, including after document edits that keep the same Pointer alive.
 `doc.commands.select(action)` defaults to the document's configured selection
@@ -279,7 +280,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
 | `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `selectedCount`, `selectedSource`, `selectionType`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `selectedCount`, `selectedSource`, `selectionType`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

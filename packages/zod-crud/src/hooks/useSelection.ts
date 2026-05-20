@@ -13,6 +13,7 @@ import {
   focusPointer,
   hasSelection,
   isCollapsed,
+  isSelected,
   primaryPointer,
   primaryRange,
   rangeCount,
@@ -70,6 +71,7 @@ export interface SelectionState<T> {
     primaryIndex?: number,
   ): void;
   empty(): void;
+  isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
 }
 
@@ -150,7 +152,8 @@ export function useSelection<T>(
       ...(primaryIndex !== undefined ? { primaryIndex } : {}),
     }),
     empty: () => dispatch({ type: "empty" }),
-    containsNode: (pointer) => snapRef.current.selectedPointers.includes(pointer),
+    isSelected: (pointer) => isSelected(snapRef.current, pointer),
+    containsNode: (pointer) => isSelected(snapRef.current, pointer),
   }), [dispatch]);
 }
 

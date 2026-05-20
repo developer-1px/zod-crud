@@ -106,6 +106,7 @@ export {
   focusPointer,
   hasSelection,
   isCollapsed,
+  isSelected,
   pointPointer,
   primaryPointer,
   primaryRange,

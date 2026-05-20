@@ -88,6 +88,10 @@ export function hasSelection(s: SelectionSnap): boolean {
   return selectedCount(s) > 0;
 }
 
+export function isSelected(s: SelectionSnap, pointer: Pointer): boolean {
+  return s.selectedPointers.includes(pointer);
+}
+
 export function caretPoint(s: SelectionSnap): JSONPoint | null {
   return isCollapsed(s) ? s.focus : null;
 }

@@ -118,6 +118,7 @@ function selectionStub(): SelectionState<{ name: string }> {
     toggleRange: () => undefined,
     selectRanges: () => undefined,
     empty: () => undefined,
+    isSelected: () => false,
     containsNode: () => false,
   };
 }

@@ -67,7 +67,7 @@ document surface:
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, string caret offsets are clamped to current text, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `anchorPointer`/`focusPointer`/`primaryPointer`/`caretPointer` expose command-ready paths, and `selectedSource` feeds `copy`/`cut` as `null | Pointer | Pointer[]` |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, string caret offsets are clamped to current text, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `anchorPointer`/`focusPointer`/`primaryPointer`/`caretPointer` expose command-ready paths, and `selectedSource` feeds `copy`/`cut` as `null | Pointer | Pointer[]` |
 | `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]`, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` spreads multi-source buffers into array targets by default while `{ spread: false }` keeps the array payload as one value |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can

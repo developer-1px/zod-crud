@@ -51,6 +51,10 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.rangeCount).toBe(2);
     expect(hook.current.selection?.selectedCount).toBe(2);
     expect(hook.current.selection?.hasSelection).toBe(true);
+    expect(hook.current.selection?.isSelected("/items/0")).toBe(true);
+    expect(hook.current.selection?.isSelected("/items/1")).toBe(true);
+    expect(hook.current.selection?.isSelected("/items/9")).toBe(false);
+    expect(hook.current.selection?.containsNode("/items/0")).toBe(true);
     expect(hook.current.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
     expect(hook.current.selection?.anchorPointer).toBe("/items/1");
     expect(hook.current.selection?.focusPointer).toBe("/items/1");
@@ -76,6 +80,7 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.rangeCount).toBe(1);
     expect(hook.current.selection?.selectedCount).toBe(1);
     expect(hook.current.selection?.hasSelection).toBe(true);
+    expect(hook.current.selection?.isSelected("/items/0/name")).toBe(true);
     expect(hook.current.selection?.anchorPointer).toBe("/items/0/name");
     expect(hook.current.selection?.focusPointer).toBe("/items/0/name");
     expect(hook.current.selection?.selectedSource).toBe("/items/0/name");
