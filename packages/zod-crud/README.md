@@ -160,6 +160,9 @@ folded, virtualized, or otherwise app-visible `JSONPoint[]` order. `resolveCurso
 computes the next target without mutating. The pure helpers
 `moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
 provide the same cursor logic for standalone headless composition.
+`doc.commands.moveCursor(direction, options?)` and
+`doc.commands.extendCursor(direction, options?)` expose keyboard-style cursor
+movement through the document command namespace.
 `doc.selection.selectScope(options?)` and `selectSelectionScope(...)` build a
 whole selection from the same `scope` or visible `points` options, covering
 Ctrl+A/select-visible flows without React.
@@ -194,9 +197,11 @@ objects without corrupting the live headless selection state.
 `doc.selection.restore(snapshot)` restores it.
 `doc.selection.subscribe(listener)` emits JSON-safe snapshots after manual
 selection actions and automatic op tracking.
-`doc.commands.select(action)` and `doc.commands.selectScope(options?)` default
-to the document's configured selection mode, so headless and React facades
-preserve the same multi-select behavior.
+`doc.commands.select(action)`, `doc.commands.selectScope(options?)`,
+`doc.commands.moveCursor(direction, options?)`, and
+`doc.commands.extendCursor(direction, options?)` default to the document's
+configured selection mode, so headless and React facades preserve the same
+multi-select behavior.
 
 Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata. Single-source copy/cut returns the copied fragment; multi-source

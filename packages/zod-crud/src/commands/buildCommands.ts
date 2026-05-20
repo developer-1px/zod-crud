@@ -7,10 +7,20 @@
 import type * as z from "zod";
 import type { JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { EMPTY_SELECTION, primaryPointer, selectedSource, selectSelectionScope } from "../core/selection/index.js";
+import {
+  EMPTY_SELECTION,
+  extendSelectionCursor,
+  moveSelectionCursor,
+  primaryPointer,
+  selectedSource,
+  selectSelectionScope,
+} from "../core/selection/index.js";
 import type {
   JSONPoint,
   SelectionAction,
+  SelectionCursorDirection,
+  SelectionCursorOptions,
+  SelectionCursorResult,
   SelectionMode,
   SelectionRange,
   SelectionScopeOptions,
@@ -33,6 +43,8 @@ export type ReplaceCommandResult =
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   find(jsonpath: string): FindOk | FindError;
 
   move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
@@ -103,6 +115,30 @@ export function buildCommands<S extends z.ZodType>(
     },
     selectScope(options) {
       const result = selectSelectionScope(selectionState(), selectionMode, ops.state, options);
+      if (result.ok) {
+        selectionRef?.current.selectRanges?.(
+          result.selection.selectionRanges,
+          result.selection.anchor,
+          result.selection.focus,
+          result.selection.primaryIndex,
+        );
+      }
+      return result;
+    },
+    moveCursor(direction, options) {
+      const result = moveSelectionCursor(selectionState(), direction, selectionMode, ops.state, options);
+      if (result.ok) {
+        selectionRef?.current.selectRanges?.(
+          result.selection.selectionRanges,
+          result.selection.anchor,
+          result.selection.focus,
+          result.selection.primaryIndex,
+        );
+      }
+      return result;
+    },
+    extendCursor(direction, options) {
+      const result = extendSelectionCursor(selectionState(), direction, selectionMode, ops.state, options);
       if (result.ok) {
         selectionRef?.current.selectRanges?.(
           result.selection.selectionRanges,

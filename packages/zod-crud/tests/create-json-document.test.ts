@@ -361,6 +361,25 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/1");
   });
 
+  test("commands move and extend cursor mutate document selection", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "extended" },
+    });
+
+    expect(doc.commands.moveCursor("first", { points: ["/items/1", "/items/0"] })).toMatchObject({
+      ok: true,
+      pointer: "/items/1",
+    });
+    expect(doc.selection?.caretPointer).toBe("/items/1");
+
+    expect(doc.commands.extendCursor("next", { points: ["/items/1", "/items/0"] })).toMatchObject({
+      ok: true,
+      pointer: "/items/0",
+    });
+    expect(doc.selection?.selectionRanges).toEqual([{ anchor: "/items/1", focus: "/items/0" }]);
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
+  });
+
   test("selection selectRanges dedupes repeated ranges", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

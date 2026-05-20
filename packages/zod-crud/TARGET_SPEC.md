@@ -362,6 +362,8 @@ interface SelectionState<T> {
 ```
 
 `commands.select` mutates document selection and returns the computed snapshot.
+`commands.moveCursor` and `commands.extendCursor` mutate document selection for
+keyboard-style cursor movement using the same cursor traversal options.
 `commands.selectScope` uses the document's configured selection mode to expose
 Ctrl+A/select-visible selection through the command namespace.
 `selectionRanges[primaryIndex]` is the primary command range. Pointer-only

@@ -62,7 +62,7 @@ document surface:
 | --- | --- |
 | `doc.value` | current schema-valid JSON value |
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
-| `doc.commands` | 10 verb command namespace; `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
+| `doc.commands` | 10 verb command namespace; `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
 | `doc.can` | command guard namespace |
 | `doc.check` | explainable dry-run guard namespace; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
@@ -99,9 +99,11 @@ read/query and schema introspection facades; React re-exports the same
 factories without adding separate read/schema models.
 Use `createDraft(doc)` for standalone headless draft/pending field state;
 `useDraft(doc)` and `useField(doc, pointer)` are React facades over it.
-`doc.commands.select(action)` and `doc.commands.selectScope(options?)` default
-to the document's configured selection mode, so headless and React facades
-preserve the same multi-select behavior.
+`doc.commands.select(action)`, `doc.commands.moveCursor(direction, options?)`,
+`doc.commands.extendCursor(direction, options?)`, and
+`doc.commands.selectScope(options?)` default to the document's configured
+selection mode, so headless and React facades preserve the same multi-select
+behavior.
 
 ## 10 Verbs
 
