@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless document, commands, selection, clipboard, history, read, schema, and draft facades.
-import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit } from "zod-crud";
+// Headless JSON state, document, commands, selection, clipboard, history, read, schema, and draft facades.
+import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSON, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -80,6 +80,8 @@ Use `createSelection(ops)` for standalone headless selection/caret state;
 Use `createCommands(args)`, `createCheck(args)`, and `createCan(args)` for
 standalone headless command, dry-run, and boolean guard facades; React
 re-exports the same factories without adding a separate command model.
+Use `createJSON(schema, initial, options?)` for standalone low-level JSON state
+and `JSONOps<T>`; React `useJSON` is a facade over it.
 Use `createClipboard(args)` for standalone headless clipboard state; React
 re-exports the same factory without adding a clipboard hook.
 Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,

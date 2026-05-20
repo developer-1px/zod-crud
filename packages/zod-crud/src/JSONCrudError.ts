@@ -29,7 +29,7 @@ const isProd = ((): boolean => {
 })();
 
 export interface ErrorPolicy {
-  strict?: boolean;
+  strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
 }
 

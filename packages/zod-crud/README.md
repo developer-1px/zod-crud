@@ -9,8 +9,9 @@ JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
 
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
-`createJSONDocument` exposes the headless document facade. `zod-crud/react`
-exposes the matching React facade plus React-only composition hooks.
+`createJSON` owns low-level headless JSON state. `createJSONDocument` exposes
+the headless document facade. `zod-crud/react` exposes matching React facades
+plus React-only composition hooks.
 `sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
@@ -137,6 +138,8 @@ owns render lifecycle only; core owns JSON editing.
 For lower-level composition, `createCommands(args)`, `createCheck(args)`, and
 `createCan(args)` expose the same selection-aware command, dry-run, and boolean
 guard facades used by the document facade.
+`createJSON(schema, initial, options?)` exposes the same low-level JSON state
+owner and `JSONOps<T>` surface that `useJSON` renders in React.
 
 Selection is headless. `JSONPoint` is either a JSON Pointer string or
 `{ path, offset?, edge?, affinity? }`, so list/tree item selection and text
@@ -297,16 +300,19 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
+| `createJSON(schema, initial, options?)` | headless low-level JSON state owner with the same `JSONOps<T>` surface as `useJSON` |
+| `JSONState<T>`, `HeadlessJSONState<T>`, `CreateJSONOptions`, `JSONChangeListener`, `JSONOps<T>`, `UseJSONOptions` | low-level JSON state and ops types |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface and read/query helpers as `useJSONDocument` |
 | `createCommands(args)`, `createCheck(args)`, `createCan(args)` | standalone headless command, dry-run, and boolean guard facades over `JSONDocumentOps` plus optional selection state |
 | `Commands<T>`, `Can<T>`, `CommandSelectionState`, `CreateCommandsOptions<S>`, `CreateCheckOptions<S>`, `CreateCanOptions<S>`, `ReplaceCommandResult` | standalone command/check/can composition types |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
 | `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
+| `createJSON(schema, initial, options?)` from `zod-crud/react` | same headless low-level JSON state owner re-exported from the React entrypoint |
 | `createCommands(args)`, `createCheck(args)`, `createCan(args)` from `zod-crud/react` | same headless command/check/can factories re-exported from the React entrypoint |
 | `createClipboard(args)` from `zod-crud/react` | same headless clipboard factory re-exported from the React entrypoint; no React clipboard hook |
 | `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
-| `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
+| `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |

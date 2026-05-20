@@ -10,7 +10,7 @@ import type { PointerOf, ValueAt } from "./core/pointer/types.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
 
 export interface UseJSONOptions {
-  strict?: boolean;
+  strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
 }
 

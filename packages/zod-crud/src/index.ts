@@ -9,6 +9,7 @@ export { JSONCrudError } from "./JSONCrudError.js";
 export type {
   HistoryMergeOptions,
   HistoryTransactionOptions,
+  JSONChangeListener,
   JSONChangeMetadata,
   JSONLoadOptions,
   JSONOps,
@@ -33,6 +34,12 @@ export type {
   JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./createJSONDocument.js";
+export { createJSON } from "./createJSON.js";
+export type {
+  CreateJSONOptions,
+  HeadlessJSONState,
+  JSONState,
+} from "./createJSON.js";
 export { createSelection } from "./selection.js";
 export type {
   CreateSelectionOptions,

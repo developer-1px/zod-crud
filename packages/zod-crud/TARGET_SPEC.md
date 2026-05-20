@@ -48,6 +48,7 @@ The headless facade is the product surface. The React facade must expose the
 same editing surface with React render lifecycle added.
 
 ```ts
+const json = createJSON(Schema, initial);
 const doc = createJSONDocument(Schema, initial, options);
 const doc = useJSONDocument(Schema, initial, options);
 ```
@@ -76,7 +77,9 @@ interface JSONDocument<T> {
 Rules:
 
 - `createJSONDocument` is authoritative for behavior.
+- `createJSON` is the standalone low-level state owner for `JSONOps<T>`.
 - `useJSONDocument` is an adapter over the same behavior.
+- `useJSON` is a React facade over `createJSON`.
 - Every facade field must be serializable or expose serializable snapshots.
 - No facade field may require React, DOM, browser APIs, or timers.
 

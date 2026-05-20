@@ -3,6 +3,7 @@
 
 export { useJSONDocument } from "./hooks/useJSONDocument.js";
 export { useJSON } from "./hooks/useJSON.js";
+export { createJSON } from "./createJSON.js";
 export { useSelection } from "./hooks/useSelection.js";
 export { createSelection } from "./selection.js";
 export { useJSONSlice } from "./hooks/useJSONSlice.js";
@@ -14,6 +15,11 @@ export type {
   JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./hooks/useJSONDocument.js";
+export type {
+  CreateJSONOptions,
+  HeadlessJSONState,
+  JSONState,
+} from "./createJSON.js";
 export type {
   ClipboardEmpty,
   ClipboardPasteResult,
@@ -102,6 +108,7 @@ export type {
 export type {
   HistoryMergeOptions,
   HistoryTransactionOptions,
+  JSONChangeListener,
   JSONChangeMetadata,
   JSONLoadOptions,
   JSONOps,

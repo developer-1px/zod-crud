@@ -7,11 +7,8 @@ import { buildCan, type Can } from "./commands/buildCan.js";
 import { buildCommands, type Commands } from "./commands/buildCommands.js";
 import { buildCheck, type Check } from "./check.js";
 import {
-  applyOperation,
-  applyPatch,
   computeInverses,
   type JSONPatchOperation,
-  type JSONResult,
 } from "./core/patch/index.js";
 import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
 import type { SelectionSnap } from "./core/selection/index.js";
@@ -25,8 +22,9 @@ import {
   mergeLast as historyMergeLast,
   type HistoryStack,
 } from "./core/history.js";
-import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.js";
+import { JSONCrudError } from "./JSONCrudError.js";
 import { createClipboardState, type ClipboardState } from "./clipboard.js";
+import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
@@ -34,7 +32,6 @@ import type {
   HistoryMergeOptions,
   HistoryTransactionOptions,
   JSONChangeMetadata,
-  JSONChangeListener,
   JSONDocumentOps,
   JSONLoadOptions,
   JSONOps,
@@ -80,20 +77,13 @@ interface HistoryEntry {
   metadata?: HistoryTransactionOptions;
 }
 
-const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
-
 export function createJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
   options: UseJSONDocumentOptions<z.output<S>> = {},
 ): JSONDocument<z.output<S>> {
-  const parsed = schema.safeParse(initial);
-  if (!parsed.success) throw parsed.error;
-
-  let state = parsed.data as z.output<S>;
-  const initialState = state;
-  const policy: ErrorPolicy = options;
-  const listeners = new Set<JSONChangeListener>();
+  const json = createJSON(schema, initial, options);
+  const rawOps = json.ops;
   const historyLimit = options.history ?? 0;
   let stack: HistoryStack<HistoryEntry> = emptyHistory<HistoryEntry>();
   let isRestoring = false;
@@ -103,78 +93,6 @@ export function createJSONDocument<S extends z.ZodType>(
   const selectionOptions: UseSelectionOptions =
     typeof options.selection === "object" ? options.selection : {};
   const selectionMode = selectionOptions.mode ?? "single";
-
-  const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {
-    if (applied.length === 0) return;
-    for (const listener of listeners) listener(applied, metadata);
-  };
-
-  const dispatch = (
-    label: JSONPatchOperation | "patch",
-    operations: ReadonlyArray<JSONPatchOperation>,
-    metadata?: JSONChangeMetadata,
-  ): JSONResult => {
-    const before = state;
-    const applied = applyPatch(schema, before, operations);
-    if (!applied.result.ok) return handleResult(policy, label, applied.result);
-    if (applied.state === before) return applied.result;
-    state = applied.state;
-    notify(applied.applied, metadata);
-    return applied.result;
-  };
-
-  const rawOps: JSONOps<z.output<S>> = {
-    add: (path, value) => dispatch({ op: "add", path: path as Pointer, value }, [{ op: "add", path: path as Pointer, value }]),
-    remove: (path) => dispatch({ op: "remove", path: path as Pointer }, [{ op: "remove", path: path as Pointer }]),
-    replace: (path, value) => dispatch({ op: "replace", path: path as Pointer, value }, [{ op: "replace", path: path as Pointer, value }]),
-    move: (from, path) => dispatch({ op: "move", from: from as Pointer, path: path as Pointer }, [{ op: "move", from: from as Pointer, path: path as Pointer }]),
-    copy: (from, path) => dispatch({ op: "copy", from: from as Pointer, path: path as Pointer }, [{ op: "copy", from: from as Pointer, path: path as Pointer }]),
-    test(path, value) {
-      const op: JSONPatchOperation = { op: "test", path: path as Pointer, value };
-      const r = applyOperation(schema, state, op);
-      return handleResult(policy, op, r.result);
-    },
-    set(path, value) {
-      const p = path as Pointer;
-      let segments: string[];
-      try {
-        segments = parsePointer(p);
-      } catch (error) {
-        return handleResult(policy, "set", {
-          ok: false,
-          code: "invalid_pointer",
-          reason: error instanceof Error ? error.message : "invalid JSON Pointer",
-          pointer: p,
-        });
-      }
-      const cur = readAt(state, segments);
-      if (value === undefined) {
-        if (!cur.ok) return { ok: true };
-        return ops.patch([{ op: "remove", path: p }]);
-      }
-      if (!cur.ok) return ops.patch([{ op: "add", path: p, value }]);
-      if (cur.value === value) return { ok: true };
-      return ops.patch([{ op: "replace", path: p, value }]);
-    },
-    patch(operations, metadata) {
-      return dispatch("patch", operations, metadata);
-    },
-    apply(operations, metadata) {
-      const r = ops.patch(operations, metadata);
-      if (!r.ok) throw new JSONCrudError("patch", r);
-    },
-    load(value) {
-      return replaceRoot("load", value);
-    },
-    reset(value) {
-      return replaceRoot("reset", value ?? initialState);
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => { listeners.delete(listener); };
-    },
-    get state() { return state; },
-  };
 
   const selectionState = createSelection(rawOps, selectionOptions);
   const snapSelection = (): SelectionSnap => selectionState.snapshot();
@@ -199,7 +117,7 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const patch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
-    const before = state;
+    const before = rawOps.state;
     const selectionBefore = snapSelection();
     const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
     const r = rawOps.patch(operations, changeMetadata);
@@ -229,20 +147,6 @@ export function createJSONDocument<S extends z.ZodType>(
     return true;
   };
 
-  const replaceRoot = (label: "load" | "reset", value: unknown): JSONResult => {
-    const next = schema.safeParse(value);
-    if (!next.success) {
-      return handleResult(policy, label, {
-        ok: false,
-        code: "schema_violation",
-        reason: JSON.stringify(next.error.issues),
-      });
-    }
-    state = next.data as z.output<S>;
-    notify([ROOT_REPLACE(state)]);
-    return { ok: true };
-  };
-
   const ops: JSONDocumentOps<z.output<S>> = {
     add: (path, value) => patch([{ op: "add", path: path as Pointer, value }]),
     remove: (path) => patch([{ op: "remove", path: path as Pointer }]),
@@ -250,7 +154,23 @@ export function createJSONDocument<S extends z.ZodType>(
     move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
     copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
     test: rawOps.test,
-    set: rawOps.set,
+    set(path, value) {
+      const p = path as Pointer;
+      let segments: string[];
+      try {
+        segments = parsePointer(p);
+      } catch {
+        return rawOps.set(path, value);
+      }
+      const current = readAt(rawOps.state, segments);
+      if (value === undefined) {
+        if (!current.ok) return { ok: true };
+        return patch([{ op: "remove", path: p }]);
+      }
+      if (!current.ok) return patch([{ op: "add", path: p, value }]);
+      if (current.value === value) return { ok: true };
+      return patch([{ op: "replace", path: p, value }]);
+    },
     patch,
     apply(operations, metadata) {
       const r = patch(operations, metadata);
@@ -278,7 +198,7 @@ export function createJSONDocument<S extends z.ZodType>(
         });
       });
     },
-    get state() { return state; },
+    get state() { return rawOps.state; },
   };
 
   const mergeLast = (mergeOptions?: HistoryMergeOptions): boolean => {
@@ -338,16 +258,16 @@ export function createJSONDocument<S extends z.ZodType>(
   const can = buildCan({ schema, ops, check });
   const clipboard = createClipboardState({
     schema,
-    getState: () => state,
+    getState: () => rawOps.state,
     ops,
     getSelectionSource: () => selectionState.selectedSource,
     getSelectionTarget: () => selectionState.primaryPointer,
   });
-  const read = buildReadFacade({ schema, getState: () => state });
+  const read = buildReadFacade({ schema, getState: () => rawOps.state });
   const schemaState = createSchemaState({ schema });
 
   return {
-    get value() { return state; },
+    get value() { return rawOps.state; },
     get selection() { return selectionEnabled ? selectionState : undefined; },
     history,
     ops,
