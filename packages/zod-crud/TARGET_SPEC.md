@@ -362,6 +362,8 @@ interface SelectionState<T> {
 ```
 
 `commands.select` mutates document selection and returns the computed snapshot.
+`commands.selectScope` uses the document's configured selection mode to expose
+Ctrl+A/select-visible selection through the command namespace.
 `selectionRanges[primaryIndex]` is the primary command range. Pointer-only
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,

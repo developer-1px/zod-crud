@@ -27,11 +27,11 @@ describe("headless command/check/can factories", () => {
       selection: false,
     });
     const selection = createSelection(doc.ops, {
-      mode: "single",
+      mode: "multiple",
       initial: ["/items/0/name"],
     });
     const selectionRef = { current: selection };
-    const commands = createCommands({ schema: Schema, ops: doc.ops, selectionRef });
+    const commands = createCommands({ schema: Schema, ops: doc.ops, selectionRef, selectionMode: "multiple" });
     const check = createCheck({ schema: Schema, ops: doc.ops, selectionRef });
     const can = createCan({ schema: Schema, ops: doc.ops, selectionRef, check });
 
@@ -54,6 +54,11 @@ describe("headless command/check/can factories", () => {
       source: "/items/1",
       sources: ["/items/1"],
     });
+
+    const selected = commands.selectScope({ points: ["/items/1", "/items/0"] });
+    expect(selected).toMatchObject({ ok: true, points: ["/items/1", "/items/0"] });
+    expect(selection.selectedPointers).toEqual(["/items/1", "/items/0"]);
+    expect(selection.primaryPointer).toBe("/items/0");
   });
 
   test("createCommands can be used without a selection ref when callers pass explicit pointers", () => {

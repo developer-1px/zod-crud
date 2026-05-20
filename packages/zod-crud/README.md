@@ -163,6 +163,8 @@ provide the same cursor logic for standalone headless composition.
 `doc.selection.selectScope(options?)` and `selectSelectionScope(...)` build a
 whole selection from the same `scope` or visible `points` options, covering
 Ctrl+A/select-visible flows without React.
+`doc.commands.selectScope(options?)` exposes the same flow through the document
+command namespace.
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `SelectionRange`, so disjoint multi-range selection and offset/edge carets are
 headless from initialization. Facade-level
@@ -192,8 +194,9 @@ objects without corrupting the live headless selection state.
 `doc.selection.restore(snapshot)` restores it.
 `doc.selection.subscribe(listener)` emits JSON-safe snapshots after manual
 selection actions and automatic op tracking.
-`doc.commands.select(action)` defaults to the document's configured selection
-mode, so headless and React facades preserve the same multi-select behavior.
+`doc.commands.select(action)` and `doc.commands.selectScope(options?)` default
+to the document's configured selection mode, so headless and React facades
+preserve the same multi-select behavior.
 
 Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata. Single-source copy/cut returns the copied fragment; multi-source

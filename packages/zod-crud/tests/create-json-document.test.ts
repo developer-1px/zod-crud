@@ -349,6 +349,18 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.caretPointer).toBe(null);
   });
 
+  test("commands.selectScope mutates document selection from visible points", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+
+    const selected = doc.commands.selectScope({ points: ["/items/1", "/items/0"], primaryIndex: 0 });
+
+    expect(selected).toMatchObject({ ok: true, points: ["/items/1", "/items/0"] });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/1", "/items/0"]);
+    expect(doc.selection?.primaryPointer).toBe("/items/1");
+  });
+
   test("selection selectRanges dedupes repeated ranges", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },
