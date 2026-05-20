@@ -263,6 +263,7 @@ type SelectionSource = Pointer | ReadonlyArray<Pointer>;
 type SelectionCursorDirection = "first" | "previous" | "next" | "last";
 
 interface SelectionCursorOptions {
+  points?: ReadonlyArray<JSONPoint>;
   scope?: Pointer;
   includeScope?: boolean;
   wrap?: boolean;
@@ -347,8 +348,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 offset/edge carets without React.
 `moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
 are pure headless helpers over a `SelectionSnap` plus current JSON state.
-They use JSON source-order DFS within `scope`; app-specific visible order stays
-user code layered above the engine.
+They use JSON source-order DFS within `scope` by default, or explicit
+`points` for filtered, folded, virtualized, or otherwise app-visible order.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.
@@ -393,6 +394,8 @@ Rules:
 - Cursor movement is source-order and state-based. It reports
   `cursor_boundary` instead of mutating when next/previous would leave scope
   and `wrap` is false.
+- Explicit cursor `points` preserve `JSONPoint` offsets/edges/affinity, so text
+  cursor positions and item cursor positions use the same engine path.
 
 Acceptance evidence:
 

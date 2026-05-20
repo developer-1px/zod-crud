@@ -42,6 +42,12 @@ export type SelectionRangeInput = JSONPoint | SelectionRange;
 export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
 
 export interface SelectionCursorOptions {
+  /**
+   * Explicit traversal order. Use this for filtered, folded, virtualized, or
+   * otherwise app-visible cursor order. When present, scope traversal is not
+   * used.
+   */
+  points?: ReadonlyArray<JSONPoint>;
   /** Pointer subtree used as the traversal root. Defaults to the document root. */
   scope?: Pointer;
   /** Include the scope pointer itself in traversal. Defaults to true. */
@@ -297,46 +303,52 @@ export function resolveSelectionCursor(
   state: unknown,
   options: SelectionCursorOptions = {},
 ): SelectionCursorTarget {
-  const scope = options.scope ?? "";
-  const scoped = scopedPointers(state, scope, options.includeScope ?? true);
-  if (!scoped.ok) {
+  const points = cursorPoints(state, options);
+  if (!points.ok) {
     return {
       ok: false,
       direction,
-      code: scoped.code,
-      reason: scoped.reason,
-      pointer: scope,
+      code: points.code,
+      reason: points.reason,
+      pointer: points.pointer,
     };
   }
-  if (scoped.pointers.length === 0) {
+  if (points.points.length === 0) {
+    const scope = options.scope ?? "";
     return {
       ok: false,
       direction,
       code: "empty_scope",
-      reason: `cursor scope is empty: ${scope}`,
+      reason: options.points !== undefined
+        ? "cursor points are empty"
+        : `cursor scope is empty: ${scope}`,
       pointer: scope,
     };
   }
 
-  const previousPointer = primaryPointer(current);
-  const previousIndex = previousPointer === null ? -1 : scoped.pointers.indexOf(previousPointer);
-  const targetIndex = cursorTargetIndex(direction, previousIndex, scoped.pointers.length, options.wrap === true);
+  const previousPoint = current.focus;
+  const previousPointer = previousPoint === null ? primaryPointer(current) : pointPath(previousPoint);
+  const previousIndex = previousPoint === null ? -1 : cursorPointIndex(points.points, previousPoint);
+  const targetIndex = cursorTargetIndex(direction, previousIndex, points.points.length, options.wrap === true);
   if (targetIndex === null) {
     return {
       ok: false,
       direction,
       code: "cursor_boundary",
-      reason: `cursor is at ${direction === "next" ? "last" : "first"} pointer in scope: ${scope}`,
+      reason: options.points !== undefined
+        ? `cursor is at ${direction === "next" ? "last" : "first"} point`
+        : `cursor is at ${direction === "next" ? "last" : "first"} pointer in scope: ${options.scope ?? ""}`,
       pointer: previousPointer,
     };
   }
 
-  const pointer = scoped.pointers[targetIndex]!;
+  const point = points.points[targetIndex]!;
+  const pointer = pointPath(point);
   return {
     ok: true,
     direction,
     pointer,
-    point: pointer,
+    point: clonePoint(point),
     previousPointer,
   };
 }
@@ -508,21 +520,46 @@ function clonePoint(point: JSONPoint): JSONPoint {
   return typeof point === "string" ? point : { ...point };
 }
 
-function scopedPointers(
+function cursorPoints(
+  state: unknown,
+  options: SelectionCursorOptions,
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer | null } {
+  if (options.points !== undefined) {
+    return explicitCursorPoints(options.points);
+  }
+
+  return scopedCursorPoints(state, options.scope ?? "", options.includeScope ?? true);
+}
+
+function explicitCursorPoints(
+  points: ReadonlyArray<JSONPoint>,
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer"; reason: string; pointer: Pointer } {
+  const out: JSONPoint[] = [];
+  for (const point of points) {
+    const pointer = pointPath(point);
+    if (tryParsePointer(pointer) === null) {
+      return { ok: false, code: "invalid_pointer", reason: `invalid cursor point pointer: ${pointer}`, pointer };
+    }
+    if (!out.some((candidate) => samePoint(candidate, point))) out.push(clonePoint(point));
+  }
+  return { ok: true, points: out };
+}
+
+function scopedCursorPoints(
   state: unknown,
   scope: Pointer,
   includeScope: boolean,
-): { ok: true; pointers: Pointer[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string } {
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer } {
   const segments = tryParsePointer(scope);
   if (segments === null) {
-    return { ok: false, code: "invalid_pointer", reason: `invalid cursor scope pointer: ${scope}` };
+    return { ok: false, code: "invalid_pointer", reason: `invalid cursor scope pointer: ${scope}`, pointer: scope };
   }
   const value = readAt(state, segments);
   if (!value.ok) {
-    return { ok: false, code: "path_not_found", reason: `cursor scope not found: ${scope}` };
+    return { ok: false, code: "path_not_found", reason: `cursor scope not found: ${scope}`, pointer: scope };
   }
   const pointers = collectPointers(value.value, scope);
-  return { ok: true, pointers: includeScope ? pointers : pointers.slice(1) };
+  return { ok: true, points: includeScope ? pointers : pointers.slice(1) };
 }
 
 function collectPointers(value: unknown, base: Pointer): Pointer[] {
@@ -559,6 +596,13 @@ function cursorTargetIndex(
       if (previousIndex > 0) return previousIndex - 1;
       return wrap ? length - 1 : null;
   }
+}
+
+function cursorPointIndex(points: ReadonlyArray<JSONPoint>, current: JSONPoint): number {
+  const exact = points.findIndex((point) => samePoint(point, current));
+  if (exact >= 0) return exact;
+  const pointer = pointPath(current);
+  return points.findIndex((point) => pointPath(point) === pointer);
 }
 
 function collectSelectedPointers(ranges: ReadonlyArray<SelectionRange>, state?: unknown): Pointer[] {

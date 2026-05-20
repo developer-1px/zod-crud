@@ -104,6 +104,55 @@ describe("createSelection", () => {
     });
   });
 
+  test("cursor helpers accept explicit visible JSONPoint order", () => {
+    const ordered = moveSelectionCursor(
+      EMPTY_SELECTION,
+      "first",
+      "single",
+      initial,
+      { points: ["/items/2", "/items/0"] },
+    );
+    expect(ordered).toMatchObject({ ok: true, pointer: "/items/2" });
+    if (!ordered.ok) throw new Error(ordered.reason);
+
+    const next = moveSelectionCursor(ordered.selection, "next", "single", initial, {
+      points: ["/items/2", "/items/0"],
+    });
+    expect(next).toMatchObject({ ok: true, pointer: "/items/0", previousPointer: "/items/2" });
+    if (!next.ok) throw new Error(next.reason);
+
+    const textPoints = [
+      { path: "/items/0/name" as const, offset: 0 },
+      { path: "/items/0/name" as const, offset: 1 },
+      { path: "/items/1/name" as const, offset: 0 },
+    ];
+    const textNext = moveSelectionCursor(next.selection, "first", "single", initial, { points: textPoints });
+    expect(textNext).toMatchObject({
+      ok: true,
+      pointer: "/items/0/name",
+      point: { path: "/items/0/name", offset: 0 },
+    });
+    if (!textNext.ok) throw new Error(textNext.reason);
+
+    const textExtended = extendSelectionCursor(textNext.selection, "next", "extended", initial, { points: textPoints });
+    expect(textExtended).toMatchObject({
+      ok: true,
+      pointer: "/items/0/name",
+      point: { path: "/items/0/name", offset: 1 },
+    });
+    if (!textExtended.ok) throw new Error(textExtended.reason);
+    expect(textExtended.selection.selectionRanges).toEqual([{
+      anchor: { path: "/items/0/name", offset: 0 },
+      focus: { path: "/items/0/name", offset: 1 },
+    }]);
+
+    expect(resolveSelectionCursor(EMPTY_SELECTION, "first", initial, { points: ["items"] })).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      pointer: "items",
+    });
+  });
+
   test("provides headless multi-selection and caret tracking over JSON ops", () => {
     const doc = createJSONDocument(Schema, initial);
     const selection = createSelection(doc.ops, {

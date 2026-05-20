@@ -155,10 +155,11 @@ projections needed by scalar Pointer commands; `selectedSource` is the
 null/single/multi source projection accepted by `copy` / `cut`.
 `doc.selection.moveCursor(direction, options?)` and
 `doc.selection.extendCursor(direction, options?)` move or extend selection in
-JSON source-order within an optional `scope`; `resolveCursor` computes the next
-target without mutating. The pure helpers `moveSelectionCursor`,
-`extendSelectionCursor`, and `resolveSelectionCursor` provide the same cursor
-logic for standalone headless composition.
+JSON source-order within an optional `scope`; pass `points` to use a filtered,
+folded, virtualized, or otherwise app-visible `JSONPoint[]` order. `resolveCursor`
+computes the next target without mutating. The pure helpers
+`moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
+provide the same cursor logic for standalone headless composition.
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `SelectionRange`, so disjoint multi-range selection and offset/edge carets are
 headless from initialization. Facade-level
