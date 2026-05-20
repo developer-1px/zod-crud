@@ -168,19 +168,21 @@ export type {
   SelectionRangeInput,
   SelectionRangeOrderResult,
   SelectionRangesOrderResult,
-  ReplaceSelectionTextResult,
   SelectionScopeErrorCode,
   SelectionScopeOptions,
   SelectionScopeResult,
   SelectionScopeTarget,
   SelectionSource,
   SelectionSpanOptions,
+  SelectionType,
+} from "./core/selection/index.js";
+export type {
+  ReplaceSelectionTextResult,
   SelectionTextEdit,
   SelectionTextEditErrorCode,
   SelectionTextEditOptions,
   SelectionTextEditsResult,
-  SelectionType,
-} from "./core/selection/index.js";
+} from "./core/selection/textEdit.js";
 export { trackPointer } from "./core/track.js";
 export {
   EMPTY_SELECTION,
@@ -197,9 +199,7 @@ export {
   orderPrimarySelectionRange,
   orderSelectionRange,
   orderSelectionRanges,
-  replaceSelectionText,
   selectionSpansForPointer,
-  selectionTextEdits,
   pointPointer,
   primaryPointer,
   primaryRange,
@@ -213,6 +213,10 @@ export {
   selectionSnapshot,
   selectionType,
 } from "./core/selection/index.js";
+export {
+  replaceSelectionText,
+  selectionTextEdits,
+} from "./core/selection/textEdit.js";
 
 // === Sidecars — 횡단 관심사 ===
 // React sidecar hooks live under `zod-crud/react`.

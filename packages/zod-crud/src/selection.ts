@@ -22,7 +22,6 @@ import {
   primaryRange,
   rangeCount,
   reduceSelection,
-  replaceSelectionText,
   resolveSelectionCursor,
   resolveSelectionScope,
   restoreSelection,
@@ -31,7 +30,6 @@ import {
   selectSelectionScope,
   selectionSnapshot,
   selectionSpansForPointer,
-  selectionTextEdits,
   selectionType,
   type OrderedSelectionRange,
   type OrderedSelectionRangeEntry,
@@ -54,7 +52,6 @@ import {
   type SelectionRangeInput,
   type SelectionRangeOrderResult,
   type SelectionRangesOrderResult,
-  type ReplaceSelectionTextResult,
   type SelectionScopeErrorCode,
   type SelectionScopeOptions,
   type SelectionScopeResult,
@@ -62,12 +59,17 @@ import {
   type SelectionSnap,
   type SelectionSource,
   type SelectionSpanOptions,
+  type SelectionType,
+} from "./core/selection/index.js";
+import {
+  replaceSelectionText,
+  selectionTextEdits,
+  type ReplaceSelectionTextResult,
   type SelectionTextEdit,
   type SelectionTextEditErrorCode,
   type SelectionTextEditOptions,
   type SelectionTextEditsResult,
-  type SelectionType,
-} from "./core/selection/index.js";
+} from "./core/selection/textEdit.js";
 
 export type {
   JSONPoint,

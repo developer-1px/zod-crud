@@ -142,9 +142,7 @@ export {
   orderPrimarySelectionRange,
   orderSelectionRange,
   orderSelectionRanges,
-  replaceSelectionText,
   selectionSpansForPointer,
-  selectionTextEdits,
   pointPointer,
   primaryPointer,
   primaryRange,
@@ -158,6 +156,10 @@ export {
   selectionSnapshot,
   selectionType,
 } from "./core/selection/index.js";
+export {
+  replaceSelectionText,
+  selectionTextEdits,
+} from "./core/selection/textEdit.js";
 export type {
   SelectionAction,
   SelectionContext,
@@ -197,7 +199,6 @@ export type {
   SelectionPointerSpansResult,
   SelectionRangeOrderResult,
   SelectionRangesOrderResult,
-  ReplaceSelectionTextResult,
   JSONPoint,
   OrderedSelectionRange,
   OrderedSelectionRangeEntry,
@@ -205,12 +206,15 @@ export type {
   SelectionRangeInput,
   SelectionSource,
   SelectionSpanOptions,
-  SelectionTextEdit,
-  SelectionTextEditErrorCode,
-  SelectionTextEditOptions,
-  SelectionTextEditsResult,
   SelectionType,
   SelectionState,
   UseSelectionOptions,
 } from "./hooks/useSelection.js";
+export type {
+  ReplaceSelectionTextResult,
+  SelectionTextEdit,
+  SelectionTextEditErrorCode,
+  SelectionTextEditOptions,
+  SelectionTextEditsResult,
+} from "./core/selection/textEdit.js";
 export { JSONCrudError } from "./JSONCrudError.js";
