@@ -360,6 +360,7 @@ interface SelectionState<T> {
   addRange(pointOrRange: JSONPoint | SelectionRange): void;
   removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  togglePointer(pointer: Pointer): void;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
@@ -433,7 +434,10 @@ their target argument is omitted; mode-only calls such as
 `commands.paste(payload, "after")` use that same target.
 `selectedCount` and `hasSelection` are item-selection projection helpers for
 rendering and command guards. `isSelected(pointer)` is the per-item selected
-predicate; `containsNode(pointer)` remains an exact selected-pointer alias.
+predicate; `togglePointer(pointer)` toggles one item in the `selectedPointers`
+projection, including removing a pointer from inside an expanded range while
+preserving the remaining items as sparse collapsed ranges.
+`containsNode(pointer)` remains an exact selected-pointer alias.
 Selection getters, `snapshot()`, and `toJSON()` expose value snapshots:
 returned arrays/ranges/JSONPoint objects are safe to store or mutate outside
 the engine. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap`

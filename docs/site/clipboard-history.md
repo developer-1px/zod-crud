@@ -35,7 +35,7 @@ const doc = useJSONDocument(Schema, initial, {
 클릭하면 toggle합니다.
 
 ```tsx
-onClick={() => doc.selection?.toggleRange(`/items/${i}`)}
+onClick={() => doc.selection?.togglePointer(`/items/${i}`)}
 ```
 
 ## 패턴 3. 캐럿이 있는 트리

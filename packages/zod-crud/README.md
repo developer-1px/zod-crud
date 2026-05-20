@@ -158,10 +158,12 @@ item-selection projection for list/tree/grid UIs.
 `doc.selection.primaryRange` exposes the active range and `doc.selection.caret`
 exposes the collapsed cursor point. `rangeCount`, `selectedCount`, and
 `hasSelection` expose selection cardinality, and `isSelected(pointer)` is the
-per-item selected predicate for list/tree/grid rendering. `anchorPointer`,
-`focusPointer`, `primaryPointer`, and `caretPointer` expose the Pointer
-projections needed by scalar Pointer commands; `selectedSource` is the
-null/single/multi source projection accepted by `copy` / `cut`.
+per-item selected predicate for list/tree/grid rendering. `togglePointer(pointer)`
+toggles one item in that selected-pointer projection, including removing a
+single item from inside an expanded range while preserving sparse selection.
+`anchorPointer`, `focusPointer`, `primaryPointer`, and `caretPointer` expose
+the Pointer projections needed by scalar Pointer commands; `selectedSource` is
+the null/single/multi source projection accepted by `copy` / `cut`.
 `doc.selection.moveCursor(direction, options?)` and
 `doc.selection.extendCursor(direction, options?)` move or extend selection in
 JSON source-order within an optional `scope`; pass `query` to use RFC 9535

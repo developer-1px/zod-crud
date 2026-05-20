@@ -346,4 +346,26 @@ describe("createSelection", () => {
     expect(selection.selectedPointers).toEqual(["/items/0", "/items/0/name"]);
     expect(changes).toHaveLength(2);
   });
+
+  test("togglePointer toggles item selection without rebuilding an expanded range", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, { mode: "extended" });
+
+    selection.setBaseAndExtent("/items/0", "/items/2");
+    expect(selection.selectedPointers).toEqual(["/items/0", "/items/1", "/items/2"]);
+
+    selection.togglePointer("/items/1");
+
+    expect(selection.selectedPointers).toEqual(["/items/0", "/items/2"]);
+    expect(selection.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      { anchor: "/items/2", focus: "/items/2" },
+    ]);
+    expect(selection.primaryPointer).toBe("/items/2");
+
+    selection.togglePointer("/items/1");
+
+    expect(selection.selectedPointers).toEqual(["/items/0", "/items/2", "/items/1"]);
+    expect(selection.primaryPointer).toBe("/items/1");
+  });
 });

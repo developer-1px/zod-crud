@@ -92,7 +92,7 @@ selection은 사용자가 선택한 JSON 위치들입니다.
 
 ```ts
 doc.selection?.setBaseAndExtent("/items/0", "/items/1");
-doc.selection?.toggleRange("/items/2");
+doc.selection?.togglePointer("/items/2");
 doc.selection?.selectScope({ points: visiblePoints });
 doc.selection?.selectScope({ query: "$.items[*].title" });
 doc.selection?.empty();

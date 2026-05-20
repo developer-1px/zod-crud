@@ -299,6 +299,7 @@ type SelectionShapeAction =
   | { type: "toggleRange"; pointer: Pointer }
   | { type: "toggleRange"; point: JSONPoint }
   | { type: "toggleRange"; range: SelectionRange }
+  | { type: "togglePointer"; pointer: Pointer }
   | {
       type: "selectRanges";
       ranges: ReadonlyArray<SelectionRangeInput>;
@@ -341,6 +342,12 @@ function withRemoved(prev: SelectionSnap, input: JSONPoint | SelectionRange | nu
   return snapFromRanges(next, Math.min(prev.primaryIndex, next.length - 1), mode, state);
 }
 
+function withToggledPointer(prev: SelectionSnap, pointer: Pointer, mode: SelectionMode, state?: unknown): SelectionSnap {
+  if (!prev.selectedPointers.includes(pointer)) return withAdded(prev, mode, collapsedRange(pointer), state);
+  const next = prev.selectedPointers.filter((selected) => selected !== pointer);
+  return snapFromRanges(next.map(collapsedRange), next.length - 1, mode, state);
+}
+
 export function reduceSelection(
   prev: SelectionSnap,
   action: SelectionAction,
@@ -365,6 +372,7 @@ export function reduceSelection(
         : withAdded(prev, mode, range, state);
       return applyActionContext(prev, next, action);
     }
+    case "togglePointer":    return applyActionContext(prev, withToggledPointer(prev, action.pointer, mode, state), action);
     case "selectRanges":     return applyActionContext(prev, selectRanges(action, mode, state), action);
     case "empty":            return applyActionContext(prev, EMPTY_SELECTION, action);
     case "setContext":       return withSelectionContext(prev, action.context);

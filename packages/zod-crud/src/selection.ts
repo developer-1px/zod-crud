@@ -108,6 +108,7 @@ export interface SelectionState<T> extends SelectionSnap {
   addRange(pointOrRange: JSONPoint | SelectionRange): void;
   removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  togglePointer(pointer: Pointer): void;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
@@ -206,6 +207,7 @@ export function createSelection<T>(
         ? { type: "toggleRange", range: pointOrRange }
         : { type: "toggleRange", point: pointOrRange });
     },
+    togglePointer(pointer) { dispatch({ type: "togglePointer", pointer }); },
     moveCursor(direction, cursorOptions) {
       const result = moveSelectionCursor(snap, direction, mode, ops.state, cursorOptions);
       if (result.ok) setSnap(result.selection);

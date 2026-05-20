@@ -193,6 +193,31 @@ describe("verbs/select", () => {
     expect(caretPointer(second)).toBe(null);
   });
 
+  test("togglePointer removes one selected item from an expanded range", () => {
+    const range = select(
+      EMPTY_SELECTION,
+      { type: "setBaseAndExtent", anchor: "/items/0", focus: "/items/2" },
+      "extended",
+      initial,
+    );
+
+    expect(range.selectedPointers).toEqual(["/items/0", "/items/1", "/items/2"]);
+
+    const removedMiddle = select(range, { type: "togglePointer", pointer: "/items/1" }, "extended", initial);
+
+    expect(removedMiddle.selectedPointers).toEqual(["/items/0", "/items/2"]);
+    expect(removedMiddle.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      { anchor: "/items/2", focus: "/items/2" },
+    ]);
+    expect(primaryPointer(removedMiddle)).toBe("/items/2");
+
+    const addedBack = select(removedMiddle, { type: "togglePointer", pointer: "/items/1" }, "extended", initial);
+
+    expect(addedBack.selectedPointers).toEqual(["/items/0", "/items/2", "/items/1"]);
+    expect(primaryPointer(addedBack)).toBe("/items/1");
+  });
+
   test("selectRanges dedupes ranges while preserving primary range intent", () => {
     const s = select(EMPTY_SELECTION, {
       type: "selectRanges",

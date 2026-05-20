@@ -142,10 +142,11 @@ const doc = useJSONDocument(Schema, initial, {
 });
 
 doc.selection?.toggleRange("/tasks/2");
+doc.selection?.togglePointer("/tasks/2");
 doc.selection?.containsNode("/tasks/2");
 ```
 
-selection은 Pointer 배열로 저장됩니다. 즉 선택된 DOM element가 아니라 선택된 JSON 위치를 기억합니다.
+selection은 Pointer 배열로 projection됩니다. 즉 선택된 DOM element가 아니라 선택된 JSON 위치를 기억합니다. 범위 안의 개별 항목을 빼거나 더하는 UI는 `togglePointer`를 씁니다.
 
 ## 캐럿은 `doc.selection.focus`
 
