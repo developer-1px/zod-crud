@@ -6,8 +6,12 @@ import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const monorepoRoot = resolve(repoRoot, "..", "..");
 const workspace = await mkdtemp(join(tmpdir(), "zod-crud-package-"));
 const npmCache = join(workspace, ".npm-cache");
+const npmEnv = { ...process.env, npm_config_cache: npmCache, npm_config_package_lock: "false" };
+const lockfilePath = join(monorepoRoot, "package-lock.json");
+const lockfileSnapshot = existsSync(lockfilePath) ? await readFile(lockfilePath) : null;
 const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 const readmeSource = await readFile(join(repoRoot, "README.md"), "utf8");
 const rootSource = await readFile(join(repoRoot, "src", "index.ts"), "utf8");
@@ -40,7 +44,7 @@ function run(command, args, cwd) {
   try {
     execFileSync(command, args, {
       cwd,
-      env: { ...process.env, npm_config_cache: npmCache },
+      env: npmEnv,
       stdio: "pipe",
     });
   } catch (error) {
@@ -52,7 +56,7 @@ function expectCommandFailure(command, args, cwd, expectedText) {
   try {
     execFileSync(command, args, {
       cwd,
-      env: { ...process.env, npm_config_cache: npmCache },
+      env: npmEnv,
       stdio: "pipe",
     });
   } catch (error) {
@@ -403,7 +407,7 @@ try {
     {
       cwd: repoRoot,
       encoding: "utf8",
-      env: { ...process.env, npm_config_cache: npmCache },
+      env: npmEnv,
       stdio: ["ignore", "pipe", "pipe"],
     },
   );
@@ -1222,5 +1226,10 @@ try {
     workspace,
   );
 } finally {
+  if (lockfileSnapshot === null) {
+    await rm(lockfilePath, { force: true });
+  } else {
+    await writeFile(lockfilePath, lockfileSnapshot);
+  }
   await rm(workspace, { force: true, recursive: true });
 }
