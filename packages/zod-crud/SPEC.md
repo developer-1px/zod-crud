@@ -34,9 +34,8 @@ UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · syst
 
 ```
 hooks/      React-only. React API 의존 (useState/useMemo/useRef/MutableRefObject).
-            useJSONDocument facade 와 low-level hooks/useJSON, useSelection,
-            useJSONSlice, useDraft/useField, React-context wiring helpers
-            (buildJSONDocumentOps, jsonDocumentHistory).
+            useJSONDocument/useJSON/useSelection/useJSONSlice/useDraft/useField
+            facade hooks only.
    │ uses
 commands/   facade builders (pure). buildCommands → Commands<T> (10 verb namespace),
    │ uses   buildCan → Can<T> (boolean guard namespace). React 무관.
@@ -761,17 +760,16 @@ export class JSONCrudError extends Error {
 index.ts              ─ headless public export (SPEC §5)
 react.ts              ─ React public export (`zod-crud/react`)
 createJSONDocument.ts ─ headless document facade (SPEC §5.10)
+createJSON.ts         ─ headless low-level JSON state owner (SPEC §5.1·§5.2)
 selection.ts          ─ headless selection state facade (SPEC §5.7)
 draft.ts              ─ headless draft/pending field state
 jsonOps.ts            ─ JSONOps boundary type
 hooks/
-  useJSON.ts          ─ React state + ops binding (SPEC §5.1·§5.2)
+  useJSON.ts          ─ React data facade over createJSON (SPEC §5.1·§5.2)
   useJSONDocument.ts  ─ React document facade
   useSelection.ts     ─ React selection facade (SPEC §5.7)
   useJSONSlice.ts     ─ pointer slice hook
   useDraft.ts         ─ React draft facade
-  buildJSONDocumentOps.ts
-  jsonDocumentHistory.ts
 commands/
   buildCommands.ts    ─ commands namespace
   buildCan.ts         ─ can namespace

@@ -41,6 +41,7 @@ import type {
 export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
   history?: number;
   selection?: boolean | UseSelectionOptions;
+  onChange?: () => void;
 }
 
 export interface JSONDocumentHistory {
@@ -94,7 +95,13 @@ export function createJSONDocument<S extends z.ZodType>(
     typeof options.selection === "object" ? options.selection : {};
   const selectionMode = selectionOptions.mode ?? "single";
 
-  const selectionState = createSelection(rawOps, selectionOptions);
+  const createSelectionOptions: UseSelectionOptions & { onChange?: () => void } = {
+    ...selectionOptions,
+  };
+  if (selectionEnabled && options.onChange !== undefined) {
+    createSelectionOptions.onChange = options.onChange;
+  }
+  const selectionState = createSelection(rawOps, createSelectionOptions);
   const snapSelection = (): SelectionSnap => selectionState.snapshot();
 
   const recordHistory = (
@@ -256,13 +263,16 @@ export function createJSONDocument<S extends z.ZodType>(
   const commands = buildCommands({ schema, ops, selectionRef, selectionMode });
   const check = buildCheck({ schema, ops, selectionRef });
   const can = buildCan({ schema, ops, check });
-  const clipboard = createClipboardState({
+  const clipboardOptions = {
     schema,
     getState: () => rawOps.state,
     ops,
     getSelectionSource: () => selectionState.selectedSource,
     getSelectionTarget: () => selectionState.primaryPointer,
-  });
+  };
+  const clipboard = createClipboardState(options.onChange === undefined
+    ? clipboardOptions
+    : { ...clipboardOptions, onChange: options.onChange });
   const read = buildReadFacade({ schema, getState: () => rawOps.state });
   const schemaState = createSchemaState({ schema });
 
