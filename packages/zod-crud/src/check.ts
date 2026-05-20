@@ -3,7 +3,7 @@ import type * as z from "zod";
 import type { JSONPatchOperation, ErrorCode } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
 import { preFlight, type PreFlightErrorCode } from "./core/schema/preFlight.js";
-import type { JSONDocumentOps } from "./jsonOps.js";
+import type { HistoryTransactionOptions, JSONDocumentOps } from "./jsonOps.js";
 import { copy, type ClipboardSource } from "./verbs/copy.js";
 import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
@@ -69,8 +69,8 @@ export interface Check<T> {
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
-  replaceText(replacement: string, options?: SelectionTextEditOptions): CheckResult;
-  deleteText(options?: SelectionTextDeleteOptions): CheckResult;
+  replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
+  deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(

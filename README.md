@@ -97,7 +97,8 @@ and offset-based edits.
 plans, and `textPatch(replacement)` / `deleteText(options?)` build RFC 6902
 `replace` patches plus the final collapsed selection for JSON string leaves.
 `commands.replaceText(...)` and `commands.deleteText(...)` commit those edits
-through document history.
+through document history with final selection and optional `label` / `origin` /
+`mergeKey` metadata.
 `at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.

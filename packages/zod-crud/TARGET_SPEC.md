@@ -174,8 +174,8 @@ interface Check<T> {
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
-  replaceText(replacement: string, options?: SelectionTextEditOptions): CheckResult;
-  deleteText(options?: SelectionTextDeleteOptions): CheckResult;
+  replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
+  deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -555,7 +555,8 @@ keyboard-style cursor movement using the same cursor traversal options.
 `commands.selectScope` uses the document's configured selection mode to expose
 Ctrl+A/select-visible selection through the command namespace.
 `commands.replaceText(replacement, options?)` commits JSON string-leaf text edits
-from the current `SelectionSnap` through document history.
+from the current `SelectionSnap` through document history, carrying optional
+`label` / `origin` / `mergeKey` metadata from options.
 `commands.deleteText(options?)` commits selected-text deletion or collapsed
 caret backward/forward deletion through that same path.
 `check.moveCursor` / `can.moveCursor`, `check.extendCursor` /
@@ -596,7 +597,7 @@ collapsed selection for JSON string leaves; `deleteSelectionText` does the same
 for selected-text deletion and collapsed caret backward/forward deletion.
 Multi-pointer rich-text/block edits use the edit plan and app-specific patching.
 `commands.replaceText(...)` / `commands.deleteText(...)` commit the string-leaf
-patch and final selection directly. `SelectionState` exposes the same
+patch, final selection, and optional history metadata directly. `SelectionState` exposes the same
 behavior as `orderPrimaryRange(options?)`, `orderRanges(options?)`,
 `spansForPointer(pointer, options?)`, `textEdits(replacement, options?)`,
 `textPatch(replacement, options?)`, and `deleteText(options?)`.
@@ -627,6 +628,9 @@ JSON string-leaf text edits.
 Document-facade `commands.deleteText(options?)`,
 `check.deleteText(options?)`, and `can.deleteText(options?)` use that same model
 for selected-text deletion and collapsed caret backward/forward deletion.
+Command options are the selection text options plus `HistoryTransactionOptions`;
+`check` and `can` accept the same shape for API parity but do not record
+metadata.
 Document-facade `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` use `primaryPointer` when
 their target argument is omitted; mode-only calls such as

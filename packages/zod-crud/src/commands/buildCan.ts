@@ -6,6 +6,7 @@
 // useMemo / useDeferredValue 로 캐싱 권장. canUndo/canRedo 는 stack 길이 검사라 저비용.
 
 import type * as z from "zod";
+import type { HistoryTransactionOptions } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type {
   SelectionCursorDirection,
@@ -29,8 +30,8 @@ export interface Can<T> {
   move(fromOrTo: Pointer, to?: Pointer): boolean;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
   replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
-  replaceText(replacement: string, options?: SelectionTextEditOptions): boolean;
-  deleteText(options?: SelectionTextDeleteOptions): boolean;
+  replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): boolean;
+  deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): boolean;
   cut(source?: ClipboardSource): boolean;
   paste(
     payload: unknown,

@@ -37,8 +37,10 @@ export type {
   CommandSelectionState,
   Commands,
   CreateCommandsOptions,
+  DeleteTextCommandOptions,
   DeleteTextCommandResult,
   ReplaceCommandResult,
+  ReplaceTextCommandOptions,
   ReplaceTextCommandResult,
 } from "./commands/buildCommands.js";
 export { createCan } from "./commands/buildCan.js";

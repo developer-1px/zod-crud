@@ -71,4 +71,60 @@ describe("doc.history metadata", () => {
     expect(doc.commands.undo()).toBe(true);
     expect(doc.value.title).toBe("draft");
   });
+
+  test("text commands pass serializable history metadata through patch commits", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: {
+        mode: "extended",
+        initial: [{
+          anchor: { path: "/title", offset: 0 },
+          focus: { path: "/title", offset: 0 },
+        }],
+      },
+    });
+    const metadata: JSONChangeMetadata[] = [];
+    doc.ops.subscribe((_, changeMetadata) => {
+      if (changeMetadata) metadata.push(changeMetadata);
+    });
+
+    expect(doc.check.replaceText("A", {
+      label: "Insert title text",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+    })).toEqual({ ok: true });
+    expect(doc.can.replaceText("A", {
+      label: "Insert title text",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+    })).toBe(true);
+    expect(doc.commands.replaceText("A", {
+      label: "Insert title text",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+    })).toMatchObject({ ok: true });
+
+    expect(doc.commands.deleteText({
+      label: "Delete title text",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+    })).toMatchObject({ ok: true });
+
+    expect(metadata).toHaveLength(2);
+    expect(metadata[0]).toMatchObject({
+      label: "Insert title text",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+      selectionBefore: { focus: { path: "/title", offset: 0 } },
+      selectionAfter: { focus: { path: "/title", offset: 1 } },
+    });
+    expect(metadata[1]).toMatchObject({
+      label: "Delete title text",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+      selectionBefore: { focus: { path: "/title", offset: 1 } },
+      selectionAfter: { focus: { path: "/title", offset: 0 } },
+    });
+    expect(JSON.parse(JSON.stringify(metadata))).toEqual(metadata);
+  });
 });

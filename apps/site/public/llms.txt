@@ -104,7 +104,8 @@ selection into ordered pointer-local edit plans. Use `replaceSelectionText` /
 `doc.selection.deleteText(options?)` for JSON string leaves; they return patch
 plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)` or
 `doc.commands.deleteText(...)` when the string-leaf edit should commit through
-document history directly.
+document history directly; options may include `label`, `origin`, and
+`mergeKey` history metadata.
 Use `createCommands(args)`, `createCheck(args)`, and `createCan(args)` for
 standalone headless command, dry-run, and boolean guard facades; React
 re-exports the same factories without adding a separate command model.
@@ -128,7 +129,8 @@ selection mode, so headless and React facades preserve the same multi-select
 behavior and the full `SelectionSnap`, including `context`.
 `doc.commands.replaceText(replacement, options?)` and
 `doc.commands.deleteText(options?)` use that same `SelectionSnap` to commit JSON
-string-leaf text edits; `doc.check.replaceText` / `doc.can.replaceText` and
+string-leaf text edits with optional `label`, `origin`, and `mergeKey`
+metadata; `doc.check.replaceText` / `doc.can.replaceText` and
 `doc.check.deleteText` / `doc.can.deleteText` dry-run the same plan.
 
 ## 10 Verbs

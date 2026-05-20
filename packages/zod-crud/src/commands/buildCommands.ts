@@ -5,7 +5,7 @@
 // undo/redo 는 ops.undo/redo (history stack 관리는 createJSONDocument 가 wiring).
 
 import type * as z from "zod";
-import type { JSONDocumentOps } from "../jsonOps.js";
+import type { HistoryTransactionOptions, JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import {
   EMPTY_SELECTION,
@@ -59,6 +59,9 @@ export type DeleteTextCommandResult =
   | DeleteSelectionTextResult
   | Extract<JSONResult, { ok: false }>;
 
+export type ReplaceTextCommandOptions = SelectionTextEditOptions & HistoryTransactionOptions;
+export type DeleteTextCommandOptions = SelectionTextDeleteOptions & HistoryTransactionOptions;
+
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
@@ -69,8 +72,8 @@ export interface Commands<T> {
   move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult<T>;
-  replaceText(replacement: string, options?: SelectionTextEditOptions): ReplaceTextCommandResult;
-  deleteText(options?: SelectionTextDeleteOptions): DeleteTextCommandResult;
+  replaceText(replacement: string, options?: ReplaceTextCommandOptions): ReplaceTextCommandResult;
+  deleteText(options?: DeleteTextCommandOptions): DeleteTextCommandResult;
 
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   copy(source?: ClipboardSource): CopyOk | CopyError;
@@ -193,7 +196,10 @@ export function buildCommands<S extends z.ZodType>(
     replaceText(replacement, textOptions) {
       const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
       if (!planned.ok) return planned;
-      const patched = ops.patch(planned.patch, { selectionAfter: planned.selection });
+      const patched = ops.patch(planned.patch, {
+        ...historyMetadata(textOptions),
+        selectionAfter: planned.selection,
+      });
       if (!patched.ok) return patched;
       applySelection(planned.selection);
       return planned;
@@ -201,7 +207,10 @@ export function buildCommands<S extends z.ZodType>(
     deleteText(textOptions) {
       const planned = deleteSelectionText(selectionState(), ops.state, textOptions);
       if (!planned.ok) return planned;
-      const patched = ops.patch(planned.patch, { selectionAfter: planned.selection });
+      const patched = ops.patch(planned.patch, {
+        ...historyMetadata(textOptions),
+        selectionAfter: planned.selection,
+      });
       if (!patched.ok) return patched;
       applySelection(planned.selection);
       return planned;
@@ -233,6 +242,15 @@ export function buildCommands<S extends z.ZodType>(
 }
 
 export const createCommands = buildCommands;
+
+function historyMetadata(options: HistoryTransactionOptions | undefined): HistoryTransactionOptions | undefined {
+  if (options === undefined) return undefined;
+  const metadata: HistoryTransactionOptions = {};
+  if (options.label !== undefined) metadata.label = options.label;
+  if (options.origin !== undefined) metadata.origin = options.origin;
+  if (options.mergeKey !== undefined) metadata.mergeKey = options.mergeKey;
+  return Object.keys(metadata).length === 0 ? undefined : metadata;
+}
 
 function emptyPasteTarget(): PasteError {
   return {
