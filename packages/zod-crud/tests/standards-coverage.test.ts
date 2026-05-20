@@ -41,6 +41,35 @@ function packageSourceFiles(dir: string, prefix = ""): string[] {
   return paths.sort();
 }
 
+function exportedNames(source: string): string[] {
+  const names: string[] = [];
+
+  for (const match of source.matchAll(/^export(?: type)? \{([\s\S]*?)\} from/gm)) {
+    const block = match[1];
+    if (block === undefined) throw new Error("export block capture failed");
+    names.push(...exportNames(block));
+  }
+  for (const match of source.matchAll(/^export\s+(interface|type|class|const|function)\s+([A-Za-z_$][\w$]*)/gm)) {
+    const name = match[2];
+    if (name === undefined) throw new Error("export declaration capture failed");
+    names.push(name);
+  }
+
+  return [...new Set(names)].sort();
+}
+
+function exportNames(block: string): string[] {
+  return block
+    .split(",")
+    .map((part) => part.replace(/\/\/.*$/gm, "").trim())
+    .filter(Boolean)
+    .map((part) => {
+      const name = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
+      if (name === undefined) throw new Error(`export name capture failed: ${part}`);
+      return name;
+    });
+}
+
 describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
   test("expected core/ 폴더가 모두 존재", () => {
     for (const dir of expectedCoreFolders) {
@@ -179,18 +208,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     const readme = readFileSync(resolve(root, "README.md"), "utf8");
     const reactSource = readFileSync(resolve(root, "src/react.ts"), "utf8");
     const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));
-    const exportBlocks = Array.from(reactSource.matchAll(/export(?: type)? \{([\s\S]*?)\} from/g), (match) => {
-      const block = match[1];
-      if (block === undefined) throw new Error("React export capture failed");
-      return block;
-    });
-    const exports = exportBlocks
-      .flatMap((block) => block.split(","))
-      .map((part) => part.replace(/\/\/.*$/gm, "").trim())
-      .filter(Boolean)
-      .map((part) => part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0])
-      .filter((name): name is string => name !== undefined)
-      .sort();
+    const exports = exportedNames(reactSource);
 
     for (const name of exports) {
       expect(apiSection, `README API table missing React export: ${name}`).toContain(`\`${name}`);
@@ -201,18 +219,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     const readme = readFileSync(resolve(root, "README.md"), "utf8");
     const rootSource = readFileSync(resolve(root, "src/index.ts"), "utf8");
     const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));
-    const exportBlocks = Array.from(rootSource.matchAll(/export(?: type)? \{([\s\S]*?)\} from/g), (match) => {
-      const block = match[1];
-      if (block === undefined) throw new Error("root export capture failed");
-      return block;
-    });
-    const exports = exportBlocks
-      .flatMap((block) => block.split(","))
-      .map((part) => part.replace(/\/\/.*$/gm, "").trim())
-      .filter(Boolean)
-      .map((part) => part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0])
-      .filter((name): name is string => name !== undefined)
-      .sort();
+    const exports = exportedNames(rootSource);
 
     for (const name of exports) {
       expect(apiSection, `README API table missing root export: ${name}`).toContain(`\`${name}`);
