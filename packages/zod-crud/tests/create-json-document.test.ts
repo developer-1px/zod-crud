@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../src/index.js";
+import { createClipboard, createJSONDocument, createSelection } from "../src/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -172,6 +172,48 @@ describe("createJSONDocument — headless facade", () => {
 
     expect(pasted.ok).toBe(true);
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("createClipboard composes independently with headless selection", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: false,
+    });
+    const selection = createSelection(doc.ops, {
+      mode: "multiple",
+      initial: ["/items/0", "/items/1"],
+    });
+    const clipboard = createClipboard({
+      schema: Schema,
+      getState: () => doc.value,
+      ops: doc.ops,
+      getSelectionSource: () => selection.selectedSource,
+      getSelectionTarget: () => selection.primaryPointer,
+    });
+
+    const copied = clipboard.copy();
+
+    expect(copied).toMatchObject({
+      ok: true,
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+    expect(clipboard.read()).toEqual({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+
+    selection.collapse("/items/1");
+    const pasted = clipboard.paste("after");
+
+    expect(pasted.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a", "b"]);
     expect(doc.history.undoDepth).toBe(1);
   });
 

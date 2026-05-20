@@ -189,8 +189,9 @@ the current selection when the source is omitted. Manual
 `doc.clipboard.paste` uses the primary selection target when the target is
 omitted, and spreads multi-source array
 payloads back into array targets by default; pass `{ spread: false }` to keep
-the array payload as one value. DOM/system clipboard integration remains user
-code.
+the array payload as one value. `createClipboard(args)` builds the same buffer
+for standalone headless composition with independent ops and selection state.
+DOM/system clipboard integration remains user code.
 
 `doc.check` is headless dry-run validation for commands and patches. It returns
 the same success/failure family the command would hit, without mutating value,
@@ -216,8 +217,8 @@ is present; pass `doc.ops` for state-only replay.
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
 
-For lower-level composition, use `createSelection(ops)` and `createDraft(doc)`
-headlessly, or `useSelection(ops)` / `useDraft(doc)` in React. See the
+For lower-level composition, use `createSelection(ops)`, `createClipboard(args)`,
+and `createDraft(doc)` headlessly, or `useSelection(ops)` / `useDraft(doc)` in React. See the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
 [`useSelection`](./SPEC.md#57-useselection--selection-state-hook) contracts in
 SPEC.
@@ -288,9 +289,11 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | Export | Purpose |
 | --- | --- |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface and read/query helpers as `useJSONDocument` |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
+| `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `createClipboard(args)` from `zod-crud/react` | same headless clipboard factory re-exported from the React entrypoint; no React clipboard hook |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |

@@ -71,7 +71,7 @@ type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
 
-interface CreateClipboardStateArgs<S extends z.ZodType> {
+export interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
   ops: JSONDocumentOps<z.output<S>>;
@@ -87,7 +87,7 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
 };
 
 export function createClipboardState<S extends z.ZodType>(
-  args: CreateClipboardStateArgs<S>,
+  args: CreateClipboardOptions<S>,
 ): ClipboardState<z.output<S>> {
   const { schema, getState, ops, getSelectionSource, getSelectionTarget, onChange } = args;
   let buffer: ClipboardBuffer | null = null;
@@ -229,6 +229,8 @@ export function createClipboardState<S extends z.ZodType>(
     },
   };
 }
+
+export const createClipboard = createClipboardState;
 
 function emptyCopySource(): CopyError {
   return {

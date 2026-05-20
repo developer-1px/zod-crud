@@ -39,6 +39,7 @@ export type {
   DraftState,
   HeadlessDraftState,
 } from "./draft.js";
+export { createClipboard } from "./clipboard.js";
 export type {
   ClipboardEmpty,
   ClipboardPasteResult,
@@ -46,6 +47,7 @@ export type {
   ClipboardReadResult,
   ClipboardState,
   ClipboardWriteOptions,
+  CreateClipboardOptions,
 } from "./clipboard.js";
 export type {
   Check,

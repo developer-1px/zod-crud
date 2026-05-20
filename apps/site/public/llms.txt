@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless document, selection, and draft facades.
-import { createDraft, createJSONDocument, createSelection } from "zod-crud";
+// Headless document, selection, clipboard, and draft facades.
+import { createClipboard, createDraft, createJSONDocument, createSelection } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -70,13 +70,15 @@ document surface:
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
 | `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `selectedSource` feeds omitted `copy`/`cut` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
-| `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` accepts a Pointer or defaults to the primary selection target while spreading multi-source buffers into array targets by default unless `{ spread: false }` |
+| `doc.clipboard` / `createClipboard(args)` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` accepts a Pointer or defaults to the primary selection target while spreading multi-source buffers into array targets by default unless `{ spread: false }` |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through
 `createJSONDocument` in core/headless code.
 Use `createSelection(ops)` for standalone headless selection/caret state;
 `useSelection(ops)` is the React facade over the same state.
+Use `createClipboard(args)` for standalone headless clipboard state; React
+re-exports the same factory without adding a clipboard hook.
 Use `createDraft(doc)` for standalone headless draft/pending field state;
 `useDraft(doc)` and `useField(doc, pointer)` are React facades over it.
 `doc.commands.select(action)` defaults to the document's configured selection

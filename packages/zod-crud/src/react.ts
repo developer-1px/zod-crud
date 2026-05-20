@@ -8,6 +8,7 @@ export { createSelection } from "./selection.js";
 export { useJSONSlice } from "./hooks/useJSONSlice.js";
 export { createDraft } from "./draft.js";
 export { useDraft, useField } from "./hooks/useDraft.js";
+export { createClipboard } from "./clipboard.js";
 export type {
   JSONDocument,
   JSONDocumentHistory,
@@ -21,6 +22,7 @@ export type {
   ClipboardSource,
   ClipboardState,
   ClipboardWriteOptions,
+  CreateClipboardOptions,
 } from "./clipboard.js";
 export type {
   Check,

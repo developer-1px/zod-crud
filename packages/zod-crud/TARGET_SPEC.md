@@ -308,8 +308,9 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `{ anchor, focus }` ranges, so apps can seed disjoint multi-range selection and
 offset/edge carets without React.
-Standalone headless composition uses `createSelection(ops)`; `useSelection`
-adds React render invalidation but no separate selection model.
+Standalone headless composition uses `createSelection(ops)` and
+`createClipboard(args)`; `useSelection` adds React render invalidation but no
+separate selection model, and React has no separate clipboard model.
 `subscribe` emits JSON-safe `SelectionSnap` transitions after manual selection
 actions and automatic op tracking.
 `selectedSource` is `null | Pointer | Pointer[]`. Document-facade
