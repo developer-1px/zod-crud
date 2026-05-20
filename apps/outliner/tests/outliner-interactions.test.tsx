@@ -135,6 +135,9 @@ describe("outliner keyboard and mouse interactions", () => {
     await user.click(screen.getByDisplayValue(firstItem));
     await user.keyboard("{/Control}");
     expect(statusText()).toMatch(/selection =\s*1/);
+    expect(selectedRows()).toHaveLength(1);
+    expect(rowForText(firstItem).getAttribute("aria-selected")).toBe("false");
+    expect(rowForText(secondItem).getAttribute("aria-selected")).toBe("true");
   });
 
   test("Ctrl+A selects all visible non-root rows in select mode", async () => {

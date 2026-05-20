@@ -1,11 +1,25 @@
 // 클릭 정책 (W3C Selection 모델):
 //   shift+click  = setBaseAndExtent (range 확장 — zod-crud 가 anchor 의 값 종류로 DFS 자가펼침)
-//   cmd/ctrl+click = toggleRange
+//   cmd/ctrl+click = item toggle (range 내부 pointer 도 개별 제거)
 //   click        = collapse
 
 import { useCallback } from "react";
 import type { DebugLogger, Pointer, SelectionState } from "zod-crud/react";
 import type { Mode } from "../keymap.js";
+
+function togglePointer<T>(selection: SelectionState<T>, pointer: Pointer): void {
+  if (!selection.selectedPointers.includes(pointer)) {
+    selection.addRange(pointer);
+    return;
+  }
+
+  const next = selection.selectedPointers.filter((selected) => selected !== pointer);
+  if (next.length === 0) {
+    selection.empty();
+    return;
+  }
+  selection.selectRanges(next, undefined, undefined, next.length - 1);
+}
 
 export function useClickPolicy<T>(
   selection: SelectionState<T> | undefined,
@@ -23,7 +37,7 @@ export function useClickPolicy<T>(
       selection.setBaseAndExtent(selection.anchor, p);
     } else if (meta) {
       e.preventDefault();
-      selection.toggleRange(p);
+      togglePointer(selection, p);
     } else {
       selection.collapse(p);
     }
