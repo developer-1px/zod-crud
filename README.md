@@ -47,6 +47,23 @@ function App() {
 }
 ```
 
+### Headless
+
+```ts
+import * as z from "zod";
+import { createJSONDocument } from "zod-crud";
+
+const Schema = z.object({ title: z.string(), tasks: z.array(z.string()) });
+const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
+
+doc.ops.replace("/title", "final");
+doc.commands.undo();
+```
+
+`createJSONDocument` and `useJSONDocument` expose the same
+`value`/`ops`/`commands`/`can`/`selection`/`history` surface; React only adds
+render lifecycle.
+
 ### Dict-record 한 키 쓰기
 
 `z.record` 의 키 하나를 변경할 때는 path 를 직접 가리킵니다. 전체 dict 를 spread 해 replace 하면 history entry 가 dict 전체 교체로 기록됩니다.
@@ -85,6 +102,7 @@ npm run verify
 
 ## Maintainer Notes
 
-- `packages/zod-crud/SPEC.md` is the canonical specification.
+- `packages/zod-crud/SPEC.md` describes current behavior. Code wins unless it
+  conflicts with an RFC.
 - `packages/zod-crud/src/index.ts` and `packages/zod-crud/src/react.ts` are the public export surfaces (SPEC §5).
 - `CONTRIBUTING.md` describes the change rules and verification checklist.

@@ -118,7 +118,14 @@ doc.commands.redo();
 </button>
 ```
 
-`doc.ops.undo()`와 `doc.ops.redo()`도 같은 history stack을 사용합니다. `doc.history`는 실행 함수가 아니라 상태와 `mergeLast()`를 제공하는 표면입니다.
+`doc.ops.undo()`와 `doc.ops.redo()`도 같은 history stack을 사용합니다. `doc.history`는 상태와 `mergeLast()`, `transaction(fn)`을 제공하는 표면입니다.
+
+```ts
+doc.history.transaction(() => {
+  doc.ops.replace("/title", "Saved");
+  doc.ops.add("/logs/-", "saved title");
+});
+```
 
 ## 실전 시나리오
 

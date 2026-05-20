@@ -6,8 +6,9 @@
 
 | 용어 | 의미 |
 |------|------|
-| `useJSONDocument` | `zod-crud/react` React 진입점. `value`, `ops`, `selection`, `history`, `commands`, `can` 을 한 객체로 묶는 facade. |
-| `JSONDocument<T>` | `useJSONDocument` 반환 타입. |
+| `createJSONDocument` | 루트 `zod-crud` 의 headless document facade. React 없이 `value`, `ops`, `selection`, `history`, `commands`, `can` 을 제공한다. |
+| `useJSONDocument` | `zod-crud/react` 의 React document facade. `createJSONDocument` 와 같은 표면을 React state/render lifecycle 위에 얹는다. |
+| `JSONDocument<T>` | `createJSONDocument` / `useJSONDocument` 반환 타입. |
 | 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 verbs 분류 기준. |
 | 10 verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |
 | hooks/commands/verbs/core | 현재 코드 위계. hooks 는 React, commands 는 facade builder, verbs 는 pure composer, core 는 RFC substrate. |
@@ -33,7 +34,7 @@
 
 | 용어 | 의미 |
 |------|------|
-| `JSONOps<T>` | `useJSON` / `useJSONDocument.ops` 의 low-level ops 표면. RFC 6902 6 op, `set`, `patch`, `apply`, lifecycle, subscribe, state 를 제공. |
+| `JSONOps<T>` | low-level ops 표면. RFC 6902 6 op, `set`, `patch`, `apply`, lifecycle, subscribe, state 를 제공. `JSONDocument.ops` 는 여기에 facade undo/redo control 을 더한다. |
 | `set(path, value)` | RFC 6902 op 는 아니며, add/replace/remove 를 idempotent 하게 합성하는 ops sugar. |
 | `patch(operations)` | RFC 6902 batch. 한 op 실패 시 전체 rollback. |
 | `apply(operations)` | 실패 시 `JSONCrudError` 를 throw 하는 fire-and-forget patch path. |

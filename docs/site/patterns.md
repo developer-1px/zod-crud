@@ -49,6 +49,15 @@ ops.replace('/text', 'hil');
 doc.history.mergeLast();  // 직전 두 entry 를 한 entry 로 합침
 ```
 
+**Pattern C — `doc.history.transaction(fn)`** (동기 작업을 한 history step 으로):
+
+```ts
+doc.history.transaction(() => {
+  ops.replace('/title', 'Saved');
+  ops.add('/logs/-', 'saved title');
+});
+```
+
 자세한 비교는 [Why no transaction verb](/docs/why-not#why-no-transaction-verb-issue-56).
 
 ---
@@ -78,17 +87,28 @@ doc.ops.remove('/items/0');
 **Canonical**:
 
 ```ts
-doc.commands.cut();    // selection 의 fragment 를 내부 clipboard 로 이동 + remove
-doc.commands.copy();   // remove 없이 복제
-doc.commands.paste();  // 현재 selection 의 anchor 위치에 fragment 삽입
+const copied = doc.commands.copy('/items/0');  // read-only JSON fragment
+if (copied.ok) {
+  doc.commands.paste(copied.payload, '/items/-');
+}
+
+const cut = doc.commands.cut('/items/1');      // payload 산출 + remove patch commit
+if (cut.ok) {
+  doc.commands.paste(cut.payload, '/archive/-');
+}
 ```
 
-DOM Clipboard API 와의 연결은 sidecar 책임 — `sidecars/recorder` 옆에 자체 brigde 를 두거나, OS clipboard 연동은 직접 짭니다 (라이브러리 정체성 밖).
+DOM Clipboard API 와의 연결은 사용자 책임 — `navigator.clipboard` 호출은 라이브러리 본체 밖입니다.
 
 `can` 으로 가능 여부 가드:
 
 ```tsx
-<button disabled={!doc.can.paste()} onClick={doc.commands.paste}>paste</button>
+<button
+  disabled={!copied.ok || !doc.can.paste(copied.payload, '/items/-')}
+  onClick={() => copied.ok && doc.commands.paste(copied.payload, '/items/-')}
+>
+  paste
+</button>
 ```
 
 ---
@@ -100,15 +120,22 @@ DOM Clipboard API 와의 연결은 sidecar 책임 — `sidecars/recorder` 옆에
 **Canonical**:
 
 ```ts
-import { buildPatchRequest, parsePatchResponse } from 'zod-crud';
+import {
+  applyPatch,
+  buildPatchRequest,
+  computeInverses,
+  parsePatchResponse,
+  withIfMatch,
+} from 'zod-crud';
 
-const { state, result, inverses } = applyPatch(Schema, prev, ops);
-if (!result.ok) return;  // schema 위반이면 commit 안 됨
+const inverse = computeInverses(prev, ops);
+const applied = applyPatch(Schema, prev, ops);
+if (!applied.result.ok || !inverse.ok) return;  // schema 위반이면 commit 안 됨
 
-const req = buildPatchRequest(`/api/doc/${id}`, ops, { ifMatch: etag });
-const res = await fetch(req.url, { method: req.method, headers: req.headers, body: req.body });
-const parsed = await parsePatchResponse(res);
-if (!parsed.ok) ops.patch(inverses);  // 서버 거부 → 로컬 되돌리기
+const req = withIfMatch(buildPatchRequest(ops), etag);
+const res = await fetch(`/api/doc/${id}`, req);
+const parsed = parsePatchResponse(await res.text(), res.headers.get('content-type'));
+if (!res.ok || !parsed.ok) rollback(inverse.inverses);  // 서버 거부 → 로컬 되돌리기
 ```
 
 `JSON_PATCH_MIME` / `MERGE_PATCH_MIME` 상수도 export. wire format 만 다루고 transport 결정은 앱이.
@@ -124,12 +151,12 @@ if (!parsed.ok) ops.patch(inverses);  // 서버 거부 → 로컬 되돌리기
 ```ts
 import { applyPatch } from 'zod-crud';
 
-const { state, result, inverses } = applyPatch(Schema, prev, [
+const { state, result } = applyPatch(Schema, prev, [
   { op: 'replace', path: '/title', value: 'final' },
 ]);
 
 if (result.ok) commit(state);
-else log(result.violations);
+else log(result.reason ?? result.code);
 ```
 
 같은 schema · 같은 op 가 React UI / 테스트 / 서버에서 동일한 결과.
@@ -147,13 +174,13 @@ import { useRecorder, replayRecording } from 'zod-crud/react';
 
 function App() {
   const doc = useJSONDocument(Schema, initial);
-  const recorder = useRecorder(doc);
+  const recorder = useRecorder(doc.ops);
 
   return (
     <>
       <button onClick={recorder.start}>record</button>
-      <button onClick={() => download('session.json', recorder.export())}>save</button>
-      <button onClick={() => replayRecording(doc, uploadedJson)}>replay</button>
+      <button onClick={() => download('session.json', JSON.stringify(recorder.stop()))}>save</button>
+      <button onClick={() => replayRecording(uploadedJson, doc.ops, { speed: 1 })}>replay</button>
     </>
   );
 }

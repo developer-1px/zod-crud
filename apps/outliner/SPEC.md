@@ -18,6 +18,8 @@ outliner.
   history) 가 `JSON.stringify` round-trip.
 - DOM 이벤트 → chord → command → RFC 6902 batch 의 단방향 흐름.
 - 사용자 한 동작(키 한 번 누르기) = 한 RFC 6902 batch = 한 history 항목 = 한 React render.
+- 텍스트 입력처럼 연속 `onChange` 로 들어오는 편집은 outliner-local 정책으로 500ms 안의
+  같은 path 변경을 `history.mergeLast()` 로 coalesce 하여 한 undo step 으로 다룬다.
 
 ## 1. Schema
 
@@ -84,6 +86,12 @@ recording toggle (Mod+Shift+\) 은 **두 모드 모두**에서 동작 (mode-inde
 row navigation 과 clipboard 는 select 만, caret 이동은 edit 만.
 
 `mode` state 자체는 outliner-local — zod-crud 는 mode 를 모른다 (다른 editor 가 다른 mode 의미를 가질 수 있음).
+
+### Text edit history coalescing
+
+[`src/hooks/useTextEditCoalesce.ts`](./src/hooks/useTextEditCoalesce.ts) 가 정본. 같은 text path 의
+연속 변경이 500ms 안에 들어오면 `doc.history.mergeLast()` 로 합쳐 단일 undo step 으로 만든다.
+이 시간 정책은 reference editor 의 UI 정책이며 zod-crud core 는 시간을 모른다.
 
 ## 3. Cursor (`selection.focus`) + 키보드 navigation
 
@@ -179,7 +187,7 @@ outliner UI 정책으로 감싼다.
 
 ## 7. Error UX
 
-- `useJSONDocument({ strict: false, onError })` 콜백으로 모든 실패가 흐름.
+- `useJSONDocument(OutlineSchema, initial, { strict: false, onError })` 콜백으로 모든 실패가 흐름.
 - toast 로 2.5s 표시 (`<div role="status" aria-live="polite">`).
 - copy/cut 성공도 info toast 로 표시 (선택 개수 알림).
 - 위반 코드:

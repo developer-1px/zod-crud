@@ -1,141 +1,182 @@
 # zod-crud
 
-> A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and **RFC 6902 (JSON Patch)**. State, actions, and change records are 100% serializable JSON. Pure-function core; React hooks live under `zod-crud/react`.
+> Zod-guarded JSON tree editing primitives. Root `zod-crud` is React-free;
+> React hooks live under `zod-crud/react`. State, operations, selection,
+> history, recordings, and wire payloads are serializable JSON.
 
-## Identity (정체성 한 줄)
+## Identity
 
-**FE 표준화 레이어** — 4대 기둥(Selection / Edit / Clipboard / Undo)을 10 verbs 로 정의하고 JSON 표준(RFC 6901/6902/9535/8259, W3C Selection, WAI-ARIA APG, RFC 8927) 위에 매핑한 wrapper. 본체는 editor 가 아니라 **JSON tree 라이브러리** — 편집기로 자기 묘사하지 말 것.
+zod-crud is a reusable FE editing vocabulary layer for JSON documents:
+Selection / Edit / Clipboard / Undo are mapped to JSON standards
+(RFC 6901 Pointer, RFC 6902 Patch, RFC 9535 JSONPath, RFC 8259 JSON,
+W3C Selection vocabulary, JSON Schema/Zod). It is not a UI component library
+and should not be described as an editor.
 
-## 4대 기둥 ↔ 10 verbs
-
-| 기둥 | Verbs |
-|------|-------|
-| **Selection** | `select` |
-| **Edit** | `move`, `duplicate`, `replace` |
-| **Clipboard** | `cut`, `copy`, `paste` |
-| **Undo** | `undo`, `redo` |
-| **Find** | `find`, `replace`(string 의미) |
-
-10 verb closure 는 정체성. 11번째 verb 추가는 정체성 영향. RFC 6902 의 6 op(add/remove/replace/move/copy/test) 는 verbs 의 substrate — `JSONOps` 표면에서 `add/remove/replace` 로 노출.
-
-## Public surface (canonical entry points)
+## Canonical Entry Points
 
 ```ts
-// 단일 facade — 90% 의 사용자
-import { useJSONDocument } from 'zod-crud/react'
+// Headless document facade. Same surface shape as useJSONDocument.
+import { createJSONDocument } from "zod-crud";
 
-// JSONOps 타입 (sub-hook 으로 ops 전파 시)
-import type { JSONOps } from 'zod-crud'
+// React facade and React-only helpers.
+import {
+  useJSONDocument,
+  useJSON,
+  useSelection,
+  useJSONSlice,
+  useDraft,
+  useField,
+  useRecorder,
+  useDebugLog,
+} from "zod-crud/react";
 
-// Pure core (no React)
-import { applyPatch, applyOperation, computeInverses } from 'zod-crud'
+// Pure core.
+import { applyPatch, applyOperation, computeInverses } from "zod-crud";
 
-// Pointer / serialize
-import { parsePointer, buildPointer, serialize, parse } from 'zod-crud'
+// Pointer / serialization.
+import { parsePointer, buildPointer, serialize, parse, safeParse } from "zod-crud";
 
-// Sidecars (횡단 관심사 — core 영향 없음)
-import { useRecorder, useDebugLog } from 'zod-crud/react'
-
-// HTTP wire (RFC 5789 + 6902 + 7396)
-import { buildPatchRequest, parsePatchResponse, applyMergePatch } from 'zod-crud'
+// Headless sidecars.
+import {
+  replayRecording,
+  buildPatchRequest,
+  withIfMatch,
+  parsePatchResponse,
+  applyMergePatch,
+} from "zod-crud";
 ```
 
-공개 entrypoint 는 `packages/zod-crud/src/index.ts` (`zod-crud`) 와 `packages/zod-crud/src/react.ts` (`zod-crud/react`). **목록 외 internal 경로 import 금지**.
+Only import from package exports: `zod-crud`, `zod-crud/react`, or explicit
+`zod-crud/verbs/*` subpaths. Do not import `zod-crud/src/*` or `zod-crud/dist/*`.
+
+## Facade Surface
+
+`createJSONDocument(schema, initial, options?)` and
+`useJSONDocument(schema, initial, options?)` intentionally expose the same
+document surface:
+
+| Field | Meaning |
+| --- | --- |
+| `doc.value` | current schema-valid JSON value |
+| `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
+| `doc.commands` | 10 verb command namespace |
+| `doc.can` | command guard namespace |
+| `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast()`, `transaction(fn)` |
+| `doc.selection` | Pointer-based W3C-shaped selection when enabled |
+
+React is a facade adapter, not the owner of the editing model. If a workflow can
+be expressed through `useJSONDocument`, it should also be expressible through
+`createJSONDocument` in core/headless code.
+
+## 10 Verbs
+
+| Pillar | Verbs |
+| --- | --- |
+| Selection | `select`, `find` |
+| Edit | `move`, `duplicate`, `replace` |
+| Clipboard | `cut`, `copy`, `paste` |
+| Undo | `undo`, `redo` |
+
+`JSONOps` stays close to RFC 6902: `add`, `remove`, `replace`, `move`, `copy`,
+`test`, `patch`, `apply`, plus lifecycle helpers. New convenience verbs should
+not be added unless they change the 4-pillar closure.
 
 ## Canonical Patterns
 
-### 1. 표준 셋업
+### React facade
 
 ```tsx
-const Schema = z.object({
-  cells: z.record(z.string(), z.string()),
-  notes: z.record(z.string(), z.string()),
-})
+const doc = useJSONDocument(Schema, initialState, {
+  history: 100,
+  selection: { mode: "multiple" },
+});
 
-const { value, ops, commands, can, history, selection } = useJSONDocument(
-  Schema,
-  initialState,
-  { history: 100 }
-)
+doc.ops.replace("/title", "final");
+doc.commands.undo();
 ```
 
-### 2. Dict-record 한 키 쓰기 — **path 직접, 분기 명시**
-
-`z.record(z.string(), V)` 의 키 한 개를 변경할 때:
+### Headless facade
 
 ```ts
-// ✅ canonical — surgical, 한 path 만 history entry
-const writeCell = (k: string, v: string) => {
-  if (v === '' && cells[k] !== undefined) ops.remove(`/cells/${k}`)
-  else if (v !== '' && cells[k] === undefined) ops.add(`/cells/${k}`, v)
-  else if (v !== '' && cells[k] !== v) ops.replace(`/cells/${k}`, v)
+const doc = createJSONDocument(Schema, initialState, { history: 100 });
+
+doc.ops.add("/items/-", item);
+doc.history.transaction(() => {
+  doc.ops.replace("/title", "final");
+  doc.ops.add("/logs/-", "renamed");
+});
+```
+
+### Pure patch
+
+```ts
+const ops = [{ op: "replace", path: "/title", value: "final" }];
+const inverse = computeInverses(prev, ops);
+const applied = applyPatch(Schema, prev, ops);
+
+if (applied.result.ok && inverse.ok) {
+  commit(applied.state);
 }
-
-// ❌ anti-pattern — 전체 dict spread 후 replace
-ops.replace('/cells', { ...cells, [k]: v })   // 한 키 변경 의도인데 dict 전체가 history entry 가 됨
 ```
 
-issue #52 픽스 (2026-05-10) 이후 dynamic record key 도 `as never` 없이 typecheck 통과.
+### Dict-record one key
 
-### 3. Drag / keystroke burst — `history.mergeLast()` 또는 local state preview
-
-drag mousemove 마다 ops 를 호출하면 undo entry 가 폭증. 두 가지 정본 패턴:
+For `z.record(z.string(), V)`, edit the exact key path. Do not replace the
+whole record with a spread.
 
 ```ts
-// Pattern A — local React state 로 preview, drop 시 한 번만 commit (권장)
-const [liveWidth, setLiveWidth] = useState(null)
-// onMove: setLiveWidth(...)
-// onUp:   ops.replace('/colWidths/A', liveWidth)
-
-// Pattern B — burst 후 history.mergeLast() 로 직전 entry 합치기
-ops.replace('/blocks/0/text', 'h')
-ops.replace('/blocks/0/text', 'hi')
-ops.replace('/blocks/0/text', 'hil')
-history.mergeLast()  // 임의 횟수 반복 가능 → 1 history step
+const writeKey = (k: string, v: V | undefined) => {
+  const path = `/cells/${k}` as const;
+  if (v === undefined && cells[k] !== undefined) doc.ops.remove(path);
+  else if (v !== undefined && cells[k] === undefined) doc.ops.add(path, v);
+  else if (v !== undefined && cells[k] !== v) doc.ops.replace(path, v);
+};
 ```
 
-### 4. Headless (no React)
+### Clipboard
+
+Clipboard verbs are headless JSON fragment operations. They do not call
+`navigator.clipboard`.
 
 ```ts
-const { state, result, inverses } = applyPatch(Schema, prev, [
-  { op: 'replace', path: '/title', value: 'final' },
-])
+const copied = doc.commands.copy("/items/0");
+if (copied.ok) {
+  doc.commands.paste(copied.payload, "/items/-");
+}
 ```
 
-`applyPatch` 의 schema generic 은 `exactOptionalPropertyTypes: true` 에서도 통과 (issue #55 회귀 가드).
+### Burst edits
 
-### 5. Pointer follow — patch 적용 후 selection 자동 추적
+Use local UI preview for drag/IME. For synchronous multi-step document edits,
+use `doc.history.transaction(fn)`. For already-committed bursts, use
+`doc.history.mergeLast()`.
 
-`trackPointer` 가 RFC 6902 op 적용 후 anchor pointer 를 따라간다. selection state 는 ops 가 자동 업데이트.
+## Source Of Truth
 
-## Anti-patterns (spreadsheet dogfooding 발견)
+- Code behavior is the first source of truth.
+- If code conflicts with RFC 6901/6902/9535/8259 or relevant wire standards,
+  the RFC wins and code plus docs must be fixed.
+- `packages/zod-crud/SPEC.md` describes current behavior; update it with
+  behavior changes.
+- Public export files: `packages/zod-crud/src/index.ts` and
+  `packages/zod-crud/src/react.ts`.
+- Site docs support `::source{path="..." lines="..."}`; source references are
+  resolved during `npm run build -w @zod-crud/site`.
 
-1. **전체 dict spread + replace** — 위 §Canonical Patterns #2 참조
-2. **drag/burst 마다 ops 호출 후 undo 폭증 방치** — local state 또는 `mergeLast` 필요
-3. **internal 경로 import** — `zod-crud/src/...` 또는 `zod-crud/dist/...` 모두 금지. `zod-crud` / `zod-crud/react` / 명시된 subpath export 만 안정
-4. **editor / 편집기 어휘로 라이브러리 자기 묘사** — JSON tree 라이브러리. wrapper. 편집기 아님
+## Verification
 
-## SemVer 정책
+```sh
+npm run typecheck
+npm test
+npm run build
+npm run smoke:package
+npm run verify
+```
 
-v0.x — minor 단위로 진화. v1.0 은 4기둥 closure 가 외부 사용 케이스로 충분 검증된 후. PRD #14 의 8 phase 전부 v0.x.
+Package publish guard: `npm run verify` through `prepublishOnly`.
 
-## 핵심 문서
+## Links
 
-- `packages/zod-crud/SPEC.md` — canonical specification (정본; 충돌 시 코드/docs/test 보다 우선)
-- `packages/zod-crud/STANDARDS.md` — RFC ↔ core/\* 1:1 매핑 표
-- `packages/zod-crud/GLOSSARY.md` — 어휘
-- `docs/site/getting-started.md` — 첫 사용자 onboarding
-- `docs/site/operations.md` — ops/history/selection 표면 레퍼런스
-- `docs/site/examples.md` — 시나리오별 예제
-
-## 검증 누적이 일어나는 곳
-
-- `apps/site` (zod-crud.dev) — 공식 docs site
-- `apps/outliner`, `apps/mobile-cms`, `apps/api-collection` — workspace 내 자체 demo apps
-- `../spredsheet`, `../editable-lifecycle` — 외부 dogfooding 소비자
-
-## License & links
-
-- MIT
 - Repo: https://github.com/developer-1px/zod-crud
 - Site: https://developer-1px.github.io/zod-crud/
+- License: MIT

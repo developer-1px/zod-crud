@@ -79,7 +79,7 @@ const doc = useJSONDocument(Todo, initial, {
 });
 ```
 
-실제 undo/redo 실행은 `doc.ops.undo()` 또는 `doc.commands.undo()`로 합니다. `doc.history`는 버튼을 켜고 끄기 위한 상태 표면입니다.
+실제 undo/redo 실행은 보통 `doc.commands.undo()` / `doc.commands.redo()`로 합니다. `doc.history`는 버튼을 켜고 끄기 위한 상태 표면입니다.
 
 ```tsx
 <button onClick={doc.commands.undo} disabled={!doc.history.canUndo}>

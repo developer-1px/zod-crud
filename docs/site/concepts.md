@@ -1,6 +1,6 @@
-# useJSONDocument
+# useJSONDocument / createJSONDocument
 
-`useJSONDocument`는 zod-crud의 중심 hook입니다. 사용자가 처음 만나는 제품 표면이고, 내부적으로는 낮은 레벨 hook들을 묶어 하나의 문서 편집기 상태 객체를 만듭니다.
+`useJSONDocument`는 React에서 쓰는 중심 hook입니다. React 밖에서는 같은 표면의 `createJSONDocument`를 씁니다. 둘 다 낮은 레벨 작업들을 묶어 하나의 JSON 문서 편집 객체를 만듭니다.
 
 ## 반환값은 하나의 `doc` 객체입니다
 
@@ -16,7 +16,7 @@ const doc = useJSONDocument(Schema, initial);
 | `doc.ops` | RFC 6902 6개 operation에 가까운 저수준 작업 API |
 | `doc.commands` | select, find, move, duplicate, replace, cut, copy, paste, undo, redo 명령 |
 | `doc.can` | 명령 실행 가능 여부를 계산하는 guard |
-| `doc.history` | undo/redo 가능 여부와 history 병합 API |
+| `doc.history` | undo/redo 가능 여부, depth, history 병합 API |
 | `doc.selection` | 선택 상태. 옵션을 켰을 때 사용 |
 
 ## `doc.value`
@@ -71,10 +71,16 @@ const doc = useJSONDocument(Schema, initial, { history: 100 });
 
 doc.history.canUndo;
 doc.history.canRedo;
+doc.history.undoDepth;
+doc.history.redoDepth;
 doc.history.mergeLast();
+doc.history.transaction(() => {
+  doc.ops.replace("/title", "A");
+  doc.ops.add("/logs/-", "rename");
+});
 ```
 
-실행은 `doc.ops.undo()` 또는 `doc.commands.undo()`로 합니다. history를 켜지 않으면 undo/redo 스택은 쌓이지 않습니다.
+실행은 보통 `doc.commands.undo()` / `doc.commands.redo()`로 합니다. history를 켜지 않으면 undo/redo 스택은 쌓이지 않습니다.
 
 ## `doc.selection`
 
@@ -123,7 +129,6 @@ doc.selection?.empty();
 낮은 레벨 hook은 이런 경우에 씁니다.
 
 - selection을 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
-- React 밖에서 같은 문서 facade가 필요할 때 (`createJSONDocument`)
 - document facade 없이 `useJSON`만 가볍게 쓰고 싶을 때
 
 ## 타입 표면

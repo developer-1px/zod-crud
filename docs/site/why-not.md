@@ -42,7 +42,7 @@ surgical patch 의 의의를 죽입니다. undo 가 "dict 전체 교체" 로 되
 
 ### 거부 이유
 
-`transaction(fn)` 또는 `coalesceWith: 'previous'` 같은 묶음 패치 API 는 4기둥 어디에도 귀속되지 않습니다. **history 차원** 의 정책이지 verb 가 아닙니다.
+`transaction`은 4기둥 어디에도 귀속되지 않습니다. 그래서 `commands.transaction()` 같은 verb 로 두지 않습니다. 묶음 정책은 **history 차원** 이므로 `doc.history.transaction(fn)` 으로 둡니다.
 
 ### Canonical 대안 A — local React state preview (권장)
 
@@ -73,7 +73,18 @@ ops.replace('/blocks/0/text', 'hil');
 doc.history.mergeLast();  // 직전 두 entry 를 한 entry 로 합침 — 임의 횟수 반복 호출 가능
 ```
 
-### Canonical 대안 C — sidecar (필요 시)
+### Canonical 대안 C — `doc.history.transaction(fn)`
+
+한 사용자 동작이 동기 ops 여러 개로 구성될 때 씁니다.
+
+```ts
+doc.history.transaction(() => {
+  ops.replace('/title', 'Saved');
+  ops.add('/logs/-', 'saved title');
+});
+```
+
+### Canonical 대안 D — sidecar (필요 시)
 
 시간/path 휴리스틱이 도메인별로 다른 자동 coalesce 가 필요하면 sidecar 로 만듭니다.
 

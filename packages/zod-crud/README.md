@@ -8,7 +8,8 @@ vocabulary becomes a **reusable standard layer**.
 
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
-`zod-crud/react` exposes the thin React adapter that injects selection.
+`createJSONDocument` exposes the headless document facade. `zod-crud/react`
+exposes the matching React facade plus React-only composition hooks.
 `sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
@@ -83,20 +84,45 @@ export function App() {
 }
 ```
 
-`useJSONDocument` returns a single facade with five surfaces:
+`useJSONDocument` returns a single facade with six surfaces:
 
 | Surface | Purpose |
 | --- | --- |
 | `doc.value` | current schema-valid state (`T`) |
-| `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe` |
+| `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
 | `doc.can` | mutation guard predicates + `undo`/`redo` flags |
 | `doc.selection` | W3C-shaped selection coordinates (anchor/focus, JSON Pointer) |
-| `doc.history` | `canUndo`/`canRedo`/`mergeLast` flags |
+| `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast()`, `transaction(fn)` |
 
 Selection and history are first-class — they are not parallel hooks you wire
 up yourself. `commands.*` mutate through the history-aware path; `ops.*` is
 the low-level RFC 6902 escape hatch for fire-and-forget patches.
+
+## Headless — `createJSONDocument`
+
+```ts
+import * as z from "zod";
+import { createJSONDocument } from "zod-crud";
+
+const Schema = z.object({
+  title: z.string(),
+  tasks: z.array(z.object({ id: z.string(), done: z.boolean() })),
+});
+
+const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
+
+doc.ops.add("/tasks/-", { id: "a", done: false });
+doc.history.transaction(() => {
+  doc.ops.replace("/title", "final");
+  doc.ops.add("/tasks/-", { id: "b", done: true });
+});
+doc.commands.undo();
+```
+
+`createJSONDocument` and `useJSONDocument` intentionally share the same
+`value`/`ops`/`commands`/`can`/`selection`/`history` surface. React owns render
+lifecycle only; core owns JSON editing.
 
 For lower-level composition (`useJSON` + `useSelection`), see the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
@@ -169,7 +195,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | Export | Purpose |
 | --- | --- |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`selection`/`history` surface as `useJSONDocument` |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` | shared headless/React facade types |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
 | `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |

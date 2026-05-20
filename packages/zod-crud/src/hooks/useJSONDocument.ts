@@ -47,7 +47,7 @@ export interface JSONDocumentHistory {
  * State surface (read-only data):
  * - value: T — current state
  * - selection: SelectionState — read-only 좌표 state
- * - history: { canUndo, canRedo, mergeLast } — read-only flags
+ * - history: canUndo/canRedo/depth flags + mergeLast/transaction
  * - ops: RFC 6902 raw escape hatch (low-level)
  *
  * Command surface (TipTap 식 디팩토 — `commands` + `can` group):

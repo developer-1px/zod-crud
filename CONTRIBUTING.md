@@ -25,9 +25,8 @@ npm run site:build
 
 ## Change Rules
 
-- Read `SPEC.md` §0.1 (Absolute Principles) before any behavior change. The
-  five principles (JSON-only state, RFC 6901 path, RFC 6902 op, pure core,
-  React-only-in-hook) are not negotiable per-PR.
+- Read `SPEC.md` §0.3 (Absolute Principles) before any behavior change. The
+  ten principles are not negotiable per-PR.
 - Keep the public package surfaces in `packages/zod-crud/src/index.ts` and
   `packages/zod-crud/src/react.ts` small and intentional. They must match
   `SPEC.md` §5.
@@ -37,8 +36,10 @@ npm run site:build
   array shorthand forms are forbidden.
 - Failed operations must leave state, history, and lifecycle unchanged
   (SPEC G8 atomicity).
-- Behavior changes start with a SPEC.md edit (or new ADR under
-  `packages/zod-crud/adr/`), then code follows.
+- Behavior changes include a matching `SPEC.md` edit (or new ADR under
+  `packages/zod-crud/adr/`) in the same change. Planned behavior work should
+  usually update the SPEC first; drift fixes may update docs after confirming
+  current code behavior.
 
 ## Pull Request Checklist
 

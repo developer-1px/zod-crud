@@ -66,6 +66,7 @@ DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다.
 | 값 편집만 필요한 작은 UI | `useJSON` |
 | selection을 별도 provider로 분리 | `useJSON` + `useSelection` |
 | 제품 수준 편집 명령이 필요함 | `useJSONDocument.commands` |
+| React 밖에서 문서 facade가 필요함 | `createJSONDocument` |
 | React 밖에서 patch만 적용 | `applyPatch` |
 
 ## 예제 읽기

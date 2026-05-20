@@ -1,6 +1,6 @@
 # zod-crud
 
-> **Zod 로 보호되는 headless JSON tree 라이브러리.** RFC 6901 (JSON Pointer) 과 RFC 6902 (JSON Patch) 위에 4기둥 / 10 verbs 의 편집 어휘를 매핑한 wrapper. State · actions · change records 모두 100% serializable JSON. Pure core, React 는 하나의 hook 에 한정.
+> **Zod 로 보호되는 headless JSON tree 라이브러리.** RFC 6901 (JSON Pointer) 과 RFC 6902 (JSON Patch) 위에 4기둥 / 10 verbs 의 편집 어휘를 매핑한 wrapper. State · actions · change records 모두 100% serializable JSON. Pure core, React 는 `zod-crud/react` entrypoint 에 한정.
 
 ## 4기둥 ↔ 10 verbs
 
@@ -12,7 +12,7 @@
 | **Undo** | `undo`, `redo` | RFC 6902 inverse + history stack |
 | **Find** | `find`, `replace`(string) | RFC 9535 JSONPath |
 
-자주 요청되는 `upsert`, `transaction` 등 거부한 기능과 대안은 [Why Not](/docs/why-not).
+자주 요청되는 `upsert`, `transaction verb` 등 거부한 기능과 대안은 [Why Not](/docs/why-not).
 
 ## 30초 셋업
 
@@ -55,7 +55,7 @@ function Sheet() {
 | `ops` | RFC 6902 기반 저수준 편집 작업 (`add`/`remove`/`replace`/`move`/`copy`/`patch`) |
 | `commands` | 10 verbs 의 제품 수준 명령 namespace |
 | `can` | 명령 실행 가능 여부 guard namespace |
-| `history` | undo/redo 가능 여부 + `mergeLast()` |
+| `history` | undo/redo 가능 여부 + `mergeLast()` + `transaction(fn)` |
 | `selection` | 선택된 JSON Pointer 위치들 (옵션) |
 
 ## RFC 매핑 — 어떤 substrate 위에 서 있는가
@@ -77,7 +77,7 @@ function Sheet() {
 - DOM event 와 **keyboard shortcut 자동 연결**
 - 브라우저 **clipboard API 직접 호출**
 - 시각적 selection 이나 **ARIA 속성 렌더링**
-- `upsert` / `transaction` / throwing `apply` 같은 **편의 verb** — [Why Not](/docs/why-not)
+- `upsert` / `transaction verb` / throwing `apply` 같은 **편의 verb** — [Why Not](/docs/why-not)
 
 이 경계 덕에 같은 편집 규칙이 React UI · headless 테스트 · 서버 연동에서 동일하게 재사용됩니다.
 
