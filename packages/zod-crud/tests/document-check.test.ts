@@ -76,7 +76,7 @@ describe("doc.check — explainable dry-run guard", () => {
     });
     doc.clipboard.write({ id: "x", name: "X" }, { source: "/items/1" });
 
-    const checked = doc.check.cut("/items/0");
+    const checked = doc.check.remove("/items/0");
 
     expect(checked.ok).toBe(true);
     expect(doc.value).toEqual(initial);
@@ -91,7 +91,7 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.history.redoDepth).toBe(0);
   });
 
-  test("copy and cut checks default to current selection without mutation", () => {
+  test("copy, cut, and remove checks default to current selection without mutation", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single", initial: ["/items/0"] },
     });
@@ -100,6 +100,8 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.copy()).toBe(true);
     expect(doc.check.cut()).toEqual({ ok: true });
     expect(doc.can.cut()).toBe(true);
+    expect(doc.check.remove()).toEqual({ ok: true });
+    expect(doc.can.remove()).toBe(true);
     expect(doc.value).toEqual(initial);
     expect(doc.selection?.selectedSource).toBe("/items/0");
 
@@ -109,6 +111,8 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.copy()).toBe(false);
     expect(doc.check.cut()).toMatchObject({ ok: false, code: "empty_selection" });
     expect(doc.can.cut()).toBe(false);
+    expect(doc.check.remove()).toMatchObject({ ok: false, code: "empty_selection" });
+    expect(doc.can.remove()).toBe(false);
   });
 
   test("duplicate checks default to current primary selection without mutation", () => {

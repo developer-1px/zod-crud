@@ -301,6 +301,8 @@ export { find, queryPointers } from "./verbs/find.js";
 export type { FindError, FindOk } from "./verbs/find.js";
 export { move } from "./verbs/move.js";
 export type { MoveError, MoveOk, MoveResult } from "./verbs/move.js";
+export { remove } from "./verbs/remove.js";
+export type { RemoveError, RemoveOk, RemoveResult, RemoveSource } from "./verbs/remove.js";
 export { redo } from "./verbs/redo.js";
 export type { RedoResult } from "./verbs/redo.js";
 export { replace } from "./verbs/replace.js";

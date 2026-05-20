@@ -77,6 +77,17 @@ describe("buildCommands — TipTap 식 commands group", () => {
     expect(ops.state.items).toHaveLength(1);
   });
 
+  test("commands.remove(source) — structural delete without payload", () => {
+    const ops = makeOps(initial);
+    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const r = commands.remove("/items/0");
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.patch).toEqual([{ op: "remove", path: "/items/0" }]);
+    expect("payload" in r).toBe(false);
+    expect(ops.state.items).toHaveLength(1);
+  });
+
   test("commands.paste(payload, target, mode)", () => {
     const ops = makeOps(initial);
     const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
@@ -135,6 +146,12 @@ describe("buildCan — TipTap 식 can group", () => {
     expect(can.cut("/items/0")).toBe(true);
   });
 
+  test("can.remove(source) returns true for valid structural remove", () => {
+    const ops = makeOps(initial);
+    const can = buildCan({ schema: Schema, ops });
+    expect(can.remove("/items/0")).toBe(true);
+  });
+
   test("can.cut(source) returns false when schema would be violated", () => {
     const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
     type S = z.output<typeof NonEmpty>;
@@ -155,6 +172,7 @@ describe("buildCan — TipTap 식 can group", () => {
     };
     const can = buildCan({ schema: NonEmpty, ops });
     expect(can.cut("/items/0")).toBe(false);
+    expect(can.remove("/items/0")).toBe(false);
   });
 
   test("can.move(from, to) — preFlight gate", () => {

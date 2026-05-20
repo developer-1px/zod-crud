@@ -35,6 +35,7 @@ import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError,
 import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import { replace as replaceVerb, type ReplaceOk, type ReplaceError } from "../verbs/replace.js";
+import { remove as removeVerb, type RemoveError, type RemoveOk, type RemoveSource } from "../verbs/remove.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
 import {
   deleteSelectionText,
@@ -71,6 +72,7 @@ export interface Commands<T> {
 
   move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
+  remove(source?: RemoveSource): RemoveOk<T> | RemoveError;
   replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult<T>;
   replaceText(replacement: string, options?: ReplaceTextCommandOptions): ReplaceTextCommandResult;
   deleteText(options?: DeleteTextCommandOptions): DeleteTextCommandResult;
@@ -182,6 +184,12 @@ export function buildCommands<S extends z.ZodType>(
         ? emptyDuplicateSource()
         : run(duplicate(schema, ops.state, source, args.opts));
     },
+    remove(source) {
+      const resolved = sourceOrSelection(source);
+      return resolved === null
+        ? emptyRemoveSource()
+        : run(removeVerb(schema, ops.state, resolved));
+    },
     replace(pathOrValue, maybeValue) {
       // 다른 mutating verb 와 동일하게 ops.patch 경유 (history commit + listener notify).
       const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
@@ -289,6 +297,14 @@ function emptyReplaceTarget(): ReplaceCommandResult {
     ok: false,
     code: "empty_selection",
     reason: "replace target selection is empty",
+  };
+}
+
+function emptyRemoveSource(): RemoveError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "remove source selection is empty",
   };
 }
 

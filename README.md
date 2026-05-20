@@ -103,9 +103,9 @@ through document history with final selection and optional `label` / `origin` /
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.
 Selection-backed facade commands can omit the current source or target:
-`copy`/`cut` use `selectedSource`, `move`/`duplicate` use `primaryPointer` as
-source, and `replace`/`paste` use `primaryPointer` as target; `replaceText` and
-`deleteText` use the full selection range.
+`copy`/`cut`/`remove` use `selectedSource`, `move`/`duplicate` use
+`primaryPointer` as source, and `replace`/`paste` use `primaryPointer` as
+target; `replaceText` and `deleteText` use the full selection range.
 Selection `initial` and `selectRanges` accept `JSONPoint` or `{ anchor, focus }`
 ranges, so multi-range selection and caret coordinates stay headless.
 

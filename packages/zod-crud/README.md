@@ -2,13 +2,13 @@
 
 All frontend editing is JSON editing. zod-crud is a headless JSON editing
 engine that maps the **edit vocabulary every FE service rebuilds from
-scratch** (select, move, cut, copy, paste, duplicate, undo, redo, find,
+scratch** (select, move, remove, cut, copy, paste, duplicate, undo, redo, find,
 replace) onto JSON standards (**RFC 6901 Pointer · RFC 6902 Patch · RFC 9535
 JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
 **reusable standard layer**.
 
 State, actions, and change records are 100% serializable JSON. The core is
-pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
+pure RFC substrate. `verbs/*` compose substrate into the 11 edit verbs.
 `createJSON` owns low-level headless JSON state. `createJSONDocument` exposes
 the headless document facade. `zod-crud/react` exposes matching React facades
 plus React-only composition hooks.
@@ -97,7 +97,7 @@ export function App() {
 | `doc.value` | current schema-valid state (`T`) |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
-| `doc.commands` | edit commands plus selection/text helpers (`replaceText`, `deleteText`, cursor movement, select scope) |
+| `doc.commands` | edit commands plus selection/text helpers (`remove`, `replaceText`, `deleteText`, cursor movement, select scope) |
 | `doc.can` | mutation, JSONPath find, and selection guard predicates + `undo`/`redo` flags |
 | `doc.check` | explainable dry-run guard results for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
@@ -212,10 +212,12 @@ scope returns `empty_scope`.
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `SelectionRange`, so disjoint multi-range selection and offset/edge carets are
 headless from initialization. Facade-level
-`commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
-`doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
-`can.cut()` default to the current selection when the source is omitted and
-return `empty_selection` when that selection is empty.
+`commands.copy()` / `commands.cut()` / `commands.remove()`,
+`doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` /
+`check.cut()` / `check.remove()`, and `can.copy()` / `can.cut()` /
+`can.remove()` default to the current selection when the source is omitted and
+return `empty_selection` when that selection is empty. `commands.remove()`
+commits the structural delete without clipboard payload.
 Facade-level `commands.move(to)`, `check.move(to)`, and `can.move(to)` default
 to the primary selection source when the source is omitted; the target remains
 an explicit Pointer.
@@ -437,9 +439,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `computeInverses` | RFC 6902 inverse helper |
-| `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
-| `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
-| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
+| `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `remove`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
+| `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/remove`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
+| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `RemoveError`, `RemoveOk`, `RemoveResult`, `RemoveSource`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
 | `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `compareSelectionPoints`, `orderSelectionRange`, `orderPrimarySelectionRange`, `orderSelectionRanges`, `selectionSpansForPointer`, `selectionTextEdits`, `replaceSelectionText`, `deleteSelectionText`, `SelectionContext`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointOrderResult`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |

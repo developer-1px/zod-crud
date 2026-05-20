@@ -977,6 +977,23 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value.items).toEqual([]);
   });
 
+  test("commands remove defaults to the current selection source without clipboard payload", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
+    });
+
+    const removed = doc.commands.remove();
+
+    expect(removed).toMatchObject({
+      ok: true,
+      sources: ["/items/0", "/items/1"],
+    });
+    expect("payload" in removed).toBe(false);
+    expect(doc.value.items).toEqual([]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
   test("commands copy and cut report empty selection when source is omitted", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,
@@ -992,6 +1009,11 @@ describe("createJSONDocument — headless facade", () => {
       ok: false,
       code: "empty_selection",
       message: "cut source selection is empty",
+    });
+    expect(doc.commands.remove()).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "remove source selection is empty",
     });
     expect(doc.value).toEqual(initial);
     expect(doc.history.undoDepth).toBe(0);

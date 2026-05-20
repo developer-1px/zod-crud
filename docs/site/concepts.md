@@ -16,7 +16,7 @@ const doc = useJSONDocument(Schema, initial);
 | `doc.lastPatch` | 마지막으로 적용된 문서 patch snapshot |
 | `doc.ops` | RFC 6902 6개 operation에 가까운 저수준 작업 API |
 | `doc.commit` | patch와 최종 selection을 한 history entry로 커밋 |
-| `doc.commands` | select, find, move, duplicate, replace, cut, copy, paste, undo, redo 명령 |
+| `doc.commands` | select, find, move, duplicate, remove, replace, cut, copy, paste, undo, redo 명령 |
 | `doc.can` | 명령 실행 가능 여부를 계산하는 guard |
 | `doc.check` | 실패 코드와 이유를 포함한 dry-run guard |
 | `doc.schema` | serializable schema introspection |
@@ -69,13 +69,14 @@ doc.commit(
 
 ## `doc.commands`와 `doc.can`
 
-`doc.commands`는 공식 편집 어휘 10개를 제품 기능 이름으로 노출합니다.
+`doc.commands`는 공식 편집 어휘 11개를 제품 기능 이름으로 노출합니다.
 
 ```ts
 doc.commands.find("$..title");
 doc.commands.replace("$.tasks[*].done", true);
 doc.commands.move("/tasks/2", "/tasks/0");
 doc.commands.duplicate("/tasks/0");
+doc.commands.remove("/tasks/1");
 doc.commands.cut("/tasks/1");
 doc.commands.paste(payload, "/tasks/-");
 doc.commands.undo();

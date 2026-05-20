@@ -92,6 +92,7 @@ also includes a headless JSON clipboard buffer.
 
 ```ts
 type ClipboardSource = Pointer | ReadonlyArray<Pointer>;
+type RemoveSource = Pointer | ReadonlyArray<Pointer>;
 
 type ClipboardReadOk = {
   ok: true;
@@ -173,6 +174,7 @@ interface Check<T> {
   find(jsonpath: string): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
+  remove(source?: RemoveSource): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
   deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;
@@ -607,9 +609,11 @@ separate selection model, and React has no separate clipboard model.
 `subscribe` emits JSON-safe `SelectionSnap` transitions after manual selection
 actions and automatic op tracking.
 `selectedSource` is `null | Pointer | Pointer[]`. Document-facade
-`commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
-`doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
-`can.cut()` use it when their source argument is omitted.
+`commands.copy()` / `commands.cut()` / `commands.remove()`,
+`doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` /
+`check.cut()` / `check.remove()`, and `can.copy()` / `can.cut()` /
+`can.remove()` use it when their source argument is omitted.
+`commands.remove()` commits a structural delete without clipboard payload.
 Document-facade `commands.move(to)`, `check.move(to)`, and `can.move(to)` use
 `primaryPointer` when their source argument is omitted; the target remains an
 explicit Pointer.

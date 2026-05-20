@@ -63,7 +63,7 @@ document surface:
 | `doc.value` | current schema-valid JSON value |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
-| `doc.commands` | edit command namespace; `replaceText(replacement, options?)` and `deleteText(options?)` commit selection text edits, `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
+| `doc.commands` | edit command namespace; `remove(source?)` commits structural JSON deletion without clipboard payload, `replaceText(replacement, options?)` and `deleteText(options?)` commit selection text edits, `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
 | `doc.can` | command, JSONPath find, and selection guard namespace |
 | `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, selection movement, and selection text edits; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
@@ -71,7 +71,7 @@ document surface:
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `context` is optional JSON-serializable selection-local editing state for stored marks/active tools/find mode, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `moveCursor`/`extendCursor` mutate cursor/range by JSON source-order within an optional scope, by RFC 9535 `query` results, or by explicit app-visible `points`, `resolveCursor` computes the same target without mutation, `selectScope` builds Ctrl+A/select-visible/select-find-results selections from that same traversal model, `orderPrimaryRange` converts directional anchor/focus into document-order start/end, `orderRanges` does the same for every range while preserving original range indexes and primary flag, `spansForPointer(pointer)` clips selection into pointer-local spans for rendering/offset edits, `textEdits(replacement)` plans ordered pointer-local text replacements, `textPatch(replacement)` builds string-leaf RFC 6902 replace patches plus final collapsed selection, `deleteText(options?)` builds selected-text or caret-backspace/delete patches plus final collapsed selection, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `togglePointer(pointer)` toggles one selected item including inside expanded ranges while preserving sparse selection, `selectedSource` feeds omitted `copy`/`cut` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `context` is optional JSON-serializable selection-local editing state for stored marks/active tools/find mode, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `moveCursor`/`extendCursor` mutate cursor/range by JSON source-order within an optional scope, by RFC 9535 `query` results, or by explicit app-visible `points`, `resolveCursor` computes the same target without mutation, `selectScope` builds Ctrl+A/select-visible/select-find-results selections from that same traversal model, `orderPrimaryRange` converts directional anchor/focus into document-order start/end, `orderRanges` does the same for every range while preserving original range indexes and primary flag, `spansForPointer(pointer)` clips selection into pointer-local spans for rendering/offset edits, `textEdits(replacement)` plans ordered pointer-local text replacements, `textPatch(replacement)` builds string-leaf RFC 6902 replace patches plus final collapsed selection, `deleteText(options?)` builds selected-text or caret-backspace/delete patches plus final collapsed selection, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `togglePointer(pointer)` toggles one selected item including inside expanded ranges while preserving sparse selection, `selectedSource` feeds omitted `copy`/`cut`/`remove` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
 | `doc.clipboard` / `createClipboard(args)` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` accepts a Pointer or defaults to the primary selection target while spreading multi-source buffers into array targets by default unless `{ spread: false }` |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
@@ -133,12 +133,12 @@ string-leaf text edits with optional `label`, `origin`, and `mergeKey`
 metadata; `doc.check.replaceText` / `doc.can.replaceText` and
 `doc.check.deleteText` / `doc.can.deleteText` dry-run the same plan.
 
-## 10 Verbs
+## 11 Verbs
 
 | Pillar | Verbs |
 | --- | --- |
 | Selection | `select`, `find` |
-| Edit | `move`, `duplicate`, `replace` |
+| Edit | `move`, `duplicate`, `remove`, `replace` |
 | Clipboard | `cut`, `copy`, `paste` |
 | Undo | `undo`, `redo` |
 

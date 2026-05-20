@@ -11,6 +11,7 @@ import { find } from "./verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import { replace as replaceVerb } from "./verbs/replace.js";
+import { remove as removeVerb, type RemoveSource } from "./verbs/remove.js";
 import {
   deleteSelectionText,
   replaceSelectionText,
@@ -68,6 +69,7 @@ export interface Check<T> {
   find(jsonpath: string): CheckResult;
   move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
+  remove(source?: RemoveSource): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
   deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;
@@ -144,6 +146,10 @@ export function buildCheck<S extends z.ZodType>(
       return source === null
         ? emptySelection("duplicate source selection is empty")
         : toCheckResult(duplicate(schema, ops.state, source, args.opts));
+    },
+    remove(source) {
+      const resolved = sourceOrSelection(source);
+      return resolved === null ? emptySelection("remove source selection is empty") : toCheckResult(removeVerb(schema, ops.state, resolved));
     },
     replace(pathOrValue, maybeValue) {
       const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
