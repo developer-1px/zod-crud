@@ -1,7 +1,7 @@
 // SPEC §5.7 — Selection state hook. pure 로직은 core/selection/.
 // W3C Selection API 어휘. collapsed selection = 캐럿 (별도 focus 축 없음).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   EMPTY_SELECTION,
@@ -67,28 +67,36 @@ export function useSelection<T>(
       ops.state,
     );
   });
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
 
   useEffect(() => {
     return ops.subscribe((applied) => {
-      setSnap((prev) => applySelectionAutoRules(prev, applied, ops.state, mode));
+      const next = applySelectionAutoRules(snapRef.current, applied, ops.state, mode);
+      snapRef.current = next;
+      setSnap(next);
     });
   }, [ops, mode]);
 
   // dispatch 시 ops.state 를 전달 — reducer 의 setBaseAndExtent/extend 가 DFS 확장에 사용.
   const dispatch = useCallback(
-    (action: SelectionAction) => setSnap((prev) => reduceSelection(prev, action, mode, ops.state)),
+    (action: SelectionAction) => {
+      const next = reduceSelection(snapRef.current, action, mode, ops.state);
+      snapRef.current = next;
+      setSnap(next);
+    },
     [ops, mode],
   );
 
   return useMemo<SelectionState<T>>(() => ({
-    ranges: snap.ranges,
-    selectedPointers: snap.selectedPointers,
-    selectionRanges: snap.selectionRanges,
-    primaryIndex: snap.primaryIndex,
-    anchor: snap.anchor,
-    focus: snap.focus,
-    isCollapsed: isCollapsed(snap),
-    type: selectionType(snap),
+    get ranges() { return snapRef.current.ranges; },
+    get selectedPointers() { return snapRef.current.selectedPointers; },
+    get selectionRanges() { return snapRef.current.selectionRanges; },
+    get primaryIndex() { return snapRef.current.primaryIndex; },
+    get anchor() { return snapRef.current.anchor; },
+    get focus() { return snapRef.current.focus; },
+    get isCollapsed() { return isCollapsed(snapRef.current); },
+    get type() { return selectionType(snapRef.current); },
     collapse: (point) => dispatch({ type: "collapse", point }),
     setBaseAndExtent: (anchor, focus) => dispatch({ type: "setBaseAndExtent", anchor, focus }),
     extend: (point) => dispatch({ type: "extend", point }),
@@ -111,8 +119,8 @@ export function useSelection<T>(
       ...(primaryIndex !== undefined ? { primaryIndex } : {}),
     }),
     empty: () => dispatch({ type: "empty" }),
-    containsNode: (pointer) => snap.selectedPointers.includes(pointer),
-  }), [snap, dispatch]);
+    containsNode: (pointer) => snapRef.current.selectedPointers.includes(pointer),
+  }), [dispatch]);
 }
 
 function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {

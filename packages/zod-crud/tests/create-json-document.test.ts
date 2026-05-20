@@ -142,13 +142,13 @@ describe("createJSONDocument — headless facade", () => {
       selection: { mode: "multiple" },
     });
 
-    const selected = doc.commands.select({ type: "addRange", pointer: "/items/0" }, "multiple");
+    const selected = doc.commands.select({ type: "addRange", pointer: "/items/0" });
 
     expect(selected.selectedPointers).toEqual(["/items/0"]);
     expect(doc.selection?.selectedPointers).toEqual(["/items/0"]);
     expect(doc.selection?.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
 
-    doc.commands.select({ type: "addRange", pointer: "/items/1" }, "multiple");
+    doc.commands.select({ type: "addRange", pointer: "/items/1" });
 
     expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
     expect(doc.selection?.selectionRanges).toEqual([

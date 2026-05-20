@@ -73,6 +73,8 @@ document surface:
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through
 `createJSONDocument` in core/headless code.
+`doc.commands.select(action)` defaults to the document's configured selection
+mode, so headless and React facades preserve the same multi-select behavior.
 
 ## 10 Verbs
 

@@ -416,7 +416,7 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const selectionRef = { get current() { return selectionState; } };
-  const commands = buildCommands({ schema, ops, selectionRef });
+  const commands = buildCommands({ schema, ops, selectionRef, selectionMode });
   const check = buildCheck({ schema, ops });
   const can = buildCan({ schema, ops, check });
   const clipboard = createClipboardState({ schema, getState: () => state, ops });

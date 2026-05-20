@@ -490,6 +490,7 @@ collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐
 4. **Anchor/focus tracking**: 각 range 의 `anchor`/`focus` path 도 같은 규칙으로 추적/복구하고 offset/edge/affinity 는 보존한다.
 
 수동 `collapse/addRange/removeRange/toggleRange/setBaseAndExtent/selectRanges/empty` 는 위 규칙보다 우선한다.
+facade 의 `doc.commands.select(action, mode?)` 는 `mode` 를 생략하면 문서 생성 시 설정한 selection mode 를 사용한다. 따라서 `createJSONDocument` 와 `useJSONDocument` 에서 `multiple` / `extended` 동작이 같은 기본값을 가진다.
 
 History 의미: selection 단독 변경은 history 비대상. `useJSONDocument` facade 는 patch dispatch 시점에 selection 스냅샷을 같이 entry 에 캡처해 undo/redo 시 같이 원복한다.
 

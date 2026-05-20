@@ -44,6 +44,7 @@ export interface BuildCommandsArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONDocumentOps<z.output<S>>;
   selectionRef: { current: SelectionHandle };
+  selectionMode?: SelectionMode;
 }
 
 interface SelectionHandle extends SelectionSnap {
@@ -63,7 +64,7 @@ interface MutationResult<T> {
 export function buildCommands<S extends z.ZodType>(
   args: BuildCommandsArgs<S>,
 ): Commands<z.output<S>> {
-  const { schema, ops, selectionRef } = args;
+  const { schema, ops, selectionRef, selectionMode = "single" } = args;
 
   // mutating verb 의 결과를 받아 ok 면 history commit. result 그대로 반환.
   // commit 은 ops.patch 가 listener notify + history 등록까지 처리.
@@ -73,7 +74,7 @@ export function buildCommands<S extends z.ZodType>(
   };
 
   return {
-    select(action, mode = "single") {
+    select(action, mode = selectionMode) {
       const next = selectVerb(selectionRef.current, action, mode, ops.state);
       selectionRef.current.selectRanges?.(next.selectionRanges, next.anchor, next.focus, next.primaryIndex);
       return next;

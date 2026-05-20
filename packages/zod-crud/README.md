@@ -140,6 +140,8 @@ Selection is headless. `JSONPoint` is either a JSON Pointer string or
 carets use the same core model. `doc.selection.selectionRanges` is the source
 of truth for caret/range shape; `doc.selection.selectedPointers` is the
 item-selection projection for list/tree/grid UIs.
+`doc.commands.select(action)` defaults to the document's configured selection
+mode, so headless and React facades preserve the same multi-select behavior.
 
 Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata; DOM/system clipboard integration remains user code.

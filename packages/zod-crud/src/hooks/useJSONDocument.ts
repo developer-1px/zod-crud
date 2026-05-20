@@ -94,9 +94,10 @@ export function useJSONDocument<S extends z.ZodType>(
   const selectionEnabled = options.selection !== undefined && options.selection !== false;
   const selectionOptions: UseSelectionOptions =
     typeof options.selection === "object" ? options.selection : {};
+  const selectionMode = selectionEnabled ? selectionOptions.mode ?? "single" : "single";
   const selectionState = useSelection<z.output<S>>(
     rawOps,
-    selectionEnabled ? selectionOptions : { mode: "single" },
+    selectionEnabled ? selectionOptions : { mode: selectionMode },
   );
 
   const historyLimit = options.history ?? 0;
@@ -157,8 +158,8 @@ export function useJSONDocument<S extends z.ZodType>(
   }, [mergeLast]);
 
   const commands = useMemo(
-    () => buildCommands({ schema, ops, selectionRef }),
-    [schema, ops],
+    () => buildCommands({ schema, ops, selectionRef, selectionMode }),
+    [schema, ops, selectionMode],
   );
   const check = useMemo(() => buildCheck({ schema, ops }), [schema, ops]);
   const can = useMemo(() => buildCan({ schema, ops, check }), [schema, ops, check]);
