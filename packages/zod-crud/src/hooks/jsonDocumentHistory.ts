@@ -18,14 +18,7 @@ export interface HistoryEntry {
 }
 
 export function snapSelection<T>(selection: SelectionState<T>): SelectionSnap {
-  return {
-    ranges: [...selection.ranges],
-    selectedPointers: [...selection.selectedPointers],
-    selectionRanges: selection.selectionRanges.map((range) => ({ ...range })),
-    primaryIndex: selection.primaryIndex,
-    anchor: selection.anchor,
-    focus: selection.focus,
-  };
+  return selection.snapshot();
 }
 
 export function recordHistoryEntry<T>(

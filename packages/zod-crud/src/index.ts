@@ -113,6 +113,7 @@ export {
   rangeCount,
   selectedCount,
   selectedSource,
+  selectionSnapshot,
   selectionType,
 } from "./core/selection/index.js";
 

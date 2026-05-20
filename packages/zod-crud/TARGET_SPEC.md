@@ -280,6 +280,7 @@ interface SelectionState<T> {
   empty(): void;
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
+  snapshot(): SelectionSnap;
 }
 ```
 
@@ -293,6 +294,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `selectedCount` and `hasSelection` are item-selection projection helpers for
 rendering and command guards. `isSelected(pointer)` is the per-item selected
 predicate; `containsNode(pointer)` remains an exact selected-pointer alias.
+Selection getters and `snapshot()` expose value snapshots: returned
+arrays/ranges/JSONPoint objects are safe to store or mutate outside the engine.
 
 Rules:
 
@@ -301,6 +304,8 @@ Rules:
 - String caret offsets are clamped to the current string length when state is
   available, including after document edits that keep the same Pointer alive.
 - Selection snapshots remain JSON serializable.
+- Selection snapshots clone object coordinates; external JSONPoint mutation does
+  not mutate live selection state.
 - RFC 6902 mutation drives automatic path tracking. Offset/edge/affinity are
   preserved when the underlying `path` tracks to a new Pointer.
 

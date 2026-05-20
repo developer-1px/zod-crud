@@ -30,6 +30,7 @@ import {
   reduceSelection,
   selectedCount,
   selectedSource,
+  selectionSnapshot,
   selectionType,
   type SelectionAction,
   type JSONPoint,
@@ -97,6 +98,7 @@ export interface SelectionState<T> extends SelectionSnap {
   empty(): void;
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
+  snapshot(): SelectionSnap;
 }
 
 export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
@@ -163,23 +165,16 @@ export function createJSONDocument<S extends z.ZodType>(
   const selectionMode = selectionOptions.mode ?? "single";
   let selectionSnap = initialSelection(selectionOptions, selectionMode, state);
 
-  const snapSelection = (): SelectionSnap => ({
-    ranges: [...selectionSnap.ranges],
-    selectedPointers: [...selectionSnap.selectedPointers],
-    selectionRanges: selectionSnap.selectionRanges.map((range) => ({ ...range })),
-    primaryIndex: selectionSnap.primaryIndex,
-    anchor: selectionSnap.anchor,
-    focus: selectionSnap.focus,
-  });
+  const snapSelection = (): SelectionSnap => selectionSnapshot(selectionSnap);
 
   const dispatchSelection = (action: SelectionAction): void => {
     selectionSnap = reduceSelection(selectionSnap, action, selectionMode, state);
   };
 
   const selectionState: SelectionState<z.output<S>> = {
-    get ranges() { return selectionSnap.ranges; },
-    get selectedPointers() { return selectionSnap.selectedPointers; },
-    get selectionRanges() { return selectionSnap.selectionRanges; },
+    get ranges() { return [...selectionSnap.ranges]; },
+    get selectedPointers() { return [...selectionSnap.selectedPointers]; },
+    get selectionRanges() { return selectionSnapshot(selectionSnap).selectionRanges; },
     get primaryIndex() { return selectionSnap.primaryIndex; },
     get rangeCount() { return rangeCount(selectionSnap); },
     get selectedCount() { return selectedCount(selectionSnap); },
@@ -191,8 +186,8 @@ export function createJSONDocument<S extends z.ZodType>(
     get primaryPointer() { return primaryPointer(selectionSnap); },
     get caret() { return caretPoint(selectionSnap); },
     get caretPointer() { return caretPointer(selectionSnap); },
-    get anchor() { return selectionSnap.anchor; },
-    get focus() { return selectionSnap.focus; },
+    get anchor() { return selectionSnapshot(selectionSnap).anchor; },
+    get focus() { return selectionSnapshot(selectionSnap).focus; },
     get isCollapsed() { return isCollapsed(selectionSnap); },
     get type() { return selectionType(selectionSnap); },
     collapse(point) { dispatchSelection({ type: "collapse", point }); },
@@ -227,6 +222,7 @@ export function createJSONDocument<S extends z.ZodType>(
     empty() { dispatchSelection({ type: "empty" }); },
     isSelected(pointer) { return isSelected(selectionSnap, pointer); },
     containsNode(pointer) { return isSelected(selectionSnap, pointer); },
+    snapshot() { return snapSelection(); },
   };
 
   const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {

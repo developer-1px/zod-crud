@@ -20,6 +20,7 @@ import {
   selectedCount,
   selectionType,
   selectedSource,
+  selectionSnapshot,
   type SelectionSnap,
   type SelectionMode,
   type SelectionAction,
@@ -73,6 +74,7 @@ export interface SelectionState<T> {
   empty(): void;
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
+  snapshot(): SelectionSnap;
 }
 
 export function useSelection<T>(
@@ -112,9 +114,9 @@ export function useSelection<T>(
   );
 
   return useMemo<SelectionState<T>>(() => ({
-    get ranges() { return snapRef.current.ranges; },
-    get selectedPointers() { return snapRef.current.selectedPointers; },
-    get selectionRanges() { return snapRef.current.selectionRanges; },
+    get ranges() { return [...snapRef.current.ranges]; },
+    get selectedPointers() { return [...snapRef.current.selectedPointers]; },
+    get selectionRanges() { return selectionSnapshot(snapRef.current).selectionRanges; },
     get primaryIndex() { return snapRef.current.primaryIndex; },
     get rangeCount() { return rangeCount(snapRef.current); },
     get selectedCount() { return selectedCount(snapRef.current); },
@@ -126,8 +128,8 @@ export function useSelection<T>(
     get primaryPointer() { return primaryPointer(snapRef.current); },
     get caret() { return caretPoint(snapRef.current); },
     get caretPointer() { return caretPointer(snapRef.current); },
-    get anchor() { return snapRef.current.anchor; },
-    get focus() { return snapRef.current.focus; },
+    get anchor() { return selectionSnapshot(snapRef.current).anchor; },
+    get focus() { return selectionSnapshot(snapRef.current).focus; },
     get isCollapsed() { return isCollapsed(snapRef.current); },
     get type() { return selectionType(snapRef.current); },
     collapse: (point) => dispatch({ type: "collapse", point }),
@@ -154,6 +156,7 @@ export function useSelection<T>(
     empty: () => dispatch({ type: "empty" }),
     isSelected: (pointer) => isSelected(snapRef.current, pointer),
     containsNode: (pointer) => isSelected(snapRef.current, pointer),
+    snapshot: () => selectionSnapshot(snapRef.current),
   }), [dispatch]);
 }
 

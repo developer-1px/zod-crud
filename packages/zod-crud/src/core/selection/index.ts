@@ -73,7 +73,8 @@ export function pointPointer(point: JSONPoint): Pointer {
 }
 
 export function primaryRange(s: SelectionSnap): SelectionRange | null {
-  return s.selectionRanges[s.primaryIndex] ?? null;
+  const range = s.selectionRanges[s.primaryIndex];
+  return range === undefined ? null : cloneRange(range);
 }
 
 export function rangeCount(s: SelectionSnap): number {
@@ -93,7 +94,7 @@ export function isSelected(s: SelectionSnap, pointer: Pointer): boolean {
 }
 
 export function caretPoint(s: SelectionSnap): JSONPoint | null {
-  return isCollapsed(s) ? s.focus : null;
+  return isCollapsed(s) && s.focus !== null ? clonePoint(s.focus) : null;
 }
 
 export function anchorPointer(s: SelectionSnap): Pointer | null {
@@ -117,6 +118,17 @@ export function primaryPointer(s: SelectionSnap): Pointer | null {
 export function caretPointer(s: SelectionSnap): Pointer | null {
   const caret = caretPoint(s);
   return caret ? pointPath(caret) : null;
+}
+
+export function selectionSnapshot(s: SelectionSnap): SelectionSnap {
+  return {
+    ranges: [...s.ranges],
+    selectedPointers: [...s.selectedPointers],
+    selectionRanges: s.selectionRanges.map(cloneRange),
+    primaryIndex: s.primaryIndex,
+    anchor: s.anchor === null ? null : clonePoint(s.anchor),
+    focus: s.focus === null ? null : clonePoint(s.focus),
+  };
 }
 
 export type SelectionAction =
@@ -271,13 +283,14 @@ function normalizeSelectionRange(range: SelectionRange, state?: unknown): Select
 }
 
 function normalizePoint(point: JSONPoint, state?: unknown): JSONPoint {
-  if (typeof point === "string" || point.offset === undefined || state === undefined) return point;
+  if (typeof point === "string") return point;
+  if (point.offset === undefined || state === undefined) return clonePoint(point);
   const segments = tryParsePointer(point.path);
-  if (segments === null) return point;
+  if (segments === null) return clonePoint(point);
   const value = readAt(state, segments);
-  if (!value.ok || typeof value.value !== "string") return point;
+  if (!value.ok || typeof value.value !== "string") return clonePoint(point);
   const offset = clampOffset(point.offset, value.value.length);
-  return offset === point.offset ? point : { ...point, offset };
+  return offset === point.offset ? clonePoint(point) : { ...point, offset };
 }
 
 function clampOffset(offset: number, max: number): number {
@@ -334,7 +347,7 @@ function normalizeRanges(
 }
 
 function collapsedRange(point: JSONPoint): SelectionRange {
-  return { anchor: point, focus: point };
+  return { anchor: clonePoint(point), focus: clonePoint(point) };
 }
 
 function pointPath(point: JSONPoint): Pointer {
@@ -343,6 +356,17 @@ function pointPath(point: JSONPoint): Pointer {
 
 function withPointPath(point: JSONPoint, path: Pointer): JSONPoint {
   return typeof point === "string" ? path : { ...point, path };
+}
+
+function cloneRange(range: SelectionRange): SelectionRange {
+  return {
+    anchor: clonePoint(range.anchor),
+    focus: clonePoint(range.focus),
+  };
+}
+
+function clonePoint(point: JSONPoint): JSONPoint {
+  return typeof point === "string" ? point : { ...point };
 }
 
 function collectSelectedPointers(ranges: ReadonlyArray<SelectionRange>, state?: unknown): Pointer[] {

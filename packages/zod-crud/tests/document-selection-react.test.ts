@@ -101,6 +101,45 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.primaryPointer).toBe("/items/0/name");
   });
 
+  test("selection getters and snapshot expose value copies through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    }));
+    const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
+
+    act(() => {
+      hook.current.selection?.collapse(point);
+    });
+
+    point.offset = 99;
+    expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const caret = hook.current.selection?.caret;
+    if (caret === undefined || caret === null || typeof caret === "string") throw new Error("expected JSONPoint object");
+    caret.offset = 88;
+    expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const primaryRange = hook.current.selection?.primaryRange;
+    if (primaryRange === undefined || primaryRange === null || typeof primaryRange.anchor === "string") {
+      throw new Error("expected JSONPoint object");
+    }
+    primaryRange.anchor.offset = 66;
+    expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const selectionRange = hook.current.selection?.selectionRanges[0];
+    if (selectionRange === undefined || typeof selectionRange.anchor === "string") {
+      throw new Error("expected JSONPoint object");
+    }
+    selectionRange.anchor.offset = 55;
+    expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const snapshot = hook.current.selection?.snapshot();
+    const snapshotAnchor = snapshot?.selectionRanges[0]?.anchor;
+    if (snapshotAnchor === undefined || typeof snapshotAnchor === "string") throw new Error("expected JSONPoint object");
+    snapshotAnchor.offset = 77;
+    expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+  });
+
   test("selectRanges dedupes repeated ranges through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

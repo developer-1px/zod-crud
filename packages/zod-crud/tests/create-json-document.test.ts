@@ -274,6 +274,46 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.caretPointer).toBe("/items/0/name");
   });
 
+  test("selection getters and snapshot expose value copies", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+    const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
+
+    doc.selection?.collapse(point);
+    point.offset = 99;
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const caret = doc.selection?.caret;
+    if (caret === undefined || caret === null || typeof caret === "string") throw new Error("expected JSONPoint object");
+    caret.offset = 88;
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const primaryRange = doc.selection?.primaryRange;
+    if (primaryRange === undefined || primaryRange === null || typeof primaryRange.anchor === "string") {
+      throw new Error("expected JSONPoint object");
+    }
+    primaryRange.anchor.offset = 66;
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const selectionRange = doc.selection?.selectionRanges[0];
+    if (selectionRange === undefined || typeof selectionRange.anchor === "string") {
+      throw new Error("expected JSONPoint object");
+    }
+    selectionRange.anchor.offset = 55;
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const snapshot = doc.selection?.snapshot();
+    const snapshotAnchor = snapshot?.selectionRanges[0]?.anchor;
+    if (snapshotAnchor === undefined || typeof snapshotAnchor === "string") throw new Error("expected JSONPoint object");
+    snapshotAnchor.offset = 77;
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const selectedPointers = doc.selection?.selectedPointers as unknown as string[];
+    selectedPointers.push("/items/1");
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
+  });
+
   test("selection primaryPointer can drive headless clipboard commands", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single", initial: ["/items/1"] },

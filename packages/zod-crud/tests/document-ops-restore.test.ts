@@ -120,5 +120,13 @@ function selectionStub(): SelectionState<{ name: string }> {
     empty: () => undefined,
     isSelected: () => false,
     containsNode: () => false,
+    snapshot: () => ({
+      ranges: [],
+      selectedPointers: [],
+      selectionRanges: [],
+      primaryIndex: -1,
+      anchor: null,
+      focus: null,
+    }),
   };
 }

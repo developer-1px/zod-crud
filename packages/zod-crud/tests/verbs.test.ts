@@ -20,6 +20,7 @@ import {
   reduceSelection,
   selectedCount,
   selectedSource,
+  selectionSnapshot,
 } from "../src/core/selection/index.js";
 import { commit, emptyHistory } from "../src/core/history.js";
 import { computeInverses } from "../src/core/patch/index.js";
@@ -119,6 +120,30 @@ describe("verbs/select", () => {
     expect(caretPoint(s)).toEqual(point);
     expect(caretPointer(s)).toBe("/items/0/name");
     expect(pointPointer(point)).toBe("/items/0/name");
+  });
+
+  test("JSONPoint coordinates are stored and projected as value snapshots", () => {
+    const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
+    const s = select(EMPTY_SELECTION, { type: "collapse", point }, "single");
+
+    point.offset = 99;
+    expect(caretPoint(s)).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const projectedCaret = caretPoint(s);
+    if (projectedCaret === null || typeof projectedCaret === "string") throw new Error("expected JSONPoint object");
+    projectedCaret.offset = 88;
+    expect(caretPoint(s)).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const projectedRange = primaryRange(s);
+    if (projectedRange === null || typeof projectedRange.anchor === "string") throw new Error("expected JSONPoint object");
+    projectedRange.anchor.offset = 66;
+    expect(caretPoint(s)).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+
+    const snapshot = selectionSnapshot(s);
+    const snapshotAnchor = snapshot.selectionRanges[0]?.anchor;
+    if (snapshotAnchor === undefined || typeof snapshotAnchor === "string") throw new Error("expected JSONPoint object");
+    snapshotAnchor.offset = 77;
+    expect(caretPoint(s)).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
   });
 
   test("JSONPoint string offsets are normalized against current state", () => {
