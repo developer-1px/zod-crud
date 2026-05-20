@@ -281,7 +281,7 @@ interface SelectionState<T> {
   removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
   selectRanges(
-    ranges: ReadonlyArray<Pointer | SelectionRange>,
+    ranges: ReadonlyArray<JSONPoint | SelectionRange>,
     anchor?: JSONPoint | null,
     focus?: JSONPoint | null,
     primaryIndex?: number,
@@ -298,6 +298,9 @@ interface SelectionState<T> {
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `primaryPointer`, and `caretPointer` are Pointer projections for command wiring.
+`UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
+`{ anchor, focus }` ranges, so apps can seed disjoint multi-range selection and
+offset/edge carets without React.
 `selectedSource` is `null | Pointer | Pointer[]`. Document-facade
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /

@@ -94,6 +94,7 @@ export type {
   SelectionEdge,
   SelectionMode,
   SelectionRange,
+  SelectionRangeInput,
   SelectionSource,
   SelectionType,
 } from "./core/selection/index.js";

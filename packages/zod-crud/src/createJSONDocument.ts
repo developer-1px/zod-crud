@@ -36,6 +36,7 @@ import {
   type JSONPoint,
   type SelectionMode,
   type SelectionRange,
+  type SelectionRangeInput,
   type SelectionSnap,
   type SelectionSource,
   type SelectionType,
@@ -67,7 +68,7 @@ import type {
 
 export interface UseSelectionOptions {
   mode?: SelectionMode;
-  initial?: ReadonlyArray<JSONPoint>;
+  initial?: ReadonlyArray<SelectionRangeInput>;
 }
 
 export interface SelectionState<T> extends SelectionSnap {
@@ -90,7 +91,7 @@ export interface SelectionState<T> extends SelectionSnap {
   removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
   selectRanges(
-    ranges: ReadonlyArray<Pointer | SelectionRange>,
+    ranges: ReadonlyArray<SelectionRangeInput>,
     anchor?: JSONPoint | null,
     focus?: JSONPoint | null,
     primaryIndex?: number,
@@ -498,7 +499,7 @@ function mergeEntryMetadata(
   return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
-function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {
+function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
   return typeof input === "object" && "anchor" in input && "focus" in input;
 }
 
@@ -509,9 +510,17 @@ function initialSelection(
 ): SelectionSnap {
   const init = options.initial;
   if (!init?.length) return EMPTY_SELECTION;
+  if (init.some(isSelectionRange)) {
+    return reduceSelection(
+      EMPTY_SELECTION,
+      { type: "selectRanges", ranges: init },
+      mode,
+      state,
+    );
+  }
   return reduceSelection(
     EMPTY_SELECTION,
-    { type: "setBaseAndExtent", anchor: init[0]!, focus: init[init.length - 1]! },
+    { type: "setBaseAndExtent", anchor: init[0] as JSONPoint, focus: init[init.length - 1] as JSONPoint },
     mode,
     state,
   );

@@ -75,6 +75,7 @@ export type {
   SelectionMode,
   JSONPoint,
   SelectionRange,
+  SelectionRangeInput,
   SelectionSource,
   SelectionType,
   SelectionState,

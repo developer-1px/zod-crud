@@ -32,6 +32,7 @@ export interface SelectionRange {
   focus: JSONPoint;
 }
 
+export type SelectionRangeInput = JSONPoint | SelectionRange;
 export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
 
 export interface SelectionSnap {
@@ -149,7 +150,7 @@ export type SelectionAction =
   | { type: "toggleRange"; range: SelectionRange }
   | {
       type: "selectRanges";
-      ranges: ReadonlyArray<Pointer | SelectionRange>;
+      ranges: ReadonlyArray<SelectionRangeInput>;
       anchor?: JSONPoint | null;
       focus?: JSONPoint | null;
       primaryIndex?: number;
@@ -271,8 +272,8 @@ function actionRemoveTarget(action: { pointer?: Pointer; point?: JSONPoint; rang
   return action.index ?? action.range ?? actionPoint(action);
 }
 
-function normalizeRangeInput(input: Pointer | SelectionRange): SelectionRange {
-  return typeof input === "string" ? collapsedRange(input) : input;
+function normalizeRangeInput(input: SelectionRangeInput): SelectionRange {
+  return isSelectionRange(input) ? input : collapsedRange(input);
 }
 
 function normalizeSelectionRange(range: SelectionRange, state?: unknown): SelectionRange {
@@ -392,7 +393,7 @@ function selectionInputMatches(candidate: SelectionRange, input: JSONPoint | Sel
     || selectedPointers.includes(pointPath(input));
 }
 
-function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {
+function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
   return typeof input === "object" && "anchor" in input && "focus" in input;
 }
 

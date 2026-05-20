@@ -210,6 +210,27 @@ describe("verbs/select", () => {
     expect(primaryPointer(s)).toBe("/items/0");
   });
 
+  test("selectRanges accepts JSONPoint objects as collapsed ranges", () => {
+    const point = { path: "/items/0/name" as const, offset: 99, affinity: "forward" as const };
+    const s = select(EMPTY_SELECTION, {
+      type: "selectRanges",
+      ranges: [point, { anchor: "/items/2", focus: "/items/2" }],
+      primaryIndex: 0,
+    }, "multiple", initial);
+
+    expect(s.selectedPointers).toEqual(["/items/0/name", "/items/2"]);
+    expect(s.selectionRanges).toEqual([
+      {
+        anchor: { path: "/items/0/name", offset: 1, affinity: "forward" },
+        focus: { path: "/items/0/name", offset: 1, affinity: "forward" },
+      },
+      { anchor: "/items/2", focus: "/items/2" },
+    ]);
+    expect(s.primaryIndex).toBe(0);
+    expect(primaryPointer(s)).toBe("/items/0/name");
+    expect(caretPoint(s)).toBe(null);
+  });
+
   test("extended range falls back to endpoints when pointer is invalid", () => {
     const s = reduceSelection(
       EMPTY_SELECTION,

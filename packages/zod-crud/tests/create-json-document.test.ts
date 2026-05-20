@@ -323,6 +323,33 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/0");
   });
 
+  test("selection initial accepts explicit JSONPoint ranges", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: {
+        mode: "multiple",
+        initial: [
+          { anchor: "/items/0", focus: "/items/0" },
+          {
+            anchor: { path: "/items/1/name", offset: 99, affinity: "forward" },
+            focus: { path: "/items/1/name", offset: 99, affinity: "forward" },
+          },
+        ],
+      },
+    });
+
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1/name"]);
+    expect(doc.selection?.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      {
+        anchor: { path: "/items/1/name", offset: 1, affinity: "forward" },
+        focus: { path: "/items/1/name", offset: 1, affinity: "forward" },
+      },
+    ]);
+    expect(doc.selection?.primaryIndex).toBe(1);
+    expect(doc.selection?.primaryPointer).toBe("/items/1/name");
+    expect(doc.selection?.caret).toBe(null);
+  });
+
   test("JSONPoint caret tracks pointer movement while preserving offset", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,

@@ -27,16 +27,24 @@ import {
   type SelectionType,
   type JSONPoint,
   type SelectionRange,
+  type SelectionRangeInput,
   type SelectionSource,
 } from "../core/selection/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type { JSONOps } from "./useJSON.js";
 
-export type { JSONPoint, SelectionMode, SelectionRange, SelectionSource, SelectionType };
+export type {
+  JSONPoint,
+  SelectionMode,
+  SelectionRange,
+  SelectionRangeInput,
+  SelectionSource,
+  SelectionType,
+};
 
 export interface UseSelectionOptions {
   mode?: SelectionMode;
-  initial?: ReadonlyArray<JSONPoint>;
+  initial?: ReadonlyArray<SelectionRangeInput>;
 }
 
 export interface SelectionState<T> {
@@ -66,7 +74,7 @@ export interface SelectionState<T> {
   toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
   // 비표준 escape hatch — 도메인-aware range 확장 (DFS 등) 을 호출자가 계산해 넘긴다.
   selectRanges(
-    ranges: ReadonlyArray<Pointer | SelectionRange>,
+    ranges: ReadonlyArray<SelectionRangeInput>,
     anchor?: JSONPoint | null,
     focus?: JSONPoint | null,
     primaryIndex?: number,
@@ -85,9 +93,17 @@ export function useSelection<T>(
   const [snap, setSnap] = useState<SelectionSnap>(() => {
     const init = options.initial;
     if (!init?.length) return EMPTY_SELECTION;
+    if (init.some(isSelectionRange)) {
+      return reduceSelection(
+        EMPTY_SELECTION,
+        { type: "selectRanges", ranges: init },
+        mode,
+        ops.state,
+      );
+    }
     return reduceSelection(
       EMPTY_SELECTION,
-      { type: "setBaseAndExtent", anchor: init[0]!, focus: init[init.length - 1]! },
+      { type: "setBaseAndExtent", anchor: init[0] as JSONPoint, focus: init[init.length - 1] as JSONPoint },
       mode,
       ops.state,
     );
@@ -160,6 +176,6 @@ export function useSelection<T>(
   }), [dispatch]);
 }
 
-function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {
+function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
   return typeof input === "object" && "anchor" in input && "focus" in input;
 }

@@ -75,6 +75,8 @@ path introspection without making Zod internals the public API.
 Selection-backed facade commands can omit the current source or target:
 `copy`/`cut` use `selectedSource`, `move`/`duplicate` use `primaryPointer` as
 source, and `replace`/`paste` use `primaryPointer` as target.
+Selection `initial` and `selectRanges` accept `JSONPoint` or `{ anchor, focus }`
+ranges, so multi-range selection and caret coordinates stay headless.
 
 ### Dict-record 한 키 쓰기
 

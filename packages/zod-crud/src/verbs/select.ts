@@ -7,6 +7,7 @@ import {
   type JSONPoint,
   type SelectionMode,
   type SelectionRange,
+  type SelectionRangeInput,
   type SelectionSnap,
   EMPTY_SELECTION,
 } from "../core/selection/index.js";
@@ -22,4 +23,4 @@ export function select(
 }
 
 export { EMPTY_SELECTION };
-export type { JSONPoint, SelectionAction, SelectionMode, SelectionRange, SelectionSnap, Pointer };
+export type { JSONPoint, SelectionAction, SelectionMode, SelectionRange, SelectionRangeInput, SelectionSnap, Pointer };
