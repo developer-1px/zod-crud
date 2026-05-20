@@ -70,6 +70,24 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(hook.current.selection?.caretPointer).toBe("/items/0/name");
   });
+
+  test("selectRanges dedupes repeated ranges through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    }));
+
+    act(() => {
+      hook.current.selection?.selectRanges(["/items/0", "/items/1", "/items/0"], undefined, undefined, 2);
+    });
+
+    expect(hook.current.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
+    expect(hook.current.selection?.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      { anchor: "/items/1", focus: "/items/1" },
+    ]);
+    expect(hook.current.selection?.primaryIndex).toBe(0);
+    expect(hook.current.selection?.primaryPointer).toBe("/items/0");
+  });
 });
 
 function renderHook<T>(hook: () => T): { readonly current: T } {
