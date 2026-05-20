@@ -12,10 +12,12 @@ import {
   orderSelectionRange,
   orderSelectionRanges,
   primaryPointer,
+  replaceSelectionText,
   resolveSelectionCursor,
   resolveSelectionScope,
   selectSelectionScope,
   selectionSpansForPointer,
+  selectionTextEdits,
 } from "../src/index.js";
 
 const Schema = z.object({
@@ -462,6 +464,205 @@ describe("createSelection", () => {
         endOffset: 5,
         full: true,
       }],
+    });
+  });
+
+  test("plans text edits from selection ranges and preserves selection context", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "extended",
+      context: { marks: ["bold"] },
+      initial: [{
+        anchor: { path: "/items/0/name", offset: 0 },
+        focus: { path: "/items/0/name", offset: 1 },
+      }],
+    });
+
+    expect(selectionTextEdits(selection.snapshot(), initial, "AX")).toMatchObject({
+      ok: true,
+      edits: [{
+        pointer: "/items/0/name",
+        rangeIndex: 0,
+        primary: true,
+        startOffset: 0,
+        endOffset: 1,
+        replacement: "AX",
+      }],
+    });
+
+    expect(replaceSelectionText(selection.snapshot(), initial, "AX")).toEqual({
+      ok: true,
+      patch: [{ op: "replace", path: "/items/0/name", value: "AX" }],
+      pointers: ["/items/0/name"],
+      edits: [{
+        pointer: "/items/0/name",
+        rangeIndex: 0,
+        primary: true,
+        start: { path: "/items/0/name", offset: 0 },
+        end: { path: "/items/0/name", offset: 1 },
+        startOffset: 0,
+        endOffset: 1,
+        collapsed: false,
+        full: true,
+        replacement: "AX",
+      }],
+      selection: {
+        ranges: ["/items/0/name"],
+        selectedPointers: ["/items/0/name"],
+        selectionRanges: [{
+          anchor: { path: "/items/0/name", offset: 2 },
+          focus: { path: "/items/0/name", offset: 2 },
+        }],
+        primaryIndex: 0,
+        anchor: { path: "/items/0/name", offset: 2 },
+        focus: { path: "/items/0/name", offset: 2 },
+        context: { marks: ["bold"] },
+      },
+    });
+
+    expect(selection.textPatch("AX")).toMatchObject({
+      ok: true,
+      patch: [{ op: "replace", path: "/items/0/name", value: "AX" }],
+      selection: {
+        focus: { path: "/items/0/name", offset: 2 },
+        context: { marks: ["bold"] },
+      },
+    });
+  });
+
+  test("builds multi-cursor string replacement patches in document order", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "multiple",
+      initial: [
+        {
+          anchor: { path: "/items/1/name", offset: 1 },
+          focus: { path: "/items/1/name", offset: 1 },
+        },
+        {
+          anchor: { path: "/items/0/name", offset: 1 },
+          focus: { path: "/items/0/name", offset: 1 },
+        },
+      ],
+    });
+
+    const result = selection.textPatch("!");
+
+    expect(result).toMatchObject({
+      ok: true,
+      patch: [
+        { op: "replace", path: "/items/0/name", value: "A!" },
+        { op: "replace", path: "/items/1/name", value: "B!" },
+      ],
+      pointers: ["/items/0/name", "/items/1/name"],
+      selection: {
+        selectedPointers: ["/items/0/name", "/items/1/name"],
+        selectionRanges: [
+          {
+            anchor: { path: "/items/0/name", offset: 2 },
+            focus: { path: "/items/0/name", offset: 2 },
+          },
+          {
+            anchor: { path: "/items/1/name", offset: 2 },
+            focus: { path: "/items/1/name", offset: 2 },
+          },
+        ],
+        primaryIndex: 0,
+        focus: { path: "/items/0/name", offset: 2 },
+      },
+    });
+  });
+
+  test("text edit planning supports app-provided non-string text domains", () => {
+    const blockState = {
+      blocks: [
+        { text: "Alpha" },
+        { text: "Beta" },
+      ],
+    };
+    const selection = {
+      ...EMPTY_SELECTION,
+      ranges: ["/blocks/0", "/blocks/1"],
+      selectedPointers: ["/blocks/0", "/blocks/1"],
+      selectionRanges: [{
+        anchor: { path: "/blocks/0", offset: 2 },
+        focus: { path: "/blocks/1", offset: 3 },
+      }],
+      primaryIndex: 0,
+      anchor: { path: "/blocks/0", offset: 2 },
+      focus: { path: "/blocks/1", offset: 3 },
+    };
+
+    expect(selectionTextEdits(selection, blockState, "", {
+      points: ["/blocks/0", "/blocks/1"],
+      getLength(_pointer, value) {
+        return typeof value === "object" && value !== null && "text" in value
+          ? String((value as { text: unknown }).text).length
+          : null;
+      },
+    })).toMatchObject({
+      ok: true,
+      edits: [
+        {
+          pointer: "/blocks/0",
+          startOffset: 2,
+          endOffset: 5,
+          full: false,
+        },
+        {
+          pointer: "/blocks/1",
+          startOffset: 0,
+          endOffset: 3,
+          full: false,
+        },
+      ],
+    });
+
+    expect(replaceSelectionText(selection, blockState, "", {
+      points: ["/blocks/0", "/blocks/1"],
+      getLength(_pointer, value) {
+        return typeof value === "object" && value !== null && "text" in value
+          ? String((value as { text: unknown }).text).length
+          : null;
+      },
+    })).toMatchObject({
+      ok: false,
+      code: "multi_pointer_range",
+      pointer: "/blocks/0",
+      index: 0,
+    });
+  });
+
+  test("text replacement reports missing length and non-string targets", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const objectSelection = createSelection(doc.ops, {
+      mode: "single",
+      initial: [{
+        anchor: { path: "/items/0", edge: "before" },
+        focus: { path: "/items/0", edge: "after" },
+      }],
+    });
+
+    expect(objectSelection.textEdits("x", { points: ["/items/0"] })).toMatchObject({
+      ok: false,
+      code: "missing_length",
+      pointer: "/items/0",
+      index: 0,
+    });
+
+    const pointSelection = createSelection(doc.ops, {
+      mode: "single",
+      initial: [{
+        anchor: { path: "/items/0", offset: 0 },
+        focus: { path: "/items/0", offset: 0 },
+      }],
+    });
+
+    expect(pointSelection.textPatch("x", { points: ["/items/0"] })).toMatchObject({
+      ok: false,
+      code: "not_string",
+      pointer: "/items/0",
+      index: 0,
     });
   });
 

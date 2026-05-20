@@ -435,6 +435,50 @@ type SelectionPointerSpansResult =
       index: number | null;
     };
 
+interface SelectionTextEditOptions extends SelectionSpanOptions {
+  affinity?: SelectionAffinity;
+}
+
+type SelectionTextEditErrorCode =
+  | SelectionOrderErrorCode
+  | "missing_length"
+  | "multi_pointer_range"
+  | "overlapping_ranges"
+  | "path_not_found"
+  | "not_string";
+
+interface SelectionTextEdit extends SelectionPointerSpan {
+  startOffset: number;
+  endOffset: number;
+  replacement: string;
+}
+
+type SelectionTextEditsResult =
+  | { ok: true; edits: ReadonlyArray<SelectionTextEdit> }
+  | {
+      ok: false;
+      code: SelectionTextEditErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
+    };
+
+type ReplaceSelectionTextResult =
+  | {
+      ok: true;
+      patch: JSONPatchOperation[];
+      selection: SelectionSnap;
+      edits: ReadonlyArray<SelectionTextEdit>;
+      pointers: ReadonlyArray<Pointer>;
+    }
+  | {
+      ok: false;
+      code: SelectionTextEditErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
+    };
+
 interface SelectionState<T> {
   readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
   readonly selectedPointers: ReadonlyArray<Pointer>;
@@ -469,6 +513,8 @@ interface SelectionState<T> {
   orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
   orderRanges(options?: SelectionOrderOptions): SelectionRangesOrderResult;
   spansForPointer(pointer: Pointer, options?: SelectionSpanOptions): SelectionPointerSpansResult;
+  textEdits(replacement: string, options?: SelectionTextEditOptions): SelectionTextEditsResult;
+  textPatch(replacement: string, options?: SelectionTextEditOptions): ReplaceSelectionTextResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): Omit<SelectionScopeResult, "selection">;
   selectRanges(
@@ -518,15 +564,20 @@ includes selecting all JSONPath find results through `query`.
 anchor/focus endpoints into document-order `start`/`end` ranges. They use JSON
 source-order by default, JSONPath `query` order when provided, or explicit
 visible `points` order for folded/virtualized UIs. Same-path offsets compare by
-numeric order, and an ancestor point with `edge: "after"` sorts after its
-descendants. `orderSelectionRanges` sorts every range by `start` while
+numeric order, `edge: "before"` sorts before same-path offsets,
+`edge: "after"` sorts after same-path offsets, and an ancestor point with
+`edge: "after"` sorts after its descendants. `orderSelectionRanges` sorts every range by `start` while
 preserving original `selectionRanges` indexes and the primary flag.
 `selectionSpansForPointer` clips those ordered ranges to one pointer-local
 span list for rendering and offset-based commands. String values resolve
 offsets from current state; apps can provide `getLength` for non-string offset
-domains. `SelectionState` exposes the same behavior as
-`orderPrimaryRange(options?)`, `orderRanges(options?)`, and
-`spansForPointer(pointer, options?)`.
+domains. `selectionTextEdits` turns selection into ordered pointer-local text
+edit plans. `replaceSelectionText` builds RFC 6902 `replace` patches plus final
+collapsed selection for JSON string leaves; multi-pointer rich-text/block edits
+use the edit plan and app-specific patching. `SelectionState` exposes the same
+behavior as `orderPrimaryRange(options?)`, `orderRanges(options?)`,
+`spansForPointer(pointer, options?)`, `textEdits(replacement, options?)`, and
+`textPatch(replacement, options?)`.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.

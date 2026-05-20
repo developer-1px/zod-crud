@@ -92,6 +92,9 @@ helpers turn directional anchor/focus ranges into document-order `start`/`end`
 ranges for delete, format, copy, and paste commands.
 `spansForPointer()` projects those ranges into pointer-local spans for rendering
 and offset-based edits.
+`textEdits(replacement)` turns selection into ordered pointer-local text edit
+plans, and `textPatch(replacement)` builds RFC 6902 `replace` patches plus the
+final collapsed selection for JSON string leaves.
 `at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.

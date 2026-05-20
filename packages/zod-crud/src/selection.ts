@@ -22,6 +22,7 @@ import {
   primaryRange,
   rangeCount,
   reduceSelection,
+  replaceSelectionText,
   resolveSelectionCursor,
   resolveSelectionScope,
   restoreSelection,
@@ -30,6 +31,7 @@ import {
   selectSelectionScope,
   selectionSnapshot,
   selectionSpansForPointer,
+  selectionTextEdits,
   selectionType,
   type OrderedSelectionRange,
   type OrderedSelectionRangeEntry,
@@ -52,6 +54,7 @@ import {
   type SelectionRangeInput,
   type SelectionRangeOrderResult,
   type SelectionRangesOrderResult,
+  type ReplaceSelectionTextResult,
   type SelectionScopeErrorCode,
   type SelectionScopeOptions,
   type SelectionScopeResult,
@@ -59,6 +62,10 @@ import {
   type SelectionSnap,
   type SelectionSource,
   type SelectionSpanOptions,
+  type SelectionTextEdit,
+  type SelectionTextEditErrorCode,
+  type SelectionTextEditOptions,
+  type SelectionTextEditsResult,
   type SelectionType,
 } from "./core/selection/index.js";
 
@@ -84,11 +91,16 @@ export type {
   SelectionRangeInput,
   SelectionRangeOrderResult,
   SelectionRangesOrderResult,
+  ReplaceSelectionTextResult,
   SelectionScopeErrorCode,
   SelectionScopeOptions,
   SelectionScopeResult,
   SelectionScopeTarget,
   SelectionSpanOptions,
+  SelectionTextEdit,
+  SelectionTextEditErrorCode,
+  SelectionTextEditOptions,
+  SelectionTextEditsResult,
   SelectionSource,
   SelectionSnap,
   SelectionType,
@@ -140,6 +152,8 @@ export interface SelectionState<T> extends SelectionSnap {
   orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
   orderRanges(options?: SelectionOrderOptions): SelectionRangesOrderResult;
   spansForPointer(pointer: Pointer, options?: SelectionSpanOptions): SelectionPointerSpansResult;
+  textEdits(replacement: string, options?: SelectionTextEditOptions): SelectionTextEditsResult;
+  textPatch(replacement: string, options?: SelectionTextEditOptions): ReplaceSelectionTextResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
@@ -260,6 +274,12 @@ export function createSelection<T>(
     },
     spansForPointer(pointer, spanOptions) {
       return selectionSpansForPointer(snap, pointer, ops.state, spanOptions);
+    },
+    textEdits(replacement, textEditOptions) {
+      return selectionTextEdits(snap, ops.state, replacement, textEditOptions);
+    },
+    textPatch(replacement, textEditOptions) {
+      return replaceSelectionText(snap, ops.state, replacement, textEditOptions);
     },
     selectScope(scopeOptions) {
       const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);
