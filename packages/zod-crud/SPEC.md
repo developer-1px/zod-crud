@@ -482,7 +482,7 @@ export interface SelectionState<T> {
 ```
 
 `anchor` / `focus` 는 W3C Selection API 의 좌표 이름이다. `selectionRanges[primaryIndex]` 가 키보드 입력·paste·format command 의 주 작용 범위다.
-`primaryRange` 는 그 주 작용 범위를 직접 반환하는 편의 getter 다. `primaryPointer` 는 그 범위의 focus path 이며 scalar `copy` / `cut` / `replace` 같은 Pointer 기반 명령으로 연결하기 위한 값이다. multi-source `copy` / `cut` 은 `selectedPointers` 배열을 그대로 받는다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. `caretPointer` 는 caret 의 path 이다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다.
+`primaryRange` 는 그 주 작용 범위를 직접 반환하는 편의 getter 다. `primaryPointer` 는 그 범위의 focus path 이며 scalar `copy` / `cut` / `replace` 같은 Pointer 기반 명령으로 연결하기 위한 값이다. multi-source `copy` / `cut` 은 `selectedPointers` 배열을 그대로 받는다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. `caretPointer` 는 caret 의 path 이다. string value 위의 caret offset 은 state 가 있으면 현재 string 길이 안으로 clamp 되고, 같은 Pointer 가 살아남는 문서 편집 후에도 다시 clamp 된다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다.
 
 **자동 규칙 네 가지** — 사용자 wiring 0.
 

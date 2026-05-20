@@ -144,6 +144,8 @@ item-selection projection for list/tree/grid UIs.
 exposes the collapsed cursor point. `primaryPointer` and `caretPointer` are the
 Pointer projections for scalar Pointer commands; `selectedPointers` can be
 passed directly to `copy` / `cut` for multi-source payloads.
+String caret offsets are clamped to the current string length when state is
+available, including after document edits that keep the same Pointer alive.
 `doc.commands.select(action)` defaults to the document's configured selection
 mode, so headless and React facades preserve the same multi-select behavior.
 

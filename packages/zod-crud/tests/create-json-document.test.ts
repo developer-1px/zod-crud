@@ -231,6 +231,32 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
   });
 
+  test("JSONPoint caret offsets are clamped to string length", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    doc.selection?.collapse({ path: "/items/0/name", offset: 99, affinity: "forward" });
+
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    expect(doc.selection?.selectionRanges).toEqual([{
+      anchor: { path: "/items/0/name", offset: 1, affinity: "forward" },
+      focus: { path: "/items/0/name", offset: 1, affinity: "forward" },
+    }]);
+  });
+
+  test("JSONPoint caret offsets stay valid after string edits", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    doc.selection?.collapse({ path: "/items/0/name", offset: 1, affinity: "backward" });
+    doc.ops.replace("/items/0/name", "");
+
+    expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 0, affinity: "backward" });
+    expect(doc.selection?.caretPointer).toBe("/items/0/name");
+  });
+
   test("selection primaryPointer can drive headless clipboard commands", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single", initial: ["/items/1"] },

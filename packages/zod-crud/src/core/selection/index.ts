@@ -9,7 +9,7 @@
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
 import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../track.js";
-import type { Pointer } from "../pointer/index.js";
+import { readAt, tryParsePointer, type Pointer } from "../pointer/index.js";
 import type { JSONPatchOperation } from "../patch/index.js";
 import { expandRange } from "./range.js";
 
@@ -192,7 +192,7 @@ export function applySelectionAutoRules(
   const nextFocus = trackOrRecover(prev.focus);
   const next = snapFromRanges(nextRanges, prev.primaryIndex, mode, after);
   const normalized = nextAnchor !== null && nextFocus !== null
-    ? { ...next, anchor: nextAnchor, focus: nextFocus }
+    ? { ...next, anchor: normalizePoint(nextAnchor, after), focus: normalizePoint(nextFocus, after) }
     : next;
   return sameSelectionSnap(prev, normalized) ? prev : normalized;
 }
@@ -232,13 +232,35 @@ function normalizeRangeInput(input: Pointer | SelectionRange): SelectionRange {
   return typeof input === "string" ? collapsedRange(input) : input;
 }
 
+function normalizeSelectionRange(range: SelectionRange, state?: unknown): SelectionRange {
+  return {
+    anchor: normalizePoint(range.anchor, state),
+    focus: normalizePoint(range.focus, state),
+  };
+}
+
+function normalizePoint(point: JSONPoint, state?: unknown): JSONPoint {
+  if (typeof point === "string" || point.offset === undefined || state === undefined) return point;
+  const segments = tryParsePointer(point.path);
+  if (segments === null) return point;
+  const value = readAt(state, segments);
+  if (!value.ok || typeof value.value !== "string") return point;
+  const offset = clampOffset(point.offset, value.value.length);
+  return offset === point.offset ? point : { ...point, offset };
+}
+
+function clampOffset(offset: number, max: number): number {
+  if (!Number.isFinite(offset)) return 0;
+  return Math.min(Math.max(Math.trunc(offset), 0), max);
+}
+
 function snapFromRanges(
   input: ReadonlyArray<SelectionRange>,
   primaryIndex: number,
   mode: SelectionMode,
   state?: unknown,
 ): SelectionSnap {
-  const normalized = normalizeRanges(input, primaryIndex, mode);
+  const normalized = normalizeRanges(input.map((range) => normalizeSelectionRange(range, state)), primaryIndex, mode);
   const selectionRanges = normalized.ranges;
   if (selectionRanges.length === 0) return EMPTY_SELECTION;
   const nextPrimary = normalized.primaryIndex;

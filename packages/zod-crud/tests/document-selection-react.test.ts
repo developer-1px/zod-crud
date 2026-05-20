@@ -71,6 +71,19 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.caretPointer).toBe("/items/0/name");
   });
 
+  test("clamps collapsed caret offsets through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    }));
+
+    act(() => {
+      hook.current.selection?.collapse({ path: "/items/0/name", offset: 99, affinity: "forward" });
+    });
+
+    expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    expect(hook.current.selection?.primaryPointer).toBe("/items/0/name");
+  });
+
   test("selectRanges dedupes repeated ranges through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

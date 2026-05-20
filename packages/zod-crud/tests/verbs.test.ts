@@ -99,6 +99,26 @@ describe("verbs/select", () => {
     expect(pointPointer(point)).toBe("/items/0/name");
   });
 
+  test("JSONPoint string offsets are normalized against current state", () => {
+    const s = reduceSelection(
+      EMPTY_SELECTION,
+      {
+        type: "setBaseAndExtent",
+        anchor: { path: "/items/0/name", offset: -1 },
+        focus: { path: "/items/1/name", offset: 99 },
+      },
+      "extended",
+      initial,
+    );
+
+    expect(s.selectionRanges).toEqual([{
+      anchor: { path: "/items/0/name", offset: 0 },
+      focus: { path: "/items/1/name", offset: 1 },
+    }]);
+    expect(s.anchor).toEqual({ path: "/items/0/name", offset: 0 });
+    expect(s.focus).toEqual({ path: "/items/1/name", offset: 1 });
+  });
+
   test("multiple mode stores independent ranges and primary range", () => {
     const first = select(EMPTY_SELECTION, { type: "addRange", pointer: "/items/0" }, "multiple");
     const second = select(first, { type: "addRange", range: { anchor: "/items/1/name", focus: "/items/1/name" } }, "multiple");

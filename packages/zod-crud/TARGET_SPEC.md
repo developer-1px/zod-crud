@@ -279,6 +279,8 @@ Rules:
 
 - Offset-bearing points are allowed only where the value at `path` supports an
   offset domain, such as string text or app-declared sequence fields.
+- String caret offsets are clamped to the current string length when state is
+  available, including after document edits that keep the same Pointer alive.
 - Selection snapshots remain JSON serializable.
 - RFC 6902 mutation drives automatic path tracking. Offset/edge/affinity are
   preserved when the underlying `path` tracks to a new Pointer.
