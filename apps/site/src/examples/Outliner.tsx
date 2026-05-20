@@ -54,7 +54,7 @@ export function Outliner() {
     strict: false,
     selection: { mode: "single", initial: [""] },
   });
-  const focus: Pointer | null = doc.selection?.focus ?? null;
+  const focus: Pointer | null = doc.selection?.focusPointer ?? null;
 
   // 키 매핑 (DOM 이벤트 → RFC 6902 op) — UI 책임.
   const onKey = (e: React.KeyboardEvent, p: Pointer): void => {

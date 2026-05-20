@@ -5,7 +5,7 @@ import { useCallback } from "react";
 import type { DebugLogger } from "zod-crud/react";
 import * as cmd from "../commands/index.js";
 import type { CommandId, Mode } from "../keymap.js";
-import type { CommandContext } from "../commands/index.js";
+import { focusOf, type CommandContext } from "../commands/index.js";
 import { readNode } from "../pointer-utils.js";
 
 interface UseDispatchArgs {
@@ -22,7 +22,7 @@ interface UseDispatchArgs {
 export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleRecord, logger }: UseDispatchArgs) {
   void mode; // 현재 dispatch 는 mode 를 직접 안 쓰지만 dependency 로 노출
   return useCallback((id: CommandId): boolean => {
-    logger?.log("dispatch", { id, mode, ctx: ctx ? { focus: ctx.selection.focus, ranges: [...ctx.selection.ranges] } : null });
+    logger?.log("dispatch", { id, mode, ctx: ctx ? { focus: focusOf(ctx), ranges: [...ctx.selection.selectedPointers] } : null });
     if (id === "toggle-record") { toggleRecord(); return true; }
     if (!ctx) return false;
     const surface = (r: { ok: boolean; code?: string; reason?: string } | void) => {
@@ -34,7 +34,7 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleR
       case "insert-sibling": surface(cmd.insertSibling(ctx)); setMode("edit"); return true;
       // edit 모드 Backspace: 빈 텍스트일 때만 row 제거. 그 외는 DOM 기본 (글자 삭제) 통과.
       case "remove-if-empty": {
-        const f = ctx.selection.focus;
+        const f = focusOf(ctx);
         if (f === null) return false;
         const node = readNode(ctx.state, f);
         if (!node || node.text !== "") return false;
@@ -54,8 +54,8 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo, toggleR
       case "extend-down":    cmd.extendSelection(ctx, "down"); return true;
       case "move-up":        surface(cmd.moveUp(ctx)); return true;
       case "move-down":      surface(cmd.moveDown(ctx)); return true;
-      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.ranges.length || 1}`); return true;
-      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.ranges.length || 1}`); return true;
+      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.selectedPointers.length || 1}`); return true;
+      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.selectedPointers.length || 1}`); return true;
       case "paste-sibling":  surface(cmd.paste(ctx, "sibling")); return true;
       case "paste-child":    surface(cmd.paste(ctx, "child")); return true;
       case "undo":           undo(); return true;

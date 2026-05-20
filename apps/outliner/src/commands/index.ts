@@ -4,6 +4,7 @@
 // 모든 mutation 후 focus·selection 은 zod-crud 자동 규칙 (SPEC §5.7 / §5.8) 에 맡긴다.
 // commands 는 RFC 6902 op 만 발행한다 — focus/selection 명시 set/clear 안 한다.
 
+export { focusOf } from "./context.js";
 export type { CommandContext } from "./context.js";
 export {
   insertSibling, demote, promote, remove, moveUp, moveDown,

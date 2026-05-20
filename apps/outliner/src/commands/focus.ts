@@ -5,11 +5,11 @@ import type { OutlineNode } from "../schema.js";
 import {
   parentOf, nextVisible, prevVisible, firstVisible, lastVisible, firstChildOf,
 } from "../pointer-utils.js";
-import type { CommandContext } from "./context.js";
+import { focusOf, type CommandContext } from "./context.js";
 
 // 화살표 nav = 캐럿 이동 = collapsed selection. focus·selection 둘 다 [target].
 function navigate(ctx: CommandContext, compute: (state: OutlineNode, f: Pointer | null) => Pointer | null) {
-  const target = compute(ctx.state, ctx.selection.focus);
+  const target = compute(ctx.state, focusOf(ctx));
   if (target !== null) ctx.selection.collapse(target);
 }
 

@@ -1,6 +1,6 @@
 // Command 들이 공유하는 ctx 형식 + 공용 헬퍼.
 
-import type { JSONOps, Pointer, SelectionState } from "zod-crud/react";
+import { pointPointer, type JSONOps, type JSONPoint, type Pointer, type SelectionState } from "zod-crud/react";
 import type { OutlineNode } from "../schema.js";
 import type { ClipboardApi } from "../clipboard.js";
 import { comparePointer } from "../pointer-utils.js";
@@ -12,10 +12,23 @@ export interface CommandContext {
   clipboard: ClipboardApi;
 }
 
+export function pointerOf(point: JSONPoint | null | undefined): Pointer | null {
+  return point == null ? null : pointPointer(point);
+}
+
+export function focusOf(ctx: CommandContext): Pointer | null {
+  return pointerOf(ctx.selection.focus);
+}
+
+export function anchorOf(ctx: CommandContext): Pointer | null {
+  return pointerOf(ctx.selection.anchor);
+}
+
 // 현재 동작 대상 — multi-select 가 비어있으면 focus 단일 사용.
 export function targetsOf(ctx: CommandContext): Pointer[] {
-  if (ctx.selection.ranges.length > 0) return [...ctx.selection.ranges];
-  if (ctx.selection.focus !== null) return [ctx.selection.focus];
+  if (ctx.selection.selectedPointers.length > 0) return [...ctx.selection.selectedPointers];
+  const focus = focusOf(ctx);
+  if (focus !== null) return [focus];
   return [];
 }
 

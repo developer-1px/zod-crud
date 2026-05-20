@@ -2,7 +2,7 @@
 
 import type { JSONPatchOperation, JSONResult } from "zod-crud";
 import type { PasteMode } from "../clipboard.js";
-import { type CommandContext, targetsOf, sortDfs } from "./context.js";
+import { type CommandContext, focusOf, targetsOf, sortDfs } from "./context.js";
 
 export function copy(ctx: CommandContext): void {
   const targets = targetsOf(ctx);
@@ -22,5 +22,5 @@ export function cut(ctx: CommandContext): void {
 }
 
 export function paste(ctx: CommandContext, mode: PasteMode): JSONResult {
-  return ctx.clipboard.paste(ctx.selection.focus ?? "", mode, ctx.ops);
+  return ctx.clipboard.paste(focusOf(ctx) ?? "", mode, ctx.ops);
 }

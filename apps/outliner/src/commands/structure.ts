@@ -4,10 +4,10 @@
 import { trackPointer, type JSONPatchOperation, type JSONResult, type Pointer } from "zod-crud";
 import { EMPTY_NODE } from "../schema.js";
 import { parentOf, lastIndex, siblingAt, readChildren } from "../pointer-utils.js";
-import { type CommandContext, targetsOf, sortDfs } from "./context.js";
+import { focusOf, type CommandContext, targetsOf, sortDfs } from "./context.js";
 
 export function insertSibling(ctx: CommandContext): JSONResult {
-  const p = ctx.selection.focus;
+  const p = focusOf(ctx);
   if (p === null) return { ok: false, code: "path_not_found", reason: "no focus" };
   const idx = lastIndex(p);
   if (idx === null) return { ok: false, code: "path_not_found", reason: "root has no sibling" };
@@ -91,7 +91,7 @@ export function remove(ctx: CommandContext): JSONResult {
 }
 
 export function moveUp(ctx: CommandContext): JSONResult {
-  const p = ctx.selection.focus;
+  const p = focusOf(ctx);
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null || idx === 0) return { ok: false, code: "path_not_found", reason: "already first" };
@@ -99,7 +99,7 @@ export function moveUp(ctx: CommandContext): JSONResult {
 }
 
 export function moveDown(ctx: CommandContext): JSONResult {
-  const p = ctx.selection.focus;
+  const p = focusOf(ctx);
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null) return { ok: false, code: "path_not_found" };

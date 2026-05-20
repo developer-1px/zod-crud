@@ -67,8 +67,8 @@ export function Outliner() {
         <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
         <span className="status">
           mode = <code className={`mode mode-${mode}`}>{mode}</code>
-          {" · "}focus = <code>{doc.selection?.focus ?? "—"}</code>
-          {" · "}selection = <code>{doc.selection?.ranges.length ?? 0}</code>
+          {" · "}focus = <code>{doc.selection?.focusPointer ?? "—"}</code>
+          {" · "}selection = <code>{doc.selection?.selectedPointers.length ?? 0}</code>
           {" · "}clipboard = <code>{clipboard.mode === "empty" ? "—" : `${clipboard.mode} ${clipboard.values.length}`}</code>
         </span>
       </div>
@@ -76,8 +76,8 @@ export function Outliner() {
       <ul role="tree" aria-label="outline" aria-multiselectable className="tree" onKeyDown={onKeyDown} tabIndex={-1}>
         <OutlineRow
           node={doc.value} pointer="" depth={0}
-          focus={doc.selection?.focus ?? null}
-          selection={doc.selection?.ranges ?? []}
+          focus={doc.selection?.focusPointer ?? null}
+          selection={doc.selection?.selectedPointers ?? []}
           mode={mode}
           onClickText={onClickText} onClickBullet={onClickBullet}
           onKeyDown={onKeyDown} ops={doc.ops} onTextEdit={onTextEdit}
