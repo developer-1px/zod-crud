@@ -26,6 +26,14 @@ export type {
   CheckViolation,
 } from "./check.js";
 export type {
+  EntriesResult,
+  EntryKind,
+  QueryResult,
+  ReadEntry,
+  ReadFacade,
+  ReadResult,
+} from "./read.js";
+export type {
   DraftFieldState,
   DraftState,
 } from "./hooks/useDraft.js";

@@ -39,6 +39,7 @@ import {
 } from "./core/history.js";
 import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.js";
 import { createClipboardState, type ClipboardState } from "./clipboard.js";
+import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import type {
   JSONChangeListener,
   JSONDocumentOps,
@@ -94,6 +95,10 @@ export interface JSONDocument<T> {
   readonly can: Can<T>;
   readonly check: Check<T>;
   readonly clipboard: ClipboardState<T>;
+  at(path: Pointer): ReadResult;
+  exists(path: Pointer): boolean;
+  query(jsonpath: string): QueryResult;
+  entries(path: Pointer): EntriesResult;
 }
 
 interface HistoryEntry {
@@ -376,6 +381,7 @@ export function createJSONDocument<S extends z.ZodType>(
   const check = buildCheck({ schema, ops });
   const can = buildCan({ schema, ops, check });
   const clipboard = createClipboardState({ schema, getState: () => state, ops });
+  const read = buildReadFacade({ schema, getState: () => state });
 
   return {
     get value() { return state; },
@@ -386,6 +392,10 @@ export function createJSONDocument<S extends z.ZodType>(
     can,
     check,
     clipboard,
+    at: read.at,
+    exists: read.exists,
+    query: read.query,
+    entries: read.entries,
   };
 }
 

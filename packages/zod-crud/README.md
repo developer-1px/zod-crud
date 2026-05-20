@@ -102,6 +102,9 @@ export function App() {
 | `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
 | `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast()`, `transaction(fn)` |
 
+The facade also exposes read/query helpers: `doc.at(path)`,
+`doc.exists(path)`, `doc.query(jsonpath)`, and `doc.entries(path)`.
+
 Selection and history are first-class — they are not parallel hooks you wire
 up yourself. `commands.*` mutate through the history-aware path; `ops.*` is
 the low-level RFC 6902 escape hatch for fire-and-forget patches.
@@ -143,6 +146,9 @@ metadata; DOM/system clipboard integration remains user code.
 `doc.check` is headless dry-run validation for commands and patches. It returns
 the same success/failure family the command would hit, without mutating value,
 selection, clipboard, or history.
+
+`doc.at`, `doc.exists`, `doc.query`, and `doc.entries` are headless read helpers
+over the current document value. JSONPath queries return pointers, not values.
 
 For lower-level composition (`useJSON` + `useSelection`), see the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
@@ -214,10 +220,10 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface as `useJSONDocument` |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation` | shared headless facade types |
+| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface and read/query helpers as `useJSONDocument` |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |

@@ -204,8 +204,11 @@ Rules:
 
 Acceptance evidence:
 
-- Tests cover root, object, array, record, primitive, invalid pointer, and
-  JSONPath query.
+- Headless tests in `tests/document-read.test.ts` cover root, object, array,
+  record, primitive, invalid pointer, path missing, existence, current-state
+  reads after edits, and JSONPath query.
+- React facade tests in `tests/document-read-react.test.ts` prove the same read
+  surface exists through `useJSONDocument`.
 
 ## 6. Selection Subsystem
 
@@ -364,24 +367,18 @@ Rules:
 
 Acceptance evidence:
 
-- Headless tests in `tests/document-check.test.ts` cover schema violation,
-  invalid pointer, path missing, discriminated union paste mismatch, undo/redo
-  unavailable, dry-run immutability, and `can === check.ok`.
-- React facade tests in `tests/document-clipboard-react.test.ts` prove the same
-  check surface exists through `useJSONDocument`.
+- Tests prove old recordings without metadata still replay.
+- Tests prove new recordings preserve metadata and optional selection snaps.
 
 ## 10. Issue Slices
 
 Implementation should proceed in this order:
 
-1. **Read/query facade**
-   - Add `doc.at`, `doc.exists`, `doc.query`, `doc.entries`.
-
-2. **History metadata**
+1. **History metadata**
    - Add transaction options and merge metadata.
    - Preserve metadata in recordings.
 
-4. **Schema facade**
+2. **Schema facade**
    - Add read-only path introspection.
 
 ## 11. Completion Gates

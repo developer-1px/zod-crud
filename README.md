@@ -69,7 +69,8 @@ doc.commands.undo();
 only adds render lifecycle. Selection uses headless `JSONPoint` coordinates, so
 item selection and text carets share one JSON editing model. Clipboard is a
 headless JSON fragment buffer; system clipboard calls remain user code. `check`
-is the explainable dry-run guard behind `can`.
+is the explainable dry-run guard behind `can`. `at`/`exists`/`query`/`entries`
+provide pointer and JSONPath reads without React.
 
 ### Dict-record 한 키 쓰기
 

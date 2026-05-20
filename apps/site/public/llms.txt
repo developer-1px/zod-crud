@@ -63,6 +63,8 @@ document surface:
 | `doc.commands` | 10 verb command namespace |
 | `doc.can` | command guard namespace |
 | `doc.check` | explainable dry-run guard namespace; `can.x(...) === check.x(...).ok` |
+| `doc.at` / `doc.exists` | pointer read helpers |
+| `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast()`, `transaction(fn)` |
 | `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth and `selectedPointers` is the item-selection projection |
 | `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut`/`paste` mutate through the same document facade while system clipboard calls stay user code |
@@ -157,6 +159,17 @@ history.
 ```ts
 const result = doc.check.replace("/items/0/name", value);
 if (!result.ok && result.code === "schema_violation") show(result.violations);
+```
+
+### Read / Query
+
+Use facade reads instead of reimplementing Pointer or JSONPath traversal in UI
+code. `doc.query` returns pointers, not values.
+
+```ts
+const title = doc.at("/title");
+const itemPointers = doc.query("$.items[*].id");
+const children = doc.entries("/items");
 ```
 
 ### Burst edits

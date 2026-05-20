@@ -31,6 +31,14 @@ export type {
   CheckResult,
   CheckViolation,
 } from "./check.js";
+export type {
+  EntriesResult,
+  EntryKind,
+  QueryResult,
+  ReadEntry,
+  ReadFacade,
+  ReadResult,
+} from "./read.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

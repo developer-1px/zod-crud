@@ -14,6 +14,8 @@ import { buildCommands, type Commands } from "../commands/buildCommands.js";
 import { buildCan, type Can } from "../commands/buildCan.js";
 import { buildCheck, type Check } from "../check.js";
 import { createClipboardState, type ClipboardState } from "../clipboard.js";
+import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "../read.js";
+import type { Pointer } from "../core/pointer/index.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
   emptyHistory,
@@ -56,6 +58,7 @@ export interface JSONDocumentHistory {
  * - commands: 10 verb methods (select/find/move/duplicate/replace/cut/copy/paste/undo/redo)
  * - can: mutation guard predicates + stack flags
  * - check: explainable dry-run guard results
+ * - at/exists/query/entries: read/query helpers
  */
 export interface JSONDocument<T> {
   value: T;
@@ -66,6 +69,10 @@ export interface JSONDocument<T> {
   can: Can<T>;
   check: Check<T>;
   clipboard: ClipboardState<T>;
+  at(path: Pointer): ReadResult;
+  exists(path: Pointer): boolean;
+  query(jsonpath: string): QueryResult;
+  entries(path: Pointer): EntriesResult;
 }
 
 export function useJSONDocument<S extends z.ZodType>(
@@ -130,6 +137,10 @@ export function useJSONDocument<S extends z.ZodType>(
     () => createClipboardState({ schema, getState: () => ops.state, ops, onChange: bumpClipboardVersion }),
     [schema, ops],
   );
+  const read = useMemo(
+    () => buildReadFacade({ schema, getState: () => ops.state }),
+    [schema, ops],
+  );
 
   return useMemo<JSONDocument<z.output<S>>>(() => {
     const history: JSONDocumentHistory = {
@@ -149,6 +160,10 @@ export function useJSONDocument<S extends z.ZodType>(
       can,
       check,
       clipboard,
+      at: read.at,
+      exists: read.exists,
+      query: read.query,
+      entries: read.entries,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, check, clipboard]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, check, clipboard, read]);
 }
