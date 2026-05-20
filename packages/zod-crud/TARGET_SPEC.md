@@ -349,6 +349,11 @@ interface SelectionOrderOptions {
   includeScope?: boolean;
 }
 
+interface SelectionSpanOptions extends SelectionOrderOptions {
+  length?: number;
+  getLength?: (pointer: Pointer, value: unknown) => number | null | undefined;
+}
+
 interface OrderedSelectionRange {
   anchor: JSONPoint;
   focus: JSONPoint;
@@ -404,6 +409,32 @@ type SelectionRangesOrderResult =
       index: number | null;
     };
 
+interface SelectionPointerSpan {
+  pointer: Pointer;
+  rangeIndex: number;
+  primary: boolean;
+  start: JSONPoint;
+  end: JSONPoint;
+  startOffset: number | null;
+  endOffset: number | null;
+  collapsed: boolean;
+  full: boolean;
+}
+
+type SelectionPointerSpansResult =
+  | {
+      ok: true;
+      pointer: Pointer;
+      spans: ReadonlyArray<SelectionPointerSpan>;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
+    };
+
 interface SelectionState<T> {
   readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
   readonly selectedPointers: ReadonlyArray<Pointer>;
@@ -437,6 +468,7 @@ interface SelectionState<T> {
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
   orderRanges(options?: SelectionOrderOptions): SelectionRangesOrderResult;
+  spansForPointer(pointer: Pointer, options?: SelectionSpanOptions): SelectionPointerSpansResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): Omit<SelectionScopeResult, "selection">;
   selectRanges(
@@ -489,8 +521,12 @@ visible `points` order for folded/virtualized UIs. Same-path offsets compare by
 numeric order, and an ancestor point with `edge: "after"` sorts after its
 descendants. `orderSelectionRanges` sorts every range by `start` while
 preserving original `selectionRanges` indexes and the primary flag.
-`SelectionState` exposes the same behavior as `orderPrimaryRange(options?)` and
-`orderRanges(options?)`.
+`selectionSpansForPointer` clips those ordered ranges to one pointer-local
+span list for rendering and offset-based commands. String values resolve
+offsets from current state; apps can provide `getLength` for non-string offset
+domains. `SelectionState` exposes the same behavior as
+`orderPrimaryRange(options?)`, `orderRanges(options?)`, and
+`spansForPointer(pointer, options?)`.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.

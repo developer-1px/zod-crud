@@ -15,6 +15,7 @@ import {
   resolveSelectionCursor,
   resolveSelectionScope,
   selectSelectionScope,
+  selectionSpansForPointer,
 } from "../src/index.js";
 
 const Schema = z.object({
@@ -383,6 +384,84 @@ describe("createSelection", () => {
       ok: false,
       code: "empty_selection",
       index: null,
+    });
+  });
+
+  test("projects selection ranges into pointer-local spans for rendering", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "extended",
+      initial: [{
+        anchor: { path: "/items/0/name", offset: 0 },
+        focus: { path: "/items/2/name", offset: 1 },
+      }],
+    });
+
+    expect(selectionSpansForPointer(
+      selection.snapshot(),
+      "/items/1/name",
+      initial,
+      { query: "$.items[*].name" },
+    )).toMatchObject({
+      ok: true,
+      pointer: "/items/1/name",
+      spans: [{
+        rangeIndex: 0,
+        primary: true,
+        start: { path: "/items/1/name", edge: "before" },
+        end: { path: "/items/1/name", edge: "after" },
+        startOffset: 0,
+        endOffset: 1,
+        collapsed: false,
+        full: true,
+      }],
+    });
+
+    expect(selection.spansForPointer("/items/2/name", { query: "$.items[*].name" })).toMatchObject({
+      ok: true,
+      spans: [{
+        startOffset: 0,
+        endOffset: 1,
+        full: true,
+      }],
+    });
+
+    expect(selection.spansForPointer("/items/0/id", { query: "$.items[*].name" })).toEqual({
+      ok: true,
+      pointer: "/items/0/id",
+      spans: [],
+    });
+
+    expect(selectionSpansForPointer(EMPTY_SELECTION, "/items/0/name", initial)).toEqual({
+      ok: true,
+      pointer: "/items/0/name",
+      spans: [],
+    });
+  });
+
+  test("selection spans accept app-provided lengths for non-string offset domains", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "extended",
+      initial: [{
+        anchor: { path: "/items/0", offset: 2 },
+        focus: { path: "/items/2", offset: 3 },
+      }],
+    });
+
+    expect(selection.spansForPointer("/items/1", {
+      getLength(pointer) {
+        return pointer === "/items/1" ? 5 : null;
+      },
+    })).toMatchObject({
+      ok: true,
+      spans: [{
+        start: { path: "/items/1", edge: "before" },
+        end: { path: "/items/1", edge: "after" },
+        startOffset: 0,
+        endOffset: 5,
+        full: true,
+      }],
     });
   });
 

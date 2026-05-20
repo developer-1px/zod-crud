@@ -90,6 +90,8 @@ cursor/scope options can use `query` to traverse or select JSONPath find results
 `orderPrimaryRange()` / `orderRanges()` and the pure `orderSelectionRange`
 helpers turn directional anchor/focus ranges into document-order `start`/`end`
 ranges for delete, format, copy, and paste commands.
+`spansForPointer()` projects those ranges into pointer-local spans for rendering
+and offset-based edits.
 `at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.

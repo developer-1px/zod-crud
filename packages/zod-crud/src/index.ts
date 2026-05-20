@@ -162,6 +162,8 @@ export type {
   SelectionOrderErrorCode,
   SelectionOrderOptions,
   SelectionPointOrderResult,
+  SelectionPointerSpan,
+  SelectionPointerSpansResult,
   SelectionRange,
   SelectionRangeInput,
   SelectionRangeOrderResult,
@@ -171,6 +173,7 @@ export type {
   SelectionScopeResult,
   SelectionScopeTarget,
   SelectionSource,
+  SelectionSpanOptions,
   SelectionType,
 } from "./core/selection/index.js";
 export { trackPointer } from "./core/track.js";
@@ -189,6 +192,7 @@ export {
   orderPrimarySelectionRange,
   orderSelectionRange,
   orderSelectionRanges,
+  selectionSpansForPointer,
   pointPointer,
   primaryPointer,
   primaryRange,

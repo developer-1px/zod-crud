@@ -29,6 +29,7 @@ import {
   selectedSource,
   selectSelectionScope,
   selectionSnapshot,
+  selectionSpansForPointer,
   selectionType,
   type OrderedSelectionRange,
   type OrderedSelectionRangeEntry,
@@ -45,6 +46,8 @@ import {
   type SelectionOrderErrorCode,
   type SelectionOrderOptions,
   type SelectionPointOrderResult,
+  type SelectionPointerSpan,
+  type SelectionPointerSpansResult,
   type SelectionRange,
   type SelectionRangeInput,
   type SelectionRangeOrderResult,
@@ -55,6 +58,7 @@ import {
   type SelectionScopeTarget,
   type SelectionSnap,
   type SelectionSource,
+  type SelectionSpanOptions,
   type SelectionType,
 } from "./core/selection/index.js";
 
@@ -74,6 +78,8 @@ export type {
   SelectionOrderErrorCode,
   SelectionOrderOptions,
   SelectionPointOrderResult,
+  SelectionPointerSpan,
+  SelectionPointerSpansResult,
   SelectionRange,
   SelectionRangeInput,
   SelectionRangeOrderResult,
@@ -82,6 +88,7 @@ export type {
   SelectionScopeOptions,
   SelectionScopeResult,
   SelectionScopeTarget,
+  SelectionSpanOptions,
   SelectionSource,
   SelectionSnap,
   SelectionType,
@@ -132,6 +139,7 @@ export interface SelectionState<T> extends SelectionSnap {
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
   orderRanges(options?: SelectionOrderOptions): SelectionRangesOrderResult;
+  spansForPointer(pointer: Pointer, options?: SelectionSpanOptions): SelectionPointerSpansResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
@@ -249,6 +257,9 @@ export function createSelection<T>(
     },
     orderRanges(orderOptions) {
       return orderSelectionRanges(snap, ops.state, orderOptions);
+    },
+    spansForPointer(pointer, spanOptions) {
+      return selectionSpansForPointer(snap, pointer, ops.state, spanOptions);
     },
     selectScope(scopeOptions) {
       const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);

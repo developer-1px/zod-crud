@@ -113,6 +113,19 @@ export interface SelectionOrderOptions {
   includeScope?: boolean;
 }
 
+export interface SelectionSpanOptions extends SelectionOrderOptions {
+  /**
+   * Pointer-local length for resolving `edge: "before" | "after"` into
+   * numeric offsets. String values use their current string length by default.
+   */
+  length?: number;
+  /**
+   * App-provided length resolver for non-string offset domains such as rich
+   * text block paths.
+   */
+  getLength?: (pointer: Pointer, value: unknown) => number | null | undefined;
+}
+
 export type SelectionCursorResult =
   | {
       ok: true;
@@ -204,6 +217,32 @@ export type SelectionRangesOrderResult =
       ranges: ReadonlyArray<OrderedSelectionRangeEntry>;
       primaryIndex: number;
       primaryRange: OrderedSelectionRangeEntry | null;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
+    };
+
+export interface SelectionPointerSpan {
+  pointer: Pointer;
+  rangeIndex: number;
+  primary: boolean;
+  start: JSONPoint;
+  end: JSONPoint;
+  startOffset: number | null;
+  endOffset: number | null;
+  collapsed: boolean;
+  full: boolean;
+}
+
+export type SelectionPointerSpansResult =
+  | {
+      ok: true;
+      pointer: Pointer;
+      spans: ReadonlyArray<SelectionPointerSpan>;
     }
   | {
       ok: false;
@@ -506,6 +545,64 @@ export function orderSelectionRanges(
     primaryIndex,
     primaryRange: primaryIndex < 0 ? null : sorted[primaryIndex]!,
   };
+}
+
+export function selectionSpansForPointer(
+  selection: SelectionSnap,
+  pointer: Pointer,
+  state: unknown,
+  options: SelectionSpanOptions = {},
+): SelectionPointerSpansResult {
+  if (tryParsePointer(pointer) === null) {
+    return {
+      ok: false,
+      code: "invalid_pointer",
+      reason: `invalid selection span pointer: ${pointer}`,
+      pointer,
+      index: null,
+    };
+  }
+  if (selection.selectionRanges.length === 0) return { ok: true, pointer, spans: [] };
+  const points = cursorPoints(state, options);
+  if (!points.ok) return { ...points, index: null };
+  if (!points.points.some((point) => pointPath(point) === pointer)) {
+    return { ok: true, pointer, spans: [] };
+  }
+
+  const ordered = orderSelectionRanges(selection, state, options);
+  if (!ordered.ok) return ordered;
+
+  const length = pointerLength(pointer, state, options);
+  const before = pointBefore(pointer);
+  const after = pointAfter(pointer);
+  const spans: SelectionPointerSpan[] = [];
+  for (const range of ordered.ranges) {
+    const endBefore = compareSelectionPoints(range.end, before, state, options);
+    if (!endBefore.ok) return { ...endBefore, index: range.index };
+    if (endBefore.order <= 0) continue;
+
+    const startAfter = compareSelectionPoints(range.start, after, state, options);
+    if (!startAfter.ok) return { ...startAfter, index: range.index };
+    if (startAfter.order >= 0) continue;
+
+    const start = pointPath(range.start) === pointer ? range.start : before;
+    const end = pointPath(range.end) === pointer ? range.end : after;
+    const clipped = compareSelectionPoints(start, end, state, options);
+    if (!clipped.ok) return { ...clipped, index: range.index };
+    spans.push({
+      pointer,
+      rangeIndex: range.index,
+      primary: range.primary,
+      start: clonePoint(start),
+      end: clonePoint(end),
+      startOffset: spanOffset(start, "start", length),
+      endOffset: spanOffset(end, "end", length),
+      collapsed: clipped.order === 0,
+      full: spanIsFull(pointer, start, end, length),
+    });
+  }
+
+  return { ok: true, pointer, spans };
 }
 
 type SelectionShapeAction =
@@ -1001,6 +1098,58 @@ function compareOrderedRanges(
   const end = compareSelectionPoints(left.end, right.end, state, options);
   if (end.ok && end.order !== 0) return end.order;
   return compareNumbers(left.index, right.index);
+}
+
+function pointBefore(pointer: Pointer): JSONPointObject {
+  return { path: pointer, edge: "before" };
+}
+
+function pointAfter(pointer: Pointer): JSONPointObject {
+  return { path: pointer, edge: "after" };
+}
+
+function isBeforeBoundary(point: JSONPoint, pointer: Pointer): boolean {
+  return typeof point !== "string" && point.path === pointer && point.edge === "before";
+}
+
+function isAfterBoundary(point: JSONPoint, pointer: Pointer): boolean {
+  return typeof point !== "string" && point.path === pointer && point.edge === "after";
+}
+
+function pointerLength(pointer: Pointer, state: unknown, options: SelectionSpanOptions): number | null {
+  if (options.length !== undefined) return normalizeLength(options.length);
+  const value = readPointerValue(state, pointer);
+  const resolved = options.getLength?.(pointer, value);
+  if (resolved !== undefined && resolved !== null) return normalizeLength(resolved);
+  return typeof value === "string" ? value.length : null;
+}
+
+function readPointerValue(state: unknown, pointer: Pointer): unknown {
+  const segments = tryParsePointer(pointer);
+  if (segments === null) return undefined;
+  const value = readAt(state, segments);
+  return value.ok ? value.value : undefined;
+}
+
+function normalizeLength(value: number): number | null {
+  return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : null;
+}
+
+function spanOffset(point: JSONPoint, side: "start" | "end", length: number | null): number | null {
+  if (typeof point === "string") return null;
+  if (typeof point !== "string" && point.offset !== undefined) {
+    return length === null ? Math.max(0, Math.trunc(point.offset)) : clampOffset(point.offset, length);
+  }
+  if (typeof point !== "string" && point.edge === "before") return 0;
+  if (typeof point !== "string" && point.edge === "after") return length;
+  if (length === null) return null;
+  return side === "start" ? 0 : length;
+}
+
+function spanIsFull(pointer: Pointer, start: JSONPoint, end: JSONPoint, length: number | null): boolean {
+  if (isBeforeBoundary(start, pointer) && isAfterBoundary(end, pointer)) return true;
+  if (length === null) return false;
+  return spanOffset(start, "start", length) === 0 && spanOffset(end, "end", length) === length;
 }
 
 function scopedCursorPoints(

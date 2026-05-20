@@ -24,6 +24,8 @@ import {
   type SelectionOrderErrorCode,
   type SelectionOrderOptions,
   type SelectionPointOrderResult,
+  type SelectionPointerSpan,
+  type SelectionPointerSpansResult,
   type SelectionRange,
   type SelectionRangeInput,
   type SelectionRangeOrderResult,
@@ -33,6 +35,7 @@ import {
   type SelectionScopeResult,
   type SelectionScopeTarget,
   type SelectionSource,
+  type SelectionSpanOptions,
   type SelectionType,
 } from "../selection.js";
 import type { JSONOps } from "../jsonOps.js";
@@ -55,6 +58,8 @@ export type {
   SelectionOrderErrorCode,
   SelectionOrderOptions,
   SelectionPointOrderResult,
+  SelectionPointerSpan,
+  SelectionPointerSpansResult,
   SelectionRange,
   SelectionRangeInput,
   SelectionRangeOrderResult,
@@ -64,6 +69,7 @@ export type {
   SelectionScopeResult,
   SelectionScopeTarget,
   SelectionSource,
+  SelectionSpanOptions,
   SelectionState,
   SelectionType,
   UseSelectionOptions,
