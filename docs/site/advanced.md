@@ -14,6 +14,18 @@ const result = applyPatch(Schema, state, operations);
 
 ::source{path="packages/zod-crud/src/core/patch/index.ts" title="applyPatch" lines="274-329"}
 
+## React 없는 같은 facade
+
+React 밖에서도 문서 단위 API는 `createJSONDocument`를 씁니다. 반환 표면은
+`useJSONDocument`와 같은 `value`, `ops`, `commands`, `can`, `history`, `selection` 묶음입니다.
+
+::source{path="packages/zod-crud/src/createJSONDocument.ts" title="headless document surface" lines="65-86"}
+
+구현은 React state 대신 closure state를 쓰지만, commit은 같은 schema gate, JSON Patch, selection tracking,
+history reducer를 통과합니다.
+
+::source{path="packages/zod-crud/src/createJSONDocument.ts" title="createJSONDocument" lines="97-117"}
+
 ## JSON Pointer
 
 문서 안의 위치는 Pointer로 표현됩니다.

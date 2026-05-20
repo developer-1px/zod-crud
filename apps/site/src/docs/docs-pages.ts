@@ -55,21 +55,18 @@ collected.sort((a, b) => a.order - b.order);
 
 // 빌드 타임 검증: 모든 ::source{path="..."}가 실제 파일을 가리키는가
 import { parseMarkdown } from "./markdown.js";
-import { packageSources } from "../routes/source-registry.js";
+import { resolveSourceReference } from "./source-references.js";
 {
-  const known = new Set([
-    ...Object.keys(packageSources).map((p) => `packages/zod-crud/src/${p}`),
-  ]);
-  // apps/site 내부 참조도 허용 (기존 패턴 유지)
-  const sitePrefixOK = (p: string) => p.startsWith("apps/site/");
   const broken: string[] = [];
   for (const page of collected) {
     const blocks = parseMarkdown(page.markdown);
     for (const b of blocks) {
       if (b.kind !== "source") continue;
-      const path = b.reference.path;
-      if (!known.has(path) && !sitePrefixOK(path)) {
-        broken.push(`${page.slug}.md → ${path}`);
+      try {
+        resolveSourceReference(b.reference);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "unknown source reference error";
+        broken.push(`${page.slug}.md → ${b.reference.path}:${b.reference.lines} — ${message}`);
       }
     }
   }

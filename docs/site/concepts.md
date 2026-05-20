@@ -123,9 +123,13 @@ doc.selection?.empty();
 낮은 레벨 hook은 이런 경우에 씁니다.
 
 - selection을 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
-- React 밖에서 core만 쓰고 싶을 때
+- React 밖에서 같은 문서 facade가 필요할 때 (`createJSONDocument`)
 - document facade 없이 `useJSON`만 가볍게 쓰고 싶을 때
 
 ## 타입 표면
 
 ::source{path="packages/zod-crud/src/hooks/useJSONDocument.ts" title="useJSONDocument types" lines="21-49"}
+
+React 없는 facade도 같은 표면 이름을 유지합니다.
+
+::source{path="packages/zod-crud/src/createJSONDocument.ts" title="createJSONDocument types" lines="65-86"}
