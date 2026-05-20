@@ -409,6 +409,11 @@ Generic editors need to ask what a path can contain. The target schema facade
 exposes read-only introspection without leaking Zod internals as the primary
 API.
 
+Standalone lower-level composition uses `createRead(args)` for current-value
+Pointer/JSONPath reads and `createSchema(args)` for serializable schema
+introspection. React re-exports the same factories and does not own a separate
+read/schema model.
+
 ```ts
 interface SchemaState<T> {
   at(path: Pointer, mode?: "value" | "insert"): SchemaQueryResult;

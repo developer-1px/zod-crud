@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless document, selection, clipboard, history, and draft facades.
-import { createClipboard, createDraft, createJSONDocument, createSelection, emptyHistory, historyCommit } from "zod-crud";
+// Headless document, selection, clipboard, history, read, schema, and draft facades.
+import { createClipboard, createDraft, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -83,6 +83,9 @@ Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,
 `historyMergeLast`, `historyCanUndo`, and `historyCanRedo` for standalone
 headless undo/redo stack state; React re-exports the same pure reducer
 primitives without adding a separate history model.
+Use `createRead(args)` and `createSchema(args)` for standalone headless
+read/query and schema introspection facades; React re-exports the same
+factories without adding separate read/schema models.
 Use `createDraft(doc)` for standalone headless draft/pending field state;
 `useDraft(doc)` and `useField(doc, pointer)` are React facades over it.
 `doc.commands.select(action)` defaults to the document's configured selection

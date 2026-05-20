@@ -85,9 +85,11 @@ export interface SchemaState<T> {
   describe(path: Pointer, mode?: SchemaPathMode): SchemaDescriptionResult;
 }
 
-export interface CreateSchemaStateArgs<S extends z.ZodType> {
+export interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
+
+export type CreateSchemaStateArgs<S extends z.ZodType> = CreateSchemaOptions<S>;
 
 interface ResolveSchemaOk {
   ok: true;
@@ -97,7 +99,7 @@ interface ResolveSchemaOk {
 type ResolveSchemaResult = ResolveSchemaOk | SchemaErrorResult;
 
 export function createSchemaState<S extends z.ZodType>(
-  args: CreateSchemaStateArgs<S>,
+  args: CreateSchemaOptions<S>,
 ): SchemaState<z.output<S>> {
   const rootSchema = args.schema;
 
@@ -157,6 +159,8 @@ export function createSchemaState<S extends z.ZodType>(
     },
   };
 }
+
+export const createSchema = createSchemaState;
 
 function resolveSchema(
   schema: z.ZodType,

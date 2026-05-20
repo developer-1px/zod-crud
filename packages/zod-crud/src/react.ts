@@ -30,7 +30,9 @@ export type {
   CheckResult,
   CheckViolation,
 } from "./check.js";
+export { createRead } from "./read.js";
 export type {
+  CreateReadOptions,
   EntriesResult,
   EntryKind,
   QueryResult,
@@ -38,7 +40,9 @@ export type {
   ReadFacade,
   ReadResult,
 } from "./read.js";
+export { createSchema } from "./schema.js";
 export type {
+  CreateSchemaOptions,
   SchemaDescription,
   SchemaDescriptionResult,
   SchemaErrorCode,

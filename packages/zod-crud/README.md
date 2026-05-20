@@ -219,6 +219,9 @@ document history uses.
 
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
+For standalone reads and schema introspection, use `createRead(args)` and
+`createSchema(args)` with the same headless implementations used by
+`createJSONDocument`.
 
 For lower-level composition, use `createSelection(ops)`, `createClipboard(args)`,
 and `createDraft(doc)` headlessly, or `useSelection(ops)` / `useDraft(doc)` in React. See the
@@ -307,6 +310,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `DraftState<T>`, `DraftFieldState<T>`, `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` from `zod-crud/react` | draft/pending field types |
 | `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
 | `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` from `zod-crud/react` | same headless history primitives re-exported from the React entrypoint |
+| `createRead(args)`, `ReadFacade`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `CreateReadOptions<S>` | standalone headless read/query facade |
+| `createSchema(args)`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `CreateSchemaOptions<S>` | standalone serializable schema introspection facade |
+| `createRead(args)`, `ReadFacade`, `CreateReadOptions<S>`, `createSchema(args)`, `SchemaState<T>`, `CreateSchemaOptions<S>` from `zod-crud/react` | same headless read/schema factories re-exported from the React entrypoint |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
