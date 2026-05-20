@@ -10,6 +10,7 @@ import {
   moveSelectionCursor,
   orderPrimarySelectionRange,
   orderSelectionRange,
+  orderSelectionRanges,
   primaryPointer,
   resolveSelectionCursor,
   resolveSelectionScope,
@@ -313,6 +314,75 @@ describe("createSelection", () => {
         start: { path: "/items/0/name", offset: 0 },
         end: { path: "/items/1/name", offset: 1 },
       },
+    });
+  });
+
+  test("orders all selection ranges by document order while preserving original indexes", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "multiple",
+      initial: [
+        { anchor: "/items/2/name", focus: "/items/1/name" },
+        { anchor: { path: "/items/0/name", offset: 1 }, focus: { path: "/items/0/name", offset: 0 } },
+        "/items/1/id",
+      ],
+    });
+
+    const ordered = orderSelectionRanges(selection.snapshot(), initial);
+    expect(ordered).toMatchObject({
+      ok: true,
+      primaryIndex: 1,
+      ranges: [
+        {
+          index: 1,
+          primary: false,
+          direction: "backward",
+          start: { path: "/items/0/name", offset: 0 },
+          end: { path: "/items/0/name", offset: 1 },
+        },
+        {
+          index: 2,
+          primary: true,
+          start: "/items/1/id",
+          end: "/items/1/id",
+        },
+        {
+          index: 0,
+          primary: false,
+          direction: "backward",
+          start: "/items/1/name",
+          end: "/items/2/name",
+        },
+      ],
+      primaryRange: {
+        index: 2,
+        primary: true,
+        start: "/items/1/id",
+      },
+    });
+
+    const visible = selection.orderRanges({
+      points: [
+        { path: "/items/0/name", offset: 0 },
+        { path: "/items/0/name", offset: 1 },
+        "/items/1/id",
+        "/items/1/name",
+        "/items/2/name",
+      ],
+    });
+    expect(visible).toMatchObject({
+      ok: true,
+      ranges: [
+        { index: 1, start: { path: "/items/0/name", offset: 0 } },
+        { index: 2, start: "/items/1/id" },
+        { index: 0, start: "/items/1/name" },
+      ],
+    });
+
+    expect(orderSelectionRanges(EMPTY_SELECTION, initial)).toMatchObject({
+      ok: false,
+      code: "empty_selection",
+      index: null,
     });
   });
 

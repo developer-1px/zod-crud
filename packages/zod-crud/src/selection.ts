@@ -17,6 +17,7 @@ import {
   isSelected,
   moveSelectionCursor,
   orderPrimarySelectionRange,
+  orderSelectionRanges,
   primaryPointer,
   primaryRange,
   rangeCount,
@@ -30,6 +31,7 @@ import {
   selectionSnapshot,
   selectionType,
   type OrderedSelectionRange,
+  type OrderedSelectionRangeEntry,
   type JSONPoint,
   type SelectionAction,
   type SelectionContext,
@@ -46,6 +48,7 @@ import {
   type SelectionRange,
   type SelectionRangeInput,
   type SelectionRangeOrderResult,
+  type SelectionRangesOrderResult,
   type SelectionScopeErrorCode,
   type SelectionScopeOptions,
   type SelectionScopeResult,
@@ -58,6 +61,7 @@ import {
 export type {
   JSONPoint,
   OrderedSelectionRange,
+  OrderedSelectionRangeEntry,
   SelectionAction,
   SelectionContext,
   SelectionCursorDirection,
@@ -73,6 +77,7 @@ export type {
   SelectionRange,
   SelectionRangeInput,
   SelectionRangeOrderResult,
+  SelectionRangesOrderResult,
   SelectionScopeErrorCode,
   SelectionScopeOptions,
   SelectionScopeResult,
@@ -126,6 +131,7 @@ export interface SelectionState<T> extends SelectionSnap {
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
+  orderRanges(options?: SelectionOrderOptions): SelectionRangesOrderResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
@@ -240,6 +246,9 @@ export function createSelection<T>(
     },
     orderPrimaryRange(orderOptions) {
       return orderPrimarySelectionRange(snap, ops.state, orderOptions);
+    },
+    orderRanges(orderOptions) {
+      return orderSelectionRanges(snap, ops.state, orderOptions);
     },
     selectScope(scopeOptions) {
       const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);

@@ -358,6 +358,11 @@ interface OrderedSelectionRange {
   collapsed: boolean;
 }
 
+interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
+  index: number;
+  primary: boolean;
+}
+
 type SelectionPointOrderResult =
   | {
       ok: true;
@@ -382,6 +387,21 @@ type SelectionRangeOrderResult =
       code: SelectionOrderErrorCode;
       reason: string;
       pointer: Pointer | null;
+    };
+
+type SelectionRangesOrderResult =
+  | {
+      ok: true;
+      ranges: ReadonlyArray<OrderedSelectionRangeEntry>;
+      primaryIndex: number;
+      primaryRange: OrderedSelectionRangeEntry | null;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
     };
 
 interface SelectionState<T> {
@@ -416,6 +436,7 @@ interface SelectionState<T> {
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
+  orderRanges(options?: SelectionOrderOptions): SelectionRangesOrderResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): Omit<SelectionScopeResult, "selection">;
   selectRanges(
@@ -466,8 +487,10 @@ anchor/focus endpoints into document-order `start`/`end` ranges. They use JSON
 source-order by default, JSONPath `query` order when provided, or explicit
 visible `points` order for folded/virtualized UIs. Same-path offsets compare by
 numeric order, and an ancestor point with `edge: "after"` sorts after its
-descendants. `SelectionState` exposes the same behavior as
-`orderPrimaryRange(options?)`.
+descendants. `orderSelectionRanges` sorts every range by `start` while
+preserving original `selectionRanges` indexes and the primary flag.
+`SelectionState` exposes the same behavior as `orderPrimaryRange(options?)` and
+`orderRanges(options?)`.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.

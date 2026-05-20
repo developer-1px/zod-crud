@@ -87,9 +87,9 @@ dry-run guard behind `can`, including JSONPath find syntax checks, JSONPath
 multi-match replace checks, and selection cursor/scope guards (`moveCursor`,
 `extendCursor`, `selectScope`) for keyboard and select-visible UI. Selection
 cursor/scope options can use `query` to traverse or select JSONPath find results.
-`orderPrimaryRange()` and the pure `orderSelectionRange` helpers turn
-directional anchor/focus ranges into document-order `start`/`end` ranges for
-delete, format, copy, and paste commands.
+`orderPrimaryRange()` / `orderRanges()` and the pure `orderSelectionRange`
+helpers turn directional anchor/focus ranges into document-order `start`/`end`
+ranges for delete, format, copy, and paste commands.
 `at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.

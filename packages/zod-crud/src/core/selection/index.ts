@@ -179,6 +179,13 @@ export interface OrderedSelectionRange {
   collapsed: boolean;
 }
 
+export interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
+  /** Original `selectionRanges` index before document-order sorting. */
+  index: number;
+  /** True when this entry came from `selection.primaryIndex`. */
+  primary: boolean;
+}
+
 export type SelectionRangeOrderResult =
   | {
       ok: true;
@@ -189,6 +196,21 @@ export type SelectionRangeOrderResult =
       code: SelectionOrderErrorCode;
       reason: string;
       pointer: Pointer | null;
+    };
+
+export type SelectionRangesOrderResult =
+  | {
+      ok: true;
+      ranges: ReadonlyArray<OrderedSelectionRangeEntry>;
+      primaryIndex: number;
+      primaryRange: OrderedSelectionRangeEntry | null;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
     };
 
 export interface SelectionSnap {
@@ -448,6 +470,42 @@ export function orderPrimarySelectionRange(
     };
   }
   return orderSelectionRange(range, state, options);
+}
+
+export function orderSelectionRanges(
+  selection: SelectionSnap,
+  state: unknown,
+  options: SelectionOrderOptions = {},
+): SelectionRangesOrderResult {
+  if (selection.selectionRanges.length === 0) {
+    return {
+      ok: false,
+      code: "empty_selection",
+      reason: "selection ranges are empty",
+      pointer: null,
+      index: null,
+    };
+  }
+
+  const ranges: OrderedSelectionRangeEntry[] = [];
+  for (let index = 0; index < selection.selectionRanges.length; index += 1) {
+    const ordered = orderSelectionRange(selection.selectionRanges[index]!, state, options);
+    if (!ordered.ok) return { ...ordered, index };
+    ranges.push({
+      ...ordered.range,
+      index,
+      primary: index === selection.primaryIndex,
+    });
+  }
+
+  const sorted = ranges.sort((left, right) => compareOrderedRanges(left, right, state, options));
+  const primaryIndex = sorted.findIndex((range) => range.primary);
+  return {
+    ok: true,
+    ranges: sorted,
+    primaryIndex,
+    primaryRange: primaryIndex < 0 ? null : sorted[primaryIndex]!,
+  };
 }
 
 type SelectionShapeAction =
@@ -930,6 +988,19 @@ function samePathPointRank(point: JSONPoint): { position: number; edge: number }
 
 function compareNumbers(left: number, right: number): -1 | 0 | 1 {
   return left < right ? -1 : left > right ? 1 : 0;
+}
+
+function compareOrderedRanges(
+  left: OrderedSelectionRangeEntry,
+  right: OrderedSelectionRangeEntry,
+  state: unknown,
+  options: SelectionOrderOptions,
+): -1 | 0 | 1 {
+  const start = compareSelectionPoints(left.start, right.start, state, options);
+  if (start.ok && start.order !== 0) return start.order;
+  const end = compareSelectionPoints(left.end, right.end, state, options);
+  if (end.ok && end.order !== 0) return end.order;
+  return compareNumbers(left.index, right.index);
 }
 
 function scopedCursorPoints(
