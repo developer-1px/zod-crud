@@ -139,6 +139,7 @@ export {
 export type {
   ClipboardItemMap,
   ClipboardItemOptions,
+  ClipboardSource,
   CopyError,
   CopyOk,
   CopyResult,

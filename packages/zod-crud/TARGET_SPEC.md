@@ -86,15 +86,18 @@ Current pure verbs (`copy`, `cut`, `paste`) remain exported. The current facade
 also includes a headless JSON clipboard buffer.
 
 ```ts
+type ClipboardSource = Pointer | ReadonlyArray<Pointer>;
+
 interface ClipboardState<T> {
   readonly hasData: boolean;
   readonly source: Pointer | null;
+  readonly sources: ReadonlyArray<Pointer> | null;
   read(): ClipboardReadResult;
   write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
   clear(): void;
 
-  copy(source: Pointer): CopyOk | CopyError;
-  cut(source: Pointer): CutOk<T> | CutError;
+  copy(source: ClipboardSource): CopyOk | CopyError;
+  cut(source: ClipboardSource): CutOk<T> | CutError;
   paste(target: Pointer, mode?: PasteMode): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
@@ -102,10 +105,10 @@ interface ClipboardState<T> {
 
 Semantics:
 
-- The buffer stores a JSON fragment and optional source metadata.
-- `copy(source)` reads from document state and writes buffer.
-- `cut(source)` writes buffer and commits the remove patch atomically.
-- `paste(target, mode)` reads buffer and commits the paste patch.
+- The buffer stores a JSON fragment and optional source/source-list metadata.
+- `copy(source)` reads one `Pointer` or a `Pointer[]` from document state and writes buffer.
+- `cut(source)` writes buffer and commits one remove patch atomically; multi-source cut sorts remove ops to avoid array index shift.
+- `paste(target, mode)` reads buffer and commits the paste patch. Multi-source array payloads spread into array targets.
 - Failed paste does not clear or mutate the buffer.
 - Failed cut does not write buffer and does not mutate document state.
 - DOM/system clipboard integration remains user code.
@@ -133,6 +136,7 @@ type CheckResult =
         | "rekey_failed"
         | "missing_new_key"
         | "key_conflict"
+        | "empty_selection"
         | "empty_stack"
         | "apply_failed";
       reason?: string;
@@ -144,9 +148,9 @@ interface Check<T> {
   move(from: Pointer, to: Pointer): CheckResult;
   duplicate(source: Pointer, opts?: DuplicateOpts): CheckResult;
   replace(path: Pointer, value: unknown): CheckResult;
-  cut(source: Pointer): CheckResult;
-  copy(source: Pointer): CheckResult;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode): CheckResult;
+  cut(source: ClipboardSource): CheckResult;
+  copy(source: ClipboardSource): CheckResult;
+  paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
 
   readonly undo: CheckResult;

@@ -16,6 +16,7 @@ export type {
   ClipboardPasteResult,
   ClipboardReadOk,
   ClipboardReadResult,
+  ClipboardSource,
   ClipboardState,
   ClipboardWriteOptions,
 } from "./clipboard.js";

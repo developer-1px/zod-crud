@@ -67,8 +67,8 @@ document surface:
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `primaryRange` is the active range, `primaryPointer` is the active focus path for Pointer commands, `caret` is the collapsed cursor point, `caretPointer` is its path, and `selectedPointers` is the item-selection projection |
-| `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut`/`paste` mutate through the same document facade while system clipboard calls stay user code |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `primaryRange` is the active range, `primaryPointer` is the active focus path for scalar Pointer commands, `caret` is the collapsed cursor point, `caretPointer` is its path, and `selectedPointers` can feed multi-source `copy`/`cut` |
+| `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]`, multi-source payloads are JSON arrays, and `paste` spreads multi-source buffers into array targets while system clipboard calls stay user code |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through
@@ -162,6 +162,10 @@ if (copied.ok) {
 
 const selected = doc.selection?.primaryPointer;
 if (selected) doc.commands.copy(selected);
+
+const sources = doc.selection?.selectedPointers ?? [];
+const multi = doc.commands.copy(sources);
+if (multi.ok) doc.commands.paste(multi.payload, "/items/-", "into", { spread: true });
 ```
 
 ### Check

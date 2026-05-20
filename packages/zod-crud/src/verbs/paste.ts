@@ -1,6 +1,5 @@
 // verbs/paste — Clipboard 기둥. payload + target/mode → RFC 6902 add patch.
 // (schema, state, payload, target, mode) → { next, patch }.
-// hooks/useJSONDocument 가 selection 을 자동 주입 (ADR-0002 §0.5).
 
 import type * as z from "zod";
 import type { JSONPatchOperation } from "../core/patch/index.js";
@@ -36,6 +35,8 @@ export interface PasteDuMismatch {
 
 export interface PasteOptions {
   rekey?: RekeyOptions;
+  /** Array payload 를 array target 에 여러 add op 로 펼친다. Multi-source clipboard paste 에 사용. */
+  spread?: boolean;
 }
 
 export function paste<S extends z.ZodType>(
@@ -49,15 +50,18 @@ export function paste<S extends z.ZodType>(
   const rekeyed = tryRekeyPayload(payload, state, options.rekey);
   if (!rekeyed.ok) return rekeyed;
   const nextPayload = rekeyed.payload;
-  const mismatch = findDuMismatch(schema, nextPayload, target, mode);
+  const spread = shouldSpread(nextPayload, target, mode, options);
+  const mismatch = spread
+    ? nextPayload.map((item) => findDuMismatch(schema, item, target, mode)).find((item): item is PasteDuMismatch => item !== null) ?? null
+    : findDuMismatch(schema, nextPayload, target, mode);
   if (mismatch) return mismatch;
 
-  const op = buildPasteOp(nextPayload, target, mode);
-  const r = preFlight(schema, state, [op]);
+  const patch = spread ? buildSpreadPasteOps(nextPayload, target, mode) : [buildPasteOp(nextPayload, target, mode)];
+  const r = preFlight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.draft, patch: [op] };
+  return { ok: true, next: r.draft, patch };
 }
 
 function findDuMismatch<S extends z.ZodType>(
@@ -130,4 +134,41 @@ function buildPasteOp(payload: unknown, target: Pointer, mode: PasteMode): JSONP
       // collapsed selection / 빈 위치 — add 그대로. 배열의 `/-` 도 자연 처리.
       return { op: "add", path: target, value: payload };
   }
+}
+
+function shouldSpread(
+  payload: unknown,
+  target: Pointer,
+  mode: PasteMode,
+  options: PasteOptions,
+): payload is unknown[] {
+  return options.spread === true
+    && mode !== "replace"
+    && Array.isArray(payload)
+    && isArrayInsertionPath(insertionTarget(target, mode));
+}
+
+function buildSpreadPasteOps(payload: ReadonlyArray<unknown>, target: Pointer, mode: PasteMode): JSONPatchOperation[] {
+  const path = insertionTarget(target, mode);
+  return payload.map((value, index) => ({
+    op: "add",
+    path: offsetInsertionPath(path, index),
+    value,
+  }));
+}
+
+function insertionTarget(target: Pointer, mode: PasteMode): Pointer {
+  if (mode !== "after") return target;
+  const m = target.match(/^(.*\/)([0-9]+)$/);
+  return m ? m[1] + String(Number(m[2]) + 1) : target;
+}
+
+function offsetInsertionPath(path: Pointer, offset: number): Pointer {
+  if (offset === 0 || path.endsWith("/-")) return path;
+  const m = path.match(/^(.*\/)([0-9]+)$/);
+  return m ? m[1] + String(Number(m[2]) + offset) : path;
+}
+
+function isArrayInsertionPath(path: Pointer): boolean {
+  return /\/(?:-|0|[1-9][0-9]*)$/.test(path);
 }

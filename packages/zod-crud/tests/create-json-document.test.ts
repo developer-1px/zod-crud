@@ -199,6 +199,72 @@ describe("createJSONDocument — headless facade", () => {
     });
   });
 
+  test("selection selectedPointers can drive multi-source headless clipboard commands", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
+    });
+
+    const sources = doc.selection?.selectedPointers ?? [];
+    const copied = doc.commands.copy(sources);
+
+    expect(copied).toMatchObject({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+
+    const cut = doc.commands.cut(sources);
+
+    expect(cut).toMatchObject({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      sources: ["/items/0", "/items/1"],
+    });
+    expect(doc.value.items).toEqual([]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("doc.clipboard accepts multi-source copy/cut buffers", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const copied = doc.clipboard.copy(["/items/0", "/items/1"]);
+
+    expect(copied.ok).toBe(true);
+    expect(doc.clipboard.source).toBe("/items/0");
+    expect(doc.clipboard.sources).toEqual(["/items/0", "/items/1"]);
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+    });
+    expect(doc.clipboard.toItems({ tsv: true })["text/plain"]).toBe("id\tname\na\tA\nb\tB");
+
+    const pasted = doc.clipboard.paste("/items/-");
+
+    expect(pasted.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a", "b"]);
+    doc.commands.undo();
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
+
+    const cut = doc.clipboard.cut(["/items/0", "/items/1"]);
+
+    expect(cut.ok).toBe(true);
+    expect(doc.value.items).toEqual([]);
+    expect(doc.clipboard.sources).toEqual(["/items/0", "/items/1"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
   test("transaction collapses multiple ops into one undo entry", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

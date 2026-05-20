@@ -45,7 +45,7 @@ describe("verbs/ closure — 10 verbs ↔ 파일 1:1", () => {
     const fs = await import("node:fs");
     const src = fs.readFileSync(resolve(root, "src/commands/buildCommands.ts"), "utf-8");
     for (const v of expectedVerbs) {
-      // method 시그니처 (ex. `cut(source: Pointer)`)
+      // method 시그니처 (ex. `cut(source: ClipboardSource)`)
       const reMethod = new RegExp(`^\\s*${v}\\s*\\(`, "m");
       expect(reMethod.test(src), `Commands<T> missing method ${v}`).toBe(true);
     }

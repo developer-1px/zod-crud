@@ -31,7 +31,27 @@ describe("verbs/copy", () => {
     if (!r.ok) return;
     expect(r.payload).toEqual({ id: "a", name: "A" });
     expect(r.payload).not.toBe(initial.items[0]); // deep clone
+    expect(r.sources).toEqual(["/items/0"]);
     expect(initial.items.length).toBe(2); // unchanged
+  });
+
+  test("selectedPointers 배열을 JSON array payload 로 추출한다", () => {
+    const r = copy(initial, ["/items/0", "/items/1"]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toEqual([
+      { id: "a", name: "A" },
+      { id: "b", name: "B" },
+    ]);
+    expect(r.source).toBe("/items/0");
+    expect(r.sources).toEqual(["/items/0", "/items/1"]);
+    expect((r.payload as unknown[])[0]).not.toBe(initial.items[0]);
+  });
+
+  test("empty selectedPointers 배열은 structured error", () => {
+    const r = copy(initial, []);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("empty_selection");
   });
 
   test("path_not_found 시 ok: false", () => {
@@ -89,6 +109,47 @@ describe("verbs/cut", () => {
     expect(r.payload).toEqual({ id: "a", name: "A" });
     expect(r.next.items).toEqual([{ id: "b", name: "B" }]);
     expect(r.patch).toEqual([{ op: "remove", path: "/items/0" }]);
+    expect(r.sources).toEqual(["/items/0"]);
+  });
+
+  test("selectedPointers 배열 cut 은 payload 순서를 보존하고 remove patch 는 index shift 없이 정렬한다", () => {
+    const state = {
+      items: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+        { id: "c", name: "C" },
+      ],
+      meta: { foo: "bar" },
+    };
+
+    const r = cut(Schema, state, ["/items/0", "/items/1"]);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toEqual([
+      { id: "a", name: "A" },
+      { id: "b", name: "B" },
+    ]);
+    expect(r.source).toBe("/items/0");
+    expect(r.sources).toEqual(["/items/0", "/items/1"]);
+    expect(r.patch).toEqual([
+      { op: "remove", path: "/items/1" },
+      { op: "remove", path: "/items/0" },
+    ]);
+    expect(r.next.items).toEqual([{ id: "c", name: "C" }]);
+  });
+
+  test("multi cut schema 위반 시 payload/patch commit 후보를 거부한다", () => {
+    const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
+    const r = cut(NonEmpty, { items: ["a", "b", "c"] }, ["/items/0", "/items/1"]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("schema_violation");
+  });
+
+  test("empty selectedPointers 배열 cut 은 structured error", () => {
+    const r = cut(Schema, initial, []);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("empty_selection");
   });
 
   test("schema 위반 시 둘 다 안 일어남 (preFlight gate)", () => {
@@ -120,6 +181,36 @@ describe("verbs/paste", () => {
     if (!r.ok) return;
     expect(r.next.items).toHaveLength(3);
     expect(r.next.items[2]).toEqual({ id: "c", name: "C" });
+  });
+
+  test("spread option inserts multi-source array payload in order", () => {
+    const r = paste(Schema, initial, [
+      { id: "c", name: "C" },
+      { id: "d", name: "D" },
+    ], "/items/-", "into", { spread: true });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.next.items.map((item) => item.id)).toEqual(["a", "b", "c", "d"]);
+    expect(r.patch).toEqual([
+      { op: "add", path: "/items/-", value: { id: "c", name: "C" } },
+      { op: "add", path: "/items/-", value: { id: "d", name: "D" } },
+    ]);
+  });
+
+  test("spread option offsets numeric insertion paths", () => {
+    const r = paste(Schema, initial, [
+      { id: "x", name: "X" },
+      { id: "y", name: "Y" },
+    ], "/items/0", "after", { spread: true });
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.next.items.map((item) => item.id)).toEqual(["a", "x", "y", "b"]);
+    expect(r.patch).toEqual([
+      { op: "add", path: "/items/1", value: { id: "x", name: "X" } },
+      { op: "add", path: "/items/2", value: { id: "y", name: "Y" } },
+    ]);
   });
 
   test("after mode 가 다음 인덱스로 add", () => {

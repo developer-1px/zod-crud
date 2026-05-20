@@ -578,7 +578,7 @@ try {
     return `import { ${name} } from "zod-crud/verbs/${name}";`;
   });
   const verbTypeImportLines = [
-    'import type { ClipboardItemMap, ClipboardItemOptions, CopyError, CopyOk, CopyResult } from "zod-crud/verbs/copy";',
+    'import type { ClipboardItemMap, ClipboardItemOptions, ClipboardSource, CopyError, CopyOk, CopyResult } from "zod-crud/verbs/copy";',
     'import type { CutError, CutOk } from "zod-crud/verbs/cut";',
     'import type { DuplicateError, DuplicateOk, DuplicateOpts } from "zod-crud/verbs/duplicate";',
     'import type { FindError, FindOk } from "zod-crud/verbs/find";',
@@ -677,7 +677,7 @@ try {
       ...verbImportLines,
       ...verbTypeImportLines,
       ...verbFunctionChecks,
-      'type VerbSubpathTypes = [ClipboardItemMap, ClipboardItemOptions, CopyError, CopyOk, CopyResult, CutError, CutOk<{ name: string }>, DuplicateError, DuplicateOk<{ name: string }>, DuplicateOpts, FindError, FindOk, MoveError, MoveOk<{ name: string }>, MoveResult<{ name: string }>, PasteDuMismatch, PasteError, PasteMode, PasteOk<{ name: string }>, PasteOptions, RedoResult<{ name: string }, UndoEntry>, ReplaceError, ReplaceOk<{ name: string }>, SelectionAction, SelectionMode, SelectionSnap, UndoEntry, UndoNoop, UndoResult<{ name: string }, UndoEntry>, RekeyContext, RekeyStrategy];',
+      'type VerbSubpathTypes = [ClipboardItemMap, ClipboardItemOptions, ClipboardSource, CopyError, CopyOk, CopyResult, CutError, CutOk<{ name: string }>, DuplicateError, DuplicateOk<{ name: string }>, DuplicateOpts, FindError, FindOk, MoveError, MoveOk<{ name: string }>, MoveResult<{ name: string }>, PasteDuMismatch, PasteError, PasteMode, PasteOk<{ name: string }>, PasteOptions, RedoResult<{ name: string }, UndoEntry>, ReplaceError, ReplaceOk<{ name: string }>, SelectionAction, SelectionMode, SelectionSnap, UndoEntry, UndoNoop, UndoResult<{ name: string }, UndoEntry>, RekeyContext, RekeyStrategy];',
       'declare const verbSubpathTypes: VerbSubpathTypes;',
       'verbSubpathTypes satisfies readonly unknown[];',
       'const options: RekeyOptions = { fields: ["id"], strategy: "suffix" };',
@@ -714,9 +714,9 @@ try {
     [
       'import * as z from "zod";',
       'import { applyOperation, applyPatch, tryParsePointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, type CutError, type DuplicateError, type JSONPatchOperation, type ParseError, type ParseResult, type PasteError, type PatchRequest, type Pointer, type PreFlightErrorCode, type RekeyResult, type ReplaceError } from "zod-crud";',
-      'import type { ApplyResult, ClipboardItemMap, ClipboardItemOptions, CopyError, CopyOk, CopyResult, CutOk, DuplicateOk, DuplicateOpts, ErrorCode, FindError, FindOk, JSONLoadOptions, JSONOps, JSONResult, MoveError, MoveOk, MoveResult, PasteDuMismatch, PasteMode, PasteOk, PasteOptions, PointerOf, RecordedStep, Recording, RedoResult, RekeyContext, RekeyOptions, RekeyStrategy, ReplayOptions, SelectionAction, SelectionMode, SelectionSnap, SelectionType, UndoEntry, UndoNoop, UndoResult, UseJSONOptions, ValueAt } from "zod-crud";',
+      'import type { ApplyResult, ClipboardItemMap, ClipboardItemOptions, ClipboardSource, CopyError, CopyOk, CopyResult, CutOk, DuplicateOk, DuplicateOpts, ErrorCode, FindError, FindOk, JSONLoadOptions, JSONOps, JSONResult, MoveError, MoveOk, MoveResult, PasteDuMismatch, PasteMode, PasteOk, PasteOptions, PointerOf, RecordedStep, Recording, RedoResult, RekeyContext, RekeyOptions, RekeyStrategy, ReplayOptions, SelectionAction, SelectionMode, SelectionSnap, SelectionType, UndoEntry, UndoNoop, UndoResult, UseJSONOptions, ValueAt } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
-      'type PublicRootTypes = [ApplyResult<typeof schema>, ClipboardItemMap, ClipboardItemOptions, CopyError, CopyOk, CopyResult, CutOk<z.output<typeof schema>>, DuplicateOk<z.output<typeof schema>>, DuplicateOpts, ErrorCode, FindError, FindOk, JSONLoadOptions, JSONOps<z.output<typeof schema>>, JSONResult, MoveError, MoveOk<z.output<typeof schema>>, MoveResult<z.output<typeof schema>>, PasteDuMismatch, PasteMode, PasteOk<z.output<typeof schema>>, PasteOptions, PointerOf<z.output<typeof schema>>, RecordedStep, Recording<z.output<typeof schema>>, RedoResult<z.output<typeof schema>, UndoEntry>, RekeyContext, RekeyOptions, RekeyStrategy, ReplayOptions, SelectionAction, SelectionMode, SelectionSnap, SelectionType, UndoEntry, UndoNoop, UndoResult<z.output<typeof schema>, UndoEntry>, UseJSONOptions, ValueAt<z.output<typeof schema>, "/name">];',
+      'type PublicRootTypes = [ApplyResult<typeof schema>, ClipboardItemMap, ClipboardItemOptions, ClipboardSource, CopyError, CopyOk, CopyResult, CutOk<z.output<typeof schema>>, DuplicateOk<z.output<typeof schema>>, DuplicateOpts, ErrorCode, FindError, FindOk, JSONLoadOptions, JSONOps<z.output<typeof schema>>, JSONResult, MoveError, MoveOk<z.output<typeof schema>>, MoveResult<z.output<typeof schema>>, PasteDuMismatch, PasteMode, PasteOk<z.output<typeof schema>>, PasteOptions, PointerOf<z.output<typeof schema>>, RecordedStep, Recording<z.output<typeof schema>>, RedoResult<z.output<typeof schema>, UndoEntry>, RekeyContext, RekeyOptions, RekeyStrategy, ReplayOptions, SelectionAction, SelectionMode, SelectionSnap, SelectionType, UndoEntry, UndoNoop, UndoResult<z.output<typeof schema>, UndoEntry>, UseJSONOptions, ValueAt<z.output<typeof schema>, "/name">];',
       'declare const publicRootTypes: PublicRootTypes;',
       'publicRootTypes satisfies readonly unknown[];',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',
@@ -740,7 +740,7 @@ try {
       'declare const preFlightCode: PreFlightErrorCode;',
       'preFlightCode satisfies "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "not_serializable" | "preFlight_failed";',
       'declare const cutError: CutError;',
-      'cutError.code satisfies "path_not_found" | "not_serializable" | "invalid_pointer" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
+      'cutError.code satisfies "empty_selection" | "path_not_found" | "not_serializable" | "invalid_pointer" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'declare const pasteError: PasteError;',
       'pasteError.code satisfies "not_serializable" | "rekey_failed" | "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'type RootRekeyFailure = Extract<RekeyResult, { ok: false }>;',

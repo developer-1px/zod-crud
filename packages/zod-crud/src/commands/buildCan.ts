@@ -7,17 +7,18 @@
 
 import type * as z from "zod";
 import type { Pointer } from "../core/pointer/index.js";
-import type { PasteMode } from "../verbs/paste.js";
+import type { PasteMode, PasteOptions } from "../verbs/paste.js";
 import type { DuplicateOpts } from "../verbs/duplicate.js";
+import type { ClipboardSource } from "../verbs/copy.js";
 import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 
 export interface Can<T> {
   move(from: Pointer, to: Pointer): boolean;
   duplicate(source: Pointer, opts?: DuplicateOpts): boolean;
   replace(path: Pointer, value: unknown): boolean;
-  cut(source: Pointer): boolean;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode): boolean;
-  copy(source: Pointer): boolean;
+  cut(source: ClipboardSource): boolean;
+  paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): boolean;
+  copy(source: ClipboardSource): boolean;
 
   readonly undo: boolean;
   readonly redo: boolean;
@@ -34,7 +35,7 @@ export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.outp
     duplicate(source, opts) { return check.duplicate(source, opts).ok; },
     replace(path, value) { return check.replace(path, value).ok; },
     cut(source) { return check.cut(source).ok; },
-    paste(payload, target, mode = "into") { return check.paste(payload, target, mode).ok; },
+    paste(payload, target, mode = "into", options = {}) { return check.paste(payload, target, mode, options).ok; },
     copy(source) { return check.copy(source).ok; },
 
     get undo() { return check.undo.ok; },
