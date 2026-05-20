@@ -228,7 +228,7 @@ selection actions and automatic op tracking.
 `doc.commands.moveCursor(direction, options?)`, and
 `doc.commands.extendCursor(direction, options?)` default to the document's
 configured selection mode, so headless and React facades preserve the same
-multi-select behavior.
+multi-select behavior and the full `SelectionSnap`, including `context`.
 `doc.commit(patch, { selection, label, origin, mergeKey })` applies an RFC 6902
 patch, overrides mutation auto-selection with the provided final `SelectionAction`
 or `SelectionSnap`, and records data + final selection in one history entry.

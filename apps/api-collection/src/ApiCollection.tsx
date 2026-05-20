@@ -52,7 +52,7 @@ export function ApiCollection() {
     setTimeout(() => setToast((t) => (t === msg ? "" : t)), 2400);
   }, []);
 
-  const selectedPointers = doc.selection?.ranges ?? [];
+  const selectedPointers = doc.selection?.selectedPointers ?? [];
   const selectedItems = useMemo(
     () => selectedPointers.map((p) => getAt(doc.value, p)).filter((x): x is Item => !!x),
     [selectedPointers, doc.value],
@@ -61,7 +61,7 @@ export function ApiCollection() {
   // ── selection ────────────────────────────────────────────────────────────
   const onClickRow = useCallback((pointer: string, e: React.MouseEvent) => {
     if (!doc.selection) return;
-    if (e.metaKey || e.ctrlKey) doc.selection.toggleRange(pointer);
+    if (e.metaKey || e.ctrlKey) doc.selection.togglePointer(pointer);
     else if (e.shiftKey && doc.selection.anchor) doc.selection.setBaseAndExtent(doc.selection.anchor, pointer);
     else doc.selection.collapse(pointer);
   }, [doc.selection]);

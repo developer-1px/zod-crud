@@ -668,7 +668,7 @@ export interface HeadlessSelectionState<T> extends SelectionState<T> {
 4. **Anchor/focus tracking**: 각 range 의 `anchor`/`focus` path 도 같은 규칙으로 추적/복구하고 offset/edge/affinity 는 보존한다.
 
 수동 `collapse/addRange/removeRange/toggleRange/togglePointer/setBaseAndExtent/selectRanges/empty` 는 위 규칙보다 우선한다.
-facade 의 `doc.commands.select(action, mode?)`, `doc.commands.selectScope(options?)`, `doc.commands.moveCursor(direction, options?)`, `doc.commands.extendCursor(direction, options?)` 는 `mode` 를 생략하면 문서 생성 시 설정한 selection mode 를 사용한다. 따라서 `createJSONDocument` 와 `useJSONDocument` 에서 `multiple` / `extended` 동작이 같은 기본값을 가진다.
+facade 의 `doc.commands.select(action, mode?)`, `doc.commands.selectScope(options?)`, `doc.commands.moveCursor(direction, options?)`, `doc.commands.extendCursor(direction, options?)` 는 `mode` 를 생략하면 문서 생성 시 설정한 selection mode 를 사용한다. 이 command 경로는 계산된 full `SelectionSnap` 을 적용하므로 `context` 같은 selection-local JSON state 도 `createJSONDocument` 와 `useJSONDocument` 에서 같은 의미로 보존된다.
 facade 의 `doc.check.find()` / `doc.can.find()` 는 JSONPath syntax 를 mutation 없이 검증하고, `doc.check.moveCursor()` / `doc.can.moveCursor()`, `doc.check.extendCursor()` / `doc.can.extendCursor()`, `doc.check.selectScope()` / `doc.can.selectScope()` 는 같은 traversal option 으로 selection 을 바꾸지 않고 실행 가능 여부를 보고한다.
 
 History 의미: selection 단독 변경은 history 비대상. `createJSONDocument` facade 는 patch dispatch 시점에 selection 스냅샷을 같이 entry 에 캡처해 undo/redo 시 같이 원복하고, `useJSONDocument` 는 같은 headless document facade 를 사용한다. `JSONChangeMetadata.selectionAfter` 가 명시되면 mutation auto-selection 보다 우선하며, selection state 는 외부 `ops.subscribe` listener 보다 먼저 해당 snapshot 으로 복원된다.

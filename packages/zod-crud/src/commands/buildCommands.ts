@@ -74,6 +74,7 @@ export interface CommandSelectionState extends SelectionSnap {
     focus?: JSONPoint | null,
     primaryIndex?: number,
   ): void;
+  restore?(snapshot: SelectionSnap): void;
 }
 
 export interface CreateCommandsOptions<S extends z.ZodType> {
@@ -108,47 +109,38 @@ export function buildCommands<S extends z.ZodType>(
     target ?? primaryPointer(selectionState());
   const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
     source ?? primaryPointer(selectionState());
+  const applySelection = (selection: SelectionSnap): void => {
+    if (selectionRef?.current.restore) {
+      selectionRef.current.restore(selection);
+      return;
+    }
+    selectionRef?.current.selectRanges?.(
+      selection.selectionRanges,
+      selection.anchor,
+      selection.focus,
+      selection.primaryIndex,
+    );
+  };
 
   return {
     select(action, mode = selectionMode) {
       const next = selectVerb(selectionState(), action, mode, ops.state);
-      selectionRef?.current.selectRanges?.(next.selectionRanges, next.anchor, next.focus, next.primaryIndex);
+      applySelection(next);
       return next;
     },
     selectScope(options) {
       const result = selectSelectionScope(selectionState(), selectionMode, ops.state, options);
-      if (result.ok) {
-        selectionRef?.current.selectRanges?.(
-          result.selection.selectionRanges,
-          result.selection.anchor,
-          result.selection.focus,
-          result.selection.primaryIndex,
-        );
-      }
+      if (result.ok) applySelection(result.selection);
       return result;
     },
     moveCursor(direction, options) {
       const result = moveSelectionCursor(selectionState(), direction, selectionMode, ops.state, options);
-      if (result.ok) {
-        selectionRef?.current.selectRanges?.(
-          result.selection.selectionRanges,
-          result.selection.anchor,
-          result.selection.focus,
-          result.selection.primaryIndex,
-        );
-      }
+      if (result.ok) applySelection(result.selection);
       return result;
     },
     extendCursor(direction, options) {
       const result = extendSelectionCursor(selectionState(), direction, selectionMode, ops.state, options);
-      if (result.ok) {
-        selectionRef?.current.selectRanges?.(
-          result.selection.selectionRanges,
-          result.selection.anchor,
-          result.selection.focus,
-          result.selection.primaryIndex,
-        );
-      }
+      if (result.ok) applySelection(result.selection);
       return result;
     },
     find(jsonpath) {

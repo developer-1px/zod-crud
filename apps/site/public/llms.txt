@@ -112,7 +112,7 @@ Use `createDraft(doc)` for standalone headless draft/pending field state;
 `doc.commands.extendCursor(direction, options?)`, and
 `doc.commands.selectScope(options?)` default to the document's configured
 selection mode, so headless and React facades preserve the same multi-select
-behavior.
+behavior and the full `SelectionSnap`, including `context`.
 
 ## 10 Verbs
 
