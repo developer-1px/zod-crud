@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
@@ -40,8 +40,7 @@ async function editFirstItemAndInsertSibling() {
   // click 정책 = select 모드 → 편집은 Enter 로 진입
   await user.keyboard("{Enter}");
   await waitFor(() => expect((firstInput as HTMLInputElement).readOnly).toBe(false));
-  await user.keyboard("{Backspace}".repeat(firstItem.length));
-  await user.keyboard(editedFirstItem);
+  fireEvent.change(firstInput, { target: { value: editedFirstItem } });
   await waitFor(() => expect((firstInput as HTMLInputElement).value).toBe(editedFirstItem));
   // edit 모드의 Enter = insert-sibling
   await user.keyboard("{Enter}");

@@ -23,5 +23,22 @@ export default defineConfig({
     strictPort: true,
     watch: { usePolling: true, interval: 300 },
   },
-  build: { outDir: "dist", emptyOutDir: true },
+  build: {
+    outDir: "dist",
+    emptyOutDir: true,
+    chunkSizeWarningLimit: 1100,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) return "react";
+          if (id.includes("node_modules/@tanstack")) return "router";
+          if (id.includes("/packages/zod-crud/src/")) return "zod-crud";
+          if (id.includes("/apps/outliner/src/")) return "demo-outliner";
+          if (id.includes("/apps/mobile-cms/src/")) return "demo-mobile-cms";
+          if (id.includes("/apps/api-collection/src/")) return "demo-api-collection";
+          if (id.includes("/apps/site/src/routes/source-registry.ts")) return "package-sources";
+        },
+      },
+    },
+  },
 });

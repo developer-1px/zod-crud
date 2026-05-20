@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from "react";
-import { codeToHtml } from "shiki";
 
 import { computeHighlightSet } from "./computeHighlightSet.js";
 import { FallbackCode } from "./FallbackCode.js";
@@ -23,7 +22,8 @@ export function HighlightedCode({
 
   useEffect(() => {
     let cancelled = false;
-    void codeToHtml(source, { lang: langFromFilename(filename), theme: "github-dark" })
+    void import("./highlightCodeToHtml.js")
+      .then(({ highlightCodeToHtml }) => highlightCodeToHtml(source, langFromFilename(filename)))
       .then((h) => { if (!cancelled) setHtml(h); })
       .catch(() => { if (!cancelled) setHtml(null); });
     return () => { cancelled = true; };
