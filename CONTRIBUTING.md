@@ -36,10 +36,9 @@ npm run site:build
   array shorthand forms are forbidden.
 - Failed operations must leave state, history, and lifecycle unchanged
   (SPEC G8 atomicity).
-- Behavior changes include a matching `SPEC.md` edit (or new ADR under
-  `packages/zod-crud/adr/`) in the same change. Planned behavior work should
-  usually update the SPEC first; drift fixes may update docs after confirming
-  current code behavior.
+- Behavior changes include a matching `SPEC.md` edit in the same change.
+  Planned behavior work should usually update the SPEC first; drift fixes may
+  update docs after confirming current code behavior.
 
 ## Pull Request Checklist
 

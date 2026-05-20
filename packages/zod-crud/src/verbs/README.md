@@ -1,6 +1,6 @@
 # verbs/ — 편집 어휘 composer (pure)
 
-ADR-0002 / SPEC §0 의 10 verbs 가 1 파일 1 동사로 매핑된다.
+SPEC §0 의 10 verbs 가 1 파일 1 동사로 매핑된다.
 
 ## 규약 (lint-equivalent rules)
 

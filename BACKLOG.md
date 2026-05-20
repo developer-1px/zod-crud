@@ -12,7 +12,7 @@
 
 ## zod-crud library
 
-> Clipboard / cut atomicity / system clipboard 통합 항목은 Epic #15 의 P5 (#35-#38) 에서 closure. `boundary` 정합 (ADR-0002): system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체.
+> Clipboard / cut atomicity / system clipboard 통합 항목은 closure. `boundary` 정합: system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체.
 > silent fail 정책은 P4 (#31-#34) 의 schema preFlight gate 결과로 흡수.
 
 ## 미해결 (post-v0.12.0)
