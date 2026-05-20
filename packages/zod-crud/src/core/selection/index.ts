@@ -74,8 +74,20 @@ export function primaryRange(s: SelectionSnap): SelectionRange | null {
   return s.selectionRanges[s.primaryIndex] ?? null;
 }
 
+export function rangeCount(s: SelectionSnap): number {
+  return s.selectionRanges.length;
+}
+
 export function caretPoint(s: SelectionSnap): JSONPoint | null {
   return isCollapsed(s) ? s.focus : null;
+}
+
+export function anchorPointer(s: SelectionSnap): Pointer | null {
+  return s.anchor === null ? null : pointPath(s.anchor);
+}
+
+export function focusPointer(s: SelectionSnap): Pointer | null {
+  return s.focus === null ? null : pointPath(s.focus);
 }
 
 export function primaryPointer(s: SelectionSnap): Pointer | null {

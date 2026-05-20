@@ -48,7 +48,10 @@ describe("useJSONDocument doc.selection", () => {
       { anchor: "/items/1", focus: "/items/1" },
     ]);
     expect(hook.current.selection?.primaryIndex).toBe(1);
+    expect(hook.current.selection?.rangeCount).toBe(2);
     expect(hook.current.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
+    expect(hook.current.selection?.anchorPointer).toBe("/items/1");
+    expect(hook.current.selection?.focusPointer).toBe("/items/1");
     expect(hook.current.selection?.primaryPointer).toBe("/items/1");
     expect(hook.current.selection?.caret).toBe(null);
     expect(hook.current.selection?.caretPointer).toBe(null);
@@ -67,6 +70,9 @@ describe("useJSONDocument doc.selection", () => {
       anchor: { path: "/items/0/name", offset: 1, affinity: "forward" },
       focus: { path: "/items/0/name", offset: 1, affinity: "forward" },
     });
+    expect(hook.current.selection?.rangeCount).toBe(1);
+    expect(hook.current.selection?.anchorPointer).toBe("/items/0/name");
+    expect(hook.current.selection?.focusPointer).toBe("/items/0/name");
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(hook.current.selection?.caretPointer).toBe("/items/0/name");
   });

@@ -248,8 +248,15 @@ interface SelectionState<T> {
   readonly selectedPointers: ReadonlyArray<Pointer>;
   readonly selectionRanges: ReadonlyArray<SelectionRange>;
   readonly primaryIndex: number;
+  readonly rangeCount: number;
+  readonly primaryRange: SelectionRange | null;
   readonly anchor: JSONPoint | null;
+  readonly anchorPointer: Pointer | null;
   readonly focus: JSONPoint | null;
+  readonly focusPointer: Pointer | null;
+  readonly primaryPointer: Pointer | null;
+  readonly caret: JSONPoint | null;
+  readonly caretPointer: Pointer | null;
   readonly isCollapsed: boolean;
   readonly type: SelectionType;
 
@@ -273,7 +280,8 @@ interface SelectionState<T> {
 `commands.select` mutates document selection and returns the computed snapshot.
 `selectionRanges[primaryIndex]` is the primary command range. Pointer-only
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
-carets and item-boundary carets.
+carets and item-boundary carets. `anchorPointer`, `focusPointer`,
+`primaryPointer`, and `caretPointer` are Pointer projections for command wiring.
 
 Rules:
 

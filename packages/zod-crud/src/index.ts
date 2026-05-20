@@ -99,12 +99,15 @@ export type {
 export { trackPointer } from "./core/track.js";
 export {
   EMPTY_SELECTION,
+  anchorPointer,
   caretPoint,
   caretPointer,
+  focusPointer,
   isCollapsed,
   pointPointer,
   primaryPointer,
   primaryRange,
+  rangeCount,
   selectionType,
 } from "./core/selection/index.js";
 

@@ -193,7 +193,10 @@ describe("createJSONDocument — headless facade", () => {
       { anchor: "/items/1", focus: "/items/1" },
     ]);
     expect(doc.selection?.primaryIndex).toBe(1);
+    expect(doc.selection?.rangeCount).toBe(2);
     expect(doc.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
+    expect(doc.selection?.anchorPointer).toBe("/items/1");
+    expect(doc.selection?.focusPointer).toBe("/items/1");
     expect(doc.selection?.primaryPointer).toBe("/items/1");
     expect(doc.selection?.caret).toBe(null);
     expect(doc.selection?.caretPointer).toBe(null);
@@ -226,6 +229,9 @@ describe("createJSONDocument — headless facade", () => {
 
     expect(doc.selection?.anchor).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(doc.selection?.focus).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    expect(doc.selection?.rangeCount).toBe(1);
+    expect(doc.selection?.anchorPointer).toBe("/items/0/name");
+    expect(doc.selection?.focusPointer).toBe("/items/0/name");
     expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(doc.selection?.caretPointer).toBe("/items/0/name");
     expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
