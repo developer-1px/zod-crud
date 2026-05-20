@@ -18,8 +18,7 @@
 
 목표 API 확장 순서:
 
-1. history metadata
-2. schema introspection facade
+1. schema introspection facade
 
 ## 미해결 (post-v0.12.0)
 

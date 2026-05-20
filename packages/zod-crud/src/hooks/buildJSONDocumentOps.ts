@@ -4,6 +4,7 @@
 import type { MutableRefObject } from "react";
 
 import type { JSONOps, JSONDocumentOps } from "../jsonOps.js";
+import type { HistoryTransactionOptions, JSONChangeMetadata } from "../jsonOps.js";
 import { JSONCrudError } from "../JSONCrudError.js";
 import type { SelectionState } from "./useSelection.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
@@ -29,16 +30,29 @@ export interface BuildJSONDocumentOpsArgs<T> {
   isRestoringRef: MutableRefObject<boolean>;
   selectionRef: MutableRefObject<SelectionState<T>>;
   historyLimit: number;
+  getHistoryMetadata?: () => HistoryTransactionOptions | undefined;
 }
 
 export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSONDocumentOps<T> {
-  const { rawOps, stackRef, isRestoringRef, selectionRef, historyLimit } = args;
+  const { rawOps, stackRef, isRestoringRef, selectionRef, historyLimit, getHistoryMetadata } = args;
 
-  const patch: JSONOps<T>["patch"] = (operations) => {
+  const patch: JSONOps<T>["patch"] = (operations, metadata) => {
     const before = rawOps.state;
-    const r = rawOps.patch(operations);
+    const selectionBefore = snapSelection(selectionRef.current);
+    const changeMetadata = buildChangeMetadata(getHistoryMetadata?.(), metadata, selectionBefore);
+    const r = rawOps.patch(operations, changeMetadata);
+    const selectionAfter = snapSelection(selectionRef.current);
+    if (changeMetadata) changeMetadata.selectionAfter = selectionAfter;
     if (r.ok && historyLimit > 0 && !isRestoringRef.current) {
-      recordHistoryEntry(stackRef, before, operations, selectionRef.current, historyLimit);
+      recordHistoryEntry(
+        stackRef,
+        before,
+        operations,
+        selectionBefore,
+        selectionAfter,
+        historyLimit,
+        changeMetadata,
+      );
     }
     return r;
   };
@@ -96,8 +110,8 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
       return patch([{ op: "replace", path: p, value }]);
     },
     patch,
-    apply: (operations) => {
-      const r = patch(operations);
+    apply: (operations, metadata) => {
+      const r = patch(operations, metadata);
       if (!r.ok) throw new JSONCrudError("patch", r);
     },
     undo: () => restore("undo"),
@@ -116,5 +130,18 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
     },
     subscribe: rawOps.subscribe,
     get state() { return rawOps.state; },
+  };
+}
+
+function buildChangeMetadata(
+  active: HistoryTransactionOptions | undefined,
+  direct: JSONChangeMetadata | undefined,
+  selectionBefore: ReturnType<typeof snapSelection>,
+): JSONChangeMetadata | undefined {
+  const metadata = active || direct ? { ...active, ...direct } : undefined;
+  if (!metadata) return undefined;
+  return {
+    ...metadata,
+    selectionBefore,
   };
 }

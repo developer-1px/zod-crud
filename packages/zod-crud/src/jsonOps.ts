@@ -5,6 +5,7 @@
 // commands/buildCommands 가 이 type 을 받아 verbs/* 합성을 wiring.
 
 import type { JSONPatchOperation, JSONResult } from "./core/patch/index.js";
+import type { SelectionSnap } from "./core/selection/index.js";
 import type { PointerOf, ValueAt } from "./core/pointer/types.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
 
@@ -13,7 +14,25 @@ export interface UseJSONOptions {
   onError?: (error: JSONCrudError) => void;
 }
 
-export type JSONChangeListener = (applied: ReadonlyArray<JSONPatchOperation>) => void;
+export interface HistoryTransactionOptions {
+  label?: string;
+  origin?: "keyboard" | "pointer" | "programmatic" | string;
+  mergeKey?: string;
+}
+
+export interface HistoryMergeOptions {
+  mergeKey?: string;
+}
+
+export interface JSONChangeMetadata extends HistoryTransactionOptions {
+  selectionBefore?: SelectionSnap;
+  selectionAfter?: SelectionSnap;
+}
+
+export type JSONChangeListener = (
+  applied: ReadonlyArray<JSONPatchOperation>,
+  metadata?: JSONChangeMetadata,
+) => void;
 
 export interface JSONLoadOptions {
   /** Keep useJSONDocument history instead of treating load as a hard reset. */
@@ -43,9 +62,9 @@ export interface JSONOps<T> {
   // value === undefined → 존재 시 remove / 부재 시 no-op. defined → 부재 시 add / 동일 시 no-op / 다르면 replace.
   set<P extends PointerOf<T>>(path: P, value: ValueAt<T, P> | undefined): JSONResult;
 
-  patch(operations: ReadonlyArray<JSONPatchOperation>): JSONResult;
+  patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
   // fire-and-forget — schema 위반 등 실패 시 JSONCrudError throw. hot path (keystroke 등) 용.
-  apply(operations: ReadonlyArray<JSONPatchOperation>): void;
+  apply(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void;
 
   load(value: T, options?: JSONLoadOptions): JSONResult;
   reset(value?: T): JSONResult;

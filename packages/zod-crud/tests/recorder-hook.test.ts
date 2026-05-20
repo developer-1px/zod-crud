@@ -110,10 +110,39 @@ describe("useRecorder", () => {
     expect(recording?.steps).toHaveLength(1);
     expect(recording?.steps[0]?.ops[0]).toEqual({ op: "replace", path: "/nested/count", value: 2 });
   });
+
+  test("history transaction metadata 를 recording step 에 보존한다", () => {
+    const hook = renderHook(() => useHarness());
+
+    act(() => {
+      hook.current.recorder.start();
+    });
+    act(() => {
+      hook.current.doc.history.transaction({ label: "Increment", origin: "keyboard", mergeKey: "count" }, () => {
+        hook.current.doc.ops.replace("/nested/count", 1);
+      });
+    });
+
+    let recording: ReturnType<typeof hook.current.recorder.stop> | undefined;
+    act(() => {
+      recording = hook.current.recorder.stop();
+    });
+
+    expect(recording?.steps).toHaveLength(1);
+    expect(recording?.steps[0]).toMatchObject({
+      label: "Increment",
+      origin: "keyboard",
+      mergeKey: "count",
+      selectionBefore: {
+        selectedPointers: [],
+      },
+    });
+    expect(JSON.parse(JSON.stringify(recording?.steps[0]))).toEqual(recording?.steps[0]);
+  });
 });
 
 function useHarness() {
-  const doc = useJSONDocument(Schema, { nested: { count: 0 } });
+  const doc = useJSONDocument(Schema, { nested: { count: 0 } }, { history: 10 });
   const recorder = useRecorder(doc.ops);
   return { doc, recorder };
 }

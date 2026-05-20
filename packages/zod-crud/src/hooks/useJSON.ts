@@ -14,10 +14,10 @@ import {
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";
 import { handleResult, JSONCrudError, type ErrorPolicy } from "../JSONCrudError.js";
-import type { JSONOps, UseJSONOptions, JSONChangeListener } from "../jsonOps.js";
+import type { JSONChangeMetadata, JSONOps, UseJSONOptions, JSONChangeListener } from "../jsonOps.js";
 
 export { JSONCrudError } from "../JSONCrudError.js";
-export type { JSONOps, UseJSONOptions, JSONChangeListener } from "../jsonOps.js";
+export type { JSONChangeMetadata, JSONOps, UseJSONOptions, JSONChangeListener } from "../jsonOps.js";
 
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
 
@@ -41,20 +41,24 @@ export function useJSON<S extends z.ZodType>(
   stateRef.current = state;
 
   const listenersRef = useRef<Set<JSONChangeListener>>(new Set());
-  const notify = useCallback((applied: ReadonlyArray<JSONPatchOperation>) => {
+  const notify = useCallback((applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata) => {
     if (applied.length === 0) return;
-    for (const fn of listenersRef.current) fn(applied);
+    for (const fn of listenersRef.current) fn(applied, metadata);
   }, []);
 
   const ops = useMemo<JSONOps<z.output<S>>>(() => {
-    const dispatch = (label: JSONPatchOperation | "patch", list: ReadonlyArray<JSONPatchOperation>): JSONResult => {
+    const dispatch = (
+      label: JSONPatchOperation | "patch",
+      list: ReadonlyArray<JSONPatchOperation>,
+      metadata?: JSONChangeMetadata,
+    ): JSONResult => {
       const before = stateRef.current;
       const { state: next, result, applied } = applyPatch(schema, before, list);
       if (!result.ok) return handleResult(policyRef.current, label, result);
       if (next === before) return result;
       stateRef.current = next;
       setState(next);
-      notify(applied);
+      notify(applied, metadata);
       return result;
     };
     const single = (op: JSONPatchOperation) => dispatch(op, [op]);
@@ -106,9 +110,9 @@ export function useJSON<S extends z.ZodType>(
         if (cur.value === value) return { ok: true };
         return single({ op: "replace", path: p, value });
       },
-      patch(operations) { return dispatch("patch", operations); },
-      apply(operations) {
-        const r = dispatch("patch", operations);
+      patch(operations, metadata) { return dispatch("patch", operations, metadata); },
+      apply(operations, metadata) {
+        const r = dispatch("patch", operations, metadata);
         if (!r.ok) throw new JSONCrudError("patch", r);
       },
 

@@ -6,7 +6,14 @@
 
 // === Boundary error + ops contract ===
 export { JSONCrudError } from "./JSONCrudError.js";
-export type { JSONLoadOptions, JSONOps, UseJSONOptions } from "./jsonOps.js";
+export type {
+  HistoryMergeOptions,
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
+  JSONLoadOptions,
+  JSONOps,
+  UseJSONOptions,
+} from "./jsonOps.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";

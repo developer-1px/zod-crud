@@ -306,8 +306,8 @@ export interface JSONOps<T> {
   test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
 
   // RFC 6902 batch
-  patch(operations: ReadonlyArray<JSONPatchOperation>): JSONResult;
-  apply(operations: ReadonlyArray<JSONPatchOperation>): void;
+  patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
+  apply(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void;
 
   // sugar: add/replace/remove 를 idempotent 하게 합성. RFC 6902 op 는 아님.
   set<P extends PointerOf<T>>(path: P, value: ValueAt<T, P> | undefined): JSONResult;
@@ -321,7 +321,25 @@ export interface JSONOps<T> {
   readonly state: T;
 }
 
-export type JSONChangeListener = (applied: ReadonlyArray<JSONPatchOperation>) => void;
+export interface HistoryTransactionOptions {
+  label?: string;
+  origin?: "keyboard" | "pointer" | "programmatic" | string;
+  mergeKey?: string;
+}
+
+export interface HistoryMergeOptions {
+  mergeKey?: string;
+}
+
+export interface JSONChangeMetadata extends HistoryTransactionOptions {
+  selectionBefore?: SelectionSnap;
+  selectionAfter?: SelectionSnap;
+}
+
+export type JSONChangeListener = (
+  applied: ReadonlyArray<JSONPatchOperation>,
+  metadata?: JSONChangeMetadata,
+) => void;
 
 export interface JSONLoadOptions {
   preserveHistory?: boolean;
@@ -538,6 +556,7 @@ clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출�
 check 는 state, selection, clipboard, history 를 바꾸지 않는 dry-run guard 이며 `can.x(...) === check.x(...).ok` 이다.
 read/query helpers 는 현재 state 를 Pointer/JSONPath 로 읽고, JSONPath query 는 value 가 아니라 Pointer[] 로 환원한다.
 history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
+`transaction({ label, origin, mergeKey }, fn)` metadata 는 history entry 와 recorder step 에 JSON 으로 보존된다.
 
 ---
 

@@ -41,6 +41,9 @@ import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.j
 import { createClipboardState, type ClipboardState } from "./clipboard.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import type {
+  HistoryMergeOptions,
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
   JSONChangeListener,
   JSONDocumentOps,
   JSONLoadOptions,
@@ -82,8 +85,9 @@ export interface JSONDocumentHistory {
   readonly canRedo: boolean;
   readonly undoDepth: number;
   readonly redoDepth: number;
-  mergeLast(): boolean;
+  mergeLast(options?: HistoryMergeOptions): boolean;
   transaction(fn: () => void): void;
+  transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
 
 export interface JSONDocument<T> {
@@ -106,6 +110,7 @@ interface HistoryEntry {
   inverse: JSONPatchOperation[];
   selectionBefore: SelectionSnap;
   selectionAfter: SelectionSnap;
+  metadata?: HistoryTransactionOptions;
 }
 
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
@@ -125,6 +130,7 @@ export function createJSONDocument<S extends z.ZodType>(
   const historyLimit = options.history ?? 0;
   let stack: HistoryStack<HistoryEntry> = emptyHistory<HistoryEntry>();
   let isRestoring = false;
+  let activeHistoryMetadata: HistoryTransactionOptions | undefined;
 
   const selectionEnabled = options.selection !== undefined && options.selection !== false;
   const selectionOptions: UseSelectionOptions =
@@ -187,22 +193,24 @@ export function createJSONDocument<S extends z.ZodType>(
     containsNode(pointer) { return selectionSnap.selectedPointers.includes(pointer); },
   };
 
-  const notify = (applied: ReadonlyArray<JSONPatchOperation>): void => {
+  const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {
     if (applied.length === 0) return;
     selectionSnap = applySelectionAutoRules(selectionSnap, applied, state, selectionMode);
-    for (const listener of listeners) listener(applied);
+    if (metadata) metadata.selectionAfter = snapSelection();
+    for (const listener of listeners) listener(applied, metadata);
   };
 
   const dispatch = (
     label: JSONPatchOperation | "patch",
     operations: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
   ): JSONResult => {
     const before = state;
     const applied = applyPatch(schema, before, operations);
     if (!applied.result.ok) return handleResult(policy, label, applied.result);
     if (applied.state === before) return applied.result;
     state = applied.state;
-    notify(applied.applied);
+    notify(applied.applied, metadata);
     return applied.result;
   };
 
@@ -239,11 +247,11 @@ export function createJSONDocument<S extends z.ZodType>(
       if (cur.value === value) return { ok: true };
       return ops.patch([{ op: "replace", path: p, value }]);
     },
-    patch(operations) {
-      return dispatch("patch", operations);
+    patch(operations, metadata) {
+      return dispatch("patch", operations, metadata);
     },
-    apply(operations) {
-      const r = ops.patch(operations);
+    apply(operations, metadata) {
+      const r = ops.patch(operations, metadata);
       if (!r.ok) throw new JSONCrudError("patch", r);
     },
     load(value) {
@@ -263,23 +271,29 @@ export function createJSONDocument<S extends z.ZodType>(
     before: z.output<S>,
     operations: ReadonlyArray<JSONPatchOperation>,
     selectionBefore: SelectionSnap,
+    selectionAfter: SelectionSnap,
+    metadata?: HistoryTransactionOptions,
   ): void => {
     const inverse = computeInverses(before, operations);
     if (!inverse.ok) return;
-    stack = historyCommit(stack, {
+    const entry: HistoryEntry = {
       forward: [...operations],
       inverse: inverse.inverses,
       selectionBefore,
-      selectionAfter: snapSelection(),
-    }, historyLimit);
+      selectionAfter,
+    };
+    if (metadata) entry.metadata = { ...metadata };
+    stack = historyCommit(stack, entry, historyLimit);
   };
 
-  const patch: JSONOps<z.output<S>>["patch"] = (operations) => {
+  const patch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
     const before = state;
     const selectionBefore = snapSelection();
-    const r = rawOps.patch(operations);
+    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
+    const r = rawOps.patch(operations, changeMetadata);
+    const selectionAfter = snapSelection();
     if (r.ok && historyLimit > 0 && !isRestoring) {
-      recordHistory(before, operations, selectionBefore);
+      recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
   };
@@ -326,8 +340,8 @@ export function createJSONDocument<S extends z.ZodType>(
     test: rawOps.test,
     set: rawOps.set,
     patch,
-    apply(operations) {
-      const r = patch(operations);
+    apply(operations, metadata) {
+      const r = patch(operations, metadata);
       if (!r.ok) throw new JSONCrudError("patch", r);
     },
     undo: () => restore("undo"),
@@ -348,17 +362,46 @@ export function createJSONDocument<S extends z.ZodType>(
     get state() { return state; },
   };
 
-  const mergeLast = (): boolean => {
+  const mergeLast = (mergeOptions?: HistoryMergeOptions): boolean => {
     if (isRestoring) return false;
-    const next = historyMergeLast(stack, (prev, top) => ({
-      forward: [...prev.forward, ...top.forward],
-      inverse: [...top.inverse, ...prev.inverse],
-      selectionBefore: prev.selectionBefore,
-      selectionAfter: top.selectionAfter,
-    }));
+    const next = historyMergeLast(stack, (prev, top) => {
+      const metadata = mergeEntryMetadata(prev, top, mergeOptions);
+      return {
+        forward: [...prev.forward, ...top.forward],
+        inverse: [...top.inverse, ...prev.inverse],
+        selectionBefore: prev.selectionBefore,
+        selectionAfter: top.selectionAfter,
+        ...(metadata ? { metadata } : {}),
+      };
+    });
     if (!next) return false;
     stack = next;
     return true;
+  };
+
+  const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
+    const previous = activeHistoryMetadata;
+    activeHistoryMetadata = metadata ? { ...previous, ...metadata } : previous;
+    try {
+      fn();
+    } finally {
+      activeHistoryMetadata = previous;
+    }
+  };
+
+  const transaction = (
+    optionsOrFn: HistoryTransactionOptions | (() => void),
+    maybeFn?: () => void,
+  ): void => {
+    const hasOptions = typeof optionsOrFn !== "function";
+    const transactionOptions = hasOptions ? optionsOrFn : undefined;
+    const fn = hasOptions ? maybeFn : optionsOrFn;
+    if (!fn) return;
+    const depthBefore = stack.undo.length;
+    withHistoryMetadata(transactionOptions, fn);
+    while (stack.undo.length > depthBefore + 1) {
+      if (!mergeLast()) break;
+    }
   };
 
   const history: JSONDocumentHistory = {
@@ -367,13 +410,7 @@ export function createJSONDocument<S extends z.ZodType>(
     get undoDepth() { return stack.undo.length; },
     get redoDepth() { return stack.redo.length; },
     mergeLast,
-    transaction(fn) {
-      const depthBefore = stack.undo.length;
-      fn();
-      while (stack.undo.length > depthBefore + 1) {
-        if (!mergeLast()) break;
-      }
-    },
+    transaction,
   };
 
   const selectionRef = { get current() { return selectionState; } };
@@ -397,6 +434,28 @@ export function createJSONDocument<S extends z.ZodType>(
     query: read.query,
     entries: read.entries,
   };
+}
+
+function buildChangeMetadata(
+  active: HistoryTransactionOptions | undefined,
+  direct: JSONChangeMetadata | undefined,
+  selectionBefore: SelectionSnap,
+): JSONChangeMetadata | undefined {
+  const metadata = active || direct ? { ...active, ...direct } : undefined;
+  if (!metadata) return undefined;
+  return {
+    ...metadata,
+    selectionBefore,
+  };
+}
+
+function mergeEntryMetadata(
+  prev: HistoryEntry,
+  top: HistoryEntry,
+  options?: HistoryMergeOptions,
+): HistoryTransactionOptions | undefined {
+  const merged = { ...prev.metadata, ...top.metadata, ...options };
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }
 
 function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {

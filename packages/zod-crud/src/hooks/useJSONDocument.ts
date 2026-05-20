@@ -8,6 +8,7 @@ import type * as z from "zod";
 
 import { useJSON, type UseJSONOptions, type JSONCrudError } from "./useJSON.js";
 import type { JSONOps, JSONDocumentOps } from "../jsonOps.js";
+import type { HistoryMergeOptions, HistoryTransactionOptions } from "../jsonOps.js";
 import { useSelection, type SelectionState, type UseSelectionOptions } from "./useSelection.js";
 import { buildJSONDocumentOps } from "./buildJSONDocumentOps.js";
 import { buildCommands, type Commands } from "../commands/buildCommands.js";
@@ -36,13 +37,14 @@ export interface JSONDocumentHistory {
   readonly canRedo: boolean;
   readonly undoDepth: number;
   readonly redoDepth: number;
-  mergeLast(): boolean;
+  mergeLast(options?: HistoryMergeOptions): boolean;
   /**
    * #56 — fn 내부의 모든 ops 를 한 history step 으로 collapse.
    * 각 op 은 동기적으로 state 를 갱신하여 display sync 는 깨지지 않는다.
    * fn 종료 후 mergeLast 를 반복 호출하여 단일 entry 로 압축.
    */
   transaction(fn: () => void): void;
+  transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
 
 /**
@@ -97,30 +99,55 @@ export function useJSONDocument<S extends z.ZodType>(
   const historyLimit = options.history ?? 0;
   const stackRef = useRef<HistoryStack<HistoryEntry>>(emptyHistory<HistoryEntry>());
   const isRestoringRef = useRef(false);
+  const historyMetadataRef = useRef<HistoryTransactionOptions | undefined>(undefined);
   const selectionRef = useRef(selectionState);
   selectionRef.current = selectionState;
 
   const ops = useMemo<JSONDocumentOps<z.output<S>>>(
-    () => buildJSONDocumentOps({ rawOps, stackRef, isRestoringRef, selectionRef, historyLimit }),
+    () => buildJSONDocumentOps({
+      rawOps,
+      stackRef,
+      isRestoringRef,
+      selectionRef,
+      historyLimit,
+      getHistoryMetadata: () => historyMetadataRef.current,
+    }),
     [rawOps, historyLimit],
   );
 
-  const mergeLast = useCallback((): boolean => {
+  const mergeLast = useCallback((options?: HistoryMergeOptions): boolean => {
     if (isRestoringRef.current) return false;
-    const next = historyMergeLast(stackRef.current, (prev, top) => ({
-      forward: [...prev.forward, ...top.forward],
-      inverse: [...top.inverse, ...prev.inverse],
-      selectionBefore: prev.selectionBefore,
-      selectionAfter: top.selectionAfter,
-    }));
+    const next = historyMergeLast(stackRef.current, (prev, top) => {
+      const metadata = mergeEntryMetadata(prev, top, options);
+      return {
+        forward: [...prev.forward, ...top.forward],
+        inverse: [...top.inverse, ...prev.inverse],
+        selectionBefore: prev.selectionBefore,
+        selectionAfter: top.selectionAfter,
+        ...(metadata ? { metadata } : {}),
+      };
+    });
     if (!next) return false;
     stackRef.current = next;
     return true;
   }, []);
 
-  const transaction = useCallback((fn: () => void): void => {
+  const transaction = useCallback((
+    optionsOrFn: HistoryTransactionOptions | (() => void),
+    maybeFn?: () => void,
+  ): void => {
+    const hasOptions = typeof optionsOrFn !== "function";
+    const transactionOptions = hasOptions ? optionsOrFn : undefined;
+    const fn = hasOptions ? maybeFn : optionsOrFn;
+    if (typeof fn !== "function") return;
     const depthBefore = stackRef.current.undo.length;
-    fn();
+    const previous = historyMetadataRef.current;
+    historyMetadataRef.current = transactionOptions ? { ...previous, ...transactionOptions } : previous;
+    try {
+      fn();
+    } finally {
+      historyMetadataRef.current = previous;
+    }
     while (stackRef.current.undo.length > depthBefore + 1) {
       if (!mergeLast()) break;
     }
@@ -166,4 +193,13 @@ export function useJSONDocument<S extends z.ZodType>(
       entries: read.entries,
     };
   }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, check, clipboard, read]);
+}
+
+function mergeEntryMetadata(
+  prev: HistoryEntry,
+  top: HistoryEntry,
+  options?: HistoryMergeOptions,
+): HistoryTransactionOptions | undefined {
+  const merged = { ...prev.metadata, ...top.metadata, ...options };
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }

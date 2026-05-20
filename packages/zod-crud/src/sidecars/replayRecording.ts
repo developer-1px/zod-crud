@@ -1,10 +1,16 @@
 import type { JSONPatchOperation } from "../core/patch/index.js";
+import type { SelectionSnap } from "../core/selection/index.js";
 import { JSONCrudError } from "../JSONCrudError.js";
 import type { JSONOps } from "../jsonOps.js";
 
 export interface RecordedStep {
   ops: ReadonlyArray<JSONPatchOperation>;
   at: number;
+  label?: string;
+  origin?: string;
+  mergeKey?: string;
+  selectionBefore?: SelectionSnap;
+  selectionAfter?: SelectionSnap;
 }
 
 export interface Recording<T> {

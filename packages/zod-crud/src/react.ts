@@ -45,6 +45,9 @@ export { useDebugLog } from "./sidecars/debug-log.js";
 export type { DebugLog, DebugLogApi, DebugLogger } from "./sidecars/debug-log.js";
 
 export type {
+  HistoryMergeOptions,
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
   JSONLoadOptions,
   JSONOps,
   UseJSONOptions,

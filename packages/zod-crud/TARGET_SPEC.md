@@ -309,8 +309,11 @@ Rules:
 
 Acceptance evidence:
 
-- Tests prove transaction metadata is serializable, undo/redo state is
-  unchanged, and recordings preserve metadata.
+- Headless tests in `tests/document-history-metadata.test.ts` prove transaction
+  metadata is serializable, undo/redo state is unchanged, and merge metadata
+  does not change stack behavior.
+- React recorder tests in `tests/recorder-hook.test.ts` prove recordings
+  preserve transaction metadata and optional selection snapshots.
 
 ## 8. Schema Subsystem
 
@@ -374,11 +377,7 @@ Acceptance evidence:
 
 Implementation should proceed in this order:
 
-1. **History metadata**
-   - Add transaction options and merge metadata.
-   - Preserve metadata in recordings.
-
-2. **Schema facade**
+1. **Schema facade**
    - Add read-only path introspection.
 
 ## 11. Completion Gates

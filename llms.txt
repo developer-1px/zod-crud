@@ -65,7 +65,7 @@ document surface:
 | `doc.check` | explainable dry-run guard namespace; `can.x(...) === check.x(...).ok` |
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
-| `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast()`, `transaction(fn)` |
+| `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
 | `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth and `selectedPointers` is the item-selection projection |
 | `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut`/`paste` mutate through the same document facade while system clipboard calls stay user code |
 
@@ -175,8 +175,9 @@ const children = doc.entries("/items");
 ### Burst edits
 
 Use local UI preview for drag/IME. For synchronous multi-step document edits,
-use `doc.history.transaction(fn)`. For already-committed bursts, use
-`doc.history.mergeLast()`.
+use `doc.history.transaction({ label, origin, mergeKey }, fn)`. For
+already-committed bursts, use `doc.history.mergeLast({ mergeKey })`. History
+metadata is serializable and recorder steps preserve it when present.
 
 ## Source Of Truth
 

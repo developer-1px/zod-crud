@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSONOps } from "../jsonOps.js";
 import { cloneJson } from "../core/json.js";
+import type { JSONChangeMetadata } from "../jsonOps.js";
 import type { RecordedStep, Recording } from "./replayRecording.js";
 export { replayRecording } from "./replayRecording.js";
 export type { RecordedStep, Recording, ReplayOptions } from "./replayRecording.js";
@@ -27,10 +28,14 @@ export function useRecorder<T>(ops: JSONOps<T>): RecorderApi<T> {
 
   useEffect(() => {
     if (!isRecording) return;
-    return ops.subscribe((applied) => {
+    return ops.subscribe((applied, metadata) => {
       const start = startRef.current;
       if (!start) return;
-      stepsRef.current.push({ ops: cloneJson([...applied]), at: Date.now() - start.at });
+      stepsRef.current.push({
+        ops: cloneJson([...applied]),
+        at: Date.now() - start.at,
+        ...cloneMetadata(metadata),
+      });
       force((n) => n + 1);
     });
   }, [isRecording, ops]);
@@ -67,4 +72,15 @@ export function useRecorder<T>(ops: JSONOps<T>): RecorderApi<T> {
     // 위해 dep 에 force 트리거 사용 — 대신 isRecording 과 callbacks 만 dep, steps 는 매 render 시 ref.current 로 최신
     [isRecording, start, stop, clear],
   );
+}
+
+function cloneMetadata(metadata: JSONChangeMetadata | undefined): Partial<RecordedStep> {
+  if (!metadata) return {};
+  const out: Partial<RecordedStep> = {};
+  if (metadata.label !== undefined) out.label = metadata.label;
+  if (metadata.origin !== undefined) out.origin = metadata.origin;
+  if (metadata.mergeKey !== undefined) out.mergeKey = metadata.mergeKey;
+  if (metadata.selectionBefore !== undefined) out.selectionBefore = cloneJson(metadata.selectionBefore);
+  if (metadata.selectionAfter !== undefined) out.selectionAfter = cloneJson(metadata.selectionAfter);
+  return out;
 }
