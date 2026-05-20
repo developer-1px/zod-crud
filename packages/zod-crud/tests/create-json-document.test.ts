@@ -270,6 +270,28 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.undoDepth).toBe(1);
   });
 
+  test("doc.clipboard paste options can keep a multi-source payload as one array item", () => {
+    const Item = z.object({ id: z.string(), name: z.string() });
+    const GroupSchema = z.object({
+      items: z.array(Item),
+      groups: z.array(z.array(Item)),
+    });
+    const doc = createJSONDocument(GroupSchema, { items: initial.items, groups: [] }, { history: 10 });
+
+    doc.clipboard.copy(["/items/0", "/items/1"]);
+
+    const defaultSpread = doc.clipboard.paste("/groups/-");
+    expect(defaultSpread.ok).toBe(false);
+    if (!defaultSpread.ok) expect(defaultSpread.code).toBe("schema_violation");
+    expect(doc.value.groups).toEqual([]);
+
+    const pasted = doc.clipboard.paste("/groups/-", "into", { spread: false });
+
+    expect(pasted.ok).toBe(true);
+    expect(doc.value.groups).toEqual([initial.items]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
   test("transaction collapses multiple ops into one undo entry", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

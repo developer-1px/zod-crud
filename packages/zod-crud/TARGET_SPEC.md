@@ -105,7 +105,7 @@ interface ClipboardState<T> {
 
   copy(source: ClipboardSource): CopyOk | CopyError;
   cut(source: ClipboardSource): CutOk<T> | CutError;
-  paste(target: Pointer, mode?: PasteMode): ClipboardPasteResult<T>;
+  paste(target: Pointer, mode?: PasteMode, options?: PasteOptions): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
 ```
@@ -115,7 +115,7 @@ Semantics:
 - The buffer stores a JSON fragment and optional source/source-list metadata. `read()` returns both.
 - `copy(source)` reads one `Pointer` or a `Pointer[]` from document state and writes buffer.
 - `cut(source)` writes buffer and commits one remove patch atomically; multi-source cut prunes covered descendants and sorts remove ops to avoid array index shift.
-- `paste(target, mode)` reads buffer and commits the paste patch. Multi-source array payloads spread into array targets.
+- `paste(target, mode, options)` reads buffer and commits the paste patch. Multi-source array payloads spread into array targets by default; pass `{ spread: false }` to keep the array payload as one value.
 - Failed paste does not clear or mutate the buffer.
 - Failed cut does not write buffer and does not mutate document state.
 - DOM/system clipboard integration remains user code.

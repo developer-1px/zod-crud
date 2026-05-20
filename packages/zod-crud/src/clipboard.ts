@@ -15,7 +15,7 @@ import {
   type CopyOk,
 } from "./verbs/copy.js";
 import { cut, type CutError, type CutOk } from "./verbs/cut.js";
-import { paste, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk } from "./verbs/paste.js";
+import { paste, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk, type PasteOptions } from "./verbs/paste.js";
 
 export type { ClipboardSource } from "./verbs/copy.js";
 
@@ -50,7 +50,7 @@ export interface ClipboardState<T> {
 
   copy(source: ClipboardSource): CopyOk | CopyError;
   cut(source: ClipboardSource): CutOk<T> | CutError;
-  paste(target: Pointer, mode?: PasteMode): ClipboardPasteResult<T>;
+  paste(target: Pointer, mode?: PasteMode, options?: PasteOptions): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
 
@@ -168,10 +168,12 @@ export function createClipboardState<S extends z.ZodType>(
       return result;
     },
 
-    paste(target, mode = "into") {
+    paste(target, mode = "into", options = {}) {
       if (!buffer) return EMPTY_CLIPBOARD;
+      const spread = options.spread ?? ((buffer.sources?.length ?? 0) > 1);
       const result = paste(schema, getState(), buffer.payload, target, mode, {
-        spread: (buffer.sources?.length ?? 0) > 1,
+        ...options,
+        spread,
       });
       if (!result.ok) return result;
       const patchResult = ops.patch(result.patch);
