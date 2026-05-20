@@ -1,6 +1,7 @@
 # Backlog
 
-진행 중이 아닌, 발견된 작업 항목 모음. SPEC 변경이 따르는 큰 결정은 별도 ADR 또는 SPEC PR 로.
+진행 중이 아닌, 발견된 작업 항목 모음. 현재 동작 SPEC 은
+`packages/zod-crud/SPEC.md`, 목표 API 는 `packages/zod-crud/TARGET_SPEC.md` 를 따른다.
 
 ## reference editor
 
@@ -14,6 +15,16 @@
 
 > Clipboard / cut atomicity / system clipboard 통합 항목은 closure. `boundary` 정합: system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체.
 > silent fail 정책은 P4 (#31-#34) 의 schema preFlight gate 결과로 흡수.
+
+목표 API 확장 순서:
+
+1. selection command contract
+2. document clipboard (`doc.clipboard`)
+3. explainable guard (`doc.check`)
+4. read/query facade (`doc.at`, `doc.exists`, `doc.query`, `doc.entries`)
+5. history metadata
+6. schema introspection facade
+7. JSONPoint selection
 
 ## 미해결 (post-v0.12.0)
 

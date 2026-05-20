@@ -8,7 +8,10 @@
 
 ### 0.0 정체성 (정본 한 줄)
 
-zod-crud 는 **FE 서비스가 매번 다시 만드는 편집 어휘 (select / move / cut / copy / paste / duplicate / undo / redo / find / replace) 를 JSON 표준 (RFC 6901 Pointer · 6902 Patch · 9535 JSONPath · W3C Selection · RFC 8927+Zod) 과 매핑하여 재사용 가능한 표준 레이어로 정립한 JSON tree 라이브러리** 다.
+zod-crud 의 비전은 **모든 FE 편집은 JSON 편집이다** 이다. zod-crud 는 FE 서비스가 매번 다시 만드는 편집 어휘
+(select / move / cut / copy / paste / duplicate / undo / redo / find / replace) 를 JSON 표준
+(RFC 6901 Pointer · 6902 Patch · 9535 JSONPath · W3C Selection · RFC 8927+Zod) 과 매핑하여
+재사용 가능한 표준 레이어로 정립한 headless JSON editing engine 이다.
 
 UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · system clipboard 호출 · 시각적 selection 표시는 본체가 아니다. JSON 데이터 편집만 본체.
 

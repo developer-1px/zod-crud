@@ -1,10 +1,11 @@
 # zod-crud
 
-zod-crud is a JSON tree library that maps the **edit vocabulary every FE
-service rebuilds from scratch** (select, move, cut, copy, paste, duplicate,
-undo, redo, find, replace) onto JSON standards (**RFC 6901 Pointer · RFC
-6902 Patch · RFC 9535 JSONPath · W3C Selection · RFC 8927 + Zod**) so the
-vocabulary becomes a **reusable standard layer**.
+All frontend editing is JSON editing. zod-crud is a headless JSON editing
+engine that maps the **edit vocabulary every FE service rebuilds from
+scratch** (select, move, cut, copy, paste, duplicate, undo, redo, find,
+replace) onto JSON standards (**RFC 6901 Pointer · RFC 6902 Patch · RFC 9535
+JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
+**reusable standard layer**.
 
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
@@ -16,6 +17,10 @@ The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
 code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
 conflicts with an RFC, in which case the RFC wins. The RFC ↔ `core/*` 1:1
 mapping is in [`STANDARDS.md`](./STANDARDS.md).
+
+The future engine target lives in [`TARGET_SPEC.md`](./TARGET_SPEC.md). It
+tracks the intended headless JSON editing surface and is not a current API
+claim.
 
 ## Install
 

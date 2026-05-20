@@ -1,0 +1,393 @@
+# zod-crud — Target Specification
+
+**Status: target specification.** This document defines the intended engine
+surface. It is not a claim about current package behavior. Current behavior is
+specified in [`SPEC.md`](./SPEC.md) and exported from `src/index.ts` /
+`src/react.ts`.
+
+## 0. Vision
+
+**All frontend editing is JSON editing.**
+
+FE applications that need save, undo, replay, collaboration boundaries, server
+sync, or inspection eventually need a JSON-compatible document model for their
+editing state. zod-crud is the headless JSON editing engine for that document
+state.
+
+The engine owns the edit state and the edit grammar. Applications own visual
+rendering and input interpretation.
+
+## 1. Contract
+
+zod-crud provides the primitives every editor-like FE rebuilds:
+
+- schema-safe JSON document state
+- RFC 6901 coordinates
+- RFC 6902 mutation
+- selection/caret over JSON coordinates
+- clipboard fragments
+- undo/redo history
+- command, guard, and diagnostic facade
+- replayable operation streams
+- wire-safe JSON serialization
+
+zod-crud does not provide:
+
+- visual components
+- DOM event mapping
+- keyboard shortcut presets
+- `navigator.clipboard` calls
+- drag/drop DOM policy
+- app-specific navigation order
+- persistence backend
+- CRDT/OT conflict policy
+
+## 2. Target Facade
+
+The headless facade is the product surface. The React facade must expose the
+same editing surface with React render lifecycle added.
+
+```ts
+const doc = createJSONDocument(Schema, initial, options);
+const doc = useJSONDocument(Schema, initial, options);
+```
+
+Target `JSONDocument<T>`:
+
+```ts
+interface JSONDocument<T> {
+  readonly value: T;
+  readonly ops: JSONDocumentOps<T>;
+  readonly commands: Commands<T>;
+  readonly can: Can<T>;
+  readonly check: Check<T>;
+  readonly selection: SelectionState<T> | undefined;
+  readonly clipboard: ClipboardState<T>;
+  readonly history: JSONDocumentHistory;
+  readonly schema: SchemaState<T>;
+
+  at(path: Pointer): ReadResult;
+  exists(path: Pointer): boolean;
+  query(jsonpath: string): QueryResult;
+  entries(path: Pointer): EntriesResult;
+}
+```
+
+Rules:
+
+- `createJSONDocument` is authoritative for behavior.
+- `useJSONDocument` is an adapter over the same behavior.
+- Every facade field must be serializable or expose serializable snapshots.
+- No facade field may require React, DOM, browser APIs, or timers.
+
+## 3. Clipboard Subsystem
+
+Current pure verbs (`copy`, `cut`, `paste`) are correct but not enough for a
+document engine. The target facade includes a headless JSON clipboard buffer.
+
+```ts
+interface ClipboardState<T> {
+  readonly hasData: boolean;
+  readonly source: Pointer | null;
+  read(): ClipboardReadResult;
+  write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
+  clear(): void;
+
+  copy(source: Pointer): CopyOk | CopyError;
+  cut(source: Pointer): CutOk<T> | CutError;
+  paste(target: Pointer, mode?: PasteMode): PasteOk<T> | PasteError | PasteDuMismatch;
+  toItems(options?: ClipboardItemOptions): ClipboardItemMap;
+}
+```
+
+Semantics:
+
+- The buffer stores a JSON fragment and optional source metadata.
+- `copy(source)` reads from document state and writes buffer.
+- `cut(source)` writes buffer and commits the remove patch atomically.
+- `paste(target, mode)` reads buffer and commits the paste patch.
+- Failed paste does not clear or mutate the buffer.
+- Failed cut does not write buffer and does not mutate document state.
+- DOM/system clipboard integration remains user code.
+
+Acceptance evidence:
+
+- Headless tests prove copy -> paste, cut -> undo, failed paste preserves
+  buffer, and non-JSON payloads are rejected.
+- React facade tests prove the same behavior through `useJSONDocument`.
+
+## 4. Check Subsystem
+
+`can` is a boolean UI guard. A document engine also needs explainable failure.
+
+```ts
+type CheckResult =
+  | { ok: true }
+  | {
+      ok: false;
+      code: ErrorCode | PreFlightErrorCode | "du_branch_mismatch" | "rekey_failed";
+      reason?: string;
+      pointer?: Pointer;
+      violations?: ReadonlyArray<{ path: string; message: string }>;
+    };
+
+interface Check<T> {
+  move(from: Pointer, to: Pointer): CheckResult;
+  duplicate(source: Pointer, opts?: DuplicateOpts): CheckResult;
+  replace(path: Pointer, value: unknown): CheckResult;
+  cut(source: Pointer): CheckResult;
+  copy(source: Pointer): CheckResult;
+  paste(payload: unknown, target: Pointer, mode?: PasteMode): CheckResult;
+  patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
+
+  readonly undo: CheckResult;
+  readonly redo: CheckResult;
+}
+```
+
+Rules:
+
+- `can.x(...) === check.x(...).ok`.
+- `check` must not mutate document state, selection, clipboard, or history.
+- `check` reports the same code family the actual command would produce.
+
+Acceptance evidence:
+
+- Tests cover schema violation, invalid pointer, path missing, discriminated
+  union paste mismatch, and undo/redo unavailable.
+
+## 5. Read / Query Subsystem
+
+Generic FE editors need pointer-based reading without reimplementing path
+logic.
+
+```ts
+type ReadResult =
+  | { ok: true; path: Pointer; value: unknown }
+  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
+
+type QueryResult =
+  | { ok: true; query: string; pointers: Pointer[] }
+  | { ok: false; code: "invalid_query"; reason?: string };
+
+type EntryKind = "root" | "object" | "array" | "record" | "primitive";
+
+type EntriesResult =
+  | {
+      ok: true;
+      path: Pointer;
+      kind: EntryKind;
+      entries: ReadonlyArray<{ key: string; path: Pointer; value: unknown }>;
+    }
+  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
+```
+
+Rules:
+
+- `at("")` reads the whole document.
+- `exists(path)` is `at(path).ok`.
+- `query(jsonpath)` returns pointers, not values.
+- `entries(path)` is state-based; app-specific visible navigation order remains
+  user code.
+
+Acceptance evidence:
+
+- Tests cover root, object, array, record, primitive, invalid pointer, and
+  JSONPath query.
+
+## 6. Selection Subsystem
+
+Selection is a first-class engine subsystem. The short-term target is to make
+selection mutation explicit and stateful. The long-term target is to support
+offset-bearing JSON coordinates.
+
+### 6.1 Short-term API
+
+```ts
+interface SelectionState<T> {
+  readonly ranges: ReadonlyArray<Pointer>;
+  readonly anchor: Pointer | null;
+  readonly focus: Pointer | null;
+  readonly isCollapsed: boolean;
+  readonly type: SelectionType;
+
+  select(action: SelectionAction): void;
+  collapse(pointer: Pointer): void;
+  setBaseAndExtent(anchor: Pointer, focus: Pointer): void;
+  extend(pointer: Pointer): void;
+  addRange(pointer: Pointer): void;
+  removeRange(pointer: Pointer): void;
+  toggleRange(pointer: Pointer): void;
+  selectRanges(ranges: ReadonlyArray<Pointer>, anchor: Pointer | null, focus: Pointer | null): void;
+  empty(): void;
+  containsNode(pointer: Pointer): boolean;
+}
+```
+
+`commands.select` must either mutate document selection or be removed from the
+command namespace. A command named `select` that only returns a computed snap is
+not a product-level command.
+
+### 6.2 Long-term Coordinate Model
+
+```ts
+interface JSONPoint {
+  path: Pointer;
+  offset?: number;
+}
+
+interface JSONRange {
+  anchor: JSONPoint;
+  focus: JSONPoint;
+}
+```
+
+Rules:
+
+- Pointer-only selection remains valid.
+- Offset-bearing points are allowed only where the value at `path` supports an
+  offset domain, such as string text or app-declared sequence fields.
+- Selection snapshots remain JSON serializable.
+- RFC 6902 mutation still drives automatic tracking.
+
+Acceptance evidence:
+
+- Short-term tests prove `doc.selection.select(action)` mutates headless and
+  React facades identically.
+- Long-term implementation requires separate compatibility tests for
+  Pointer-only and offset-bearing selections.
+
+## 7. History Subsystem
+
+History already owns undo/redo/merge/transaction. Target history adds
+serializable metadata for user-intent grouping and recording.
+
+```ts
+interface HistoryTransactionOptions {
+  label?: string;
+  origin?: "keyboard" | "pointer" | "programmatic" | string;
+  mergeKey?: string;
+}
+
+interface JSONDocumentHistory {
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly undoDepth: number;
+  readonly redoDepth: number;
+  mergeLast(options?: { mergeKey?: string }): boolean;
+  transaction(fn: () => void): void;
+  transaction(options: HistoryTransactionOptions, fn: () => void): void;
+}
+```
+
+Rules:
+
+- Time-based coalescing remains app/sidecar policy.
+- Core may store `mergeKey`, but must not own timers.
+- Recording sidecars preserve history metadata when present.
+
+Acceptance evidence:
+
+- Tests prove transaction metadata is serializable, undo/redo state is
+  unchanged, and recordings preserve metadata.
+
+## 8. Schema Subsystem
+
+Generic editors need to ask what a path can contain. The target schema facade
+exposes read-only introspection without leaking Zod internals as the primary
+API.
+
+```ts
+interface SchemaState<T> {
+  at(path: Pointer, mode?: "value" | "insert"): SchemaQueryResult;
+  kind(path: Pointer, mode?: "value" | "insert"): SchemaKindResult;
+  accepts(path: Pointer, value: unknown, mode?: "value" | "insert"): CheckResult;
+  describe(path: Pointer, mode?: "value" | "insert"): SchemaDescriptionResult;
+}
+```
+
+Rules:
+
+- Schema introspection is advisory; commits are still validated by the schema
+  gate.
+- Results must be serializable.
+- Zod stays the runtime schema authority.
+
+Acceptance evidence:
+
+- Tests cover object property, array item, record value, discriminated union
+  branch, and unknown path.
+
+## 9. Replay / Wire Subsystem
+
+Replay and wire helpers remain sidecars, but target metadata makes them engine
+grade.
+
+Target recording step:
+
+```ts
+interface RecordedStep {
+  ops: ReadonlyArray<JSONPatchOperation>;
+  at: number;
+  label?: string;
+  origin?: string;
+  mergeKey?: string;
+  selectionBefore?: SelectionSnap;
+  selectionAfter?: SelectionSnap;
+}
+```
+
+Rules:
+
+- Recording is still JSON.
+- Replay applies operations through the same document facade.
+- Replay may restore selection if metadata is present and the target document
+  exposes selection.
+
+Acceptance evidence:
+
+- Tests prove old recordings without metadata still replay.
+- Tests prove new recordings preserve metadata and optional selection snaps.
+
+## 10. Issue Slices
+
+Implementation should proceed in this order:
+
+1. **Selection command contract**
+   - Add `selection.select(action)` or make `commands.select(action)` mutate.
+   - Remove pure-only command ambiguity.
+
+2. **Document clipboard**
+   - Add `doc.clipboard`.
+   - Keep pure verb exports.
+   - Prove atomic cut and failed paste behavior.
+
+3. **Check facade**
+   - Add `doc.check`.
+   - Define `can === check.ok` invariant.
+
+4. **Read/query facade**
+   - Add `doc.at`, `doc.exists`, `doc.query`, `doc.entries`.
+
+5. **History metadata**
+   - Add transaction options and merge metadata.
+   - Preserve metadata in recordings.
+
+6. **Schema facade**
+   - Add read-only path introspection.
+
+7. **JSONPoint selection**
+   - Design and implement only after Pointer-only compatibility is locked.
+
+## 11. Completion Gates
+
+The target spec is implemented only when all gates pass:
+
+- Root `zod-crud` exports all target headless types and functions without
+  requiring React.
+- `zod-crud/react` exposes the same document facade plus React-only helpers.
+- `npm run verify` passes.
+- Package smoke tests cover root, React, and any new subpath exports.
+- Site docs for new APIs use source-backed references where code snippets are
+  copied from repo files.
+- `llms.txt` names the new current API only after it is implemented.

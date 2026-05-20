@@ -1,13 +1,17 @@
 # zod-crud
 
-A Zod-guarded JSON tree library locked to **RFC 6901 (JSON Pointer)** and
-**RFC 6902 (JSON Patch)**. State, actions, and change records are 100%
-serializable JSON. The core is pure functions; React hooks live behind the
-`zod-crud/react` entrypoint.
+All frontend editing is JSON editing. zod-crud is a Zod-guarded headless JSON
+editing engine locked to **RFC 6901 (JSON Pointer)** and **RFC 6902
+(JSON Patch)**. State, actions, and change records are 100% serializable JSON.
+The core is pure functions; React hooks live behind the `zod-crud/react`
+entrypoint.
 
 The behavior contract lives in `packages/zod-crud/SPEC.md`. It describes the
 current package behavior; on conflict, code behavior wins unless it conflicts
 with an RFC, in which case the RFC wins.
+
+The long-term engine target is tracked separately in
+`packages/zod-crud/TARGET_SPEC.md`; it is not a current-behavior contract.
 
 ## Package
 
@@ -104,5 +108,7 @@ npm run verify
 
 - `packages/zod-crud/SPEC.md` describes current behavior. Code wins unless it
   conflicts with an RFC.
+- `packages/zod-crud/TARGET_SPEC.md` describes the intended headless JSON
+  editing engine surface.
 - `packages/zod-crud/src/index.ts` and `packages/zod-crud/src/react.ts` are the public export surfaces (SPEC §5).
 - `CONTRIBUTING.md` describes the change rules and verification checklist.

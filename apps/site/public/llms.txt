@@ -1,6 +1,7 @@
 # zod-crud
 
-> Zod-guarded JSON tree editing primitives. Root `zod-crud` is React-free;
+> All frontend editing is JSON editing. zod-crud provides Zod-guarded headless
+> JSON editing primitives. Root `zod-crud` is React-free;
 > React hooks live under `zod-crud/react`. State, operations, selection,
 > history, recordings, and wire payloads are serializable JSON.
 
@@ -158,6 +159,8 @@ use `doc.history.transaction(fn)`. For already-committed bursts, use
   the RFC wins and code plus docs must be fixed.
 - `packages/zod-crud/SPEC.md` describes current behavior; update it with
   behavior changes.
+- `packages/zod-crud/TARGET_SPEC.md` describes target APIs; do not present
+  those APIs as current until the source exports exist.
 - Public export files: `packages/zod-crud/src/index.ts` and
   `packages/zod-crud/src/react.ts`.
 - Site docs support `::source{path="..." lines="..."}`; source references are
