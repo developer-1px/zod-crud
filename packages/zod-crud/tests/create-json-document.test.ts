@@ -119,6 +119,34 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value).toEqual(initial);
   });
 
+  test("commands move defaults to the current primary selection source", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    const moved = doc.commands.move("/items/1");
+
+    expect(moved.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("commands move reports empty selection when source is omitted", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    const moved = doc.commands.move("/items/1");
+
+    expect(moved).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "move source selection is empty",
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
   test("doc.clipboard copies, pastes, and exposes serializable items", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

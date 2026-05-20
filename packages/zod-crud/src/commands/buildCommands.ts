@@ -20,7 +20,7 @@ import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type ClipboardSource, type CopyOk, type CopyError } from "../verbs/copy.js";
 import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode, type PasteOptions } from "../verbs/paste.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
-import { move as moveVerb, type MoveResult } from "../verbs/move.js";
+import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
 
@@ -32,7 +32,7 @@ export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   find(jsonpath: string): FindOk | FindError;
 
-  move(from: Pointer, to: Pointer): MoveResult<T>;
+  move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
   replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult;
@@ -99,8 +99,12 @@ export function buildCommands<S extends z.ZodType>(
       return find(ops.state, jsonpath);
     },
 
-    move(from, to) {
-      return run(moveVerb(schema, ops.state, from, to));
+    move(fromOrTo, maybeTo) {
+      const args = resolveMoveArgs(fromOrTo, maybeTo, arguments.length >= 2);
+      const source = primarySourceOrSelection(args.from);
+      return source === null
+        ? emptyMoveSource()
+        : run(moveVerb(schema, ops.state, source, args.to));
     },
     duplicate(sourceOrOpts, maybeOpts) {
       const args = resolveDuplicateArgs(sourceOrOpts, maybeOpts);
@@ -142,6 +146,14 @@ function emptyPasteTarget(): PasteError {
     ok: false,
     code: "empty_selection",
     message: "paste target selection is empty",
+  };
+}
+
+function emptyMoveSource(): MoveError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "move source selection is empty",
   };
 }
 

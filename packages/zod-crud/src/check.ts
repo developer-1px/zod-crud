@@ -7,7 +7,7 @@ import type { JSONDocumentOps } from "./jsonOps.js";
 import { copy, type ClipboardSource } from "./verbs/copy.js";
 import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
-import { move as moveVerb } from "./verbs/move.js";
+import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import { primaryPointer, selectedSource, type SelectionSnap } from "./core/selection/index.js";
 
@@ -38,7 +38,7 @@ export type CheckResult =
     };
 
 export interface Check<T> {
-  move(from: Pointer, to: Pointer): CheckResult;
+  move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
@@ -86,8 +86,12 @@ export function buildCheck<S extends z.ZodType>(
     source ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
 
   return {
-    move(from, to) {
-      return toCheckResult(moveVerb(schema, ops.state, from, to));
+    move(fromOrTo, maybeTo) {
+      const args = resolveMoveArgs(fromOrTo, maybeTo, arguments.length >= 2);
+      const source = primarySourceOrSelection(args.from);
+      return source === null
+        ? emptySelection("move source selection is empty")
+        : toCheckResult(moveVerb(schema, ops.state, source, args.to));
     },
     duplicate(sourceOrOpts, opts) {
       const args = resolveDuplicateArgs(sourceOrOpts, opts);

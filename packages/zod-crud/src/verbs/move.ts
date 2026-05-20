@@ -14,12 +14,25 @@ export interface MoveOk<T> {
 
 export interface MoveError {
   ok: false;
-  code: PreFlightErrorCode;
+  code: "empty_selection" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
 export type MoveResult<T> = MoveOk<T> | MoveError;
+
+export interface ResolvedMoveArgs {
+  from?: Pointer;
+  to: Pointer;
+}
+
+export function resolveMoveArgs(
+  fromOrTo: Pointer,
+  to: Pointer | undefined,
+  hasToArg: boolean,
+): ResolvedMoveArgs {
+  return hasToArg ? { from: fromOrTo, to: to! } : { to: fromOrTo };
+}
 
 /**
  * RFC 6902 `move` op. (schema, state, from, to) → preFlight gate → { next, patch }.

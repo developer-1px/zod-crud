@@ -115,6 +115,25 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.duplicate()).toBe(false);
   });
 
+  test("move checks default to current primary selection source without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    expect(doc.check.move("/items/1")).toEqual({ ok: true });
+    expect(doc.can.move("/items/1")).toBe(true);
+    expect(doc.value).toEqual(initial);
+
+    doc.selection?.empty();
+
+    expect(doc.check.move("/items/1")).toMatchObject({
+      ok: false,
+      code: "empty_selection",
+      reason: "move source selection is empty",
+    });
+    expect(doc.can.move("/items/1")).toBe(false);
+  });
+
   test("paste checks default to current selection target without mutation", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single", initial: ["/items/0"] },

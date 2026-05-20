@@ -13,7 +13,7 @@ import type { ClipboardSource } from "../verbs/copy.js";
 import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
 
 export interface Can<T> {
-  move(from: Pointer, to: Pointer): boolean;
+  move(fromOrTo: Pointer, to?: Pointer): boolean;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
   replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
   cut(source?: ClipboardSource): boolean;
@@ -36,7 +36,11 @@ export interface BuildCanArgs<S extends z.ZodType> extends BuildCheckArgs<S> {
 export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.output<S>> {
   const check = args.check ?? buildCheck(args);
   return {
-    move(from, to) { return check.move(from, to).ok; },
+    move(fromOrTo, maybeTo) {
+      return arguments.length >= 2
+        ? check.move(fromOrTo, maybeTo).ok
+        : check.move(fromOrTo).ok;
+    },
     duplicate(source, opts) { return check.duplicate(source, opts).ok; },
     replace(pathOrValue, maybeValue) {
       return arguments.length >= 2
