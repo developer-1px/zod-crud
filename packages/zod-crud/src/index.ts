@@ -46,6 +46,17 @@ export type {
   ReadFacade,
   ReadResult,
 } from "./read.js";
+export type {
+  SchemaDescription,
+  SchemaDescriptionResult,
+  SchemaErrorCode,
+  SchemaErrorResult,
+  SchemaKind,
+  SchemaKindResult,
+  SchemaPathMode,
+  SchemaQueryResult,
+  SchemaState,
+} from "./schema.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

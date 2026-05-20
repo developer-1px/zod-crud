@@ -18,7 +18,7 @@
 
 목표 API 확장 순서:
 
-1. schema introspection facade
+- 현재 facade 확장 slice 는 closure. 다음은 standards / engine hardening.
 
 ## 미해결 (post-v0.12.0)
 

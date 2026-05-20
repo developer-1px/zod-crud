@@ -34,6 +34,17 @@ export type {
   ReadResult,
 } from "./read.js";
 export type {
+  SchemaDescription,
+  SchemaDescriptionResult,
+  SchemaErrorCode,
+  SchemaErrorResult,
+  SchemaKind,
+  SchemaKindResult,
+  SchemaPathMode,
+  SchemaQueryResult,
+  SchemaState,
+} from "./schema.js";
+export type {
   DraftFieldState,
   DraftState,
 } from "./hooks/useDraft.js";

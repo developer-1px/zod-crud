@@ -65,12 +65,13 @@ doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` expose the same
-`value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface; React
+`value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface; React
 only adds render lifecycle. Selection uses headless `JSONPoint` coordinates, so
 item selection and text carets share one JSON editing model. Clipboard is a
 headless JSON fragment buffer; system clipboard calls remain user code. `check`
 is the explainable dry-run guard behind `can`. `at`/`exists`/`query`/`entries`
-provide pointer and JSONPath reads without React.
+provide pointer and JSONPath reads without React. `schema` exposes serializable
+path introspection without making Zod internals the public API.
 
 ### Dict-record 한 키 쓰기
 

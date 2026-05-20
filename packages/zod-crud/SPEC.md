@@ -42,6 +42,7 @@ commands/   facade builders (pure). buildCommands → Commands<T> (10 verb names
    │ uses   buildCan → Can<T> (boolean guard namespace). React 무관.
 check.ts    buildCheck → Check<T> (explainable dry-run guard namespace). React 무관.
 read.ts     buildReadFacade → at/exists/query/entries. React 무관.
+schema.ts   createSchemaState → schema introspection facade. React 무관.
 verbs/      편집 어휘 composer (pure, React 무관). 1 파일 1 동사 = 10 verbs.
    │ uses   verbs 끼리 import 금지 — 합성은 commands/ 또는 hooks/ 에서.
 core/       RFC 표준 substrate (pure). 1 substrate = 1 단위 (폴더 또는 파일).
@@ -541,6 +542,7 @@ export interface JSONDocument<T> {
   commands: Commands<T>;
   can: Can<T>;
   check: Check<T>;
+  schema: SchemaState<T>;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
@@ -549,12 +551,13 @@ export interface JSONDocument<T> {
 ```
 
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
-React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs, boolean guard predicates, explainable dry-run checks, read/query helpers 를 한 객체로 묶는다.
+React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs, boolean guard predicates, explainable dry-run checks, schema introspection, read/query helpers 를 한 객체로 묶는다.
 React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
 clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다.
 check 는 state, selection, clipboard, history 를 바꾸지 않는 dry-run guard 이며 `can.x(...) === check.x(...).ok` 이다.
 read/query helpers 는 현재 state 를 Pointer/JSONPath 로 읽고, JSONPath query 는 value 가 아니라 Pointer[] 로 환원한다.
+schema introspection 은 serializable description/kind/accepts 결과를 제공하며 Zod 객체를 public API 로 노출하지 않는다.
 history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
 `transaction({ label, origin, mergeKey }, fn)` metadata 는 history entry 와 recorder step 에 JSON 으로 보존된다.
 
@@ -693,6 +696,7 @@ commands/
   buildCan.ts         ─ can namespace
 check.ts              ─ explainable dry-run guard namespace
 read.ts               ─ read/query facade helpers
+schema.ts             ─ schema introspection facade
 verbs/
   select.ts move.ts cut.ts copy.ts paste.ts duplicate.ts undo.ts redo.ts find.ts replace.ts
 core/

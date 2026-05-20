@@ -63,6 +63,7 @@ document surface:
 | `doc.commands` | 10 verb command namespace |
 | `doc.can` | command guard namespace |
 | `doc.check` | explainable dry-run guard namespace; `can.x(...) === check.x(...).ok` |
+| `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
@@ -170,6 +171,17 @@ code. `doc.query` returns pointers, not values.
 const title = doc.at("/title");
 const itemPointers = doc.query("$.items[*].id");
 const children = doc.entries("/items");
+```
+
+### Schema
+
+Use `doc.schema` to ask what a path can contain without reaching into Zod
+internals. Results are serializable and advisory; commits still go through the
+schema gate.
+
+```ts
+const kind = doc.schema.kind("/items", "insert");
+const accepts = doc.schema.accepts("/items", item, "insert");
 ```
 
 ### Burst edits

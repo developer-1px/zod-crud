@@ -339,8 +339,11 @@ Rules:
 
 Acceptance evidence:
 
-- Tests cover object property, array item, record value, discriminated union
-  branch, and unknown path.
+- Headless tests in `tests/document-schema.test.ts` cover object property,
+  array insert item, record value, discriminated union branch, invalid pointer,
+  unknown path, serializable descriptions, and `accepts` without mutation.
+- React facade tests in `tests/document-schema-react.test.ts` prove the same
+  schema surface exists through `useJSONDocument`.
 
 ## 9. Replay / Wire Subsystem
 
@@ -375,10 +378,8 @@ Acceptance evidence:
 
 ## 10. Issue Slices
 
-Implementation should proceed in this order:
-
-1. **Schema facade**
-   - Add read-only path introspection.
+Current facade expansion slices are implemented. Continue from open standards
+and engine-hardening items in `BACKLOG.md`.
 
 ## 11. Completion Gates
 

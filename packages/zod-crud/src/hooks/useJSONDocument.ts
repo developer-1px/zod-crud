@@ -16,6 +16,7 @@ import { buildCan, type Can } from "../commands/buildCan.js";
 import { buildCheck, type Check } from "../check.js";
 import { createClipboardState, type ClipboardState } from "../clipboard.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "../read.js";
+import { createSchemaState, type SchemaState } from "../schema.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
@@ -61,6 +62,7 @@ export interface JSONDocumentHistory {
  * - can: mutation guard predicates + stack flags
  * - check: explainable dry-run guard results
  * - at/exists/query/entries: read/query helpers
+ * - schema: serializable schema introspection facade
  */
 export interface JSONDocument<T> {
   value: T;
@@ -71,6 +73,7 @@ export interface JSONDocument<T> {
   can: Can<T>;
   check: Check<T>;
   clipboard: ClipboardState<T>;
+  schema: SchemaState<T>;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
@@ -168,6 +171,10 @@ export function useJSONDocument<S extends z.ZodType>(
     () => buildReadFacade({ schema, getState: () => ops.state }),
     [schema, ops],
   );
+  const schemaState = useMemo(
+    () => createSchemaState({ schema }),
+    [schema],
+  );
 
   return useMemo<JSONDocument<z.output<S>>>(() => {
     const history: JSONDocumentHistory = {
@@ -187,12 +194,13 @@ export function useJSONDocument<S extends z.ZodType>(
       can,
       check,
       clipboard,
+      schema: schemaState,
       at: read.at,
       exists: read.exists,
       query: read.query,
       entries: read.entries,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, check, clipboard, read]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, check, clipboard, read, schemaState]);
 }
 
 function mergeEntryMetadata(

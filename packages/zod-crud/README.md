@@ -89,7 +89,7 @@ export function App() {
 }
 ```
 
-`useJSONDocument` returns a single facade with eight surfaces:
+`useJSONDocument` returns a single facade with nine surfaces:
 
 | Surface | Purpose |
 | --- | --- |
@@ -98,6 +98,7 @@ export function App() {
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
 | `doc.can` | mutation guard predicates + `undo`/`redo` flags |
 | `doc.check` | explainable dry-run guard results; `can.x(...) === check.x(...).ok` |
+| `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
 | `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
 | `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast(options?)`, `transaction(options?, fn)` |
@@ -131,7 +132,7 @@ doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` intentionally share the same
-`value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface. React
+`value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface. React
 owns render lifecycle only; core owns JSON editing.
 
 Selection is headless. `JSONPoint` is either a JSON Pointer string or
@@ -153,6 +154,9 @@ over the current document value. JSONPath queries return pointers, not values.
 History metadata is serializable. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user
 intent in undo entries and recorder steps.
+
+`doc.schema` answers what a path can contain without exposing Zod objects.
+It is advisory; commits still go through the schema gate.
 
 For lower-level composition (`useJSON` + `useSelection`), see the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
@@ -224,10 +228,10 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`selection`/`clipboard`/`history` surface and read/query helpers as `useJSONDocument` |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
+| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface and read/query helpers as `useJSONDocument` |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
