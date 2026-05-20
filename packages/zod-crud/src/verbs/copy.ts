@@ -4,8 +4,9 @@
 
 import type { Pointer } from "../core/pointer/index.js";
 import { cloneJson, jsonSerializableError } from "../core/json.js";
-import { isPrefix, readAt, tryParsePointer } from "../core/pointer/index.js";
+import { readAt, tryParsePointer } from "../core/pointer/index.js";
 import { serialize } from "../core/pointer/serialize.js";
+import { normalizePointerSources, type PointerSource, type PointerSourceError } from "../core/pointer/sourceSet.js";
 import { getArrayElement, getObjectKeys } from "../core/schema/introspection.js";
 import type * as z from "zod";
 
@@ -26,7 +27,7 @@ export interface CopyError {
 }
 
 export type CopyResult = CopyOk | CopyError;
-export type ClipboardSource = Pointer | ReadonlyArray<Pointer>;
+export type ClipboardSource = PointerSource;
 
 export interface ClipboardItemOptions {
   json?: boolean;
@@ -76,41 +77,14 @@ function copyOne(state: unknown, source: Pointer, sources: ReadonlyArray<Pointer
 }
 
 function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer[] } | CopyError {
-  if (typeof source === "string") return { ok: true, sources: [source] };
-
-  const sources: Pointer[] = [];
-  const parsedSources: string[][] = [];
-  for (const item of source) {
-    const segments = tryParsePointer(item);
-    if (segments === null) {
-      return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${item}` };
-    }
-
-    const duplicate = parsedSources.some((existing) => sameSegments(existing, segments));
-    if (duplicate) continue;
-
-    const covered = parsedSources.some((existing) => existing.length < segments.length && isPrefix(existing, segments));
-    if (covered) continue;
-
-    for (let i = parsedSources.length - 1; i >= 0; i -= 1) {
-      const existing = parsedSources[i]!;
-      if (segments.length < existing.length && isPrefix(segments, existing)) {
-        parsedSources.splice(i, 1);
-        sources.splice(i, 1);
-      }
-    }
-
-    sources.push(item);
-    parsedSources.push(segments);
-  }
-  if (sources.length === 0) {
-    return { ok: false, code: "empty_selection", message: "copy source selection is empty" };
-  }
-  return { ok: true, sources };
+  const result = normalizePointerSources(source);
+  return result.ok ? result : copySourceError(result);
 }
 
-function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
-  return left.length === right.length && isPrefix(left, right);
+function copySourceError(error: PointerSourceError): CopyError {
+  return error.code === "invalid_pointer"
+    ? { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${error.pointer}` }
+    : { ok: false, code: "empty_selection", message: "copy source selection is empty" };
 }
 
 export function toClipboardItems(payload: unknown, schema: z.ZodType, options: ClipboardItemOptions = {}): ClipboardItemMap {

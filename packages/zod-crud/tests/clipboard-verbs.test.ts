@@ -86,6 +86,15 @@ describe("verbs/copy", () => {
     if (!r.ok) expect(r.code).toBe("invalid_pointer");
   });
 
+  test("invalid source inside multi-source copy returns structured error", () => {
+    const r = copy(initial, ["/items/0", "items/1" as never]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("invalid_pointer");
+      expect(r.message).toContain("items/1");
+    }
+  });
+
   test("non-JSON source 는 payload 손실 없이 거부", () => {
     const r = copy({ item: { id: "a", dropped: undefined } }, "/item");
     expect(r.ok).toBe(false);
@@ -221,6 +230,15 @@ describe("verbs/cut", () => {
     const r = cut(Schema, initial, "items/0" as never);
     expect(r.ok).toBe(false);
     if (!r.ok) expect(r.code).toBe("invalid_pointer");
+  });
+
+  test("invalid source inside multi-source cut returns structured error", () => {
+    const r = cut(Schema, initial, ["/items/0", "items/1" as never]);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("invalid_pointer");
+      expect(r.message).toContain("items/1");
+    }
   });
 });
 

@@ -6,7 +6,8 @@ import type * as z from "zod";
 import { cloneJson, jsonSerializableError } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { isPrefix, readAt, tryParsePointer } from "../core/pointer/index.js";
+import { readAt, tryParsePointer } from "../core/pointer/index.js";
+import { normalizePointerSources, type PointerSourceError } from "../core/pointer/sourceSet.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import type { ClipboardSource } from "./copy.js";
 
@@ -74,41 +75,14 @@ function readPayload(state: unknown, source: Pointer): { ok: true; payload: unkn
 }
 
 function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer[] } | CutError {
-  if (typeof source === "string") return { ok: true, sources: [source] };
-
-  const sources: Pointer[] = [];
-  const parsedSources: string[][] = [];
-  for (const item of source) {
-    const segments = tryParsePointer(item);
-    if (segments === null) {
-      return { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${item}` };
-    }
-
-    const duplicate = parsedSources.some((existing) => sameSegments(existing, segments));
-    if (duplicate) continue;
-
-    const covered = parsedSources.some((existing) => existing.length < segments.length && isPrefix(existing, segments));
-    if (covered) continue;
-
-    for (let i = parsedSources.length - 1; i >= 0; i -= 1) {
-      const existing = parsedSources[i]!;
-      if (segments.length < existing.length && isPrefix(segments, existing)) {
-        parsedSources.splice(i, 1);
-        sources.splice(i, 1);
-      }
-    }
-
-    sources.push(item);
-    parsedSources.push(segments);
-  }
-  if (sources.length === 0) {
-    return { ok: false, code: "empty_selection", message: "cut source selection is empty" };
-  }
-  return { ok: true, sources };
+  const result = normalizePointerSources(source);
+  return result.ok ? result : cutSourceError(result);
 }
 
-function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
-  return left.length === right.length && isPrefix(left, right);
+function cutSourceError(error: PointerSourceError): CutError {
+  return error.code === "invalid_pointer"
+    ? { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${error.pointer}` }
+    : { ok: false, code: "empty_selection", message: "cut source selection is empty" };
 }
 
 function sortRemoveSources(sources: ReadonlyArray<Pointer>): Pointer[] {
