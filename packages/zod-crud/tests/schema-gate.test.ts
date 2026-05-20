@@ -60,6 +60,36 @@ describe("core/schema/preFlight", () => {
     ]);
     expect(r.ok).toBe(false);
   });
+
+  test("cross-field refinement 위반도 commit 전에 거부", () => {
+    const RangeSchema = z.object({
+      start: z.number(),
+      end: z.number(),
+    }).superRefine((value, ctx) => {
+      if (value.end <= value.start) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["end"],
+          message: "end must be greater than start",
+        });
+      }
+    });
+
+    const state = { start: 1, end: 3 };
+    const r = preFlight(RangeSchema, state, [
+      { op: "replace", path: "/start", value: 5 },
+    ]);
+
+    expect(r.ok).toBe(false);
+    expect(state).toEqual({ start: 1, end: 3 });
+    if (!r.ok) {
+      expect(r.code).toBe("schema_violation");
+      expect(r.violations).toContainEqual({
+        path: "/end",
+        message: "end must be greater than start",
+      });
+    }
+  });
 });
 
 describe("core/schema/validate", () => {

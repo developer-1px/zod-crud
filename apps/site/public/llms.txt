@@ -87,6 +87,10 @@ be expressed through `useJSONDocument`, it should also be expressible through
 `test`, `patch`, `apply`, plus lifecycle helpers. New convenience verbs should
 not be added unless they change the 4-pillar closure.
 
+The schema gate dry-applies the patch and runs whole-document
+`schema.safeParse`, so cross-field `.refine` / `.superRefine` violations are
+rejected before commit.
+
 JSONPath follows RFC 9535 selectors and filter function extensions:
 `length`, `count`, `match`, `search`, and `value`.
 The vendored RFC 9535 CTS gates full 703/703 conformance.

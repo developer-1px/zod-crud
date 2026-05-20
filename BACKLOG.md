@@ -22,7 +22,7 @@
 
 ## 미해결 (post-v0.12.0)
 
-- **cross-field refinement 보호** — preFlight branch-only 의 보호 밖. 별도 ADR 검토
+현재 알려진 미해결 없음.
 
 ## SPEC drift
 

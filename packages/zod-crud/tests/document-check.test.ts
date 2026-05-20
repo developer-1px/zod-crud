@@ -30,6 +30,32 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(invalidPointer).toMatchObject({ ok: false, code: "invalid_pointer" });
   });
 
+  test("reports cross-field refinement failures without mutation", () => {
+    const RangeSchema = z.object({
+      start: z.number(),
+      end: z.number(),
+    }).superRefine((value, ctx) => {
+      if (value.end <= value.start) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["end"],
+          message: "end must be greater than start",
+        });
+      }
+    });
+    const doc = createJSONDocument(RangeSchema, { start: 1, end: 3 });
+
+    const result = doc.check.replace("/start", 5);
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "schema_violation",
+      violations: [{ path: "/end", message: "end must be greater than start" }],
+    });
+    expect(result.ok).toBe(doc.can.replace("/start", 5));
+    expect(doc.value).toEqual({ start: 1, end: 3 });
+  });
+
   test("does not mutate value, selection, clipboard, or history", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,

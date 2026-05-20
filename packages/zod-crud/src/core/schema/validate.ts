@@ -1,6 +1,6 @@
 // core/schema/validate — dev-only assertion (전체 state 검증).
-// preFlight 가 잡지 못한 케이스 (branch-only 누락 / cross-field refinement) 를 위한
-// defensive guard. prod 빌드에서는 no-op.
+// public mutation path 밖에서 state 가 깨진 경우를 위한 defensive guard.
+// prod 빌드에서는 no-op.
 
 import type * as z from "zod";
 import { buildPointer } from "../pointer/index.js";

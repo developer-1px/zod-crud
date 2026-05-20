@@ -147,6 +147,9 @@ metadata; DOM/system clipboard integration remains user code.
 `doc.check` is headless dry-run validation for commands and patches. It returns
 the same success/failure family the command would hit, without mutating value,
 selection, clipboard, or history.
+The schema gate dry-applies the patch and runs whole-document
+`schema.safeParse`, so cross-field `.refine` / `.superRefine` violations are
+rejected before commit.
 
 `doc.at`, `doc.exists`, `doc.query`, and `doc.entries` are headless read helpers
 over the current document value. JSONPath queries return pointers, not values,

@@ -1,10 +1,7 @@
 // core/schema/preFlight — patch 적용 전 schema gate.
 // (state, patch, schema) → Ok(draft) | Err(violations).
-// branch-only 검증 정책 — patch 가 닿는 가지만 zod.safeParse (Q11 합의).
-//
-// 현재 구현 메모: 1차 구현은 dry-apply + 전체 safeParse 로 동치 결과 산출.
-// branch-only optimization (Pointer path → sub-schema descent) 는 후속 개선에서.
-// API 표면은 branch-only contract 그대로 유지하므로 호출자 코드는 변경 없음.
+// dry-apply 후 전체 schema.safeParse 를 실행한다.
+// cross-field refine/superRefine 위반도 commit 전에 schema_violation 으로 거부한다.
 
 import * as z from "zod";
 import { applyPatch, type JSONPatchOperation, type ErrorCode } from "../patch/index.js";
@@ -28,9 +25,6 @@ export type PreFlightResult<T> = PreFlightOk<T> | PreFlightErr;
 
 /**
  * patch 가 commit 되기 전에 schema 위반 여부를 검증한다.
- * branch-only 정책: cross-field refinement (.refine / .superRefine) 는 보호 밖.
- *   사용자가 cross-field 보호를 원하면 별도 commit-후 검증 wiring 필요.
- *
  * 실패 시 commit 하지 않는다 — history 오염 0.
  */
 export function preFlight<S extends z.ZodType>(
