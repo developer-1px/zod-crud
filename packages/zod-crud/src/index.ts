@@ -8,6 +8,16 @@
 export { JSONCrudError } from "./JSONCrudError.js";
 export type { JSONLoadOptions, JSONOps, UseJSONOptions } from "./jsonOps.js";
 
+// === Headless document facade ===
+export { createJSONDocument } from "./createJSONDocument.js";
+export type {
+  JSONDocument,
+  JSONDocumentHistory,
+  SelectionState,
+  UseJSONDocumentOptions,
+  UseSelectionOptions,
+} from "./createJSONDocument.js";
+
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";
 export type {

@@ -260,9 +260,10 @@ function assertSerializable(x: unknown, where: string): JSONResult;
 - `load(value, options?)` — 외부에서 받은 JSON을 schema 검증 후 state로 교체. `useJSONDocument` 에서는 성공 시 기본적으로 history 를 비우며, `{ preserveHistory: true }` 를 넘기면 기존 history 를 유지한다. 실패 시 state 와 history 를 모두 유지한다.
 - `reset(value?)` — initial 또는 인자 값으로 교체. 성공 시 history 를 비운다. 실패 시 state 와 history 를 모두 유지한다.
 
-### 4.4 History — `useJSONDocument` owner
+### 4.4 History — `JSONDocument` facade owner
 
-History 는 `useJSONDocument` facade 가 owner 다. `useJSON` 는 RFC 6902 ops 와 lifecycle 만 제공하고,
+History 는 `JSONDocument` facade 가 owner 다. headless `createJSONDocument` 와 React `useJSONDocument` 가
+같은 표면을 제공한다. `useJSON` 는 RFC 6902 ops 와 lifecycle 만 제공하고,
 undo/redo stack 은 `JSONDocument.history` 와 `JSONDocument.commands.undo/redo` 에서 다룬다.
 
 내부 형식: `JSONPatchOperation[]` forward/inverse stack. 표준 형식 그대로 저장하므로 외부 직렬화 무료.
@@ -470,9 +471,15 @@ export function applyMergePatch(target: unknown, patch: unknown): unknown;      
 
 테스트: [`tests/http.test.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/tests/http.test.ts) — RFC 7396 §2 의 표준 예제 + ETag conditional + content-type negotiation.
 
-### 5.10 `useJSONDocument` — 단일 React facade
+### 5.10 `createJSONDocument` / `useJSONDocument` — 단일 facade
 
 ```ts
+export function createJSONDocument<S extends z.ZodType>(
+  schema: S,
+  initial: z.input<S>,
+  options?: UseJSONDocumentOptions<z.output<S>>,
+): JSONDocument<z.output<S>>;
+
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
@@ -489,7 +496,8 @@ export interface JSONDocument<T> {
 }
 ```
 
-`zod-crud/react` 의 정체성 표면. data, selection, history, 10 verbs, guard predicates 를 한 객체로 묶는다.
+`zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
+React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, history, 10 verbs, guard predicates 를 한 객체로 묶는다.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
 history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
 

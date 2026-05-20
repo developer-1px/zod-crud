@@ -1,0 +1,362 @@
+// Headless JSONDocument facade.
+// React 의존 없이 useJSONDocument 와 같은 편집 표면을 제공한다.
+
+import type * as z from "zod";
+
+import { buildCan, type Can } from "./commands/buildCan.js";
+import { buildCommands, type Commands } from "./commands/buildCommands.js";
+import {
+  applyOperation,
+  applyPatch,
+  computeInverses,
+  type JSONPatchOperation,
+  type JSONResult,
+} from "./core/patch/index.js";
+import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
+import {
+  applySelectionAutoRules,
+  EMPTY_SELECTION,
+  isCollapsed,
+  reduceSelection,
+  selectionType,
+  type SelectionAction,
+  type SelectionMode,
+  type SelectionSnap,
+  type SelectionType,
+} from "./core/selection/index.js";
+import {
+  back as historyBack,
+  canRedo as historyCanRedo,
+  canUndo as historyCanUndo,
+  commit as historyCommit,
+  emptyHistory,
+  forward as historyForward,
+  mergeLast as historyMergeLast,
+  type HistoryStack,
+} from "./core/history.js";
+import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.js";
+import type {
+  JSONChangeListener,
+  JSONDocumentOps,
+  JSONLoadOptions,
+  JSONOps,
+  UseJSONOptions,
+} from "./jsonOps.js";
+
+export interface UseSelectionOptions {
+  mode?: SelectionMode;
+  initial?: ReadonlyArray<Pointer>;
+}
+
+export interface SelectionState<T> extends SelectionSnap {
+  readonly isCollapsed: boolean;
+  readonly type: SelectionType;
+  collapse(pointer: Pointer): void;
+  setBaseAndExtent(anchor: Pointer, focus: Pointer): void;
+  extend(pointer: Pointer): void;
+  addRange(pointer: Pointer): void;
+  removeRange(pointer: Pointer): void;
+  toggleRange(pointer: Pointer): void;
+  selectRanges(ranges: ReadonlyArray<Pointer>, anchor: Pointer | null, focus: Pointer | null): void;
+  empty(): void;
+  containsNode(pointer: Pointer): boolean;
+}
+
+export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
+  history?: number;
+  selection?: boolean | UseSelectionOptions;
+}
+
+export interface JSONDocumentHistory {
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly undoDepth: number;
+  readonly redoDepth: number;
+  mergeLast(): boolean;
+  transaction(fn: () => void): void;
+}
+
+export interface JSONDocument<T> {
+  readonly value: T;
+  readonly selection: SelectionState<T> | undefined;
+  readonly history: JSONDocumentHistory;
+  readonly ops: JSONDocumentOps<T>;
+  readonly commands: Commands<T>;
+  readonly can: Can<T>;
+}
+
+interface HistoryEntry {
+  forward: JSONPatchOperation[];
+  inverse: JSONPatchOperation[];
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+}
+
+const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
+
+export function createJSONDocument<S extends z.ZodType>(
+  schema: S,
+  initial: z.input<S>,
+  options: UseJSONDocumentOptions<z.output<S>> = {},
+): JSONDocument<z.output<S>> {
+  const parsed = schema.safeParse(initial);
+  if (!parsed.success) throw parsed.error;
+
+  let state = parsed.data as z.output<S>;
+  const initialState = state;
+  const policy: ErrorPolicy = options;
+  const listeners = new Set<JSONChangeListener>();
+  const historyLimit = options.history ?? 0;
+  let stack: HistoryStack<HistoryEntry> = emptyHistory<HistoryEntry>();
+  let isRestoring = false;
+
+  const selectionEnabled = options.selection !== undefined && options.selection !== false;
+  const selectionOptions: UseSelectionOptions =
+    typeof options.selection === "object" ? options.selection : {};
+  const selectionMode = selectionOptions.mode ?? "single";
+  let selectionSnap = initialSelection(selectionOptions, selectionMode, state);
+
+  const snapSelection = (): SelectionSnap => ({
+    ranges: [...selectionSnap.ranges],
+    anchor: selectionSnap.anchor,
+    focus: selectionSnap.focus,
+  });
+
+  const dispatchSelection = (action: SelectionAction): void => {
+    selectionSnap = reduceSelection(selectionSnap, action, selectionMode, state);
+  };
+
+  const selectionState: SelectionState<z.output<S>> = {
+    get ranges() { return selectionSnap.ranges; },
+    get anchor() { return selectionSnap.anchor; },
+    get focus() { return selectionSnap.focus; },
+    get isCollapsed() { return isCollapsed(selectionSnap); },
+    get type() { return selectionType(selectionSnap); },
+    collapse(pointer) { dispatchSelection({ type: "collapse", pointer }); },
+    setBaseAndExtent(anchor, focus) { dispatchSelection({ type: "setBaseAndExtent", anchor, focus }); },
+    extend(pointer) { dispatchSelection({ type: "extend", pointer }); },
+    addRange(pointer) { dispatchSelection({ type: "addRange", pointer }); },
+    removeRange(pointer) { dispatchSelection({ type: "removeRange", pointer }); },
+    toggleRange(pointer) { dispatchSelection({ type: "toggleRange", pointer }); },
+    selectRanges(ranges, anchor, focus) { dispatchSelection({ type: "selectRanges", ranges, anchor, focus }); },
+    empty() { dispatchSelection({ type: "empty" }); },
+    containsNode(pointer) { return selectionSnap.ranges.includes(pointer); },
+  };
+
+  const notify = (applied: ReadonlyArray<JSONPatchOperation>): void => {
+    if (applied.length === 0) return;
+    selectionSnap = applySelectionAutoRules(selectionSnap, applied, state, selectionMode);
+    for (const listener of listeners) listener(applied);
+  };
+
+  const dispatch = (
+    label: JSONPatchOperation | "patch",
+    operations: ReadonlyArray<JSONPatchOperation>,
+  ): JSONResult => {
+    const before = state;
+    const applied = applyPatch(schema, before, operations);
+    if (!applied.result.ok) return handleResult(policy, label, applied.result);
+    if (applied.state === before) return applied.result;
+    state = applied.state;
+    notify(applied.applied);
+    return applied.result;
+  };
+
+  const rawOps: JSONOps<z.output<S>> = {
+    add: (path, value) => dispatch({ op: "add", path: path as Pointer, value }, [{ op: "add", path: path as Pointer, value }]),
+    remove: (path) => dispatch({ op: "remove", path: path as Pointer }, [{ op: "remove", path: path as Pointer }]),
+    replace: (path, value) => dispatch({ op: "replace", path: path as Pointer, value }, [{ op: "replace", path: path as Pointer, value }]),
+    move: (from, path) => dispatch({ op: "move", from: from as Pointer, path: path as Pointer }, [{ op: "move", from: from as Pointer, path: path as Pointer }]),
+    copy: (from, path) => dispatch({ op: "copy", from: from as Pointer, path: path as Pointer }, [{ op: "copy", from: from as Pointer, path: path as Pointer }]),
+    test(path, value) {
+      const op: JSONPatchOperation = { op: "test", path: path as Pointer, value };
+      const r = applyOperation(schema, state, op);
+      return handleResult(policy, op, r.result);
+    },
+    set(path, value) {
+      const p = path as Pointer;
+      let segments: string[];
+      try {
+        segments = parsePointer(p);
+      } catch (error) {
+        return handleResult(policy, "set", {
+          ok: false,
+          code: "invalid_pointer",
+          reason: error instanceof Error ? error.message : "invalid JSON Pointer",
+          pointer: p,
+        });
+      }
+      const cur = readAt(state, segments);
+      if (value === undefined) {
+        if (!cur.ok) return { ok: true };
+        return ops.patch([{ op: "remove", path: p }]);
+      }
+      if (!cur.ok) return ops.patch([{ op: "add", path: p, value }]);
+      if (cur.value === value) return { ok: true };
+      return ops.patch([{ op: "replace", path: p, value }]);
+    },
+    patch(operations) {
+      return dispatch("patch", operations);
+    },
+    apply(operations) {
+      const r = ops.patch(operations);
+      if (!r.ok) throw new JSONCrudError("patch", r);
+    },
+    load(value) {
+      return replaceRoot("load", value);
+    },
+    reset(value) {
+      return replaceRoot("reset", value ?? initialState);
+    },
+    subscribe(listener) {
+      listeners.add(listener);
+      return () => { listeners.delete(listener); };
+    },
+    get state() { return state; },
+  };
+
+  const recordHistory = (
+    before: z.output<S>,
+    operations: ReadonlyArray<JSONPatchOperation>,
+    selectionBefore: SelectionSnap,
+  ): void => {
+    const inverse = computeInverses(before, operations);
+    if (!inverse.ok) return;
+    stack = historyCommit(stack, {
+      forward: [...operations],
+      inverse: inverse.inverses,
+      selectionBefore,
+      selectionAfter: snapSelection(),
+    }, historyLimit);
+  };
+
+  const patch: JSONOps<z.output<S>>["patch"] = (operations) => {
+    const before = state;
+    const selectionBefore = snapSelection();
+    const r = rawOps.patch(operations);
+    if (r.ok && historyLimit > 0 && !isRestoring) {
+      recordHistory(before, operations, selectionBefore);
+    }
+    return r;
+  };
+
+  const restore = (direction: "undo" | "redo"): boolean => {
+    const popped = direction === "undo" ? historyBack(stack) : historyForward(stack);
+    if (!popped) return false;
+    const entry = popped.entry;
+    if (direction === "undo") entry.selectionAfter = snapSelection();
+    isRestoring = true;
+    try {
+      const r = rawOps.patch(direction === "undo" ? entry.inverse : entry.forward);
+      if (!r.ok) return false;
+    } catch {
+      return false;
+    } finally {
+      isRestoring = false;
+    }
+    stack = popped.next;
+    selectionSnap = direction === "undo" ? entry.selectionBefore : entry.selectionAfter;
+    return true;
+  };
+
+  const replaceRoot = (label: "load" | "reset", value: unknown): JSONResult => {
+    const next = schema.safeParse(value);
+    if (!next.success) {
+      return handleResult(policy, label, {
+        ok: false,
+        code: "schema_violation",
+        reason: JSON.stringify(next.error.issues),
+      });
+    }
+    state = next.data as z.output<S>;
+    notify([ROOT_REPLACE(state)]);
+    return { ok: true };
+  };
+
+  const ops: JSONDocumentOps<z.output<S>> = {
+    add: (path, value) => patch([{ op: "add", path: path as Pointer, value }]),
+    remove: (path) => patch([{ op: "remove", path: path as Pointer }]),
+    replace: (path, value) => patch([{ op: "replace", path: path as Pointer, value }]),
+    move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
+    copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
+    test: rawOps.test,
+    set: rawOps.set,
+    patch,
+    apply(operations) {
+      const r = patch(operations);
+      if (!r.ok) throw new JSONCrudError("patch", r);
+    },
+    undo: () => restore("undo"),
+    redo: () => restore("redo"),
+    canUndo: () => historyCanUndo(stack),
+    canRedo: () => historyCanRedo(stack),
+    load(value, loadOptions?: JSONLoadOptions) {
+      const r = rawOps.load(value);
+      if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();
+      return r;
+    },
+    reset(value) {
+      const r = rawOps.reset(value);
+      if (r.ok) stack = emptyHistory<HistoryEntry>();
+      return r;
+    },
+    subscribe: rawOps.subscribe,
+    get state() { return state; },
+  };
+
+  const mergeLast = (): boolean => {
+    if (isRestoring) return false;
+    const next = historyMergeLast(stack, (prev, top) => ({
+      forward: [...prev.forward, ...top.forward],
+      inverse: [...top.inverse, ...prev.inverse],
+      selectionBefore: prev.selectionBefore,
+      selectionAfter: top.selectionAfter,
+    }));
+    if (!next) return false;
+    stack = next;
+    return true;
+  };
+
+  const history: JSONDocumentHistory = {
+    get canUndo() { return ops.canUndo(); },
+    get canRedo() { return ops.canRedo(); },
+    get undoDepth() { return stack.undo.length; },
+    get redoDepth() { return stack.redo.length; },
+    mergeLast,
+    transaction(fn) {
+      const depthBefore = stack.undo.length;
+      fn();
+      while (stack.undo.length > depthBefore + 1) {
+        if (!mergeLast()) break;
+      }
+    },
+  };
+
+  const selectionRef = { get current() { return selectionState; } };
+  const commands = buildCommands({ schema, ops, selectionRef });
+  const can = buildCan({ schema, ops });
+
+  return {
+    get value() { return state; },
+    get selection() { return selectionEnabled ? selectionState : undefined; },
+    history,
+    ops,
+    commands,
+    can,
+  };
+}
+
+function initialSelection(
+  options: UseSelectionOptions,
+  mode: SelectionMode,
+  state: unknown,
+): SelectionSnap {
+  const init = options.initial;
+  if (!init?.length) return EMPTY_SELECTION;
+  return reduceSelection(
+    EMPTY_SELECTION,
+    { type: "setBaseAndExtent", anchor: init[0]!, focus: init[init.length - 1]! },
+    mode,
+    state,
+  );
+}
