@@ -36,6 +36,8 @@ export type {
 export type { Pointer } from "./core/pointer/index.js";
 export type {
   SelectionMode,
+  JSONPoint,
+  SelectionRange,
   SelectionType,
   SelectionState,
   UseSelectionOptions,

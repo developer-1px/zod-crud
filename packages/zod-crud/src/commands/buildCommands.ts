@@ -8,9 +8,11 @@ import type * as z from "zod";
 import type { JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type {
+  JSONPoint,
   SelectionAction,
-  SelectionSnap,
   SelectionMode,
+  SelectionRange,
+  SelectionSnap,
 } from "../core/selection/index.js";
 import { select as selectVerb } from "../verbs/select.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
@@ -41,7 +43,16 @@ export interface Commands<T> {
 export interface BuildCommandsArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONDocumentOps<z.output<S>>;
-  selectionRef: { current: SelectionSnap };
+  selectionRef: { current: SelectionHandle };
+}
+
+interface SelectionHandle extends SelectionSnap {
+  selectRanges?(
+    ranges: ReadonlyArray<SelectionRange>,
+    anchor?: JSONPoint | null,
+    focus?: JSONPoint | null,
+    primaryIndex?: number,
+  ): void;
 }
 
 interface MutationResult<T> {
@@ -63,8 +74,9 @@ export function buildCommands<S extends z.ZodType>(
 
   return {
     select(action, mode = "single") {
-      // selectionRef.current 는 SelectionSnap 형태. selectVerb 는 pure 라 직접 전달.
-      return selectVerb(selectionRef.current, action, mode);
+      const next = selectVerb(selectionRef.current, action, mode, ops.state);
+      selectionRef.current.selectRanges?.(next.selectionRanges, next.anchor, next.focus, next.primaryIndex);
+      return next;
     },
     find(jsonpath) {
       return find(ops.state, jsonpath);

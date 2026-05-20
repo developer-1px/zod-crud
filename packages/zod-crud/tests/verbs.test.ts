@@ -72,8 +72,36 @@ describe("verbs/select", () => {
   test("collapse action 이 caret selection 으로 환원", () => {
     const s = select(EMPTY_SELECTION, { type: "collapse", pointer: "/items/0" }, "single");
     expect(s.ranges).toEqual(["/items/0"]);
+    expect(s.selectedPointers).toEqual(["/items/0"]);
+    expect(s.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
+    expect(s.primaryIndex).toBe(0);
     expect(s.anchor).toBe("/items/0");
     expect(s.focus).toBe("/items/0");
+  });
+
+  test("JSONPoint caret preserves text offset separately from selected pointer", () => {
+    const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
+    const s = select(EMPTY_SELECTION, { type: "collapse", point }, "single");
+
+    expect(s.ranges).toEqual(["/items/0/name"]);
+    expect(s.selectedPointers).toEqual(["/items/0/name"]);
+    expect(s.selectionRanges).toEqual([{ anchor: point, focus: point }]);
+    expect(s.anchor).toEqual(point);
+    expect(s.focus).toEqual(point);
+  });
+
+  test("multiple mode stores independent ranges and primary range", () => {
+    const first = select(EMPTY_SELECTION, { type: "addRange", pointer: "/items/0" }, "multiple");
+    const second = select(first, { type: "addRange", range: { anchor: "/items/1/name", focus: "/items/1/name" } }, "multiple");
+
+    expect(second.ranges).toEqual(["/items/0", "/items/1/name"]);
+    expect(second.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      { anchor: "/items/1/name", focus: "/items/1/name" },
+    ]);
+    expect(second.primaryIndex).toBe(1);
+    expect(second.anchor).toBe("/items/1/name");
+    expect(second.focus).toBe("/items/1/name");
   });
 
   test("extended range falls back to endpoints when pointer is invalid", () => {

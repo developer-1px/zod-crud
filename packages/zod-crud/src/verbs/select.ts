@@ -4,7 +4,9 @@
 import {
   reduceSelection as coreReduce,
   type SelectionAction,
+  type JSONPoint,
   type SelectionMode,
+  type SelectionRange,
   type SelectionSnap,
   EMPTY_SELECTION,
 } from "../core/selection/index.js";
@@ -14,9 +16,10 @@ export function select(
   current: SelectionSnap,
   action: SelectionAction,
   mode: SelectionMode = "single",
+  state?: unknown,
 ): SelectionSnap {
-  return coreReduce(current, action, mode);
+  return coreReduce(current, action, mode, state);
 }
 
 export { EMPTY_SELECTION };
-export type { SelectionAction, SelectionMode, SelectionSnap, Pointer };
+export type { JSONPoint, SelectionAction, SelectionMode, SelectionRange, SelectionSnap, Pointer };

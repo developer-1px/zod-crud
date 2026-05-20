@@ -71,6 +71,9 @@ export function useDebugLog<T>(
     if (!enabled || !selection) return;
     log("selection", {
       ranges: [...selection.ranges],
+      selectedPointers: [...selection.selectedPointers],
+      selectionRanges: [...selection.selectionRanges],
+      primaryIndex: selection.primaryIndex,
       anchor: selection.anchor,
       focus: selection.focus,
       isCollapsed: selection.isCollapsed,

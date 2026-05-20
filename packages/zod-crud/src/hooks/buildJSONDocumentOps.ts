@@ -62,8 +62,11 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
     if (!r.ok) return false; // 스택 갱신 안 함 — 원상태 유지
     stackRef.current = popped.next;
     const t = direction === "undo" ? e.selectionBefore : e.selectionAfter;
-    if (t.anchor && t.focus) selectionRef.current.setBaseAndExtent(t.anchor, t.focus);
-    else selectionRef.current.empty();
+    if (t.selectionRanges.length > 0) {
+      selectionRef.current.selectRanges(t.selectionRanges, t.anchor, t.focus, t.primaryIndex);
+    } else {
+      selectionRef.current.empty();
+    }
     return true;
   };
 

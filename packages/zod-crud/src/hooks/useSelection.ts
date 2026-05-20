@@ -13,31 +13,41 @@ import {
   type SelectionMode,
   type SelectionAction,
   type SelectionType,
+  type JSONPoint,
+  type SelectionRange,
 } from "../core/selection/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type { JSONOps } from "./useJSON.js";
 
-export type { SelectionMode, SelectionType };
+export type { JSONPoint, SelectionMode, SelectionRange, SelectionType };
 
 export interface UseSelectionOptions {
   mode?: SelectionMode;
-  initial?: ReadonlyArray<Pointer>;
+  initial?: ReadonlyArray<JSONPoint>;
 }
 
 export interface SelectionState<T> {
   ranges: ReadonlyArray<Pointer>;
-  anchor: Pointer | null;
-  focus: Pointer | null;
+  selectedPointers: ReadonlyArray<Pointer>;
+  selectionRanges: ReadonlyArray<SelectionRange>;
+  primaryIndex: number;
+  anchor: JSONPoint | null;
+  focus: JSONPoint | null;
   isCollapsed: boolean;
   type: SelectionType;
-  collapse(pointer: Pointer): void;
-  setBaseAndExtent(anchor: Pointer, focus: Pointer): void;
-  extend(pointer: Pointer): void;
-  addRange(pointer: Pointer): void;
-  removeRange(pointer: Pointer): void;
-  toggleRange(pointer: Pointer): void;
+  collapse(point: JSONPoint): void;
+  setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
+  extend(point: JSONPoint): void;
+  addRange(pointOrRange: JSONPoint | SelectionRange): void;
+  removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
+  toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
   // 비표준 escape hatch — 도메인-aware range 확장 (DFS 등) 을 호출자가 계산해 넘긴다.
-  selectRanges(ranges: ReadonlyArray<Pointer>, anchor: Pointer | null, focus: Pointer | null): void;
+  selectRanges(
+    ranges: ReadonlyArray<Pointer | SelectionRange>,
+    anchor?: JSONPoint | null,
+    focus?: JSONPoint | null,
+    primaryIndex?: number,
+  ): void;
   empty(): void;
   containsNode(pointer: Pointer): boolean;
 }
@@ -72,18 +82,39 @@ export function useSelection<T>(
 
   return useMemo<SelectionState<T>>(() => ({
     ranges: snap.ranges,
+    selectedPointers: snap.selectedPointers,
+    selectionRanges: snap.selectionRanges,
+    primaryIndex: snap.primaryIndex,
     anchor: snap.anchor,
     focus: snap.focus,
     isCollapsed: isCollapsed(snap),
     type: selectionType(snap),
-    collapse: (pointer) => dispatch({ type: "collapse", pointer }),
+    collapse: (point) => dispatch({ type: "collapse", point }),
     setBaseAndExtent: (anchor, focus) => dispatch({ type: "setBaseAndExtent", anchor, focus }),
-    extend: (pointer) => dispatch({ type: "extend", pointer }),
-    addRange: (pointer) => dispatch({ type: "addRange", pointer }),
-    removeRange: (pointer) => dispatch({ type: "removeRange", pointer }),
-    toggleRange: (pointer) => dispatch({ type: "toggleRange", pointer }),
-    selectRanges: (ranges, anchor, focus) => dispatch({ type: "selectRanges", ranges, anchor, focus }),
+    extend: (point) => dispatch({ type: "extend", point }),
+    addRange: (pointOrRange) => dispatch(isSelectionRange(pointOrRange)
+      ? { type: "addRange", range: pointOrRange }
+      : { type: "addRange", point: pointOrRange }),
+    removeRange: (pointOrRangeOrIndex) => dispatch(typeof pointOrRangeOrIndex === "number"
+      ? { type: "removeRange", index: pointOrRangeOrIndex }
+      : isSelectionRange(pointOrRangeOrIndex)
+        ? { type: "removeRange", range: pointOrRangeOrIndex }
+        : { type: "removeRange", point: pointOrRangeOrIndex }),
+    toggleRange: (pointOrRange) => dispatch(isSelectionRange(pointOrRange)
+      ? { type: "toggleRange", range: pointOrRange }
+      : { type: "toggleRange", point: pointOrRange }),
+    selectRanges: (ranges, anchor, focus, primaryIndex) => dispatch({
+      type: "selectRanges",
+      ranges,
+      ...(anchor !== undefined ? { anchor } : {}),
+      ...(focus !== undefined ? { focus } : {}),
+      ...(primaryIndex !== undefined ? { primaryIndex } : {}),
+    }),
     empty: () => dispatch({ type: "empty" }),
-    containsNode: (pointer) => snap.ranges.includes(pointer),
+    containsNode: (pointer) => snap.selectedPointers.includes(pointer),
   }), [snap, dispatch]);
+}
+
+function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {
+  return typeof input === "object" && "anchor" in input && "focus" in input;
 }

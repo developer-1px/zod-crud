@@ -63,7 +63,7 @@ document surface:
 | `doc.commands` | 10 verb command namespace |
 | `doc.can` | command guard namespace |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast()`, `transaction(fn)` |
-| `doc.selection` | Pointer-based W3C-shaped selection when enabled |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth and `selectedPointers` is the item-selection projection |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through

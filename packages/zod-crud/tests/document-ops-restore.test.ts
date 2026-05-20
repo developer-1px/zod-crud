@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import type { HistoryStack } from "../src/core/history.js";
 import type { JSONPatchOperation, JSONResult } from "../src/core/patch/index.js";
+import { EMPTY_SELECTION } from "../src/core/selection/index.js";
 import { buildJSONDocumentOps } from "../src/hooks/buildJSONDocumentOps.js";
 import type { HistoryEntry } from "../src/hooks/jsonDocumentHistory.js";
 import type { SelectionState } from "../src/hooks/useSelection.js";
@@ -12,8 +13,8 @@ describe("buildJSONDocumentOps restore", () => {
     const entry: HistoryEntry = {
       forward: [{ op: "replace", path: "/name", value: "next" }],
       inverse: [{ op: "replace", path: "/name", value: "old" }],
-      selectionBefore: { ranges: [], anchor: null, focus: null },
-      selectionAfter: { ranges: [], anchor: null, focus: null },
+      selectionBefore: EMPTY_SELECTION,
+      selectionAfter: EMPTY_SELECTION,
     };
     const stackRef = { current: { undo: [entry], redo: [] } satisfies HistoryStack<HistoryEntry> };
     const isRestoringRef = { current: false };
@@ -38,8 +39,8 @@ describe("buildJSONDocumentOps restore", () => {
     const entry: HistoryEntry = {
       forward: [{ op: "replace", path: "/name", value: "next" }],
       inverse: [{ op: "replace", path: "/name", value: "old" }],
-      selectionBefore: { ranges: [], anchor: null, focus: null },
-      selectionAfter: { ranges: [], anchor: null, focus: null },
+      selectionBefore: EMPTY_SELECTION,
+      selectionAfter: EMPTY_SELECTION,
     };
     const stackRef = { current: { undo: [], redo: [entry] } satisfies HistoryStack<HistoryEntry> };
     const isRestoringRef = { current: false };
@@ -92,6 +93,9 @@ function baseOps(patch: (operations: ReadonlyArray<JSONPatchOperation>) => JSONR
 function selectionStub(): SelectionState<{ name: string }> {
   return {
     ranges: [],
+    selectedPointers: [],
+    selectionRanges: [],
+    primaryIndex: -1,
     anchor: null,
     focus: null,
     isCollapsed: false,

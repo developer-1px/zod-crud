@@ -48,7 +48,14 @@ export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 export { serialize, parse, safeParse } from "./core/pointer/serialize.js";
 
 // === Selection — W3C Selection API 정합 ===
-export type { SelectionMode, SelectionType } from "./core/selection/index.js";
+export type {
+  JSONPoint,
+  SelectionAffinity,
+  SelectionEdge,
+  SelectionMode,
+  SelectionRange,
+  SelectionType,
+} from "./core/selection/index.js";
 export { trackPointer } from "./core/track.js";
 export { EMPTY_SELECTION } from "./core/selection/index.js";
 

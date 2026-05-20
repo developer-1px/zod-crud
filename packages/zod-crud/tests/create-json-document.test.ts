@@ -63,6 +63,41 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.redoDepth).toBe(1);
   });
 
+  test("commands.select mutates document selection", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+
+    const selected = doc.commands.select({ type: "addRange", pointer: "/items/0" }, "multiple");
+
+    expect(selected.selectedPointers).toEqual(["/items/0"]);
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0"]);
+    expect(doc.selection?.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
+
+    doc.commands.select({ type: "addRange", pointer: "/items/1" }, "multiple");
+
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
+    expect(doc.selection?.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      { anchor: "/items/1", focus: "/items/1" },
+    ]);
+    expect(doc.selection?.primaryIndex).toBe(1);
+  });
+
+  test("JSONPoint caret tracks pointer movement while preserving offset", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single" },
+    });
+
+    doc.selection?.collapse({ path: "/items/1/name", offset: 1, affinity: "forward" });
+    doc.ops.remove("/items/0");
+
+    expect(doc.selection?.anchor).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    expect(doc.selection?.focus).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
+  });
+
   test("transaction collapses multiple ops into one undo entry", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

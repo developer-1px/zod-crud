@@ -7,6 +7,7 @@ import { buildCommands } from "../src/commands/buildCommands.js";
 import { buildCan } from "../src/commands/buildCan.js";
 import type { JSONDocumentOps } from "../src/jsonOps.js";
 import { applyPatch, type JSONPatchOperation } from "../src/core/patch/index.js";
+import { EMPTY_SELECTION } from "../src/core/selection/index.js";
 import { JSONCrudError } from "../src/JSONCrudError.js";
 
 const Schema = z.object({
@@ -55,7 +56,7 @@ function makeOps(s0: State): JSONDocumentOps<State> {
   };
 }
 
-const emptySelectionRef = { current: { ranges: [], anchor: null, focus: null } };
+const emptySelectionRef = { current: EMPTY_SELECTION };
 
 describe("buildCommands — TipTap 식 commands group", () => {
   test("commands.copy(source) — read-only payload", () => {

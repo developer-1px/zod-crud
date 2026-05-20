@@ -20,7 +20,9 @@ import {
   reduceSelection,
   selectionType,
   type SelectionAction,
+  type JSONPoint,
   type SelectionMode,
+  type SelectionRange,
   type SelectionSnap,
   type SelectionType,
 } from "./core/selection/index.js";
@@ -45,19 +47,24 @@ import type {
 
 export interface UseSelectionOptions {
   mode?: SelectionMode;
-  initial?: ReadonlyArray<Pointer>;
+  initial?: ReadonlyArray<JSONPoint>;
 }
 
 export interface SelectionState<T> extends SelectionSnap {
   readonly isCollapsed: boolean;
   readonly type: SelectionType;
-  collapse(pointer: Pointer): void;
-  setBaseAndExtent(anchor: Pointer, focus: Pointer): void;
-  extend(pointer: Pointer): void;
-  addRange(pointer: Pointer): void;
-  removeRange(pointer: Pointer): void;
-  toggleRange(pointer: Pointer): void;
-  selectRanges(ranges: ReadonlyArray<Pointer>, anchor: Pointer | null, focus: Pointer | null): void;
+  collapse(point: JSONPoint): void;
+  setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
+  extend(point: JSONPoint): void;
+  addRange(pointOrRange: JSONPoint | SelectionRange): void;
+  removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
+  toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  selectRanges(
+    ranges: ReadonlyArray<Pointer | SelectionRange>,
+    anchor?: JSONPoint | null,
+    focus?: JSONPoint | null,
+    primaryIndex?: number,
+  ): void;
   empty(): void;
   containsNode(pointer: Pointer): boolean;
 }
@@ -118,6 +125,9 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const snapSelection = (): SelectionSnap => ({
     ranges: [...selectionSnap.ranges],
+    selectedPointers: [...selectionSnap.selectedPointers],
+    selectionRanges: selectionSnap.selectionRanges.map((range) => ({ ...range })),
+    primaryIndex: selectionSnap.primaryIndex,
     anchor: selectionSnap.anchor,
     focus: selectionSnap.focus,
   });
@@ -128,19 +138,44 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const selectionState: SelectionState<z.output<S>> = {
     get ranges() { return selectionSnap.ranges; },
+    get selectedPointers() { return selectionSnap.selectedPointers; },
+    get selectionRanges() { return selectionSnap.selectionRanges; },
+    get primaryIndex() { return selectionSnap.primaryIndex; },
     get anchor() { return selectionSnap.anchor; },
     get focus() { return selectionSnap.focus; },
     get isCollapsed() { return isCollapsed(selectionSnap); },
     get type() { return selectionType(selectionSnap); },
-    collapse(pointer) { dispatchSelection({ type: "collapse", pointer }); },
+    collapse(point) { dispatchSelection({ type: "collapse", point }); },
     setBaseAndExtent(anchor, focus) { dispatchSelection({ type: "setBaseAndExtent", anchor, focus }); },
-    extend(pointer) { dispatchSelection({ type: "extend", pointer }); },
-    addRange(pointer) { dispatchSelection({ type: "addRange", pointer }); },
-    removeRange(pointer) { dispatchSelection({ type: "removeRange", pointer }); },
-    toggleRange(pointer) { dispatchSelection({ type: "toggleRange", pointer }); },
-    selectRanges(ranges, anchor, focus) { dispatchSelection({ type: "selectRanges", ranges, anchor, focus }); },
+    extend(point) { dispatchSelection({ type: "extend", point }); },
+    addRange(pointOrRange) {
+      dispatchSelection(isSelectionRange(pointOrRange)
+        ? { type: "addRange", range: pointOrRange }
+        : { type: "addRange", point: pointOrRange });
+    },
+    removeRange(pointOrRangeOrIndex) {
+      dispatchSelection(typeof pointOrRangeOrIndex === "number"
+        ? { type: "removeRange", index: pointOrRangeOrIndex }
+        : isSelectionRange(pointOrRangeOrIndex)
+          ? { type: "removeRange", range: pointOrRangeOrIndex }
+          : { type: "removeRange", point: pointOrRangeOrIndex });
+    },
+    toggleRange(pointOrRange) {
+      dispatchSelection(isSelectionRange(pointOrRange)
+        ? { type: "toggleRange", range: pointOrRange }
+        : { type: "toggleRange", point: pointOrRange });
+    },
+    selectRanges(ranges, anchor, focus, primaryIndex) {
+      dispatchSelection({
+        type: "selectRanges",
+        ranges,
+        ...(anchor !== undefined ? { anchor } : {}),
+        ...(focus !== undefined ? { focus } : {}),
+        ...(primaryIndex !== undefined ? { primaryIndex } : {}),
+      });
+    },
     empty() { dispatchSelection({ type: "empty" }); },
-    containsNode(pointer) { return selectionSnap.ranges.includes(pointer); },
+    containsNode(pointer) { return selectionSnap.selectedPointers.includes(pointer); },
   };
 
   const notify = (applied: ReadonlyArray<JSONPatchOperation>): void => {
@@ -344,6 +379,10 @@ export function createJSONDocument<S extends z.ZodType>(
     commands,
     can,
   };
+}
+
+function isSelectionRange(input: JSONPoint | SelectionRange): input is SelectionRange {
+  return typeof input === "object" && "anchor" in input && "focus" in input;
 }
 
 function initialSelection(

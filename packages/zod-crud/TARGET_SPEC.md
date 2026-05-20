@@ -197,65 +197,71 @@ Acceptance evidence:
 
 ## 6. Selection Subsystem
 
-Selection is a first-class engine subsystem. The short-term target is to make
-selection mutation explicit and stateful. The long-term target is to support
-offset-bearing JSON coordinates.
-
-### 6.1 Short-term API
+Selection is a first-class engine subsystem. Current source of truth is
+`SPEC.md` §5.7. The target facade keeps selection headless, JSON-serializable,
+and shared by `createJSONDocument` and `useJSONDocument`.
 
 ```ts
+type JSONPoint =
+  | Pointer
+  | {
+      path: Pointer;
+      offset?: number;
+      edge?: "before" | "after";
+      affinity?: "forward" | "backward";
+    };
+
+interface SelectionRange {
+  anchor: JSONPoint;
+  focus: JSONPoint;
+}
+
 interface SelectionState<T> {
-  readonly ranges: ReadonlyArray<Pointer>;
-  readonly anchor: Pointer | null;
-  readonly focus: Pointer | null;
+  readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
+  readonly selectedPointers: ReadonlyArray<Pointer>;
+  readonly selectionRanges: ReadonlyArray<SelectionRange>;
+  readonly primaryIndex: number;
+  readonly anchor: JSONPoint | null;
+  readonly focus: JSONPoint | null;
   readonly isCollapsed: boolean;
   readonly type: SelectionType;
 
-  select(action: SelectionAction): void;
-  collapse(pointer: Pointer): void;
-  setBaseAndExtent(anchor: Pointer, focus: Pointer): void;
-  extend(pointer: Pointer): void;
-  addRange(pointer: Pointer): void;
-  removeRange(pointer: Pointer): void;
-  toggleRange(pointer: Pointer): void;
-  selectRanges(ranges: ReadonlyArray<Pointer>, anchor: Pointer | null, focus: Pointer | null): void;
+  collapse(point: JSONPoint): void;
+  setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
+  extend(point: JSONPoint): void;
+  addRange(pointOrRange: JSONPoint | SelectionRange): void;
+  removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
+  toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  selectRanges(
+    ranges: ReadonlyArray<Pointer | SelectionRange>,
+    anchor?: JSONPoint | null,
+    focus?: JSONPoint | null,
+    primaryIndex?: number,
+  ): void;
   empty(): void;
   containsNode(pointer: Pointer): boolean;
 }
 ```
 
-`commands.select` must either mutate document selection or be removed from the
-command namespace. A command named `select` that only returns a computed snap is
-not a product-level command.
-
-### 6.2 Long-term Coordinate Model
-
-```ts
-interface JSONPoint {
-  path: Pointer;
-  offset?: number;
-}
-
-interface JSONRange {
-  anchor: JSONPoint;
-  focus: JSONPoint;
-}
-```
+`commands.select` mutates document selection and returns the computed snapshot.
+`selectionRanges[primaryIndex]` is the primary command range. Pointer-only
+selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
+carets and item-boundary carets.
 
 Rules:
 
-- Pointer-only selection remains valid.
 - Offset-bearing points are allowed only where the value at `path` supports an
   offset domain, such as string text or app-declared sequence fields.
 - Selection snapshots remain JSON serializable.
-- RFC 6902 mutation still drives automatic tracking.
+- RFC 6902 mutation drives automatic path tracking. Offset/edge/affinity are
+  preserved when the underlying `path` tracks to a new Pointer.
 
 Acceptance evidence:
 
-- Short-term tests prove `doc.selection.select(action)` mutates headless and
-  React facades identically.
-- Long-term implementation requires separate compatibility tests for
-  Pointer-only and offset-bearing selections.
+- `tests/verbs.test.ts` covers Pointer selection, JSONPoint caret, and multiple
+  independent ranges.
+- `tests/create-json-document.test.ts` covers `commands.select` mutation and
+  JSONPoint path tracking through document patches.
 
 ## 7. History Subsystem
 
@@ -353,31 +359,24 @@ Acceptance evidence:
 
 Implementation should proceed in this order:
 
-1. **Selection command contract**
-   - Add `selection.select(action)` or make `commands.select(action)` mutate.
-   - Remove pure-only command ambiguity.
-
-2. **Document clipboard**
+1. **Document clipboard**
    - Add `doc.clipboard`.
    - Keep pure verb exports.
    - Prove atomic cut and failed paste behavior.
 
-3. **Check facade**
+2. **Check facade**
    - Add `doc.check`.
    - Define `can === check.ok` invariant.
 
-4. **Read/query facade**
+3. **Read/query facade**
    - Add `doc.at`, `doc.exists`, `doc.query`, `doc.entries`.
 
-5. **History metadata**
+4. **History metadata**
    - Add transaction options and merge metadata.
    - Preserve metadata in recordings.
 
-6. **Schema facade**
+5. **Schema facade**
    - Add read-only path introspection.
-
-7. **JSONPoint selection**
-   - Design and implement only after Pointer-only compatibility is locked.
 
 ## 11. Completion Gates
 

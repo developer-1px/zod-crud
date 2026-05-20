@@ -66,7 +66,8 @@ doc.commands.undo();
 
 `createJSONDocument` and `useJSONDocument` expose the same
 `value`/`ops`/`commands`/`can`/`selection`/`history` surface; React only adds
-render lifecycle.
+render lifecycle. Selection uses headless `JSONPoint` coordinates, so item
+selection and text carets share one JSON editing model.
 
 ### Dict-record 한 키 쓰기
 
