@@ -5,7 +5,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { z } from "zod";
 
 import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
-import { useRecorder } from "../src/sidecars/recorder.js";
+import { replayRecording, useRecorder } from "../src/sidecars/recorder.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;
@@ -139,10 +139,50 @@ describe("useRecorder", () => {
     });
     expect(JSON.parse(JSON.stringify(recording?.steps[0]))).toEqual(recording?.steps[0]);
   });
+
+  test("replayRecording restores recorded selection through a React document target", async () => {
+    const source = renderHook(() => useSelectionHarness());
+
+    act(() => {
+      source.current.doc.selection?.collapse("/nested/count");
+      source.current.recorder.start();
+    });
+    act(() => {
+      source.current.doc.ops.replace("/nested/count", 1);
+    });
+
+    let recording: ReturnType<typeof source.current.recorder.stop> | undefined;
+    act(() => {
+      recording = source.current.recorder.stop();
+    });
+    const recorded = recording;
+    if (!recorded) throw new Error("expected recording");
+
+    const target = renderHook(() => useSelectionHarness());
+    act(() => {
+      target.current.doc.selection?.collapse("/nested");
+    });
+
+    await act(async () => {
+      await replayRecording(recorded, target.current.doc, { speed: Infinity });
+    });
+
+    expect(target.current.doc.value.nested.count).toBe(1);
+    expect(target.current.doc.selection?.snapshot()).toEqual(recorded.steps[0]?.selectionAfter);
+  });
 });
 
 function useHarness() {
   const doc = useJSONDocument(Schema, { nested: { count: 0 } }, { history: 10 });
+  const recorder = useRecorder(doc.ops);
+  return { doc, recorder };
+}
+
+function useSelectionHarness() {
+  const doc = useJSONDocument(Schema, { nested: { count: 0 } }, {
+    history: 10,
+    selection: { mode: "single" },
+  });
   const recorder = useRecorder(doc.ops);
   return { doc, recorder };
 }

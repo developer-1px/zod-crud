@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { applyPatch, JSONCrudError, replayRecording, type JSONOps, type Recording } from "../src/index.js";
+import { applyPatch, createJSONDocument, JSONCrudError, replayRecording, type JSONOps, type Recording } from "../src/index.js";
 
 const Schema = z.object({ items: z.array(z.string()) });
 type S = z.infer<typeof Schema>;
@@ -62,6 +62,54 @@ describe("replayRecording", () => {
     const ops = makeOps({ items: ["x"] });
     await replayRecording(recording, ops, { speed: Infinity });
     expect(ops.state).toEqual({ items: ["b"] });
+  });
+
+  test("restores selection snapshots when replay target is a document facade", async () => {
+    const recording: Recording<S> = {
+      startedAt: 0,
+      initial: { items: ["a", "b"] },
+      steps: [{
+        ops: [{ op: "replace", path: "/items/1", value: "B" }],
+        at: 0,
+        selectionBefore: {
+          ranges: ["/items/0"],
+          selectedPointers: ["/items/0"],
+          selectionRanges: [{ anchor: "/items/0", focus: "/items/0" }],
+          primaryIndex: 0,
+          anchor: "/items/0",
+          focus: "/items/0",
+        },
+        selectionAfter: {
+          ranges: ["/items/1"],
+          selectedPointers: ["/items/1"],
+          selectionRanges: [{
+            anchor: { path: "/items/1", offset: 99, affinity: "forward" },
+            focus: { path: "/items/1", offset: 99, affinity: "forward" },
+          }],
+          primaryIndex: 0,
+          anchor: { path: "/items/1", offset: 99, affinity: "forward" },
+          focus: { path: "/items/1", offset: 99, affinity: "forward" },
+        },
+      }],
+    };
+    const doc = createJSONDocument(Schema, { items: ["stale"] }, {
+      selection: { mode: "single" },
+    });
+
+    await replayRecording(recording, doc, { speed: Infinity });
+
+    expect(doc.value).toEqual({ items: ["a", "B"] });
+    expect(doc.selection?.snapshot()).toEqual({
+      ranges: ["/items/1"],
+      selectedPointers: ["/items/1"],
+      selectionRanges: [{
+        anchor: { path: "/items/1", offset: 1, affinity: "forward" },
+        focus: { path: "/items/1", offset: 1, affinity: "forward" },
+      }],
+      primaryIndex: 0,
+      anchor: { path: "/items/1", offset: 1, affinity: "forward" },
+      focus: { path: "/items/1", offset: 1, affinity: "forward" },
+    });
   });
 
   test("respects abort signal", async () => {

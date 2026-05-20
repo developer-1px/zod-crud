@@ -583,6 +583,7 @@ read/query helpers 는 현재 state 를 Pointer/JSONPath 로 읽고, JSONPath qu
 schema introspection 은 serializable description/kind/accepts 결과를 제공하며 Zod 객체를 public API 로 노출하지 않는다.
 history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
 `transaction({ label, origin, mergeKey }, fn)` metadata 는 history entry 와 recorder step 에 JSON 으로 보존된다.
+`replayRecording(recording, ops)` 는 state-only replay 이고, `replayRecording(recording, doc)` 는 step 의 `selectionBefore` / `selectionAfter` metadata 가 있으면 document selection 도 복원한다.
 
 ---
 

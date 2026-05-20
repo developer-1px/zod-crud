@@ -124,7 +124,14 @@ export function buildJSONDocumentOps<T>(args: BuildJSONDocumentOpsArgs<T>): JSON
       if (r.ok) stackRef.current = emptyHistory<HistoryEntry>();
       return r;
     },
-    subscribe: rawOps.subscribe,
+    subscribe(listener) {
+      return rawOps.subscribe((applied, metadata) => {
+        listener(applied, {
+          ...metadata,
+          selectionAfter: snapSelection(selectionRef.current),
+        });
+      });
+    },
     get state() { return rawOps.state; },
   };
 }
@@ -133,11 +140,10 @@ function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,
   direct: JSONChangeMetadata | undefined,
   selectionBefore: ReturnType<typeof snapSelection>,
-): JSONChangeMetadata | undefined {
-  const metadata = active || direct ? { ...active, ...direct } : undefined;
-  if (!metadata) return undefined;
+): JSONChangeMetadata {
   return {
-    ...metadata,
+    ...active,
+    ...direct,
     selectionBefore,
   };
 }

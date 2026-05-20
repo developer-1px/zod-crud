@@ -51,7 +51,15 @@ export type {
 } from "./hooks/useDraft.js";
 
 export { useRecorder, replayRecording } from "./sidecars/recorder.js";
-export type { RecordedStep, RecorderApi, Recording, ReplayOptions } from "./sidecars/recorder.js";
+export type {
+  RecordedStep,
+  RecorderApi,
+  Recording,
+  ReplayDocumentTarget,
+  ReplayOptions,
+  ReplaySelectionTarget,
+  ReplayTarget,
+} from "./sidecars/recorder.js";
 
 export { useDebugLog } from "./sidecars/debug-log.js";
 export type { DebugLog, DebugLogApi, DebugLogger } from "./sidecars/debug-log.js";

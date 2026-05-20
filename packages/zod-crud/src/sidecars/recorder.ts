@@ -10,7 +10,14 @@ import { cloneJson } from "../core/json.js";
 import type { JSONChangeMetadata } from "../jsonOps.js";
 import type { RecordedStep, Recording } from "./replayRecording.js";
 export { replayRecording } from "./replayRecording.js";
-export type { RecordedStep, Recording, ReplayOptions } from "./replayRecording.js";
+export type {
+  RecordedStep,
+  Recording,
+  ReplayDocumentTarget,
+  ReplayOptions,
+  ReplaySelectionTarget,
+  ReplayTarget,
+} from "./replayRecording.js";
 
 export interface RecorderApi<T> {
   isRecording: boolean;

@@ -486,11 +486,10 @@ function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,
   direct: JSONChangeMetadata | undefined,
   selectionBefore: SelectionSnap,
-): JSONChangeMetadata | undefined {
-  const metadata = active || direct ? { ...active, ...direct } : undefined;
-  if (!metadata) return undefined;
+): JSONChangeMetadata {
   return {
-    ...metadata,
+    ...active,
+    ...direct,
     selectionBefore,
   };
 }

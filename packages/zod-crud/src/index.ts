@@ -125,7 +125,10 @@ export { replayRecording } from "./sidecars/replayRecording.js";
 export type {
   RecordedStep,
   Recording,
+  ReplayDocumentTarget,
   ReplayOptions,
+  ReplaySelectionTarget,
+  ReplayTarget,
 } from "./sidecars/replayRecording.js";
 
 // HTTP transport — RFC 5789 + 6902 + 7396 wire format.

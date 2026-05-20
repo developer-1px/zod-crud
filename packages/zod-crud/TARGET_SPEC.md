@@ -436,13 +436,16 @@ interface RecordedStep {
 Rules:
 
 - Recording is still JSON.
-- Replay applies operations through the same document facade.
-- Replay may restore selection if metadata is present and the target document
-  exposes selection.
+- Replay accepts either `JSONOps<T>` for state-only replay or a document facade
+  target for state + selection replay.
+- Replay restores `selectionBefore` before the first step and `selectionAfter`
+  after each step when metadata is present and the target exposes selection.
 
 Acceptance evidence:
 
 - Tests prove old recordings without metadata still replay.
+- Headless and React tests prove recordings with selection metadata restore the
+  target selection.
 - Tests prove new recordings preserve metadata and optional selection snaps.
 
 ## 10. Issue Slices
