@@ -141,6 +141,35 @@ describe("createJSONDocument — headless facade", () => {
     });
   });
 
+  test("doc.clipboard write normalizes and validates source metadata", () => {
+    const doc = createJSONDocument(Schema, initial);
+
+    const written = doc.clipboard.write(
+      { id: "a", name: "A" },
+      { source: "/items/0/name", sources: ["/items/0", "/items/0"] },
+    );
+
+    expect(written).toEqual({ ok: true });
+    expect(doc.clipboard.source).toBe("/items/0");
+    expect(doc.clipboard.sources).toEqual(["/items/0"]);
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+
+    const failed = doc.clipboard.write({ id: "bad", name: "Bad" }, { source: "items/0" });
+
+    expect(failed).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "items/0" });
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+  });
+
   test("commands.select mutates document selection", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

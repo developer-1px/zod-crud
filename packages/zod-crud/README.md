@@ -151,7 +151,8 @@ Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata. Single-source copy/cut returns the copied fragment; multi-source
 copy/cut returns a JSON array payload, keeps `source` as the primary source,
 and exposes all `sources` through both `doc.clipboard.sources` and
-`doc.clipboard.read()`. `doc.clipboard.paste` spreads multi-source array
+`doc.clipboard.read()`. Manual `doc.clipboard.write` validates and normalizes
+source metadata when provided. `doc.clipboard.paste` spreads multi-source array
 payloads back into array targets by default; pass `{ spread: false }` to keep
 the array payload as one value. DOM/system clipboard integration remains user
 code.

@@ -3,6 +3,7 @@ import type * as z from "zod";
 import { cloneJson, jsonSerializableError } from "./core/json.js";
 import type { JSONResult } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
+import { normalizePointerSources } from "./core/pointer/sourceSet.js";
 import { schemaAtPointer } from "./core/schema/introspection.js";
 import type { JSONDocumentOps } from "./jsonOps.js";
 import {
@@ -61,6 +62,10 @@ interface ClipboardBuffer {
   schema: z.ZodType;
 }
 
+type ClipboardWriteSourcesResult =
+  | { ok: true; sources: Pointer[] | null }
+  | { ok: false; result: Exclude<JSONResult, { ok: true }> };
+
 interface CreateClipboardStateArgs<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
@@ -92,13 +97,26 @@ export function createClipboardState<S extends z.ZodType>(
   });
   const bufferSchema = (source: Pointer | null): z.ZodType =>
     source === null ? schema : (schemaAtPointer(schema, source) ?? schema);
-  const writeSources = (options: ClipboardWriteOptions): Pointer[] | null => {
-    const sources: Pointer[] = [];
-    if (options.source !== undefined && options.source !== null) sources.push(options.source);
+  const writeSources = (options: ClipboardWriteOptions): ClipboardWriteSourcesResult => {
+    const candidates: Pointer[] = [];
+    if (options.source !== undefined && options.source !== null) candidates.push(options.source);
     for (const item of options.sources ?? []) {
-      if (!sources.includes(item)) sources.push(item);
+      candidates.push(item);
     }
-    return sources.length > 0 ? sources : null;
+    if (candidates.length === 0) return { ok: true, sources: null };
+
+    const normalized = normalizePointerSources(candidates);
+    if (normalized.ok) return { ok: true, sources: normalized.sources };
+    if (normalized.code === "empty_selection") return { ok: true, sources: null };
+    return {
+      ok: false,
+      result: {
+        ok: false,
+        code: "invalid_pointer",
+        reason: `invalid clipboard source pointer: ${normalized.pointer}`,
+        pointer: normalized.pointer,
+      },
+    };
   };
 
   return {
@@ -119,7 +137,9 @@ export function createClipboardState<S extends z.ZodType>(
     write(payload, options = {}) {
       const reason = jsonSerializableError(payload);
       if (reason) return { ok: false, code: "not_serializable", reason };
-      const sources = writeSources(options);
+      const writtenSources = writeSources(options);
+      if (!writtenSources.ok) return writtenSources.result;
+      const sources = writtenSources.sources;
       const source = sources?.[0] ?? null;
       setBuffer({
         payload: cloneJson(payload),
