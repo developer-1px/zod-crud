@@ -146,11 +146,16 @@ doc.commit(
   {
     label: "insertText",
     origin: "editor",
-    selection: { type: "collapse", point: { path: "/blocks/0", offset: 2 } },
+    selection: {
+      type: "collapse",
+      point: { path: "/blocks/0", offset: 2 },
+      context: { marks: ["bold"] },
+    },
   },
 );
 ```
 
+`selection.context`는 stored marks 같은 선택-local JSON 컨텍스트입니다.
 selection-only commit처럼 빈 patch를 커밋하면 `doc.lastPatch`는 `[]`입니다.
 
 ```ts

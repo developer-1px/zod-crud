@@ -66,6 +66,42 @@ describe("createSelection", () => {
     expect(changes).toHaveLength(3);
   });
 
+  test("stores JSON-serializable selection context with snapshot semantics", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "single",
+      context: { marks: ["bold"], intent: "insert" },
+    });
+    const changes: unknown[] = [];
+    selection.subscribe((snapshot, previous) => changes.push({ snapshot, previous }));
+
+    expect(selection.context).toEqual({ marks: ["bold"], intent: "insert" });
+
+    selection.collapse({ path: "/items/0/name", offset: 1 });
+    expect(selection.caret).toEqual({ path: "/items/0/name", offset: 1 });
+    expect(selection.context).toEqual({ marks: ["bold"], intent: "insert" });
+
+    const snapshot = selection.snapshot();
+    expect(snapshot.context).toEqual({ marks: ["bold"], intent: "insert" });
+    ((snapshot.context as { marks: string[] }).marks).push("italic");
+    expect(selection.context).toEqual({ marks: ["bold"], intent: "insert" });
+
+    selection.setContext({ marks: ["italic"] });
+    expect(selection.context).toEqual({ marks: ["italic"] });
+
+    selection.clearContext();
+    expect(selection.context).toBeUndefined();
+    expect(selection.snapshot()).not.toHaveProperty("context");
+    expect(changes).toHaveLength(3);
+  });
+
+  test("rejects non-JSON selection context", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops);
+
+    expect(() => selection.setContext({ bad: () => undefined } as never)).toThrow(TypeError);
+  });
+
   test("cursor helpers are pure and report scope/boundary failures", () => {
     const first = moveSelectionCursor(
       EMPTY_SELECTION,

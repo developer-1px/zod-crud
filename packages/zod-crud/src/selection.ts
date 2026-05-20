@@ -3,6 +3,7 @@
 
 import type { JSONOps } from "./jsonOps.js";
 import type { Pointer } from "./core/pointer/index.js";
+import { jsonEqual } from "./core/json.js";
 import {
   EMPTY_SELECTION,
   anchorPointer,
@@ -29,6 +30,7 @@ import {
   selectionType,
   type JSONPoint,
   type SelectionAction,
+  type SelectionContext,
   type SelectionCursorDirection,
   type SelectionCursorErrorCode,
   type SelectionCursorOptions,
@@ -49,6 +51,7 @@ import {
 export type {
   JSONPoint,
   SelectionAction,
+  SelectionContext,
   SelectionCursorDirection,
   SelectionCursorErrorCode,
   SelectionCursorOptions,
@@ -69,6 +72,7 @@ export type {
 export interface UseSelectionOptions {
   mode?: SelectionMode;
   initial?: ReadonlyArray<SelectionRangeInput>;
+  context?: SelectionContext;
 }
 
 export interface CreateSelectionOptions extends UseSelectionOptions {
@@ -97,6 +101,7 @@ export interface SelectionState<T> extends SelectionSnap {
   readonly primaryPointer: Pointer | null;
   readonly caret: JSONPoint | null;
   readonly caretPointer: Pointer | null;
+  readonly context: SelectionContext | undefined;
   collapse(point: JSONPoint): void;
   setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
   extend(point: JSONPoint): void;
@@ -114,6 +119,8 @@ export interface SelectionState<T> extends SelectionSnap {
     focus?: JSONPoint | null,
     primaryIndex?: number,
   ): void;
+  setContext(context: SelectionContext): void;
+  clearContext(): void;
   empty(): void;
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
@@ -164,6 +171,7 @@ export function createSelection<T>(
     get selectedPointers() { return [...snap.selectedPointers]; },
     get selectionRanges() { return selectionSnapshot(snap).selectionRanges; },
     get primaryIndex() { return snap.primaryIndex; },
+    get context() { return selectionSnapshot(snap).context; },
     get rangeCount() { return rangeCount(snap); },
     get selectedCount() { return selectedCount(snap); },
     get hasSelection() { return hasSelection(snap); },
@@ -231,6 +239,8 @@ export function createSelection<T>(
         ...(primaryIndex !== undefined ? { primaryIndex } : {}),
       });
     },
+    setContext(context) { dispatch({ type: "setContext", context }); },
+    clearContext() { dispatch({ type: "clearContext" }); },
     empty() { dispatch({ type: "empty" }); },
     isSelected(pointer) { return isSelected(snap, pointer); },
     containsNode(pointer) { return isSelected(snap, pointer); },
@@ -254,6 +264,7 @@ function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boole
   return left.primaryIndex === right.primaryIndex
     && samePointOrNull(left.anchor, right.anchor)
     && samePointOrNull(left.focus, right.focus)
+    && sameSelectionContext(left.context, right.context)
     && samePointerArray(left.ranges, right.ranges)
     && samePointerArray(left.selectedPointers, right.selectedPointers)
     && left.selectionRanges.length === right.selectionRanges.length
@@ -266,6 +277,10 @@ function samePointerArray(left: ReadonlyArray<Pointer>, right: ReadonlyArray<Poi
 
 function sameRange(left: SelectionRange, right: SelectionRange): boolean {
   return samePoint(left.anchor, right.anchor) && samePoint(left.focus, right.focus);
+}
+
+function sameSelectionContext(left: SelectionContext | undefined, right: SelectionContext | undefined): boolean {
+  return jsonEqual(left, right);
 }
 
 function samePointOrNull(left: JSONPoint | null, right: JSONPoint | null): boolean {
@@ -287,21 +302,27 @@ function initialSelection(
   state: unknown,
 ): SelectionSnap {
   const init = options.initial;
-  if (!init?.length) return EMPTY_SELECTION;
-  if (init.some(isSelectionRange)) {
-    return reduceSelection(
+  let snap: SelectionSnap;
+  if (!init?.length) {
+    snap = EMPTY_SELECTION;
+  } else if (init.some(isSelectionRange)) {
+    snap = reduceSelection(
       EMPTY_SELECTION,
       { type: "selectRanges", ranges: init },
       mode,
       state,
     );
+  } else {
+    snap = reduceSelection(
+      EMPTY_SELECTION,
+      { type: "setBaseAndExtent", anchor: init[0] as JSONPoint, focus: init[init.length - 1] as JSONPoint },
+      mode,
+      state,
+    );
   }
-  return reduceSelection(
-    EMPTY_SELECTION,
-    { type: "setBaseAndExtent", anchor: init[0] as JSONPoint, focus: init[init.length - 1] as JSONPoint },
-    mode,
-    state,
-  );
+  return options.context === undefined
+    ? snap
+    : reduceSelection(snap, { type: "setContext", context: options.context }, mode, state);
 }
 
 function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {

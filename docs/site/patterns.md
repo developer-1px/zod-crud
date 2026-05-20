@@ -66,7 +66,11 @@ doc.commit(
   {
     label: 'insertText',
     origin: 'editor',
-    selection: { type: 'collapse', point: { path: '/blocks/0', offset: 2 } },
+    selection: {
+      type: 'collapse',
+      point: { path: '/blocks/0', offset: 2 },
+      context: { marks: ['bold'] },
+    },
   },
 );
 ```

@@ -147,11 +147,12 @@ describe("createJSONDocument — headless facade", () => {
         ],
       },
     });
-    const observed: Array<{ focus: unknown; selectionAfter: unknown }> = [];
+    const observed: Array<{ focus: unknown; context: unknown; selectionAfter: unknown }> = [];
     doc.ops.subscribe((_, metadata) => {
       observed.push({
         focus: doc.selection?.focus,
-        selectionAfter: metadata?.selectionAfter?.focus,
+        context: doc.selection?.context,
+        selectionAfter: metadata?.selectionAfter,
       });
     });
 
@@ -173,6 +174,7 @@ describe("createJSONDocument — headless facade", () => {
           type: "setBaseAndExtent",
           anchor: { path: "/doc/blocks/0", offset: 2 },
           focus: { path: "/doc/blocks/0", offset: 2 },
+          context: { marks: ["bold"] },
         },
       },
     );
@@ -190,10 +192,23 @@ describe("createJSONDocument — headless facade", () => {
       },
     ]);
     expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 2 });
+    expect(doc.selection?.context).toEqual({ marks: ["bold"] });
     expect(observed).toEqual([
       {
         focus: { path: "/doc/blocks/0", offset: 2 },
-        selectionAfter: { path: "/doc/blocks/0", offset: 2 },
+        context: { marks: ["bold"] },
+        selectionAfter: {
+          ranges: ["/doc/blocks/0"],
+          selectedPointers: ["/doc/blocks/0"],
+          selectionRanges: [{
+            anchor: { path: "/doc/blocks/0", offset: 2 },
+            focus: { path: "/doc/blocks/0", offset: 2 },
+          }],
+          primaryIndex: 0,
+          anchor: { path: "/doc/blocks/0", offset: 2 },
+          focus: { path: "/doc/blocks/0", offset: 2 },
+          context: { marks: ["bold"] },
+        },
       },
     ]);
     expect(doc.history.undoDepth).toBe(1);
@@ -202,6 +217,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value).toEqual(editorInitial);
     expect(doc.selection?.anchor).toEqual({ path: "/doc/blocks/0", offset: 1 });
     expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 4 });
+    expect(doc.selection?.context).toBeUndefined();
 
     expect(doc.commands.redo()).toBe(true);
     expect(doc.value.doc.blocks[0]?.text).toBe("AXa");
@@ -216,6 +232,7 @@ describe("createJSONDocument — headless facade", () => {
       },
     ]);
     expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 2 });
+    expect(doc.selection?.context).toEqual({ marks: ["bold"] });
   });
 
   test("commit selection-only updates do not create document patches or history", () => {
@@ -231,12 +248,14 @@ describe("createJSONDocument — headless facade", () => {
         type: "setBaseAndExtent",
         anchor: { path: "/doc/blocks/0", offset: 1 },
         focus: { path: "/doc/blocks/0", offset: 3 },
+        context: { marks: ["italic"] },
       },
     });
 
     expect(committed).toEqual({ ok: true });
     expect(doc.selection?.anchor).toEqual({ path: "/doc/blocks/0", offset: 1 });
     expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 3 });
+    expect(doc.selection?.context).toEqual({ marks: ["italic"] });
     expect(patches).toEqual([]);
     expect(doc.history.undoDepth).toBe(0);
   });

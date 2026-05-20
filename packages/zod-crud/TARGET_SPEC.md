@@ -350,6 +350,7 @@ interface SelectionState<T> {
   readonly primaryPointer: Pointer | null;
   readonly caret: JSONPoint | null;
   readonly caretPointer: Pointer | null;
+  readonly context: JSONValue | undefined;
   readonly isCollapsed: boolean;
   readonly type: SelectionType;
 
@@ -370,6 +371,8 @@ interface SelectionState<T> {
     focus?: JSONPoint | null,
     primaryIndex?: number,
   ): void;
+  setContext(context: JSONValue): void;
+  clearContext(): void;
   empty(): void;
   isSelected(pointer: Pointer): boolean;
   containsNode(pointer: Pointer): boolean;
@@ -436,6 +439,11 @@ returned arrays/ranges/JSONPoint objects are safe to store or mutate outside
 the engine. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap`
 as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores
 that wire-safe snapshot.
+`context` is optional JSON-serializable selection-local editing state. It is
+for stored marks, active tools, find mode, or similar caret/selection state
+that should not be written into document JSON. Cursor movement and mutation
+tracking preserve it; `setContext`, `clearContext`, initial selection options,
+and `SelectionAction.context` replace or clear it.
 
 Rules:
 
@@ -444,8 +452,8 @@ Rules:
 - String caret offsets are clamped to the current string length when state is
   available, including after document edits that keep the same Pointer alive.
 - Selection snapshots remain JSON serializable.
-- Selection snapshots clone object coordinates; external JSONPoint mutation does
-  not mutate live selection state.
+- Selection snapshots clone object coordinates and context; external mutation
+  does not mutate live selection state.
 - RFC 6902 mutation drives automatic path tracking. Offset/edge/affinity are
   preserved when the underlying `path` tracks to a new Pointer.
 - Cursor movement is source-order and state-based. It reports
@@ -504,8 +512,9 @@ Rules:
 - Core may store `mergeKey`, but must not own timers.
 - Recording sidecars preserve history metadata when present.
 - `doc.commit(patch, { selection, label, origin, mergeKey })` records patch
-  and final selection in one history entry. Empty patch + selection is
-  selection-only and does not create an undo entry.
+  and final selection in one history entry. Selection context is part of the
+  final selection snapshot and is restored by undo/redo. Empty patch +
+  selection is selection-only and does not create an undo entry.
 - `doc.lastPatch` exposes the last applied normalized document patch as a
   serializable value snapshot and clears to `[]` after selection-only edits.
 - Recording can be produced headlessly with `createRecorder(ops)`; React

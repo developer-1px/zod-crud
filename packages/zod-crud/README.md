@@ -214,6 +214,12 @@ return value snapshots, so callers can store or mutate returned `JSONPoint`
 objects without corrupting the live headless selection state.
 `JSON.stringify(doc.selection)` emits that same snapshot, and
 `doc.selection.restore(snapshot)` restores it.
+`doc.selection.context` is optional JSON-serializable selection-local editing
+state. Use it for stored marks, active tool state, or other headless context
+that belongs to the selection/caret rather than the document JSON. It is cloned
+in snapshots, restored through `restore(snapshot)`, preserved by cursor/path
+tracking, and can be updated with `setContext`, `clearContext`, or a
+`SelectionAction` carrying `context`.
 `doc.selection.subscribe(listener)` emits JSON-safe snapshots after manual
 selection actions and automatic op tracking.
 `doc.commands.select(action)`, `doc.commands.selectScope(options?)`,
@@ -224,6 +230,8 @@ multi-select behavior.
 `doc.commit(patch, { selection, label, origin, mergeKey })` applies an RFC 6902
 patch, overrides mutation auto-selection with the provided final `SelectionAction`
 or `SelectionSnap`, and records data + final selection in one history entry.
+When the final selection carries `context`, that context is recorded with
+`selectionAfter` and restored by undo/redo.
 When `patch` is empty, `commit` may update selection but does not create a
 document patch or undo entry.
 `doc.lastPatch` exposes the last applied normalized document patch as a value
@@ -384,7 +392,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `JSONPatchOperation`, `JSONResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
-| `serialize`, `parse`, `safeParse` | JSON helpers (SPEC §5.5) |
+| `serialize`, `parse`, `safeParse`, `jsonEqual`, `JSONPrimitive`, `JSONValue` | JSON helpers (SPEC §5.5) |
 | `buildPatchRequest`, `withIfMatch`, `parsePatchResponse` | HTTP PATCH wire helpers (SPEC §5.9) |
 | `PatchRequest`, `ParseResult`, `ParseError` | HTTP sidecar types (SPEC §5.9) |
 | `createRecorder`, `replayRecording`, `RecorderApi<T>`, `HeadlessRecorderApi<T>`, `CreateRecorderOptions`, `Recording<T>`, `RecordedStep`, `ReplayTarget<T>`, `ReplayDocumentTarget<T>`, `ReplaySelectionTarget`, `ReplayOptions` | replayable JSON recording sidecar (SPEC §5) |
@@ -395,9 +403,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `computeInverses` | RFC 6902 inverse helper |
 | `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
-| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
+| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `SelectionContext`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

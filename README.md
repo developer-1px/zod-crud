@@ -63,7 +63,11 @@ const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 }
 doc.ops.replace("/title", "final");
 doc.commit(
   [{ op: "replace", path: "/tasks", value: ["ship"] }],
-  { label: "replaceTasks", origin: "editor", selection: { type: "collapse", pointer: "/tasks/0" } },
+  {
+    label: "replaceTasks",
+    origin: "editor",
+    selection: { type: "collapse", pointer: "/tasks/0", context: { tool: "keyboard" } },
+  },
 );
 doc.commands.undo();
 ```
@@ -75,7 +79,9 @@ surface, plus `commit` and read/query helpers; React only adds render lifecycle.
 patch and records the final model selection in the same undo entry. `lastPatch`
 is a snapshot of the last applied document patch and is `[]` after selection-only
 commits. Selection uses headless `JSONPoint` coordinates, so item selection and
-text carets share one JSON editing model. Clipboard is a headless JSON fragment
+text carets share one JSON editing model. `selection.context` stores
+selection-local JSON state such as stored marks or active tools without writing
+it into document JSON. Clipboard is a headless JSON fragment
 buffer; system clipboard calls remain user code. `check` is the explainable
 dry-run guard behind `can`, including JSONPath find syntax checks, JSONPath
 multi-match replace checks, and selection cursor/scope guards (`moveCursor`,

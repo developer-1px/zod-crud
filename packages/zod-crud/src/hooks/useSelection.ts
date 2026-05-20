@@ -7,6 +7,7 @@ import {
   createSelection,
   type CreateSelectionOptions,
   type HeadlessSelectionState,
+  type SelectionContext,
   type SelectionChangeListener,
   type SelectionState,
   type UseSelectionOptions,
@@ -32,6 +33,7 @@ export type {
   JSONPoint,
   CreateSelectionOptions,
   HeadlessSelectionState,
+  SelectionContext,
   SelectionChangeListener,
   SelectionCursorDirection,
   SelectionCursorErrorCode,
@@ -62,6 +64,7 @@ export function useSelection<T>(
       mode,
       onChange: force,
       ...(options.initial !== undefined ? { initial: options.initial } : {}),
+      ...(options.context !== undefined ? { context: options.context } : {}),
     }),
     [ops, mode],
   );

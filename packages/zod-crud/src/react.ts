@@ -153,6 +153,7 @@ export {
 } from "./core/selection/index.js";
 export type {
   SelectionAction,
+  SelectionContext,
   SelectionAffinity,
   SelectionEdge,
   SelectionSnap,
@@ -165,6 +166,8 @@ export type {
   ApplyResult,
 } from "./core/patch/index.js";
 export type { Pointer } from "./core/pointer/index.js";
+export { jsonEqual } from "./core/json.js";
+export type { JSONPrimitive, JSONValue } from "./core/json.js";
 export type {
   CreateSelectionOptions,
   HeadlessSelectionState,

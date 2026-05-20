@@ -9,6 +9,7 @@ import {
   resolveSelectionScope,
   selectSelectionScope,
   type SelectionAction,
+  type SelectionContext,
   type JSONPoint,
   type SelectionCursorDirection,
   type SelectionCursorErrorCode,
@@ -47,6 +48,7 @@ export {
 export type {
   JSONPoint,
   SelectionAction,
+  SelectionContext,
   SelectionCursorDirection,
   SelectionCursorErrorCode,
   SelectionCursorOptions,

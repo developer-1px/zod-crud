@@ -91,6 +91,31 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.caret).toBe(null);
   });
 
+  test("selection context is exposed through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: {
+        mode: "single",
+        initial: [{ path: "/items/0/name", offset: 1 }],
+        context: { marks: ["bold"] },
+      },
+    }));
+
+    expect(hook.current.selection?.context).toEqual({ marks: ["bold"] });
+    expect(hook.current.selection?.toJSON().context).toEqual({ marks: ["bold"] });
+
+    act(() => {
+      hook.current.selection?.setContext({ marks: ["italic"] });
+    });
+
+    expect(hook.current.selection?.context).toEqual({ marks: ["italic"] });
+
+    act(() => {
+      hook.current.selection?.clearContext();
+    });
+
+    expect(hook.current.selection?.context).toBeUndefined();
+  });
+
   test("exposes collapsed caret directly", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "single" },

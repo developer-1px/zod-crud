@@ -164,6 +164,10 @@ doc.selection?.selectScope({ query: "$.tasks[*].title" });
 
 항목이 이동하거나 삭제되면 selection의 `anchor`와 `focus`는 변경을 따라갑니다.
 `selection.isCollapsed`가 `true`이면 현재 selection은 단일 캐럿입니다.
+`selection.context`에는 stored marks나 active tool처럼 선택/캐럿에 붙는 JSON
+컨텍스트를 둘 수 있습니다. 이 값은 document JSON 패치가 아니며
+`setContext`, `clearContext`, `SelectionAction.context`, `snapshot()`,
+`restore()`를 통해 headless로 관리됩니다.
 
 ## 옵션 전체
 

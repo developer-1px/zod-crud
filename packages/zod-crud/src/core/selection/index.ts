@@ -12,6 +12,7 @@ import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../tr
 import { JSONPathSyntaxError, queryMatches } from "../jsonpath/index.js";
 import { appendSegment, readAt, tryParsePointer, type Pointer } from "../pointer/index.js";
 import type { JSONPatchOperation } from "../patch/index.js";
+import { cloneJson, jsonEqual, type JSONValue } from "../json.js";
 import { expandRange } from "./range.js";
 
 export type SelectionMode = "single" | "multiple" | "extended";
@@ -19,6 +20,7 @@ export type SelectionType = "None" | "Caret" | "Range";
 export type SelectionEdge = "before" | "after";
 export type SelectionAffinity = "forward" | "backward";
 export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
+export type SelectionContext = JSONValue;
 export type SelectionCursorErrorCode =
   | "invalid_pointer"
   | "path_not_found"
@@ -138,6 +140,7 @@ export interface SelectionSnap {
   primaryIndex: number;
   anchor: JSONPoint | null;
   focus: JSONPoint | null;
+  context?: SelectionContext | undefined;
 }
 
 export const EMPTY_SELECTION: SelectionSnap = {
@@ -214,7 +217,7 @@ export function caretPointer(s: SelectionSnap): Pointer | null {
 }
 
 export function selectionSnapshot(s: SelectionSnap): SelectionSnap {
-  return {
+  const snapshot = {
     ranges: [...s.ranges],
     selectedPointers: [...s.selectedPointers],
     selectionRanges: s.selectionRanges.map(cloneRange),
@@ -222,6 +225,7 @@ export function selectionSnapshot(s: SelectionSnap): SelectionSnap {
     anchor: s.anchor === null ? null : clonePoint(s.anchor),
     focus: s.focus === null ? null : clonePoint(s.focus),
   };
+  return s.context === undefined ? snapshot : withSelectionContext(snapshot, s.context);
 }
 
 export function restoreSelection(
@@ -230,9 +234,10 @@ export function restoreSelection(
   state?: unknown,
 ): SelectionSnap {
   const snap = selectionSnapshot(snapshot);
-  return snap.selectionRanges.length === 0
+  const restored = snap.selectionRanges.length === 0
     ? EMPTY_SELECTION
     : snapFromRanges(snap.selectionRanges, snap.primaryIndex, mode, state);
+  return snap.context === undefined ? restored : withSelectionContext(restored, snap.context);
 }
 
 export function selectSelectionScope(
@@ -278,7 +283,7 @@ export function resolveSelectionScope(
   return { ok: true, points: points.points.map(clonePoint) };
 }
 
-export type SelectionAction =
+type SelectionShapeAction =
   | { type: "collapse"; pointer: Pointer }
   | { type: "collapse"; point: JSONPoint }
   | { type: "setBaseAndExtent"; anchor: JSONPoint; focus: JSONPoint }
@@ -302,6 +307,16 @@ export type SelectionAction =
       primaryIndex?: number;
     }
   | { type: "empty" };
+
+export type SelectionAction =
+  | (SelectionShapeAction & {
+      /** JSON-serializable editing context attached to the resulting selection. */
+      context?: SelectionContext;
+      /** Remove existing selection context after applying this action. */
+      clearContext?: boolean;
+    })
+  | { type: "setContext"; context: SelectionContext }
+  | { type: "clearContext" };
 
 const isMulti = (m: SelectionMode) => m === "extended" || m === "multiple";
 
@@ -333,19 +348,27 @@ export function reduceSelection(
   state?: unknown,
 ): SelectionSnap {
   switch (action.type) {
-    case "collapse":         return snapFromRanges([collapsedRange(actionPoint(action))], 0, mode, state);
-    case "setBaseAndExtent": return extentOf(mode, action.anchor, action.focus, state);
-    case "extend":           return extentOf(mode, prev.anchor ?? actionPoint(action), actionPoint(action), state);
-    case "addRange":         return withAdded(prev, mode, actionRange(action), state);
-    case "removeRange":      return withRemoved(prev, actionRemoveTarget(action), mode, state);
+    case "collapse":
+      return applyActionContext(prev, snapFromRanges([collapsedRange(actionPoint(action))], 0, mode, state), action);
+    case "setBaseAndExtent":
+      return applyActionContext(prev, extentOf(mode, action.anchor, action.focus, state), action);
+    case "extend":
+      return applyActionContext(prev, extentOf(mode, prev.anchor ?? actionPoint(action), actionPoint(action), state), action);
+    case "addRange":
+      return applyActionContext(prev, withAdded(prev, mode, actionRange(action), state), action);
+    case "removeRange":
+      return applyActionContext(prev, withRemoved(prev, actionRemoveTarget(action), mode, state), action);
     case "toggleRange": {
       const range = actionRange(action);
-      return prev.selectionRanges.some((candidate) => sameRange(candidate, range))
+      const next = prev.selectionRanges.some((candidate) => sameRange(candidate, range))
         ? withRemoved(prev, range, mode, state)
         : withAdded(prev, mode, range, state);
+      return applyActionContext(prev, next, action);
     }
-    case "selectRanges":     return selectRanges(action, mode, state);
-    case "empty":            return EMPTY_SELECTION;
+    case "selectRanges":     return applyActionContext(prev, selectRanges(action, mode, state), action);
+    case "empty":            return applyActionContext(prev, EMPTY_SELECTION, action);
+    case "setContext":       return withSelectionContext(prev, action.context);
+    case "clearContext":     return withoutSelectionContext(prev);
   }
 }
 
@@ -451,7 +474,7 @@ export function applySelectionAutoRules(
   // 패치 안의 모든 add/copy/move destination = 새 selection (rule ①).
   const targets = pickAutoTargets(applied, after);
   if (targets.length > 0) {
-    return snapFromRanges(targets.map(collapsedRange), Math.max(0, targets.length - 1), mode, after);
+    return withPreviousContext(prev, snapFromRanges(targets.map(collapsedRange), Math.max(0, targets.length - 1), mode, after));
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
@@ -477,7 +500,8 @@ export function applySelectionAutoRules(
   const normalized = nextAnchor !== null && nextFocus !== null
     ? { ...next, anchor: normalizePoint(nextAnchor, after), focus: normalizePoint(nextFocus, after) }
     : next;
-  return sameSelectionSnap(prev, normalized) ? prev : normalized;
+  const withContext = withPreviousContext(prev, normalized);
+  return sameSelectionSnap(prev, withContext) ? prev : withContext;
 }
 
 function pushUniqueRange(ranges: SelectionRange[], range: SelectionRange): void {
@@ -787,10 +811,47 @@ function sameSelectionSnap(left: SelectionSnap, right: SelectionSnap): boolean {
   return left.primaryIndex === right.primaryIndex
     && samePointOrNull(left.anchor, right.anchor)
     && samePointOrNull(left.focus, right.focus)
+    && sameSelectionContext(left.context, right.context)
     && left.selectedPointers.length === right.selectedPointers.length
     && left.selectedPointers.every((p, i) => p === right.selectedPointers[i])
     && left.selectionRanges.length === right.selectionRanges.length
     && left.selectionRanges.every((range, i) => sameRange(range, right.selectionRanges[i]!));
+}
+
+function applyActionContext(
+  prev: SelectionSnap,
+  next: SelectionSnap,
+  action: SelectionShapeAction & { context?: SelectionContext; clearContext?: boolean },
+): SelectionSnap {
+  const contextual = withPreviousContext(prev, next);
+  if (action.clearContext === true) return withoutSelectionContext(contextual);
+  if ("context" in action) return withSelectionContext(contextual, action.context);
+  return contextual;
+}
+
+function withPreviousContext(prev: SelectionSnap, next: SelectionSnap): SelectionSnap {
+  return prev.context === undefined ? next : withSelectionContext(next, prev.context);
+}
+
+function withSelectionContext(snap: SelectionSnap, context: SelectionContext | undefined): SelectionSnap {
+  if (context === undefined) return withoutSelectionContext(snap);
+  return { ...snap, context: cloneJson(context) };
+}
+
+function withoutSelectionContext(snap: SelectionSnap): SelectionSnap {
+  if (snap.context === undefined) return snap;
+  return {
+    ranges: snap.ranges,
+    selectedPointers: snap.selectedPointers,
+    selectionRanges: snap.selectionRanges,
+    primaryIndex: snap.primaryIndex,
+    anchor: snap.anchor,
+    focus: snap.focus,
+  };
+}
+
+function sameSelectionContext(left: SelectionContext | undefined, right: SelectionContext | undefined): boolean {
+  return jsonEqual(left, right);
 }
 
 function samePointOrNull(left: JSONPoint | null, right: JSONPoint | null): boolean {
