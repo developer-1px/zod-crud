@@ -3,10 +3,13 @@ import * as z from "zod";
 
 import {
   EMPTY_SELECTION,
+  compareSelectionPoints,
   createJSONDocument,
   createSelection,
   extendSelectionCursor,
   moveSelectionCursor,
+  orderPrimarySelectionRange,
+  orderSelectionRange,
   primaryPointer,
   resolveSelectionCursor,
   resolveSelectionScope,
@@ -222,6 +225,94 @@ describe("createSelection", () => {
       code: "empty_scope",
       reason: "cursor query matched no points: $.missing[*]",
       pointer: null,
+    });
+  });
+
+  test("orders selection ranges by JSON source, query, or visible point order", () => {
+    expect(compareSelectionPoints(
+      { path: "/items/0/name", offset: 1 },
+      { path: "/items/0/name", offset: 0 },
+      initial,
+    )).toMatchObject({
+      ok: true,
+      order: 1,
+      direction: "backward",
+      leftPointer: "/items/0/name",
+      rightPointer: "/items/0/name",
+    });
+
+    expect(compareSelectionPoints(
+      { path: "/items/1/name", offset: 2 },
+      { path: "/items/0/name", offset: 1 },
+      initial,
+    )).toMatchObject({
+      ok: true,
+      order: 1,
+      direction: "backward",
+      leftPointer: "/items/1/name",
+      rightPointer: "/items/0/name",
+    });
+
+    expect(compareSelectionPoints(
+      { path: "/items/0", edge: "after" },
+      "/items/0/name",
+      initial,
+    )).toMatchObject({
+      ok: true,
+      order: 1,
+      direction: "backward",
+    });
+
+    const ordered = orderSelectionRange(
+      {
+        anchor: { path: "/items/1/name", offset: 1 },
+        focus: { path: "/items/0/name", offset: 0 },
+      },
+      initial,
+      { query: "$.items[*].name" },
+    );
+    expect(ordered).toMatchObject({
+      ok: true,
+      range: {
+        direction: "backward",
+        collapsed: false,
+        start: { path: "/items/0/name", offset: 0 },
+        end: { path: "/items/1/name", offset: 1 },
+      },
+    });
+
+    expect(orderSelectionRange(
+      { anchor: "/items/2", focus: "/items/0" },
+      initial,
+      { points: ["/items/0", "/items/1"] },
+    )).toMatchObject({
+      ok: false,
+      code: "point_not_in_order",
+      pointer: "/items/2",
+    });
+
+    expect(orderPrimarySelectionRange(EMPTY_SELECTION, initial)).toMatchObject({
+      ok: false,
+      code: "empty_selection",
+    });
+  });
+
+  test("selection state exposes ordered primary range for selection editing", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, { mode: "extended" });
+
+    selection.setBaseAndExtent(
+      { path: "/items/1/name", offset: 1 },
+      { path: "/items/0/name", offset: 0 },
+    );
+
+    expect(selection.orderPrimaryRange({ query: "$.items[*].name" })).toMatchObject({
+      ok: true,
+      range: {
+        direction: "backward",
+        start: { path: "/items/0/name", offset: 0 },
+        end: { path: "/items/1/name", offset: 1 },
+      },
     });
   });
 

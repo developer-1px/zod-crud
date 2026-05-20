@@ -333,6 +333,57 @@ type SelectionScopeResult =
       selection: SelectionSnap;
     };
 
+type SelectionDirection = "forward" | "backward" | "none";
+type SelectionOrderErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "syntax_error"
+  | "empty_scope"
+  | "point_not_in_order"
+  | "empty_selection";
+
+interface SelectionOrderOptions {
+  points?: ReadonlyArray<JSONPoint>;
+  query?: string;
+  scope?: Pointer;
+  includeScope?: boolean;
+}
+
+interface OrderedSelectionRange {
+  anchor: JSONPoint;
+  focus: JSONPoint;
+  start: JSONPoint;
+  end: JSONPoint;
+  direction: SelectionDirection;
+  collapsed: boolean;
+}
+
+type SelectionPointOrderResult =
+  | {
+      ok: true;
+      order: -1 | 0 | 1;
+      direction: SelectionDirection;
+      left: JSONPoint;
+      right: JSONPoint;
+      leftPointer: Pointer;
+      rightPointer: Pointer;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+    };
+
+type SelectionRangeOrderResult =
+  | { ok: true; range: OrderedSelectionRange }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+    };
+
 interface SelectionState<T> {
   readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
   readonly selectedPointers: ReadonlyArray<Pointer>;
@@ -364,6 +415,7 @@ interface SelectionState<T> {
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): Omit<SelectionScopeResult, "selection">;
   selectRanges(
@@ -408,6 +460,14 @@ precedence over `query`, and both bypass `scope` traversal.
 `selectSelectionScope` and `resolveSelectionScope` use the same traversal
 options for Ctrl+A/select-visible style selection without requiring React; this
 includes selecting all JSONPath find results through `query`.
+`compareSelectionPoints`, `orderSelectionRange`, and
+`orderPrimarySelectionRange` are pure helpers that turn directional
+anchor/focus endpoints into document-order `start`/`end` ranges. They use JSON
+source-order by default, JSONPath `query` order when provided, or explicit
+visible `points` order for folded/virtualized UIs. Same-path offsets compare by
+numeric order, and an ancestor point with `edge: "after"` sorts after its
+descendants. `SelectionState` exposes the same behavior as
+`orderPrimaryRange(options?)`.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.
@@ -473,7 +533,8 @@ Acceptance evidence:
 - `tests/verbs.test.ts` covers Pointer selection, JSONPoint caret, and multiple
   independent ranges.
 - `tests/selection-headless.test.ts` covers pure cursor helpers, query-driven
-  cursor/scope traversal, and `createSelection` cursor movement/extension.
+  cursor/scope traversal, selection range ordering, and `createSelection`
+  cursor movement/extension.
 - `tests/create-json-document.test.ts` covers `commands.select` mutation,
   `commands.selectScope({ query })`, and JSONPoint path tracking through
   document patches.

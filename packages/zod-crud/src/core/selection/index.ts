@@ -20,6 +20,7 @@ export type SelectionType = "None" | "Caret" | "Range";
 export type SelectionEdge = "before" | "after";
 export type SelectionAffinity = "forward" | "backward";
 export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
+export type SelectionDirection = "forward" | "backward" | "none";
 export type SelectionContext = JSONValue;
 export type SelectionCursorErrorCode =
   | "invalid_pointer"
@@ -32,6 +33,13 @@ export type SelectionScopeErrorCode =
   | "path_not_found"
   | "syntax_error"
   | "empty_scope";
+export type SelectionOrderErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "syntax_error"
+  | "empty_scope"
+  | "point_not_in_order"
+  | "empty_selection";
 
 export interface JSONPointObject {
   path: Pointer;
@@ -89,6 +97,22 @@ export interface SelectionScopeOptions {
   primaryIndex?: number;
 }
 
+export interface SelectionOrderOptions {
+  /**
+   * Explicit order for comparing selection endpoints. Use this for filtered,
+   * folded, virtualized, or otherwise app-visible document order.
+   */
+  points?: ReadonlyArray<JSONPoint>;
+  /**
+   * JSONPath query used as comparison order. Ignored when `points` is present.
+   */
+  query?: string;
+  /** Pointer subtree used as the comparison root. Defaults to the document root. */
+  scope?: Pointer;
+  /** Include the scope pointer itself. Defaults to true. */
+  includeScope?: boolean;
+}
+
 export type SelectionCursorResult =
   | {
       ok: true;
@@ -128,6 +152,44 @@ export type SelectionScopeResult =
 export type SelectionScopeTarget =
   | Omit<Extract<SelectionScopeResult, { ok: true }>, "selection">
   | Omit<Extract<SelectionScopeResult, { ok: false }>, "selection">;
+
+export type SelectionPointOrderResult =
+  | {
+      ok: true;
+      order: -1 | 0 | 1;
+      direction: SelectionDirection;
+      left: JSONPoint;
+      right: JSONPoint;
+      leftPointer: Pointer;
+      rightPointer: Pointer;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+    };
+
+export interface OrderedSelectionRange {
+  anchor: JSONPoint;
+  focus: JSONPoint;
+  start: JSONPoint;
+  end: JSONPoint;
+  direction: SelectionDirection;
+  collapsed: boolean;
+}
+
+export type SelectionRangeOrderResult =
+  | {
+      ok: true;
+      range: OrderedSelectionRange;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+    };
 
 export interface SelectionSnap {
   /**
@@ -281,6 +343,111 @@ export function resolveSelectionScope(
     };
   }
   return { ok: true, points: points.points.map(clonePoint) };
+}
+
+export function compareSelectionPoints(
+  left: JSONPoint,
+  right: JSONPoint,
+  state: unknown,
+  options: SelectionOrderOptions = {},
+): SelectionPointOrderResult {
+  const leftPointer = pointPath(left);
+  const rightPointer = pointPath(right);
+  if (tryParsePointer(leftPointer) === null) {
+    return {
+      ok: false,
+      code: "invalid_pointer",
+      reason: `invalid selection point pointer: ${leftPointer}`,
+      pointer: leftPointer,
+    };
+  }
+  if (tryParsePointer(rightPointer) === null) {
+    return {
+      ok: false,
+      code: "invalid_pointer",
+      reason: `invalid selection point pointer: ${rightPointer}`,
+      pointer: rightPointer,
+    };
+  }
+
+  if (leftPointer === rightPointer) {
+    return pointOrderOk(left, right, compareSamePathPoints(left, right, state));
+  }
+
+  const boundaryOrder = compareBoundaryContainment(left, right);
+  if (boundaryOrder !== null) return pointOrderOk(left, right, boundaryOrder);
+
+  const points = cursorPoints(state, options);
+  if (!points.ok) return points;
+  if (points.points.length === 0) {
+    return {
+      ok: false,
+      code: "empty_scope",
+      reason: emptyTraversalReason("selection", options),
+      pointer: emptyTraversalPointer(options),
+    };
+  }
+
+  const leftIndex = cursorPointIndex(points.points, left);
+  if (leftIndex < 0) {
+    return {
+      ok: false,
+      code: "point_not_in_order",
+      reason: `selection point is not in comparison order: ${leftPointer}`,
+      pointer: leftPointer,
+    };
+  }
+  const rightIndex = cursorPointIndex(points.points, right);
+  if (rightIndex < 0) {
+    return {
+      ok: false,
+      code: "point_not_in_order",
+      reason: `selection point is not in comparison order: ${rightPointer}`,
+      pointer: rightPointer,
+    };
+  }
+
+  return pointOrderOk(left, right, compareNumbers(leftIndex, rightIndex));
+}
+
+export function orderSelectionRange(
+  range: SelectionRange,
+  state: unknown,
+  options: SelectionOrderOptions = {},
+): SelectionRangeOrderResult {
+  const normalized = normalizeSelectionRange(range, state);
+  const compared = compareSelectionPoints(normalized.anchor, normalized.focus, state, options);
+  if (!compared.ok) return compared;
+  const anchor = clonePoint(normalized.anchor);
+  const focus = clonePoint(normalized.focus);
+  return {
+    ok: true,
+    range: {
+      anchor,
+      focus,
+      start: compared.order <= 0 ? clonePoint(normalized.anchor) : clonePoint(normalized.focus),
+      end: compared.order <= 0 ? clonePoint(normalized.focus) : clonePoint(normalized.anchor),
+      direction: compared.direction,
+      collapsed: compared.order === 0,
+    },
+  };
+}
+
+export function orderPrimarySelectionRange(
+  selection: SelectionSnap,
+  state: unknown,
+  options: SelectionOrderOptions = {},
+): SelectionRangeOrderResult {
+  const range = selection.selectionRanges[selection.primaryIndex];
+  if (range === undefined) {
+    return {
+      ok: false,
+      code: "empty_selection",
+      reason: "primary selection range is empty",
+      pointer: null,
+    };
+  }
+  return orderSelectionRange(range, state, options);
 }
 
 type SelectionShapeAction =
@@ -643,7 +810,7 @@ function clonePoint(point: JSONPoint): JSONPoint {
 
 function cursorPoints(
   state: unknown,
-  options: SelectionCursorOptions,
+  options: SelectionCursorOptions | SelectionOrderOptions,
 ): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found" | "syntax_error"; reason: string; pointer: Pointer | null } {
   if (options.points !== undefined) {
     return explicitCursorPoints(options.points);
@@ -699,7 +866,7 @@ function queryCursorPoints(
 
 function emptyTraversalReason(
   kind: "cursor" | "selection",
-  options: SelectionCursorOptions | SelectionScopeOptions,
+  options: SelectionCursorOptions | SelectionScopeOptions | SelectionOrderOptions,
 ): string {
   if (options.points !== undefined) return `${kind} points are empty`;
   if (options.query !== undefined) return `${kind} query matched no points: ${options.query}`;
@@ -707,9 +874,62 @@ function emptyTraversalReason(
 }
 
 function emptyTraversalPointer(
-  options: SelectionCursorOptions | SelectionScopeOptions,
+  options: SelectionCursorOptions | SelectionScopeOptions | SelectionOrderOptions,
 ): Pointer | null {
   return options.query !== undefined ? null : options.scope ?? "";
+}
+
+function pointOrderOk(left: JSONPoint, right: JSONPoint, order: -1 | 0 | 1): Extract<SelectionPointOrderResult, { ok: true }> {
+  return {
+    ok: true,
+    order,
+    direction: order < 0 ? "forward" : order > 0 ? "backward" : "none",
+    left: clonePoint(left),
+    right: clonePoint(right),
+    leftPointer: pointPath(left),
+    rightPointer: pointPath(right),
+  };
+}
+
+function compareSamePathPoints(left: JSONPoint, right: JSONPoint, state: unknown): -1 | 0 | 1 {
+  if (samePoint(left, right)) return 0;
+  const leftRank = samePathPointRank(normalizePoint(left, state));
+  const rightRank = samePathPointRank(normalizePoint(right, state));
+  const positionOrder = compareNumbers(leftRank.position, rightRank.position);
+  return positionOrder === 0 ? compareNumbers(leftRank.edge, rightRank.edge) : positionOrder;
+}
+
+function compareBoundaryContainment(left: JSONPoint, right: JSONPoint): -1 | 1 | null {
+  const leftSegments = tryParsePointer(pointPath(left));
+  const rightSegments = tryParsePointer(pointPath(right));
+  if (leftSegments === null || rightSegments === null) return null;
+  if (isStrictPrefix(leftSegments, rightSegments)) {
+    return pointEdge(left) === "after" ? 1 : -1;
+  }
+  if (isStrictPrefix(rightSegments, leftSegments)) {
+    return pointEdge(right) === "after" ? -1 : 1;
+  }
+  return null;
+}
+
+function isStrictPrefix(prefix: ReadonlyArray<string>, value: ReadonlyArray<string>): boolean {
+  return prefix.length < value.length && prefix.every((segment, index) => segment === value[index]);
+}
+
+function pointEdge(point: JSONPoint): SelectionEdge | undefined {
+  return typeof point === "string" ? undefined : point.edge;
+}
+
+function samePathPointRank(point: JSONPoint): { position: number; edge: number } {
+  if (typeof point === "string") return { position: 0, edge: 0 };
+  return {
+    position: point.offset === undefined || !Number.isFinite(point.offset) ? 0 : point.offset,
+    edge: point.edge === "before" ? -1 : point.edge === "after" ? 1 : 0,
+  };
+}
+
+function compareNumbers(left: number, right: number): -1 | 0 | 1 {
+  return left < right ? -1 : left > right ? 1 : 0;
 }
 
 function scopedCursorPoints(

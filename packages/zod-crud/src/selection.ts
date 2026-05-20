@@ -16,6 +16,7 @@ import {
   isCollapsed,
   isSelected,
   moveSelectionCursor,
+  orderPrimarySelectionRange,
   primaryPointer,
   primaryRange,
   rangeCount,
@@ -28,6 +29,7 @@ import {
   selectSelectionScope,
   selectionSnapshot,
   selectionType,
+  type OrderedSelectionRange,
   type JSONPoint,
   type SelectionAction,
   type SelectionContext,
@@ -36,9 +38,14 @@ import {
   type SelectionCursorOptions,
   type SelectionCursorResult,
   type SelectionCursorTarget,
+  type SelectionDirection,
   type SelectionMode,
+  type SelectionOrderErrorCode,
+  type SelectionOrderOptions,
+  type SelectionPointOrderResult,
   type SelectionRange,
   type SelectionRangeInput,
+  type SelectionRangeOrderResult,
   type SelectionScopeErrorCode,
   type SelectionScopeOptions,
   type SelectionScopeResult,
@@ -50,6 +57,7 @@ import {
 
 export type {
   JSONPoint,
+  OrderedSelectionRange,
   SelectionAction,
   SelectionContext,
   SelectionCursorDirection,
@@ -57,9 +65,14 @@ export type {
   SelectionCursorOptions,
   SelectionCursorResult,
   SelectionCursorTarget,
+  SelectionDirection,
   SelectionMode,
+  SelectionOrderErrorCode,
+  SelectionOrderOptions,
+  SelectionPointOrderResult,
   SelectionRange,
   SelectionRangeInput,
+  SelectionRangeOrderResult,
   SelectionScopeErrorCode,
   SelectionScopeOptions,
   SelectionScopeResult,
@@ -112,6 +125,7 @@ export interface SelectionState<T> extends SelectionSnap {
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  orderPrimaryRange(options?: SelectionOrderOptions): SelectionRangeOrderResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
@@ -223,6 +237,9 @@ export function createSelection<T>(
       return result.ok
         ? { ...result, selection: selectionSnapshot(snap) }
         : { ...result, selection: selectionSnapshot(snap) };
+    },
+    orderPrimaryRange(orderOptions) {
+      return orderPrimarySelectionRange(snap, ops.state, orderOptions);
     },
     selectScope(scopeOptions) {
       const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);
