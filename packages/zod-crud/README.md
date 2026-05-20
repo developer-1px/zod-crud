@@ -151,7 +151,7 @@ selection, clipboard, or history.
 `doc.at`, `doc.exists`, `doc.query`, and `doc.entries` are headless read helpers
 over the current document value. JSONPath queries return pointers, not values,
 and support RFC 9535 function extensions (`length`/`count`/`match`/`search`/`value`).
-The vendored RFC 9535 CTS currently gates a 522/703 conformance floor.
+The vendored RFC 9535 CTS gates full 703/703 conformance.
 
 History metadata is serializable. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user

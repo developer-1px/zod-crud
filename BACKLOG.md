@@ -22,7 +22,6 @@
 
 ## 미해결 (post-v0.12.0)
 
-- **RFC 9535 CTS full-conformance gap closure** — suite 는 `tests/conformance/jsonpath-cts.json` 로 통합됨. 현재 floor 는 522/703.
 - **cross-field refinement 보호** — preFlight branch-only 의 보호 밖. 별도 ADR 검토
 
 ## SPEC drift

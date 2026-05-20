@@ -25,12 +25,12 @@ interface Failure {
 
 const EXPECTED_TOTAL = 703;
 const EXPECTED_INVALID_SELECTORS = 247;
-const MIN_PASSING_CASES = 522;
+const EXPECTED_PASSING_CASES = EXPECTED_TOTAL;
 
 const suite = cts as { tests: JsonPathCtsCase[] };
 
 describe("RFC 9535 JSONPath CTS — jsonpath-standard vendor", () => {
-  test("current conformance floor does not regress", () => {
+  test("full conformance does not regress", () => {
     const failures: Failure[] = [];
     let invalidSelectors = 0;
     let passed = 0;
@@ -61,7 +61,7 @@ describe("RFC 9535 JSONPath CTS — jsonpath-standard vendor", () => {
 
     expect(suite.tests).toHaveLength(EXPECTED_TOTAL);
     expect(invalidSelectors).toBe(EXPECTED_INVALID_SELECTORS);
-    expect(passed, JSON.stringify(failures.slice(0, 20), null, 2)).toBeGreaterThanOrEqual(MIN_PASSING_CASES);
+    expect(passed, JSON.stringify(failures.slice(0, 20), null, 2)).toBe(EXPECTED_PASSING_CASES);
   });
 });
 

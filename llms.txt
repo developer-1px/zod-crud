@@ -89,7 +89,7 @@ not be added unless they change the 4-pillar closure.
 
 JSONPath follows RFC 9535 selectors and filter function extensions:
 `length`, `count`, `match`, `search`, and `value`.
-The vendored RFC 9535 CTS gates the current conformance floor at 522/703.
+The vendored RFC 9535 CTS gates full 703/703 conformance.
 
 ## Canonical Patterns
 

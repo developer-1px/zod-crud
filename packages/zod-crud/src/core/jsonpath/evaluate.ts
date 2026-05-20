@@ -67,12 +67,8 @@ function applySelector(sel: Selector, m: Match, root: unknown): Match[] {
     const len = m.value.length;
     const step = sel.step;
     if (step === 0) return [];
-    let start = sel.start ?? (step > 0 ? 0 : len - 1);
-    let end = sel.end ?? (step > 0 ? len : -len - 1);
-    if (start < 0) start = Math.max(0, len + start);
-    if (end < 0) end = Math.max(-1, len + end);
-    start = Math.min(start, len);
-    end = Math.min(end, len);
+    const start = normalizeSliceIndex(sel.start, len, step, true);
+    const end = normalizeSliceIndex(sel.end, len, step, false);
     const out: Match[] = [];
     if (step > 0) for (let i = start; i < end; i += step) out.push({ pointer: m.pointer + "/" + i, value: m.value[i] });
     else for (let i = start; i > end; i += step) out.push({ pointer: m.pointer + "/" + i, value: m.value[i] });
@@ -117,10 +113,10 @@ function evalFilter(expr: FilterExpr, current: Match, root: unknown): boolean {
     switch (expr.op) {
       case "==": return jsonEqual(l, r);
       case "!=": return !jsonEqual(l, r);
-      case "<": return (l as number) < (r as number);
-      case "<=": return (l as number) <= (r as number);
-      case ">": return (l as number) > (r as number);
-      case ">=": return (l as number) >= (r as number);
+      case "<": return compareOrdered(l, r, (left, right) => left < right);
+      case "<=": return jsonEqual(l, r) || compareOrdered(l, r, (left, right) => left <= right);
+      case ">": return compareOrdered(l, r, (left, right) => left > right);
+      case ">=": return jsonEqual(l, r) || compareOrdered(l, r, (left, right) => left >= right);
     }
   }
   if (expr.kind === "function") return resolveFunctionAsLogical(expr.fn, current, root);
@@ -154,7 +150,7 @@ function resolveFunctionAsLogical(fn: FunctionExpr, current: Match, root: unknow
 
 function resolveFunctionAsValue(fn: FunctionExpr, current: Match, root: unknown): unknown {
   const result = resolveFunction(fn, current, root);
-  return result.kind === "value" ? result.value : undefined;
+  return result.kind === "value" ? result.value : NOTHING;
 }
 
 type FunctionResult =
@@ -198,11 +194,11 @@ function resolveValueArg(arg: Comparable, current: Match, root: unknown): unknow
   if (arg.kind === "function") {
     const result = resolveFunction(arg.fn, current, root);
     if (result.kind === "value" || result.kind === "logical") return result.value;
-    if (result.kind === "nodes") return result.value.length === 1 ? result.value[0]?.value : undefined;
-    return undefined;
+    if (result.kind === "nodes") return result.value.length === 1 ? result.value[0]?.value : NOTHING;
+    return NOTHING;
   }
   const nodes = resolveFilterQuery(arg.path, current, root);
-  return nodes.length === 1 ? nodes[0]?.value : undefined;
+  return nodes.length === 1 ? nodes[0]?.value : NOTHING;
 }
 
 function resolveNodesArg(arg: Comparable, current: Match, root: unknown): Match[] {
@@ -223,17 +219,64 @@ function jsonLength(value: unknown): number | undefined {
 
 function regexTest(input: string, pattern: string, full: boolean): boolean {
   try {
-    const re = new RegExp(full ? `^(?:${pattern})$` : pattern, "u");
+    const translated = translateRegexpDot(pattern);
+    const re = new RegExp(full ? `^(?:${translated})$` : translated, "u");
     return re.test(input);
   } catch {
     return false;
   }
 }
 
+function translateRegexpDot(pattern: string): string {
+  let out = "";
+  let inClass = false;
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i]!;
+    if (ch === "\\") {
+      out += ch;
+      if (i + 1 < pattern.length) out += pattern[++i]!;
+      continue;
+    }
+    if (ch === "[") {
+      inClass = true;
+      out += ch;
+      continue;
+    }
+    if (ch === "]" && inClass) {
+      inClass = false;
+      out += ch;
+      continue;
+    }
+    out += ch === "." && !inClass ? "[^\\r\\n]" : ch;
+  }
+  return out;
+}
+
 const NOTHING = Symbol("JSONPath Nothing");
+
+function normalizeSliceIndex(index: number | null, len: number, step: number, isStart: boolean): number {
+  if (step > 0) {
+    const defaultValue = isStart ? 0 : len;
+    return clamp(index === null ? defaultValue : (index < 0 ? len + index : index), 0, len);
+  }
+  const defaultValue = isStart ? len - 1 : -1;
+  return clamp(index === null ? defaultValue : (index < 0 ? len + index : index), -1, len - 1);
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+function compareOrdered(left: unknown, right: unknown, compare: (left: number | string, right: number | string) => boolean): boolean {
+  if (left === NOTHING || right === NOTHING) return false;
+  if (typeof left === "number" && typeof right === "number") return compare(left, right);
+  if (typeof left === "string" && typeof right === "string") return compare(left, right);
+  return false;
+}
 
 function jsonEqual(left: unknown, right: unknown): boolean {
   if (left === NOTHING || right === NOTHING) return left === right;
+  if (typeof left === "number" && typeof right === "number") return left === right;
   if (Object.is(left, right)) return true;
   if (Array.isArray(left) && Array.isArray(right)) {
     return left.length === right.length && left.every((value, index) => jsonEqual(value, right[index]));
