@@ -26,6 +26,7 @@ export { createSelection } from "./selection.js";
 export type {
   CreateSelectionOptions,
   HeadlessSelectionState,
+  SelectionChangeListener,
   SelectionState,
   UseSelectionOptions,
 } from "./selection.js";

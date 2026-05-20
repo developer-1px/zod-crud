@@ -294,6 +294,7 @@ interface SelectionState<T> {
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
   restore(snapshot: SelectionSnap): void;
+  subscribe(listener: SelectionChangeListener): () => void;
 }
 ```
 
@@ -307,6 +308,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 offset/edge carets without React.
 Standalone headless composition uses `createSelection(ops)`; `useSelection`
 adds React render invalidation but no separate selection model.
+`subscribe` emits JSON-safe `SelectionSnap` transitions after manual selection
+actions and automatic op tracking.
 `selectedSource` is `null | Pointer | Pointer[]`. Document-facade
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /

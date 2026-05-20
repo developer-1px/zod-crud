@@ -18,11 +18,13 @@ const initial: z.output<typeof Schema> = {
 describe("createSelection", () => {
   test("provides headless multi-selection and caret tracking over JSON ops", () => {
     const doc = createJSONDocument(Schema, initial);
-    const changes: unknown[] = [];
     const selection = createSelection(doc.ops, {
       mode: "multiple",
       initial: ["/items/0"],
-      onChange: () => changes.push(selection.snapshot()),
+    });
+    const changes: unknown[] = [];
+    selection.subscribe((snapshot, previous) => {
+      changes.push({ snapshot, previous });
     });
 
     expect(selection.selectedPointers).toEqual(["/items/0"]);
@@ -48,11 +50,16 @@ describe("createSelection", () => {
       },
     ]);
     expect(JSON.parse(JSON.stringify(selection))).toEqual(selection.snapshot());
-    expect(changes.length).toBeGreaterThanOrEqual(2);
+    expect(changes).toHaveLength(2);
+    expect(changes[0]).toMatchObject({
+      previous: { selectedPointers: ["/items/0"] },
+      snapshot: { selectedPointers: ["/items/0", "/items/1/name"] },
+    });
 
     selection.dispose();
     doc.ops.remove("/items/0");
 
     expect(selection.selectedPointers).toEqual(["/items/0", "/items/0/name"]);
+    expect(changes).toHaveLength(2);
   });
 });

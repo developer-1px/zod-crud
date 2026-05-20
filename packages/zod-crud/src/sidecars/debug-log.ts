@@ -66,18 +66,20 @@ export function useDebugLog<T>(
     });
   }, [enabled, ops, log]);
 
-  // selection 전이 — useEffect 가 selection 객체 정체성 바뀔 때마다 (= snap 변경) 발화.
+  // selection 전이 — headless selection subscription 을 직접 tap.
   useEffect(() => {
     if (!enabled || !selection) return;
-    log("selection", {
-      ranges: [...selection.ranges],
-      selectedPointers: [...selection.selectedPointers],
-      selectionRanges: [...selection.selectionRanges],
-      primaryIndex: selection.primaryIndex,
-      anchor: selection.anchor,
-      focus: selection.focus,
-      isCollapsed: selection.isCollapsed,
-      type: selection.type,
+    return selection.subscribe((snapshot) => {
+      log("selection", {
+        ranges: [...snapshot.ranges],
+        selectedPointers: [...snapshot.selectedPointers],
+        selectionRanges: [...snapshot.selectionRanges],
+        primaryIndex: snapshot.primaryIndex,
+        anchor: snapshot.anchor,
+        focus: snapshot.focus,
+        isCollapsed: selection.isCollapsed,
+        type: selection.type,
+      });
     });
   }, [enabled, selection, log]);
 

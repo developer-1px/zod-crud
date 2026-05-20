@@ -52,6 +52,11 @@ export interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;
 }
 
+export type SelectionChangeListener = (
+  snapshot: SelectionSnap,
+  previous: SelectionSnap,
+) => void;
+
 export interface SelectionState<T> extends SelectionSnap {
   readonly rangeCount: number;
   readonly selectedCount: number;
@@ -83,6 +88,7 @@ export interface SelectionState<T> extends SelectionSnap {
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
   restore(snapshot: SelectionSnap): void;
+  subscribe(listener: SelectionChangeListener): () => void;
 }
 
 export interface HeadlessSelectionState<T> extends SelectionState<T> {
@@ -95,12 +101,20 @@ export function createSelection<T>(
 ): HeadlessSelectionState<T> {
   const mode: SelectionMode = options.mode ?? "single";
   let snap = initialSelection(options, mode, ops.state);
-  const emit = (): void => {
+  let disposed = false;
+  const listeners = new Set<SelectionChangeListener>();
+  const emit = (previous: SelectionSnap): void => {
+    if (disposed) return;
     options.onChange?.();
+    for (const listener of listeners) {
+      listener(selectionSnapshot(snap), selectionSnapshot(previous));
+    }
   };
   const setSnap = (next: SelectionSnap): void => {
+    const previous = selectionSnapshot(snap);
+    if (sameSelectionSnapshot(previous, next)) return;
     snap = next;
-    emit();
+    emit(previous);
   };
   const dispatch = (action: SelectionAction): void => {
     setSnap(reduceSelection(snap, action, mode, ops.state));
@@ -163,8 +177,48 @@ export function createSelection<T>(
     snapshot() { return selectionSnapshot(snap); },
     toJSON() { return selectionSnapshot(snap); },
     restore(snapshot) { setSnap(restoreSelection(snapshot, mode, ops.state)); },
-    dispose() { unsubscribe(); },
+    subscribe(listener) {
+      if (disposed) return () => undefined;
+      listeners.add(listener);
+      return () => { listeners.delete(listener); };
+    },
+    dispose() {
+      disposed = true;
+      listeners.clear();
+      unsubscribe();
+    },
   };
+}
+
+function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boolean {
+  return left.primaryIndex === right.primaryIndex
+    && samePointOrNull(left.anchor, right.anchor)
+    && samePointOrNull(left.focus, right.focus)
+    && samePointerArray(left.ranges, right.ranges)
+    && samePointerArray(left.selectedPointers, right.selectedPointers)
+    && left.selectionRanges.length === right.selectionRanges.length
+    && left.selectionRanges.every((range, index) => sameRange(range, right.selectionRanges[index]!));
+}
+
+function samePointerArray(left: ReadonlyArray<Pointer>, right: ReadonlyArray<Pointer>): boolean {
+  return left.length === right.length && left.every((pointer, index) => pointer === right[index]);
+}
+
+function sameRange(left: SelectionRange, right: SelectionRange): boolean {
+  return samePoint(left.anchor, right.anchor) && samePoint(left.focus, right.focus);
+}
+
+function samePointOrNull(left: JSONPoint | null, right: JSONPoint | null): boolean {
+  if (left === null || right === null) return left === right;
+  return samePoint(left, right);
+}
+
+function samePoint(left: JSONPoint, right: JSONPoint): boolean {
+  if (typeof left === "string" || typeof right === "string") return left === right;
+  return left.path === right.path
+    && left.offset === right.offset
+    && left.edge === right.edge
+    && left.affinity === right.affinity;
 }
 
 function initialSelection(

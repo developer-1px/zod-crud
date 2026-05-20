@@ -85,6 +85,7 @@ export type { Pointer } from "./core/pointer/index.js";
 export type {
   CreateSelectionOptions,
   HeadlessSelectionState,
+  SelectionChangeListener,
   SelectionMode,
   JSONPoint,
   SelectionRange,

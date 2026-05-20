@@ -446,6 +446,11 @@ export interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;
 }
 
+export type SelectionChangeListener = (
+  snapshot: SelectionSnap,
+  previous: SelectionSnap,
+) => void;
+
 export type JSONPoint =
   | Pointer
   | {
@@ -499,6 +504,7 @@ export interface SelectionState<T> {
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
   restore(snapshot: SelectionSnap): void;
+  subscribe(listener: SelectionChangeListener): () => void;
 }
 
 export interface HeadlessSelectionState<T> extends SelectionState<T> {
@@ -508,6 +514,8 @@ export interface HeadlessSelectionState<T> extends SelectionState<T> {
 
 `createSelection(ops)` 가 headless state owner 이고, React `useSelection(ops)`
 은 같은 객체를 만들고 render invalidation 과 dispose 만 담당하는 facade 다.
+`selection.subscribe(listener)` 는 manual selection action 과 JSON op tracking 후의
+`SelectionSnap` 전이를 JSON snapshot 으로 발행한다.
 `anchor` / `focus` 는 W3C Selection API 의 좌표 이름이다. `selectionRanges[primaryIndex]` 가 키보드 입력·paste·format command 의 주 작용 범위다.
 `rangeCount` 는 `selectionRanges.length`, `selectedCount` 는 `selectedPointers.length`, `hasSelection` 은 `selectedCount > 0` 이다. `isSelected(pointer)` 는 list/tree/grid 렌더링의 per-item selected predicate 이고, `containsNode(pointer)` 는 같은 exact selected-pointer 검사의 호환 alias 다. `primaryRange` 는 주 작용 범위를 직접 반환하는 편의 getter 다. `anchorPointer` / `focusPointer` / `primaryPointer` / `caretPointer` 는 JSONPoint 를 Pointer 기반 명령으로 연결하기 위한 projection 이다. `primaryPointer` 는 primary range 의 focus path 다. `UseSelectionOptions.initial` 과 `selectRanges` 는 `JSONPoint` 또는 `{ anchor, focus }` range 를 받으므로 초기 상태부터 disjoint multi-range 와 offset/edge caret 을 표현할 수 있다. `selectedSource` 는 selection 이 없으면 `null`, 단일 선택이면 `Pointer`, 다중 선택이면 `Pointer[]` 이다. document facade 의 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, `can.copy()` / `can.cut()` 은 source 인자가 생략되면 `selectedSource` 를 사용하고, selection 이 비어 있으면 `empty_selection` 을 반환한다. `commands.move(to)`, `check.move(to)`, `can.move(to)` 는 source 인자가 생략되면 `primaryPointer` 를 source 로 사용하며, target 은 명시 Pointer 로 받는다. `commands.duplicate()`, `check.duplicate()`, `can.duplicate()` 은 source 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.duplicate({ newKey })` 는 선택된 object member 를 새 key 로 복제한다. `commands.replace(value)`, `check.replace(value)`, `can.replace(value)` 는 path 인자가 생략되면 `primaryPointer` 를 사용한다. `commands.paste(payload)`, `doc.clipboard.paste()`, `check.paste(payload)`, `can.paste(payload)` 은 target 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.paste(payload, "after")` 같은 mode-only 호출도 같은 target 을 사용한다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. string value 위의 caret offset 은 state 가 있으면 현재 string 길이 안으로 clamp 되고, 같은 Pointer 가 살아남는 문서 편집 후에도 다시 clamp 된다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다. `selection` getter, `primaryRange`, `caret`, `snapshot()`, and `toJSON()` expose value snapshots: returned arrays/ranges/JSONPoint objects may be stored or mutated by callers without mutating live selection state. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap` as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores that wire-safe snapshot.
 

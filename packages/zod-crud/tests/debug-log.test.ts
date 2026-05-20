@@ -114,11 +114,48 @@ describe("useDebugLog", () => {
     expect(first?.events.map((event) => event.kind)).toEqual(["first"]);
     expect(second?.events.map((event) => event.kind)).toEqual(["second"]);
   });
+
+  test("selection transitions are logged through the headless selection subscription", () => {
+    const hook = renderHook(() => useSelectionHarness());
+
+    act(() => {
+      hook.current.debug.start();
+    });
+    act(() => {
+      hook.current.doc.selection?.collapse("/title");
+    });
+
+    let log: ReturnType<typeof hook.current.debug.stop> | undefined;
+    act(() => {
+      log = hook.current.debug.stop();
+    });
+
+    expect(log?.events).toContainEqual(expect.objectContaining({
+      kind: "selection",
+      data: expect.objectContaining({
+        selectedPointers: ["/title"],
+        selectionRanges: [{ anchor: "/title", focus: "/title" }],
+        primaryIndex: 0,
+        anchor: "/title",
+        focus: "/title",
+        isCollapsed: true,
+        type: "Caret",
+      }),
+    }));
+  });
 });
 
 function useHarness() {
   const doc = useJSONDocument(Schema, { title: "A", nested: { count: 0 } });
   const debug = useDebugLog(doc.ops);
+  return { doc, debug };
+}
+
+function useSelectionHarness() {
+  const doc = useJSONDocument(Schema, { title: "A", nested: { count: 0 } }, {
+    selection: { mode: "single" },
+  });
+  const debug = useDebugLog(doc.ops, doc.selection);
   return { doc, debug };
 }
 
