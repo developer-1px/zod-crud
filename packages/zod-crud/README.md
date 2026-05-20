@@ -160,6 +160,9 @@ folded, virtualized, or otherwise app-visible `JSONPoint[]` order. `resolveCurso
 computes the next target without mutating. The pure helpers
 `moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
 provide the same cursor logic for standalone headless composition.
+`doc.selection.selectScope(options?)` and `selectSelectionScope(...)` build a
+whole selection from the same `scope` or visible `points` options, covering
+Ctrl+A/select-visible flows without React.
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `SelectionRange`, so disjoint multi-range selection and offset/edge carets are
 headless from initialization. Facade-level
@@ -323,7 +326,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
-| `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `SelectionSource`, `SelectionRangeInput`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `UseSelectionOptions`, `CreateSelectionOptions` from `zod-crud/react` | React selection hook types |
+| `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `SelectionSource`, `SelectionRangeInput`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `UseSelectionOptions`, `CreateSelectionOptions` from `zod-crud/react` | React selection hook types |
 | `createDraft(doc, options?)` | headless draft/pending field state over a document facade |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
 | `DraftState<T>`, `DraftFieldState<T>`, `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` from `zod-crud/react` | draft/pending field types |
@@ -352,7 +355,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
 | `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

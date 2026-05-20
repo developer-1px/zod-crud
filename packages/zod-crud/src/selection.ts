@@ -20,9 +20,11 @@ import {
   rangeCount,
   reduceSelection,
   resolveSelectionCursor,
+  resolveSelectionScope,
   restoreSelection,
   selectedCount,
   selectedSource,
+  selectSelectionScope,
   selectionSnapshot,
   selectionType,
   type JSONPoint,
@@ -35,6 +37,10 @@ import {
   type SelectionMode,
   type SelectionRange,
   type SelectionRangeInput,
+  type SelectionScopeErrorCode,
+  type SelectionScopeOptions,
+  type SelectionScopeResult,
+  type SelectionScopeTarget,
   type SelectionSnap,
   type SelectionSource,
   type SelectionType,
@@ -51,6 +57,10 @@ export type {
   SelectionMode,
   SelectionRange,
   SelectionRangeInput,
+  SelectionScopeErrorCode,
+  SelectionScopeOptions,
+  SelectionScopeResult,
+  SelectionScopeTarget,
   SelectionSource,
   SelectionSnap,
   SelectionType,
@@ -92,6 +102,8 @@ export interface SelectionState<T> extends SelectionSnap {
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
+  resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
     ranges: ReadonlyArray<SelectionRangeInput>,
     anchor?: JSONPoint | null,
@@ -193,6 +205,14 @@ export function createSelection<T>(
       return result.ok
         ? { ...result, selection: selectionSnapshot(snap) }
         : { ...result, selection: selectionSnapshot(snap) };
+    },
+    selectScope(scopeOptions) {
+      const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);
+      if (result.ok) setSnap(result.selection);
+      return result;
+    },
+    resolveScope(scopeOptions) {
+      return resolveSelectionScope(ops.state, scopeOptions);
     },
     selectRanges(ranges, anchor, focus, primaryIndex) {
       dispatch({

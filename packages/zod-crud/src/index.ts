@@ -153,6 +153,10 @@ export type {
   SelectionMode,
   SelectionRange,
   SelectionRangeInput,
+  SelectionScopeErrorCode,
+  SelectionScopeOptions,
+  SelectionScopeResult,
+  SelectionScopeTarget,
   SelectionSource,
   SelectionType,
 } from "./core/selection/index.js";
@@ -173,9 +177,11 @@ export {
   primaryRange,
   rangeCount,
   restoreSelection,
+  resolveSelectionScope,
   resolveSelectionCursor,
   selectedCount,
   selectedSource,
+  selectSelectionScope,
   selectionSnapshot,
   selectionType,
 } from "./core/selection/index.js";

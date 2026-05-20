@@ -7,7 +7,10 @@ import {
   createSelection,
   extendSelectionCursor,
   moveSelectionCursor,
+  primaryPointer,
   resolveSelectionCursor,
+  resolveSelectionScope,
+  selectSelectionScope,
 } from "../src/index.js";
 
 const Schema = z.object({
@@ -150,6 +153,59 @@ describe("createSelection", () => {
       ok: false,
       code: "invalid_pointer",
       pointer: "items",
+    });
+  });
+
+  test("selects a headless scope or explicit visible point set", () => {
+    const scoped = selectSelectionScope(
+      EMPTY_SELECTION,
+      "multiple",
+      initial,
+      { scope: "/items", includeScope: false },
+    );
+    expect(scoped).toMatchObject({ ok: true });
+    if (!scoped.ok) throw new Error(scoped.reason);
+    expect(scoped.points).toEqual([
+      "/items/0",
+      "/items/0/id",
+      "/items/0/name",
+      "/items/1",
+      "/items/1/id",
+      "/items/1/name",
+      "/items/2",
+      "/items/2/id",
+      "/items/2/name",
+    ]);
+    expect(scoped.selection.selectedPointers).toEqual(scoped.points);
+    expect(primaryPointer(scoped.selection)).toBe("/items/2/name");
+
+    const visible = selectSelectionScope(
+      EMPTY_SELECTION,
+      "multiple",
+      initial,
+      { points: ["/items/2", "/items/0"], primaryIndex: 0 },
+    );
+    expect(visible).toMatchObject({ ok: true });
+    if (!visible.ok) throw new Error(visible.reason);
+    expect(visible.selection.selectedPointers).toEqual(["/items/2", "/items/0"]);
+    expect(primaryPointer(visible.selection)).toBe("/items/2");
+
+    expect(resolveSelectionScope(initial, { points: [] })).toMatchObject({
+      ok: false,
+      code: "empty_scope",
+      pointer: "",
+    });
+
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, { mode: "multiple" });
+    expect(selection.selectScope({ points: ["/items/1", "/items/0"] })).toMatchObject({
+      ok: true,
+      points: ["/items/1", "/items/0"],
+    });
+    expect(selection.selectedPointers).toEqual(["/items/1", "/items/0"]);
+    expect(selection.resolveScope({ points: ["/items/2"] })).toEqual({
+      ok: true,
+      points: ["/items/2"],
     });
   });
 

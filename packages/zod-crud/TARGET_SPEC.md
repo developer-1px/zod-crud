@@ -269,6 +269,13 @@ interface SelectionCursorOptions {
   wrap?: boolean;
 }
 
+interface SelectionScopeOptions {
+  points?: ReadonlyArray<JSONPoint>;
+  scope?: Pointer;
+  includeScope?: boolean;
+  primaryIndex?: number;
+}
+
 type SelectionCursorErrorCode =
   | "invalid_pointer"
   | "path_not_found"
@@ -288,6 +295,20 @@ type SelectionCursorResult =
       ok: false;
       direction: SelectionCursorDirection;
       code: SelectionCursorErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      selection: SelectionSnap;
+    };
+
+type SelectionScopeResult =
+  | {
+      ok: true;
+      points: ReadonlyArray<JSONPoint>;
+      selection: SelectionSnap;
+    }
+  | {
+      ok: false;
+      code: "invalid_pointer" | "path_not_found" | "empty_scope";
       reason: string;
       pointer: Pointer | null;
       selection: SelectionSnap;
@@ -322,6 +343,8 @@ interface SelectionState<T> {
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   resolveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
+  selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
+  resolveScope(options?: SelectionScopeOptions): Omit<SelectionScopeResult, "selection">;
   selectRanges(
     ranges: ReadonlyArray<JSONPoint | SelectionRange>,
     anchor?: JSONPoint | null,
@@ -350,6 +373,8 @@ offset/edge carets without React.
 are pure headless helpers over a `SelectionSnap` plus current JSON state.
 They use JSON source-order DFS within `scope` by default, or explicit
 `points` for filtered, folded, virtualized, or otherwise app-visible order.
+`selectSelectionScope` and `resolveSelectionScope` use the same traversal
+options for Ctrl+A/select-visible style selection without requiring React.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.

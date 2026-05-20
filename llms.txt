@@ -17,7 +17,7 @@ and should not be described as an editor.
 
 ```ts
 // Headless JSON state, document, commands, selection, clipboard, history, read, schema, and draft facades.
-import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSON, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor } from "zod-crud";
+import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSON, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -69,7 +69,7 @@ document surface:
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `moveCursor`/`extendCursor` mutate cursor/range by JSON source-order within an optional scope or by explicit app-visible `points`, `resolveCursor` computes the same target without mutation, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `selectedSource` feeds omitted `copy`/`cut` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `moveCursor`/`extendCursor` mutate cursor/range by JSON source-order within an optional scope or by explicit app-visible `points`, `resolveCursor` computes the same target without mutation, `selectScope` builds Ctrl+A/select-visible selections from that same traversal model, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `selectedSource` feeds omitted `copy`/`cut` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
 | `doc.clipboard` / `createClipboard(args)` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` accepts a Pointer or defaults to the primary selection target while spreading multi-source buffers into array targets by default unless `{ spread: false }` |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
@@ -81,6 +81,8 @@ Use `moveSelectionCursor`, `extendSelectionCursor`, and
 `resolveSelectionCursor` for pure headless source-order cursor movement over a
 `SelectionSnap` plus current JSON state, or pass explicit `points` for
 filtered, folded, virtualized, or otherwise app-visible order.
+Use `selectSelectionScope` and `resolveSelectionScope` for pure headless
+select-all/select-visible behavior over the same traversal options.
 Use `createCommands(args)`, `createCheck(args)`, and `createCan(args)` for
 standalone headless command, dry-run, and boolean guard facades; React
 re-exports the same factories without adding a separate command model.

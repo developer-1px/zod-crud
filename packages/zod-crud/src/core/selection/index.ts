@@ -23,6 +23,10 @@ export type SelectionCursorErrorCode =
   | "path_not_found"
   | "empty_scope"
   | "cursor_boundary";
+export type SelectionScopeErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "empty_scope";
 
 export interface JSONPointObject {
   path: Pointer;
@@ -56,6 +60,20 @@ export interface SelectionCursorOptions {
   wrap?: boolean;
 }
 
+export interface SelectionScopeOptions {
+  /**
+   * Explicit selection order. Use this for select-all over filtered, folded,
+   * virtualized, or otherwise app-visible items.
+   */
+  points?: ReadonlyArray<JSONPoint>;
+  /** Pointer subtree used as the selection root. Defaults to the document root. */
+  scope?: Pointer;
+  /** Include the scope pointer itself. Defaults to true. */
+  includeScope?: boolean;
+  /** Primary range index after normalization. Defaults to the last selected point. */
+  primaryIndex?: number;
+}
+
 export type SelectionCursorResult =
   | {
       ok: true;
@@ -77,6 +95,24 @@ export type SelectionCursorResult =
 export type SelectionCursorTarget =
   | Omit<Extract<SelectionCursorResult, { ok: true }>, "selection">
   | Omit<Extract<SelectionCursorResult, { ok: false }>, "selection">;
+
+export type SelectionScopeResult =
+  | {
+      ok: true;
+      points: ReadonlyArray<JSONPoint>;
+      selection: SelectionSnap;
+    }
+  | {
+      ok: false;
+      code: SelectionScopeErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      selection: SelectionSnap;
+    };
+
+export type SelectionScopeTarget =
+  | Omit<Extract<SelectionScopeResult, { ok: true }>, "selection">
+  | Omit<Extract<SelectionScopeResult, { ok: false }>, "selection">;
 
 export interface SelectionSnap {
   /**
@@ -184,6 +220,53 @@ export function restoreSelection(
   return snap.selectionRanges.length === 0
     ? EMPTY_SELECTION
     : snapFromRanges(snap.selectionRanges, snap.primaryIndex, mode, state);
+}
+
+export function selectSelectionScope(
+  prev: SelectionSnap,
+  mode: SelectionMode,
+  state: unknown,
+  options: SelectionScopeOptions = {},
+): SelectionScopeResult {
+  const points = selectionPoints(state, options);
+  if (!points.ok) return { ...points, selection: selectionSnapshot(prev) };
+  if (points.points.length === 0) {
+    return {
+      ok: false,
+      code: "empty_scope",
+      reason: options.points !== undefined
+        ? "selection points are empty"
+        : `selection scope is empty: ${options.scope ?? ""}`,
+      pointer: options.scope ?? "",
+      selection: selectionSnapshot(prev),
+    };
+  }
+  const primaryIndex = options.primaryIndex ?? points.points.length - 1;
+  const selection = snapFromRanges(points.points.map(collapsedRange), primaryIndex, mode, state);
+  return {
+    ok: true,
+    points: points.points.map(clonePoint),
+    selection,
+  };
+}
+
+export function resolveSelectionScope(
+  state: unknown,
+  options: SelectionScopeOptions = {},
+): SelectionScopeTarget {
+  const points = selectionPoints(state, options);
+  if (!points.ok) return points;
+  if (points.points.length === 0) {
+    return {
+      ok: false,
+      code: "empty_scope",
+      reason: options.points !== undefined
+        ? "selection points are empty"
+        : `selection scope is empty: ${options.scope ?? ""}`,
+      pointer: options.scope ?? "",
+    };
+  }
+  return { ok: true, points: points.points.map(clonePoint) };
 }
 
 export type SelectionAction =
@@ -523,6 +606,17 @@ function clonePoint(point: JSONPoint): JSONPoint {
 function cursorPoints(
   state: unknown,
   options: SelectionCursorOptions,
+): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer | null } {
+  if (options.points !== undefined) {
+    return explicitCursorPoints(options.points);
+  }
+
+  return scopedCursorPoints(state, options.scope ?? "", options.includeScope ?? true);
+}
+
+function selectionPoints(
+  state: unknown,
+  options: SelectionScopeOptions,
 ): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer | null } {
   if (options.points !== undefined) {
     return explicitCursorPoints(options.points);

@@ -6,6 +6,8 @@ import {
   extendSelectionCursor,
   moveSelectionCursor,
   resolveSelectionCursor,
+  resolveSelectionScope,
+  selectSelectionScope,
   type SelectionAction,
   type JSONPoint,
   type SelectionCursorDirection,
@@ -16,6 +18,10 @@ import {
   type SelectionMode,
   type SelectionRange,
   type SelectionRangeInput,
+  type SelectionScopeErrorCode,
+  type SelectionScopeOptions,
+  type SelectionScopeResult,
+  type SelectionScopeTarget,
   type SelectionSnap,
   EMPTY_SELECTION,
 } from "../core/selection/index.js";
@@ -31,7 +37,13 @@ export function select(
 }
 
 export { EMPTY_SELECTION };
-export { extendSelectionCursor, moveSelectionCursor, resolveSelectionCursor };
+export {
+  extendSelectionCursor,
+  moveSelectionCursor,
+  resolveSelectionCursor,
+  resolveSelectionScope,
+  selectSelectionScope,
+};
 export type {
   JSONPoint,
   SelectionAction,
@@ -43,6 +55,10 @@ export type {
   SelectionMode,
   SelectionRange,
   SelectionRangeInput,
+  SelectionScopeErrorCode,
+  SelectionScopeOptions,
+  SelectionScopeResult,
+  SelectionScopeTarget,
   SelectionSnap,
   Pointer,
 };
