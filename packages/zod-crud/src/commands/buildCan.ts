@@ -17,7 +17,12 @@ export interface Can<T> {
   duplicate(source: Pointer, opts?: DuplicateOpts): boolean;
   replace(path: Pointer, value: unknown): boolean;
   cut(source?: ClipboardSource): boolean;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): boolean;
+  paste(
+    payload: unknown,
+    targetOrMode?: Pointer | PasteMode,
+    modeOrOptions?: PasteMode | PasteOptions,
+    options?: PasteOptions,
+  ): boolean;
   copy(source?: ClipboardSource): boolean;
 
   readonly undo: boolean;

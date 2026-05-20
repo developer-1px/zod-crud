@@ -105,7 +105,11 @@ interface ClipboardState<T> {
 
   copy(source?: ClipboardSource): CopyOk | CopyError;
   cut(source?: ClipboardSource): CutOk<T> | CutError;
-  paste(target: Pointer, mode?: PasteMode, options?: PasteOptions): ClipboardPasteResult<T>;
+  paste(
+    targetOrMode?: Pointer | PasteMode,
+    modeOrOptions?: PasteMode | PasteOptions,
+    options?: PasteOptions,
+  ): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
 ```
@@ -116,7 +120,7 @@ Semantics:
 - `write(payload, options)` validates and normalizes source metadata when provided.
 - `copy(source?)` reads one `Pointer` or a `Pointer[]` from document state and writes buffer. If source is omitted, it uses the current selection source.
 - `cut(source?)` writes buffer and commits one remove patch atomically; multi-source cut keeps first occurrences, prunes covered descendants, and sorts remove ops to avoid array index shift. If source is omitted, it uses the current selection source.
-- `paste(target, mode, options)` reads buffer and commits the paste patch. Multi-source array payloads spread into array targets by default; pass `{ spread: false }` to keep the array payload as one value.
+- `paste(targetOrMode?, modeOrOptions?, options?)` reads buffer and commits the paste patch. If target is omitted, it uses the current primary selection target; mode-only calls such as `paste("after")` use that same target. Multi-source array payloads spread into array targets by default; pass `{ spread: false }` to keep the array payload as one value.
 - Failed paste does not clear or mutate the buffer.
 - Failed cut does not write buffer and does not mutate document state.
 - DOM/system clipboard integration remains user code.
@@ -158,7 +162,12 @@ interface Check<T> {
   replace(path: Pointer, value: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): CheckResult;
+  paste(
+    payload: unknown,
+    targetOrMode?: Pointer | PasteMode,
+    modeOrOptions?: PasteMode | PasteOptions,
+    options?: PasteOptions,
+  ): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
 
   readonly undo: CheckResult;
@@ -293,6 +302,10 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
 `can.cut()` use it when their source argument is omitted.
+Document-facade `commands.paste(payload)`, `doc.clipboard.paste()`,
+`check.paste(payload)`, and `can.paste(payload)` use `primaryPointer` when
+their target argument is omitted; mode-only calls such as
+`commands.paste(payload, "after")` use that same target.
 `selectedCount` and `hasSelection` are item-selection projection helpers for
 rendering and command guards. `isSelected(pointer)` is the per-item selected
 predicate; `containsNode(pointer)` remains an exact selected-pointer alias.

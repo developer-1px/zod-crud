@@ -170,6 +170,7 @@ export function useJSONDocument<S extends z.ZodType>(
       getState: () => ops.state,
       ops,
       getSelectionSource: () => selectionRef.current.selectedSource,
+      getSelectionTarget: () => selectionRef.current.primaryPointer,
       onChange: bumpClipboardVersion,
     }),
     [schema, ops],

@@ -96,6 +96,25 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.copy()).toBe(false);
   });
 
+  test("paste checks default to current selection target without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    expect(doc.check.paste({ id: "x", name: "X" }, "after")).toEqual({ ok: true });
+    expect(doc.can.paste({ id: "x", name: "X" }, "after")).toBe(true);
+    expect(doc.value).toEqual(initial);
+
+    doc.selection?.empty();
+
+    expect(doc.check.paste({ id: "x", name: "X" })).toMatchObject({
+      ok: false,
+      code: "empty_selection",
+      reason: "paste target selection is empty",
+    });
+    expect(doc.can.paste({ id: "x", name: "X" })).toBe(false);
+  });
+
   test("reports discriminated union paste mismatch before mutation", () => {
     const BlockSchema = z.object({
       blocks: z.array(z.discriminatedUnion("kind", [

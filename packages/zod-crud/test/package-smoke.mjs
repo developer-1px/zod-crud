@@ -742,7 +742,7 @@ try {
       'declare const cutError: CutError;',
       'cutError.code satisfies "empty_selection" | "path_not_found" | "not_serializable" | "invalid_pointer" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'declare const pasteError: PasteError;',
-      'pasteError.code satisfies "not_serializable" | "rekey_failed" | "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
+      'pasteError.code satisfies "empty_selection" | "not_serializable" | "rekey_failed" | "invalid_pointer" | "path_not_found" | "move_into_self" | "schema_violation" | "test_failed" | "preFlight_failed";',
       'type RootRekeyFailure = Extract<RekeyResult, { ok: false }>;',
       'declare const rootRekeyCode: RootRekeyFailure["code"];',
       'rootRekeyCode satisfies "not_serializable" | "rekey_failed";',

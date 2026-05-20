@@ -63,6 +63,34 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.redoDepth).toBe(1);
   });
 
+  test("commands paste defaults to the current selection target", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    const pasted = doc.commands.paste({ id: "x", name: "X" }, "after");
+
+    expect(pasted.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "x", "b"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("commands paste reports empty selection when target is omitted", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    const pasted = doc.commands.paste({ id: "x", name: "X" });
+
+    expect(pasted).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "paste target selection is empty",
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
   test("doc.clipboard copies, pastes, and exposes serializable items", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
@@ -124,6 +152,20 @@ describe("createJSONDocument — headless facade", () => {
       sources: ["/items/0"],
     });
     expect(doc.history.undoDepth).toBe(0);
+  });
+
+  test("doc.clipboard paste defaults to the current selection target", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    doc.clipboard.copy("/items/1");
+    const pasted = doc.clipboard.paste("after");
+
+    expect(pasted.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "b"]);
+    expect(doc.history.undoDepth).toBe(1);
   });
 
   test("doc.clipboard write rejects non-JSON without clearing existing buffer", () => {

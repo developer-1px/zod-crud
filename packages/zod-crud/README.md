@@ -150,6 +150,10 @@ null/single/multi source projection accepted by `copy` / `cut`. Facade-level
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
 `can.cut()` default to the current selection when the source is omitted.
+Facade-level `commands.paste(payload)`, `doc.clipboard.paste()`,
+`check.paste(payload)`, and `can.paste(payload)` default to the primary
+selection target when the target is omitted; a mode-only call such as
+`commands.paste(payload, "after")` uses that same target.
 String caret offsets are clamped to the current string length when state is
 available, including after document edits that keep the same Pointer alive.
 Selection getters and `doc.selection.snapshot()` return value snapshots, so
@@ -165,7 +169,8 @@ and exposes all `sources` through both `doc.clipboard.sources` and
 `doc.clipboard.read()`. `doc.clipboard.copy()` and `doc.clipboard.cut()` use
 the current selection when the source is omitted. Manual
 `doc.clipboard.write` validates and normalizes source metadata when provided.
-`doc.clipboard.paste` spreads multi-source array
+`doc.clipboard.paste` uses the primary selection target when the target is
+omitted, and spreads multi-source array
 payloads back into array targets by default; pass `{ spread: false }` to keep
 the array payload as one value. DOM/system clipboard integration remains user
 code.

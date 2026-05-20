@@ -193,6 +193,20 @@ describe("useJSONDocument doc.selection", () => {
       sources: ["/items/0", "/items/1"],
     });
   });
+
+  test("commands paste defaults to current selection target through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    }));
+
+    act(() => {
+      hook.current.commands.paste({ id: "x", name: "X" }, "after");
+    });
+
+    expect(hook.current.value.items.map((item) => item.id)).toEqual(["a", "x", "b"]);
+    expect(hook.current.history.undoDepth).toBe(1);
+  });
 });
 
 function renderHook<T>(hook: () => T): { readonly current: T } {

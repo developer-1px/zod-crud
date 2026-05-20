@@ -454,6 +454,7 @@ export function createJSONDocument<S extends z.ZodType>(
     getState: () => state,
     ops,
     getSelectionSource: () => selectionState.selectedSource,
+    getSelectionTarget: () => selectionState.primaryPointer,
   });
   const read = buildReadFacade({ schema, getState: () => state });
   const schemaState = createSchemaState({ schema });

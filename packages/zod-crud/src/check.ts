@@ -8,8 +8,8 @@ import { copy, type ClipboardSource } from "./verbs/copy.js";
 import { cut } from "./verbs/cut.js";
 import { duplicate, type DuplicateOpts } from "./verbs/duplicate.js";
 import { move as moveVerb } from "./verbs/move.js";
-import { paste, type PasteMode, type PasteOptions } from "./verbs/paste.js";
-import { selectedSource, type SelectionSnap } from "./core/selection/index.js";
+import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
+import { primaryPointer, selectedSource, type SelectionSnap } from "./core/selection/index.js";
 
 export type CheckErrorCode =
   | ErrorCode
@@ -43,7 +43,12 @@ export interface Check<T> {
   replace(path: Pointer, value: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): CheckResult;
+  paste(
+    payload: unknown,
+    targetOrMode?: Pointer | PasteMode,
+    modeOrOptions?: PasteMode | PasteOptions,
+    options?: PasteOptions,
+  ): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
 
   readonly undo: CheckResult;
@@ -75,6 +80,8 @@ export function buildCheck<S extends z.ZodType>(
   const { schema, ops, selectionRef } = args;
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
+  const targetOrSelection = (target?: Pointer): Pointer | null =>
+    target ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
 
   return {
     move(from, to) {
@@ -94,8 +101,12 @@ export function buildCheck<S extends z.ZodType>(
       const resolved = sourceOrSelection(source);
       return resolved === null ? emptySelection("copy source selection is empty") : toCheckResult(copy(ops.state, resolved));
     },
-    paste(payload, target, mode = "into", options = {}) {
-      return toCheckResult(paste(schema, ops.state, payload, target, mode, options));
+    paste(payload, targetOrMode, modeOrOptions, maybeOptions) {
+      const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
+      const target = targetOrSelection(args.target);
+      return target === null
+        ? emptySelection("paste target selection is empty")
+        : toCheckResult(paste(schema, ops.state, payload, target, args.mode, args.options));
     },
     patch(operations) {
       return toCheckResult(preFlight(schema, ops.state, operations));

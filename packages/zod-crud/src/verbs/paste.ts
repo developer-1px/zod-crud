@@ -20,7 +20,7 @@ export interface PasteOk<T> {
 
 export interface PasteError {
   ok: false;
-  code: "not_serializable" | "rekey_failed" | PreFlightErrorCode;
+  code: "empty_selection" | "not_serializable" | "rekey_failed" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -37,6 +37,34 @@ export interface PasteOptions {
   rekey?: RekeyOptions;
   /** Array payload 를 array target 에 여러 add op 로 펼친다. Multi-source clipboard paste 에 사용. */
   spread?: boolean;
+}
+
+export interface ResolvedPasteArgs {
+  target?: Pointer;
+  mode: PasteMode;
+  options: PasteOptions;
+}
+
+export function resolvePasteArgs(
+  targetOrMode?: Pointer | PasteMode,
+  modeOrOptions?: PasteMode | PasteOptions,
+  maybeOptions?: PasteOptions,
+): ResolvedPasteArgs {
+  if (isPasteMode(targetOrMode)) {
+    return {
+      mode: targetOrMode,
+      options: isPasteMode(modeOrOptions) || modeOrOptions === undefined
+        ? maybeOptions ?? {}
+        : modeOrOptions,
+    };
+  }
+  return {
+    ...(targetOrMode !== undefined ? { target: targetOrMode } : {}),
+    mode: isPasteMode(modeOrOptions) ? modeOrOptions : "into",
+    options: isPasteMode(modeOrOptions) || modeOrOptions === undefined
+      ? maybeOptions ?? {}
+      : modeOrOptions,
+  };
 }
 
 export function paste<S extends z.ZodType>(
@@ -179,4 +207,8 @@ function isArrayInsertionPath(state: unknown, path: Pointer): boolean {
 
   const parent = readAt(state, segments.slice(0, -1));
   return parent.ok && Array.isArray(parent.value);
+}
+
+function isPasteMode(value: unknown): value is PasteMode {
+  return value === "before" || value === "after" || value === "into" || value === "replace";
 }

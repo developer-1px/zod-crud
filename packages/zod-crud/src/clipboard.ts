@@ -17,7 +17,7 @@ import {
   type CopyOk,
 } from "./verbs/copy.js";
 import { cut, type CutError, type CutOk } from "./verbs/cut.js";
-import { paste, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk, type PasteOptions } from "./verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk, type PasteOptions } from "./verbs/paste.js";
 
 export type { ClipboardSource } from "./verbs/copy.js";
 
@@ -52,7 +52,11 @@ export interface ClipboardState<T> {
 
   copy(source?: ClipboardSource): CopyOk | CopyError;
   cut(source?: ClipboardSource): CutOk<T> | CutError;
-  paste(target: Pointer, mode?: PasteMode, options?: PasteOptions): ClipboardPasteResult<T>;
+  paste(
+    targetOrMode?: Pointer | PasteMode,
+    modeOrOptions?: PasteMode | PasteOptions,
+    options?: PasteOptions,
+  ): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
 
@@ -72,6 +76,7 @@ interface CreateClipboardStateArgs<S extends z.ZodType> {
   getState(): z.output<S>;
   ops: JSONDocumentOps<z.output<S>>;
   getSelectionSource?: () => SelectionSource | null;
+  getSelectionTarget?: () => Pointer | null;
   onChange?: () => void;
 }
 
@@ -84,7 +89,7 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
 export function createClipboardState<S extends z.ZodType>(
   args: CreateClipboardStateArgs<S>,
 ): ClipboardState<z.output<S>> {
-  const { schema, getState, ops, getSelectionSource, onChange } = args;
+  const { schema, getState, ops, getSelectionSource, getSelectionTarget, onChange } = args;
   let buffer: ClipboardBuffer | null = null;
 
   const setBuffer = (next: ClipboardBuffer | null): void => {
@@ -101,6 +106,8 @@ export function createClipboardState<S extends z.ZodType>(
     source === null ? schema : (schemaAtPointer(schema, source) ?? schema);
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource =>
     source ?? getSelectionSource?.() ?? [];
+  const targetOrSelection = (target?: Pointer): Pointer | null =>
+    target ?? getSelectionTarget?.() ?? null;
   const writeSources = (options: ClipboardWriteOptions): ClipboardWriteSourcesResult => {
     const candidates: Pointer[] = [];
     if (options.source !== undefined && options.source !== null) candidates.push(options.source);
@@ -192,11 +199,20 @@ export function createClipboardState<S extends z.ZodType>(
       return result;
     },
 
-    paste(target, mode = "into", options = {}) {
+    paste(targetOrMode, modeOrOptions, maybeOptions) {
       if (!buffer) return EMPTY_CLIPBOARD;
-      const spread = options.spread ?? ((buffer.sources?.length ?? 0) > 1);
-      const result = paste(schema, getState(), buffer.payload, target, mode, {
-        ...options,
+      const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
+      const target = targetOrSelection(args.target);
+      if (target === null) {
+        return {
+          ok: false,
+          code: "empty_selection",
+          message: "paste target selection is empty",
+        };
+      }
+      const spread = args.options.spread ?? ((buffer.sources?.length ?? 0) > 1);
+      const result = paste(schema, getState(), buffer.payload, target, args.mode, {
+        ...args.options,
         spread,
       });
       if (!result.ok) return result;

@@ -67,8 +67,8 @@ document surface:
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, string caret offsets are clamped to current text, getters and `snapshot()` return value-safe coordinates, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `anchorPointer`/`focusPointer`/`primaryPointer`/`caretPointer` expose command-ready paths, and omitted `copy`/`cut` sources default to `selectedSource` |
-| `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` spreads multi-source buffers into array targets by default while `{ spread: false }` keeps the array payload as one value |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, string caret offsets are clamped to current text, getters and `snapshot()` return value-safe coordinates, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `selectedSource` feeds omitted `copy`/`cut` sources, and `primaryPointer` feeds omitted `paste` targets |
+| `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` accepts a Pointer or defaults to the primary selection target while spreading multi-source buffers into array targets by default unless `{ spread: false }` |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through
@@ -162,11 +162,11 @@ if (copied.ok) {
 
 doc.commands.select({ type: "addRange", pointer: "/items/0" });
 const selected = doc.commands.copy();
-if (selected.ok) doc.commands.paste(selected.payload, "/items/-");
+if (selected.ok) doc.commands.paste(selected.payload, "after");
 
 doc.commands.select({ type: "addRange", pointer: "/items/1" });
 const multi = doc.commands.copy();
-if (multi.ok) doc.commands.paste(multi.payload, "/items/-", "into", { spread: true });
+if (multi.ok) doc.commands.paste(multi.payload, "after", { spread: true });
 ```
 
 ### Check

@@ -7,7 +7,7 @@
 import type * as z from "zod";
 import type { JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { selectedSource } from "../core/selection/index.js";
+import { primaryPointer, selectedSource } from "../core/selection/index.js";
 import type {
   JSONPoint,
   SelectionAction,
@@ -18,7 +18,7 @@ import type {
 import { select as selectVerb } from "../verbs/select.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type ClipboardSource, type CopyOk, type CopyError } from "../verbs/copy.js";
-import { paste, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode, type PasteOptions } from "../verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode, type PasteOptions } from "../verbs/paste.js";
 import { duplicate, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
@@ -35,7 +35,12 @@ export interface Commands<T> {
 
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   copy(source?: ClipboardSource): CopyOk | CopyError;
-  paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): PasteOk<T> | PasteError | PasteDuMismatch;
+  paste(
+    payload: unknown,
+    targetOrMode?: Pointer | PasteMode,
+    modeOrOptions?: PasteMode | PasteOptions,
+    options?: PasteOptions,
+  ): PasteOk<T> | PasteError | PasteDuMismatch;
 
   undo(): boolean;
   redo(): boolean;
@@ -75,6 +80,8 @@ export function buildCommands<S extends z.ZodType>(
   };
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource =>
     source ?? selectedSource(selectionRef.current) ?? [];
+  const targetOrSelection = (target?: Pointer): Pointer | null =>
+    target ?? primaryPointer(selectionRef.current);
 
   return {
     select(action, mode = selectionMode) {
@@ -103,11 +110,23 @@ export function buildCommands<S extends z.ZodType>(
     copy(source) {
       return copy(ops.state, sourceOrSelection(source));
     },
-    paste(payload, target, mode = "into", options = {}) {
-      return run(paste(schema, ops.state, payload, target, mode, options));
+    paste(payload, targetOrMode, modeOrOptions, maybeOptions) {
+      const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
+      const target = targetOrSelection(args.target);
+      return target === null
+        ? emptyPasteTarget()
+        : run(paste(schema, ops.state, payload, target, args.mode, args.options));
     },
 
     undo() { return ops.undo(); },
     redo() { return ops.redo(); },
+  };
+}
+
+function emptyPasteTarget(): PasteError {
+  return {
+    ok: false,
+    code: "empty_selection",
+    message: "paste target selection is empty",
   };
 }
