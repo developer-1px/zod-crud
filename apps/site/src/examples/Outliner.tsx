@@ -76,8 +76,10 @@ export function Outliner() {
       const parent = parentOf(p);
       if (parent === null) return;
       const insertAt = `${parent}/${idx + 1}`;
-      const r = doc.ops.patch([{ op: "add", path: insertAt, value: { text: "", children: [] } }]);
-      if (r.ok) doc.selection?.collapse(insertAt);
+      doc.commit(
+        [{ op: "add", path: insertAt, value: { text: "", children: [] } }],
+        { selection: { type: "collapse", pointer: insertAt } },
+      );
       return;
     }
     if (e.key === "Tab" && !e.shiftKey) {
@@ -86,11 +88,11 @@ export function Outliner() {
       if (idx === null || idx === 0) return;
       const prev = siblingAt(p, idx - 1);
       const target = `${prev}/children/-`;
-      const r = doc.ops.patch([{ op: "move", from: p, path: target }]);
-      if (r.ok) {
-        const prevChildren = readChildren(doc.value, prev);
-        doc.selection?.collapse(`${prev}/children/${prevChildren.length}`);
-      }
+      const prevChildren = readChildren(doc.value, prev);
+      doc.commit(
+        [{ op: "move", from: p, path: target }],
+        { selection: { type: "collapse", pointer: `${prev}/children/${prevChildren.length}` } },
+      );
       return;
     }
     if (e.key === "Tab" && e.shiftKey) {
@@ -103,8 +105,10 @@ export function Outliner() {
       if (parentParent === null) return;
       const targetIdx = parentIdx + 1;
       const target = `${parentParent}/${targetIdx}`;
-      const r = doc.ops.patch([{ op: "move", from: p, path: target }]);
-      if (r.ok) doc.selection?.collapse(target);
+      doc.commit(
+        [{ op: "move", from: p, path: target }],
+        { selection: { type: "collapse", pointer: target } },
+      );
       return;
     }
     if (e.key === "Backspace") {
@@ -114,10 +118,10 @@ export function Outliner() {
         const idx = lastIndex(p);
         const parent = parentOf(p);
         if (idx === null || parent === null) return;
-        const r = doc.ops.patch([{ op: "remove", path: p }]);
-        if (r.ok) {
-          doc.selection?.collapse(idx > 0 ? siblingAt(p, idx - 1) : parent);
-        }
+        doc.commit(
+          [{ op: "remove", path: p }],
+          { selection: { type: "collapse", pointer: idx > 0 ? siblingAt(p, idx - 1) : parent } },
+        );
       }
     }
   };
