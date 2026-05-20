@@ -4,6 +4,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { z } from "zod";
 
+import { createDebugLog, createJSONDocument } from "../src/index.js";
 import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
 import { useDebugLog } from "../src/sidecars/debug-log.js";
 
@@ -27,6 +28,45 @@ afterEach(() => {
 });
 
 describe("useDebugLog", () => {
+  test("createDebugLog records commits and selection headlessly", () => {
+    const doc = createJSONDocument(Schema, { title: "A", nested: { count: 0 } }, {
+      selection: { mode: "single" },
+    });
+    const debug = createDebugLog(doc.ops, doc.selection);
+
+    debug.start();
+    doc.selection?.collapse("/title");
+    const payload = { nested: { count: 1 } };
+    debug.log("custom", payload);
+    payload.nested.count = 9;
+    doc.ops.replace("/nested/count", 1);
+    const log = debug.stop();
+    doc.value.nested.count = 99;
+    debug.dispose();
+
+    expect(log.initialState).toEqual({ title: "A", nested: { count: 0 } });
+    expect(log.events).toContainEqual(expect.objectContaining({
+      kind: "selection",
+      data: expect.objectContaining({
+        selectedPointers: ["/title"],
+        selectionRanges: [{ anchor: "/title", focus: "/title" }],
+        isCollapsed: true,
+        type: "Caret",
+      }),
+    }));
+    expect(log.events).toContainEqual(expect.objectContaining({
+      kind: "custom",
+      data: { nested: { count: 1 } },
+    }));
+    expect(log.events).toContainEqual(expect.objectContaining({
+      kind: "commit",
+      data: expect.objectContaining({
+        before: { title: "A", nested: { count: 0 } },
+        after: { title: "A", nested: { count: 1 } },
+      }),
+    }));
+  });
+
   test("custom event data 와 initialState 를 기록 시점 JSON snapshot 으로 고정한다", () => {
     const hook = renderHook(() => useHarness());
 

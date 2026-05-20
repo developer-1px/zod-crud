@@ -64,8 +64,15 @@ export type {
   ReplayTarget,
 } from "./sidecars/recorder.js";
 
-export { useDebugLog } from "./sidecars/debug-log.js";
-export type { DebugLog, DebugLogApi, DebugLogger } from "./sidecars/debug-log.js";
+export { createDebugLog, useDebugLog } from "./sidecars/debug-log.js";
+export type {
+  CreateDebugLogOptions,
+  DebugEvent,
+  DebugLog,
+  DebugLogApi,
+  DebugLogger,
+  HeadlessDebugLogApi,
+} from "./sidecars/debug-log.js";
 
 export type {
   HistoryMergeOptions,

@@ -384,6 +384,8 @@ Rules:
 - Recording sidecars preserve history metadata when present.
 - Recording can be produced headlessly with `createRecorder(ops)`; React
   `useRecorder` is a facade over it.
+- Diagnostic timelines can be produced headlessly with
+  `createDebugLog(ops, selection?)`; React `useDebugLog` is a facade over it.
 
 Acceptance evidence:
 
@@ -447,6 +449,8 @@ Rules:
 - Recording is still JSON.
 - Recording can be produced headlessly with `createRecorder(ops)`; React
   `useRecorder` is a facade over it.
+- Debug logs can be produced headlessly with `createDebugLog(ops, selection?)`;
+  React `useDebugLog` is a facade over it.
 - Replay accepts either `JSONOps<T>` for state-only replay or a document facade
   target for state + selection replay.
 - Replay restores `selectionBefore` before the first step and `selectionAfter`

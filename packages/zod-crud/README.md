@@ -207,8 +207,9 @@ The vendored RFC 9535 CTS gates full 703/703 conformance.
 History metadata is serializable. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user
 intent in undo entries and recorder steps.
-Use `createRecorder(doc.ops)` for headless recording; `useRecorder(doc.ops)`
-is the React facade over the same recorder.
+Use `createRecorder(doc.ops)` for headless recording and
+`createDebugLog(doc.ops, doc.selection)` for headless diagnostic timelines;
+`useRecorder` and `useDebugLog` are React facades over the same sidecars.
 `replayRecording(recording, doc)` restores recorded selection metadata when it
 is present; pass `doc.ops` for state-only replay.
 
@@ -308,6 +309,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `buildPatchRequest`, `withIfMatch`, `parsePatchResponse` | HTTP PATCH wire helpers (SPEC §5.9) |
 | `PatchRequest`, `ParseResult`, `ParseError` | HTTP sidecar types (SPEC §5.9) |
 | `createRecorder`, `replayRecording`, `RecorderApi<T>`, `HeadlessRecorderApi<T>`, `CreateRecorderOptions`, `Recording<T>`, `RecordedStep`, `ReplayTarget<T>`, `ReplayDocumentTarget<T>`, `ReplaySelectionTarget`, `ReplayOptions` | replayable JSON recording sidecar (SPEC §5) |
+| `createDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger`, `DebugEvent`, `HeadlessDebugLogApi<T>`, `CreateDebugLogOptions` | headless diagnostic timeline sidecar (SPEC §5) |
 | `useRecorder`, `RecorderApi<T>` from `zod-crud/react` | React recording hook (SPEC §5) |
 | `useDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
