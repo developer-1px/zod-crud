@@ -153,6 +153,7 @@ type CheckResult =
         | "key_conflict"
         | "empty_selection"
         | "empty_scope"
+        | "empty_match"
         | "cursor_boundary"
         | "syntax_error"
         | "empty_stack"
@@ -418,6 +419,9 @@ Document-facade `commands.duplicate()`, `check.duplicate()`, and
 opts-only calls such as `commands.duplicate({ newKey })` use that same source.
 Document-facade `commands.replace(value)`, `check.replace(value)`, and
 `can.replace(value)` use `primaryPointer` when their path argument is omitted.
+When the explicit first argument is a JSONPath string, `commands.replace`
+commits the pure `replace` verb's atomic multi-match batch, and `check.replace`
+/ `can.replace` dry-run that same batch; no matches report `empty_match`.
 Document-facade `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` use `primaryPointer` when
 their target argument is omitted; mode-only calls such as

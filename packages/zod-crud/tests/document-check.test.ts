@@ -33,6 +33,14 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.can.find("$.items[*].id")).toBe(true);
     expect(invalidFind).toMatchObject({ ok: false, code: "syntax_error" });
     expect(invalidFind.ok).toBe(doc.can.find("$.items["));
+    expect(doc.check.replace("$.items[*].name", "renamed")).toEqual({ ok: true });
+    expect(doc.can.replace("$.items[*].name", "renamed")).toBe(true);
+    expect(doc.check.replace("$.items[?@.name == 'missing'].name", "renamed")).toMatchObject({
+      ok: false,
+      code: "empty_match",
+    });
+    expect(doc.can.replace("$.items[?@.name == 'missing'].name", "renamed")).toBe(false);
+    expect(doc.value).toEqual(initial);
   });
 
   test("reports cross-field refinement failures without mutation", () => {

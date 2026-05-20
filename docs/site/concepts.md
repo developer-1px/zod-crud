@@ -47,6 +47,7 @@ doc.ops.remove("/tasks/0");
 
 ```ts
 doc.commands.find("$..title");
+doc.commands.replace("$.tasks[*].done", true);
 doc.commands.move("/tasks/2", "/tasks/0");
 doc.commands.duplicate("/tasks/0");
 doc.commands.cut("/tasks/1");
@@ -64,6 +65,7 @@ doc.commands.undo();
 
 ```ts
 doc.can.find("$.tasks[*].title");
+doc.can.replace("$.tasks[*].done", true);
 doc.check.find("$.tasks["); // syntax_error
 ```
 

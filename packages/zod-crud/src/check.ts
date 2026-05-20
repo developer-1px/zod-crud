@@ -10,6 +10,7 @@ import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/dup
 import { find } from "./verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
+import { replace as replaceVerb } from "./verbs/replace.js";
 import {
   EMPTY_SELECTION,
   primaryPointer,
@@ -31,6 +32,7 @@ export type CheckErrorCode =
   | "key_conflict"
   | "empty_selection"
   | "empty_scope"
+  | "empty_match"
   | "cursor_boundary"
   | "syntax_error"
   | "empty_stack"
@@ -135,6 +137,9 @@ export function buildCheck<S extends z.ZodType>(
     },
     replace(pathOrValue, maybeValue) {
       const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
+      if (args.target !== undefined && isJSONPath(args.target)) {
+        return toCheckResult(replaceVerb(schema, ops.state, args.target, args.value));
+      }
       const target = targetOrSelection(args.target);
       return target === null
         ? emptySelection("replace target selection is empty")
@@ -208,4 +213,8 @@ function resolveReplaceArgs(
   return hasValueArg
     ? { target: pathOrValue as Pointer, value }
     : { value: pathOrValue };
+}
+
+function isJSONPath(value: Pointer): boolean {
+  return value.startsWith("$");
 }

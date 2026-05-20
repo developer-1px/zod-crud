@@ -116,14 +116,14 @@ describe("buildCommands — TipTap 식 commands group", () => {
     expect(ops.state.items[0]?.name).toBe("renamed");
   });
 
-  test("commands.replace multi-match — find + ops.patch 합성", () => {
+  test("commands.replace multi-match — JSONPath batch", () => {
     const ops = makeOps(initial);
     const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
-    const found = commands.find("$.items[*].name");
-    expect(found.ok).toBe(true);
-    if (found.ok) {
-      ops.patch(found.pointers.map((path) => ({ op: "replace" as const, path, value: "renamed" })));
-    }
+    const replaced = commands.replace("$.items[*].name", "renamed");
+    expect(replaced).toMatchObject({
+      ok: true,
+      pointers: ["/items/0/name", "/items/1/name"],
+    });
     expect(ops.state.items.every((i) => i.name === "renamed")).toBe(true);
   });
 });

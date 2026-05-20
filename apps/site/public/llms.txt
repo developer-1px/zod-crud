@@ -210,14 +210,17 @@ history.
 const result = doc.check.replace("/items/0/name", value);
 if (!result.ok && result.code === "schema_violation") show(result.violations);
 
+const changed = doc.commands.replace("$.items[*].done", true);
+const replaceable = doc.can.replace("$.items[*].done", true);
 const findable = doc.check.find("$.items[*].name");
 const cursor = doc.check.moveCursor("next", { points: visiblePoints });
 const all = doc.check.selectScope({ points: visiblePoints });
 ```
 
-`find` syntax failures report `syntax_error`; `moveCursor` / `extendCursor`
-failures report `cursor_boundary`; `selectScope` with no selectable points
-reports `empty_scope`.
+`find` syntax failures report `syntax_error`; JSONPath replace with no matches
+reports `empty_match`; `moveCursor` / `extendCursor` failures report
+`cursor_boundary`; `selectScope` with no selectable points reports
+`empty_scope`.
 
 ### Read / Query
 

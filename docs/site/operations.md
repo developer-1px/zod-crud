@@ -39,6 +39,7 @@ doc.ops.move("/items/2", "/items/0");
 
 ```ts
 doc.commands.find("$..title");
+doc.commands.replace("$.items[*].done", true);
 doc.commands.move("/items/2", "/items/0");
 doc.commands.duplicate("/items/0");
 doc.commands.cut("/items/1");
@@ -57,7 +58,7 @@ doc.commands.redo();
 ```
 
 ```ts
-doc.can.find("$..title");
+doc.can.replace("$.items[*].done", true);
 doc.check.find("$.items[");
 ```
 

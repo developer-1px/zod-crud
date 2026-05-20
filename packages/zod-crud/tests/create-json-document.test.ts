@@ -104,6 +104,22 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.undoDepth).toBe(1);
   });
 
+  test("commands replace accepts JSONPath multi-match and commits one history entry", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const replaced = doc.commands.replace("$.items[*].name", "renamed");
+
+    expect(replaced).toMatchObject({
+      ok: true,
+      pointers: ["/items/0/name", "/items/1/name"],
+    });
+    expect(doc.value.items.map((item) => item.name)).toEqual(["renamed", "renamed"]);
+    expect(doc.history.undoDepth).toBe(1);
+
+    expect(doc.commands.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+  });
+
   test("commands replace reports empty selection when target is omitted", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single" },

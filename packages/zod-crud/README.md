@@ -190,7 +190,10 @@ Facade-level `commands.duplicate()`, `check.duplicate()`, and
 omitted; `commands.duplicate({ newKey })` duplicates a selected object member.
 Facade-level `commands.replace(value)`, `check.replace(value)`, and
 `can.replace(value)` default to the primary selection target when the path is
-omitted.
+omitted. With an explicit JSONPath string, `commands.replace(jsonpath, value)`
+commits an atomic multi-match replace; `check.replace(jsonpath, value)` and
+`can.replace(jsonpath, value)` dry-run the same batch and report `empty_match`
+when the query matches nothing.
 Facade-level `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` default to the primary
 selection target when the target is omitted; a mode-only call such as

@@ -55,6 +55,16 @@ describe("headless command/check/can factories", () => {
       sources: ["/items/1"],
     });
 
+    expect(check.replace("$.items[*].name", "renamed")).toEqual({ ok: true });
+    expect(can.replace("$.items[*].name", "renamed")).toBe(true);
+    const queryReplaced = commands.replace("$.items[*].name", "renamed");
+    expect(queryReplaced).toMatchObject({
+      ok: true,
+      pointers: ["/items/0/name", "/items/1/name"],
+    });
+    expect(doc.value.items.map((item) => item.name)).toEqual(["renamed", "renamed"]);
+    expect(doc.history.undoDepth).toBe(2);
+
     const selected = commands.selectScope({ points: ["/items/1", "/items/0"] });
     expect(selected).toMatchObject({ ok: true, points: ["/items/1", "/items/0"] });
     expect(selection.selectedPointers).toEqual(["/items/1", "/items/0"]);

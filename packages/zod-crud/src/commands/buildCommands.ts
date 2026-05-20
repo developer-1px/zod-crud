@@ -34,10 +34,13 @@ import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMis
 import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
+import { replace as replaceVerb, type ReplaceOk, type ReplaceError } from "../verbs/replace.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
 
-export type ReplaceCommandResult =
+export type ReplaceCommandResult<T = unknown> =
   | JSONResult
+  | ReplaceOk<T>
+  | ReplaceError
   | { ok: false; code: "empty_selection"; reason: string };
 
 export interface Commands<T> {
@@ -49,8 +52,7 @@ export interface Commands<T> {
 
   move(fromOrTo: Pointer, to?: Pointer): MoveResult<T>;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
-  // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
-  replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult<T>;
 
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   copy(source?: ClipboardSource): CopyOk | CopyError;
@@ -170,6 +172,9 @@ export function buildCommands<S extends z.ZodType>(
     replace(pathOrValue, maybeValue) {
       // 다른 mutating verb 와 동일하게 ops.patch 경유 (history commit + listener notify).
       const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
+      if (args.target !== undefined && isJSONPath(args.target)) {
+        return run(replaceVerb(schema, ops.state, args.target, args.value));
+      }
       const target = targetOrSelection(args.target);
       return target === null
         ? emptyReplaceTarget()
@@ -259,4 +264,8 @@ function resolveReplaceArgs(
   return hasValueArg
     ? { target: pathOrValue as Pointer, value }
     : { value: pathOrValue };
+}
+
+function isJSONPath(value: Pointer): boolean {
+  return value.startsWith("$");
 }
