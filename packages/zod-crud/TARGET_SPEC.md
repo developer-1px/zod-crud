@@ -238,6 +238,8 @@ Selection is a first-class engine subsystem. Current source of truth is
 and shared by `createJSONDocument` and `useJSONDocument`.
 `createSelection(ops)` is the headless state owner; React `useSelection(ops)`
 is only a facade over it.
+`createDraft(doc)` is the headless draft/pending-field owner; React
+`useDraft(doc)` and `useField(doc, pointer)` are facades over it.
 
 ```ts
 type JSONPoint =

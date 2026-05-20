@@ -216,8 +216,8 @@ is present; pass `doc.ops` for state-only replay.
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
 
-For lower-level composition, use `createSelection(ops)` headlessly or
-`useSelection(ops)` in React. See the
+For lower-level composition, use `createSelection(ops)` and `createDraft(doc)`
+headlessly, or `useSelection(ops)` / `useDraft(doc)` in React. See the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
 [`useSelection`](./SPEC.md#57-useselection--selection-state-hook) contracts in
 SPEC.
@@ -296,8 +296,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
 | `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `SelectionSource`, `SelectionRangeInput`, `UseSelectionOptions`, `CreateSelectionOptions` from `zod-crud/react` | React selection hook types |
+| `createDraft(doc, options?)` | headless draft/pending field state over a document facade |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
-| `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | draft/pending field types |
+| `DraftState<T>`, `DraftFieldState<T>`, `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` from `zod-crud/react` | draft/pending field types |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |

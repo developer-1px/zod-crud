@@ -598,7 +598,7 @@ export interface JSONDocument<T> {
 
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
 React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs, boolean guard predicates, explainable dry-run checks, schema introspection, read/query helpers 를 한 객체로 묶는다.
-React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다. `useSelection` 은 headless `createSelection` 의 React facade 다.
+React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다. `useSelection` 은 headless `createSelection` 의 React facade 이고, `useDraft` / `useField` 는 headless `createDraft` 의 React facade 다.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
 clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다. multi-source `copy` / `cut` 은 selection 순서의 JSON array payload 를 만들고, 중복 source 는 첫 등장만 보존하며, ancestor source 가 descendant source 를 덮으면 descendant 는 실제 source 집합에서 제외한다. source 인자를 생략한 `doc.clipboard.copy()` / `doc.clipboard.cut()` 은 현재 selection source 를 사용하고, target 인자를 생략한 `doc.clipboard.paste()` 는 현재 primary selection target 을 사용한다. manual `doc.clipboard.write` 도 source metadata 가 제공되면 같은 규칙으로 검증/정규화한다. buffer 의 `source` 는 primary source, `sources` 는 전체 source-list 이며 `read()` 도 둘 다 반환한다. remove patch 는 array index shift 를 피하도록 적용 순서만 정렬한다. `doc.clipboard.paste` 는 multi-source buffer 를 array target 에 붙일 때 기본적으로 payload 를 여러 `add` op 로 spread 하며, `{ spread: false }` 로 array payload 를 하나의 값으로 붙일 수 있다.
 check 는 state, selection, clipboard, history 를 바꾸지 않는 dry-run guard 이며 `can.x(...) === check.x(...).ok` 이다. source 인자를 생략한 `check.copy()` / `check.cut()` 은 현재 selection source 로 검증하고, source 인자를 생략한 `check.move(to)` / `check.duplicate()` 은 현재 primary selection source 로 검증하며, target 인자를 생략한 `check.replace(value)` / `check.paste(payload)` 는 현재 primary selection target 으로 검증한다.
@@ -733,13 +733,14 @@ index.ts              ─ headless public export (SPEC §5)
 react.ts              ─ React public export (`zod-crud/react`)
 createJSONDocument.ts ─ headless document facade (SPEC §5.10)
 selection.ts          ─ headless selection state facade (SPEC §5.7)
+draft.ts              ─ headless draft/pending field state
 jsonOps.ts            ─ JSONOps boundary type
 hooks/
   useJSON.ts          ─ React state + ops binding (SPEC §5.1·§5.2)
   useJSONDocument.ts  ─ React document facade
   useSelection.ts     ─ React selection facade (SPEC §5.7)
   useJSONSlice.ts     ─ pointer slice hook
-  useDraft.ts         ─ draft/pending field helpers
+  useDraft.ts         ─ React draft facade
   buildJSONDocumentOps.ts
   jsonDocumentHistory.ts
 commands/

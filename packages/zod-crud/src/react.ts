@@ -6,6 +6,7 @@ export { useJSON } from "./hooks/useJSON.js";
 export { useSelection } from "./hooks/useSelection.js";
 export { createSelection } from "./selection.js";
 export { useJSONSlice } from "./hooks/useJSONSlice.js";
+export { createDraft } from "./draft.js";
 export { useDraft, useField } from "./hooks/useDraft.js";
 export type {
   JSONDocument,
@@ -47,9 +48,13 @@ export type {
   SchemaState,
 } from "./schema.js";
 export type {
+  CreateDraftOptions,
+  DraftChangeListener,
+  DraftDocument,
   DraftFieldState,
   DraftState,
-} from "./hooks/useDraft.js";
+  HeadlessDraftState,
+} from "./draft.js";
 
 export { createRecorder, useRecorder, replayRecording } from "./sidecars/recorder.js";
 export type {

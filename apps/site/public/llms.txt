@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless document and selection facades.
-import { createJSONDocument, createSelection } from "zod-crud";
+// Headless document, selection, and draft facades.
+import { createDraft, createJSONDocument, createSelection } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -77,6 +77,8 @@ be expressed through `useJSONDocument`, it should also be expressible through
 `createJSONDocument` in core/headless code.
 Use `createSelection(ops)` for standalone headless selection/caret state;
 `useSelection(ops)` is the React facade over the same state.
+Use `createDraft(doc)` for standalone headless draft/pending field state;
+`useDraft(doc)` and `useField(doc, pointer)` are React facades over it.
 `doc.commands.select(action)` defaults to the document's configured selection
 mode, so headless and React facades preserve the same multi-select behavior.
 
