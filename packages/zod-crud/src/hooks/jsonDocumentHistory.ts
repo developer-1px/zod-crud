@@ -7,7 +7,7 @@ import { computeInverses, type JSONPatchOperation } from "../core/patch/index.js
 import { commit as historyCommit, type HistoryStack } from "../core/history.js";
 import type { SelectionSnap } from "../core/selection/index.js";
 import type { HistoryTransactionOptions } from "../jsonOps.js";
-import type { SelectionState } from "./useSelection.js";
+import type { SelectionState } from "../selection.js";
 
 export interface HistoryEntry {
   forward: JSONPatchOperation[];

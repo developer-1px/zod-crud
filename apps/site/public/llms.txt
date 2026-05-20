@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless document facade. Same surface shape as useJSONDocument.
-import { createJSONDocument } from "zod-crud";
+// Headless document and selection facades.
+import { createJSONDocument, createSelection } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -74,6 +74,8 @@ document surface:
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through
 `createJSONDocument` in core/headless code.
+Use `createSelection(ops)` for standalone headless selection/caret state;
+`useSelection(ops)` is the React facade over the same state.
 `doc.commands.select(action)` defaults to the document's configured selection
 mode, so headless and React facades preserve the same multi-select behavior.
 

@@ -6,7 +6,7 @@ import type { MutableRefObject } from "react";
 import type { JSONOps, JSONDocumentOps } from "../jsonOps.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "../jsonOps.js";
 import { JSONCrudError } from "../JSONCrudError.js";
-import type { SelectionState } from "./useSelection.js";
+import type { SelectionState } from "../selection.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import { parsePointer, readAt } from "../core/pointer/index.js";

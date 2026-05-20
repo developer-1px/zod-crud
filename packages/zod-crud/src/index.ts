@@ -20,10 +20,15 @@ export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONDocument,
   JSONDocumentHistory,
-  SelectionState,
   UseJSONDocumentOptions,
-  UseSelectionOptions,
 } from "./createJSONDocument.js";
+export { createSelection } from "./selection.js";
+export type {
+  CreateSelectionOptions,
+  HeadlessSelectionState,
+  SelectionState,
+  UseSelectionOptions,
+} from "./selection.js";
 export type {
   ClipboardEmpty,
   ClipboardPasteResult,

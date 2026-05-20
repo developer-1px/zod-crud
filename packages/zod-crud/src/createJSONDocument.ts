@@ -14,34 +14,7 @@ import {
   type JSONResult,
 } from "./core/patch/index.js";
 import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
-import {
-  applySelectionAutoRules,
-  anchorPointer,
-  caretPointer,
-  caretPoint,
-  EMPTY_SELECTION,
-  focusPointer,
-  hasSelection,
-  isCollapsed,
-  isSelected,
-  primaryPointer,
-  primaryRange,
-  rangeCount,
-  reduceSelection,
-  restoreSelection,
-  selectedCount,
-  selectedSource,
-  selectionSnapshot,
-  selectionType,
-  type SelectionAction,
-  type JSONPoint,
-  type SelectionMode,
-  type SelectionRange,
-  type SelectionRangeInput,
-  type SelectionSnap,
-  type SelectionSource,
-  type SelectionType,
-} from "./core/selection/index.js";
+import type { SelectionSnap } from "./core/selection/index.js";
 import {
   back as historyBack,
   canRedo as historyCanRedo,
@@ -56,6 +29,7 @@ import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.j
 import { createClipboardState, type ClipboardState } from "./clipboard.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
+import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
 import type {
   HistoryMergeOptions,
   HistoryTransactionOptions,
@@ -66,44 +40,6 @@ import type {
   JSONOps,
   UseJSONOptions,
 } from "./jsonOps.js";
-
-export interface UseSelectionOptions {
-  mode?: SelectionMode;
-  initial?: ReadonlyArray<SelectionRangeInput>;
-}
-
-export interface SelectionState<T> extends SelectionSnap {
-  readonly rangeCount: number;
-  readonly selectedCount: number;
-  readonly hasSelection: boolean;
-  readonly isCollapsed: boolean;
-  readonly type: SelectionType;
-  readonly primaryRange: SelectionRange | null;
-  readonly anchorPointer: Pointer | null;
-  readonly focusPointer: Pointer | null;
-  readonly selectedSource: SelectionSource | null;
-  readonly primaryPointer: Pointer | null;
-  readonly caret: JSONPoint | null;
-  readonly caretPointer: Pointer | null;
-  collapse(point: JSONPoint): void;
-  setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
-  extend(point: JSONPoint): void;
-  addRange(pointOrRange: JSONPoint | SelectionRange): void;
-  removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
-  toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
-  selectRanges(
-    ranges: ReadonlyArray<SelectionRangeInput>,
-    anchor?: JSONPoint | null,
-    focus?: JSONPoint | null,
-    primaryIndex?: number,
-  ): void;
-  empty(): void;
-  isSelected(pointer: Pointer): boolean;
-  containsNode(pointer: Pointer): boolean;
-  snapshot(): SelectionSnap;
-  toJSON(): SelectionSnap;
-  restore(snapshot: SelectionSnap): void;
-}
 
 export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
   history?: number;
@@ -167,74 +103,9 @@ export function createJSONDocument<S extends z.ZodType>(
   const selectionOptions: UseSelectionOptions =
     typeof options.selection === "object" ? options.selection : {};
   const selectionMode = selectionOptions.mode ?? "single";
-  let selectionSnap = initialSelection(selectionOptions, selectionMode, state);
-
-  const snapSelection = (): SelectionSnap => selectionSnapshot(selectionSnap);
-
-  const dispatchSelection = (action: SelectionAction): void => {
-    selectionSnap = reduceSelection(selectionSnap, action, selectionMode, state);
-  };
-
-  const selectionState: SelectionState<z.output<S>> = {
-    get ranges() { return [...selectionSnap.ranges]; },
-    get selectedPointers() { return [...selectionSnap.selectedPointers]; },
-    get selectionRanges() { return selectionSnapshot(selectionSnap).selectionRanges; },
-    get primaryIndex() { return selectionSnap.primaryIndex; },
-    get rangeCount() { return rangeCount(selectionSnap); },
-    get selectedCount() { return selectedCount(selectionSnap); },
-    get hasSelection() { return hasSelection(selectionSnap); },
-    get primaryRange() { return primaryRange(selectionSnap); },
-    get anchorPointer() { return anchorPointer(selectionSnap); },
-    get focusPointer() { return focusPointer(selectionSnap); },
-    get selectedSource() { return selectedSource(selectionSnap); },
-    get primaryPointer() { return primaryPointer(selectionSnap); },
-    get caret() { return caretPoint(selectionSnap); },
-    get caretPointer() { return caretPointer(selectionSnap); },
-    get anchor() { return selectionSnapshot(selectionSnap).anchor; },
-    get focus() { return selectionSnapshot(selectionSnap).focus; },
-    get isCollapsed() { return isCollapsed(selectionSnap); },
-    get type() { return selectionType(selectionSnap); },
-    collapse(point) { dispatchSelection({ type: "collapse", point }); },
-    setBaseAndExtent(anchor, focus) { dispatchSelection({ type: "setBaseAndExtent", anchor, focus }); },
-    extend(point) { dispatchSelection({ type: "extend", point }); },
-    addRange(pointOrRange) {
-      dispatchSelection(isSelectionRange(pointOrRange)
-        ? { type: "addRange", range: pointOrRange }
-        : { type: "addRange", point: pointOrRange });
-    },
-    removeRange(pointOrRangeOrIndex) {
-      dispatchSelection(typeof pointOrRangeOrIndex === "number"
-        ? { type: "removeRange", index: pointOrRangeOrIndex }
-        : isSelectionRange(pointOrRangeOrIndex)
-          ? { type: "removeRange", range: pointOrRangeOrIndex }
-          : { type: "removeRange", point: pointOrRangeOrIndex });
-    },
-    toggleRange(pointOrRange) {
-      dispatchSelection(isSelectionRange(pointOrRange)
-        ? { type: "toggleRange", range: pointOrRange }
-        : { type: "toggleRange", point: pointOrRange });
-    },
-    selectRanges(ranges, anchor, focus, primaryIndex) {
-      dispatchSelection({
-        type: "selectRanges",
-        ranges,
-        ...(anchor !== undefined ? { anchor } : {}),
-        ...(focus !== undefined ? { focus } : {}),
-        ...(primaryIndex !== undefined ? { primaryIndex } : {}),
-      });
-    },
-    empty() { dispatchSelection({ type: "empty" }); },
-    isSelected(pointer) { return isSelected(selectionSnap, pointer); },
-    containsNode(pointer) { return isSelected(selectionSnap, pointer); },
-    snapshot() { return snapSelection(); },
-    toJSON() { return snapSelection(); },
-    restore(snapshot) { selectionSnap = restoreSelection(snapshot, selectionMode, state); },
-  };
 
   const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {
     if (applied.length === 0) return;
-    selectionSnap = applySelectionAutoRules(selectionSnap, applied, state, selectionMode);
-    if (metadata) metadata.selectionAfter = snapSelection();
     for (const listener of listeners) listener(applied, metadata);
   };
 
@@ -305,6 +176,9 @@ export function createJSONDocument<S extends z.ZodType>(
     get state() { return state; },
   };
 
+  const selectionState = createSelection(rawOps, selectionOptions);
+  const snapSelection = (): SelectionSnap => selectionState.snapshot();
+
   const recordHistory = (
     before: z.output<S>,
     operations: ReadonlyArray<JSONPatchOperation>,
@@ -351,7 +225,7 @@ export function createJSONDocument<S extends z.ZodType>(
       isRestoring = false;
     }
     stack = popped.next;
-    selectionSnap = restoreSelection(direction === "undo" ? entry.selectionBefore : entry.selectionAfter, selectionMode, state);
+    selectionState.restore(direction === "undo" ? entry.selectionBefore : entry.selectionAfter);
     return true;
   };
 
@@ -396,7 +270,14 @@ export function createJSONDocument<S extends z.ZodType>(
       if (r.ok) stack = emptyHistory<HistoryEntry>();
       return r;
     },
-    subscribe: rawOps.subscribe,
+    subscribe(listener) {
+      return rawOps.subscribe((applied, metadata) => {
+        listener(applied, {
+          ...metadata,
+          selectionAfter: snapSelection(),
+        });
+      });
+    },
     get state() { return state; },
   };
 
@@ -501,31 +382,4 @@ function mergeEntryMetadata(
 ): HistoryTransactionOptions | undefined {
   const merged = { ...prev.metadata, ...top.metadata, ...options };
   return Object.keys(merged).length > 0 ? merged : undefined;
-}
-
-function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
-  return typeof input === "object" && "anchor" in input && "focus" in input;
-}
-
-function initialSelection(
-  options: UseSelectionOptions,
-  mode: SelectionMode,
-  state: unknown,
-): SelectionSnap {
-  const init = options.initial;
-  if (!init?.length) return EMPTY_SELECTION;
-  if (init.some(isSelectionRange)) {
-    return reduceSelection(
-      EMPTY_SELECTION,
-      { type: "selectRanges", ranges: init },
-      mode,
-      state,
-    );
-  }
-  return reduceSelection(
-    EMPTY_SELECTION,
-    { type: "setBaseAndExtent", anchor: init[0] as JSONPoint, focus: init[init.length - 1] as JSONPoint },
-    mode,
-    state,
-  );
 }

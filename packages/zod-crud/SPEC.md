@@ -427,6 +427,11 @@ Path arithmetic 은 모든 editor 가 공유하는 순수 path 조작. 이 5개 
 ### 5.7 `useSelection` — Selection state hook
 
 ```ts
+export function createSelection<T>(
+  ops: JSONOps<T>,
+  options?: CreateSelectionOptions,
+): HeadlessSelectionState<T>;
+
 export function useSelection<T>(
   ops: JSONOps<T>,
   options?: UseSelectionOptions,
@@ -435,6 +440,10 @@ export function useSelection<T>(
 export interface UseSelectionOptions {
   mode?: "single" | "multiple" | "extended";  // ARIA Listbox/Tree/Grid 어휘. 기본 "single"
   initial?: ReadonlyArray<JSONPoint | SelectionRange>;
+}
+
+export interface CreateSelectionOptions extends UseSelectionOptions {
+  onChange?: () => void;
 }
 
 export type JSONPoint =
@@ -491,8 +500,14 @@ export interface SelectionState<T> {
   toJSON(): SelectionSnap;
   restore(snapshot: SelectionSnap): void;
 }
+
+export interface HeadlessSelectionState<T> extends SelectionState<T> {
+  dispose(): void;
+}
 ```
 
+`createSelection(ops)` 가 headless state owner 이고, React `useSelection(ops)`
+은 같은 객체를 만들고 render invalidation 과 dispose 만 담당하는 facade 다.
 `anchor` / `focus` 는 W3C Selection API 의 좌표 이름이다. `selectionRanges[primaryIndex]` 가 키보드 입력·paste·format command 의 주 작용 범위다.
 `rangeCount` 는 `selectionRanges.length`, `selectedCount` 는 `selectedPointers.length`, `hasSelection` 은 `selectedCount > 0` 이다. `isSelected(pointer)` 는 list/tree/grid 렌더링의 per-item selected predicate 이고, `containsNode(pointer)` 는 같은 exact selected-pointer 검사의 호환 alias 다. `primaryRange` 는 주 작용 범위를 직접 반환하는 편의 getter 다. `anchorPointer` / `focusPointer` / `primaryPointer` / `caretPointer` 는 JSONPoint 를 Pointer 기반 명령으로 연결하기 위한 projection 이다. `primaryPointer` 는 primary range 의 focus path 다. `UseSelectionOptions.initial` 과 `selectRanges` 는 `JSONPoint` 또는 `{ anchor, focus }` range 를 받으므로 초기 상태부터 disjoint multi-range 와 offset/edge caret 을 표현할 수 있다. `selectedSource` 는 selection 이 없으면 `null`, 단일 선택이면 `Pointer`, 다중 선택이면 `Pointer[]` 이다. document facade 의 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, `can.copy()` / `can.cut()` 은 source 인자가 생략되면 `selectedSource` 를 사용하고, selection 이 비어 있으면 `empty_selection` 을 반환한다. `commands.move(to)`, `check.move(to)`, `can.move(to)` 는 source 인자가 생략되면 `primaryPointer` 를 source 로 사용하며, target 은 명시 Pointer 로 받는다. `commands.duplicate()`, `check.duplicate()`, `can.duplicate()` 은 source 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.duplicate({ newKey })` 는 선택된 object member 를 새 key 로 복제한다. `commands.replace(value)`, `check.replace(value)`, `can.replace(value)` 는 path 인자가 생략되면 `primaryPointer` 를 사용한다. `commands.paste(payload)`, `doc.clipboard.paste()`, `check.paste(payload)`, `can.paste(payload)` 은 target 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.paste(payload, "after")` 같은 mode-only 호출도 같은 target 을 사용한다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. string value 위의 caret offset 은 state 가 있으면 현재 string 길이 안으로 clamp 되고, 같은 Pointer 가 살아남는 문서 편집 후에도 다시 clamp 된다. `ranges` 는 호환용 selected-pointer projection 이며, 실제 caret/range shape 의 정본은 `selectionRanges` 다. `selection` getter, `primaryRange`, `caret`, `snapshot()`, and `toJSON()` expose value snapshots: returned arrays/ranges/JSONPoint objects may be stored or mutated by callers without mutating live selection state. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap` as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores that wire-safe snapshot.
 
@@ -575,7 +590,7 @@ export interface JSONDocument<T> {
 
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
 React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs, boolean guard predicates, explainable dry-run checks, schema introspection, read/query helpers 를 한 객체로 묶는다.
-React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다.
+React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다. `useSelection` 은 headless `createSelection` 의 React facade 다.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
 clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다. multi-source `copy` / `cut` 은 selection 순서의 JSON array payload 를 만들고, 중복 source 는 첫 등장만 보존하며, ancestor source 가 descendant source 를 덮으면 descendant 는 실제 source 집합에서 제외한다. source 인자를 생략한 `doc.clipboard.copy()` / `doc.clipboard.cut()` 은 현재 selection source 를 사용하고, target 인자를 생략한 `doc.clipboard.paste()` 는 현재 primary selection target 을 사용한다. manual `doc.clipboard.write` 도 source metadata 가 제공되면 같은 규칙으로 검증/정규화한다. buffer 의 `source` 는 primary source, `sources` 는 전체 source-list 이며 `read()` 도 둘 다 반환한다. remove patch 는 array index shift 를 피하도록 적용 순서만 정렬한다. `doc.clipboard.paste` 는 multi-source buffer 를 array target 에 붙일 때 기본적으로 payload 를 여러 `add` op 로 spread 하며, `{ spread: false }` 로 array payload 를 하나의 값으로 붙일 수 있다.
 check 는 state, selection, clipboard, history 를 바꾸지 않는 dry-run guard 이며 `can.x(...) === check.x(...).ok` 이다. source 인자를 생략한 `check.copy()` / `check.cut()` 은 현재 selection source 로 검증하고, source 인자를 생략한 `check.move(to)` / `check.duplicate()` 은 현재 primary selection source 로 검증하며, target 인자를 생략한 `check.replace(value)` / `check.paste(payload)` 는 현재 primary selection target 으로 검증한다.
@@ -707,11 +722,12 @@ export class JSONCrudError extends Error {
 index.ts              ─ headless public export (SPEC §5)
 react.ts              ─ React public export (`zod-crud/react`)
 createJSONDocument.ts ─ headless document facade (SPEC §5.10)
+selection.ts          ─ headless selection state facade (SPEC §5.7)
 jsonOps.ts            ─ JSONOps boundary type
 hooks/
   useJSON.ts          ─ React state + ops binding (SPEC §5.1·§5.2)
   useJSONDocument.ts  ─ React document facade
-  useSelection.ts     ─ selection hook (SPEC §5.7)
+  useSelection.ts     ─ React selection facade (SPEC §5.7)
   useJSONSlice.ts     ─ pointer slice hook
   useDraft.ts         ─ draft/pending field helpers
   buildJSONDocumentOps.ts

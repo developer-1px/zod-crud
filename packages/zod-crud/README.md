@@ -213,7 +213,8 @@ is present; pass `doc.ops` for state-only replay.
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
 
-For lower-level composition (`useJSON` + `useSelection`), see the
+For lower-level composition, use `createSelection(ops)` headlessly or
+`useSelection(ops)` in React. See the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
 [`useSelection`](./SPEC.md#57-useselection--selection-state-hook) contracts in
 SPEC.
@@ -289,8 +290,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
+| `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
-| `SelectionState<T>`, `SelectionSource`, `SelectionRangeInput`, `UseSelectionOptions` from `zod-crud/react` | React selection hook types |
+| `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionSource`, `SelectionRangeInput`, `UseSelectionOptions`, `CreateSelectionOptions` from `zod-crud/react` | React selection hook types |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
 | `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | draft/pending field types |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
@@ -312,7 +314,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
 | `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

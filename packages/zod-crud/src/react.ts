@@ -4,6 +4,7 @@
 export { useJSONDocument } from "./hooks/useJSONDocument.js";
 export { useJSON } from "./hooks/useJSON.js";
 export { useSelection } from "./hooks/useSelection.js";
+export { createSelection } from "./selection.js";
 export { useJSONSlice } from "./hooks/useJSONSlice.js";
 export { useDraft, useField } from "./hooks/useDraft.js";
 export type {
@@ -82,6 +83,8 @@ export type {
 } from "./core/patch/index.js";
 export type { Pointer } from "./core/pointer/index.js";
 export type {
+  CreateSelectionOptions,
+  HeadlessSelectionState,
   SelectionMode,
   JSONPoint,
   SelectionRange,

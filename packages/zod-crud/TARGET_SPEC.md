@@ -236,6 +236,8 @@ Acceptance evidence:
 Selection is a first-class engine subsystem. Current source of truth is
 `SPEC.md` §5.7. The target facade keeps selection headless, JSON-serializable,
 and shared by `createJSONDocument` and `useJSONDocument`.
+`createSelection(ops)` is the headless state owner; React `useSelection(ops)`
+is only a facade over it.
 
 ```ts
 type JSONPoint =
@@ -303,6 +305,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `UseSelectionOptions.initial` and `selectRanges` accept `JSONPoint` or
 `{ anchor, focus }` ranges, so apps can seed disjoint multi-range selection and
 offset/edge carets without React.
+Standalone headless composition uses `createSelection(ops)`; `useSelection`
+adds React render invalidation but no separate selection model.
 `selectedSource` is `null | Pointer | Pointer[]`. Document-facade
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /

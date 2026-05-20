@@ -8,7 +8,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { JSONOps } from "../jsonOps.js";
-import type { SelectionState } from "../hooks/useSelection.js";
+import type { SelectionState } from "../selection.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import { cloneJson } from "../core/json.js";
 
