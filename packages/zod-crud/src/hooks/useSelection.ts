@@ -11,10 +11,12 @@ import {
   caretPointer,
   caretPoint,
   focusPointer,
+  hasSelection,
   isCollapsed,
   primaryPointer,
   primaryRange,
   rangeCount,
+  selectedCount,
   selectionType,
   selectedSource,
   type SelectionSnap,
@@ -41,6 +43,8 @@ export interface SelectionState<T> {
   selectionRanges: ReadonlyArray<SelectionRange>;
   primaryIndex: number;
   rangeCount: number;
+  selectedCount: number;
+  hasSelection: boolean;
   primaryRange: SelectionRange | null;
   anchorPointer: Pointer | null;
   focusPointer: Pointer | null;
@@ -111,6 +115,8 @@ export function useSelection<T>(
     get selectionRanges() { return snapRef.current.selectionRanges; },
     get primaryIndex() { return snapRef.current.primaryIndex; },
     get rangeCount() { return rangeCount(snapRef.current); },
+    get selectedCount() { return selectedCount(snapRef.current); },
+    get hasSelection() { return hasSelection(snapRef.current); },
     get primaryRange() { return primaryRange(snapRef.current); },
     get anchorPointer() { return anchorPointer(snapRef.current); },
     get focusPointer() { return focusPointer(snapRef.current); },

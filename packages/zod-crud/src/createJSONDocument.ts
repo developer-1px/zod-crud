@@ -21,11 +21,13 @@ import {
   caretPoint,
   EMPTY_SELECTION,
   focusPointer,
+  hasSelection,
   isCollapsed,
   primaryPointer,
   primaryRange,
   rangeCount,
   reduceSelection,
+  selectedCount,
   selectedSource,
   selectionType,
   type SelectionAction,
@@ -68,6 +70,8 @@ export interface UseSelectionOptions {
 
 export interface SelectionState<T> extends SelectionSnap {
   readonly rangeCount: number;
+  readonly selectedCount: number;
+  readonly hasSelection: boolean;
   readonly isCollapsed: boolean;
   readonly type: SelectionType;
   readonly primaryRange: SelectionRange | null;
@@ -176,6 +180,8 @@ export function createJSONDocument<S extends z.ZodType>(
     get selectionRanges() { return selectionSnap.selectionRanges; },
     get primaryIndex() { return selectionSnap.primaryIndex; },
     get rangeCount() { return rangeCount(selectionSnap); },
+    get selectedCount() { return selectedCount(selectionSnap); },
+    get hasSelection() { return hasSelection(selectionSnap); },
     get primaryRange() { return primaryRange(selectionSnap); },
     get anchorPointer() { return anchorPointer(selectionSnap); },
     get focusPointer() { return focusPointer(selectionSnap); },

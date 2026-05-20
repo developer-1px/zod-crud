@@ -80,6 +80,14 @@ export function rangeCount(s: SelectionSnap): number {
   return s.selectionRanges.length;
 }
 
+export function selectedCount(s: SelectionSnap): number {
+  return s.selectedPointers.length;
+}
+
+export function hasSelection(s: SelectionSnap): boolean {
+  return selectedCount(s) > 0;
+}
+
 export function caretPoint(s: SelectionSnap): JSONPoint | null {
   return isCollapsed(s) ? s.focus : null;
 }

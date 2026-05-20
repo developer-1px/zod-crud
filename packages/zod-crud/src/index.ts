@@ -104,11 +104,13 @@ export {
   caretPoint,
   caretPointer,
   focusPointer,
+  hasSelection,
   isCollapsed,
   pointPointer,
   primaryPointer,
   primaryRange,
   rangeCount,
+  selectedCount,
   selectedSource,
   selectionType,
 } from "./core/selection/index.js";

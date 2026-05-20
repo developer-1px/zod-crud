@@ -251,6 +251,8 @@ interface SelectionState<T> {
   readonly selectionRanges: ReadonlyArray<SelectionRange>;
   readonly primaryIndex: number;
   readonly rangeCount: number;
+  readonly selectedCount: number;
+  readonly hasSelection: boolean;
   readonly primaryRange: SelectionRange | null;
   readonly anchor: JSONPoint | null;
   readonly anchorPointer: Pointer | null;
@@ -287,6 +289,8 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `primaryPointer`, and `caretPointer` are Pointer projections for command wiring.
 `selectedSource` is `null | Pointer | Pointer[]` and can be passed to `copy` /
 `cut` after a null check.
+`selectedCount` and `hasSelection` are item-selection projection helpers for
+rendering and command guards.
 
 Rules:
 
