@@ -157,7 +157,7 @@ type CheckResult =
     };
 
 interface Check<T> {
-  move(from: Pointer, to: Pointer): CheckResult;
+  move(fromOrTo: Pointer, to?: Pointer): CheckResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
@@ -302,6 +302,9 @@ carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
 `doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
 `can.cut()` use it when their source argument is omitted.
+Document-facade `commands.move(to)`, `check.move(to)`, and `can.move(to)` use
+`primaryPointer` when their source argument is omitted; the target remains an
+explicit Pointer.
 Document-facade `commands.duplicate()`, `check.duplicate()`, and
 `can.duplicate()` use `primaryPointer` when their source argument is omitted;
 opts-only calls such as `commands.duplicate({ newKey })` use that same source.

@@ -235,6 +235,20 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.value.items.map((item) => item.id)).toEqual(["a", "a", "b"]);
     expect(hook.current.history.undoDepth).toBe(1);
   });
+
+  test("commands move defaults to current primary selection source through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    }));
+
+    act(() => {
+      hook.current.commands.move("/items/1");
+    });
+
+    expect(hook.current.value.items.map((item) => item.id)).toEqual(["b", "a"]);
+    expect(hook.current.history.undoDepth).toBe(1);
+  });
 });
 
 function renderHook<T>(hook: () => T): { readonly current: T } {

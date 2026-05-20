@@ -72,6 +72,9 @@ headless JSON fragment buffer; system clipboard calls remain user code. `check`
 is the explainable dry-run guard behind `can`. `at`/`exists`/`query`/`entries`
 provide pointer and JSONPath reads without React. `schema` exposes serializable
 path introspection without making Zod internals the public API.
+Selection-backed facade commands can omit the current source or target:
+`copy`/`cut` use `selectedSource`, `move`/`duplicate` use `primaryPointer` as
+source, and `replace`/`paste` use `primaryPointer` as target.
 
 ### Dict-record 한 키 쓰기
 
