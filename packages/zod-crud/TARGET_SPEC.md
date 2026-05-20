@@ -88,6 +88,13 @@ also includes a headless JSON clipboard buffer.
 ```ts
 type ClipboardSource = Pointer | ReadonlyArray<Pointer>;
 
+type ClipboardReadOk = {
+  ok: true;
+  payload: unknown;
+  source: Pointer | null;
+  sources: ReadonlyArray<Pointer> | null;
+};
+
 interface ClipboardState<T> {
   readonly hasData: boolean;
   readonly source: Pointer | null;
@@ -105,7 +112,7 @@ interface ClipboardState<T> {
 
 Semantics:
 
-- The buffer stores a JSON fragment and optional source/source-list metadata.
+- The buffer stores a JSON fragment and optional source/source-list metadata. `read()` returns both.
 - `copy(source)` reads one `Pointer` or a `Pointer[]` from document state and writes buffer.
 - `cut(source)` writes buffer and commits one remove patch atomically; multi-source cut prunes covered descendants and sorts remove ops to avoid array index shift.
 - `paste(target, mode)` reads buffer and commits the paste patch. Multi-source array payloads spread into array targets.

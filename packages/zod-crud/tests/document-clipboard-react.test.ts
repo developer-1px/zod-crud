@@ -68,6 +68,7 @@ describe("useJSONDocument doc.clipboard", () => {
       ok: true,
       payload: { id: "a", name: "A" },
       source: "/items/0",
+      sources: ["/items/0"],
     });
   });
 });

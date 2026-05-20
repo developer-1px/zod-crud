@@ -72,6 +72,7 @@ describe("doc.check — explainable dry-run guard", () => {
       ok: true,
       payload: { id: "x", name: "X" },
       source: "/items/1",
+      sources: ["/items/1"],
     });
     expect(doc.history.undoDepth).toBe(0);
     expect(doc.history.redoDepth).toBe(0);

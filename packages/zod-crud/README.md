@@ -150,9 +150,10 @@ mode, so headless and React facades preserve the same multi-select behavior.
 Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata. Single-source copy/cut returns the copied fragment; multi-source
 copy/cut returns a JSON array payload, keeps `source` as the primary source,
-and exposes all `sources`. `doc.clipboard.paste` spreads multi-source array
-payloads back into array targets. DOM/system clipboard integration remains
-user code.
+and exposes all `sources` through both `doc.clipboard.sources` and
+`doc.clipboard.read()`. `doc.clipboard.paste` spreads multi-source array
+payloads back into array targets. DOM/system clipboard integration remains user
+code.
 
 `doc.check` is headless dry-run validation for commands and patches. It returns
 the same success/failure family the command would hit, without mutating value,

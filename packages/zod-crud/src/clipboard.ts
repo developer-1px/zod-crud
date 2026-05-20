@@ -28,6 +28,7 @@ export interface ClipboardReadOk {
   ok: true;
   payload: unknown;
   source: Pointer | null;
+  sources: ReadonlyArray<Pointer> | null;
 }
 
 export interface ClipboardEmpty {
@@ -111,6 +112,7 @@ export function createClipboardState<S extends z.ZodType>(
         ok: true,
         payload: cloneJson(buffer.payload),
         source: buffer.source,
+        sources: buffer.sources ? [...buffer.sources] : null,
       };
     },
 

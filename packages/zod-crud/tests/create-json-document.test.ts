@@ -77,6 +77,7 @@ describe("createJSONDocument — headless facade", () => {
       ok: true,
       payload: { id: "a", name: "A" },
       source: "/items/0",
+      sources: ["/items/0"],
     });
     expect(doc.clipboard.toItems({ json: true })).toMatchObject({
       "application/json": "{\"id\":\"a\",\"name\":\"A\"}",
@@ -101,6 +102,7 @@ describe("createJSONDocument — headless facade", () => {
       ok: true,
       payload: { id: "a", name: "A" },
       source: "/items/0",
+      sources: ["/items/0"],
     });
 
     expect(doc.commands.undo()).toBe(true);
@@ -119,6 +121,7 @@ describe("createJSONDocument — headless facade", () => {
       ok: true,
       payload: { id: "a", name: "A" },
       source: "/items/0",
+      sources: ["/items/0"],
     });
     expect(doc.history.undoDepth).toBe(0);
   });
@@ -134,6 +137,7 @@ describe("createJSONDocument — headless facade", () => {
       ok: true,
       payload: { ok: true },
       source: null,
+      sources: null,
     });
   });
 
@@ -247,6 +251,7 @@ describe("createJSONDocument — headless facade", () => {
         { id: "b", name: "B" },
       ],
       source: "/items/0",
+      sources: ["/items/0", "/items/1"],
     });
     expect(doc.clipboard.toItems({ tsv: true })["text/plain"]).toBe("id\tname\na\tA\nb\tB");
 
