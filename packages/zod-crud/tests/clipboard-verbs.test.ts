@@ -48,6 +48,15 @@ describe("verbs/copy", () => {
     expect((r.payload as unknown[])[0]).not.toBe(initial.items[0]);
   });
 
+  test("covered descendant sources are pruned from multi-source copy", () => {
+    const r = copy(initial, ["/items/0/name", "/items/0"]);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toEqual([{ id: "a", name: "A" }]);
+    expect(r.source).toBe("/items/0");
+    expect(r.sources).toEqual(["/items/0"]);
+  });
+
   test("empty selectedPointers 배열은 structured error", () => {
     const r = copy(initial, []);
     expect(r.ok).toBe(false);
@@ -137,6 +146,17 @@ describe("verbs/cut", () => {
       { op: "remove", path: "/items/0" },
     ]);
     expect(r.next.items).toEqual([{ id: "c", name: "C" }]);
+  });
+
+  test("covered descendant sources are pruned from multi-source cut", () => {
+    const r = cut(Schema, initial, ["/items/0/name", "/items/0"]);
+
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.payload).toEqual([{ id: "a", name: "A" }]);
+    expect(r.sources).toEqual(["/items/0"]);
+    expect(r.patch).toEqual([{ op: "remove", path: "/items/0" }]);
+    expect(r.next.items).toEqual([{ id: "b", name: "B" }]);
   });
 
   test("multi cut schema 위반 시 payload/patch commit 후보를 거부한다", () => {

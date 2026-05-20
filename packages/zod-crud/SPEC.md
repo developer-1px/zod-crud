@@ -565,7 +565,7 @@ export interface JSONDocument<T> {
 React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs, boolean guard predicates, explainable dry-run checks, schema introspection, read/query helpers 를 한 객체로 묶는다.
 React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
-clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다. multi-source `copy` / `cut` 은 selection 순서의 JSON array payload 를 만들고, remove patch 는 array index shift 를 피하도록 적용 순서만 정렬한다. `doc.clipboard.paste` 는 multi-source buffer 를 array target 에 붙일 때 payload 를 여러 `add` op 로 spread 한다.
+clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다. multi-source `copy` / `cut` 은 selection 순서의 JSON array payload 를 만들고, ancestor source 가 descendant source 를 덮으면 descendant 는 실제 source 집합에서 제외한다. remove patch 는 array index shift 를 피하도록 적용 순서만 정렬한다. `doc.clipboard.paste` 는 multi-source buffer 를 array target 에 붙일 때 payload 를 여러 `add` op 로 spread 한다.
 check 는 state, selection, clipboard, history 를 바꾸지 않는 dry-run guard 이며 `can.x(...) === check.x(...).ok` 이다.
 read/query helpers 는 현재 state 를 Pointer/JSONPath 로 읽고, JSONPath query 는 value 가 아니라 Pointer[] 로 환원한다.
 schema introspection 은 serializable description/kind/accepts 결과를 제공하며 Zod 객체를 public API 로 노출하지 않는다.

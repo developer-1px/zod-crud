@@ -6,7 +6,7 @@ import type * as z from "zod";
 import { cloneJson, jsonSerializableError } from "../core/json.js";
 import type { JSONPatchOperation } from "../core/patch/index.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { readAt, tryParsePointer } from "../core/pointer/index.js";
+import { isPrefix, readAt, tryParsePointer } from "../core/pointer/index.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import type { ClipboardSource } from "./copy.js";
 
@@ -77,8 +77,26 @@ function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer
   if (typeof source === "string") return { ok: true, sources: [source] };
 
   const sources: Pointer[] = [];
+  const parsedSources: string[][] = [];
   for (const item of source) {
-    if (!sources.includes(item)) sources.push(item);
+    const segments = tryParsePointer(item);
+    if (segments === null) {
+      return { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${item}` };
+    }
+
+    const covered = parsedSources.some((existing) => existing.length < segments.length && isPrefix(existing, segments));
+    if (covered) continue;
+
+    for (let i = parsedSources.length - 1; i >= 0; i -= 1) {
+      const existing = parsedSources[i]!;
+      if (segments.length <= existing.length && isPrefix(segments, existing)) {
+        parsedSources.splice(i, 1);
+        sources.splice(i, 1);
+      }
+    }
+
+    sources.push(item);
+    parsedSources.push(segments);
   }
   if (sources.length === 0) {
     return { ok: false, code: "empty_selection", message: "cut source selection is empty" };

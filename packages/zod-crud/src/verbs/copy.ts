@@ -4,7 +4,7 @@
 
 import type { Pointer } from "../core/pointer/index.js";
 import { cloneJson, jsonSerializableError } from "../core/json.js";
-import { readAt, tryParsePointer } from "../core/pointer/index.js";
+import { isPrefix, readAt, tryParsePointer } from "../core/pointer/index.js";
 import { serialize } from "../core/pointer/serialize.js";
 import { getArrayElement, getObjectKeys } from "../core/schema/introspection.js";
 import type * as z from "zod";
@@ -79,8 +79,26 @@ function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer
   if (typeof source === "string") return { ok: true, sources: [source] };
 
   const sources: Pointer[] = [];
+  const parsedSources: string[][] = [];
   for (const item of source) {
-    if (!sources.includes(item)) sources.push(item);
+    const segments = tryParsePointer(item);
+    if (segments === null) {
+      return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${item}` };
+    }
+
+    const covered = parsedSources.some((existing) => existing.length < segments.length && isPrefix(existing, segments));
+    if (covered) continue;
+
+    for (let i = parsedSources.length - 1; i >= 0; i -= 1) {
+      const existing = parsedSources[i]!;
+      if (segments.length <= existing.length && isPrefix(segments, existing)) {
+        parsedSources.splice(i, 1);
+        sources.splice(i, 1);
+      }
+    }
+
+    sources.push(item);
+    parsedSources.push(segments);
   }
   if (sources.length === 0) {
     return { ok: false, code: "empty_selection", message: "copy source selection is empty" };
