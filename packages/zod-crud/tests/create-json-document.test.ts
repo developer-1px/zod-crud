@@ -236,6 +236,33 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.undoDepth).toBe(1);
   });
 
+  test("multi-source cut recovers selection without duplicate ranges", () => {
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+        { id: "c", name: "C" },
+      ],
+      meta: { foo: "bar" },
+    }, {
+      history: 10,
+      selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
+    });
+
+    const cut = doc.commands.cut(doc.selection?.selectedPointers ?? []);
+
+    expect(cut.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["c"]);
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0"]);
+    expect(doc.selection?.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
+    expect(doc.selection?.primaryIndex).toBe(0);
+
+    expect(doc.commands.undo()).toBe(true);
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
+    expect(doc.commands.redo()).toBe(true);
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0"]);
+  });
+
   test("doc.clipboard accepts multi-source copy/cut buffers", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

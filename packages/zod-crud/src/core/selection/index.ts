@@ -185,8 +185,8 @@ export function applySelectionAutoRules(
   for (const range of prev.selectionRanges) {
     const anchor = trackOrRecover(range.anchor);
     const focus = trackOrRecover(range.focus);
-    if (anchor !== null && focus !== null) nextRanges.push({ anchor, focus });
-    else if (anchor !== null || focus !== null) nextRanges.push(collapsedRange(anchor ?? focus!));
+    if (anchor !== null && focus !== null) pushUniqueRange(nextRanges, { anchor, focus });
+    else if (anchor !== null || focus !== null) pushUniqueRange(nextRanges, collapsedRange(anchor ?? focus!));
   }
   const nextAnchor = trackOrRecover(prev.anchor);
   const nextFocus = trackOrRecover(prev.focus);
@@ -195,6 +195,10 @@ export function applySelectionAutoRules(
     ? { ...next, anchor: nextAnchor, focus: nextFocus }
     : next;
   return sameSelectionSnap(prev, normalized) ? prev : normalized;
+}
+
+function pushUniqueRange(ranges: SelectionRange[], range: SelectionRange): void {
+  if (!ranges.some((candidate) => sameRange(candidate, range))) ranges.push(range);
 }
 
 function selectRanges(
