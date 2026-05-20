@@ -136,5 +136,6 @@ function selectionStub(): SelectionState<{ name: string }> {
       anchor: null,
       focus: null,
     }),
+    restore: () => undefined,
   };
 }

@@ -180,6 +180,39 @@ describe("useJSONDocument doc.selection", () => {
     expect(JSON.parse(JSON.stringify(hook.current.selection))).toEqual(hook.current.selection?.snapshot());
   });
 
+  test("selection restores serialized snapshots through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    }));
+
+    act(() => {
+      hook.current.selection?.selectRanges([
+        { anchor: "/items/0", focus: "/items/0" },
+        {
+          anchor: { path: "/items/1/name", offset: 99, affinity: "forward" },
+          focus: { path: "/items/1/name", offset: 99, affinity: "forward" },
+        },
+      ]);
+    });
+    const saved = JSON.parse(JSON.stringify(hook.current.selection));
+
+    act(() => {
+      hook.current.selection?.empty();
+      hook.current.selection?.restore(saved);
+    });
+
+    expect(hook.current.selection?.selectedPointers).toEqual(["/items/0", "/items/1/name"]);
+    expect(hook.current.selection?.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      {
+        anchor: { path: "/items/1/name", offset: 1, affinity: "forward" },
+        focus: { path: "/items/1/name", offset: 1, affinity: "forward" },
+      },
+    ]);
+    expect(hook.current.selection?.primaryIndex).toBe(1);
+    expect(hook.current.selection?.primaryPointer).toBe("/items/1/name");
+  });
+
   test("selectRanges dedupes repeated ranges through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

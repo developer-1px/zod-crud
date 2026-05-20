@@ -291,6 +291,7 @@ interface SelectionState<T> {
   containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
+  restore(snapshot: SelectionSnap): void;
 }
 ```
 
@@ -324,7 +325,8 @@ predicate; `containsNode(pointer)` remains an exact selected-pointer alias.
 Selection getters, `snapshot()`, and `toJSON()` expose value snapshots:
 returned arrays/ranges/JSONPoint objects are safe to store or mutate outside
 the engine. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap`
-as `doc.selection.snapshot()`.
+as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores
+that wire-safe snapshot.
 
 Rules:
 

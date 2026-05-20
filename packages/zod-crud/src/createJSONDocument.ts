@@ -28,6 +28,7 @@ import {
   primaryRange,
   rangeCount,
   reduceSelection,
+  restoreSelection,
   selectedCount,
   selectedSource,
   selectionSnapshot,
@@ -101,6 +102,7 @@ export interface SelectionState<T> extends SelectionSnap {
   containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
+  restore(snapshot: SelectionSnap): void;
 }
 
 export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
@@ -226,6 +228,7 @@ export function createJSONDocument<S extends z.ZodType>(
     containsNode(pointer) { return isSelected(selectionSnap, pointer); },
     snapshot() { return snapSelection(); },
     toJSON() { return snapSelection(); },
+    restore(snapshot) { selectionSnap = restoreSelection(snapshot, selectionMode, state); },
   };
 
   const notify = (applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void => {
@@ -348,7 +351,7 @@ export function createJSONDocument<S extends z.ZodType>(
       isRestoring = false;
     }
     stack = popped.next;
-    selectionSnap = direction === "undo" ? entry.selectionBefore : entry.selectionAfter;
+    selectionSnap = restoreSelection(direction === "undo" ? entry.selectionBefore : entry.selectionAfter, selectionMode, state);
     return true;
   };
 

@@ -132,6 +132,17 @@ export function selectionSnapshot(s: SelectionSnap): SelectionSnap {
   };
 }
 
+export function restoreSelection(
+  snapshot: SelectionSnap,
+  mode: SelectionMode,
+  state?: unknown,
+): SelectionSnap {
+  const snap = selectionSnapshot(snapshot);
+  return snap.selectionRanges.length === 0
+    ? EMPTY_SELECTION
+    : snapFromRanges(snap.selectionRanges, snap.primaryIndex, mode, state);
+}
+
 export type SelectionAction =
   | { type: "collapse"; pointer: Pointer }
   | { type: "collapse"; point: JSONPoint }

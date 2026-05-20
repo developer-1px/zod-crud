@@ -450,6 +450,39 @@ describe("createJSONDocument — headless facade", () => {
     expect(JSON.parse(JSON.stringify(doc.selection))).toEqual(doc.selection?.snapshot());
   });
 
+  test("selection restores serialized snapshots", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+    doc.selection?.selectRanges([
+      { anchor: "/items/0", focus: "/items/0" },
+      {
+        anchor: { path: "/items/1/name", offset: 99, affinity: "forward" },
+        focus: { path: "/items/1/name", offset: 99, affinity: "forward" },
+      },
+    ]);
+    const saved = JSON.parse(JSON.stringify(doc.selection));
+
+    doc.selection?.empty();
+    expect(doc.selection?.selectedPointers).toEqual([]);
+
+    doc.selection?.restore(saved);
+
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0", "/items/1/name"]);
+    expect(doc.selection?.selectionRanges).toEqual([
+      { anchor: "/items/0", focus: "/items/0" },
+      {
+        anchor: { path: "/items/1/name", offset: 1, affinity: "forward" },
+        focus: { path: "/items/1/name", offset: 1, affinity: "forward" },
+      },
+    ]);
+    expect(doc.selection?.primaryIndex).toBe(1);
+    expect(doc.selection?.primaryPointer).toBe("/items/1/name");
+
+    saved.selectionRanges[1].anchor.offset = 0;
+    expect(doc.selection?.selectionRanges[1]?.anchor).toEqual({ path: "/items/1/name", offset: 1, affinity: "forward" });
+  });
+
   test("selection primaryPointer can drive headless clipboard commands", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single", initial: ["/items/1"] },

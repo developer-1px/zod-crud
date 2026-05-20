@@ -171,7 +171,8 @@ available, including after document edits that keep the same Pointer alive.
 Selection getters, `doc.selection.snapshot()`, and `doc.selection.toJSON()`
 return value snapshots, so callers can store or mutate returned `JSONPoint`
 objects without corrupting the live headless selection state.
-`JSON.stringify(doc.selection)` emits that same snapshot.
+`JSON.stringify(doc.selection)` emits that same snapshot, and
+`doc.selection.restore(snapshot)` restores it.
 `doc.commands.select(action)` defaults to the document's configured selection
 mode, so headless and React facades preserve the same multi-select behavior.
 
@@ -306,7 +307,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
 | `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

@@ -112,6 +112,7 @@ export {
   primaryPointer,
   primaryRange,
   rangeCount,
+  restoreSelection,
   selectedCount,
   selectedSource,
   selectionSnapshot,

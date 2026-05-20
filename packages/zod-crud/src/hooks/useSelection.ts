@@ -7,6 +7,7 @@ import {
   EMPTY_SELECTION,
   reduceSelection,
   applySelectionAutoRules,
+  restoreSelection,
   anchorPointer,
   caretPointer,
   caretPoint,
@@ -84,6 +85,7 @@ export interface SelectionState<T> {
   containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
+  restore(snapshot: SelectionSnap): void;
 }
 
 export function useSelection<T>(
@@ -175,7 +177,12 @@ export function useSelection<T>(
     containsNode: (pointer) => isSelected(snapRef.current, pointer),
     snapshot: () => selectionSnapshot(snapRef.current),
     toJSON: () => selectionSnapshot(snapRef.current),
-  }), [dispatch]);
+    restore: (snapshot) => {
+      const next = restoreSelection(snapshot, mode, ops.state);
+      snapRef.current = next;
+      setSnap(next);
+    },
+  }), [dispatch, mode, ops]);
 }
 
 function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
