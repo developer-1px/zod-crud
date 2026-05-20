@@ -213,6 +213,14 @@ describe("verbs/paste", () => {
     ]);
   });
 
+  test("spread option only spreads into real array parents", () => {
+    const RecordSchema = z.object({ cells: z.record(z.string(), z.string()) });
+    const r = paste(RecordSchema, { cells: { "0": "old" } }, ["a", "b"], "/cells/0", "into", { spread: true });
+
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.code).toBe("schema_violation");
+  });
+
   test("after mode 가 다음 인덱스로 add", () => {
     const r = paste(Schema, initial, { id: "x", name: "X" }, "/items/0", "after");
     expect(r.ok).toBe(true);

@@ -3,7 +3,7 @@
 
 import type * as z from "zod";
 import type { JSONPatchOperation } from "../core/patch/index.js";
-import type { Pointer } from "../core/pointer/index.js";
+import { readAt, tryParsePointer, type Pointer } from "../core/pointer/index.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import { getDiscriminatedUnionInfo, getObjectLiteralValues, schemaAtPointer } from "../core/schema/introspection.js";
 import { tryRekeyPayload, type RekeyOptions } from "../core/schema/rekey.js";
@@ -50,7 +50,7 @@ export function paste<S extends z.ZodType>(
   const rekeyed = tryRekeyPayload(payload, state, options.rekey);
   if (!rekeyed.ok) return rekeyed;
   const nextPayload = rekeyed.payload;
-  const spread = shouldSpread(nextPayload, target, mode, options);
+  const spread = shouldSpread(nextPayload, state, target, mode, options);
   const mismatch = spread
     ? nextPayload.map((item) => findDuMismatch(schema, item, target, mode)).find((item): item is PasteDuMismatch => item !== null) ?? null
     : findDuMismatch(schema, nextPayload, target, mode);
@@ -138,6 +138,7 @@ function buildPasteOp(payload: unknown, target: Pointer, mode: PasteMode): JSONP
 
 function shouldSpread(
   payload: unknown,
+  state: unknown,
   target: Pointer,
   mode: PasteMode,
   options: PasteOptions,
@@ -145,7 +146,7 @@ function shouldSpread(
   return options.spread === true
     && mode !== "replace"
     && Array.isArray(payload)
-    && isArrayInsertionPath(insertionTarget(target, mode));
+    && isArrayInsertionPath(state, insertionTarget(target, mode));
 }
 
 function buildSpreadPasteOps(payload: ReadonlyArray<unknown>, target: Pointer, mode: PasteMode): JSONPatchOperation[] {
@@ -169,6 +170,13 @@ function offsetInsertionPath(path: Pointer, offset: number): Pointer {
   return m ? m[1] + String(Number(m[2]) + offset) : path;
 }
 
-function isArrayInsertionPath(path: Pointer): boolean {
-  return /\/(?:-|0|[1-9][0-9]*)$/.test(path);
+function isArrayInsertionPath(state: unknown, path: Pointer): boolean {
+  const segments = tryParsePointer(path);
+  if (segments === null || segments.length === 0) return false;
+
+  const segment = segments[segments.length - 1]!;
+  if (segment !== "-" && !/^(0|[1-9][0-9]*)$/.test(segment)) return false;
+
+  const parent = readAt(state, segments.slice(0, -1));
+  return parent.ok && Array.isArray(parent.value);
 }
