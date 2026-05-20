@@ -64,6 +64,7 @@ document surface:
 | `doc.can` | command guard namespace |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast()`, `transaction(fn)` |
 | `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth and `selectedPointers` is the item-selection projection |
+| `doc.clipboard` | headless JSON fragment buffer; `copy`/`cut`/`paste` mutate through the same document facade while system clipboard calls stay user code |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through

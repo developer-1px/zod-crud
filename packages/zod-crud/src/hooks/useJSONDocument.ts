@@ -3,7 +3,7 @@
 // History 는 core/history (pure reducer) 에 위임한다 (P2).
 // DOM Selection 모델 — 별도 focus 축은 없다. 캐럿 = collapsed selection.
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useMemo, useReducer, useRef } from "react";
 import type * as z from "zod";
 
 import { useJSON, type UseJSONOptions, type JSONCrudError } from "./useJSON.js";
@@ -12,6 +12,7 @@ import { useSelection, type SelectionState, type UseSelectionOptions } from "./u
 import { buildJSONDocumentOps } from "./buildJSONDocumentOps.js";
 import { buildCommands, type Commands } from "../commands/buildCommands.js";
 import { buildCan, type Can } from "../commands/buildCan.js";
+import { createClipboardState, type ClipboardState } from "../clipboard.js";
 import { type HistoryEntry } from "./jsonDocumentHistory.js";
 import {
   emptyHistory,
@@ -61,6 +62,7 @@ export interface JSONDocument<T> {
   ops: JSONDocumentOps<T>;
   commands: Commands<T>;
   can: Can<T>;
+  clipboard: ClipboardState<T>;
 }
 
 export function useJSONDocument<S extends z.ZodType>(
@@ -119,6 +121,11 @@ export function useJSONDocument<S extends z.ZodType>(
     [schema, ops],
   );
   const can = useMemo(() => buildCan({ schema, ops }), [schema, ops]);
+  const [, bumpClipboardVersion] = useReducer((version: number) => version + 1, 0);
+  const clipboard = useMemo(
+    () => createClipboardState({ schema, getState: () => ops.state, ops, onChange: bumpClipboardVersion }),
+    [schema, ops],
+  );
 
   return useMemo<JSONDocument<z.output<S>>>(() => {
     const history: JSONDocumentHistory = {
@@ -136,6 +143,7 @@ export function useJSONDocument<S extends z.ZodType>(
       ops,
       commands,
       can,
+      clipboard,
     };
-  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can]);
+  }, [value, ops, selectionEnabled, selectionState, mergeLast, transaction, commands, can, clipboard]);
 }

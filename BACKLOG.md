@@ -18,11 +18,10 @@
 
 목표 API 확장 순서:
 
-1. document clipboard (`doc.clipboard`)
-2. explainable guard (`doc.check`)
-3. read/query facade (`doc.at`, `doc.exists`, `doc.query`, `doc.entries`)
-4. history metadata
-5. schema introspection facade
+1. explainable guard (`doc.check`)
+2. read/query facade (`doc.at`, `doc.exists`, `doc.query`, `doc.entries`)
+3. history metadata
+4. schema introspection facade
 
 ## 미해결 (post-v0.12.0)
 

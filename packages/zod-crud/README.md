@@ -89,7 +89,7 @@ export function App() {
 }
 ```
 
-`useJSONDocument` returns a single facade with six surfaces:
+`useJSONDocument` returns a single facade with seven surfaces:
 
 | Surface | Purpose |
 | --- | --- |
@@ -98,6 +98,7 @@ export function App() {
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
 | `doc.can` | mutation guard predicates + `undo`/`redo` flags |
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
+| `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
 | `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast()`, `transaction(fn)` |
 
 Selection and history are first-class — they are not parallel hooks you wire
@@ -126,14 +127,17 @@ doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` intentionally share the same
-`value`/`ops`/`commands`/`can`/`selection`/`history` surface. React owns render
-lifecycle only; core owns JSON editing.
+`value`/`ops`/`commands`/`can`/`selection`/`clipboard`/`history` surface. React
+owns render lifecycle only; core owns JSON editing.
 
 Selection is headless. `JSONPoint` is either a JSON Pointer string or
 `{ path, offset?, edge?, affinity? }`, so list/tree item selection and text
 carets use the same core model. `doc.selection.selectionRanges` is the source
 of truth for caret/range shape; `doc.selection.selectedPointers` is the
 item-selection projection for list/tree/grid UIs.
+
+Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
+metadata; DOM/system clipboard integration remains user code.
 
 For lower-level composition (`useJSON` + `useSelection`), see the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
@@ -205,10 +209,10 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`selection`/`history` surface as `useJSONDocument` |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` | shared headless facade types |
+| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`selection`/`clipboard`/`history` surface as `useJSONDocument` |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardState<T>` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
@@ -232,7 +236,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `computeInverses` | RFC 6902 inverse helper |
 | `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
-| `ClipboardItemMap`, `ClipboardItemOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionSnap`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
+| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionSnap`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
 | `EMPTY_SELECTION`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |

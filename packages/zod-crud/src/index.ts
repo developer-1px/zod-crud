@@ -17,6 +17,14 @@ export type {
   UseJSONDocumentOptions,
   UseSelectionOptions,
 } from "./createJSONDocument.js";
+export type {
+  ClipboardEmpty,
+  ClipboardPasteResult,
+  ClipboardReadOk,
+  ClipboardReadResult,
+  ClipboardState,
+  ClipboardWriteOptions,
+} from "./clipboard.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

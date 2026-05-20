@@ -82,8 +82,8 @@ Rules:
 
 ## 3. Clipboard Subsystem
 
-Current pure verbs (`copy`, `cut`, `paste`) are correct but not enough for a
-document engine. The target facade includes a headless JSON clipboard buffer.
+Current pure verbs (`copy`, `cut`, `paste`) remain exported. The current facade
+also includes a headless JSON clipboard buffer.
 
 ```ts
 interface ClipboardState<T> {
@@ -95,7 +95,7 @@ interface ClipboardState<T> {
 
   copy(source: Pointer): CopyOk | CopyError;
   cut(source: Pointer): CutOk<T> | CutError;
-  paste(target: Pointer, mode?: PasteMode): PasteOk<T> | PasteError | PasteDuMismatch;
+  paste(target: Pointer, mode?: PasteMode): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
 ```
@@ -112,9 +112,10 @@ Semantics:
 
 Acceptance evidence:
 
-- Headless tests prove copy -> paste, cut -> undo, failed paste preserves
-  buffer, and non-JSON payloads are rejected.
-- React facade tests prove the same behavior through `useJSONDocument`.
+- Headless tests in `tests/create-json-document.test.ts` prove copy -> paste,
+  cut -> undo, failed paste preserves buffer, and non-JSON payloads are rejected.
+- React facade tests in `tests/document-clipboard-react.test.ts` prove the same
+  behavior through `useJSONDocument`.
 
 ## 4. Check Subsystem
 
@@ -359,23 +360,18 @@ Acceptance evidence:
 
 Implementation should proceed in this order:
 
-1. **Document clipboard**
-   - Add `doc.clipboard`.
-   - Keep pure verb exports.
-   - Prove atomic cut and failed paste behavior.
-
-2. **Check facade**
+1. **Check facade**
    - Add `doc.check`.
    - Define `can === check.ok` invariant.
 
-3. **Read/query facade**
+2. **Read/query facade**
    - Add `doc.at`, `doc.exists`, `doc.query`, `doc.entries`.
 
-4. **History metadata**
+3. **History metadata**
    - Add transaction options and merge metadata.
    - Preserve metadata in recordings.
 
-5. **Schema facade**
+4. **Schema facade**
    - Add read-only path introspection.
 
 ## 11. Completion Gates

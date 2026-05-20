@@ -12,6 +12,14 @@ export type {
   UseJSONDocumentOptions,
 } from "./hooks/useJSONDocument.js";
 export type {
+  ClipboardEmpty,
+  ClipboardPasteResult,
+  ClipboardReadOk,
+  ClipboardReadResult,
+  ClipboardState,
+  ClipboardWriteOptions,
+} from "./clipboard.js";
+export type {
   DraftFieldState,
   DraftState,
 } from "./hooks/useDraft.js";

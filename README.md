@@ -65,9 +65,10 @@ doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` expose the same
-`value`/`ops`/`commands`/`can`/`selection`/`history` surface; React only adds
-render lifecycle. Selection uses headless `JSONPoint` coordinates, so item
-selection and text carets share one JSON editing model.
+`value`/`ops`/`commands`/`can`/`selection`/`clipboard`/`history` surface; React
+only adds render lifecycle. Selection uses headless `JSONPoint` coordinates, so
+item selection and text carets share one JSON editing model. Clipboard is a
+headless JSON fragment buffer; system clipboard calls remain user code.
 
 ### Dict-record 한 키 쓰기
 

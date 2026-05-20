@@ -63,6 +63,80 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.redoDepth).toBe(1);
   });
 
+  test("doc.clipboard copies, pastes, and exposes serializable items", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.clipboard.hasData).toBe(false);
+    expect(doc.clipboard.read()).toEqual({ ok: false, code: "empty_clipboard", message: "clipboard is empty" });
+
+    const copied = doc.clipboard.copy("/items/0");
+    expect(copied.ok).toBe(true);
+    expect(doc.clipboard.hasData).toBe(true);
+    expect(doc.clipboard.source).toBe("/items/0");
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+    });
+    expect(doc.clipboard.toItems({ json: true })).toMatchObject({
+      "application/json": "{\"id\":\"a\",\"name\":\"A\"}",
+      "text/plain": "{\"id\":\"a\",\"name\":\"A\"}",
+    });
+
+    const pasted = doc.clipboard.paste("/items/-");
+
+    expect(pasted.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("doc.clipboard cut writes buffer and undo restores document", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const cut = doc.clipboard.cut("/items/0");
+
+    expect(cut.ok).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b"]);
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+    });
+
+    expect(doc.commands.undo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  test("doc.clipboard failed paste preserves buffer and document", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    doc.clipboard.copy("/items/0");
+
+    const failed = doc.clipboard.paste("/meta/foo", "replace");
+
+    expect(failed.ok).toBe(false);
+    expect(doc.value).toEqual(initial);
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+    });
+    expect(doc.history.undoDepth).toBe(0);
+  });
+
+  test("doc.clipboard write rejects non-JSON without clearing existing buffer", () => {
+    const doc = createJSONDocument(Schema, initial);
+    doc.clipboard.write({ ok: true });
+
+    const failed = doc.clipboard.write({ bad: undefined });
+
+    expect(failed).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { ok: true },
+      source: null,
+    });
+  });
+
   test("commands.select mutates document selection", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

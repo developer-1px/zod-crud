@@ -37,6 +37,7 @@ import {
   type HistoryStack,
 } from "./core/history.js";
 import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.js";
+import { createClipboardState, type ClipboardState } from "./clipboard.js";
 import type {
   JSONChangeListener,
   JSONDocumentOps,
@@ -90,6 +91,7 @@ export interface JSONDocument<T> {
   readonly ops: JSONDocumentOps<T>;
   readonly commands: Commands<T>;
   readonly can: Can<T>;
+  readonly clipboard: ClipboardState<T>;
 }
 
 interface HistoryEntry {
@@ -370,6 +372,7 @@ export function createJSONDocument<S extends z.ZodType>(
   const selectionRef = { get current() { return selectionState; } };
   const commands = buildCommands({ schema, ops, selectionRef });
   const can = buildCan({ schema, ops });
+  const clipboard = createClipboardState({ schema, getState: () => state, ops });
 
   return {
     get value() { return state; },
@@ -378,6 +381,7 @@ export function createJSONDocument<S extends z.ZodType>(
     ops,
     commands,
     can,
+    clipboard,
   };
 }
 
