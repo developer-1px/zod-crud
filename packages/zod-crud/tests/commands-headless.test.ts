@@ -64,6 +64,22 @@ describe("headless command/check/can factories", () => {
     expect(selection.caret).toEqual({ path: "/items/0/name", offset: 2 });
     expect(doc.history.undoDepth).toBe(2);
 
+    expect(check.deleteText()).toEqual({ ok: true });
+    expect(can.deleteText()).toBe(true);
+
+    const textDeleted = commands.deleteText();
+
+    expect(textDeleted).toMatchObject({
+      ok: true,
+      patch: [{ op: "replace", path: "/items/0/name", value: "A" }],
+      selection: {
+        focus: { path: "/items/0/name", offset: 1 },
+      },
+    });
+    expect(doc.value.items[0]?.name).toBe("A");
+    expect(selection.caret).toEqual({ path: "/items/0/name", offset: 1 });
+    expect(doc.history.undoDepth).toBe(3);
+
     commands.select({ type: "collapse", pointer: "/items/1" });
     const copied = commands.copy();
 
@@ -83,7 +99,7 @@ describe("headless command/check/can factories", () => {
       pointers: ["/items/0/name", "/items/1/name"],
     });
     expect(doc.value.items.map((item) => item.name)).toEqual(["renamed", "renamed"]);
-    expect(doc.history.undoDepth).toBe(3);
+    expect(doc.history.undoDepth).toBe(4);
 
     const selected = commands.selectScope({ points: ["/items/1", "/items/0"] });
     expect(selected).toMatchObject({ ok: true, points: ["/items/1", "/items/0"] });

@@ -6,6 +6,7 @@ import {
   compareSelectionPoints,
   createJSONDocument,
   createSelection,
+  deleteSelectionText,
   extendSelectionCursor,
   moveSelectionCursor,
   orderPrimarySelectionRange,
@@ -570,6 +571,53 @@ describe("createSelection", () => {
         primaryIndex: 0,
         focus: { path: "/items/0/name", offset: 2 },
       },
+    });
+  });
+
+  test("deletes text backward or forward from collapsed carets", () => {
+    const state = { title: "ABCD" };
+    const selection = {
+      ...EMPTY_SELECTION,
+      ranges: ["/title"],
+      selectedPointers: ["/title"],
+      selectionRanges: [{
+        anchor: { path: "/title", offset: 2 },
+        focus: { path: "/title", offset: 2 },
+      }],
+      primaryIndex: 0,
+      anchor: { path: "/title", offset: 2 },
+      focus: { path: "/title", offset: 2 },
+    };
+
+    expect(deleteSelectionText(selection, state)).toMatchObject({
+      ok: true,
+      patch: [{ op: "replace", path: "/title", value: "ACD" }],
+      selection: {
+        focus: { path: "/title", offset: 1 },
+      },
+    });
+
+    expect(deleteSelectionText(selection, state, { direction: "forward", count: 2 })).toMatchObject({
+      ok: true,
+      patch: [{ op: "replace", path: "/title", value: "AB" }],
+      selection: {
+        focus: { path: "/title", offset: 2 },
+      },
+    });
+
+    expect(deleteSelectionText({
+      ...selection,
+      selectionRanges: [{
+        anchor: { path: "/title", offset: 0 },
+        focus: { path: "/title", offset: 0 },
+      }],
+      anchor: { path: "/title", offset: 0 },
+      focus: { path: "/title", offset: 0 },
+    }, state)).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+      pointer: "/title",
+      index: 0,
     });
   });
 

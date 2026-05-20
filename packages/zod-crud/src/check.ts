@@ -12,7 +12,9 @@ import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
 import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
 import { replace as replaceVerb } from "./verbs/replace.js";
 import {
+  deleteSelectionText,
   replaceSelectionText,
+  type SelectionTextDeleteOptions,
   type SelectionTextEditErrorCode,
   type SelectionTextEditOptions,
 } from "./core/selection/textEdit.js";
@@ -68,6 +70,7 @@ export interface Check<T> {
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions): CheckResult;
+  deleteText(options?: SelectionTextDeleteOptions): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -154,6 +157,12 @@ export function buildCheck<S extends z.ZodType>(
     },
     replaceText(replacement, textOptions) {
       const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
+      return planned.ok
+        ? toCheckResult(preFlight(schema, ops.state, planned.patch))
+        : toCheckResult(planned);
+    },
+    deleteText(textOptions) {
+      const planned = deleteSelectionText(selectionState(), ops.state, textOptions);
       return planned.ok
         ? toCheckResult(preFlight(schema, ops.state, planned.patch))
         : toCheckResult(planned);

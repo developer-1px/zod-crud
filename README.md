@@ -85,7 +85,7 @@ it into document JSON. Clipboard is a headless JSON fragment
 buffer; system clipboard calls remain user code. `check` is the explainable
 dry-run guard behind `can`, including JSONPath find syntax checks, JSONPath
 multi-match replace checks, and selection cursor/scope guards (`moveCursor`,
-`extendCursor`, `selectScope`) plus `replaceText` guards for keyboard and
+`extendCursor`, `selectScope`) plus `replaceText` / `deleteText` guards for keyboard and
 select-visible UI. Selection cursor/scope options can use `query` to traverse
 or select JSONPath find results.
 `orderPrimaryRange()` / `orderRanges()` and the pure `orderSelectionRange`
@@ -94,16 +94,17 @@ ranges for delete, format, copy, and paste commands.
 `spansForPointer()` projects those ranges into pointer-local spans for rendering
 and offset-based edits.
 `textEdits(replacement)` turns selection into ordered pointer-local text edit
-plans, and `textPatch(replacement)` builds RFC 6902 `replace` patches plus the
-final collapsed selection for JSON string leaves. `commands.replaceText(...)`
-commits that string-leaf edit through document history.
+plans, and `textPatch(replacement)` / `deleteText(options?)` build RFC 6902
+`replace` patches plus the final collapsed selection for JSON string leaves.
+`commands.replaceText(...)` and `commands.deleteText(...)` commit those edits
+through document history.
 `at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.
 Selection-backed facade commands can omit the current source or target:
 `copy`/`cut` use `selectedSource`, `move`/`duplicate` use `primaryPointer` as
-source, and `replace`/`paste` use `primaryPointer` as target; `replaceText`
-uses the full selection range.
+source, and `replace`/`paste` use `primaryPointer` as target; `replaceText` and
+`deleteText` use the full selection range.
 Selection `initial` and `selectRanges` accept `JSONPoint` or `{ anchor, focus }`
 ranges, so multi-range selection and caret coordinates stay headless.
 

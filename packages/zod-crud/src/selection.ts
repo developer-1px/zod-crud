@@ -62,10 +62,14 @@ import {
   type SelectionType,
 } from "./core/selection/index.js";
 import {
+  deleteSelectionText,
   replaceSelectionText,
   selectionTextEdits,
+  type DeleteSelectionTextResult,
   type ReplaceSelectionTextResult,
   type SelectionTextEdit,
+  type SelectionTextDeleteDirection,
+  type SelectionTextDeleteOptions,
   type SelectionTextEditErrorCode,
   type SelectionTextEditOptions,
   type SelectionTextEditsResult,
@@ -93,6 +97,7 @@ export type {
   SelectionRangeInput,
   SelectionRangeOrderResult,
   SelectionRangesOrderResult,
+  DeleteSelectionTextResult,
   ReplaceSelectionTextResult,
   SelectionScopeErrorCode,
   SelectionScopeOptions,
@@ -100,6 +105,8 @@ export type {
   SelectionScopeTarget,
   SelectionSpanOptions,
   SelectionTextEdit,
+  SelectionTextDeleteDirection,
+  SelectionTextDeleteOptions,
   SelectionTextEditErrorCode,
   SelectionTextEditOptions,
   SelectionTextEditsResult,
@@ -156,6 +163,7 @@ export interface SelectionState<T> extends SelectionSnap {
   spansForPointer(pointer: Pointer, options?: SelectionSpanOptions): SelectionPointerSpansResult;
   textEdits(replacement: string, options?: SelectionTextEditOptions): SelectionTextEditsResult;
   textPatch(replacement: string, options?: SelectionTextEditOptions): ReplaceSelectionTextResult;
+  deleteText(options?: SelectionTextDeleteOptions): DeleteSelectionTextResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
@@ -282,6 +290,9 @@ export function createSelection<T>(
     },
     textPatch(replacement, textEditOptions) {
       return replaceSelectionText(snap, ops.state, replacement, textEditOptions);
+    },
+    deleteText(textDeleteOptions) {
+      return deleteSelectionText(snap, ops.state, textDeleteOptions);
     },
     selectScope(scopeOptions) {
       const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);

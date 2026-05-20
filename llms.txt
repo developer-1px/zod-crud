@@ -17,7 +17,7 @@ and should not be described as an editor.
 
 ```ts
 // Headless JSON state, document, commands, selection, clipboard, history, read, schema, and draft facades.
-import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSON, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText } from "zod-crud";
+import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSON, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -63,15 +63,15 @@ document surface:
 | `doc.value` | current schema-valid JSON value |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
-| `doc.commands` | edit command namespace; `replaceText(replacement, options?)` commits selection text edits, `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
+| `doc.commands` | edit command namespace; `replaceText(replacement, options?)` and `deleteText(options?)` commit selection text edits, `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
 | `doc.can` | command, JSONPath find, and selection guard namespace |
-| `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, selection movement, and selection text replacement; `can.x(...) === check.x(...).ok` |
+| `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, selection movement, and selection text edits; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
 | `doc.commit` | apply an RFC 6902 patch plus optional final `SelectionAction | SelectionSnap` as one history entry |
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `context` is optional JSON-serializable selection-local editing state for stored marks/active tools/find mode, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `moveCursor`/`extendCursor` mutate cursor/range by JSON source-order within an optional scope, by RFC 9535 `query` results, or by explicit app-visible `points`, `resolveCursor` computes the same target without mutation, `selectScope` builds Ctrl+A/select-visible/select-find-results selections from that same traversal model, `orderPrimaryRange` converts directional anchor/focus into document-order start/end, `orderRanges` does the same for every range while preserving original range indexes and primary flag, `spansForPointer(pointer)` clips selection into pointer-local spans for rendering/offset edits, `textEdits(replacement)` plans ordered pointer-local text replacements, `textPatch(replacement)` builds string-leaf RFC 6902 replace patches plus final collapsed selection, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `togglePointer(pointer)` toggles one selected item including inside expanded ranges while preserving sparse selection, `selectedSource` feeds omitted `copy`/`cut` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
+| `doc.selection` | `JSONPoint`-based W3C-shaped selection when enabled; `selectionRanges` is the caret/range source of truth, `context` is optional JSON-serializable selection-local editing state for stored marks/active tools/find mode, `initial`/`selectRanges` accept `JSONPoint` or `{ anchor, focus }`, string caret offsets are clamped to current text, getters, `snapshot()`, and `toJSON()` return value-safe coordinates, `JSON.stringify(doc.selection)` emits that snapshot, `restore(snapshot)` restores it, `subscribe(listener)` emits JSON-safe snapshot transitions, `moveCursor`/`extendCursor` mutate cursor/range by JSON source-order within an optional scope, by RFC 9535 `query` results, or by explicit app-visible `points`, `resolveCursor` computes the same target without mutation, `selectScope` builds Ctrl+A/select-visible/select-find-results selections from that same traversal model, `orderPrimaryRange` converts directional anchor/focus into document-order start/end, `orderRanges` does the same for every range while preserving original range indexes and primary flag, `spansForPointer(pointer)` clips selection into pointer-local spans for rendering/offset edits, `textEdits(replacement)` plans ordered pointer-local text replacements, `textPatch(replacement)` builds string-leaf RFC 6902 replace patches plus final collapsed selection, `deleteText(options?)` builds selected-text or caret-backspace/delete patches plus final collapsed selection, `rangeCount`/`selectedCount`/`hasSelection` expose cardinality, `isSelected(pointer)` is the per-item predicate, `togglePointer(pointer)` toggles one selected item including inside expanded ranges while preserving sparse selection, `selectedSource` feeds omitted `copy`/`cut` sources and empty selection returns `empty_selection`, and `primaryPointer` feeds omitted `move`/`duplicate` sources plus `replace`/`paste` targets |
 | `doc.clipboard` / `createClipboard(args)` | headless JSON fragment buffer; `copy`/`cut` accept `Pointer | Pointer[]` or default to current selection, `write` normalizes source metadata, multi-source payloads are JSON arrays, `read()` preserves `source`/`sources`, and `paste` accepts a Pointer or defaults to the primary selection target while spreading multi-source buffers into array targets by default unless `{ spread: false }` |
 
 React is a facade adapter, not the owner of the editing model. If a workflow can
@@ -100,9 +100,11 @@ rendering or editing needs pointer-local selected spans; pass `getLength` for
 non-string offset domains.
 Use `selectionTextEdits` / `doc.selection.textEdits(replacement)` to turn
 selection into ordered pointer-local edit plans. Use `replaceSelectionText` /
-`doc.selection.textPatch(replacement)` for JSON string leaves; it returns patch
-plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)`
-when the string-leaf edit should commit through document history directly.
+`doc.selection.textPatch(replacement)` and `deleteSelectionText` /
+`doc.selection.deleteText(options?)` for JSON string leaves; they return patch
+plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)` or
+`doc.commands.deleteText(...)` when the string-leaf edit should commit through
+document history directly.
 Use `createCommands(args)`, `createCheck(args)`, and `createCan(args)` for
 standalone headless command, dry-run, and boolean guard facades; React
 re-exports the same factories without adding a separate command model.
@@ -124,9 +126,10 @@ Use `createDraft(doc)` for standalone headless draft/pending field state;
 `doc.commands.selectScope(options?)` default to the document's configured
 selection mode, so headless and React facades preserve the same multi-select
 behavior and the full `SelectionSnap`, including `context`.
-`doc.commands.replaceText(replacement, options?)` uses that same `SelectionSnap`
-to commit JSON string-leaf text edits; `doc.check.replaceText` and
-`doc.can.replaceText` dry-run the same plan.
+`doc.commands.replaceText(replacement, options?)` and
+`doc.commands.deleteText(options?)` use that same `SelectionSnap` to commit JSON
+string-leaf text edits; `doc.check.replaceText` / `doc.can.replaceText` and
+`doc.check.deleteText` / `doc.can.deleteText` dry-run the same plan.
 
 ## 10 Verbs
 

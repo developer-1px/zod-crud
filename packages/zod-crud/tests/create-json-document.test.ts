@@ -185,6 +185,67 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value).toEqual(initial);
   });
 
+  test("commands deleteText commits caret deletion and restores through undo", () => {
+    const doc = createJSONDocument(EditorSchema, editorInitial, {
+      history: 10,
+      selection: {
+        mode: "extended",
+        initial: [{
+          anchor: { path: "/doc/blocks/0/text", offset: 2 },
+          focus: { path: "/doc/blocks/0/text", offset: 2 },
+        }],
+        context: { input: "keyboard" },
+      },
+    });
+
+    expect(doc.check.deleteText()).toEqual({ ok: true });
+    expect(doc.can.deleteText()).toBe(true);
+
+    const deleted = doc.commands.deleteText();
+
+    expect(deleted).toMatchObject({
+      ok: true,
+      patch: [{ op: "replace", path: "/doc/blocks/0/text", value: "Apha" }],
+      selection: {
+        focus: { path: "/doc/blocks/0/text", offset: 1 },
+        context: { input: "keyboard" },
+      },
+    });
+    expect(doc.value.doc.blocks[0]?.text).toBe("Apha");
+    expect(doc.selection?.caret).toEqual({ path: "/doc/blocks/0/text", offset: 1 });
+    expect(doc.history.undoDepth).toBe(1);
+
+    expect(doc.commands.undo()).toBe(true);
+    expect(doc.value).toEqual(editorInitial);
+    expect(doc.selection?.caret).toEqual({ path: "/doc/blocks/0/text", offset: 2 });
+    expect(doc.selection?.context).toEqual({ input: "keyboard" });
+  });
+
+  test("commands deleteText reports caret boundary failures without mutation", () => {
+    const doc = createJSONDocument(EditorSchema, editorInitial, {
+      selection: {
+        mode: "extended",
+        initial: [{
+          anchor: { path: "/doc/blocks/0/text", offset: 0 },
+          focus: { path: "/doc/blocks/0/text", offset: 0 },
+        }],
+      },
+    });
+
+    expect(doc.commands.deleteText()).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+      pointer: "/doc/blocks/0/text",
+    });
+    expect(doc.check.deleteText()).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+      pointer: "/doc/blocks/0/text",
+    });
+    expect(doc.can.deleteText()).toBe(false);
+    expect(doc.value).toEqual(editorInitial);
+  });
+
   test("commands replace accepts JSONPath multi-match and commits one history entry", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

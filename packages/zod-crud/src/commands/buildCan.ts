@@ -12,7 +12,10 @@ import type {
   SelectionCursorOptions,
   SelectionScopeOptions,
 } from "../core/selection/index.js";
-import type { SelectionTextEditOptions } from "../core/selection/textEdit.js";
+import type {
+  SelectionTextDeleteOptions,
+  SelectionTextEditOptions,
+} from "../core/selection/textEdit.js";
 import type { PasteMode, PasteOptions } from "../verbs/paste.js";
 import type { DuplicateOpts } from "../verbs/duplicate.js";
 import type { ClipboardSource } from "../verbs/copy.js";
@@ -27,6 +30,7 @@ export interface Can<T> {
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): boolean;
   replace(pathOrValue: Pointer | unknown, value?: unknown): boolean;
   replaceText(replacement: string, options?: SelectionTextEditOptions): boolean;
+  deleteText(options?: SelectionTextDeleteOptions): boolean;
   cut(source?: ClipboardSource): boolean;
   paste(
     payload: unknown,
@@ -65,6 +69,7 @@ export function buildCan<S extends z.ZodType>(args: CreateCanOptions<S>): Can<z.
         : check.replace(pathOrValue).ok;
     },
     replaceText(replacement, options) { return check.replaceText(replacement, options).ok; },
+    deleteText(options) { return check.deleteText(options).ok; },
     cut(source) { return check.cut(source).ok; },
     paste(payload, target, mode = "into", options = {}) { return check.paste(payload, target, mode, options).ok; },
     copy(source) { return check.copy(source).ok; },

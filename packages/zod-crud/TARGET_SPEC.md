@@ -175,6 +175,7 @@ interface Check<T> {
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions): CheckResult;
+  deleteText(options?: SelectionTextDeleteOptions): CheckResult;
   cut(source?: ClipboardSource): CheckResult;
   copy(source?: ClipboardSource): CheckResult;
   paste(
@@ -441,11 +442,19 @@ interface SelectionTextEditOptions extends SelectionSpanOptions {
   affinity?: SelectionAffinity;
 }
 
+type SelectionTextDeleteDirection = "backward" | "forward";
+
+interface SelectionTextDeleteOptions extends SelectionTextEditOptions {
+  direction?: SelectionTextDeleteDirection;
+  count?: number;
+}
+
 type SelectionTextEditErrorCode =
   | SelectionOrderErrorCode
   | "missing_length"
   | "multi_pointer_range"
   | "overlapping_ranges"
+  | "cursor_boundary"
   | "path_not_found"
   | "not_string";
 
@@ -480,6 +489,8 @@ type ReplaceSelectionTextResult =
       pointer: Pointer | null;
       index: number | null;
     };
+
+type DeleteSelectionTextResult = ReplaceSelectionTextResult;
 
 interface SelectionState<T> {
   readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
@@ -517,6 +528,7 @@ interface SelectionState<T> {
   spansForPointer(pointer: Pointer, options?: SelectionSpanOptions): SelectionPointerSpansResult;
   textEdits(replacement: string, options?: SelectionTextEditOptions): SelectionTextEditsResult;
   textPatch(replacement: string, options?: SelectionTextEditOptions): ReplaceSelectionTextResult;
+  deleteText(options?: SelectionTextDeleteOptions): DeleteSelectionTextResult;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
   resolveScope(options?: SelectionScopeOptions): Omit<SelectionScopeResult, "selection">;
   selectRanges(
@@ -544,10 +556,12 @@ keyboard-style cursor movement using the same cursor traversal options.
 Ctrl+A/select-visible selection through the command namespace.
 `commands.replaceText(replacement, options?)` commits JSON string-leaf text edits
 from the current `SelectionSnap` through document history.
+`commands.deleteText(options?)` commits selected-text deletion or collapsed
+caret backward/forward deletion through that same path.
 `check.moveCursor` / `can.moveCursor`, `check.extendCursor` /
-`can.extendCursor`, `check.selectScope` / `can.selectScope`, and
-`check.replaceText` / `can.replaceText` expose the same availability checks
-without mutating selection.
+`can.extendCursor`, `check.selectScope` / `can.selectScope`,
+`check.replaceText` / `can.replaceText`, and `check.deleteText` /
+`can.deleteText` expose the same availability checks without mutating selection.
 `selectionRanges[primaryIndex]` is the primary command range. Pointer-only
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,
@@ -578,12 +592,14 @@ span list for rendering and offset-based commands. String values resolve
 offsets from current state; apps can provide `getLength` for non-string offset
 domains. `selectionTextEdits` turns selection into ordered pointer-local text
 edit plans. `replaceSelectionText` builds RFC 6902 `replace` patches plus final
-collapsed selection for JSON string leaves; multi-pointer rich-text/block edits
-use the edit plan and app-specific patching. `commands.replaceText(...)` commits
-the string-leaf patch and final selection directly. `SelectionState` exposes the same
+collapsed selection for JSON string leaves; `deleteSelectionText` does the same
+for selected-text deletion and collapsed caret backward/forward deletion.
+Multi-pointer rich-text/block edits use the edit plan and app-specific patching.
+`commands.replaceText(...)` / `commands.deleteText(...)` commit the string-leaf
+patch and final selection directly. `SelectionState` exposes the same
 behavior as `orderPrimaryRange(options?)`, `orderRanges(options?)`,
-`spansForPointer(pointer, options?)`, `textEdits(replacement, options?)`, and
-`textPatch(replacement, options?)`.
+`spansForPointer(pointer, options?)`, `textEdits(replacement, options?)`,
+`textPatch(replacement, options?)`, and `deleteText(options?)`.
 Standalone headless composition uses `createSelection(ops)` and
 `createClipboard(args)`; `useSelection` adds React render invalidation but no
 separate selection model, and React has no separate clipboard model.
@@ -608,6 +624,9 @@ Document-facade `commands.replaceText(replacement, options?)`,
 `check.replaceText(replacement, options?)`, and
 `can.replaceText(replacement, options?)` use the full selection range model for
 JSON string-leaf text edits.
+Document-facade `commands.deleteText(options?)`,
+`check.deleteText(options?)`, and `can.deleteText(options?)` use that same model
+for selected-text deletion and collapsed caret backward/forward deletion.
 Document-facade `commands.paste(payload)`, `doc.clipboard.paste()`,
 `check.paste(payload)`, and `can.paste(payload)` use `primaryPointer` when
 their target argument is omitted; mode-only calls such as

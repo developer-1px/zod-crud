@@ -37,6 +37,7 @@ export type {
   CommandSelectionState,
   Commands,
   CreateCommandsOptions,
+  DeleteTextCommandResult,
   ReplaceCommandResult,
   ReplaceTextCommandResult,
 } from "./commands/buildCommands.js";
@@ -158,6 +159,7 @@ export {
   selectionType,
 } from "./core/selection/index.js";
 export {
+  deleteSelectionText,
   replaceSelectionText,
   selectionTextEdits,
 } from "./core/selection/textEdit.js";
@@ -212,8 +214,11 @@ export type {
   UseSelectionOptions,
 } from "./hooks/useSelection.js";
 export type {
+  DeleteSelectionTextResult,
   ReplaceSelectionTextResult,
   SelectionTextEdit,
+  SelectionTextDeleteDirection,
+  SelectionTextDeleteOptions,
   SelectionTextEditErrorCode,
   SelectionTextEditOptions,
   SelectionTextEditsResult,

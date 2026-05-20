@@ -37,8 +37,11 @@ import { find, type FindOk, type FindError } from "../verbs/find.js";
 import { replace as replaceVerb, type ReplaceOk, type ReplaceError } from "../verbs/replace.js";
 import type { JSONPatchOperation, JSONResult } from "../core/patch/index.js";
 import {
+  deleteSelectionText,
   replaceSelectionText,
+  type DeleteSelectionTextResult,
   type ReplaceSelectionTextResult,
+  type SelectionTextDeleteOptions,
   type SelectionTextEditOptions,
 } from "../core/selection/textEdit.js";
 
@@ -52,6 +55,10 @@ export type ReplaceTextCommandResult =
   | ReplaceSelectionTextResult
   | Extract<JSONResult, { ok: false }>;
 
+export type DeleteTextCommandResult =
+  | DeleteSelectionTextResult
+  | Extract<JSONResult, { ok: false }>;
+
 export interface Commands<T> {
   select(action: SelectionAction, mode?: SelectionMode): SelectionSnap;
   selectScope(options?: SelectionScopeOptions): SelectionScopeResult;
@@ -63,6 +70,7 @@ export interface Commands<T> {
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): DuplicateOk<T> | DuplicateError;
   replace(pathOrValue: Pointer | unknown, value?: unknown): ReplaceCommandResult<T>;
   replaceText(replacement: string, options?: SelectionTextEditOptions): ReplaceTextCommandResult;
+  deleteText(options?: SelectionTextDeleteOptions): DeleteTextCommandResult;
 
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   copy(source?: ClipboardSource): CopyOk | CopyError;
@@ -184,6 +192,14 @@ export function buildCommands<S extends z.ZodType>(
     },
     replaceText(replacement, textOptions) {
       const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
+      if (!planned.ok) return planned;
+      const patched = ops.patch(planned.patch, { selectionAfter: planned.selection });
+      if (!patched.ok) return patched;
+      applySelection(planned.selection);
+      return planned;
+    },
+    deleteText(textOptions) {
+      const planned = deleteSelectionText(selectionState(), ops.state, textOptions);
       if (!planned.ok) return planned;
       const patched = ops.patch(planned.patch, { selectionAfter: planned.selection });
       if (!patched.ok) return patched;
