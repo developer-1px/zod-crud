@@ -94,6 +94,7 @@ export type {
   SelectionEdge,
   SelectionMode,
   SelectionRange,
+  SelectionSource,
   SelectionType,
 } from "./core/selection/index.js";
 export { trackPointer } from "./core/track.js";
@@ -108,6 +109,7 @@ export {
   primaryPointer,
   primaryRange,
   rangeCount,
+  selectedSource,
   selectionType,
 } from "./core/selection/index.js";
 

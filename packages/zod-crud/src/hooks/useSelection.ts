@@ -16,17 +16,19 @@ import {
   primaryRange,
   rangeCount,
   selectionType,
+  selectedSource,
   type SelectionSnap,
   type SelectionMode,
   type SelectionAction,
   type SelectionType,
   type JSONPoint,
   type SelectionRange,
+  type SelectionSource,
 } from "../core/selection/index.js";
 import type { Pointer } from "../core/pointer/index.js";
 import type { JSONOps } from "./useJSON.js";
 
-export type { JSONPoint, SelectionMode, SelectionRange, SelectionType };
+export type { JSONPoint, SelectionMode, SelectionRange, SelectionSource, SelectionType };
 
 export interface UseSelectionOptions {
   mode?: SelectionMode;
@@ -42,6 +44,7 @@ export interface SelectionState<T> {
   primaryRange: SelectionRange | null;
   anchorPointer: Pointer | null;
   focusPointer: Pointer | null;
+  selectedSource: SelectionSource | null;
   primaryPointer: Pointer | null;
   caret: JSONPoint | null;
   caretPointer: Pointer | null;
@@ -111,6 +114,7 @@ export function useSelection<T>(
     get primaryRange() { return primaryRange(snapRef.current); },
     get anchorPointer() { return anchorPointer(snapRef.current); },
     get focusPointer() { return focusPointer(snapRef.current); },
+    get selectedSource() { return selectedSource(snapRef.current); },
     get primaryPointer() { return primaryPointer(snapRef.current); },
     get caret() { return caretPoint(snapRef.current); },
     get caretPointer() { return caretPointer(snapRef.current); },

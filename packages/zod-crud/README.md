@@ -143,8 +143,8 @@ item-selection projection for list/tree/grid UIs.
 `doc.selection.primaryRange` exposes the active range and `doc.selection.caret`
 exposes the collapsed cursor point. `rangeCount`, `anchorPointer`,
 `focusPointer`, `primaryPointer`, and `caretPointer` expose the Pointer
-projections needed by scalar Pointer commands; `selectedPointers` can be passed
-directly to `copy` / `cut` for multi-source payloads.
+projections needed by scalar Pointer commands; `selectedSource` is the
+null/single/multi source projection accepted by `copy` / `cut`.
 String caret offsets are clamped to the current string length when state is
 available, including after document edits that keep the same Pointer alive.
 `doc.commands.select(action)` defaults to the document's configured selection
@@ -256,7 +256,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
-| `SelectionState<T>`, `UseSelectionOptions` from `zod-crud/react` | React selection hook types |
+| `SelectionState<T>`, `SelectionSource`, `UseSelectionOptions` from `zod-crud/react` | React selection hook types |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
 | `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | draft/pending field types |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
@@ -276,9 +276,9 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `computeInverses` | RFC 6902 inverse helper |
 | `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
 | `zod-crud/verbs/copy`, `zod-crud/verbs/cut`, `zod-crud/verbs/duplicate`, `zod-crud/verbs/find`, `zod-crud/verbs/move`, `zod-crud/verbs/paste`, `zod-crud/verbs/redo`, `zod-crud/verbs/replace`, `zod-crud/verbs/select`, `zod-crud/verbs/undo` | direct headless verb subpaths |
-| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionSnap`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
+| `ClipboardEmpty`, `ClipboardItemMap`, `ClipboardItemOptions`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionEdge`, `SelectionRange`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
 | `parseMergePatch`, `applyMergePatch`, `JSON_PATCH_MIME`, `MERGE_PATCH_MIME` | HTTP PATCH / Merge Patch helpers |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `isCollapsed`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `selectionType`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
+| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `isCollapsed`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `selectedSource`, `selectionType`, `SelectionMode`, `SelectionType`, `SelectionState<T>`, `UseSelectionOptions` | selection primitives |
 | `toJSONSchema`, `fromJSONSchema`, `PreFlightErrorCode` | JSON Schema bridge and schema preflight types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 

@@ -243,6 +243,8 @@ interface SelectionRange {
   focus: JSONPoint;
 }
 
+type SelectionSource = Pointer | ReadonlyArray<Pointer>;
+
 interface SelectionState<T> {
   readonly ranges: ReadonlyArray<Pointer>;           // legacy selected pointer projection
   readonly selectedPointers: ReadonlyArray<Pointer>;
@@ -254,6 +256,7 @@ interface SelectionState<T> {
   readonly anchorPointer: Pointer | null;
   readonly focus: JSONPoint | null;
   readonly focusPointer: Pointer | null;
+  readonly selectedSource: SelectionSource | null;
   readonly primaryPointer: Pointer | null;
   readonly caret: JSONPoint | null;
   readonly caretPointer: Pointer | null;
@@ -282,6 +285,8 @@ interface SelectionState<T> {
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `primaryPointer`, and `caretPointer` are Pointer projections for command wiring.
+`selectedSource` is `null | Pointer | Pointer[]` and can be passed to `copy` /
+`cut` after a null check.
 
 Rules:
 

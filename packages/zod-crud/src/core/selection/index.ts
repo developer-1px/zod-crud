@@ -32,6 +32,8 @@ export interface SelectionRange {
   focus: JSONPoint;
 }
 
+export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
+
 export interface SelectionSnap {
   /**
    * Legacy selected-pointer list. Use `selectionRanges` for caret/range shape
@@ -88,6 +90,11 @@ export function anchorPointer(s: SelectionSnap): Pointer | null {
 
 export function focusPointer(s: SelectionSnap): Pointer | null {
   return s.focus === null ? null : pointPath(s.focus);
+}
+
+export function selectedSource(s: SelectionSnap): SelectionSource | null {
+  if (s.selectedPointers.length === 0) return null;
+  return s.selectedPointers.length === 1 ? s.selectedPointers[0]! : [...s.selectedPointers];
 }
 
 export function primaryPointer(s: SelectionSnap): Pointer | null {

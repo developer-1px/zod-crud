@@ -26,12 +26,14 @@ import {
   primaryRange,
   rangeCount,
   reduceSelection,
+  selectedSource,
   selectionType,
   type SelectionAction,
   type JSONPoint,
   type SelectionMode,
   type SelectionRange,
   type SelectionSnap,
+  type SelectionSource,
   type SelectionType,
 } from "./core/selection/index.js";
 import {
@@ -71,6 +73,7 @@ export interface SelectionState<T> extends SelectionSnap {
   readonly primaryRange: SelectionRange | null;
   readonly anchorPointer: Pointer | null;
   readonly focusPointer: Pointer | null;
+  readonly selectedSource: SelectionSource | null;
   readonly primaryPointer: Pointer | null;
   readonly caret: JSONPoint | null;
   readonly caretPointer: Pointer | null;
@@ -176,6 +179,7 @@ export function createJSONDocument<S extends z.ZodType>(
     get primaryRange() { return primaryRange(selectionSnap); },
     get anchorPointer() { return anchorPointer(selectionSnap); },
     get focusPointer() { return focusPointer(selectionSnap); },
+    get selectedSource() { return selectedSource(selectionSnap); },
     get primaryPointer() { return primaryPointer(selectionSnap); },
     get caret() { return caretPoint(selectionSnap); },
     get caretPointer() { return caretPointer(selectionSnap); },

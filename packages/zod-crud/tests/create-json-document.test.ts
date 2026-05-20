@@ -197,6 +197,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
     expect(doc.selection?.anchorPointer).toBe("/items/1");
     expect(doc.selection?.focusPointer).toBe("/items/1");
+    expect(doc.selection?.selectedSource).toEqual(["/items/0", "/items/1"]);
     expect(doc.selection?.primaryPointer).toBe("/items/1");
     expect(doc.selection?.caret).toBe(null);
     expect(doc.selection?.caretPointer).toBe(null);
@@ -232,6 +233,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.rangeCount).toBe(1);
     expect(doc.selection?.anchorPointer).toBe("/items/0/name");
     expect(doc.selection?.focusPointer).toBe("/items/0/name");
+    expect(doc.selection?.selectedSource).toBe("/items/0/name");
     expect(doc.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
     expect(doc.selection?.caretPointer).toBe("/items/0/name");
     expect(doc.selection?.selectedPointers).toEqual(["/items/0/name"]);
@@ -270,6 +272,7 @@ describe("createJSONDocument — headless facade", () => {
 
     const source = doc.selection?.primaryPointer;
     expect(source).toBe("/items/1");
+    expect(doc.selection?.selectedSource).toBe("/items/1");
 
     const copied = source ? doc.commands.copy(source) : { ok: false as const };
 
@@ -286,7 +289,9 @@ describe("createJSONDocument — headless facade", () => {
       selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
     });
 
-    const sources = doc.selection?.selectedPointers ?? [];
+    const sources = doc.selection?.selectedSource;
+    expect(sources).toEqual(["/items/0", "/items/1"]);
+    if (!sources) throw new Error("expected selected source");
     const copied = doc.commands.copy(sources);
 
     expect(copied).toMatchObject({

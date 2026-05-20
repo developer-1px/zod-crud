@@ -16,6 +16,7 @@ import {
   primaryRange,
   rangeCount,
   reduceSelection,
+  selectedSource,
 } from "../src/core/selection/index.js";
 import { commit, emptyHistory } from "../src/core/history.js";
 import { computeInverses } from "../src/core/patch/index.js";
@@ -91,6 +92,7 @@ describe("verbs/select", () => {
     expect(primaryRange(s)).toEqual({ anchor: "/items/0", focus: "/items/0" });
     expect(anchorPointer(s)).toBe("/items/0");
     expect(focusPointer(s)).toBe("/items/0");
+    expect(selectedSource(s)).toBe("/items/0");
     expect(primaryPointer(s)).toBe("/items/0");
     expect(caretPoint(s)).toBe("/items/0");
     expect(caretPointer(s)).toBe("/items/0");
@@ -148,6 +150,7 @@ describe("verbs/select", () => {
     expect(primaryRange(second)).toEqual({ anchor: "/items/1/name", focus: "/items/1/name" });
     expect(anchorPointer(second)).toBe("/items/1/name");
     expect(focusPointer(second)).toBe("/items/1/name");
+    expect(selectedSource(second)).toEqual(["/items/0", "/items/1/name"]);
     expect(primaryPointer(second)).toBe("/items/1/name");
     expect(caretPoint(second)).toBe(null);
     expect(caretPointer(second)).toBe(null);
