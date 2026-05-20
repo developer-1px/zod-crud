@@ -79,6 +79,31 @@ describe("headless command/check/can factories", () => {
     expect(can.moveCursor("next", { points: ["/items/1", "/items/0"] })).toBe(false);
     expect(check.selectScope({ points: ["/items/1"] })).toEqual({ ok: true });
     expect(can.selectScope({ points: ["/items/1"] })).toBe(true);
+
+    const querySelected = commands.selectScope({ query: "$.items[*].name" });
+    expect(querySelected).toMatchObject({ ok: true, points: ["/items/0/name", "/items/1/name"] });
+    expect(selection.selectedPointers).toEqual(["/items/0/name", "/items/1/name"]);
+
+    expect(commands.moveCursor("first", { query: "$.items[*].id" })).toMatchObject({
+      ok: true,
+      pointer: "/items/0/id",
+    });
+    expect(commands.moveCursor("next", { query: "$.items[*].id" })).toMatchObject({
+      ok: true,
+      pointer: "/items/1/id",
+    });
+    expect(check.selectScope({ query: "$.items[*].id" })).toEqual({ ok: true });
+    expect(can.selectScope({ query: "$.items[*].id" })).toBe(true);
+    expect(check.moveCursor("next", { query: "$.items[*].id" })).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+    });
+    expect(can.moveCursor("next", { query: "$.items[*].id" })).toBe(false);
+    expect(check.selectScope({ query: "$.items[" })).toMatchObject({
+      ok: false,
+      code: "syntax_error",
+    });
+    expect(can.selectScope({ query: "$.items[" })).toBe(false);
   });
 
   test("createCommands can be used without a selection ref when callers pass explicit pointers", () => {
