@@ -60,11 +60,25 @@ export type {
   ClipboardWriteOptions,
   CreateClipboardOptions,
 } from "./clipboard.js";
+export { createCommands } from "./commands/buildCommands.js";
+export type {
+  CommandSelectionState,
+  Commands,
+  CreateCommandsOptions,
+  ReplaceCommandResult,
+} from "./commands/buildCommands.js";
+export { createCan } from "./commands/buildCan.js";
+export type {
+  Can,
+  CreateCanOptions,
+} from "./commands/buildCan.js";
+export { createCheck } from "./check.js";
 export type {
   Check,
   CheckErrorCode,
   CheckResult,
   CheckViolation,
+  CreateCheckOptions,
 } from "./check.js";
 export { createRead } from "./read.js";
 export type {

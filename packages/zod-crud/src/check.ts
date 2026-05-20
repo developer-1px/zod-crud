@@ -61,6 +61,8 @@ export interface BuildCheckArgs<S extends z.ZodType> {
   selectionRef?: { current: SelectionSnap };
 }
 
+export type CreateCheckOptions<S extends z.ZodType> = BuildCheckArgs<S>;
+
 type CheckableResult =
   | { ok: true }
   | {
@@ -75,7 +77,7 @@ type CheckableResult =
 const OK: CheckResult = { ok: true };
 
 export function buildCheck<S extends z.ZodType>(
-  args: BuildCheckArgs<S>,
+  args: CreateCheckOptions<S>,
 ): Check<z.output<S>> {
   const { schema, ops, selectionRef } = args;
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
@@ -134,6 +136,8 @@ export function buildCheck<S extends z.ZodType>(
     },
   };
 }
+
+export const createCheck = buildCheck;
 
 function toCheckResult(result: CheckableResult): CheckResult {
   if (result.ok) return OK;

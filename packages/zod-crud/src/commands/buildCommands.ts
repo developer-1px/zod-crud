@@ -7,7 +7,7 @@
 import type * as z from "zod";
 import type { JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
-import { primaryPointer, selectedSource } from "../core/selection/index.js";
+import { EMPTY_SELECTION, primaryPointer, selectedSource } from "../core/selection/index.js";
 import type {
   JSONPoint,
   SelectionAction,
@@ -50,21 +50,23 @@ export interface Commands<T> {
   redo(): boolean;
 }
 
-export interface BuildCommandsArgs<S extends z.ZodType> {
-  schema: S;
-  ops: JSONDocumentOps<z.output<S>>;
-  selectionRef: { current: SelectionHandle };
-  selectionMode?: SelectionMode;
-}
-
-interface SelectionHandle extends SelectionSnap {
+export interface CommandSelectionState extends SelectionSnap {
   selectRanges?(
-    ranges: ReadonlyArray<SelectionRange>,
+    ranges: ReadonlyArray<JSONPoint | SelectionRange>,
     anchor?: JSONPoint | null,
     focus?: JSONPoint | null,
     primaryIndex?: number,
   ): void;
 }
+
+export interface CreateCommandsOptions<S extends z.ZodType> {
+  schema: S;
+  ops: JSONDocumentOps<z.output<S>>;
+  selectionRef?: { current: CommandSelectionState };
+  selectionMode?: SelectionMode;
+}
+
+export type BuildCommandsArgs<S extends z.ZodType> = CreateCommandsOptions<S>;
 
 interface MutationResult<T> {
   ok: boolean;
@@ -72,7 +74,7 @@ interface MutationResult<T> {
 }
 
 export function buildCommands<S extends z.ZodType>(
-  args: BuildCommandsArgs<S>,
+  args: CreateCommandsOptions<S>,
 ): Commands<z.output<S>> {
   const { schema, ops, selectionRef, selectionMode = "single" } = args;
 
@@ -82,17 +84,18 @@ export function buildCommands<S extends z.ZodType>(
     if (r.ok && r.patch) ops.patch(r.patch);
     return r;
   };
+  const selectionState = (): CommandSelectionState => selectionRef?.current ?? EMPTY_SELECTION;
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
-    source ?? selectedSource(selectionRef.current);
+    source ?? selectedSource(selectionState());
   const targetOrSelection = (target?: Pointer): Pointer | null =>
-    target ?? primaryPointer(selectionRef.current);
+    target ?? primaryPointer(selectionState());
   const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
-    source ?? primaryPointer(selectionRef.current);
+    source ?? primaryPointer(selectionState());
 
   return {
     select(action, mode = selectionMode) {
-      const next = selectVerb(selectionRef.current, action, mode, ops.state);
-      selectionRef.current.selectRanges?.(next.selectionRanges, next.anchor, next.focus, next.primaryIndex);
+      const next = selectVerb(selectionState(), action, mode, ops.state);
+      selectionRef?.current.selectRanges?.(next.selectionRanges, next.anchor, next.focus, next.primaryIndex);
       return next;
     },
     find(jsonpath) {
@@ -146,6 +149,8 @@ export function buildCommands<S extends z.ZodType>(
     redo() { return ops.redo(); },
   };
 }
+
+export const createCommands = buildCommands;
 
 function emptyPasteTarget(): PasteError {
   return {

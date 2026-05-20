@@ -403,6 +403,13 @@ Acceptance evidence:
 - React recorder tests in `tests/recorder-hook.test.ts` prove recordings
   preserve transaction metadata and optional selection snapshots.
 
+## 7.1 Command / Guard Subsystem
+
+Standalone lower-level composition uses `createCommands(args)`,
+`createCheck(args)`, and `createCan(args)` for the same selection-aware command
+verbs, dry-run checks, and boolean guards exposed by `createJSONDocument`.
+React re-exports the same factories and does not own a separate command model.
+
 ## 8. Schema Subsystem
 
 Generic editors need to ask what a path can contain. The target schema facade
