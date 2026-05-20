@@ -7,6 +7,7 @@
 import type * as z from "zod";
 import type { JSONDocumentOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
+import { selectedSource } from "../core/selection/index.js";
 import type {
   JSONPoint,
   SelectionAction,
@@ -32,8 +33,8 @@ export interface Commands<T> {
   // RFC 6901 Pointer-based (commands surface 어휘 일관성). JSONPath multi-match 는 commands.find + ops.patch 로 합성.
   replace(path: Pointer, value: unknown): JSONResult;
 
-  cut(source: ClipboardSource): CutOk<T> | CutError;
-  copy(source: ClipboardSource): CopyOk | CopyError;
+  cut(source?: ClipboardSource): CutOk<T> | CutError;
+  copy(source?: ClipboardSource): CopyOk | CopyError;
   paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): PasteOk<T> | PasteError | PasteDuMismatch;
 
   undo(): boolean;
@@ -72,6 +73,8 @@ export function buildCommands<S extends z.ZodType>(
     if (r.ok && r.patch) ops.patch(r.patch);
     return r;
   };
+  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource =>
+    source ?? selectedSource(selectionRef.current) ?? [];
 
   return {
     select(action, mode = selectionMode) {
@@ -95,10 +98,10 @@ export function buildCommands<S extends z.ZodType>(
     },
 
     cut(source) {
-      return run(cut(schema, ops.state, source));
+      return run(cut(schema, ops.state, sourceOrSelection(source)));
     },
     copy(source) {
-      return copy(ops.state, source);
+      return copy(ops.state, sourceOrSelection(source));
     },
     paste(payload, target, mode = "into", options = {}) {
       return run(paste(schema, ops.state, payload, target, mode, options));

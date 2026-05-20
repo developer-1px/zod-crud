@@ -161,11 +161,17 @@ export function useJSONDocument<S extends z.ZodType>(
     () => buildCommands({ schema, ops, selectionRef, selectionMode }),
     [schema, ops, selectionMode],
   );
-  const check = useMemo(() => buildCheck({ schema, ops }), [schema, ops]);
+  const check = useMemo(() => buildCheck({ schema, ops, selectionRef }), [schema, ops]);
   const can = useMemo(() => buildCan({ schema, ops, check }), [schema, ops, check]);
   const [, bumpClipboardVersion] = useReducer((version: number) => version + 1, 0);
   const clipboard = useMemo(
-    () => createClipboardState({ schema, getState: () => ops.state, ops, onChange: bumpClipboardVersion }),
+    () => createClipboardState({
+      schema,
+      getState: () => ops.state,
+      ops,
+      getSelectionSource: () => selectionRef.current.selectedSource,
+      onChange: bumpClipboardVersion,
+    }),
     [schema, ops],
   );
   const read = useMemo(

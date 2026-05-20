@@ -146,7 +146,10 @@ exposes the collapsed cursor point. `rangeCount`, `selectedCount`, and
 per-item selected predicate for list/tree/grid rendering. `anchorPointer`,
 `focusPointer`, `primaryPointer`, and `caretPointer` expose the Pointer
 projections needed by scalar Pointer commands; `selectedSource` is the
-null/single/multi source projection accepted by `copy` / `cut`.
+null/single/multi source projection accepted by `copy` / `cut`. Facade-level
+`commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
+`doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
+`can.cut()` default to the current selection when the source is omitted.
 String caret offsets are clamped to the current string length when state is
 available, including after document edits that keep the same Pointer alive.
 Selection getters and `doc.selection.snapshot()` return value snapshots, so
@@ -159,8 +162,10 @@ Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata. Single-source copy/cut returns the copied fragment; multi-source
 copy/cut returns a JSON array payload, keeps `source` as the primary source,
 and exposes all `sources` through both `doc.clipboard.sources` and
-`doc.clipboard.read()`. Manual `doc.clipboard.write` validates and normalizes
-source metadata when provided. `doc.clipboard.paste` spreads multi-source array
+`doc.clipboard.read()`. `doc.clipboard.copy()` and `doc.clipboard.cut()` use
+the current selection when the source is omitted. Manual
+`doc.clipboard.write` validates and normalizes source metadata when provided.
+`doc.clipboard.paste` spreads multi-source array
 payloads back into array targets by default; pass `{ spread: false }` to keep
 the array payload as one value. DOM/system clipboard integration remains user
 code.

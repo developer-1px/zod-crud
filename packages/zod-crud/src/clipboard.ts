@@ -6,6 +6,7 @@ import type { Pointer } from "./core/pointer/index.js";
 import { normalizePointerSources } from "./core/pointer/sourceSet.js";
 import { schemaAtPointer } from "./core/schema/introspection.js";
 import type { JSONDocumentOps } from "./jsonOps.js";
+import type { SelectionSource } from "./core/selection/index.js";
 import {
   copy,
   toClipboardItems,
@@ -49,8 +50,8 @@ export interface ClipboardState<T> {
   write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
   clear(): void;
 
-  copy(source: ClipboardSource): CopyOk | CopyError;
-  cut(source: ClipboardSource): CutOk<T> | CutError;
+  copy(source?: ClipboardSource): CopyOk | CopyError;
+  cut(source?: ClipboardSource): CutOk<T> | CutError;
   paste(target: Pointer, mode?: PasteMode, options?: PasteOptions): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
@@ -70,6 +71,7 @@ interface CreateClipboardStateArgs<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
   ops: JSONDocumentOps<z.output<S>>;
+  getSelectionSource?: () => SelectionSource | null;
   onChange?: () => void;
 }
 
@@ -82,7 +84,7 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
 export function createClipboardState<S extends z.ZodType>(
   args: CreateClipboardStateArgs<S>,
 ): ClipboardState<z.output<S>> {
-  const { schema, getState, ops, onChange } = args;
+  const { schema, getState, ops, getSelectionSource, onChange } = args;
   let buffer: ClipboardBuffer | null = null;
 
   const setBuffer = (next: ClipboardBuffer | null): void => {
@@ -97,6 +99,8 @@ export function createClipboardState<S extends z.ZodType>(
   });
   const bufferSchema = (source: Pointer | null): z.ZodType =>
     source === null ? schema : (schemaAtPointer(schema, source) ?? schema);
+  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource =>
+    source ?? getSelectionSource?.() ?? [];
   const writeSources = (options: ClipboardWriteOptions): ClipboardWriteSourcesResult => {
     const candidates: Pointer[] = [];
     if (options.source !== undefined && options.source !== null) candidates.push(options.source);
@@ -155,7 +159,7 @@ export function createClipboardState<S extends z.ZodType>(
     },
 
     copy(source) {
-      const result = copy(getState(), source);
+      const result = copy(getState(), sourceOrSelection(source));
       if (result.ok) {
         setBuffer({
           payload: result.payload,
@@ -168,7 +172,7 @@ export function createClipboardState<S extends z.ZodType>(
     },
 
     cut(source) {
-      const result = cut(schema, getState(), source);
+      const result = cut(schema, getState(), sourceOrSelection(source));
       if (!result.ok) return result;
       const patchResult = ops.patch(result.patch);
       if (!patchResult.ok) {

@@ -157,6 +157,42 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.primaryIndex).toBe(0);
     expect(hook.current.selection?.primaryPointer).toBe("/items/0");
   });
+
+  test("commands and clipboard copy default to current selection through the React facade", () => {
+    const hook = renderHook(() => useJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    }));
+
+    act(() => {
+      hook.current.commands.select({ type: "addRange", pointer: "/items/0" });
+      hook.current.commands.select({ type: "addRange", pointer: "/items/1" });
+    });
+
+    const copied = hook.current.commands.copy();
+    expect(copied).toMatchObject({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+
+    act(() => {
+      hook.current.clipboard.copy();
+    });
+
+    expect(hook.current.clipboard.read()).toEqual({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+  });
 });
 
 function renderHook<T>(hook: () => T): { readonly current: T } {

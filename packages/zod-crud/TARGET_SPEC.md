@@ -103,8 +103,8 @@ interface ClipboardState<T> {
   write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
   clear(): void;
 
-  copy(source: ClipboardSource): CopyOk | CopyError;
-  cut(source: ClipboardSource): CutOk<T> | CutError;
+  copy(source?: ClipboardSource): CopyOk | CopyError;
+  cut(source?: ClipboardSource): CutOk<T> | CutError;
   paste(target: Pointer, mode?: PasteMode, options?: PasteOptions): ClipboardPasteResult<T>;
   toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
@@ -114,8 +114,8 @@ Semantics:
 
 - The buffer stores a JSON fragment and optional source/source-list metadata. `read()` returns both.
 - `write(payload, options)` validates and normalizes source metadata when provided.
-- `copy(source)` reads one `Pointer` or a `Pointer[]` from document state and writes buffer.
-- `cut(source)` writes buffer and commits one remove patch atomically; multi-source cut keeps first occurrences, prunes covered descendants, and sorts remove ops to avoid array index shift.
+- `copy(source?)` reads one `Pointer` or a `Pointer[]` from document state and writes buffer. If source is omitted, it uses the current selection source.
+- `cut(source?)` writes buffer and commits one remove patch atomically; multi-source cut keeps first occurrences, prunes covered descendants, and sorts remove ops to avoid array index shift. If source is omitted, it uses the current selection source.
 - `paste(target, mode, options)` reads buffer and commits the paste patch. Multi-source array payloads spread into array targets by default; pass `{ spread: false }` to keep the array payload as one value.
 - Failed paste does not clear or mutate the buffer.
 - Failed cut does not write buffer and does not mutate document state.
@@ -156,8 +156,8 @@ interface Check<T> {
   move(from: Pointer, to: Pointer): CheckResult;
   duplicate(source: Pointer, opts?: DuplicateOpts): CheckResult;
   replace(path: Pointer, value: unknown): CheckResult;
-  cut(source: ClipboardSource): CheckResult;
-  copy(source: ClipboardSource): CheckResult;
+  cut(source?: ClipboardSource): CheckResult;
+  copy(source?: ClipboardSource): CheckResult;
   paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
 
@@ -289,8 +289,10 @@ interface SelectionState<T> {
 selection remains valid via `JSONPoint = Pointer`; offset/edge points model text
 carets and item-boundary carets. `anchorPointer`, `focusPointer`,
 `primaryPointer`, and `caretPointer` are Pointer projections for command wiring.
-`selectedSource` is `null | Pointer | Pointer[]` and can be passed to `copy` /
-`cut` after a null check.
+`selectedSource` is `null | Pointer | Pointer[]`. Document-facade
+`commands.copy()` / `commands.cut()`, `doc.clipboard.copy()` /
+`doc.clipboard.cut()`, `check.copy()` / `check.cut()`, and `can.copy()` /
+`can.cut()` use it when their source argument is omitted.
 `selectedCount` and `hasSelection` are item-selection projection helpers for
 rendering and command guards. `isSelected(pointer)` is the per-item selected
 predicate; `containsNode(pointer)` remains an exact selected-pointer alias.

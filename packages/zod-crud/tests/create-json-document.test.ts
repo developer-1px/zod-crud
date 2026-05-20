@@ -367,6 +367,69 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.undoDepth).toBe(1);
   });
 
+  test("commands copy and cut default to the current selection source", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
+    });
+
+    const copied = doc.commands.copy();
+    expect(copied).toMatchObject({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+
+    const cut = doc.commands.cut();
+    expect(cut).toMatchObject({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+    expect(doc.value.items).toEqual([]);
+  });
+
+  test("doc.clipboard copy and cut default to the current selection source", () => {
+    const copyDoc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
+    });
+
+    const copied = copyDoc.clipboard.copy();
+    expect(copied.ok).toBe(true);
+    expect(copyDoc.clipboard.read()).toEqual({
+      ok: true,
+      payload: [
+        { id: "a", name: "A" },
+        { id: "b", name: "B" },
+      ],
+      source: "/items/0",
+      sources: ["/items/0", "/items/1"],
+    });
+
+    const cutDoc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+    const cut = cutDoc.clipboard.cut();
+
+    expect(cut.ok).toBe(true);
+    expect(cutDoc.value.items).toEqual([{ id: "b", name: "B" }]);
+    expect(cutDoc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+  });
+
   test("multi-source cut recovers selection without duplicate ranges", () => {
     const doc = createJSONDocument(Schema, {
       items: [

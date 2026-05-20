@@ -78,6 +78,24 @@ describe("doc.check — explainable dry-run guard", () => {
     expect(doc.history.redoDepth).toBe(0);
   });
 
+  test("copy and cut checks default to current selection without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    expect(doc.check.copy()).toEqual({ ok: true });
+    expect(doc.can.copy()).toBe(true);
+    expect(doc.check.cut()).toEqual({ ok: true });
+    expect(doc.can.cut()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(doc.selection?.selectedSource).toBe("/items/0");
+
+    doc.selection?.empty();
+
+    expect(doc.check.copy()).toMatchObject({ ok: false, code: "empty_selection" });
+    expect(doc.can.copy()).toBe(false);
+  });
+
   test("reports discriminated union paste mismatch before mutation", () => {
     const BlockSchema = z.object({
       blocks: z.array(z.discriminatedUnion("kind", [

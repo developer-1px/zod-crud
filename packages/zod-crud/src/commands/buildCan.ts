@@ -16,9 +16,9 @@ export interface Can<T> {
   move(from: Pointer, to: Pointer): boolean;
   duplicate(source: Pointer, opts?: DuplicateOpts): boolean;
   replace(path: Pointer, value: unknown): boolean;
-  cut(source: ClipboardSource): boolean;
+  cut(source?: ClipboardSource): boolean;
   paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): boolean;
-  copy(source: ClipboardSource): boolean;
+  copy(source?: ClipboardSource): boolean;
 
   readonly undo: boolean;
   readonly redo: boolean;

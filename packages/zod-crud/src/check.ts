@@ -9,6 +9,7 @@ import { cut } from "./verbs/cut.js";
 import { duplicate, type DuplicateOpts } from "./verbs/duplicate.js";
 import { move as moveVerb } from "./verbs/move.js";
 import { paste, type PasteMode, type PasteOptions } from "./verbs/paste.js";
+import { selectedSource, type SelectionSnap } from "./core/selection/index.js";
 
 export type CheckErrorCode =
   | ErrorCode
@@ -40,8 +41,8 @@ export interface Check<T> {
   move(from: Pointer, to: Pointer): CheckResult;
   duplicate(source: Pointer, opts?: DuplicateOpts): CheckResult;
   replace(path: Pointer, value: unknown): CheckResult;
-  cut(source: ClipboardSource): CheckResult;
-  copy(source: ClipboardSource): CheckResult;
+  cut(source?: ClipboardSource): CheckResult;
+  copy(source?: ClipboardSource): CheckResult;
   paste(payload: unknown, target: Pointer, mode?: PasteMode, options?: PasteOptions): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
 
@@ -52,6 +53,7 @@ export interface Check<T> {
 export interface BuildCheckArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONDocumentOps<z.output<S>>;
+  selectionRef?: { current: SelectionSnap };
 }
 
 type CheckableResult =
@@ -70,7 +72,9 @@ const OK: CheckResult = { ok: true };
 export function buildCheck<S extends z.ZodType>(
   args: BuildCheckArgs<S>,
 ): Check<z.output<S>> {
-  const { schema, ops } = args;
+  const { schema, ops, selectionRef } = args;
+  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
+    source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
 
   return {
     move(from, to) {
@@ -83,10 +87,12 @@ export function buildCheck<S extends z.ZodType>(
       return toCheckResult(preFlight(schema, ops.state, [{ op: "replace", path, value }]));
     },
     cut(source) {
-      return toCheckResult(cut(schema, ops.state, source));
+      const resolved = sourceOrSelection(source);
+      return resolved === null ? emptySelection("cut source selection is empty") : toCheckResult(cut(schema, ops.state, resolved));
     },
     copy(source) {
-      return toCheckResult(copy(ops.state, source));
+      const resolved = sourceOrSelection(source);
+      return resolved === null ? emptySelection("copy source selection is empty") : toCheckResult(copy(ops.state, resolved));
     },
     paste(payload, target, mode = "into", options = {}) {
       return toCheckResult(paste(schema, ops.state, payload, target, mode, options));
@@ -123,5 +129,13 @@ function emptyStack(kind: "undo" | "redo"): CheckResult {
     ok: false,
     code: "empty_stack",
     reason: `${kind} stack is empty`,
+  };
+}
+
+function emptySelection(reason: string): CheckResult {
+  return {
+    ok: false,
+    code: "empty_selection",
+    reason,
   };
 }
