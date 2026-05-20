@@ -47,14 +47,19 @@ function Sheet() {
 }
 ```
 
-`doc` 의 6 표면:
+`doc` 의 중심 표면:
 
 | 필드 | 뜻 |
 |------|-----|
 | `value` | 현재 JSON 문서 값 (schema-valid) |
+| `lastPatch` | 마지막으로 적용된 문서 patch |
 | `ops` | RFC 6902 기반 저수준 편집 작업 (`add`/`remove`/`replace`/`move`/`copy`/`patch`) |
+| `commit` | patch와 최종 selection을 한 undo entry로 커밋 |
 | `commands` | 10 verbs 의 제품 수준 명령 namespace |
 | `can` | 명령 실행 가능 여부 guard namespace |
+| `check` | 실패 코드가 있는 dry-run guard |
+| `schema` | serializable schema introspection |
+| `clipboard` | headless JSON fragment buffer |
 | `history` | undo/redo 가능 여부 + `mergeLast()` + `transaction(fn)` |
 | `selection` | 선택된 JSON Pointer 위치들 (옵션) |
 

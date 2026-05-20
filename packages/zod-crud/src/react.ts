@@ -12,6 +12,8 @@ export { useDraft, useField } from "./hooks/useDraft.js";
 export { createClipboard } from "./clipboard.js";
 export type {
   JSONDocument,
+  JSONDocumentCommitOptions,
+  JSONDocumentCommitSelection,
   JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./hooks/useJSONDocument.js";

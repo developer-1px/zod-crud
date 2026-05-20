@@ -61,11 +61,13 @@ document surface:
 | Field | Meaning |
 | --- | --- |
 | `doc.value` | current schema-valid JSON value |
+| `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
 | `doc.commands` | 10 verb command namespace; `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
 | `doc.can` | command, JSONPath find, and selection guard namespace |
 | `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
 | `doc.schema` | serializable schema introspection; `at`/`kind`/`accepts`/`describe` |
+| `doc.commit` | apply an RFC 6902 patch plus optional final `SelectionAction | SelectionSnap` as one history entry |
 | `doc.at` / `doc.exists` | pointer read helpers |
 | `doc.query` / `doc.entries` | JSONPath-to-pointer query and state-based child entries |
 | `doc.history` | `canUndo`, `canRedo`, depths, `mergeLast(options?)`, `transaction(options?, fn)` |
@@ -77,6 +79,9 @@ be expressed through `useJSONDocument`, it should also be expressible through
 `createJSONDocument` in core/headless code.
 Use `createSelection(ops)` for standalone headless selection/caret state;
 `useSelection(ops)` is the React facade over the same state.
+Use `doc.commit(patch, { selection, label, origin, mergeKey })` when an editor
+engine already knows the final caret/range after a patch. Empty patch +
+selection updates selection without document patches or undo entries.
 Use `moveSelectionCursor`, `extendSelectionCursor`, and
 `resolveSelectionCursor` for pure headless source-order cursor movement over a
 `SelectionSnap` plus current JSON state, pass `query` for RFC 9535 JSONPath
@@ -148,6 +153,14 @@ doc.commands.undo();
 const doc = createJSONDocument(Schema, initialState, { history: 100 });
 
 doc.ops.add("/items/-", item);
+doc.commit(
+  [{ op: "replace", path: "/blocks", value: nextBlocks }],
+  {
+    label: "insertText",
+    origin: "editor",
+    selection: { type: "collapse", point: { path: "/blocks/0", offset: 2 } },
+  },
+);
 doc.history.transaction(() => {
   doc.ops.replace("/title", "final");
   doc.ops.add("/logs/-", "renamed");
@@ -246,8 +259,10 @@ const accepts = doc.schema.accepts("/items", item, "insert");
 
 ### Burst edits
 
-Use local UI preview for drag/IME. For synchronous multi-step document edits,
-use `doc.history.transaction({ label, origin, mergeKey }, fn)`. For
+Use local UI preview for drag/IME. Use
+`doc.commit(patch, { selection, label, origin, mergeKey })` when a patch and
+final model selection should be one undo entry. For synchronous multi-step
+document edits, use `doc.history.transaction({ label, origin, mergeKey }, fn)`. For
 already-committed bursts, use `doc.history.mergeLast({ mergeKey })`. History
 metadata is serializable and recorder steps preserve it when present.
 Use `createRecorder(doc.ops)` for headless recording; `useRecorder(doc.ops)`

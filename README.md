@@ -61,19 +61,26 @@ const Schema = z.object({ title: z.string(), tasks: z.array(z.string()) });
 const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
 
 doc.ops.replace("/title", "final");
+doc.commit(
+  [{ op: "replace", path: "/tasks", value: ["ship"] }],
+  { label: "replaceTasks", origin: "editor", selection: { type: "collapse", pointer: "/tasks/0" } },
+);
 doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` expose the same
-`value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface; React
-only adds render lifecycle. Selection uses headless `JSONPoint` coordinates, so
-item selection and text carets share one JSON editing model. Clipboard is a
-headless JSON fragment buffer; system clipboard calls remain user code. `check`
-is the explainable dry-run guard behind `can`, including JSONPath find syntax
-checks, JSONPath multi-match replace checks, and selection cursor/scope guards
-(`moveCursor`, `extendCursor`, `selectScope`) for keyboard and select-visible
-UI. Selection cursor/scope options can use `query` to traverse or select
-JSONPath find results.
+`value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history`
+surface, plus `commit` and read/query helpers; React only adds render lifecycle.
+`commit(patch, { selection, label, origin, mergeKey })` applies an RFC 6902
+patch and records the final model selection in the same undo entry. `lastPatch`
+is a snapshot of the last applied document patch and is `[]` after selection-only
+commits. Selection uses headless `JSONPoint` coordinates, so item selection and
+text carets share one JSON editing model. Clipboard is a headless JSON fragment
+buffer; system clipboard calls remain user code. `check` is the explainable
+dry-run guard behind `can`, including JSONPath find syntax checks, JSONPath
+multi-match replace checks, and selection cursor/scope guards (`moveCursor`,
+`extendCursor`, `selectScope`) for keyboard and select-visible UI. Selection
+cursor/scope options can use `query` to traverse or select JSONPath find results.
 `at`/`exists`/`query`/`entries` provide pointer and JSONPath reads without
 React. `schema` exposes serializable path introspection without making Zod
 internals the public API.
@@ -95,7 +102,7 @@ else if (v !== '' && cells[k] !== v) ops.replace(`/cells/${k}`, v);
 
 ### Drag / keystroke burst — undo entry 합치기
 
-burst 입력으로 history 가 폭증하면 `doc.history.mergeLast({ mergeKey })` 로 직전 두 entry 를 합치거나, drag/IME 같이 transient 한 입력은 local state 로 미리보기 후 drop/commit 시점에 한 번만 `ops` 호출합니다. 의도가 있는 batch 는 `doc.history.transaction({ label, origin, mergeKey }, fn)` 로 recorder metadata 까지 남깁니다. 시나리오별 예제는 `docs/site/operations.md` 참조.
+burst 입력으로 history 가 폭증하면 `doc.history.mergeLast({ mergeKey })` 로 직전 두 entry 를 합치거나, drag/IME 같이 transient 한 입력은 local state 로 미리보기 후 drop/commit 시점에 한 번만 `doc.commit` 또는 `ops` 를 호출합니다. patch 와 최종 selection 이 함께 정해지는 editor command 는 `doc.commit(patch, { selection, label, origin })` 으로 한 undo entry 에 묶습니다. 의도가 있는 batch 는 `doc.history.transaction({ label, origin, mergeKey }, fn)` 로 recorder metadata 까지 남깁니다. 시나리오별 예제는 `docs/site/operations.md` 참조.
 
 ### Pure core (no React)
 

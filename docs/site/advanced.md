@@ -17,14 +17,14 @@ const result = applyPatch(Schema, state, operations);
 ## React 없는 같은 facade
 
 React 밖에서도 문서 단위 API는 `createJSONDocument`를 씁니다. 반환 표면은
-`useJSONDocument`와 같은 `value`, `ops`, `commands`, `can`, `history`, `selection` 묶음입니다.
+`useJSONDocument`와 같은 `value`, `lastPatch`, `ops`, `commands`, `can`, `history`, `selection`, `commit` 묶음입니다.
 
-::source{path="packages/zod-crud/src/createJSONDocument.ts" title="headless document surface" lines="65-86"}
+::source{path="packages/zod-crud/src/createJSONDocument.ts" title="headless document surface" lines="65-89"}
 
 구현은 React state 대신 closure state를 쓰지만, commit은 같은 schema gate, JSON Patch, selection tracking,
-history reducer를 통과합니다.
+history reducer를 통과합니다. `doc.commit()`은 patch와 최종 `SelectionAction` / `SelectionSnap`을 한 undo entry로 묶습니다.
 
-::source{path="packages/zod-crud/src/createJSONDocument.ts" title="createJSONDocument" lines="97-117"}
+::source{path="packages/zod-crud/src/createJSONDocument.ts" title="createJSONDocument" lines="145-185"}
 
 ## JSON Pointer
 
@@ -108,9 +108,14 @@ zod-crud는 변경을 먼저 계산한 뒤, schema를 통과할 때만 commit합
 ├─ createJSONDocument
 └─ useJSONDocument
    ├─ doc.value
+   ├─ doc.lastPatch
    ├─ doc.ops
+   ├─ doc.commit
    ├─ doc.commands
    ├─ doc.can
+   ├─ doc.check
+   ├─ doc.schema
+   ├─ doc.clipboard
    ├─ doc.history
    └─ doc.selection   ← W3C Selection. 캐럿 = collapsed
 

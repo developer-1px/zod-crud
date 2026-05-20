@@ -35,8 +35,11 @@ const doc = useJSONDocument(Todo, {
 | 필드 | 지금 단계에서의 의미 |
 |------|----------------------|
 | `doc.value` | 현재 문서 |
+| `doc.lastPatch` | 마지막으로 적용된 문서 patch |
 | `doc.ops` | JSON Pointer와 JSON Patch에 가까운 저수준 작업 |
+| `doc.commit` | patch와 최종 selection을 한 undo entry로 커밋 |
 | `doc.commands` | 편집기 기능으로 쓰기 좋은 명령 묶음 |
+| `doc.can` / `doc.check` | 실행 가능 여부와 실패 이유 |
 | `doc.history` | undo/redo 가능 여부 |
 
 ## 3. 화면에 값을 보여줍니다
@@ -100,4 +103,4 @@ const doc = useJSONDocument(Todo, initial, {
 
 ## 다음에 읽을 것
 
-[useJSONDocument](/docs/concepts)에서 `doc.value`, `doc.ops`, `doc.commands`, `doc.can`, `doc.history`, `doc.selection`을 하나씩 설명합니다.
+[useJSONDocument](/docs/concepts)에서 `doc.value`, `doc.lastPatch`, `doc.ops`, `doc.commit`, `doc.commands`, `doc.can`, `doc.check`, `doc.history`, `doc.selection`을 하나씩 설명합니다.

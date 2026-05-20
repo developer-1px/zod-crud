@@ -31,6 +31,8 @@ export type { HistoryStack } from "./core/history.js";
 export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONDocument,
+  JSONDocumentCommitOptions,
+  JSONDocumentCommitSelection,
   JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./createJSONDocument.js";

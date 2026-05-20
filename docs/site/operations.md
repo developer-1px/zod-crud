@@ -1,6 +1,7 @@
 # Editor State
 
 `doc` 는 문서 값, 편집, selection, 캐럿, history 를 함께 들고 있는 객체입니다. `doc.ops` 는 JSON Patch 저수준 표면, `doc.commands` 는 제품 수준 명령 표면.
+마지막으로 적용된 문서 patch 는 `doc.lastPatch` 로 읽습니다.
 
 ## 문서 값
 
@@ -21,6 +22,7 @@ doc.ops.replace("/title", "New title");
 doc.ops.add("/items/-", item);
 doc.ops.remove("/items/0");
 doc.ops.move("/items/2", "/items/0");
+doc.lastPatch;
 ```
 
 | 작업 | 언제 쓰나요? |
@@ -135,6 +137,21 @@ doc.commands.redo();
 ```
 
 `doc.ops.undo()`와 `doc.ops.redo()`도 같은 history stack을 사용합니다. `doc.history`는 상태와 `mergeLast()`, `transaction(fn)`을 제공하는 표면입니다.
+
+patch와 최종 selection을 함께 아는 편집 엔진은 `doc.commit()`으로 한 history entry를 만듭니다.
+
+```ts
+doc.commit(
+  [{ op: "replace", path: "/blocks", value: nextBlocks }],
+  {
+    label: "insertText",
+    origin: "editor",
+    selection: { type: "collapse", point: { path: "/blocks/0", offset: 2 } },
+  },
+);
+```
+
+selection-only commit처럼 빈 patch를 커밋하면 `doc.lastPatch`는 `[]`입니다.
 
 ```ts
 doc.history.transaction(() => {

@@ -90,11 +90,12 @@ export function App() {
 }
 ```
 
-`useJSONDocument` returns a single facade with nine surfaces:
+`useJSONDocument` returns a single facade with document fields and helpers:
 
 | Surface | Purpose |
 | --- | --- |
 | `doc.value` | current schema-valid state (`T`) |
+| `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
 | `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
 | `doc.commands` | 10 edit verbs (select/find/move/duplicate/replace/cut/copy/paste/undo/redo) |
 | `doc.can` | mutation, JSONPath find, and selection guard predicates + `undo`/`redo` flags |
@@ -103,13 +104,16 @@ export function App() {
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
 | `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`/`toItems`) |
 | `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast(options?)`, `transaction(options?, fn)` |
+| `doc.commit` | document-level patch commit with optional final `selection` and history metadata |
 
 The facade also exposes read/query helpers: `doc.at(path)`,
 `doc.exists(path)`, `doc.query(jsonpath)`, and `doc.entries(path)`.
 
 Selection and history are first-class — they are not parallel hooks you wire
-up yourself. `commands.*` mutate through the history-aware path; `ops.*` is
-the low-level RFC 6902 escape hatch for fire-and-forget patches.
+up yourself. `commands.*` mutate through the history-aware path; `doc.commit`
+is the editor-engine path when a patch and final model selection must land in
+one undo entry; `ops.*` is the low-level RFC 6902 escape hatch for
+fire-and-forget patches.
 
 ## Headless — `createJSONDocument`
 
@@ -125,16 +129,21 @@ const Schema = z.object({
 const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
 
 doc.ops.add("/tasks/-", { id: "a", done: false });
+doc.commit(
+  [{ op: "replace", path: "/title", value: "final" }],
+  { label: "rename", origin: "editor", selection: { type: "collapse", pointer: "/title" } },
+);
 doc.history.transaction(() => {
-  doc.ops.replace("/title", "final");
   doc.ops.add("/tasks/-", { id: "b", done: true });
+  doc.ops.add("/tasks/-", { id: "c", done: false });
 });
 doc.commands.undo();
 ```
 
 `createJSONDocument` and `useJSONDocument` intentionally share the same
-`value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface. React
-owns render lifecycle only; core owns JSON editing.
+`value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history`
+surface, plus `commit` and read/query helpers. React owns render lifecycle
+only; core owns JSON editing.
 For lower-level composition, `createCommands(args)`, `createCheck(args)`, and
 `createCan(args)` expose the same selection-aware command, dry-run, and boolean
 guard facades used by the document facade.
@@ -212,6 +221,14 @@ selection actions and automatic op tracking.
 `doc.commands.extendCursor(direction, options?)` default to the document's
 configured selection mode, so headless and React facades preserve the same
 multi-select behavior.
+`doc.commit(patch, { selection, label, origin, mergeKey })` applies an RFC 6902
+patch, overrides mutation auto-selection with the provided final `SelectionAction`
+or `SelectionSnap`, and records data + final selection in one history entry.
+When `patch` is empty, `commit` may update selection but does not create a
+document patch or undo entry.
+`doc.lastPatch` exposes the last applied normalized document patch as a value
+snapshot. It updates for commands, ops, load/reset, undo, and redo, and clears
+to `[]` after empty patch commits such as selection-only edits.
 
 Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
 metadata. Single-source copy/cut returns the copied fragment; multi-source
@@ -245,8 +262,10 @@ and support RFC 9535 function extensions (`length`/`count`/`match`/`search`/`val
 The vendored RFC 9535 CTS gates full 703/703 conformance.
 
 History metadata is serializable. Use
+`doc.commit(patch, { selection, label, origin, mergeKey })` when an editor
+command already knows the final caret/range after a patch. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user
-intent in undo entries and recorder steps.
+intent for synchronous multi-op batches.
 Use `createRecorder(doc.ops)` for headless recording and
 `createDebugLog(doc.ops, doc.selection)` for headless diagnostic timelines;
 `useRecorder` and `useDebugLog` are React facades over the same sidecars.
@@ -335,16 +354,16 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | --- | --- |
 | `createJSON(schema, initial, options?)` | headless low-level JSON state owner with the same `JSONOps<T>` surface as `useJSON` |
 | `JSONState<T>`, `HeadlessJSONState<T>`, `CreateJSONOptions`, `JSONChangeListener`, `JSONOps<T>`, `UseJSONOptions` | low-level JSON state and ops types |
-| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface and read/query helpers as `useJSONDocument` |
+| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
 | `createCommands(args)`, `createCheck(args)`, `createCan(args)` | standalone headless command, dry-run, and boolean guard facades over `JSONDocumentOps` plus optional selection state |
 | `Commands<T>`, `Can<T>`, `CommandSelectionState`, `CreateCommandsOptions<S>`, `CreateCheckOptions<S>`, `CreateCanOptions<S>`, `ReplaceCommandResult` | standalone command/check/can composition types |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
+| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
 | `createJSON(schema, initial, options?)` from `zod-crud/react` | same headless low-level JSON state owner re-exported from the React entrypoint |
 | `createCommands(args)`, `createCheck(args)`, `createCan(args)` from `zod-crud/react` | same headless command/check/can factories re-exported from the React entrypoint |
 | `createClipboard(args)` from `zod-crud/react` | same headless clipboard factory re-exported from the React entrypoint; no React clipboard hook |
-| `JSONDocument<T>`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |

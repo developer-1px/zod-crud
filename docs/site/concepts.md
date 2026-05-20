@@ -13,11 +13,17 @@ const doc = useJSONDocument(Schema, initial);
 | 필드 | 설명 |
 |------|------|
 | `doc.value` | 현재 문서 값 |
+| `doc.lastPatch` | 마지막으로 적용된 문서 patch snapshot |
 | `doc.ops` | RFC 6902 6개 operation에 가까운 저수준 작업 API |
+| `doc.commit` | patch와 최종 selection을 한 history entry로 커밋 |
 | `doc.commands` | select, find, move, duplicate, replace, cut, copy, paste, undo, redo 명령 |
 | `doc.can` | 명령 실행 가능 여부를 계산하는 guard |
+| `doc.check` | 실패 코드와 이유를 포함한 dry-run guard |
+| `doc.schema` | serializable schema introspection |
+| `doc.clipboard` | headless JSON clipboard buffer |
 | `doc.history` | undo/redo 가능 여부, depth, history 병합 API |
 | `doc.selection` | 선택 상태. 옵션을 켰을 때 사용 |
+| `doc.at` / `doc.query` | Pointer/JSONPath read helpers |
 
 ## `doc.value`
 
@@ -40,6 +46,26 @@ doc.ops.remove("/tasks/0");
 ```
 
 `"/title"`, `"/tasks/0"` 은 문서 안의 위치를 가리키는 JSON Pointer 입니다.
+
+patch와 최종 caret/range가 같은 사용자 편집이면 `doc.commit`을 씁니다.
+
+```ts
+doc.commit(
+  [{ op: "replace", path: "/blocks", value: nextBlocks }],
+  {
+    label: "insertText",
+    origin: "editor",
+    selection: {
+      type: "setBaseAndExtent",
+      anchor: { path: "/blocks/0", offset: 2 },
+      focus: { path: "/blocks/0", offset: 2 },
+    },
+  },
+);
+```
+
+빈 patch로 selection만 바꾸면 문서 patch와 undo entry는 만들지 않습니다.
+`doc.lastPatch`도 `[]`가 됩니다.
 
 ## `doc.commands`와 `doc.can`
 

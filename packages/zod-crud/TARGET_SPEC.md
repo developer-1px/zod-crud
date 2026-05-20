@@ -58,6 +58,7 @@ Target `JSONDocument<T>`:
 ```ts
 interface JSONDocument<T> {
   readonly value: T;
+  readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
   readonly ops: JSONDocumentOps<T>;
   readonly commands: Commands<T>;
   readonly can: Can<T>;
@@ -67,6 +68,7 @@ interface JSONDocument<T> {
   readonly history: JSONDocumentHistory;
   readonly schema: SchemaState<T>;
 
+  commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
@@ -485,6 +487,10 @@ interface JSONDocumentHistory {
   transaction(fn: () => void): void;
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
+
+interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
+  selection?: SelectionAction | SelectionSnap;
+}
 ```
 
 Standalone lower-level composition uses `emptyHistory`, `historyCommit`,
@@ -497,6 +503,11 @@ Rules:
 - Time-based coalescing remains app/sidecar policy.
 - Core may store `mergeKey`, but must not own timers.
 - Recording sidecars preserve history metadata when present.
+- `doc.commit(patch, { selection, label, origin, mergeKey })` records patch
+  and final selection in one history entry. Empty patch + selection is
+  selection-only and does not create an undo entry.
+- `doc.lastPatch` exposes the last applied normalized document patch as a
+  serializable value snapshot and clears to `[]` after selection-only edits.
 - Recording can be produced headlessly with `createRecorder(ops)`; React
   `useRecorder` is a facade over it.
 - Diagnostic timelines can be produced headlessly with

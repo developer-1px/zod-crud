@@ -42,11 +42,11 @@ surgical patch 의 의의를 죽입니다. undo 가 "dict 전체 교체" 로 되
 
 ### 거부 이유
 
-`transaction`은 4기둥 어디에도 귀속되지 않습니다. 그래서 `commands.transaction()` 같은 verb 로 두지 않습니다. 묶음 정책은 **history 차원** 이므로 `doc.history.transaction(fn)` 으로 둡니다.
+`transaction`은 4기둥 어디에도 귀속되지 않습니다. 그래서 `commands.transaction()` 같은 verb 로 두지 않습니다. 묶음 정책은 **history 차원** 이므로 `doc.history.transaction(fn)` 으로 둡니다. patch와 최종 selection을 함께 커밋하는 경우는 command verb가 아니라 document facade의 `doc.commit(patch, { selection, label, origin })` 입니다.
 
 ### Canonical 대안 A — local React state preview (권장)
 
-drag mousemove / IME composition 같이 transient 한 입력은 local React state 로 미리보기 후 drop/commit 시점에 한 번만 `ops` 호출합니다. 표준 React 패턴입니다.
+drag mousemove / IME composition 같이 transient 한 입력은 local React state 로 미리보기 후 drop/commit 시점에 한 번만 `doc.commit` 또는 `ops` 를 호출합니다. 표준 React 패턴입니다.
 
 ```tsx
 const [liveWidth, setLiveWidth] = useState<number | null>(null);
@@ -84,7 +84,22 @@ doc.history.transaction(() => {
 });
 ```
 
-### Canonical 대안 D — sidecar (필요 시)
+### Canonical 대안 D — `doc.commit(patch, { selection })`
+
+편집 엔진이 patch와 최종 caret/range를 같이 계산한 경우에 씁니다.
+
+```ts
+doc.commit(
+  [{ op: 'replace', path: '/blocks', value: nextBlocks }],
+  {
+    label: 'insertText',
+    origin: 'editor',
+    selection: { type: 'collapse', point: { path: '/blocks/0', offset: 2 } },
+  },
+);
+```
+
+### Canonical 대안 E — sidecar (필요 시)
 
 시간/path 휴리스틱이 도메인별로 다른 자동 coalesce 가 필요하면 sidecar 로 만듭니다.
 

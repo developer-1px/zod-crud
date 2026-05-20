@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { createClipboard, createJSONDocument, createSelection } from "../src/index.js";
+import type { JSONPatchOperation } from "../src/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -14,6 +15,21 @@ const initial: z.output<typeof Schema> = {
     { id: "b", name: "B" },
   ],
   meta: { foo: "bar" },
+};
+
+const EditorSchema = z.object({
+  doc: z.object({
+    blocks: z.array(z.object({ id: z.string(), text: z.string() })),
+  }),
+});
+
+const editorInitial: z.output<typeof EditorSchema> = {
+  doc: {
+    blocks: [
+      { id: "a", text: "Alpha" },
+      { id: "b", text: "Beta" },
+    ],
+  },
 };
 
 describe("createJSONDocument — headless facade", () => {
@@ -118,6 +134,140 @@ describe("createJSONDocument — headless facade", () => {
 
     expect(doc.commands.undo()).toBe(true);
     expect(doc.value).toEqual(initial);
+  });
+
+  test("commit applies patch and final selection as one history entry", () => {
+    const doc = createJSONDocument(EditorSchema, editorInitial, {
+      history: 10,
+      selection: {
+        mode: "extended",
+        initial: [
+          { path: "/doc/blocks/0", offset: 1 },
+          { path: "/doc/blocks/0", offset: 4 },
+        ],
+      },
+    });
+    const observed: Array<{ focus: unknown; selectionAfter: unknown }> = [];
+    doc.ops.subscribe((_, metadata) => {
+      observed.push({
+        focus: doc.selection?.focus,
+        selectionAfter: metadata?.selectionAfter?.focus,
+      });
+    });
+
+    const committed = doc.commit(
+      [
+        {
+          op: "replace",
+          path: "/doc/blocks",
+          value: [
+            { id: "a", text: "AXa" },
+            { id: "b", text: "Beta" },
+          ],
+        },
+      ],
+      {
+        label: "insertText",
+        origin: "editor",
+        selection: {
+          type: "setBaseAndExtent",
+          anchor: { path: "/doc/blocks/0", offset: 2 },
+          focus: { path: "/doc/blocks/0", offset: 2 },
+        },
+      },
+    );
+
+    expect(committed).toEqual({ ok: true });
+    expect(doc.value.doc.blocks[0]?.text).toBe("AXa");
+    expect(doc.lastPatch).toEqual([
+      {
+        op: "replace",
+        path: "/doc/blocks",
+        value: [
+          { id: "a", text: "AXa" },
+          { id: "b", text: "Beta" },
+        ],
+      },
+    ]);
+    expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 2 });
+    expect(observed).toEqual([
+      {
+        focus: { path: "/doc/blocks/0", offset: 2 },
+        selectionAfter: { path: "/doc/blocks/0", offset: 2 },
+      },
+    ]);
+    expect(doc.history.undoDepth).toBe(1);
+
+    expect(doc.commands.undo()).toBe(true);
+    expect(doc.value).toEqual(editorInitial);
+    expect(doc.selection?.anchor).toEqual({ path: "/doc/blocks/0", offset: 1 });
+    expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 4 });
+
+    expect(doc.commands.redo()).toBe(true);
+    expect(doc.value.doc.blocks[0]?.text).toBe("AXa");
+    expect(doc.lastPatch).toEqual([
+      {
+        op: "replace",
+        path: "/doc/blocks",
+        value: [
+          { id: "a", text: "AXa" },
+          { id: "b", text: "Beta" },
+        ],
+      },
+    ]);
+    expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 2 });
+  });
+
+  test("commit selection-only updates do not create document patches or history", () => {
+    const doc = createJSONDocument(EditorSchema, editorInitial, {
+      history: 10,
+      selection: { mode: "extended" },
+    });
+    const patches: unknown[] = [];
+    doc.ops.subscribe((patch) => patches.push(patch));
+
+    const committed = doc.commit([], {
+      selection: {
+        type: "setBaseAndExtent",
+        anchor: { path: "/doc/blocks/0", offset: 1 },
+        focus: { path: "/doc/blocks/0", offset: 3 },
+      },
+    });
+
+    expect(committed).toEqual({ ok: true });
+    expect(doc.selection?.anchor).toEqual({ path: "/doc/blocks/0", offset: 1 });
+    expect(doc.selection?.focus).toEqual({ path: "/doc/blocks/0", offset: 3 });
+    expect(patches).toEqual([]);
+    expect(doc.history.undoDepth).toBe(0);
+  });
+
+  test("lastPatch is a document snapshot and clears on empty patch commits", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    expect(doc.lastPatch).toEqual([]);
+
+    const added = doc.ops.add("/items/-", { id: "c", name: "C" });
+    expect(added).toEqual({ ok: true });
+    expect(doc.lastPatch).toEqual([{ op: "add", path: "/items/2", value: { id: "c", name: "C" } }]);
+    expect(doc.history.undoDepth).toBe(1);
+
+    const snapshot = doc.lastPatch;
+    (snapshot as JSONPatchOperation[]).push({ op: "remove", path: "/items/0" });
+    expect(doc.lastPatch).toEqual([{ op: "add", path: "/items/2", value: { id: "c", name: "C" } }]);
+
+    const selected = doc.commit([], { selection: { type: "collapse", pointer: "/items/1" } });
+    expect(selected).toEqual({ ok: true });
+    expect(doc.lastPatch).toEqual([]);
+    expect(doc.selection?.focus).toBe("/items/1");
+    expect(doc.history.undoDepth).toBe(1);
+
+    const emptyPatch = doc.ops.patch([]);
+    expect(emptyPatch).toEqual({ ok: true });
+    expect(doc.lastPatch).toEqual([]);
+    expect(doc.history.undoDepth).toBe(1);
   });
 
   test("commands replace reports empty selection when target is omitted", () => {

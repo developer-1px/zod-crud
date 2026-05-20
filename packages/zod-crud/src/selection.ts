@@ -75,6 +75,10 @@ export interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;
 }
 
+interface InternalCreateSelectionOptions extends CreateSelectionOptions {
+  applyMetadataSelectionAfter?: boolean;
+}
+
 export type SelectionChangeListener = (
   snapshot: SelectionSnap,
   previous: SelectionSnap,
@@ -128,6 +132,8 @@ export function createSelection<T>(
   options: CreateSelectionOptions = {},
 ): HeadlessSelectionState<T> {
   const mode: SelectionMode = options.mode ?? "single";
+  const applyMetadataSelectionAfter =
+    (options as InternalCreateSelectionOptions).applyMetadataSelectionAfter === true;
   let snap = initialSelection(options, mode, ops.state);
   let disposed = false;
   const listeners = new Set<SelectionChangeListener>();
@@ -147,8 +153,10 @@ export function createSelection<T>(
   const dispatch = (action: SelectionAction): void => {
     setSnap(reduceSelection(snap, action, mode, ops.state));
   };
-  const unsubscribe = ops.subscribe((applied) => {
-    setSnap(applySelectionAutoRules(snap, applied, ops.state, mode));
+  const unsubscribe = ops.subscribe((applied, metadata) => {
+    setSnap(applyMetadataSelectionAfter && metadata?.selectionAfter
+      ? restoreSelection(metadata.selectionAfter, mode, ops.state)
+      : applySelectionAutoRules(snap, applied, ops.state, mode));
   });
 
   return {

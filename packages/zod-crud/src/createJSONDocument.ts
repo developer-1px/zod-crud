@@ -7,11 +7,19 @@ import { buildCan, type Can } from "./commands/buildCan.js";
 import { buildCommands, type Commands } from "./commands/buildCommands.js";
 import { buildCheck, type Check } from "./check.js";
 import {
+  applyPatch,
   computeInverses,
   type JSONPatchOperation,
+  type JSONResult,
 } from "./core/patch/index.js";
 import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
-import type { SelectionSnap } from "./core/selection/index.js";
+import {
+  reduceSelection,
+  restoreSelection,
+  type SelectionAction,
+  type SelectionMode,
+  type SelectionSnap,
+} from "./core/selection/index.js";
 import {
   back as historyBack,
   canRedo as historyCanRedo,
@@ -54,8 +62,19 @@ export interface JSONDocumentHistory {
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
 
+export type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
+
+export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
+  /**
+   * Final model selection for this edit. When present, it overrides mutation
+   * auto-selection and is recorded in the same history entry as the patch.
+   */
+  selection?: JSONDocumentCommitSelection;
+}
+
 export interface JSONDocument<T> {
   readonly value: T;
+  readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
   readonly selection: SelectionState<T> | undefined;
   readonly history: JSONDocumentHistory;
   readonly ops: JSONDocumentOps<T>;
@@ -64,6 +83,7 @@ export interface JSONDocument<T> {
   readonly check: Check<T>;
   readonly clipboard: ClipboardState<T>;
   readonly schema: SchemaState<T>;
+  commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
@@ -89,19 +109,27 @@ export function createJSONDocument<S extends z.ZodType>(
   let stack: HistoryStack<HistoryEntry> = emptyHistory<HistoryEntry>();
   let isRestoring = false;
   let activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  let lastPatch: JSONPatchOperation[] = [];
 
   const selectionEnabled = options.selection !== undefined && options.selection !== false;
   const selectionOptions: UseSelectionOptions =
     typeof options.selection === "object" ? options.selection : {};
   const selectionMode = selectionOptions.mode ?? "single";
 
-  const createSelectionOptions: UseSelectionOptions & { onChange?: () => void } = {
+  const createSelectionOptions: UseSelectionOptions & {
+    onChange?: () => void;
+    applyMetadataSelectionAfter?: boolean;
+  } = {
     ...selectionOptions,
+    applyMetadataSelectionAfter: true,
   };
   if (selectionEnabled && options.onChange !== undefined) {
     createSelectionOptions.onChange = options.onChange;
   }
   const selectionState = createSelection(rawOps, createSelectionOptions);
+  rawOps.subscribe((applied) => {
+    lastPatch = [...applied];
+  });
   const snapSelection = (): SelectionSnap => selectionState.snapshot();
 
   const recordHistory = (
@@ -129,7 +157,40 @@ export function createJSONDocument<S extends z.ZodType>(
     const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok && historyLimit > 0 && !isRestoring) {
+    if (r.ok && operations.length === 0) lastPatch = [];
+    if (r.ok && historyLimit > 0 && !isRestoring && operations.length > 0) {
+      recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
+    }
+    return r;
+  };
+
+  const commit = (
+    operations: ReadonlyArray<JSONPatchOperation>,
+    commitOptions: JSONDocumentCommitOptions = {},
+  ): JSONResult => {
+    const { selection, ...metadataOptions } = commitOptions;
+    if (selection === undefined) return patch(operations, metadataOptions);
+
+    const before = rawOps.state;
+    const selectionBefore = snapSelection();
+    const predicted = applyPatch(schema, before, operations);
+    if (!predicted.result.ok) return patch(operations, metadataOptions);
+
+    const selectionAfter = resolveCommitSelection(selectionBefore, selection, predicted.state, selectionMode);
+    const changeMetadata = buildChangeMetadata(
+      activeHistoryMetadata,
+      {
+        ...metadataOptions,
+        selectionAfter,
+      },
+      selectionBefore,
+    );
+    const r = rawOps.patch(operations, changeMetadata);
+    if (!r.ok) return r;
+
+    if (operations.length === 0) lastPatch = [];
+    selectionState.restore(selectionAfter);
+    if (historyLimit > 0 && !isRestoring && operations.length > 0) {
       recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
@@ -201,7 +262,7 @@ export function createJSONDocument<S extends z.ZodType>(
       return rawOps.subscribe((applied, metadata) => {
         listener(applied, {
           ...metadata,
-          selectionAfter: snapSelection(),
+          selectionAfter: metadata?.selectionAfter ?? snapSelection(),
         });
       });
     },
@@ -278,6 +339,7 @@ export function createJSONDocument<S extends z.ZodType>(
 
   return {
     get value() { return rawOps.state; },
+    get lastPatch() { return [...lastPatch]; },
     get selection() { return selectionEnabled ? selectionState : undefined; },
     history,
     ops,
@@ -286,11 +348,31 @@ export function createJSONDocument<S extends z.ZodType>(
     check,
     clipboard,
     schema: schemaState,
+    commit,
     at: read.at,
     exists: read.exists,
     query: read.query,
     entries: read.entries,
   };
+}
+
+function resolveCommitSelection(
+  current: SelectionSnap,
+  selection: JSONDocumentCommitSelection,
+  state: unknown,
+  mode: SelectionMode,
+): SelectionSnap {
+  return isSelectionSnap(selection)
+    ? restoreSelection(selection, mode, state)
+    : reduceSelection(current, selection, mode, state);
+}
+
+function isSelectionSnap(selection: JSONDocumentCommitSelection): selection is SelectionSnap {
+  return typeof selection === "object"
+    && selection !== null
+    && "selectionRanges" in selection
+    && "selectedPointers" in selection
+    && "primaryIndex" in selection;
 }
 
 function buildChangeMetadata(

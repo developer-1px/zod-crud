@@ -33,7 +33,7 @@ const [livePreview, setLivePreview] = useState<V | null>(null);
 
 const onMove = (e) => setLivePreview(computeFrom(e));
 const onDrop = () => {
-  if (livePreview !== null) ops.replace('/path', livePreview);
+  if (livePreview !== null) doc.ops.replace('/path', livePreview);
   setLivePreview(null);
 };
 
@@ -56,6 +56,19 @@ doc.history.transaction(() => {
   ops.replace('/title', 'Saved');
   ops.add('/logs/-', 'saved title');
 });
+```
+
+**Pattern D — `doc.commit(patch, { selection })`** (patch와 caret/range를 한 step으로):
+
+```ts
+doc.commit(
+  [{ op: 'replace', path: '/blocks', value: nextBlocks }],
+  {
+    label: 'insertText',
+    origin: 'editor',
+    selection: { type: 'collapse', point: { path: '/blocks/0', offset: 2 } },
+  },
+);
 ```
 
 자세한 비교는 [Why no transaction verb](/docs/why-not#why-no-transaction-verb-issue-56).
