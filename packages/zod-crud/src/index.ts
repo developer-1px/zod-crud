@@ -203,18 +203,6 @@ export type {
   HeadlessDebugLogApi,
 } from "./sidecars/createDebugLog.js";
 
-// HTTP transport — RFC 5789 + 6902 + 7396 wire format.
-export {
-  buildPatchRequest,
-  withIfMatch,
-  parsePatchResponse,
-  parseMergePatch,
-  applyMergePatch,
-  JSON_PATCH_MIME,
-  MERGE_PATCH_MIME,
-} from "./sidecars/http.js";
-export type { ParseResult, ParseError, PatchRequest } from "./sidecars/http.js";
-
 // === Clipboard verbs ===
 export {
   copy,

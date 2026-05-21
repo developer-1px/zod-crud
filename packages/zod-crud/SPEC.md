@@ -900,19 +900,21 @@ export function trackPointer(
 `useSelection` 이 사용하는 low-level helper. RFC 6902 op 적용 후 기존 Pointer 가 어디로
 이동했는지 계산한다. 제거된 좌표는 `null` 이다.
 
-### 5.9 HTTP transport — RFC 5789 + 6902 + 7396
+### 5.9 Internal HTTP transport — RFC 5789 + 6902 + 7396
 
-선택적 import (`zod-crud` index 에서 export). 트리쉐이킹 보장. 외부 의존 0 — fetch / axios / 다른 client 와 직접 결합하지 않는다.
+HTTP transport helpers are internal sidecar code, not package public API.
+The stable editing contract is JSON Patch / Pointer data; apps own fetch,
+ETag policy, retry, rollback, and server negotiation.
 
 ```ts
-export const JSON_PATCH_MIME  = "application/json-patch+json";   // RFC 6902 §6
-export const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
+const JSON_PATCH_MIME  = "application/json-patch+json";   // RFC 6902 §6
+const MERGE_PATCH_MIME = "application/merge-patch+json";  // RFC 7396
 
-export function buildPatchRequest(ops: ReadonlyArray<JSONPatchOperation>): PatchRequest;
-export function withIfMatch(req: PatchRequest, etag: string): PatchRequest;            // RFC 5789 §2.4
-export function parsePatchResponse(body: string, contentType?: string | null): ParseResult | ParseError;
-export function parseMergePatch(patch: unknown, basePath: string): JSONPatchOperation[];
-export function applyMergePatch(target: unknown, patch: unknown): unknown;             // RFC 7396 §2 stateful
+function buildPatchRequest(ops: ReadonlyArray<JSONPatchOperation>): PatchRequest;
+function withIfMatch(req: PatchRequest, etag: string): PatchRequest;            // RFC 5789 §2.4
+function parsePatchResponse(body: string, contentType?: string | null): ParseResult | ParseError;
+function parseMergePatch(patch: unknown, basePath: string): JSONPatchOperation[];
+function applyMergePatch(target: unknown, patch: unknown): unknown;             // RFC 7396 §2 stateful
 ```
 
 **`parseMergePatch` 의 한계**: nested null = nested remove 의미는 target 컨텍스트 없이 RFC 6902 ops 로 분해 불가하다 (RFC 7396 merge 는 stateful). nested merge 가 필요한 경우 `applyMergePatch(target, patch)` 를 직접 사용한다.

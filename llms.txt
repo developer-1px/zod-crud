@@ -42,10 +42,6 @@ import {
   createDebugLog,
   createRecorder,
   replayRecording,
-  buildPatchRequest,
-  withIfMatch,
-  parsePatchResponse,
-  applyMergePatch,
 } from "zod-crud";
 ```
 
