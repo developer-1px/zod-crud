@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { z } from "zod/mini";
 import type { ZodType } from "zod";
 import { useJSONDocument } from "zod-crud/react";
@@ -15,46 +14,25 @@ export function ClipboardArray() {
   const doc = useJSONDocument(
     Schema,
     { tags: ["docs", "design", "ssot"] },
-    { history: 50 },
+    { history: 50, selection: { mode: "single" } },
   );
-  const { value: json, ops } = doc;
-  const [selected, setSelected] = useState<number | null>(null);
+  const { value: json } = doc;
+  const selected = doc.selection?.primaryPointer ?? null;
 
-  const onCopy = () => {
-    if (selected !== null) {
-      ops.copy(`/tags/${selected}` as `/tags/${number}`, "/tags/-");
-    }
-  };
-  const onCut = () => {
-    if (selected !== null) {
-      ops.patch([
-        { op: "copy", from: `/tags/${selected}`, path: "/tags/-" },
-        { op: "remove", path: `/tags/${selected}` },
-      ]);
-      setSelected(null);
-    }
-  };
-  const onDuplicateAtEnd = () => {
-    if (selected !== null) {
-      ops.copy(`/tags/${selected}` as `/tags/${number}`, "/tags/-");
-    }
-  };
-  const onDelete = () => {
-    if (selected !== null) {
-      ops.remove(`/tags/${selected}` as `/tags/${number}`);
-      setSelected(null);
-    }
+  const selectTag = (index: number) => {
+    doc.selection?.collapse(`/tags/${index}` as `/tags/${number}`);
   };
 
   return (
     <div className="flex max-w-sm flex-col gap-2">
       <ul className="flex flex-col gap-0.5 rounded border border-stone-200 bg-white p-1">
         {json.tags.map((tag, i) => {
-          const isSel = i === selected;
+          const pointer = `/tags/${i}` as `/tags/${number}`;
+          const isSel = pointer === selected;
           return (
             <li key={`${i}:${tag}`}>
               <button
-                onClick={() => setSelected(i)}
+                onClick={() => selectTag(i)}
                 aria-selected={isSel}
                 className="block w-full rounded px-2 py-1 text-left text-sm text-stone-700 hover:bg-stone-100 aria-selected:bg-sky-100 aria-selected:text-sky-900"
               >
@@ -65,10 +43,11 @@ export function ClipboardArray() {
         })}
       </ul>
       <div className="flex flex-wrap gap-1.5 text-xs">
-        <button onClick={onCopy} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">copy</button>
-        <button onClick={onCut} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">cut</button>
-        <button onClick={onDuplicateAtEnd} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">duplicate</button>
-        <button onClick={onDelete} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">delete</button>
+        <button onClick={() => doc.clipboard.copy()} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">copy</button>
+        <button onClick={() => doc.clipboard.cut()} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">cut</button>
+        <button onClick={() => doc.clipboard.paste("after")} disabled={selected === null || !doc.clipboard.hasData} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">paste</button>
+        <button onClick={() => doc.commands.duplicate()} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">duplicate</button>
+        <button onClick={() => doc.commands.remove()} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">delete</button>
         <button onClick={() => doc.commands.undo()} disabled={!doc.history.canUndo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
         <button onClick={() => doc.commands.redo()} disabled={!doc.history.canRedo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
       </div>

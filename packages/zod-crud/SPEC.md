@@ -274,6 +274,10 @@ undo/redo stack 은 `JSONDocument.history` 와 `JSONDocument.commands.undo/redo`
 
 ## 5. Public API
 
+Named exports are source-of-truth in `src/index.ts` and `src/react.ts`.
+Types shown below that are not named exports are structural declaration details
+of returned facades, not additional root imports.
+
 ### 5.1 Document options
 
 ```ts
@@ -333,6 +337,9 @@ interface JSONChangeMetadata extends HistoryTransactionOptions {
 }
 ```
 
+`HistoryTransactionOptions`, `JSONChangeMetadata`, `PointerOf`, and `ValueAt`
+exist to describe the `JSONOps<T>` declaration. They are not root named exports.
+
 ### 5.3 Pure core — `applyPatch` / `applyOperation`
 
 ```ts
@@ -356,11 +363,12 @@ interface ApplyResult<S extends z.ZodType> {
 ```
 
 순수함수. React 의존 0. 어떤 환경에서도 import 가능 (서버, Worker, 다른 framework).
+`ApplyResult` is the returned object shape, not a root named export.
 
 `applied` 는 실제로 commit 된 op 목록. 성공 시 입력 ops 와 동일, 실패 시 빈 배열 (G8 atomicity).
 Selection state 는 이 배열을 `JSONOps.subscribe` 로 받아 Pointer 좌표를 자동 추적한다 (§0.2).
 
-### 5.4 Pointer 타입 추론
+### 5.4 `JSONOps` pointer inference
 
 ```ts
 type PointerOf<T> = ...;        // schema 타입 → 가능한 Pointer 문자열 union
@@ -368,6 +376,7 @@ type ValueAt<T, P extends string> = ...;
 ```
 
 깊이 한계: 5단. 그 이상은 `string`으로 fallback (TS 컴파일 비용 관리).
+These helper types stay internal to `JSONOps<T>` inference.
 
 ### 5.5 JSON serializability boundary
 
@@ -760,6 +769,7 @@ interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
 React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 command verbs plus selection/remove/text helpers, boolean guard predicates, explainable dry-run checks, schema introspection, `commit`, read/query helpers 를 한 객체로 묶는다.
 React entrypoint 는 `useJSONDocument` 만 노출한다.
+`UseJSONDocumentOptions` 와 `JSONDocumentCommitOptions` 는 facade 호출의 구조적 options shape 이며 root named export 가 아니다.
 Command, dry-run, and boolean guard builders are internal composition for the document facade. Public callers use `doc.commands`, `doc.check`, and `doc.can`.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
 clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다. multi-source `copy` / `cut` 은 selection 순서의 JSON array payload 를 만들고, 중복 source 는 첫 등장만 보존하며, ancestor source 가 descendant source 를 덮으면 descendant 는 실제 source 집합에서 제외한다. source 인자를 생략한 `doc.clipboard.copy()` / `doc.clipboard.cut()` 은 현재 selection source 를 사용하고, target 인자를 생략한 `doc.clipboard.paste()` 는 현재 primary selection target 을 사용한다. manual `doc.clipboard.write` 도 source metadata 가 제공되면 같은 규칙으로 검증/정규화한다. buffer 의 `source` 는 primary source, `sources` 는 전체 source-list 이며 `read()` 도 둘 다 반환한다. remove patch 는 array index shift 를 피하도록 적용 순서만 정렬한다. `doc.clipboard.paste` 는 multi-source buffer 를 array target 에 붙일 때 기본적으로 payload 를 여러 `add` op 로 spread 하며, `{ spread: false }` 로 array payload 를 하나의 값으로 붙일 수 있다. Standalone composition 은 `createClipboard(args)` 로 같은 buffer 를 직접 만든다. 이 factory 는 `JSONOps`, `getState`, optional selection source/target getter 를 받아 React 없이 동작한다.
