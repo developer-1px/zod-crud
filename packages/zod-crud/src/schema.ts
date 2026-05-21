@@ -1,7 +1,6 @@
-import type * as z from "zod";
+import { toJSONSchema, type z } from "zod";
 
 import type { CheckResult } from "./check.js";
-import { toJSONSchema } from "./core/schema/bridge.js";
 import {
   getArrayElement,
   getDef,

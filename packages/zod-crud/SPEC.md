@@ -103,11 +103,11 @@ src/JSONCrudError.ts  throwable wrap. boundary error 어휘 (public API).
 | **RFC 8259 / ECMA-404** — JSON | state·action·change 직렬화 | 절대 |
 | **RFC 6901** — JSON Pointer (§6 URI fragment 포함) | path 표현 | 절대 |
 | **RFC 6902** — JSON Patch (conformance suite 100%) | 변경 표현 | 절대 |
-| **JSON Schema draft-2020-12** | 외부 스펙 다리 | 옵셔널 (core/schema/bridge.ts) |
+| **JSON Schema draft-2020-12** | schema description projection | 옵셔널 (`doc.schema.describe`) |
 | **RFC 9535** — JSONPath | find/replace query 어휘 | 절대 (core/jsonpath/) |
 | **WAI-ARIA** Listbox/Tree/Grid | selection 어휘 | 절대 |
 | **ECMAScript** | 런타임 | 절대 |
-| Zod 4 (semver-major 시 검토) | schema 검증 + JSON Schema 양방향 | 의존 라이브러리 |
+| Zod 4 (semver-major 시 검토) | schema 검증 + JSON Schema projection | 의존 라이브러리 |
 | React `>=18` (optional peer) | `zod-crud/react` hooks (`useJSONDocument`) | 옵셔널 |
 
 표준 외의 디팩토 관행(lodash dot path, RHF bracket path 등)은 **참조하지 않는다.** 호환 어댑터도 라이브러리 본체에 포함하지 않는다.
@@ -118,11 +118,9 @@ RFC 6901 Pointer[] 로 환원한다. `tests/conformance/jsonpath-cts.json` 는
 `jsonpath-standard/jsonpath-compliance-test-suite` 의 `cts.json` vendor 이며,
 현재 CTS gate 는 703/703 full conformance 이다.
 
-### 1.1 JSON Schema 양방향 (외부 표준 다리)
+### 1.1 JSON Schema projection
 
-[`src/core/schema/bridge.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/src/core/schema/bridge.ts) 는 내부에서 zod 4 의 JSON Schema 변환을 사용한다. Public facade 는 `doc.schema.describe(pointer)` 의 JSON 직렬화 가능한 설명을 통해 schema 정보를 노출한다. Zod ↔ JSON Schema 직접 변환이 필요한 사용자는 zod 의 `toJSONSchema` / `fromJSONSchema` 를 직접 사용한다.
-
-테스트: [`tests/schema-bridge.test.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/tests/schema-bridge.test.ts) — 내부 bridge round-trip 후 substrate 가 변환된 schema 로 mutation 검증까지 통과.
+Public facade 는 `doc.schema.describe(pointer)` 의 JSON 직렬화 가능한 설명을 통해 schema 정보를 노출한다. `jsonSchema` 값은 내부에서 zod 4 의 `toJSONSchema` 로 만든 projection 이다. Zod ↔ JSON Schema 직접 변환이 필요한 사용자는 zod 의 `toJSONSchema` / `fromJSONSchema` 를 직접 사용한다.
 
 ---
 
@@ -1046,7 +1044,7 @@ core/
   patch/              ─ RFC 6902 pure core (SPEC §5.3)
   jsonpath/           ─ RFC 9535 query substrate
   selection/          ─ W3C Selection vocabulary and reducers
-  schema/             ─ Zod/JSON Schema bridge + preFlight
+  schema/             ─ Zod introspection + preFlight
   history.ts          ─ RFC 6902 inverse + history stack
   track.ts            ─ Pointer tracking
 ```
