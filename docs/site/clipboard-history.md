@@ -84,7 +84,8 @@ const active = doc.selection?.focus;
 저장된 recording은 JSON으로 직렬화할 수 있고, `replayRecording`으로 다른 `ops` 인스턴스에 재생할 수 있습니다.
 
 ```ts
-import { replayRecording, useRecorder } from "zod-crud/react";
+import { replayRecording } from "zod-crud";
+import { useRecorder } from "zod-crud/react";
 
 const recorder = useRecorder(doc.ops);
 

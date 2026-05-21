@@ -4,7 +4,7 @@
 //   click        = collapse
 
 import { useCallback } from "react";
-import type { DebugLogger, Pointer, SelectionState } from "zod-crud/react";
+import type { DebugLogger, Pointer, SelectionState } from "zod-crud";
 import type { Mode } from "../keymap.js";
 
 export function useClickPolicy<T>(

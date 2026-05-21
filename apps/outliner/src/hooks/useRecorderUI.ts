@@ -1,7 +1,8 @@
 // 녹화 UI 정책 — useRecorder 결과를 download / replay 트리거로 노출.
 
 import { useCallback, useState } from "react";
-import { useRecorder, replayRecording, type Recording, type JSONOps } from "zod-crud/react";
+import { replayRecording, type JSONOps, type Recording } from "zod-crud";
+import { useRecorder } from "zod-crud/react";
 import type { OutlineNode } from "../schema.js";
 
 export function useRecorderUI(ops: JSONOps<OutlineNode>) {

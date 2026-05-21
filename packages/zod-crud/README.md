@@ -10,8 +10,7 @@ JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
 `createJSON` owns low-level headless JSON state. `createJSONDocument` exposes
-the headless document facade. `zod-crud/react` exposes matching React facades
-plus React-only composition hooks.
+the headless document facade. `zod-crud/react` exposes React hook facades only.
 `sidecars/` hold cross-cutting concerns (recorder, debug log, http).
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
@@ -406,23 +405,20 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
-| `createJSON(schema, initial, options?)` from `zod-crud/react` | same headless low-level JSON state owner re-exported from the React entrypoint |
-| `createCommands(args)`, `createCheck(args)`, `createCan(args)` from `zod-crud/react` | same headless command/check/can factories re-exported from the React entrypoint |
-| `createClipboard(args)` from `zod-crud/react` | same headless clipboard factory re-exported from the React entrypoint; no React clipboard hook |
-| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `RemoveCommandResult`, `ReplaceTextCommandResult`, `DeleteTextCommandResult`, `ReplaceTextCommandOptions`, `DeleteTextCommandOptions`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` from `zod-crud/react` | facade types (SPEC §5.10) |
+| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | React document hook return/options aliases |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
+| `JSONOps<T>`, `UseJSONOptions` from `zod-crud/react` | React data hook return/options aliases; root `zod-crud` owns the headless ops contract |
 | `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
-| `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `SelectionSource`, `SelectionRangeInput`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `UseSelectionOptions`, `CreateSelectionOptions` from `zod-crud/react` | React selection hook types |
+| `SelectionState<T>`, `UseSelectionOptions` from `zod-crud/react` | React selection hook return/options aliases |
 | `createDraft(doc, options?)` | headless draft/pending field state over a document facade |
+| `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` | headless draft composition types |
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
-| `DraftState<T>`, `DraftFieldState<T>`, `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` from `zod-crud/react` | draft/pending field types |
+| `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | React draft hook return aliases |
 | `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
-| `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` from `zod-crud/react` | same headless history primitives re-exported from the React entrypoint |
 | `createRead(args)`, `ReadFacade`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `CreateReadOptions<S>` | standalone headless read/query facade |
 | `createSchema(args)`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `CreateSchemaOptions<S>` | standalone serializable schema introspection facade |
-| `createRead(args)`, `ReadFacade`, `CreateReadOptions<S>`, `createSchema(args)`, `SchemaState<T>`, `CreateSchemaOptions<S>` from `zod-crud/react` | same headless read/schema factories re-exported from the React entrypoint |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
@@ -436,7 +432,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createRecorder`, `replayRecording`, `RecorderApi<T>`, `HeadlessRecorderApi<T>`, `CreateRecorderOptions`, `Recording<T>`, `RecordedStep`, `ReplayTarget<T>`, `ReplayDocumentTarget<T>`, `ReplaySelectionTarget`, `ReplayOptions` | replayable JSON recording sidecar (SPEC §5) |
 | `createDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger`, `DebugEvent`, `HeadlessDebugLogApi<T>`, `CreateDebugLogOptions` | headless diagnostic timeline sidecar (SPEC §5) |
 | `useRecorder`, `RecorderApi<T>` from `zod-crud/react` | React recording hook (SPEC §5) |
-| `useDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
+| `useDebugLog`, `DebugLogApi<T>` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `computeInverses` | RFC 6902 inverse helper |
 | `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
