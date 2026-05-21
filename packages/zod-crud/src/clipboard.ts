@@ -86,7 +86,7 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
   message: "clipboard is empty",
 };
 
-export function createClipboardState<S extends z.ZodType>(
+export function createClipboard<S extends z.ZodType>(
   args: CreateClipboardOptions<S>,
 ): ClipboardState<z.output<S>> {
   const { schema, getState, ops, getSelectionSource, getSelectionTarget, onChange } = args;
@@ -229,8 +229,6 @@ export function createClipboardState<S extends z.ZodType>(
     },
   };
 }
-
-export const createClipboard = createClipboardState;
 
 function emptyCopySource(): CopyError {
   return {

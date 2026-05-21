@@ -31,7 +31,7 @@ import {
   type HistoryStack,
 } from "./core/history.js";
 import { JSONCrudError } from "./JSONCrudError.js";
-import { createClipboardState, type ClipboardState } from "./clipboard.js";
+import { createClipboard, type ClipboardState } from "./clipboard.js";
 import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
@@ -333,7 +333,7 @@ export function createJSONDocument<S extends z.ZodType>(
     getSelectionSource: () => selectionState.selectedSource,
     getSelectionTarget: () => selectionState.primaryPointer,
   };
-  const clipboard = createClipboardState(options.onChange === undefined
+  const clipboard = createClipboard(options.onChange === undefined
     ? clipboardOptions
     : { ...clipboardOptions, onChange: options.onChange });
   const read = buildReadFacade({ schema, getState: () => rawOps.state });
