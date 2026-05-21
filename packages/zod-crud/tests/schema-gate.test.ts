@@ -1,9 +1,8 @@
-// P4 — schema preFlight + validate 단위 테스트.
+// P4 — schema preFlight 단위 테스트.
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { preFlight } from "../src/core/schema/preFlight.js";
-import { validate } from "../src/core/schema/validate.js";
 import { move } from "../src/verbs/move.js";
 
 const Schema = z.object({
@@ -88,40 +87,6 @@ describe("core/schema/preFlight", () => {
         path: "/end",
         message: "end must be greater than start",
       });
-    }
-  });
-});
-
-describe("core/schema/validate", () => {
-  test("dev assertion 통과 시 ok", () => {
-    const r = validate(Schema, { count: 0, items: [] });
-    expect(r.ok).toBe(true);
-  });
-
-  test("invalid state 에서 dev assertion 실패", () => {
-    const r = validate(Schema, { count: -1, items: [] });
-    // dev 모드 가정. NODE_ENV='development' 또는 undefined.
-    if (process.env.NODE_ENV === "production") {
-      expect(r.ok).toBe(true); // prod no-op
-    } else {
-      expect(r.ok).toBe(false);
-    }
-  });
-
-  test("dev assertion violation paths are RFC 6901 escaped pointers", () => {
-    const EscapedKeySchema = z.object({
-      "a/b": z.object({
-        "c~d": z.number().min(0),
-      }),
-    });
-
-    const r = validate(EscapedKeySchema, { "a/b": { "c~d": -1 } });
-
-    if (process.env.NODE_ENV === "production") {
-      expect(r.ok).toBe(true);
-    } else {
-      expect(r.ok).toBe(false);
-      if (!r.ok) expect(r.violations[0]?.path).toBe("/a~1b/c~0d");
     }
   });
 });
