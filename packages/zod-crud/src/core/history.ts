@@ -10,8 +10,6 @@ export interface HistoryStack<E> {
   readonly redo: ReadonlyArray<E>;
 }
 
-export const EMPTY_HISTORY: HistoryStack<never> = { undo: [], redo: [] };
-
 export function emptyHistory<E>(): HistoryStack<E> {
   return { undo: [], redo: [] };
 }

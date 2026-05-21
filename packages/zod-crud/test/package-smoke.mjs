@@ -575,7 +575,7 @@ try {
     [
       'import * as z from "zod";',
       'import * as zc from "zod-crud";',
-      'import { EMPTY_HISTORY, applyOperation, applyPatch, createClipboard, createJSONDocument, createSelection, emptyHistory, historyBack, historyCanRedo, historyCanUndo, historyCommit, historyForward, historyMergeLast, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, move, replace, toJSONSchema, fromJSONSchema } from "zod-crud";',
+      'import { applyOperation, applyPatch, createClipboard, createJSONDocument, createSelection, emptyHistory, historyBack, historyCanRedo, historyCanUndo, historyCommit, historyForward, historyMergeLast, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, move, replace, toJSONSchema, fromJSONSchema } from "zod-crud";',
       `const expectedRootValueExports = ${JSON.stringify(rootValueExports)};`,
       `const expectedRootTypeOnlyExports = ${JSON.stringify(rootTypeOnlyExports)};`,
       'for (const name of expectedRootValueExports) {',
@@ -611,7 +611,6 @@ try {
       'if (typeof createSelection !== "function") throw new Error("createSelection export failed");',
       'const jsonDoc = createJSONDocument(schema, initial);',
       'if (!jsonDoc.ops.replace("/name", "json").ok || jsonDoc.value.name !== "json") throw new Error("createJSONDocument runtime failed");',
-      'if (EMPTY_HISTORY.undo.length !== 0 || EMPTY_HISTORY.redo.length !== 0) throw new Error("EMPTY_HISTORY export failed");',
       'const historyStack = historyCommit(emptyHistory(), { id: "entry" }, 10);',
       'if (!historyCanUndo(historyStack) || historyCanRedo(historyStack)) throw new Error("history guard exports failed");',
       'const historyPopped = historyBack(historyStack);',

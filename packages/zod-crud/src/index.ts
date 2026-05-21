@@ -16,7 +16,6 @@ export type {
   UseJSONOptions,
 } from "./jsonOps.js";
 export {
-  EMPTY_HISTORY,
   emptyHistory,
   back as historyBack,
   canRedo as historyCanRedo,

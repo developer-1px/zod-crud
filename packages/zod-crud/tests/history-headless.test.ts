@@ -1,7 +1,6 @@
 import { describe, expect, test } from "vitest";
 
 import {
-  EMPTY_HISTORY,
   emptyHistory,
   historyBack,
   historyCanRedo,
@@ -34,7 +33,7 @@ describe("headless history primitives", () => {
     const initialStack: HistoryStack<Entry> = emptyHistory();
     const committed = historyCommit(historyCommit(initialStack, first, 10), second, 10);
 
-    expect(EMPTY_HISTORY.undo).toEqual([]);
+    expect(emptyHistory().undo).toEqual([]);
     expect(historyCanUndo(committed)).toBe(true);
     expect(historyCanRedo(committed)).toBe(false);
 
