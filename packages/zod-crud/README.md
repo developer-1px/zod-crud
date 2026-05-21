@@ -370,7 +370,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
 | `JSONOps<T>` | low-level ops contract |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
-| `JSONDocument<T>`, `UseJSONDocumentOptions<T>` | shared headless facade types |
+| `JSONDocument<T>` | shared headless facade type |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |

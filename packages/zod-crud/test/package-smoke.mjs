@@ -679,14 +679,13 @@ try {
     join(workspace, "react-smoke.ts"),
     [
       'import * as z from "zod";',
-      'import type { JSONDocument, UseJSONDocumentOptions } from "zod-crud";',
+      'import type { JSONDocument } from "zod-crud";',
       'import { useJSONDocument } from "zod-crud/react";',
       'const Schema = z.object({ name: z.string() });',
       'type Value = z.output<typeof Schema>;',
       'type Doc = JSONDocument<Value>;',
-      'const _documentOptions = null as unknown as UseJSONDocumentOptions<Value>;',
-      'useJSONDocument satisfies (schema: typeof Schema, initial: Value, options?: UseJSONDocumentOptions<Value>) => Doc;',
-      '_documentOptions.history satisfies number | undefined;',
+      'const doc = useJSONDocument(Schema, { name: "ok" }, { history: 1 });',
+      'doc satisfies Doc;',
     ].join("\n"),
   );
   await writeFile(

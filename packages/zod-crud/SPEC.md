@@ -276,7 +276,7 @@ undo/redo stack 은 `JSONDocument.history` 와 `JSONDocument.commands.undo/redo`
 ### 5.1 Document options
 
 ```ts
-export interface UseJSONDocumentOptions<T> {
+interface UseJSONDocumentOptions<T> {
   strict?: boolean;     // dev=true, prod=false 기본
   onError?: (e: JSONCrudError) => void;
   history?: number;
@@ -289,7 +289,7 @@ export interface UseJSONDocumentOptions<T> {
 }
 ```
 
-`UseJSONDocumentOptions` is shared by the headless and React document facades.
+The document options shape is shared by the headless and React document facades.
 The public state owner is `createJSONDocument`; low-level mutation is reached
 through the document's `JSONOps<T>` surface.
 
