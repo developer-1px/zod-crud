@@ -12,18 +12,6 @@ const Schema = z.object({
   done: z.boolean(),
 }) as unknown as ZodType<BasicCrudValue, BasicCrudValue>;
 
-export const playground = {
-  id: "basic-crud",
-  order: 1,
-  label: "Basic CRUD",
-  exports: ["useJSONDocument"],
-  sources: [
-    "apps/site/src/playgrounds/BasicCrud.playground.tsx",
-    "packages/zod-crud/src/hooks/useJSONDocument.ts",
-    "packages/zod-crud/src/createJSONDocument.ts",
-  ],
-} as const;
-
 export function BasicCrud() {
   const { value: json, ops } = useJSONDocument(Schema, { title: "draft", done: false });
 

@@ -14,18 +14,6 @@ const Schema = z.object({
   label: z.string().check(z.minLength(1)),
 }) as unknown as ZodType<RejectedDriftValue, RejectedDriftValue>;
 
-export const playground = {
-  id: "rejected-drift",
-  order: 3,
-  label: "Rejected Drift",
-  exports: ["useJSONDocument", "JSONResult"],
-  sources: [
-    "apps/site/src/playgrounds/RejectedDrift.playground.tsx",
-    "packages/zod-crud/src/core/schema/validate.ts",
-    "packages/zod-crud/src/createJSONDocument.ts",
-  ],
-} as const;
-
 export function RejectedDrift() {
   const { value: json, ops } = useJSONDocument(
     Schema,

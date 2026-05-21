@@ -27,7 +27,7 @@ jobs:
       - name: Build site
         env:
           SITE_BASE: /zod-crud/
-        run: npm run site:build
+        run: npm run playground:build
       - name: SPA fallback (404.html)
         run: cp apps/site/dist/index.html apps/site/dist/404.html
       - uses: actions/upload-pages-artifact@v3

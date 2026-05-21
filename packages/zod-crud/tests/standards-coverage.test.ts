@@ -485,6 +485,10 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(monorepoPackageJson.scripts["playground:test"]).toBe(
       "npm test -w @zod-crud/outliner && npm test -w @zod-crud/mobile-cms",
     );
+    expect(monorepoPackageJson.scripts["site:build"]).toBeUndefined();
+    expect(monorepoPackageJson.scripts["api-collection:build"]).toBeUndefined();
+    expect(monorepoPackageJson.scripts["outliner:build"]).toBeUndefined();
+    expect(monorepoPackageJson.scripts["mobile-cms:build"]).toBeUndefined();
   });
 
   test("CHANGELOG latest release matches package version", () => {

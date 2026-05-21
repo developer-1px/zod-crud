@@ -11,18 +11,6 @@ const Schema = z.object({
   tags: z.array(z.string().check(z.minLength(1))),
 }) as unknown as ZodType<ClipboardArrayValue, ClipboardArrayValue>;
 
-export const playground = {
-  id: "clipboard-array",
-  order: 2,
-  label: "Clipboard Array",
-  exports: ["useJSONDocument", "createClipboard"],
-  sources: [
-    "apps/site/src/playgrounds/ClipboardArray.playground.tsx",
-    "packages/zod-crud/src/clipboard.ts",
-    "packages/zod-crud/src/hooks/useJSONDocument.ts",
-  ],
-} as const;
-
 export function ClipboardArray() {
   const { value: json, ops } = useJSONDocument(
     Schema,
