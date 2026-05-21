@@ -17,24 +17,11 @@ export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONDocument,
   JSONDocumentCommitOptions,
-  JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./createJSONDocument.js";
 export { createSelection } from "./selection.js";
-export type {
-  CreateSelectionOptions,
-  HeadlessSelectionState,
-  SelectionState,
-  UseSelectionOptions,
-} from "./selection.js";
+export type { SelectionState } from "./selection.js";
 export { createClipboard } from "./clipboard.js";
-export type {
-  ClipboardPasteResult,
-  ClipboardReadResult,
-  ClipboardState,
-  ClipboardWriteOptions,
-  CreateClipboardOptions,
-} from "./clipboard.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./core/patch/index.js";

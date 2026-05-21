@@ -280,7 +280,11 @@ export interface UseJSONDocumentOptions<T> {
   strict?: boolean;     // dev=true, prod=false 기본
   onError?: (e: JSONCrudError) => void;
   history?: number;
-  selection?: boolean | UseSelectionOptions;
+  selection?: boolean | {
+    mode?: "single" | "multiple" | "extended";
+    initial?: ReadonlyArray<JSONPoint | SelectionRange>;
+    context?: SelectionContext;
+  };
   onChange?: () => void;
 }
 ```
@@ -397,17 +401,13 @@ Path arithmetic 은 모든 editor 가 공유하는 순수 path 조작. 이 5개 
 ```ts
 export function createSelection<T>(
   ops: JSONOps<T>,
-  options?: CreateSelectionOptions,
-): HeadlessSelectionState<T>;
-
-export interface UseSelectionOptions {
-  mode?: "single" | "multiple" | "extended";  // ARIA Listbox/Tree/Grid 어휘. 기본 "single"
-  initial?: ReadonlyArray<JSONPoint | SelectionRange>;
-}
-
-export interface CreateSelectionOptions extends UseSelectionOptions {
-  onChange?: () => void;
-}
+  options?: {
+    mode?: "single" | "multiple" | "extended";  // ARIA Listbox/Tree/Grid 어휘. 기본 "single"
+    initial?: ReadonlyArray<JSONPoint | SelectionRange>;
+    context?: SelectionContext;
+    onChange?: () => void;
+  },
+): SelectionState<T> & { dispose(): void };
 
 export type JSONPoint =
   | Pointer
@@ -680,19 +680,16 @@ export interface SelectionState<T> {
   subscribe(listener: (snapshot: SelectionSnap, previous: SelectionSnap) => void): () => void;
 }
 
-export interface HeadlessSelectionState<T> extends SelectionState<T> {
-  dispose(): void;
-}
 ```
 
-`createSelection(ops)` 가 headless state owner 이다.
+`createSelection(ops)` 가 headless state owner 이며 반환값은 `SelectionState<T>` 에 `dispose()` 를 더한 객체다.
 `selection.subscribe(listener)` 는 manual selection action 과 JSON op tracking 후의
 `SelectionSnap` 전이를 JSON snapshot 으로 발행한다.
 `anchor` / `focus` 는 W3C Selection API 의 좌표 이름이다. `selectionRanges[primaryIndex]` 가 키보드 입력·paste·format command 의 주 작용 범위다.
 `SelectionState.moveCursor` / `extendCursor` / `resolveCursor` 는 current selection 과 current JSON state 를 기준으로 cursor 를 이동하거나 확장한다. 기본 traversal 은 `scope` 안의 JSON source-order DFS 다. `query` 를 넘기면 RFC 9535 JSONPath 결과 Pointer[] 순서를 쓰고, `points` 를 넘기면 필터링/접힘/가상화/검색 결과처럼 앱이 계산한 visible `JSONPoint[]` 순서를 그대로 사용하며 `query` / `scope` traversal 은 건너뛴다. `includeScope` 는 root 포함 여부, `wrap` 은 boundary wrap 여부다.
 `SelectionState.selectScope` / `resolveScope` 는 같은 traversal options 로 Ctrl+A/select-visible 같은 전체 선택을 만든다. `query` 로 find 결과 전체를 바로 selection 으로 환원할 수 있다.
 `SelectionState.orderPrimaryRange` / `orderRanges` 는 directional anchor/focus 를 JSON source-order, JSONPath `query` 결과 순서, 또는 명시 `points` 순서 기준의 `start`/`end` 로 환원한다. 같은 path 의 `offset` 은 numeric order 로 비교하고, `edge: "before"` 는 같은 path 의 모든 offset 앞, `edge: "after"` 는 같은 path 의 모든 offset 뒤에 놓이며, ancestor point 의 `edge: "after"` 는 descendant 뒤 경계로 비교한다. `orderRanges` 는 모든 range 를 `start` 순서로 정렬하면서 원래 `selectionRanges` index 와 primary 여부를 보존한다. `SelectionState.spansForPointer` 는 정렬된 range 를 특정 pointer 안의 local span 으로 clip 한다. string 값이면 현재 길이로 `startOffset`/`endOffset` 을 해석하고, non-string offset domain 은 `SelectionSpanOptions.getLength` 로 앱이 길이를 주입한다. `SelectionState.textEdits` 는 selection 을 ordered pointer-local replacement plan 으로 환원한다. `SelectionState.textPatch` 는 JSON string leaf 에 대해 RFC 6902 `replace` patch 와 최종 collapsed selection 을 만들고, `deleteText` 는 selected text 또는 collapsed caret 의 backward/forward deletion 을 같은 patch 형태로 만든다. multi-pointer rich-text/block 편집은 `textEdits` 결과를 앱 도메인 patch 로 변환한다. `commands.replaceText(replacement, options?)` / `commands.deleteText(options?)` 는 그 string-leaf patch 와 최종 selection 을 document history 경로로 commit 하고 options 의 `label` / `origin` / `mergeKey` 를 metadata 로 전달한다. `check.replaceText` / `can.replaceText` / `check.deleteText` / `can.deleteText` 는 같은 options shape 로 같은 plan 을 mutation 없이 검증한다. delete/format/copy/paste/rendering 처럼 "선택 범위의 앞뒤" 와 pointer-local offset 이 필요한 command 는 앱마다 anchor/focus 비교를 다시 만들지 않는다.
-`rangeCount` 는 `selectionRanges.length`, `selectedCount` 는 `selectedPointers.length`, `hasSelection` 은 `selectedCount > 0` 이다. `isSelected(pointer)` 는 list/tree/grid 렌더링의 per-item selected predicate 이다. `togglePointer(pointer)` 는 `selectedPointers` projection 에서 개별 item 을 토글한다. expanded range 안의 한 pointer 를 끄면 남은 pointer 들은 독립 collapsed ranges 로 보존되므로 tree/grid 의 sparse selection 을 앱이 재구성할 필요가 없다. `toggleRange` 는 range shape 자체를 토글한다. `primaryRange` 는 주 작용 범위를 직접 반환하는 편의 getter 다. `anchorPointer` / `focusPointer` / `primaryPointer` / `caretPointer` 는 JSONPoint 를 Pointer 기반 명령으로 연결하기 위한 projection 이다. `primaryPointer` 는 primary range 의 focus path 다. `UseSelectionOptions.initial` 과 `selectRanges` 는 `JSONPoint` 또는 `{ anchor, focus }` range 를 받으므로 초기 상태부터 disjoint multi-range 와 offset/edge caret 을 표현할 수 있다. `selectedSource` 는 selection 이 없으면 `null`, 단일 선택이면 `Pointer`, 다중 선택이면 `Pointer[]` 이다. document facade 의 `commands.copy()` / `commands.cut()` / `commands.remove()`, `doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` / `check.cut()` / `check.remove()`, `can.copy()` / `can.cut()` / `can.remove()` 은 source 인자가 생략되면 `selectedSource` 를 사용하고, selection 이 비어 있으면 `empty_selection` 을 반환한다. `commands.remove()` 는 clipboard payload 없이 선택 source 를 RFC 6902 remove patch 로 commit 한다. `commands.move(to)`, `check.move(to)`, `can.move(to)` 는 source 인자가 생략되면 `primaryPointer` 를 source 로 사용하며, target 은 명시 Pointer 로 받는다. `commands.duplicate()`, `check.duplicate()`, `can.duplicate()` 은 source 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.duplicate({ newKey })` 는 선택된 object member 를 새 key 로 복제한다. `commands.replace(value)`, `check.replace(value)`, `can.replace(value)` 는 path 인자가 생략되면 `primaryPointer` 를 사용한다. 명시 첫 인자가 JSONPath 이면 `commands.replace(jsonpath, value)` 는 find 결과 전체를 atomic multi-match replace 로 commit 하고, `check.replace(jsonpath, value)` / `can.replace(jsonpath, value)` 는 같은 batch 를 mutation 없이 검증한다. `commands.replaceText(replacement, options?)`, `check.replaceText(replacement, options?)`, `can.replaceText(replacement, options?)`, `commands.deleteText(options?)`, `check.deleteText(options?)`, `can.deleteText(options?)` 는 `selectionRanges` 기반 JSON string-leaf text edit 을 처리한다. `commands.paste(payload)`, `doc.clipboard.paste()`, `check.paste(payload)`, `can.paste(payload)` 은 target 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.paste(payload, "after")` 같은 mode-only 호출도 같은 target 을 사용한다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. string value 위의 caret offset 은 state 가 있으면 현재 string 길이 안으로 clamp 되고, 같은 Pointer 가 살아남는 문서 편집 후에도 다시 clamp 된다. `context` 는 selection/caret 에 붙는 JSON-serializable 편집 컨텍스트다. rich-text stored marks, active tool state, find-mode state 처럼 document JSON 에 쓰면 안 되는 headless state 를 여기에 둔다. `setContext`, `clearContext`, `UseSelectionOptions.context`, and `SelectionAction.context` update it; selection movement and mutation tracking preserve it unless explicitly cleared or replaced. `selection` getter, `primaryRange`, `caret`, `snapshot()`, and `toJSON()` expose value snapshots: returned arrays/ranges/JSONPoint/context objects may be stored or mutated by callers without mutating live selection state. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap` as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores that wire-safe snapshot.
+`rangeCount` 는 `selectionRanges.length`, `selectedCount` 는 `selectedPointers.length`, `hasSelection` 은 `selectedCount > 0` 이다. `isSelected(pointer)` 는 list/tree/grid 렌더링의 per-item selected predicate 이다. `togglePointer(pointer)` 는 `selectedPointers` projection 에서 개별 item 을 토글한다. expanded range 안의 한 pointer 를 끄면 남은 pointer 들은 독립 collapsed ranges 로 보존되므로 tree/grid 의 sparse selection 을 앱이 재구성할 필요가 없다. `toggleRange` 는 range shape 자체를 토글한다. `primaryRange` 는 주 작용 범위를 직접 반환하는 편의 getter 다. `anchorPointer` / `focusPointer` / `primaryPointer` / `caretPointer` 는 JSONPoint 를 Pointer 기반 명령으로 연결하기 위한 projection 이다. `primaryPointer` 는 primary range 의 focus path 다. selection option 의 `initial` 과 `selectRanges` 는 `JSONPoint` 또는 `{ anchor, focus }` range 를 받으므로 초기 상태부터 disjoint multi-range 와 offset/edge caret 을 표현할 수 있다. `selectedSource` 는 selection 이 없으면 `null`, 단일 선택이면 `Pointer`, 다중 선택이면 `Pointer[]` 이다. document facade 의 `commands.copy()` / `commands.cut()` / `commands.remove()`, `doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` / `check.cut()` / `check.remove()`, `can.copy()` / `can.cut()` / `can.remove()` 은 source 인자가 생략되면 `selectedSource` 를 사용하고, selection 이 비어 있으면 `empty_selection` 을 반환한다. `commands.remove()` 는 clipboard payload 없이 선택 source 를 RFC 6902 remove patch 로 commit 한다. `commands.move(to)`, `check.move(to)`, `can.move(to)` 는 source 인자가 생략되면 `primaryPointer` 를 source 로 사용하며, target 은 명시 Pointer 로 받는다. `commands.duplicate()`, `check.duplicate()`, `can.duplicate()` 은 source 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.duplicate({ newKey })` 는 선택된 object member 를 새 key 로 복제한다. `commands.replace(value)`, `check.replace(value)`, `can.replace(value)` 는 path 인자가 생략되면 `primaryPointer` 를 사용한다. 명시 첫 인자가 JSONPath 이면 `commands.replace(jsonpath, value)` 는 find 결과 전체를 atomic multi-match replace 로 commit 하고, `check.replace(jsonpath, value)` / `can.replace(jsonpath, value)` 는 같은 batch 를 mutation 없이 검증한다. `commands.replaceText(replacement, options?)`, `check.replaceText(replacement, options?)`, `can.replaceText(replacement, options?)`, `commands.deleteText(options?)`, `check.deleteText(options?)`, `can.deleteText(options?)` 는 `selectionRanges` 기반 JSON string-leaf text edit 을 처리한다. `commands.paste(payload)`, `doc.clipboard.paste()`, `check.paste(payload)`, `can.paste(payload)` 은 target 인자가 생략되면 `primaryPointer` 를 사용하며, `commands.paste(payload, "after")` 같은 mode-only 호출도 같은 target 을 사용한다. collapsed selection (`selectionRanges.length === 1`, `anchor === focus`) 이 캐럿이고, `caret` 은 collapsed 일 때의 `focus` 다. string value 위의 caret offset 은 state 가 있으면 현재 string 길이 안으로 clamp 되고, 같은 Pointer 가 살아남는 문서 편집 후에도 다시 clamp 된다. `context` 는 selection/caret 에 붙는 JSON-serializable 편집 컨텍스트다. rich-text stored marks, active tool state, find-mode state 처럼 document JSON 에 쓰면 안 되는 headless state 를 여기에 둔다. `setContext`, `clearContext`, selection option 의 `context`, and `SelectionAction.context` update it; selection movement and mutation tracking preserve it unless explicitly cleared or replaced. `selection` getter, `primaryRange`, `caret`, `snapshot()`, and `toJSON()` expose value snapshots: returned arrays/ranges/JSONPoint/context objects may be stored or mutated by callers without mutating live selection state. `JSON.stringify(doc.selection)` serializes the same `SelectionSnap` as `doc.selection.snapshot()`, and `doc.selection.restore(snapshot)` restores that wire-safe snapshot.
 
 **자동 규칙 네 가지** — 사용자 wiring 0.
 
