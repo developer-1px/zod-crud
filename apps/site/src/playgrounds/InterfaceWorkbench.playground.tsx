@@ -18,6 +18,7 @@ import {
   type Pointer,
 } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
+import apiReferenceMarkdown from "../docs/zod-crud-api.md?raw";
 
 const Card = z.object({
   id: z.string(),
@@ -42,264 +43,11 @@ const BoardSchema = z.object({
 
 type Board = z.infer<typeof BoardSchema>;
 type BenchResult = { label: string; value: unknown };
-
-const API_REFERENCE = [
-  {
-    title: "zod-crud",
-    description: "React 없이도 쓸 수 있는 공개 entrypoint입니다. JSON Patch, JSON Pointer, document/selection/clipboard factory를 여기서 가져옵니다.",
-    points: [
-      "UI 프레임워크와 무관한 편집 로직은 이 경로만 사용합니다.",
-      "React hook은 optional peer를 분리하기 위해 zod-crud/react에서 따로 가져옵니다.",
-    ],
-    code: `import {
-  JSONCrudError,
-  createJSONDocument,
-  createSelection,
-  createClipboard,
-  applyOperation,
-  applyPatch,
-  parsePointer,
-  tryParsePointer,
-  buildPointer,
-  escapeSegment,
-  unescapeSegment,
-  PointerSyntaxError,
-  parentPointer,
-  lastSegment,
-  lastSegmentIndex,
-  appendSegment,
-  withLastSegment,
-  trackPointer,
-  type JSONOps,
-  type JSONDocument,
-  type SelectionState,
-  type JSONPatchOperation,
-  type JSONResult,
-  type Pointer,
-  type JSONPoint,
-  type SelectionAction,
-  type SelectionRange,
-  type SelectionSnap,
-} from "zod-crud";`,
-  },
-  {
-    title: "JSONDocument<T>",
-    description: "createJSONDocument와 useJSONDocument가 돌려주는 중심 facade입니다. 현재 값, mutation, command, selection, history, schema helper를 한 객체로 묶습니다.",
-    points: [
-      "일반 앱 코드는 이 객체 하나로 읽기, 쓰기, 선택, 복사/붙여넣기 흐름을 다룹니다.",
-      "commit은 patch와 최종 selection을 같은 history entry로 기록해야 할 때 씁니다.",
-    ],
-    code: `type JSONDocument<T> = {
-  readonly value: T;
-  readonly lastPatch: readonly JSONPatchOperation[];
-  readonly selection: SelectionState<T> | undefined;
-  readonly history: {
-    readonly canUndo: boolean;
-    readonly canRedo: boolean;
-    readonly undoDepth: number;
-    readonly redoDepth: number;
-    mergeLast(options?: { mergeKey?: string }): boolean;
-    transaction(fn: () => void): void;
-    transaction(options: HistoryTransactionOptions, fn: () => void): void;
-  };
-  readonly ops: JSONOps<T>;
-  readonly commands: Commands<T>;
-  readonly can: Can<T>;
-  readonly check: Check<T>;
-  readonly clipboard: ClipboardState<T>;
-  readonly schema: SchemaState<T>;
-  commit(ops: readonly JSONPatchOperation[], options?: CommitOptions): JSONResult;
-  at(path: Pointer): ReadResult;
-  exists(path: Pointer): boolean;
-  query(jsonpath: string): QueryResult;
-  entries(path: Pointer): EntriesResult;
-};`,
-  },
-  {
-    title: "JSONOps<T>",
-    description: "가장 낮은 수준의 mutation API입니다. RFC 6902 operation을 만들고 적용하며, schema 검증과 subscribe 알림을 통과합니다.",
-    points: [
-      "add/remove/replace/move/copy/test는 단일 JSON Patch operation에 대응합니다.",
-      "patch는 여러 operation을 한 번에 적용하고, metadata로 history merge나 selection 정보를 넘길 수 있습니다.",
-    ],
-    code: `type JSONOps<T> = {
-  add(path, value): JSONResult;
-  remove(path): JSONResult;
-  replace(path, value): JSONResult;
-  move(from, path): JSONResult;
-  copy(from, path): JSONResult;
-  test(path, value): JSONResult;
-  patch(ops, metadata?): JSONResult;
-  load(value, options?): JSONResult;
-  reset(value?): JSONResult;
-  subscribe(listener): () => void;
-  readonly state: T;
-};`,
-  },
-  {
-    title: "Commands<T>",
-    description: "버튼, 메뉴, 키보드 액션에 연결하기 좋은 고수준 명령 묶음입니다. selection을 기본 source/target으로 사용할 수 있습니다.",
-    points: [
-      "duplicate, move, remove, paste 같은 편집 의도를 patch로 변환해서 실행합니다.",
-      "replaceText/deleteText는 JSON Pointer selection과 텍스트 offset selection을 함께 처리합니다.",
-    ],
-    code: `type Commands<T> = {
-  select(action, mode?): SelectionSnap;
-  selectScope(options?): SelectionScopeResult;
-  moveCursor(direction, options?): SelectionCursorResult;
-  extendCursor(direction, options?): SelectionCursorResult;
-  find(jsonpath): FindResult;
-  move(fromOrTo, to?): MoveResult<T>;
-  duplicate(sourceOrOpts?, opts?): DuplicateResult<T>;
-  remove(source?): RemoveResult;
-  replace(pathOrValue, value?): ReplaceResult<T>;
-  replaceText(replacement, options?): ReplaceTextResult;
-  deleteText(options?): DeleteTextResult;
-  cut(source?): CutResult<T>;
-  copy(source?): CopyResult;
-  paste(payload, targetOrMode?, modeOrOptions?, options?): PasteResult<T>;
-  undo(): boolean;
-  redo(): boolean;
-};`,
-  },
-  {
-    title: "SelectionState<T>",
-    description: "JSON 문서 위의 selection 상태입니다. pointer 선택, range 선택, caret, 텍스트 편집용 offset을 같은 모델로 다룹니다.",
-    points: [
-      "collapse/toggle/selectRanges는 클릭, command palette, multi-select UI에서 직접 쓰기 좋습니다.",
-      "snapshot/restore/subscribe는 history, 외부 상태 동기화, 테스트에서 안정적인 경계가 됩니다.",
-    ],
-    code: `type SelectionState<T> = SelectionSnap & {
-  readonly rangeCount: number;
-  readonly selectedCount: number;
-  readonly hasSelection: boolean;
-  readonly isCollapsed: boolean;
-  readonly type: SelectionType;
-  readonly primaryRange: SelectionRange | null;
-  readonly anchorPointer: Pointer | null;
-  readonly focusPointer: Pointer | null;
-  readonly selectedSource: SelectionSource | null;
-  readonly primaryPointer: Pointer | null;
-  readonly caret: JSONPoint | null;
-  readonly caretPointer: Pointer | null;
-  readonly context: SelectionContext | undefined;
-  collapse(point): void;
-  setBaseAndExtent(anchor, focus): void;
-  extend(point): void;
-  addRange(pointOrRange): void;
-  removeRange(pointOrRangeOrIndex): void;
-  toggleRange(pointOrRange): void;
-  togglePointer(pointer): void;
-  moveCursor(direction, options?): SelectionCursorResult;
-  extendCursor(direction, options?): SelectionCursorResult;
-  resolveCursor(direction, options?): SelectionCursorResult;
-  orderPrimaryRange(options?): SelectionRangeOrderResult;
-  orderRanges(options?): SelectionRangesOrderResult;
-  spansForPointer(pointer, options?): SelectionPointerSpansResult;
-  textEdits(replacement, options?): SelectionTextEditsResult;
-  textPatch(replacement, options?): ReplaceSelectionTextResult;
-  deleteText(options?): DeleteSelectionTextResult;
-  selectScope(options?): SelectionScopeResult;
-  resolveScope(options?): SelectionScopeTarget;
-  selectRanges(ranges, anchor?, focus?, primaryIndex?): void;
-  setContext(context): void;
-  clearContext(): void;
-  empty(): void;
-  isSelected(pointer): boolean;
-  snapshot(): SelectionSnap;
-  toJSON(): SelectionSnap;
-  restore(snapshot): void;
-  subscribe(listener): () => void;
-};`,
-  },
-  {
-    title: "ClipboardState<T>",
-    description: "문서 내부 copy/cut/paste buffer입니다. selection이 있으면 source를 생략해도 현재 선택을 기준으로 동작합니다.",
-    points: [
-      "copy/cut은 pointer source를 정규화하고, paste는 target과 mode에 맞는 patch를 만듭니다.",
-      "write/read/clear는 외부 clipboard나 테스트 fixture와 연결할 때 씁니다.",
-    ],
-    code: `type ClipboardState<T> = {
-  readonly hasData: boolean;
-  readonly source: Pointer | null;
-  readonly sources: readonly Pointer[] | null;
-  read(): ClipboardReadResult;
-  write(payload, options?): JSONResult;
-  clear(): void;
-  copy(source?): CopyResult;
-  cut(source?): CutResult<T>;
-  paste(targetOrMode?, modeOrOptions?, options?): ClipboardPasteResult<T>;
-};`,
-  },
-  {
-    title: "Check / Can / SchemaState",
-    description: "실행 전에 가능한지 확인하는 표면입니다. check는 실패 이유를 돌려주고, can은 UI disabled 처리에 맞게 boolean만 돌려줍니다.",
-    points: [
-      "check.patch와 schema.accepts는 실제 mutation 없이 Zod schema 기준으로 실패 원인을 확인합니다.",
-      "schema.at/kind/describe는 pointer 위치의 타입 정보를 UI에 노출할 때 씁니다.",
-    ],
-    code: `type Check<T> = {
-  selectScope(options?): CheckResult;
-  moveCursor(direction, options?): CheckResult;
-  extendCursor(direction, options?): CheckResult;
-  find(jsonpath): CheckResult;
-  move(fromOrTo, to?): CheckResult;
-  duplicate(sourceOrOpts?, opts?): CheckResult;
-  remove(source?): CheckResult;
-  replace(pathOrValue, value?): CheckResult;
-  replaceText(replacement, options?): CheckResult;
-  deleteText(options?): CheckResult;
-  cut(source?): CheckResult;
-  copy(source?): CheckResult;
-  paste(payload, targetOrMode?, modeOrOptions?, options?): CheckResult;
-  patch(ops): CheckResult;
-  readonly undo: CheckResult;
-  readonly redo: CheckResult;
-};
-
-type Can<T> = {
-  selectScope(options?): boolean;
-  moveCursor(direction, options?): boolean;
-  extendCursor(direction, options?): boolean;
-  find(jsonpath): boolean;
-  move(fromOrTo, to?): boolean;
-  duplicate(sourceOrOpts?, opts?): boolean;
-  remove(source?): boolean;
-  replace(pathOrValue, value?): boolean;
-  replaceText(replacement, options?): boolean;
-  deleteText(options?): boolean;
-  cut(source?): boolean;
-  copy(source?): boolean;
-  paste(payload, targetOrMode?, modeOrOptions?, options?): boolean;
-  readonly undo: boolean;
-  readonly redo: boolean;
-};
-
-type SchemaState<T> = {
-  at(path, mode?): SchemaQueryResult;
-  kind(path, mode?): SchemaKindResult;
-  accepts(path, value, mode?): CheckResult;
-  describe(path, mode?): SchemaDescriptionResult;
-};`,
-  },
-  {
-    title: "zod-crud/react",
-    description: "React component에서 JSONDocument facade를 쓰기 위한 hook입니다. headless API와 같은 표면을 렌더 사이클에 맞춰 제공합니다.",
-    points: [
-      "schema와 initial value를 넘기면 doc.value, doc.ops, doc.commands, doc.selection을 바로 사용할 수 있습니다.",
-      "history와 selection 옵션은 데모 상단의 undo/redo, multi-select, clipboard 흐름에 그대로 연결됩니다.",
-    ],
-    code: `import { useJSONDocument } from "zod-crud/react";
-
-const doc = useJSONDocument(schema, initial, {
-  strict?: boolean;
-  onError?: (error: JSONCrudError) => void;
-  history?: number;
-  selection?: boolean | UseSelectionOptions;
-  onChange?: () => void;
-});`,
-  },
-] as const;
+type MarkdownBlock =
+  | { type: "heading"; level: number; text: string }
+  | { type: "paragraph"; text: string }
+  | { type: "list"; items: string[] }
+  | { type: "code"; language: string; code: string };
 
 const initialBoard: Board = {
   title: "Workbench board",
@@ -718,28 +466,151 @@ export function InterfaceWorkbench() {
 function ApiReference() {
   return (
     <section className="rounded border border-stone-200 bg-white p-3">
-      <h2 className="mb-3 mt-0 text-xs font-semibold uppercase tracking-wide text-stone-400">zod-crud API</h2>
-      <p className="mb-3 max-w-3xl text-sm leading-6 text-stone-600">
-        zod-crud는 Zod schema를 기준으로 JSON 문서를 읽고 편집하는 headless API입니다. 아래 표면만 잡으면 React 데모, headless 테스트, 외부 앱 통합을 같은 인터페이스로 다룰 수 있습니다.
-      </p>
-      <div className="grid gap-3 lg:grid-cols-2">
-        {API_REFERENCE.map((item) => (
-          <div key={item.title} className="min-w-0">
-            <h3 className="mb-1 mt-0 text-[11px] font-semibold text-stone-500">{item.title}</h3>
-            <p className="mb-2 text-xs leading-5 text-stone-600">{item.description}</p>
-            <ul className="mb-2 list-disc pl-4 text-xs leading-5 text-stone-500">
-              {item.points.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-            <pre className="max-h-80 overflow-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
-              <code>{item.code}</code>
-            </pre>
-          </div>
-        ))}
-      </div>
+      <MarkdownViewer source={apiReferenceMarkdown} />
     </section>
   );
+}
+
+function MarkdownViewer({ source }: { source: string }) {
+  const blocks = useMemo(() => parseMarkdown(source), [source]);
+
+  return (
+    <article className="grid gap-4 text-sm text-stone-700">
+      {blocks.map((block, index) => (
+        <MarkdownBlockView key={`${block.type}-${index}`} block={block} />
+      ))}
+    </article>
+  );
+}
+
+function MarkdownBlockView({ block }: { block: MarkdownBlock }) {
+  if (block.type === "heading") {
+    const HeadingTag = (block.level === 1 ? "h2" : block.level === 2 ? "h3" : "h4") as "h2" | "h3" | "h4";
+    const className = block.level === 1
+      ? "mb-0 mt-0 text-base font-semibold text-stone-900"
+      : block.level === 2
+        ? "mb-0 mt-2 border-t border-stone-200 pt-4 text-sm font-semibold text-stone-900"
+        : "mb-0 mt-1 text-xs font-semibold uppercase tracking-wide text-stone-500";
+
+    return (
+      <HeadingTag className={className}>
+        <InlineMarkdown text={block.text} />
+      </HeadingTag>
+    );
+  }
+
+  if (block.type === "paragraph") {
+    return (
+      <p className="m-0 max-w-3xl leading-6 text-stone-600">
+        <InlineMarkdown text={block.text} />
+      </p>
+    );
+  }
+
+  if (block.type === "list") {
+    return (
+      <ul className="m-0 max-w-3xl list-disc pl-5 text-sm leading-6 text-stone-600">
+        {block.items.map((item) => (
+          <li key={item}>
+            <InlineMarkdown text={item} />
+          </li>
+        ))}
+      </ul>
+    );
+  }
+
+  return (
+    <pre className="m-0 max-h-[28rem] overflow-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
+      <code>{block.code}</code>
+    </pre>
+  );
+}
+
+function InlineMarkdown({ text }: { text: string }) {
+  const nodes: ReactNode[] = [];
+  const pattern = /`([^`]+)`/g;
+  let cursor = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = pattern.exec(text)) !== null) {
+    if (match.index > cursor) nodes.push(text.slice(cursor, match.index));
+    nodes.push(
+      <code key={`${match.index}-${match[1]}`} className="rounded bg-stone-100 px-1 py-0.5 font-mono text-[0.85em] text-stone-800">
+        {match[1]}
+      </code>,
+    );
+    cursor = match.index + match[0].length;
+  }
+
+  if (cursor < text.length) nodes.push(text.slice(cursor));
+  return <>{nodes}</>;
+}
+
+function parseMarkdown(source: string): MarkdownBlock[] {
+  const lines = source.replace(/\r\n/g, "\n").split("\n");
+  const blocks: MarkdownBlock[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index] ?? "";
+    const trimmed = line.trim();
+
+    if (trimmed === "") {
+      index += 1;
+      continue;
+    }
+
+    if (trimmed.startsWith("```")) {
+      const language = trimmed.slice(3).trim();
+      const code: string[] = [];
+      index += 1;
+      while (index < lines.length && !(lines[index] ?? "").trim().startsWith("```")) {
+        code.push(lines[index] ?? "");
+        index += 1;
+      }
+      blocks.push({ type: "code", language, code: code.join("\n") });
+      index += 1;
+      continue;
+    }
+
+    const heading = /^(#{1,3})\s+(.+)$/.exec(trimmed);
+    if (heading) {
+      blocks.push({ type: "heading", level: heading[1]?.length ?? 1, text: heading[2] ?? "" });
+      index += 1;
+      continue;
+    }
+
+    if (trimmed.startsWith("- ")) {
+      const items: string[] = [];
+      while (index < lines.length) {
+        const item = (lines[index] ?? "").trim();
+        if (!item.startsWith("- ")) break;
+        items.push(item.slice(2).trim());
+        index += 1;
+      }
+      blocks.push({ type: "list", items });
+      continue;
+    }
+
+    const paragraph: string[] = [];
+    while (index < lines.length) {
+      const paragraphLine = lines[index] ?? "";
+      const paragraphTrimmed = paragraphLine.trim();
+      if (
+        paragraphTrimmed === ""
+        || paragraphTrimmed.startsWith("```")
+        || paragraphTrimmed.startsWith("- ")
+        || /^(#{1,3})\s+/.test(paragraphTrimmed)
+      ) {
+        break;
+      }
+      paragraph.push(paragraphTrimmed);
+      index += 1;
+    }
+    blocks.push({ type: "paragraph", text: paragraph.join(" ") });
+  }
+
+  return blocks;
 }
 
 function Badge({ children }: { children: ReactNode }) {
