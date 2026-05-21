@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless JSON state, document, selection, clipboard, and history facades.
-import { createClipboard, createJSON, createJSONDocument, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
+// Headless document, selection, clipboard, and history facades.
+import { createClipboard, createJSONDocument, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -88,8 +88,9 @@ plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)` or
 `doc.commands.deleteText(...)` when the string-leaf edit should commit through
 document history directly; options may include `label`, `origin`, and
 `mergeKey` history metadata.
-Use `createJSON(schema, initial, options?)` for standalone low-level JSON state
-and `JSONOps<T>`.
+Use `doc.ops` for low-level JSON operations through the document facade; the
+standalone `JSONOps<T>` type is the shared ops contract for headless
+composition.
 Use `createClipboard(args)` for standalone headless clipboard state.
 Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,
 `historyMergeLast`, `historyCanUndo`, and `historyCanRedo` for standalone

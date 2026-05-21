@@ -72,7 +72,7 @@ src/JSONCrudError.ts  throwable wrap. boundary error 어휘 (public API).
 7. **WAI-ARIA 어휘 정합** — selection mode (`single`/`multiple`/`extended`), per-item selected 상태 (`aria-selected` 의미). ARIA 패턴 (Listbox · Tree · Grid · TreeGrid) 에서 정의된 의미만 차용한다.
 8. **자동 추적** — RFC 6902 op 적용 시 selection 이 자동 추종 (이동 · 제거 · 삽입 따라 Pointer 갱신 · 소실). 사용자 wiring 0.
 9. **Schema mandatory** — `useJSONDocument(schema, initial)` / `createJSONDocument(schema, initial)` 에서 schema 는 required. 모든 mutating verb 는 `core/schema/preFlight` gate 를 통과한다. `preFlight` 는 dry-apply 후 전체 `schema.safeParse` 를 실행하므로 cross-field `.refine` / `.superRefine` 도 commit 전에 `schema_violation` 으로 거부된다.
-10. **공통 facade** — 루트 `zod-crud` 의 `createJSONDocument` 와 `zod-crud/react` 의 `useJSONDocument` 가 같은 document surface 를 제공한다. Low-level data owner 는 `createJSON` 이다.
+10. **공통 facade** — 루트 `zod-crud` 의 `createJSONDocument` 와 `zod-crud/react` 의 `useJSONDocument` 가 같은 document surface 를 제공한다. Low-level operations 는 document 의 `doc.ops` 로 노출한다.
 
 ### 0.4 Boundary
 
@@ -270,7 +270,7 @@ function assertSerializable(x: unknown, where: string): JSONResult;
 ### 4.4 History — `JSONDocument` facade owner
 
 History 는 `JSONDocument` facade 가 owner 다. headless `createJSONDocument` 와 React `useJSONDocument` 가
-같은 표면을 제공한다. `createJSON` 은 RFC 6902 ops 와 lifecycle 만 제공하고,
+같은 표면을 제공한다. RFC 6902 ops 와 lifecycle 은 `doc.ops` 로 노출하고,
 undo/redo stack 은 `JSONDocument.history` 와 `JSONDocument.commands.undo/redo` 에서 다룬다.
 
 내부 형식: `JSONPatchOperation[]` forward/inverse stack. 표준 형식 그대로 저장하므로 외부 직렬화 무료.
@@ -279,38 +279,18 @@ undo/redo stack 은 `JSONDocument.history` 와 `JSONDocument.commands.undo/redo`
 
 ## 5. Public API
 
-### 5.1 `createJSON` — low-level data owner
+### 5.1 Shared JSON options
 
 ```ts
-export function createJSON<S extends z.ZodType>(
-  schema: S,
-  initial: z.input<S>,
-  options?: CreateJSONOptions,
-): HeadlessJSONState<z.output<S>>;
-
 export interface UseJSONOptions {
   strict?: boolean;     // dev=true, prod=false 기본
   onError?: (e: JSONCrudError) => void;
 }
-
-export interface CreateJSONOptions extends UseJSONOptions {
-  onChange?: () => void;
-}
-
-export interface JSONState<T> {
-  readonly value: T;
-  readonly ops: JSONOps<T>;
-  subscribe(listener: JSONChangeListener): () => void;
-}
-
-export interface HeadlessJSONState<T> extends JSONState<T> {
-  dispose(): void;
-}
 ```
 
-`createJSON` owns schema-valid JSON state and the low-level `JSONOps<T>` surface
-without React. Undo/redo, selection, clipboard, commands, and
-schema/read facades remain document-level composition.
+`UseJSONOptions` is shared by the headless and React document facades. The
+public state owner is `createJSONDocument`; low-level mutation is reached
+through the document's `JSONOps<T>` surface.
 
 ### 5.2 `JSONOps` — 표준 6 op + lifecycle
 
@@ -1058,7 +1038,7 @@ export class JSONCrudError extends Error {
 index.ts              ─ headless public export (SPEC §5)
 react.ts              ─ React public export (`zod-crud/react`)
 createJSONDocument.ts ─ headless document facade (SPEC §5.9)
-createJSON.ts         ─ headless low-level JSON state owner (SPEC §5.1·§5.2)
+createJSON.ts         ─ internal low-level JSON state owner for createJSONDocument
 selection.ts          ─ headless selection state facade (SPEC §5.7)
 jsonOps.ts            ─ JSONOps boundary type
 hooks/

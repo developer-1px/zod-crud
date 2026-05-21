@@ -1,4 +1,4 @@
-// jsonOps — boundary type. createJSON/createJSONDocument producers ↔ command
+// jsonOps — boundary type. Internal state/document producers and command
 // builders consumers 사이의 contract. neutral 위치 (특정 layer 에 속하지 않는 boundary type).
 //
 // JSONOps<T>: low-level JSON operation 표면. RFC 6902 6 op + lifecycle + pub/sub.

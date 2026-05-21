@@ -1,14 +1,14 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSON } from "../src/index.js";
+import { createJSON } from "../src/createJSON.js";
 
 const Schema = z.object({
   title: z.string(),
   tags: z.array(z.string()),
 });
 
-describe("createJSON", () => {
+describe("internal createJSON state owner", () => {
   test("owns low-level JSONOps state without React", () => {
     const changes: unknown[] = [];
     const json = createJSON(Schema, { title: "draft", tags: [] }, {
@@ -42,7 +42,7 @@ describe("createJSON", () => {
     expect(changes).toHaveLength(6);
   });
 
-  test("load/reset and set match the low-level createJSON contract", () => {
+  test("load/reset and set match the internal low-level state contract", () => {
     const json = createJSON(Schema, { title: "draft", tags: [] }, { strict: false });
 
     expect(json.ops.set("/tags/0", "first")).toEqual({ ok: true });
