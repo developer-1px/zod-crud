@@ -1,4 +1,6 @@
 node_modules/
+.claude/
+.idea/
 .npm-cache/
 dist/
 packages/*/dist/
@@ -6,5 +8,3 @@ apps/*/dist/
 apps/*/coverage/
 *.tgz
 *.tsbuildinfo
-.claude/scheduled_tasks.lock
-.claude/*.local.md
