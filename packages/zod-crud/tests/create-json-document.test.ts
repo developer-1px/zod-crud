@@ -328,7 +328,6 @@ describe("createJSONDocument — headless facade", () => {
         focus: { path: "/doc/blocks/0", offset: 2 },
         context: { marks: ["bold"] },
         selectionAfter: {
-          ranges: ["/doc/blocks/0"],
           selectedPointers: ["/doc/blocks/0"],
           selectionRanges: [{
             anchor: { path: "/doc/blocks/0", offset: 2 },
@@ -654,7 +653,6 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.selection?.isSelected("/items/0")).toBe(true);
     expect(doc.selection?.isSelected("/items/1")).toBe(true);
     expect(doc.selection?.isSelected("/meta/foo")).toBe(false);
-    expect(doc.selection?.containsNode("/items/0")).toBe(true);
     expect(doc.selection?.primaryRange).toEqual({ anchor: "/items/1", focus: "/items/1" });
     expect(doc.selection?.anchorPointer).toBe("/items/1");
     expect(doc.selection?.focusPointer).toBe("/items/1");

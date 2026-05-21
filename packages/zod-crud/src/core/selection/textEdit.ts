@@ -325,7 +325,6 @@ function textDeleteSelectionSnap(
   const selectedPointers = uniquePointers(selectionRanges.map((range) => pointPath(range.focus)));
   const primary = selectionRanges[primaryIndex] ?? null;
   const next: SelectionSnap = {
-    ranges: selectedPointers,
     selectedPointers,
     selectionRanges: selectionRanges.map(cloneRange),
     primaryIndex,
@@ -412,7 +411,6 @@ function textEditSelection(
   const primary = selectionRanges[primaryIndex] ?? null;
   const selectedPointers = uniquePointers(edits.map((edit) => edit.pointer));
   const next: SelectionSnap = {
-    ranges: selectedPointers,
     selectedPointers,
     selectionRanges,
     primaryIndex,

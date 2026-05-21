@@ -51,7 +51,6 @@ describe("verbs/move", () => {
 describe("core/selection reducer", () => {
   test("collapse action 이 caret selection 으로 환원", () => {
     const s = reduceSelection(EMPTY_SELECTION, { type: "collapse", pointer: "/items/0" }, "single");
-    expect(s.ranges).toEqual(["/items/0"]);
     expect(s.selectedPointers).toEqual(["/items/0"]);
     expect(s.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
     expect(s.primaryIndex).toBe(0);
@@ -75,7 +74,6 @@ describe("core/selection reducer", () => {
     const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
     const s = reduceSelection(EMPTY_SELECTION, { type: "collapse", point }, "single");
 
-    expect(s.ranges).toEqual(["/items/0/name"]);
     expect(s.selectedPointers).toEqual(["/items/0/name"]);
     expect(s.selectionRanges).toEqual([{ anchor: point, focus: point }]);
     expect(s.anchor).toEqual(point);
@@ -135,7 +133,7 @@ describe("core/selection reducer", () => {
     const first = reduceSelection(EMPTY_SELECTION, { type: "addRange", pointer: "/items/0" }, "multiple");
     const second = reduceSelection(first, { type: "addRange", range: { anchor: "/items/1/name", focus: "/items/1/name" } }, "multiple");
 
-    expect(second.ranges).toEqual(["/items/0", "/items/1/name"]);
+    expect(second.selectedPointers).toEqual(["/items/0", "/items/1/name"]);
     expect(second.selectionRanges).toEqual([
       { anchor: "/items/0", focus: "/items/0" },
       { anchor: "/items/1/name", focus: "/items/1/name" },
@@ -228,7 +226,7 @@ describe("core/selection reducer", () => {
       "extended",
       initial,
     );
-    expect(s.ranges).toEqual(["items/0", "/items/1"]);
+    expect(s.selectedPointers).toEqual(["items/0", "/items/1"]);
     expect(s.anchor).toBe("items/0");
     expect(s.focus).toBe("/items/1");
   });

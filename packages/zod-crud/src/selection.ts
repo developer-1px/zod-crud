@@ -176,7 +176,6 @@ export interface SelectionState<T> extends SelectionSnap {
   clearContext(): void;
   empty(): void;
   isSelected(pointer: Pointer): boolean;
-  containsNode(pointer: Pointer): boolean;
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
   restore(snapshot: SelectionSnap): void;
@@ -220,7 +219,6 @@ export function createSelection<T>(
   });
 
   return {
-    get ranges() { return [...snap.ranges]; },
     get selectedPointers() { return [...snap.selectedPointers]; },
     get selectionRanges() { return selectionSnapshot(snap).selectionRanges; },
     get primaryIndex() { return snap.primaryIndex; },
@@ -315,7 +313,6 @@ export function createSelection<T>(
     clearContext() { dispatch({ type: "clearContext" }); },
     empty() { dispatch({ type: "empty" }); },
     isSelected(pointer) { return isSelected(snap, pointer); },
-    containsNode(pointer) { return isSelected(snap, pointer); },
     snapshot() { return selectionSnapshot(snap); },
     toJSON() { return selectionSnapshot(snap); },
     restore(snapshot) { setSnap(restoreSelection(snapshot, mode, ops.state)); },
@@ -337,7 +334,6 @@ function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boole
     && samePointOrNull(left.anchor, right.anchor)
     && samePointOrNull(left.focus, right.focus)
     && sameSelectionContext(left.context, right.context)
-    && samePointerArray(left.ranges, right.ranges)
     && samePointerArray(left.selectedPointers, right.selectedPointers)
     && left.selectionRanges.length === right.selectionRanges.length
     && left.selectionRanges.every((range, index) => sameRange(range, right.selectionRanges[index]!));

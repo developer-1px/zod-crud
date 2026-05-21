@@ -263,11 +263,6 @@ export type SelectionPointerSpansResult =
     };
 
 export interface SelectionSnap {
-  /**
-   * Legacy selected-pointer list. Use `selectionRanges` for caret/range shape
-   * and `selectedPointers` when item selection semantics are needed.
-   */
-  ranges: ReadonlyArray<Pointer>;
   selectedPointers: ReadonlyArray<Pointer>;
   selectionRanges: ReadonlyArray<SelectionRange>;
   primaryIndex: number;
@@ -277,7 +272,6 @@ export interface SelectionSnap {
 }
 
 export const EMPTY_SELECTION: SelectionSnap = {
-  ranges: [],
   selectedPointers: [],
   selectionRanges: [],
   primaryIndex: -1,
@@ -351,7 +345,6 @@ export function caretPointer(s: SelectionSnap): Pointer | null {
 
 export function selectionSnapshot(s: SelectionSnap): SelectionSnap {
   const snapshot = {
-    ranges: [...s.ranges],
     selectedPointers: [...s.selectedPointers],
     selectionRanges: s.selectionRanges.map(cloneRange),
     primaryIndex: s.primaryIndex,
@@ -915,7 +908,6 @@ function snapFromRanges(
   const primary = selectionRanges[nextPrimary]!;
   const selectedPointers = collectSelectedPointers(selectionRanges, state);
   return {
-    ranges: selectedPointers,
     selectedPointers,
     selectionRanges,
     primaryIndex: nextPrimary,
@@ -1195,7 +1187,6 @@ function withSelectionContext(snap: SelectionSnap, context: SelectionContext | u
 function withoutSelectionContext(snap: SelectionSnap): SelectionSnap {
   if (snap.context === undefined) return snap;
   return {
-    ranges: snap.ranges,
     selectedPointers: snap.selectedPointers,
     selectionRanges: snap.selectionRanges,
     primaryIndex: snap.primaryIndex,

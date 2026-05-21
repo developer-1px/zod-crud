@@ -508,7 +508,6 @@ describe("createSelection", () => {
         replacement: "AX",
       }],
       selection: {
-        ranges: ["/items/0/name"],
         selectedPointers: ["/items/0/name"],
         selectionRanges: [{
           anchor: { path: "/items/0/name", offset: 2 },
