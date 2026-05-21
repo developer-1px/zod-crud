@@ -62,7 +62,7 @@ export interface JSONDocumentHistory {
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
 
-export type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
+type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
 
 export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   /**

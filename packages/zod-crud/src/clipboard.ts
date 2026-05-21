@@ -15,21 +15,19 @@ import {
 import { cut, type CutError, type CutOk } from "./verbs/cut.js";
 import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk, type PasteOptions } from "./verbs/paste.js";
 
-export type { ClipboardSource } from "./verbs/copy.js";
-
 export interface ClipboardWriteOptions {
   source?: Pointer | null;
   sources?: ReadonlyArray<Pointer> | null;
 }
 
-export interface ClipboardReadOk {
+interface ClipboardReadOk {
   ok: true;
   payload: unknown;
   source: Pointer | null;
   sources: ReadonlyArray<Pointer> | null;
 }
 
-export interface ClipboardEmpty {
+interface ClipboardEmpty {
   ok: false;
   code: "empty_clipboard";
   message: string;

@@ -20,7 +20,6 @@ export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONDocument,
   JSONDocumentCommitOptions,
-  JSONDocumentCommitSelection,
   JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./createJSONDocument.js";
@@ -34,11 +33,8 @@ export type {
 } from "./selection.js";
 export { createClipboard } from "./clipboard.js";
 export type {
-  ClipboardEmpty,
   ClipboardPasteResult,
-  ClipboardReadOk,
   ClipboardReadResult,
-  ClipboardSource,
   ClipboardState,
   ClipboardWriteOptions,
   CreateClipboardOptions,
@@ -97,7 +93,6 @@ export type {
   SelectionScopeOptions,
   SelectionScopeResult,
   SelectionScopeTarget,
-  SelectionSource,
   SelectionSpanOptions,
   SelectionSnap,
   SelectionType,

@@ -438,8 +438,6 @@ export interface SelectionRange {
   focus: JSONPoint;
 }
 
-export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
-
 export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
 export type SelectionCursorErrorCode =
   | "invalid_pointer"
@@ -655,7 +653,7 @@ export interface SelectionState<T> {
   context: SelectionContext | undefined;      // selection-local JSON editing context
   anchorPointer: Pointer | null;       // anchor 의 Pointer projection
   focusPointer: Pointer | null;        // focus 의 Pointer projection
-  selectedSource: SelectionSource | null;  // copy/cut/remove source projection
+  selectedSource: Pointer | ReadonlyArray<Pointer> | null;  // copy/cut/remove source projection
   primaryPointer: Pointer | null;      // primaryRange.focus 의 Pointer
   caret: JSONPoint | null;             // collapsed selection 의 focus. range/none 이면 null
   caretPointer: Pointer | null;        // caret 의 Pointer
@@ -771,10 +769,8 @@ export interface JSONDocument<T> {
   entries(path: Pointer): EntriesResult;
 }
 
-export type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
-
 export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
-  selection?: JSONDocumentCommitSelection;
+  selection?: SelectionAction | SelectionSnap;
 }
 ```
 

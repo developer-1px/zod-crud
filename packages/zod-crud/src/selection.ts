@@ -106,7 +106,6 @@ export type {
   SelectionTextEditErrorCode,
   SelectionTextEditOptions,
   SelectionTextEditsResult,
-  SelectionSource,
   SelectionSnap,
   SelectionType,
 };
