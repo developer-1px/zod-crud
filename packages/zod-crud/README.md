@@ -380,7 +380,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
-| `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionMode`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>` | selection types |
+| `JSONPoint`, `SelectionRange`, `SelectionSnap`, `SelectionAction`, `SelectionState<T>` | selection state/action types |
 
 ## Guarantees
 

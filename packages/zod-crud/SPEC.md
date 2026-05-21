@@ -423,14 +423,14 @@ export interface SelectionRange {
   focus: JSONPoint;
 }
 
-export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
-export type SelectionCursorErrorCode =
+type SelectionCursorDirection = "first" | "previous" | "next" | "last";
+type SelectionCursorErrorCode =
   | "invalid_pointer"
   | "path_not_found"
   | "empty_scope"
   | "cursor_boundary";
 
-export interface SelectionCursorOptions {
+interface SelectionCursorOptions {
   points?: ReadonlyArray<JSONPoint>; // explicit visible/virtual traversal order
   query?: string;        // RFC 9535 JSONPath result order. points 가 있으면 무시.
   scope?: Pointer;        // traversal root. 기본 document root.
@@ -438,13 +438,13 @@ export interface SelectionCursorOptions {
   wrap?: boolean;         // next/previous boundary wrap. 기본 false.
 }
 
-export type SelectionScopeErrorCode =
+type SelectionScopeErrorCode =
   | "invalid_pointer"
   | "path_not_found"
   | "syntax_error"
   | "empty_scope";
 
-export interface SelectionScopeOptions {
+interface SelectionScopeOptions {
   points?: ReadonlyArray<JSONPoint>; // explicit visible/virtual selection order
   query?: string;        // RFC 9535 JSONPath result order. points 가 있으면 무시.
   scope?: Pointer;        // selection root. 기본 document root.
@@ -452,7 +452,7 @@ export interface SelectionScopeOptions {
   primaryIndex?: number;  // 기본: 마지막 point
 }
 
-export type SelectionCursorResult =
+type SelectionCursorResult =
   | {
       ok: true;
       direction: SelectionCursorDirection;
@@ -470,7 +470,7 @@ export type SelectionCursorResult =
       selection: SelectionSnap;
     };
 
-export type SelectionScopeResult =
+type SelectionScopeResult =
   | {
       ok: true;
       points: ReadonlyArray<JSONPoint>;
@@ -484,12 +484,12 @@ export type SelectionScopeResult =
       selection: SelectionSnap;
     };
 
-export type SelectionScopeTarget =
+type SelectionScopeTarget =
   | Omit<Extract<SelectionScopeResult, { ok: true }>, "selection">
   | Omit<Extract<SelectionScopeResult, { ok: false }>, "selection">;
 
-export type SelectionDirection = "forward" | "backward" | "none";
-export type SelectionOrderErrorCode =
+type SelectionDirection = "forward" | "backward" | "none";
+type SelectionOrderErrorCode =
   | "invalid_pointer"
   | "path_not_found"
   | "syntax_error"
@@ -497,19 +497,19 @@ export type SelectionOrderErrorCode =
   | "point_not_in_order"
   | "empty_selection";
 
-export interface SelectionOrderOptions {
+interface SelectionOrderOptions {
   points?: ReadonlyArray<JSONPoint>;
   query?: string;
   scope?: Pointer;
   includeScope?: boolean;
 }
 
-export interface SelectionSpanOptions extends SelectionOrderOptions {
+interface SelectionSpanOptions extends SelectionOrderOptions {
   length?: number;
   getLength?: (pointer: Pointer, value: unknown) => number | null | undefined;
 }
 
-export interface OrderedSelectionRange {
+interface OrderedSelectionRange {
   anchor: JSONPoint;
   focus: JSONPoint;
   start: JSONPoint;
@@ -518,12 +518,12 @@ export interface OrderedSelectionRange {
   collapsed: boolean;
 }
 
-export interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
+interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
   index: number;
   primary: boolean;
 }
 
-export type SelectionRangeOrderResult =
+type SelectionRangeOrderResult =
   | { ok: true; range: OrderedSelectionRange }
   | {
       ok: false;
@@ -532,7 +532,7 @@ export type SelectionRangeOrderResult =
       pointer: Pointer | null;
     };
 
-export type SelectionRangesOrderResult =
+type SelectionRangesOrderResult =
   | {
       ok: true;
       ranges: ReadonlyArray<OrderedSelectionRangeEntry>;
@@ -547,7 +547,7 @@ export type SelectionRangesOrderResult =
       index: number | null;
     };
 
-export interface SelectionPointerSpan {
+interface SelectionPointerSpan {
   pointer: Pointer;
   rangeIndex: number;
   primary: boolean;
@@ -559,7 +559,7 @@ export interface SelectionPointerSpan {
   full: boolean;
 }
 
-export type SelectionPointerSpansResult =
+type SelectionPointerSpansResult =
   | {
       ok: true;
       pointer: Pointer;
@@ -573,18 +573,18 @@ export type SelectionPointerSpansResult =
       index: number | null;
     };
 
-export interface SelectionTextEditOptions extends SelectionSpanOptions {
+interface SelectionTextEditOptions extends SelectionSpanOptions {
   affinity?: SelectionAffinity;
 }
 
-export type SelectionTextDeleteDirection = "backward" | "forward";
+type SelectionTextDeleteDirection = "backward" | "forward";
 
-export interface SelectionTextDeleteOptions extends SelectionTextEditOptions {
+interface SelectionTextDeleteOptions extends SelectionTextEditOptions {
   direction?: SelectionTextDeleteDirection;
   count?: number;
 }
 
-export type SelectionTextEditErrorCode =
+type SelectionTextEditErrorCode =
   | SelectionOrderErrorCode
   | "missing_length"
   | "multi_pointer_range"
@@ -593,13 +593,13 @@ export type SelectionTextEditErrorCode =
   | "path_not_found"
   | "not_string";
 
-export interface SelectionTextEdit extends SelectionPointerSpan {
+interface SelectionTextEdit extends SelectionPointerSpan {
   startOffset: number;
   endOffset: number;
   replacement: string;
 }
 
-export type SelectionTextEditsResult =
+type SelectionTextEditsResult =
   | { ok: true; edits: ReadonlyArray<SelectionTextEdit> }
   | {
       ok: false;
@@ -609,7 +609,7 @@ export type SelectionTextEditsResult =
       index: number | null;
     };
 
-export type ReplaceSelectionTextResult =
+type ReplaceSelectionTextResult =
   | {
       ok: true;
       patch: JSONPatchOperation[];
@@ -625,7 +625,7 @@ export type ReplaceSelectionTextResult =
       index: number | null;
     };
 
-export type DeleteSelectionTextResult = ReplaceSelectionTextResult;
+type DeleteSelectionTextResult = ReplaceSelectionTextResult;
 
 export interface SelectionState<T> {
   selectedPointers: ReadonlyArray<Pointer>;    // item/list/tree selection projection
