@@ -11,6 +11,7 @@ import { Collection, SAMPLE, type Item, type Folder, type Request, type Header, 
 const ALL_METHODS: ReadonlyArray<Method> = ["GET", "POST", "PUT", "PATCH", "DELETE"];
 
 type Clipboard = { kind: "items"; items: Item[] } | null;
+type SelectedEntry = { pointer: string; item: Item };
 
 const METHOD_COLOR: Record<Request["method"], string> = {
   GET: "#0a7",
@@ -20,8 +21,8 @@ const METHOD_COLOR: Record<Request["method"], string> = {
   DELETE: "#c33",
 };
 
-// pointer 한 개로 트리 안의 Item 을 가져온다 (보기·복사용).
-function getAt(root: { items: Item[] }, pointer: string): Item | null {
+// pointer 한 개로 트리 안의 값을 가져온다 (보기·복사용).
+function getAt(root: { items: Item[] }, pointer: string): unknown {
   if (!pointer) return null;
   const segments = pointer.split("/").slice(1).map((s) => s.replace(/~1/g, "/").replace(/~0/g, "~"));
   let cur: unknown = root;
@@ -30,7 +31,42 @@ function getAt(root: { items: Item[] }, pointer: string): Item | null {
       cur = (cur as Record<string, unknown>)[segment];
     } else return null;
   }
-  return cur as Item | null;
+  return cur;
+}
+
+function isRequest(value: unknown): value is Request {
+  return Boolean(value && typeof value === "object" && (value as { kind?: unknown }).kind === "request");
+}
+
+function isFolder(value: unknown): value is Folder {
+  return Boolean(value && typeof value === "object" && (value as { kind?: unknown }).kind === "folder");
+}
+
+function isItem(value: unknown): value is Item {
+  return isRequest(value) || isFolder(value);
+}
+
+function getItemAt(root: { items: Item[] }, pointer: string): Item | null {
+  const value = getAt(root, pointer);
+  return isItem(value) ? value : null;
+}
+
+function cloneItem(item: Item): Item {
+  return structuredClone(item);
+}
+
+function cloneItems(items: ReadonlyArray<Item>): Item[] {
+  return items.map(cloneItem);
+}
+
+function collectItemPointers(items: ReadonlyArray<Item>, parentPointer = ""): string[] {
+  const out: string[] = [];
+  items.forEach((item, index) => {
+    const pointer = `${parentPointer}/items/${index}`;
+    out.push(pointer);
+    if (item.kind === "folder") out.push(...collectItemPointers(item.items, pointer));
+  });
+  return out;
 }
 
 // pointer 를 정렬해 "역순" 으로 순회 가능하게 한다 (배열 인덱스 변동 방지).
@@ -46,6 +82,7 @@ export function ApiCollection() {
   const clipboardRef = useRef<Clipboard>(null);
   const [jsonPathExpression, setJsonPathExpression] = useState("$..items[?(@.method=='POST')]");
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [rangeAnchor, setRangeAnchor] = useState<string | null>(null);
   const [toast, setToast] = useState<string>("");
 
   const flash = useCallback((msg: string) => {
@@ -54,18 +91,35 @@ export function ApiCollection() {
   }, []);
 
   const selectedPointers = doc.selection?.selectedPointers ?? [];
-  const selectedItems = useMemo(
-    () => selectedPointers.map((p) => getAt(doc.value, p)).filter((x): x is Item => !!x),
+  const visibleItemPointers = useMemo(() => collectItemPointers(doc.value.items), [doc.value]);
+  const selectedEntries = useMemo(
+    () => selectedPointers
+      .map((pointer): SelectedEntry | null => {
+        const item = getItemAt(doc.value, pointer);
+        return item ? { pointer, item } : null;
+      })
+      .filter((entry): entry is SelectedEntry => entry !== null),
     [selectedPointers, doc.value],
   );
+  const selectedItems = useMemo(() => selectedEntries.map(({ item }) => item), [selectedEntries]);
 
   // ── selection ────────────────────────────────────────────────────────────
   const onClickRow = useCallback((pointer: string, e: React.MouseEvent) => {
     if (!doc.selection) return;
+    if (e.shiftKey && rangeAnchor) {
+      const anchorIndex = visibleItemPointers.indexOf(rangeAnchor);
+      const focusIndex = visibleItemPointers.indexOf(pointer);
+      if (anchorIndex >= 0 && focusIndex >= 0) {
+        const [start, end] = anchorIndex <= focusIndex ? [anchorIndex, focusIndex] : [focusIndex, anchorIndex];
+        const range = visibleItemPointers.slice(start, end + 1);
+        doc.selection.selectRanges(range, undefined, undefined, range.indexOf(pointer));
+        return;
+      }
+    }
     if (e.metaKey || e.ctrlKey) doc.selection.togglePointer(pointer);
-    else if (e.shiftKey && doc.selection.anchor) doc.selection.setBaseAndExtent(doc.selection.anchor, pointer);
     else doc.selection.collapse(pointer);
-  }, [doc.selection]);
+    setRangeAnchor(pointer);
+  }, [doc.selection, rangeAnchor, visibleItemPointers]);
 
   // ── JSONPath bulk select (RFC 9535) ──────────────────────────────────────
   const runQuery = useCallback((expr: string) => {
@@ -76,7 +130,8 @@ export function ApiCollection() {
     }
     const pointers = r.matches.map((m) => m.pointer);
     if (pointers.length === 0) { flash("매칭 없음"); return; }
-    doc.selection?.selectRanges(pointers, pointers[0] ?? null, pointers[pointers.length - 1] ?? null);
+    doc.selection?.selectRanges(pointers, undefined, undefined, Math.max(0, pointers.length - 1));
+    setRangeAnchor(pointers[0] ?? null);
     flash(`${pointers.length}개 매칭 — 선택됨`);
   }, [doc.commands, doc.selection, flash]);
 
@@ -94,56 +149,66 @@ export function ApiCollection() {
 
   // ── bulk: 선택된 모든 request 에 X-Trace-Id 헤더 추가 (단일 patch) ───────
   const bulkAddTraceHeader = useCallback(() => {
-    const requests = selectedItems
-      .map((it, i) => ({ it, pointer: selectedPointers[i]! }))
-      .filter((x): x is { it: Request; pointer: string } => x.it.kind === "request");
+    const requests = selectedEntries
+      .filter((entry): entry is { item: Request; pointer: string } => entry.item.kind === "request");
     if (requests.length === 0) { flash("선택된 request 가 없음"); return; }
     const traceHeader: Header = { key: "X-Trace-Id", value: "{{$randomUUID}}" };
-    const patch: JSONPatchOperation[] = requests.map(({ it, pointer }) => ({
+    const patch: JSONPatchOperation[] = requests.map(({ item, pointer }) => ({
       op: "replace",
       path: `${pointer}/headers`,
-      value: [...it.headers, traceHeader],
+      value: [...item.headers, traceHeader],
     }));
     doc.ops.patch(patch);
     flash(`${requests.length}개 request 에 X-Trace-Id 추가됨 (한 patch · 한 undo step)`);
-  }, [selectedItems, selectedPointers, doc.ops, flash]);
+  }, [selectedEntries, doc.ops, flash]);
 
   // ── clipboard ────────────────────────────────────────────────────────────
   const copy = useCallback(() => {
     if (selectedItems.length === 0) { flash("선택 없음"); return; }
-    clipboardRef.current = { kind: "items", items: selectedItems };
+    clipboardRef.current = { kind: "items", items: cloneItems(selectedItems) };
     flash(`${selectedItems.length}개 복사됨`);
   }, [selectedItems, flash]);
 
   const cut = useCallback(() => {
     if (selectedItems.length === 0) { flash("선택 없음"); return; }
-    clipboardRef.current = { kind: "items", items: selectedItems };
+    clipboardRef.current = { kind: "items", items: cloneItems(selectedItems) };
     // 역순 — 배열 인덱스 shift 방지.
-    const patch: JSONPatchOperation[] = sortPointersDesc(selectedPointers).map((pointer) => ({ op: "remove", path: pointer }));
+    const patch: JSONPatchOperation[] = sortPointersDesc(selectedEntries.map(({ pointer }) => pointer))
+      .map((pointer) => ({ op: "remove", path: pointer }));
     doc.ops.patch(patch);
     doc.selection?.empty();
+    setRangeAnchor(null);
     flash(`${selectedItems.length}개 잘라내기`);
-  }, [selectedItems, selectedPointers, doc.ops, doc.selection, flash]);
+  }, [selectedItems, selectedEntries, doc.ops, doc.selection, flash]);
 
   // 선택된 첫 폴더 안에 paste. 없으면 root.
   const paste = useCallback(() => {
     const cb = clipboardRef.current;
     if (!cb || cb.items.length === 0) { flash("클립보드 비어 있음"); return; }
-    const targetPtr = selectedPointers.find((p) => {
-      const it = getAt(doc.value, p);
-      return it?.kind === "folder";
-    }) ?? "";
-    const targetFolder = targetPtr ? (getAt(doc.value, targetPtr) as Folder) : doc.value;
+    const targetPtr = selectedEntries.find(({ item }) => item.kind === "folder")?.pointer ?? "";
+    let targetItems: ReadonlyArray<Item>;
+    if (targetPtr) {
+      const targetItem = getItemAt(doc.value, targetPtr);
+      if (!isFolder(targetItem)) { flash("대상 folder 없음"); return; }
+      targetItems = targetItem.items;
+    } else {
+      targetItems = doc.value.items;
+    }
     const basePath = `${targetPtr}/items`;
-    const startIdx = targetFolder.items.length;
+    const startIdx = targetItems.length;
     const patch: JSONPatchOperation[] = cb.items.map((it, i) => ({
       op: "add",
       path: `${basePath}/${startIdx + i}`,
-      value: it,
+      value: cloneItem(it),
     }));
     doc.ops.patch(patch);
     flash(`${cb.items.length}개 → ${targetPtr || "/"}/items 에 붙여넣기`);
-  }, [selectedPointers, doc.value, doc.ops, flash]);
+  }, [selectedEntries, doc.value, doc.ops, flash]);
+
+  const clearSelection = useCallback(() => {
+    doc.selection?.empty();
+    setRangeAnchor(null);
+  }, [doc.selection]);
 
   // ── render ───────────────────────────────────────────────────────────────
   return (
@@ -162,7 +227,7 @@ export function ApiCollection() {
         <button onClick={cut} disabled={selectedItems.length === 0}>cut</button>
         <button onClick={paste}>paste</button>
         <span style={S.sep} />
-        <button onClick={() => doc.ops.reset()}>reset</button>
+        <button onClick={() => { doc.ops.reset(); setRangeAnchor(null); }}>reset</button>
       </div>
 
       <div style={S.queryBar}>
@@ -173,7 +238,7 @@ export function ApiCollection() {
           </button>
         ))}
         <button onClick={selectAllRequests} style={S.chip}>모든 request</button>
-        <button onClick={() => doc.selection?.empty()} style={S.chip}>해제</button>
+        <button onClick={clearSelection} style={S.chip}>해제</button>
         <span style={S.sep} />
         <button onClick={bulkAddTraceHeader} disabled={selectedItems.length === 0}>
           + X-Trace-Id (선택 일괄)
