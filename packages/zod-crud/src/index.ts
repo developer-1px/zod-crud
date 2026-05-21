@@ -11,11 +11,9 @@ export type { JSONOps } from "./jsonOps.js";
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";
 export type {
+  JSONCapabilityResult,
   JSONDocument,
-  JSONDocumentIntent,
-  JSONDocumentPlanResult,
-  JSONDocumentRead,
-  JSONDocumentRunResult,
+  JSONPatchInput,
 } from "./createJSONDocument.js";
 export { createSelection } from "./selection.js";
 export type { SelectionState } from "./selection.js";
@@ -49,6 +47,7 @@ export type {
   JSONPoint,
   SelectionAction,
   SelectionRange,
+  SelectionSource,
   SelectionSnap,
 } from "./core/selection/index.js";
 export { trackPointer } from "./core/track.js";

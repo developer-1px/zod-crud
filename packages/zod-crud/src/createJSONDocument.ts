@@ -17,10 +17,7 @@ import {
   reduceSelection,
   restoreSelection,
   type SelectionAction,
-  type SelectionCursorDirection,
-  type SelectionCursorOptions,
   type SelectionMode,
-  type SelectionScopeOptions,
   type SelectionSource,
   type SelectionSnap,
 } from "./core/selection/index.js";
@@ -39,7 +36,6 @@ import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
-import type { ClipboardSource } from "./verbs/copy.js";
 import type { DuplicateOpts } from "./verbs/duplicate.js";
 import type { PasteMode, PasteOptions } from "./verbs/paste.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
@@ -48,10 +44,6 @@ import type {
   JSONChangeMetadata,
   JSONOps,
 } from "./jsonOps.js";
-import type {
-  SelectionTextDeleteOptions,
-  SelectionTextEditOptions,
-} from "./core/selection/textEdit.js";
 
 export interface UseJSONDocumentOptions<T> {
   strict?: boolean | undefined;
@@ -66,6 +58,8 @@ interface JSONDocumentHistory {
   readonly canRedo: boolean;
   readonly undoDepth: number;
   readonly redoDepth: number;
+  undo(): boolean;
+  redo(): boolean;
   mergeLast(options?: { mergeKey?: string }): boolean;
   transaction(fn: () => void): void;
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
@@ -81,57 +75,12 @@ interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   selection?: JSONDocumentCommitSelection;
 }
 
-export interface JSONDocumentRead {
-  at(path: Pointer): ReadResult;
-  exists(path: Pointer): boolean;
-  query(jsonpath: string): QueryResult;
-  entries(path: Pointer): EntriesResult;
-}
-
-export type JSONDocumentIntent =
-  | { type: "select"; action: SelectionAction; mode?: SelectionMode }
-  | { type: "selectScope"; options?: SelectionScopeOptions }
-  | { type: "moveCursor"; direction: SelectionCursorDirection; options?: SelectionCursorOptions }
-  | { type: "extendCursor"; direction: SelectionCursorDirection; options?: SelectionCursorOptions }
-  | { type: "find"; jsonpath: string }
-  | { type: "move"; source?: Pointer; target: Pointer }
-  | { type: "duplicate"; source?: Pointer; options?: DuplicateOpts }
-  | { type: "remove"; source?: SelectionSource }
-  | { type: "replace"; path?: Pointer; value: unknown }
-  | { type: "replaceText"; replacement: string; options?: SelectionTextEditOptions & HistoryTransactionOptions }
-  | { type: "deleteText"; options?: SelectionTextDeleteOptions & HistoryTransactionOptions }
-  | { type: "copy"; source?: ClipboardSource }
-  | { type: "cut"; source?: ClipboardSource }
-  | { type: "paste"; payload?: unknown; target?: Pointer; mode?: PasteMode; options?: PasteOptions }
-  | { type: "undo" }
-  | { type: "redo" };
-
-export type JSONDocumentPlanResult =
-  | CheckResult
-  | { ok: false; code: "empty_clipboard"; reason: string };
-
-export type JSONDocumentRunResult<T> =
-  | ReturnType<Commands<T>["select"]>
-  | ReturnType<Commands<T>["selectScope"]>
-  | ReturnType<Commands<T>["moveCursor"]>
-  | ReturnType<Commands<T>["extendCursor"]>
-  | ReturnType<Commands<T>["find"]>
-  | ReturnType<Commands<T>["move"]>
-  | ReturnType<Commands<T>["duplicate"]>
-  | ReturnType<Commands<T>["remove"]>
-  | ReturnType<Commands<T>["replace"]>
-  | ReturnType<Commands<T>["replaceText"]>
-  | ReturnType<Commands<T>["deleteText"]>
-  | ReturnType<Commands<T>["undo"]>
-  | ReturnType<Commands<T>["redo"]>
-  | ReturnType<ClipboardState<T>["copy"]>
-  | ReturnType<ClipboardState<T>["cut"]>
-  | ReturnType<ClipboardState<T>["paste"]>;
+export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
+export type JSONCapabilityResult = CheckResult;
 
 export interface JSONDocument<T> {
   readonly value: T;
   readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
-  readonly read: JSONDocumentRead;
   readonly selection: SelectionState<T> | undefined;
   readonly history: JSONDocumentHistory;
   readonly ops: JSONOps<T>;
@@ -140,14 +89,23 @@ export interface JSONDocument<T> {
   readonly check: Check<T>;
   readonly clipboard: ClipboardState<T>;
   readonly schema: SchemaState<T>;
-  patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
-  plan(intent: JSONDocumentIntent): JSONDocumentPlanResult;
-  run(intent: JSONDocumentIntent): JSONDocumentRunResult<T>;
+  patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
   entries(path: Pointer): EntriesResult;
+  canPatch(operations: JSONPatchInput): JSONCapabilityResult;
+  canFind(jsonpath: string): JSONCapabilityResult;
+  canReplace(path: Pointer, value: unknown): JSONCapabilityResult;
+  canRemove(source: SelectionSource): JSONCapabilityResult;
+  canMove(source: Pointer, target: Pointer): JSONCapabilityResult;
+  canDuplicate(source: Pointer, options?: DuplicateOpts): JSONCapabilityResult;
+  canCopy(source: SelectionSource): JSONCapabilityResult;
+  canCut(source: SelectionSource): JSONCapabilityResult;
+  canPaste(target: Pointer, payload: unknown, mode?: PasteMode, options?: PasteOptions): JSONCapabilityResult;
+  canUndo(): JSONCapabilityResult;
+  canRedo(): JSONCapabilityResult;
 }
 
 interface HistoryEntry {
@@ -211,7 +169,7 @@ export function createJSONDocument<S extends z.ZodType>(
     stack = commitHistory(stack, entry, historyLimit);
   };
 
-  const patch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
+  const applyDocumentPatch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
     const before = rawOps.state;
     const selectionBefore = snapSelection();
     const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
@@ -223,13 +181,15 @@ export function createJSONDocument<S extends z.ZodType>(
     }
     return r;
   };
+  const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult =>
+    applyDocumentPatch(normalizePatchInput(operations), metadata);
 
   const commit = (
     operations: ReadonlyArray<JSONPatchOperation>,
     commitOptions: JSONDocumentCommitOptions = {},
   ): JSONResult => {
     const { selection, ...metadataOptions } = commitOptions;
-    if (selection === undefined) return patch(operations, metadataOptions);
+    if (selection === undefined) return applyDocumentPatch(operations, metadataOptions);
 
     const before = rawOps.state;
     const selectionBefore = snapSelection();
@@ -282,7 +242,7 @@ export function createJSONDocument<S extends z.ZodType>(
     move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
     copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
     test: rawOps.test,
-    patch,
+    patch: applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {
       const r = rawOps.load(value);
       if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();
@@ -358,6 +318,8 @@ export function createJSONDocument<S extends z.ZodType>(
     get canRedo() { return historyControls.canRedo(); },
     get undoDepth() { return stack.undo.length; },
     get redoDepth() { return stack.redo.length; },
+    undo: () => restore("undo"),
+    redo: () => restore("redo"),
     mergeLast,
     transaction,
   };
@@ -378,118 +340,10 @@ export function createJSONDocument<S extends z.ZodType>(
     : { ...clipboardOptions, onChange: options.onChange });
   const read = buildReadFacade({ schema, getState: () => rawOps.state });
   const schemaState = createSchemaState({ schema });
-  const planPastePayload = (
-    payload: unknown,
-    intent: Extract<JSONDocumentIntent, { type: "paste" }>,
-  ): JSONDocumentPlanResult => intent.target === undefined
-    ? check.paste(payload, intent.mode, intent.options)
-    : check.paste(payload, intent.target, intent.mode, intent.options);
-  const runPastePayload = (
-    payload: unknown,
-    intent: Extract<JSONDocumentIntent, { type: "paste" }>,
-  ): JSONDocumentRunResult<z.output<S>> => intent.target === undefined
-    ? commands.paste(payload, intent.mode, intent.options)
-    : commands.paste(payload, intent.target, intent.mode, intent.options);
-  const runClipboardPaste = (
-    intent: Extract<JSONDocumentIntent, { type: "paste" }>,
-  ): JSONDocumentRunResult<z.output<S>> =>
-    intent.target === undefined
-      ? clipboard.paste(intent.mode, intent.options)
-      : clipboard.paste(intent.target, intent.mode, intent.options);
-  const plan = (intent: JSONDocumentIntent): JSONDocumentPlanResult => {
-    switch (intent.type) {
-      case "select":
-        return { ok: true };
-      case "selectScope":
-        return check.selectScope(intent.options);
-      case "moveCursor":
-        return check.moveCursor(intent.direction, intent.options);
-      case "extendCursor":
-        return check.extendCursor(intent.direction, intent.options);
-      case "find":
-        return check.find(intent.jsonpath);
-      case "move":
-        return intent.source === undefined
-          ? check.move(intent.target)
-          : check.move(intent.source, intent.target);
-      case "duplicate":
-        return intent.source === undefined
-          ? check.duplicate(intent.options)
-          : check.duplicate(intent.source, intent.options);
-      case "remove":
-        return check.remove(intent.source);
-      case "replace":
-        return intent.path === undefined
-          ? check.replace(intent.value)
-          : check.replace(intent.path, intent.value);
-      case "replaceText":
-        return check.replaceText(intent.replacement, intent.options);
-      case "deleteText":
-        return check.deleteText(intent.options);
-      case "copy":
-        return check.copy(intent.source);
-      case "cut":
-        return check.cut(intent.source);
-      case "paste": {
-        if ("payload" in intent) return planPastePayload(intent.payload, intent);
-        const buffer = clipboard.read();
-        return buffer.ok
-          ? planPastePayload(buffer.payload, intent)
-          : { ok: false, code: "empty_clipboard", reason: buffer.message };
-      }
-      case "undo":
-        return check.undo;
-      case "redo":
-        return check.redo;
-    }
-  };
-  const run = (intent: JSONDocumentIntent): JSONDocumentRunResult<z.output<S>> => {
-    switch (intent.type) {
-      case "select":
-        return commands.select(intent.action, intent.mode);
-      case "selectScope":
-        return commands.selectScope(intent.options);
-      case "moveCursor":
-        return commands.moveCursor(intent.direction, intent.options);
-      case "extendCursor":
-        return commands.extendCursor(intent.direction, intent.options);
-      case "find":
-        return commands.find(intent.jsonpath);
-      case "move":
-        return intent.source === undefined
-          ? commands.move(intent.target)
-          : commands.move(intent.source, intent.target);
-      case "duplicate":
-        return intent.source === undefined
-          ? commands.duplicate(intent.options)
-          : commands.duplicate(intent.source, intent.options);
-      case "remove":
-        return commands.remove(intent.source);
-      case "replace":
-        return intent.path === undefined
-          ? commands.replace(intent.value)
-          : commands.replace(intent.path, intent.value);
-      case "replaceText":
-        return commands.replaceText(intent.replacement, intent.options);
-      case "deleteText":
-        return commands.deleteText(intent.options);
-      case "copy":
-        return clipboard.copy(intent.source);
-      case "cut":
-        return clipboard.cut(intent.source);
-      case "paste":
-        return "payload" in intent ? runPastePayload(intent.payload, intent) : runClipboardPaste(intent);
-      case "undo":
-        return commands.undo();
-      case "redo":
-        return commands.redo();
-    }
-  };
 
   return {
     get value() { return rawOps.state; },
     get lastPatch() { return [...lastPatch]; },
-    read,
     get selection() { return selectionEnabled ? selectionState : undefined; },
     history,
     ops,
@@ -499,14 +353,31 @@ export function createJSONDocument<S extends z.ZodType>(
     clipboard,
     schema: schemaState,
     patch,
-    plan,
-    run,
     commit,
     at: read.at,
     exists: read.exists,
     query: read.query,
     entries: read.entries,
+    canPatch: (operations) => check.patch(normalizePatchInput(operations)),
+    canFind: check.find,
+    canReplace: check.replace,
+    canRemove: check.remove,
+    canMove: check.move,
+    canDuplicate: check.duplicate,
+    canCopy: check.copy,
+    canCut: check.cut,
+    canPaste: (target, payload, mode, canPasteOptions) => check.paste(payload, target, mode, canPasteOptions),
+    canUndo: () => check.undo,
+    canRedo: () => check.redo,
   };
+}
+
+function normalizePatchInput(operations: JSONPatchInput): ReadonlyArray<JSONPatchOperation> {
+  return isPatchArray(operations) ? operations : [operations];
+}
+
+function isPatchArray(operations: JSONPatchInput): operations is ReadonlyArray<JSONPatchOperation> {
+  return Array.isArray(operations);
 }
 
 function resolveCommitSelection(

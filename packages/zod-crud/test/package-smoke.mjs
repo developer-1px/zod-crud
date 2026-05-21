@@ -37,12 +37,10 @@ const rootValueExports = [
 const reactValueExports = ["useJSONDocument"];
 const rootPublicExports = [
   ...rootValueExports,
+  "JSONCapabilityResult",
   "JSONDocument",
-  "JSONDocumentIntent",
-  "JSONDocumentPlanResult",
-  "JSONDocumentRead",
-  "JSONDocumentRunResult",
   "JSONOps",
+  "JSONPatchInput",
   "JSONPatchOperation",
   "JSONPoint",
   "JSONResult",
@@ -546,9 +544,9 @@ try {
       'if (typeof createJSONDocument !== "function") throw new Error("createJSONDocument export failed");',
       'if (typeof createSelection !== "function") throw new Error("createSelection export failed");',
       'const jsonDoc = createJSONDocument(schema, initial);',
-      'const jsonRun = jsonDoc.run({ type: "replace", path: "/name", value: "json" });',
-      'if (!jsonRun.ok || jsonDoc.value.name !== "json") throw new Error("createJSONDocument runtime failed");',
-      'if (!jsonDoc.read.at("/name").ok) throw new Error("createJSONDocument read facade failed");',
+      'const jsonPatch = jsonDoc.patch({ op: "replace", path: "/name", value: "json" });',
+      'if (!jsonPatch.ok || jsonDoc.value.name !== "json") throw new Error("createJSONDocument runtime failed");',
+      'if (!jsonDoc.at("/name").ok) throw new Error("createJSONDocument read facade failed");',
     ].join("\n"),
   );
   await writeFile(
@@ -556,9 +554,9 @@ try {
     [
       'import * as z from "zod";',
       'import { applyOperation, applyPatch, tryParsePointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, type JSONPatchOperation, type Pointer } from "zod-crud";',
-      'import type { JSONDocumentIntent, JSONDocumentPlanResult, JSONDocumentRead, JSONDocumentRunResult, JSONOps, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState } from "zod-crud";',
+      'import type { JSONCapabilityResult, JSONDocument, JSONOps, JSONPatchInput, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionSource, SelectionState } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
-      'type PublicRootTypes = [JSONDocumentIntent, JSONDocumentPlanResult, JSONDocumentRead, JSONDocumentRunResult<z.output<typeof schema>>, JSONOps<z.output<typeof schema>>, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState<z.output<typeof schema>>];',
+      'type PublicRootTypes = [JSONCapabilityResult, JSONDocument<z.output<typeof schema>>, JSONOps<z.output<typeof schema>>, JSONPatchInput, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionSource, SelectionState<z.output<typeof schema>>];',
       'declare const publicRootTypes: PublicRootTypes;',
       'publicRootTypes satisfies readonly unknown[];',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',

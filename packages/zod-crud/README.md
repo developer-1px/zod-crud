@@ -1,21 +1,19 @@
 # zod-crud
 
-All frontend editing is JSON editing. zod-crud is a headless JSON editing
-engine that maps the **edit vocabulary every FE service rebuilds from
-scratch** (select, move, cut, copy, paste, duplicate, undo, redo, find,
-replace) onto JSON standards (**RFC 6901 Pointer · RFC 6902 Patch · RFC 9535
-JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
-**reusable standard layer**.
+Headless JSON editing primitives guarded by Zod schemas.
 
-State, actions, and change records are 100% serializable JSON. The core is
-pure RFC substrate. `createJSONDocument` exposes the headless document facade:
-`read` for queries, `plan` for dry-run checks, `run` for user intents, and
-`patch` for raw RFC 6902 edits. `zod-crud/react` exposes `useJSONDocument`.
+The public model is small:
 
-The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
-code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
-conflicts with an RFC, in which case the RFC wins. `core/*` substrate
-boundaries are enforced by the package tests.
+```txt
+document
+├─ patch(patch)              RFC 6902 JSON Patch
+├─ at(pointer)               RFC 6901 JSON Pointer
+├─ query(jsonPath)           RFC 9535 JSONPath
+├─ selection                 explicit JSON selection snapshots
+├─ clipboard                 copy/cut/paste payload flow
+├─ history                   undo/redo patch history
+└─ can*                      reasoned capability checks
+```
 
 ## Install
 
@@ -23,17 +21,8 @@ boundaries are enforced by the package tests.
 npm install zod-crud zod
 ```
 
-`zod` is a peer dependency. `react >=18` is an optional peer dependency
-required only for React hooks. The package is ESM-only.
-
-> **단일 zod instance 필수.** monorepo / pnpm 환경에서 `zod-crud` 와 소비자가 서로 다른
-> `zod` 인스턴스를 보면 `useJSONDocument` 의 generic 추론이 `unknown` 으로 떨어진다
-> (`$ZodFunction / $ZodTypes` 심볼이 두 번 존재). 해결책:
-> - pnpm: `public-hoist-pattern[]=zod` 또는 `dedupe-peer-dependents=true`
-> - 그래도 해소 안 되면 소비자 `tsconfig.json` 에 paths alias 로 단일 경로 강제:
->   ```json
->   "paths": { "zod": ["./node_modules/zod"], "zod/*": ["./node_modules/zod/*"] }
->   ```
+`zod` is a peer dependency. `react >=18` is optional and only needed for
+`zod-crud/react`.
 
 ## React — `useJSONDocument`
 
@@ -53,267 +42,154 @@ export function App() {
     <>
       <input
         value={doc.value.title}
-        onChange={(e) => doc.run({ type: "replace", path: "/title", value: e.target.value })}
+        onChange={(e) =>
+          doc.patch({ op: "replace", path: "/title", value: e.target.value })
+        }
       />
       <button
         onClick={() =>
-          doc.run({
-            type: "paste",
-            payload: { id: crypto.randomUUID(), done: false },
-            target: "/tasks/-",
+          doc.patch({
+            op: "add",
+            path: "/tasks/-",
+            value: { id: crypto.randomUUID(), done: false },
           })
         }
       >
         add task
       </button>
-      <button onClick={() => doc.run({ type: "undo" })} disabled={!doc.plan({ type: "undo" }).ok}>
+      <button onClick={() => doc.history.undo()} disabled={!doc.canUndo().ok}>
         undo
       </button>
-      {doc.value.tasks.map((t, i) => (
-        <div key={t.id}>
+      {doc.value.tasks.map((task, index) => (
+        <label key={task.id}>
           <input
             type="checkbox"
-            checked={t.done}
+            checked={task.done}
             onChange={(e) =>
-              doc.run({
-                type: "replace",
-                path: `/tasks/${i}/done` as `/tasks/${number}/done`,
+              doc.patch({
+                op: "replace",
+                path: `/tasks/${index}/done`,
                 value: e.target.checked,
               })
             }
           />
-          <button onClick={() => doc.run({ type: "remove", source: `/tasks/${i}` as `/tasks/${number}` })}>
-            remove
-          </button>
-        </div>
+          {task.id}
+        </label>
       ))}
     </>
   );
 }
 ```
 
-`useJSONDocument` returns a single facade with document fields and helpers:
+## Document Facade
+
+`createJSONDocument` and `useJSONDocument` expose the same document facade.
 
 | Surface | Purpose |
 | --- | --- |
-| `doc.value` | current schema-valid state (`T`) |
-| `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
-| `doc.read` | non-mutating read helpers: `at`/`exists`/`query`/`entries` |
-| `doc.plan` | explainable dry-run check for an intent; `doc.plan(intent).ok` is the boolean guard |
-| `doc.run` | user-intent execution (`replace`, `move`, `copy`, `paste`, `undo`, etc.) |
-| `doc.patch` | low-level raw JSON Patch escape hatch |
-| `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
-| `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
-| `doc.clipboard` | headless JSON clipboard buffer (`read`/`write`/`clear`; copy/cut/paste user intents go through `doc.run`) |
-| `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast(options?)`, `transaction(options?, fn)` |
-| `doc.commit` | document-level patch commit with optional final `selection` and history metadata |
-| `doc.ops`, `doc.commands`, `doc.check`, `doc.can` | compatibility facades kept for low-level and existing integrations |
+| `doc.value` | current schema-valid JSON value |
+| `doc.patch(patch)` | apply one JSON Patch operation or an operation array |
+| `doc.at(pointer)` | read one JSON Pointer location |
+| `doc.exists(pointer)` | check whether a pointer resolves |
+| `doc.query(jsonPath)` | return pointer matches for a JSONPath query |
+| `doc.entries(pointer)` | list object/array child entries |
+| `doc.selection` | optional headless selection state |
+| `doc.clipboard` | headless clipboard payload buffer |
+| `doc.history` | undo/redo state and controls |
+| `doc.can*` | reasoned capability checks, not booleans |
+| `doc.schema` | schema introspection for a pointer |
 
-The facade also keeps read/query aliases: `doc.at(path)`,
-`doc.exists(path)`, `doc.query(jsonpath)`, and `doc.entries(path)`. Prefer
-`doc.read.*` in new code.
+`doc.ops`, `doc.commands`, `doc.check`, and `doc.can` are lower-level
+compatibility surfaces. New code should start from the table above.
 
-Selection and history are first-class — they are not parallel hooks you wire
-up yourself. `commands.*` mutate through the history-aware path; `doc.commit`
-is the editor-engine path when a patch and final model selection must land in
-one undo entry; `ops.*` is the low-level RFC 6902 escape hatch for
-fire-and-forget patches.
-
-## Headless — `createJSONDocument`
+## Patch, Pointer, JSONPath
 
 ```ts
-import * as z from "zod";
-import { createJSONDocument } from "zod-crud";
+doc.patch({ op: "replace", path: "/title", value: "Ready" });
+doc.patch([
+  { op: "replace", path: "/settings/owner", value: "playground" },
+  { op: "add", path: "/lists/0/cards/-", value: card },
+]);
 
-const Schema = z.object({
-  title: z.string(),
-  tasks: z.array(z.object({ id: z.string(), done: z.boolean() })),
-});
-
-const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
-
-doc.run({ type: "paste", payload: { id: "a", done: false }, target: "/tasks/-" });
-doc.commit(
-  [{ op: "replace", path: "/title", value: "final" }],
-  { label: "rename", origin: "editor", selection: { type: "collapse", pointer: "/title" } },
-);
-doc.history.transaction(() => {
-  doc.run({ type: "paste", payload: { id: "b", done: true }, target: "/tasks/-" });
-  doc.run({ type: "paste", payload: { id: "c", done: false }, target: "/tasks/-" });
-});
-doc.run({ type: "undo" });
+doc.at("/lists/0/cards/0/title");
+doc.query("$..cards[?(@.status=='todo')]");
 ```
 
-`createJSONDocument` and `useJSONDocument` intentionally share the same
-`value`/`lastPatch`/`read`/`plan`/`run`/`patch`/`schema`/`selection`/`clipboard`/`history`
-surface, plus `commit` and compatibility facades. React owns render lifecycle
-only; core owns JSON editing.
-Use `doc.ops` for low-level `JSONOps<T>` operations through the document
-facade.
+Patch paths are JSON Pointers. JSONPath is only for query; use the returned
+pointers when you want to patch.
 
-Selection is headless. `JSONPoint` is either a JSON Pointer string or
-`{ path, offset?, edge?, affinity? }`, so list/tree item selection and text
-carets use the same core model. `doc.selection.selectionRanges` is the source
-of truth for caret/range shape; `doc.selection.selectedPointers` is the
-item-selection projection for list/tree/grid UIs.
-`doc.selection.primaryRange` exposes the active range and `doc.selection.caret`
-exposes the collapsed cursor point. `rangeCount`, `selectedCount`, and
-`hasSelection` expose selection cardinality, and `isSelected(pointer)` is the
-per-item selected predicate for list/tree/grid rendering. `togglePointer(pointer)`
-toggles one item in that selected-pointer projection, including removing a
-single item from inside an expanded range while preserving sparse selection.
-`anchorPointer`, `focusPointer`, `primaryPointer`, and `caretPointer` expose
-the Pointer projections needed by scalar Pointer commands; `selectedSource` is
-the null/single/multi source projection accepted by `copy` / `cut`.
-`doc.selection.moveCursor(direction, options?)` and
-`doc.selection.extendCursor(direction, options?)` move or extend selection in
-JSON source-order within an optional `scope`; pass `query` to use RFC 9535
-JSONPath results, or `points` to use a filtered, folded, virtualized, or
-otherwise app-visible `JSONPoint[]` order. `points` takes precedence over
-`query`, and both bypass `scope` traversal. `resolveCursor` computes the next
-target without mutating. The same cursor logic is available without React
-through `createSelection(ops)`.
-`doc.commands.moveCursor(direction, options?)` and
-`doc.commands.extendCursor(direction, options?)` expose keyboard-style cursor
-movement through the document command namespace.
-`doc.check.moveCursor` / `doc.can.moveCursor` and `doc.check.extendCursor` /
-`doc.can.extendCursor` answer whether the same cursor movement is available
-without mutating selection; boundary failures return `cursor_boundary`.
-`doc.selection.selectScope(options?)` builds a whole selection from the same
-`scope`, `query`, or visible `points` options, covering Ctrl+A/select-visible
-and select-find-results flows without React.
-`doc.selection.orderPrimaryRange(options?)`, `doc.selection.orderRanges(options?)`,
-convert directional anchor/focus ranges into document-order `start`/`end`
-ranges for delete, format, copy, and paste commands. They use JSON source-order
-by default, RFC 9535 `query` order when provided, or explicit visible `points`
-order for folded/virtualized UIs.
-`doc.selection.spansForPointer(pointer, options?)` projects selection ranges
-into pointer-local spans for rendering or offset-based commands. String values
-resolve offsets from current state; apps can provide `getLength` for non-string
-offset domains such as rich-text block paths.
-`doc.selection.textEdits(replacement, options?)` turns the current selection
-into ordered pointer-local replacement spans without mutating state.
-`doc.selection.textPatch(replacement, options?)` and
-`doc.selection.deleteText(options?)` build RFC 6902 `replace` patches plus the
-final collapsed selection for JSON string leaves; multi-pointer rich-text/block
-edits use the edit plan and app-specific patching. `doc.commands.replaceText(...)`
-and `doc.commands.deleteText(...)` commit those string-leaf patches through
-document history with final selection and optional `label` / `origin` /
-`mergeKey` metadata.
-`doc.commands.selectScope(options?)` exposes the same flow through the document
-command namespace.
-`doc.check.selectScope` / `doc.can.selectScope` guard that flow; an empty
-scope returns `empty_scope`.
-Selection `initial` options and `selectRanges` accept `JSONPoint` or
-`SelectionRange`, so disjoint multi-range selection and offset/edge carets are
-headless from initialization. Facade-level
-`commands.copy()` / `commands.cut()` / `commands.remove()`,
-`doc.clipboard.copy()` / `doc.clipboard.cut()`, `check.copy()` /
-`check.cut()` / `check.remove()`, and `can.copy()` / `can.cut()` /
-`can.remove()` default to the current selection when the source is omitted and
-return `empty_selection` when that selection is empty. `commands.remove()`
-commits the structural delete without clipboard payload.
-Facade-level `commands.move(to)`, `check.move(to)`, and `can.move(to)` default
-to the primary selection source when the source is omitted; the target remains
-an explicit Pointer.
-Facade-level `commands.duplicate()`, `check.duplicate()`, and
-`can.duplicate()` default to the primary selection source when the source is
-omitted; `commands.duplicate({ newKey })` duplicates a selected object member.
-Facade-level `commands.replace(value)`, `check.replace(value)`, and
-`can.replace(value)` default to the primary selection target when the path is
-omitted. With an explicit JSONPath string, `commands.replace(jsonpath, value)`
-commits an atomic multi-match replace; `check.replace(jsonpath, value)` and
-`can.replace(jsonpath, value)` dry-run the same batch and report `empty_match`
-when the query matches nothing.
-Facade-level `commands.replaceText(replacement, options?)`,
-`check.replaceText(replacement, options?)`, and
-`can.replaceText(replacement, options?)` use the full selection range model for
-JSON string-leaf text edits.
-Facade-level `commands.deleteText(options?)`, `check.deleteText(options?)`, and
-`can.deleteText(options?)` delete selected text or, for a collapsed caret,
-delete backward/forward from that caret.
-Command options also accept serializable history metadata (`label`, `origin`,
-`mergeKey`); guard facades accept the same shape for API parity but only
-dry-run the edit plan.
-Facade-level `commands.paste(payload)`, `doc.clipboard.paste()`,
-`check.paste(payload)`, and `can.paste(payload)` default to the primary
-selection target when the target is omitted; a mode-only call such as
-`commands.paste(payload, "after")` uses that same target.
-String caret offsets are clamped to the current string length when state is
-available, including after document edits that keep the same Pointer alive.
-Selection getters, `doc.selection.snapshot()`, and `doc.selection.toJSON()`
-return value snapshots, so callers can store or mutate returned `JSONPoint`
-objects without corrupting the live headless selection state.
-`JSON.stringify(doc.selection)` emits that same snapshot, and
-`doc.selection.restore(snapshot)` restores it.
-`doc.selection.context` is optional JSON-serializable selection-local editing
-state. Use it for stored marks, active tool state, or other headless context
-that belongs to the selection/caret rather than the document JSON. It is cloned
-in snapshots, restored through `restore(snapshot)`, preserved by cursor/path
-tracking, and can be updated with `setContext`, `clearContext`, or a
-`SelectionAction` carrying `context`.
-`doc.selection.subscribe(listener)` emits JSON-safe snapshots after manual
-selection actions and automatic op tracking.
-`doc.commands.select(action)`, `doc.commands.selectScope(options?)`,
-`doc.commands.moveCursor(direction, options?)`, and
-`doc.commands.extendCursor(direction, options?)` default to the document's
-configured selection mode, so headless and React facades preserve the same
-multi-select behavior and the full `SelectionSnap`, including `context`.
-`doc.commit(patch, { selection, label, origin, mergeKey })` applies an RFC 6902
-patch, overrides mutation auto-selection with the provided final `SelectionAction`
-or `SelectionSnap`, and records data + final selection in one history entry.
-When the final selection carries `context`, that context is recorded with
-`selectionAfter` and restored by undo/redo.
-When `patch` is empty, `commit` may update selection but does not create a
-document patch or undo entry.
-`doc.lastPatch` exposes the last applied normalized document patch as a value
-snapshot. It updates for commands, ops, load/reset, undo, and redo, and clears
-to `[]` after empty patch commits such as selection-only edits.
+## Selection
 
-Clipboard is headless too. `doc.clipboard` stores a JSON fragment and source
-metadata. Single-source copy/cut returns the copied fragment; multi-source
-copy/cut returns a JSON array payload, keeps `source` as the primary source,
-and exposes all `sources` through both `doc.clipboard.sources` and
-`doc.clipboard.read()`. `doc.clipboard.copy()` and `doc.clipboard.cut()` use
-the current selection when the source is omitted. Manual
-`doc.clipboard.write` validates and normalizes source metadata when provided.
-`doc.clipboard.paste` uses the primary selection target when the target is
-omitted, and spreads multi-source array
-payloads back into array targets by default; pass `{ spread: false }` to keep
-the array payload as one value. `createClipboard(args)` builds the same buffer
-for standalone headless composition with independent ops and selection state.
-DOM/system clipboard integration remains user code.
+Selection is a JSON-safe value. Use `anchor`/`focus` to preserve direction and
+`selectionRanges` for multi-select.
 
-`doc.check` is headless dry-run validation for commands and patches. It returns
-the same success/failure family the command would hit, without mutating value,
-selection, clipboard, or history.
-`doc.check.find(jsonpath)` and `doc.can.find(jsonpath)` validate JSONPath
-syntax without running a mutation; syntax failures return `syntax_error`.
-It also guards selection cursor and scope commands (`moveCursor`,
-`extendCursor`, `selectScope`) and string-leaf text edits
-(`replaceText`, `deleteText`) so keyboard and select-visible UI can use `can.x(...) ===
-check.x(...).ok` before dispatch.
-The schema gate dry-applies the patch and runs whole-document
-`schema.safeParse`, so cross-field `.refine` / `.superRefine` violations are
-rejected before commit.
+```ts
+doc.selection?.selectRanges([
+  "/lists/0/cards/0",
+  "/lists/0/cards/1",
+]);
 
-`doc.at`, `doc.exists`, `doc.query`, and `doc.entries` are headless read helpers
-over the current document value. JSONPath queries return pointers, not values,
-and support RFC 9535 function extensions (`length`/`count`/`match`/`search`/`value`).
-The vendored RFC 9535 CTS gates full 703/703 conformance.
+const selection = doc.selection?.snapshot();
+```
 
-History metadata is serializable. Use
-`doc.commit(patch, { selection, label, origin, mergeKey })` when an editor
-command already knows the final caret/range after a patch. Use
-`doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user
-intent for synchronous multi-op batches.
-`doc.schema` answers what a path can contain without exposing Zod objects.
-It is advisory; commits still go through the schema gate.
+For object members, prefer explicit pointer lists. JSON objects are unordered
+by the JSON RFC, so object child ranges should not carry ordering semantics.
 
-For lower-level composition, use `createSelection(ops)` and
-`createClipboard(args)` headlessly. See the
-[`createSelection`](./SPEC.md#57-createselection--selection-state) contract in
-SPEC.
+## Clipboard
+
+Clipboard operations should receive explicit sources and targets.
+
+```ts
+const source = doc.selection?.selectedPointers ?? [];
+const copied = doc.clipboard.copy(source);
+
+if (copied.ok) {
+  doc.clipboard.paste("/lists/1/cards/-");
+}
+```
+
+For direct payload insertion, write the payload first or use the lower-level
+command surface.
+
+```ts
+doc.clipboard.write({ id: "new", title: "New card" });
+doc.clipboard.paste("/lists/0/cards/-");
+```
+
+## History
+
+Document changes are recorded as patch/inverse-patch entries. Undo/redo lives
+under `doc.history`.
+
+```ts
+doc.patch({ op: "replace", path: "/title", value: "Final" });
+doc.history.undo();
+doc.history.redo();
+```
+
+Group synchronous edits with `transaction`.
+
+```ts
+doc.history.transaction({ label: "rename cards" }, () => {
+  doc.patch({ op: "replace", path: "/lists/0/cards/0/title", value: "A" });
+  doc.patch({ op: "replace", path: "/lists/0/cards/1/title", value: "B" });
+});
+```
+
+## Capability Checks
+
+`can*` methods return a result object so UI and tests can inspect the reason.
+
+```ts
+const result = doc.canPaste("/lists/0/cards/-", candidateCard);
+
+if (!result.ok) {
+  console.log(result.code, result.reason);
+}
+```
+
+Available checks include `canPatch`, `canReplace`, `canRemove`, `canMove`,
+`canDuplicate`, `canCopy`, `canCut`, `canPaste`, `canUndo`, and `canRedo`.
 
 ## Pure core (no React)
 
@@ -331,18 +207,15 @@ const r = applyPatch(Schema, initial, [
 ]);
 
 if (r.result.ok) {
-  console.log(r.state); // { title: "final", tags: ["docs"] }
+  console.log(r.state);
 }
 ```
 
 Both `applyOperation` and `applyPatch` are pure. Same input, same output.
-No React, no instances, no global state. Use them anywhere — server,
-Worker, edge runtime, tests.
 
 ## Serialization
 
-State, operations, and history records are pure JSON. There is nothing
-special to serialize — `JSON.stringify` works directly:
+State, operations, selection snapshots, and patch records are JSON.
 
 ```ts
 import * as z from "zod";
@@ -355,12 +228,7 @@ const restored = Schema.parse(JSON.parse(json));
 const safe = Schema.safeParse(JSON.parse(json));
 ```
 
-`applyOperation`/`applyPatch` reject non-JSON values such as `undefined`,
-functions, symbols, `BigInt`, `Date`, `NaN`, circular references, sparse
-arrays, and class instances with `not_serializable`.
-
-Operations are also pure JSON, so they can be sent over the wire and
-applied on the server with any RFC 6902 implementation:
+Operations can be sent as `application/json-patch+json`.
 
 ```ts
 const operations = [{ op: "replace", path: "/title", value: "final" }];
@@ -372,39 +240,31 @@ fetch("/api/save", {
 });
 ```
 
-## API
+## Public Exports
 
-See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
+Root entrypoint:
 
-| Export | Purpose |
-| --- | --- |
-| `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
-| `JSONOps<T>` | low-level ops contract |
-| `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
-| `JSONDocument<T>` | shared headless facade type |
-| `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
-| `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
-| `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
-| `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
-| `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
-| `JSONPatchOperation`, `JSONResult` | RFC 6902 types (SPEC §3, §5.3) |
-| `Pointer` | RFC 6901 path type (SPEC §2) |
-| `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
-| `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
-| `JSONPoint`, `SelectionRange`, `SelectionSnap`, `SelectionAction`, `SelectionState<T>` | selection state/action types |
+```ts
+import {
+  createJSONDocument,
+  createSelection,
+  createClipboard,
+  applyOperation,
+  applyPatch,
+  parsePointer,
+  tryParsePointer,
+  buildPointer,
+  trackPointer,
+  type JSONDocument,
+  type JSONPatchOperation,
+  type JSONResult,
+  type Pointer,
+  type SelectionSnap,
+} from "zod-crud";
+```
 
-## Guarantees
+React entrypoint:
 
-The library always upholds the SPEC §7 invariants:
-
-- **G1** — `JSON.parse(JSON.stringify(state))` deeply equals `state`
-- **G2** — operations never mutate input state
-- **G3** — committed state always passes `schema.safeParse`
-- **G4** — `applyPatch` is interoperable with other RFC 6902 implementations
-- **G5** — pointers are interpreted exactly as RFC 6901
-- **G6** — `applyOperation`/`applyPatch` are pure
-- **G7** — history undo→redo round-trips
-- **G8** — batch failure leaves state unchanged
-
-These are exercised by `test/rfc6902.test.ts`, `test/guarantees.test.ts`,
-`test/serialize.test.ts`, and `test/pointer-types.test.ts`.
+```ts
+import { useJSONDocument } from "zod-crud/react";
+```
