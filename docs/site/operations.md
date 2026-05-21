@@ -167,6 +167,6 @@ doc.history.transaction(() => {
 
 ## 실전 시나리오
 
-시나리오별 정본 코드(dict-record 한 키 쓰기, drag/burst undo, selection follow, clipboard, optimistic HTTP, headless, sidecar)는 **[Patterns](/docs/patterns)** 페이지에 모았습니다. "이걸 만들고 싶다" 의 답은 거기서.
+시나리오별 정본 코드(dict-record 한 키 쓰기, drag/burst undo, selection follow, clipboard, optimistic HTTP, headless)는 **[Patterns](/docs/patterns)** 페이지에 모았습니다. "이걸 만들고 싶다" 의 답은 거기서.
 
 거부한 기능과 그 대안은 **[Why Not](/docs/why-not)** 페이지에.

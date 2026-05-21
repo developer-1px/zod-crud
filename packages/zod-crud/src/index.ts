@@ -179,21 +179,6 @@ export {
   selectionTextEdits,
 } from "./core/selection/textEdit.js";
 
-// === Sidecars — 횡단 관심사 ===
-// React sidecar hooks live under `zod-crud/react`.
-export { createRecorder, replayRecording } from "./sidecars/replayRecording.js";
-export type {
-  CreateRecorderOptions,
-  HeadlessRecorderApi,
-  RecordedStep,
-  RecorderApi,
-  Recording,
-  ReplayDocumentTarget,
-  ReplayOptions,
-  ReplaySelectionTarget,
-  ReplayTarget,
-} from "./sidecars/replayRecording.js";
-
 // === Clipboard verbs ===
 export {
   copy,

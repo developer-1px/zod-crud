@@ -148,31 +148,3 @@ else log(result.reason ?? result.code);
 ```
 
 같은 schema · 같은 op 가 React UI / 테스트 / 서버에서 동일한 결과.
-
----
-
-## 6. Sidecar — session recorder
-
-**언제**: 사용자 세션을 patch stream 으로 녹화 → 재생 (bug repro, 데모, 데이터 마이그레이션 검증).
-
-**Canonical**:
-
-```tsx
-import { replayRecording } from 'zod-crud';
-import { useRecorder } from 'zod-crud/react';
-
-function App() {
-  const doc = useJSONDocument(Schema, initial);
-  const recorder = useRecorder(doc.ops);
-
-  return (
-    <>
-      <button onClick={recorder.start}>record</button>
-      <button onClick={() => download('session.json', JSON.stringify(recorder.stop()))}>save</button>
-      <button onClick={() => replayRecording(uploadedJson, doc.ops, { speed: 1 })}>replay</button>
-    </>
-  );
-}
-```
-
-sidecar 는 core 의 정상 흐름(ops.subscribe · history)을 *관찰만* 합니다. 본체 데이터 동작 영향 없음.

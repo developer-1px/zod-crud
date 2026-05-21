@@ -12,7 +12,6 @@
 | 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 verbs 분류 기준. |
 | 10 verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |
 | hooks/commands/verbs/core | 현재 코드 위계. hooks 는 React, commands 는 facade builder, verbs 는 pure composer, core 는 RFC substrate. |
-| sidecars | 본체 데이터 흐름 밖의 횡단 관심사. `recorder`, `http`. |
 
 ## JSON Standards
 
@@ -40,7 +39,7 @@
 | `apply(operations)` | 실패 시 `JSONCrudError` 를 throw 하는 fire-and-forget patch path. |
 | `load(value)` | 외부 JSON 을 schema 검증 후 state 로 교체. |
 | `reset(value?)` | initial 또는 인자 값으로 state 교체. |
-| `subscribe(listener)` | commit 된 patch 목록을 구독한다. Selection 자동 추적과 sidecars 가 사용한다. |
+| `subscribe(listener)` | commit 된 patch 목록을 구독한다. Selection 자동 추적이 사용한다. |
 | `state` | 현재 JSON state snapshot. |
 | `JSONChangeListener` | `(applied: ReadonlyArray<JSONPatchOperation>) => void`. |
 

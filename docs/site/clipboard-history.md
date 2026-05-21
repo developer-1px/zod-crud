@@ -78,22 +78,6 @@ const active = doc.selection?.focus;
 | paste | `doc.commands.paste(payload, target)` |
 | batch edit | `doc.ops.patch([...])` |
 
-## 패턴 6. Session recording
-
-`useRecorder`는 `doc.ops`에 subscribe해서 commit된 patch를 timestamp와 함께 모읍니다.
-저장된 recording은 JSON으로 직렬화할 수 있고, `replayRecording`으로 다른 `ops` 인스턴스에 재생할 수 있습니다.
-
-```ts
-import { replayRecording } from "zod-crud";
-import { useRecorder } from "zod-crud/react";
-
-const recorder = useRecorder(doc.ops);
-
-recorder.start();
-const recording = recorder.stop();
-await replayRecording(recording, doc.ops, { speed: 1 });
-```
-
 ## 좋은 패턴
 
 - UI 이벤트는 앱에서 해석합니다.

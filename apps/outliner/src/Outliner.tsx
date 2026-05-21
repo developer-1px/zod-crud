@@ -12,7 +12,6 @@ import { useTextEditCoalesce } from "./hooks/useTextEditCoalesce.js";
 import { useDispatch } from "./hooks/useDispatch.js";
 import { useGlobalKey } from "./hooks/useGlobalKey.js";
 import { useClickPolicy } from "./hooks/useClickPolicy.js";
-import { useRecorderUI } from "./hooks/useRecorderUI.js";
 
 export function Outliner() {
   const [mode, setMode] = useState<Mode>("select");
@@ -24,19 +23,12 @@ export function Outliner() {
   const clipboard = useClipboard();
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
-  const recorder = useRecorderUI(doc.ops);
-  const toggleRecord = useCallback(() => {
-    if (recorder.isRecording) recorder.stopAndShare();
-    else recorder.start();
-  }, [recorder]);
-
   const ctx = doc.selection
     ? { state: doc.value, ops: doc.ops, selection: doc.selection, clipboard }
     : null;
   const dispatch = useDispatch({
     ctx, mode, setMode, pushToast,
     undo: doc.commands.undo, redo: doc.commands.redo,
-    toggleRecord,
   });
 
   // row 의 onKeyDown — chord dispatcher. handled 면 preventDefault + stopPropagation
@@ -79,24 +71,6 @@ export function Outliner() {
           onKeyDown={onKeyDown} ops={doc.ops} onTextEdit={onTextEdit}
         />
       </ul>
-
-      <details className="dev-tools">
-        <summary>dev</summary>
-        {recorder.isRecording ? (
-          <button
-            onClick={() => recorder.stopAndShare()}
-            title="Stop recording and download JSON"
-            style={{ color: "#c33", fontWeight: 600 }}
-          >
-            stop record ({recorder.stepCount})
-          </button>
-        ) : (
-          <button onClick={recorder.start} title="Record patches from this state">record</button>
-        )}
-        <button onClick={recorder.loadAndReplay} disabled={recorder.replaying} title="Replay JSON recording">
-          {recorder.replaying ? "replaying" : "replay"}
-        </button>
-      </details>
 
       <details className="keymap">
         <summary>Keymap ({KEYMAP.length} bindings)</summary>

@@ -55,7 +55,7 @@ describe("package exports", () => {
 
     expect(rootSource).not.toMatch(/from "\.\/react\.js"/);
     expect(rootSource).not.toMatch(/from "\.\/hooks\//);
-    expect(rootSource).not.toMatch(/from "\.\/sidecars\/(?:debug-log|recorder)\.js"/);
+    expect(rootSource).not.toMatch(/from "\.\/sidecars\//);
     expect(rootSource).not.toMatch(/from "react"/);
   });
 });

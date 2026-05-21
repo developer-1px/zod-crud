@@ -99,9 +99,9 @@ doc.commit(
 );
 ```
 
-### Canonical 대안 E — sidecar (필요 시)
+### Canonical 대안 E — app-local policy (필요 시)
 
-시간/path 휴리스틱이 도메인별로 다른 자동 coalesce 가 필요하면 sidecar 로 만듭니다.
+시간/path 휴리스틱이 도메인별로 다른 자동 coalesce 가 필요하면 앱 레이어에서 둡니다.
 
 ```ts
 const coalesce = useHistoryCoalesce(doc, { withinMs: 200, samePath: true });

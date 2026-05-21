@@ -3,7 +3,7 @@
 > All frontend editing is JSON editing. zod-crud provides Zod-guarded headless
 > JSON editing primitives. Root `zod-crud` is React-free;
 > React hooks live under `zod-crud/react`. State, operations, selection,
-> history, recordings, and wire payloads are serializable JSON.
+> history, and wire payloads are serializable JSON.
 
 ## Identity
 
@@ -27,7 +27,6 @@ import {
   useJSONSlice,
   useDraft,
   useField,
-  useRecorder,
 } from "zod-crud/react";
 
 // Pure core.
@@ -36,11 +35,6 @@ import { applyPatch, applyOperation, computeInverses } from "zod-crud";
 // Pointer / serialization.
 import { parsePointer, buildPointer, serialize, parse, safeParse } from "zod-crud";
 
-// Headless sidecars.
-import {
-  createRecorder,
-  replayRecording,
-} from "zod-crud";
 ```
 
 Only import from package exports: `zod-crud`, `zod-crud/react`, or explicit
@@ -271,11 +265,7 @@ Use local UI preview for drag/IME. Use
 final model selection should be one undo entry. For synchronous multi-step
 document edits, use `doc.history.transaction({ label, origin, mergeKey }, fn)`. For
 already-committed bursts, use `doc.history.mergeLast({ mergeKey })`. History
-metadata is serializable and recorder steps preserve it when present.
-Use `createRecorder(doc.ops)` for headless recording; `useRecorder(doc.ops)`
-is the React facade over the same recorder.
-`replayRecording(recording, ops)` replays state only; `replayRecording(recording, doc)`
-also restores recorded selection metadata when present.
+metadata is serializable.
 
 ## Source Of Truth
 

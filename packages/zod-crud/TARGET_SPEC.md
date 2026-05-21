@@ -9,7 +9,7 @@ specified in [`SPEC.md`](./SPEC.md) and exported from `src/index.ts` /
 
 **All frontend editing is JSON editing.**
 
-FE applications that need save, undo, replay, collaboration boundaries, server
+FE applications that need save, undo, collaboration boundaries, server
 sync, or inspection eventually need a JSON-compatible document model for their
 editing state. zod-crud is the headless JSON editing engine for that document
 state.
@@ -28,7 +28,6 @@ zod-crud provides the primitives every editor-like FE rebuilds:
 - clipboard fragments
 - undo/redo history
 - command and guard facade
-- replayable operation streams
 - wire-safe JSON serialization
 
 zod-crud does not provide:
@@ -688,7 +687,7 @@ Acceptance evidence:
 ## 7. History Subsystem
 
 History already owns undo/redo/merge/transaction. Target history adds
-serializable metadata for user-intent grouping and recording.
+serializable metadata for user-intent grouping.
 
 ```ts
 interface HistoryTransactionOptions {
@@ -719,26 +718,20 @@ history.
 
 Rules:
 
-- Time-based coalescing remains app/sidecar policy.
+- Time-based coalescing remains app policy.
 - Core may store `mergeKey`, but must not own timers.
-- Recording sidecars preserve history metadata when present.
 - `doc.commit(patch, { selection, label, origin, mergeKey })` records patch
   and final selection in one history entry. Selection context is part of the
   final selection snapshot and is restored by undo/redo. Empty patch +
   selection is selection-only and does not create an undo entry.
 - `doc.lastPatch` exposes the last applied normalized document patch as a
   serializable value snapshot and clears to `[]` after selection-only edits.
-- Recording can be produced headlessly with `createRecorder(ops)`; React
-  `useRecorder` is a facade over it.
 
 Acceptance evidence:
 
 - Headless tests in `tests/document-history-metadata.test.ts` prove transaction
   metadata is serializable, undo/redo state is unchanged, and merge metadata
   does not change stack behavior.
-- React recorder tests in `tests/recorder-hook.test.ts` prove recordings
-  preserve transaction metadata and optional selection snapshots.
-
 ## 7.1 Command / Guard Subsystem
 
 The public command/guard surface is `doc.commands`, `doc.check`, and `doc.can`
@@ -780,43 +773,7 @@ Acceptance evidence:
 - React facade tests in `tests/document-schema-react.test.ts` prove the same
   schema surface exists through `useJSONDocument`.
 
-## 9. Replay / Wire Subsystem
-
-Replay and wire helpers remain sidecars, but target metadata makes them engine
-grade.
-
-Target recording step:
-
-```ts
-interface RecordedStep {
-  ops: ReadonlyArray<JSONPatchOperation>;
-  at: number;
-  label?: string;
-  origin?: string;
-  mergeKey?: string;
-  selectionBefore?: SelectionSnap;
-  selectionAfter?: SelectionSnap;
-}
-```
-
-Rules:
-
-- Recording is still JSON.
-- Recording can be produced headlessly with `createRecorder(ops)`; React
-  `useRecorder` is a facade over it.
-- Replay accepts either `JSONOps<T>` for state-only replay or a document facade
-  target for state + selection replay.
-- Replay restores `selectionBefore` before the first step and `selectionAfter`
-  after each step when metadata is present and the target exposes selection.
-
-Acceptance evidence:
-
-- Tests prove old recordings without metadata still replay.
-- Headless and React tests prove recordings with selection metadata restore the
-  target selection.
-- Tests prove new recordings preserve metadata and optional selection snaps.
-
-## 10. Issue Slices
+## 9. Issue Slices
 
 Current facade expansion slices are implemented. Continue from open standards
 and engine-hardening items in `BACKLOG.md`.
