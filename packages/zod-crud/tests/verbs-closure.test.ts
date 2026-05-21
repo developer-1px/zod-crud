@@ -40,10 +40,12 @@ describe("verbs/ closure — pure composers only", () => {
     }
   });
 
-  test("verbs/ 에 pure verb 파일 + README.md 외 추가 파일 없음 (closure 보존)", () => {
-    const actual = readdirSync(verbsPath).filter((n) => n.endsWith(".ts") || n.endsWith(".md"));
+  test("verbs/ 에 pure verb 파일 외 추가 source doc 없음 (closure 보존)", () => {
+    const actual = readdirSync(verbsPath);
     const tsFiles = actual.filter((n) => n.endsWith(".ts"));
+    const markdownFiles = actual.filter((n) => n.endsWith(".md"));
     expect(tsFiles.length).toBe(8);
+    expect(markdownFiles).toEqual([]);
     for (const f of tsFiles) {
       const verb = f.replace(/\.ts$/, "");
       expect(pureVerbFiles.includes(verb), `verbs/${f} 가 pure verb 매핑에 없음`).toBe(true);
