@@ -487,10 +487,6 @@ export type SelectionCursorResult =
       selection: SelectionSnap;
     };
 
-export type SelectionCursorTarget =
-  | Omit<Extract<SelectionCursorResult, { ok: true }>, "selection">
-  | Omit<Extract<SelectionCursorResult, { ok: false }>, "selection">;
-
 export type SelectionScopeResult =
   | {
       ok: true;
@@ -543,23 +539,6 @@ export interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
   index: number;
   primary: boolean;
 }
-
-export type SelectionPointOrderResult =
-  | {
-      ok: true;
-      order: -1 | 0 | 1;
-      direction: SelectionDirection;
-      left: JSONPoint;
-      right: JSONPoint;
-      leftPointer: Pointer;
-      rightPointer: Pointer;
-    }
-  | {
-      ok: false;
-      code: SelectionOrderErrorCode;
-      reason: string;
-      pointer: Pointer | null;
-    };
 
 export type SelectionRangeOrderResult =
   | { ok: true; range: OrderedSelectionRange }

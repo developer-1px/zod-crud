@@ -461,7 +461,7 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value).toEqual(initial);
   });
 
-  test("doc.clipboard copies, pastes, and exposes serializable items", () => {
+  test("doc.clipboard copies, pastes, and exposes a JSON payload", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
     expect(doc.clipboard.hasData).toBe(false);
@@ -477,11 +477,6 @@ describe("createJSONDocument — headless facade", () => {
       source: "/items/0",
       sources: ["/items/0"],
     });
-    expect(doc.clipboard.toItems({ json: true })).toMatchObject({
-      "application/json": "{\"id\":\"a\",\"name\":\"A\"}",
-      "text/plain": "{\"id\":\"a\",\"name\":\"A\"}",
-    });
-
     const pasted = doc.clipboard.paste("/items/-");
 
     expect(pasted.ok).toBe(true);
@@ -1169,8 +1164,6 @@ describe("createJSONDocument — headless facade", () => {
       source: "/items/0",
       sources: ["/items/0", "/items/1"],
     });
-    expect(doc.clipboard.toItems({ tsv: true })["text/plain"]).toBe("id\tname\na\tA\nb\tB");
-
     const pasted = doc.clipboard.paste("/items/-");
 
     expect(pasted.ok).toBe(true);

@@ -4,15 +4,11 @@ import { cloneJson, jsonSerializableError } from "./core/json.js";
 import type { JSONResult } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
 import { normalizePointerSources } from "./core/pointer/sourceSet.js";
-import { schemaAtPointer } from "./core/schema/introspection.js";
 import type { JSONOps } from "./jsonOps.js";
 import type { SelectionSource } from "./core/selection/index.js";
 import {
   copy,
-  toClipboardItems,
   type ClipboardSource,
-  type ClipboardItemMap,
-  type ClipboardItemOptions,
   type CopyError,
   type CopyOk,
 } from "./verbs/copy.js";
@@ -57,14 +53,12 @@ export interface ClipboardState<T> {
     modeOrOptions?: PasteMode | PasteOptions,
     options?: PasteOptions,
   ): ClipboardPasteResult<T>;
-  toItems(options?: ClipboardItemOptions): ClipboardItemMap;
 }
 
 interface ClipboardBuffer {
   payload: unknown;
   source: Pointer | null;
   sources: ReadonlyArray<Pointer> | null;
-  schema: z.ZodType;
 }
 
 type ClipboardWriteSourcesResult =
@@ -102,8 +96,6 @@ export function createClipboard<S extends z.ZodType>(
     code: result.code,
     message: result.reason ?? result.code,
   });
-  const bufferSchema = (source: Pointer | null): z.ZodType =>
-    source === null ? schema : (schemaAtPointer(schema, source) ?? schema);
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? getSelectionSource?.() ?? null;
   const targetOrSelection = (target?: Pointer): Pointer | null =>
@@ -156,7 +148,6 @@ export function createClipboard<S extends z.ZodType>(
         payload: cloneJson(payload),
         source,
         sources,
-        schema: bufferSchema(source),
       });
       return { ok: true };
     },
@@ -174,7 +165,6 @@ export function createClipboard<S extends z.ZodType>(
           payload: result.payload,
           source: result.source,
           sources: [...result.sources],
-          schema: bufferSchema(result.source),
         });
       }
       return result;
@@ -198,7 +188,6 @@ export function createClipboard<S extends z.ZodType>(
         payload: result.payload,
         source: result.source,
         sources: [...result.sources],
-        schema: bufferSchema(result.source),
       });
       return result;
     },
@@ -222,10 +211,6 @@ export function createClipboard<S extends z.ZodType>(
       if (!result.ok) return result;
       const patchResult = ops.patch(result.patch);
       return patchResult.ok ? result : patchError(patchResult);
-    },
-
-    toItems(options) {
-      return buffer ? toClipboardItems(buffer.payload, buffer.schema, options) : {};
     },
   };
 }

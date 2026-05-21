@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { copy, toClipboardItems, toMarkdown, toTsv } from "../src/verbs/copy.js";
+import { copy } from "../src/verbs/copy.js";
 import { cut } from "../src/verbs/cut.js";
 import { paste } from "../src/verbs/paste.js";
 import { duplicate } from "../src/verbs/duplicate.js";
@@ -101,34 +101,6 @@ describe("verbs/copy", () => {
     if (!r.ok) expect(r.code).toBe("not_serializable");
   });
 
-  test("schema field order 로 TSV clipboard representation 생성", () => {
-    const payload = [
-      { name: "A", id: "a" },
-      { name: "B", id: "b" },
-    ];
-    expect(toTsv(payload, Schema.shape.items)).toBe("id\tname\na\tA\nb\tB");
-  });
-
-  test("clipboard item map 은 JSON + plain text TSV + optional HTML 을 함께 제공", () => {
-    const payload = [{ id: "a", name: "A" }];
-    const items = toClipboardItems(payload, Schema.shape.items, {
-      json: true,
-      tsv: true,
-      html: () => "<table></table>",
-    });
-    expect(items["application/json"]).toBe(JSON.stringify(payload));
-    expect(items["text/plain"]).toBe("id\tname\na\tA");
-    expect(items["text/tab-separated-values"]).toBe("id\tname\na\tA");
-    expect(items["text/html"]).toBe("<table></table>");
-  });
-
-  test("clipboard item map rejects non-JSON payloads", () => {
-    expect(() => toClipboardItems({ id: "a", dropped: undefined }, Schema.shape.items)).toThrow(TypeError);
-  });
-
-  test("markdown table helper 도 schema field order 를 따른다", () => {
-    expect(toMarkdown([{ name: "A", id: "a" }], Schema.shape.items)).toBe("| id | name |\n| --- | --- |\n| a | A |");
-  });
 });
 
 describe("verbs/cut", () => {
