@@ -1,10 +1,33 @@
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+
+function rootLlmsTxt(): Plugin {
+  const path = fileURLToPath(new URL("../../llms.txt", import.meta.url));
+
+  return {
+    name: "root-llms-txt",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        if (req.url?.split("?")[0] !== "/llms.txt") return next();
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.end(readFileSync(path, "utf8"));
+      });
+    },
+    generateBundle() {
+      this.emitFile({
+        type: "asset",
+        fileName: "llms.txt",
+        source: readFileSync(path, "utf8"),
+      });
+    },
+  };
+}
 
 export default defineConfig({
   base: process.env.SITE_BASE ?? "/",
-  plugins: [react()],
+  plugins: [react(), rootLlmsTxt()],
   resolve: {
     alias: [
       {

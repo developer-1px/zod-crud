@@ -267,8 +267,8 @@ metadata is serializable.
   behavior changes.
 - Public export files: `packages/zod-crud/src/index.ts` and
   `packages/zod-crud/src/react.ts`.
-- Site docs support `::source{path="..." lines="..."}`; source references are
-  resolved during `npm run build -w @zod-crud/site`.
+- The site is a source viewer plus playground; root `llms.txt` is emitted to
+  the site build as `/llms.txt`.
 
 ## Verification
 
