@@ -72,7 +72,6 @@ export type { Pointer } from "./core/pointer/index.js";
 export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 
 // === JSON serialize helpers ===
-export { jsonEqual } from "./core/json.js";
 export { serialize } from "./core/pointer/serialize.js";
 export type { JSONPrimitive, JSONValue } from "./core/json.js";
 
