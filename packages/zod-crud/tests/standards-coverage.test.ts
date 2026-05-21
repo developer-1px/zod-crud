@@ -423,20 +423,28 @@ describe("core/* substrate allow-list", () => {
     ]);
   });
 
-  test("root verify script keeps workspace gates intact", () => {
+  test("root package stays private workspace metadata plus gates only", () => {
     const monorepoPackageJson = JSON.parse(readFileSync(resolve(root, "..", "..", "package.json"), "utf8")) as {
       private?: boolean;
-      description?: string;
       dependencies?: Record<string, string>;
+      description?: string;
+      directories?: unknown;
+      homepage?: string;
+      license?: string;
+      main?: string;
+      version?: string;
       workspaces?: string[];
       scripts: Record<string, string>;
     };
 
     expect(monorepoPackageJson.private).toBe(true);
-    expect(monorepoPackageJson.description).toBe(
-      "A Zod-guarded JSON tree library locked to RFC 6901 and RFC 6902. State, actions, and change records are serializable JSON; React adapters live behind a separate entrypoint.",
-    );
     expect(monorepoPackageJson.dependencies).toBeUndefined();
+    expect(monorepoPackageJson.description).toBeUndefined();
+    expect(monorepoPackageJson.directories).toBeUndefined();
+    expect(monorepoPackageJson.homepage).toBeUndefined();
+    expect(monorepoPackageJson.license).toBeUndefined();
+    expect(monorepoPackageJson.main).toBeUndefined();
+    expect(monorepoPackageJson.version).toBeUndefined();
     expect(monorepoPackageJson.workspaces).toEqual(["packages/*", "apps/*"]);
     expect(monorepoPackageJson.scripts.test).toBe(
       "npm test -w zod-crud",

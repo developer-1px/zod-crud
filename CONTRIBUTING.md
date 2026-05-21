@@ -20,7 +20,7 @@ npm run typecheck -w zod-crud
 npm test -w zod-crud
 npm run build -w zod-crud
 npm run smoke:package -w zod-crud
-npm run site:build
+npm run playground:build
 ```
 
 ## Change Rules
