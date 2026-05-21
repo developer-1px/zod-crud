@@ -167,13 +167,8 @@ export {
 // === Clipboard verbs ===
 export {
   copy,
-  toClipboardItems,
-  toMarkdown,
-  toTsv,
 } from "./verbs/copy.js";
 export type {
-  ClipboardItemMap,
-  ClipboardItemOptions,
   ClipboardSource,
   CopyError,
   CopyOk,
