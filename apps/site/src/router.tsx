@@ -6,7 +6,7 @@ import {
   Outlet,
 } from "@tanstack/react-router";
 import { ApiReference } from "./routes/ApiReference";
-import { Examples } from "./routes/Examples";
+import { Playground } from "./routes/Playground";
 import { OutlinerPage } from "./routes/Outliner";
 import { MobileCmsPage } from "./routes/MobileCms";
 import { ApiCollectionPage } from "./routes/ApiCollection";
@@ -21,15 +21,15 @@ const NAV: NavGroup[] = [
     title: "Source",
     items: [
       { to: "/api", label: "API reference" },
-      { to: "/examples", label: "Examples" },
     ],
   },
   {
-    title: "Demos",
+    title: "Playground",
     items: [
-      { to: "/outliner", label: "Outliner" },
-      { to: "/mobile-cms", label: "Mobile CMS" },
-      { to: "/api-collection", label: "API collection" },
+      { to: "/playground", label: "Core" },
+      { to: "/playground/outliner", label: "Outliner" },
+      { to: "/playground/mobile-cms", label: "Mobile CMS" },
+      { to: "/playground/api-collection", label: "API collection" },
     ],
   },
   {
@@ -106,16 +106,16 @@ function makeDocRoute(slug: DocsPageSlug) {
 const docRoutes = (Object.keys(docsPagesBySlug) as DocsPageSlug[]).map(makeDocRoute);
 
 const apiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api", component: ApiReference });
-const examplesRoute = createRoute({ getParentRoute: () => rootRoute, path: "/examples", component: Examples });
-const outlinerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/outliner", component: OutlinerPage });
-const mobileCmsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/mobile-cms", component: MobileCmsPage });
-const apiCollectionRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api-collection", component: ApiCollectionPage });
+const playgroundRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground", component: Playground });
+const outlinerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground/outliner", component: OutlinerPage });
+const mobileCmsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground/mobile-cms", component: MobileCmsPage });
+const apiCollectionRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground/api-collection", component: ApiCollectionPage });
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
   ...docRoutes,
   apiRoute,
-  examplesRoute,
+  playgroundRoute,
   outlinerRoute,
   mobileCmsRoute,
   apiCollectionRoute,

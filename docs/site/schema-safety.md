@@ -65,7 +65,7 @@ const doc = useJSONDocument(Schema, initial, {
 
 ## 예제: 잘못된 값 거절하기
 
-::source{path="apps/site/src/examples/RejectedDrift.tsx" title="RejectedDrift.tsx" lines="1-50"}
+::source{path="apps/site/src/playgrounds/RejectedDrift.playground.tsx" title="RejectedDrift.playground.tsx" lines="1-50"}
 
 > 잘못된 값은 들어오려는 순간 거절되고, 기존 문서 값은 유지됩니다.
 

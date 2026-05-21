@@ -71,4 +71,4 @@ DOM `Selection.anchorNode/focusNode/isCollapsed` 와 동일한 어휘입니다.
 
 ## 예제 읽기
 
-::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx" lines="1-35"}
+::source{path="apps/site/src/playgrounds/BasicCrud.playground.tsx" title="BasicCrud.playground.tsx" lines="1-35"}

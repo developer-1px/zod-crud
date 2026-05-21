@@ -8,7 +8,7 @@ const packageSources = import.meta.glob("../../../../packages/zod-crud/src/**/*.
   query: "?raw",
 }) as RawModuleMap;
 
-const siteExampleSources = import.meta.glob("../examples/**/*.{ts,tsx}", {
+const sitePlaygroundSources = import.meta.glob("../playgrounds/**/*.{ts,tsx}", {
   eager: true,
   import: "default",
   query: "?raw",
@@ -26,7 +26,7 @@ for (const [path, source] of Object.entries(packageSources)) {
   sources.set(path.replace("../../../../", ""), source);
 }
 
-for (const [path, source] of Object.entries(siteExampleSources)) {
+for (const [path, source] of Object.entries(sitePlaygroundSources)) {
   sources.set(path.replace("../", "apps/site/src/"), source);
 }
 
@@ -84,8 +84,8 @@ function displayFilename(path: string): string {
   if (path.startsWith("packages/zod-crud/src/")) {
     return path.slice("packages/zod-crud/src/".length);
   }
-  if (path.startsWith("apps/site/src/examples/")) {
-    return path.slice("apps/site/src/examples/".length);
+  if (path.startsWith("apps/site/src/playgrounds/")) {
+    return path.slice("apps/site/src/playgrounds/".length);
   }
   if (path.startsWith("apps/site/src/routes/")) {
     return path.slice("apps/site/src/routes/".length);

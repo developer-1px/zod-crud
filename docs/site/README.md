@@ -10,7 +10,7 @@
 
 지원 속성:
 
-- `path`: 저장소 기준 source path. 현재 사이트 렌더러는 `packages/zod-crud/src`, `apps/site/src/examples`, `apps/site/src/routes`의 TypeScript 파일을 등록합니다.
+- `path`: 저장소 기준 source path. 현재 사이트 렌더러는 `packages/zod-crud/src`, `apps/site/src/playgrounds`, `apps/site/src/routes`의 TypeScript 파일을 등록합니다.
 - `lines`: 한 줄 또는 inclusive `start-end` 범위.
 - `title`: 선택적 탭 라벨.
 - `height`: 선택적 viewer 높이. px 단위 숫자입니다. 기본값은 고정 높이 없음이며, line range 전체를 페이지에 펼쳐서 보여줍니다.

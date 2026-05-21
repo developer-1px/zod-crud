@@ -154,7 +154,7 @@ function renderInline(text: string) {
 
 function sourcePrefix(path: string): string {
   if (path.startsWith("packages/zod-crud/src/")) return "packages/zod-crud/src/";
-  if (path.startsWith("apps/site/src/examples/")) return "apps/site/src/examples/";
+  if (path.startsWith("apps/site/src/playgrounds/")) return "apps/site/src/playgrounds/";
   if (path.startsWith("apps/site/src/routes/")) return "apps/site/src/routes/";
   return "";
 }

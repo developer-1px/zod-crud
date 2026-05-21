@@ -99,7 +99,7 @@ const doc = useJSONDocument(Todo, initial, {
 
 이 예제는 낮은 레벨 `useJSON`을 보여주지만, 입력과 schema-safe commit의 기본 흐름은 같습니다.
 
-::source{path="apps/site/src/examples/BasicCrud.tsx" title="BasicCrud.tsx" lines="1-35"}
+::source{path="apps/site/src/playgrounds/BasicCrud.playground.tsx" title="BasicCrud.playground.tsx" lines="1-35"}
 
 ## 다음에 읽을 것
 
