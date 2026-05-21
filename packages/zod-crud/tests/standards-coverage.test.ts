@@ -221,29 +221,10 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
-  test("README API table lists every public verb subpath", () => {
-    const readme = readFileSync(resolve(root, "README.md"), "utf8");
-    const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));
-    const verbSubpaths = Object.keys((packageJson as { exports: Record<string, unknown> }).exports)
-      .filter((subpath) => subpath.startsWith("./verbs/"))
-      .map((subpath) => `zod-crud/${subpath.slice(2)}`)
-      .sort();
+  test("package exports do not expose source-layout verb subpaths", () => {
+    const exports = Object.keys((packageJson as { exports: Record<string, unknown> }).exports);
 
-    expect(verbSubpaths).toEqual([
-      "zod-crud/verbs/copy",
-      "zod-crud/verbs/cut",
-      "zod-crud/verbs/duplicate",
-      "zod-crud/verbs/find",
-      "zod-crud/verbs/move",
-      "zod-crud/verbs/paste",
-      "zod-crud/verbs/redo",
-      "zod-crud/verbs/replace",
-      "zod-crud/verbs/select",
-      "zod-crud/verbs/undo",
-    ]);
-    for (const subpath of verbSubpaths) {
-      expect(apiSection, `README API table missing verb subpath: ${subpath}`).toContain(`\`${subpath}\``);
-    }
+    expect(exports.filter((subpath) => subpath.startsWith("./verbs/"))).toEqual([]);
   });
 
   test("SPEC RFC 6902 conformance count matches vendored suite", () => {
@@ -341,7 +322,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
 
     expect(pkg.name).toBe("zod-crud");
     expect(pkg.version).toMatch(/^\d+\.\d+\.\d+$/);
-    expect(pkg.description).toBe("Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.");
+    expect(pkg.description).toBe("Headless JSON editing primitives guarded by Zod schemas.");
     expect(pkg.type).toBe("module");
     expect(pkg.license).toBe("MIT");
     expect(license).toContain("MIT License");

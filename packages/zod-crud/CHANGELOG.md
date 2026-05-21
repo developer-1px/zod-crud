@@ -5,8 +5,8 @@ All notable package changes are recorded here.
 ## 0.12.0 - 2026-05-18
 
 - Split the React entrypoint to `zod-crud/react`, keeping root `zod-crud` importable without React.
-- Exposed all ten verb modules through package `exports`.
-- Added tarball smoke checks for root, React, and verb subpath imports.
+- Kept package exports limited to root `zod-crud` and `zod-crud/react`; verb modules remain source layout, not public subpaths.
+- Added tarball smoke checks for root, React, and private source-layout subpaths.
 - Added package export consistency checks and type-regression file coverage.
 
 ## 0.7.0 - 2026-05-10

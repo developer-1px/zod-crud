@@ -19,18 +19,6 @@ const reactSource = await readFile(join(repoRoot, "src", "react.ts"), "utf8");
 const rootExports = extractExports(rootSource);
 const reactExports = extractExports(reactSource);
 const sourceModules = await sourceModulePaths(join(repoRoot, "src"));
-const verbEntries = await readdir(join(repoRoot, "src", "verbs"), { withFileTypes: true });
-const verbNames = verbEntries
-  .filter((entry) => entry.isFile() && extname(entry.name) === ".ts")
-  .map((entry) => basename(entry.name, ".ts"))
-  .sort();
-const verbExports = Object.fromEntries(await Promise.all(verbNames.map(async (name) => [
-  name,
-  extractExports(await readFile(join(repoRoot, "src", "verbs", `${name}.ts`), "utf8")),
-])));
-const verbPublicExports = mapExportNames(verbExports, "public");
-const verbValueExports = mapExportNames(verbExports, "value");
-const verbTypeOnlyExports = mapExportNames(verbExports, "typeOnly");
 const rootValueExports = rootExports.value;
 const reactValueExports = reactExports.value;
 const rootPublicExports = rootExports.public;
@@ -183,10 +171,6 @@ function exportNames(block) {
 
 function uniqueSorted(names) {
   return [...new Set(names)].sort();
-}
-
-function mapExportNames(exportsByModule, field) {
-  return Object.fromEntries(Object.entries(exportsByModule).map(([name, exports]) => [name, exports[field]]));
 }
 
 function markdownCodeBlockAfterHeading(source, heading, language) {
@@ -566,39 +550,6 @@ try {
       }
     }
   }
-  const exportedVerbs = Object.keys(packageJson.exports)
-    .filter((subpath) => subpath.startsWith("./verbs/"))
-    .map((subpath) => subpath.slice("./verbs/".length))
-    .sort();
-  if (JSON.stringify(exportedVerbs) !== JSON.stringify(verbNames)) {
-    throw new Error(
-      `Verb exports must match src/verbs/*.ts. exports=${exportedVerbs.join(",")} source=${verbNames.join(",")}`,
-    );
-  }
-  const verbImportLines = exportedVerbs.map((name) => {
-    if (name === "paste") {
-      return 'import { paste, type RekeyOptions, type RekeyResult } from "zod-crud/verbs/paste";';
-    }
-    return `import { ${name} } from "zod-crud/verbs/${name}";`;
-  });
-  const verbTypeImportLines = [
-    'import type { ClipboardItemMap, ClipboardItemOptions, ClipboardSource, CopyError, CopyOk, CopyResult } from "zod-crud/verbs/copy";',
-    'import type { CutError, CutOk } from "zod-crud/verbs/cut";',
-    'import type { DuplicateError, DuplicateOk, DuplicateOpts } from "zod-crud/verbs/duplicate";',
-    'import type { FindError, FindOk } from "zod-crud/verbs/find";',
-    'import type { MoveError, MoveOk, MoveResult } from "zod-crud/verbs/move";',
-    'import type { PasteDuMismatch, PasteError, PasteMode, PasteOk, PasteOptions, RekeyContext, RekeyStrategy } from "zod-crud/verbs/paste";',
-    'import type { RedoResult } from "zod-crud/verbs/redo";',
-    'import type { ReplaceError, ReplaceOk } from "zod-crud/verbs/replace";',
-    'import type { SelectionAction, SelectionMode, SelectionRangeInput, SelectionSnap } from "zod-crud/verbs/select";',
-    'import type { UndoEntry, UndoNoop, UndoResult } from "zod-crud/verbs/undo";',
-  ];
-  const verbFunctionChecks = exportedVerbs.map((name) => `${name} satisfies Function;`);
-  const verbRuntimeImportLines = exportedVerbs.map((name) => `import { ${name} } from "zod-crud/verbs/${name}";`);
-  const verbRuntimeNamespaceImportLines = exportedVerbs.map((name) => `import * as ${name}Ns from "zod-crud/verbs/${name}";`);
-  const verbRuntimeNamespaces = exportedVerbs.map((name) => `  ${name}: ${name}Ns,`);
-  const verbRuntimeEntries = exportedVerbs.map((name) => `${name}`).join(", ");
-
   if (zodPackage === null) {
     throw new Error("Local zod dependency is missing. Run npm install first.");
   }
@@ -624,8 +575,7 @@ try {
     [
       'import * as z from "zod";',
       'import * as zc from "zod-crud";',
-      'import { EMPTY_HISTORY, applyOperation, applyPatch, createClipboard, createJSONDocument, createSelection, emptyHistory, historyBack, historyCanRedo, historyCanUndo, historyCommit, historyForward, historyMergeLast, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, replace, toJSONSchema, fromJSONSchema } from "zod-crud";',
-      'import { move } from "zod-crud/verbs/move";',
+      'import { EMPTY_HISTORY, applyOperation, applyPatch, createClipboard, createJSONDocument, createSelection, emptyHistory, historyBack, historyCanRedo, historyCanUndo, historyCommit, historyForward, historyMergeLast, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, move, replace, toJSONSchema, fromJSONSchema } from "zod-crud";',
       `const expectedRootValueExports = ${JSON.stringify(rootValueExports)};`,
       `const expectedRootTypeOnlyExports = ${JSON.stringify(rootTypeOnlyExports)};`,
       'for (const name of expectedRootValueExports) {',
@@ -670,49 +620,11 @@ try {
       'if (historyRestored?.entry.id !== "entry") throw new Error("historyForward export failed");',
       'const historyMerged = historyMergeLast(historyCommit(historyStack, { id: "second" }, 10), (prev, top) => ({ id: `${prev.id}+${top.id}` }));',
       'if (historyMerged?.undo.at(-1)?.id !== "entry+second") throw new Error("historyMergeLast export failed");',
-      'if (!move(schema, r2.state, "/tags/0", "/tags/0").ok) throw new Error("verb subpath export failed");',
+      'if (!move(schema, r2.state, "/tags/0", "/tags/0").ok) throw new Error("move export failed");',
       'const jsonSchema = toJSONSchema(schema);',
       'if (jsonSchema.type !== "object") throw new Error("toJSONSchema export failed");',
       'const restoredSchema = fromJSONSchema(jsonSchema);',
       'if (!restoredSchema.safeParse(initial).success) throw new Error("fromJSONSchema export failed");',
-    ].join("\n"),
-  );
-  await writeFile(
-    join(workspace, "verbs-subpath-smoke.ts"),
-    [
-      ...verbImportLines,
-      ...verbTypeImportLines,
-      ...verbFunctionChecks,
-      'type VerbSubpathTypes = [ClipboardItemMap, ClipboardItemOptions, ClipboardSource, CopyError, CopyOk, CopyResult, CutError, CutOk<{ name: string }>, DuplicateError, DuplicateOk<{ name: string }>, DuplicateOpts, FindError, FindOk, MoveError, MoveOk<{ name: string }>, MoveResult<{ name: string }>, PasteDuMismatch, PasteError, PasteMode, PasteOk<{ name: string }>, PasteOptions, RedoResult<{ name: string }, UndoEntry>, ReplaceError, ReplaceOk<{ name: string }>, SelectionAction, SelectionMode, SelectionRangeInput, SelectionSnap, UndoEntry, UndoNoop, UndoResult<{ name: string }, UndoEntry>, RekeyContext, RekeyStrategy];',
-      'declare const verbSubpathTypes: VerbSubpathTypes;',
-      'verbSubpathTypes satisfies readonly unknown[];',
-      'const options: RekeyOptions = { fields: ["id"], strategy: "suffix" };',
-      'options.fields satisfies string[];',
-      'type RekeyFailure = Extract<RekeyResult, { ok: false }>;',
-      'declare const code: RekeyFailure["code"];',
-      'code satisfies "not_serializable" | "rekey_failed";',
-    ].join("\n"),
-  );
-  await writeFile(
-    join(workspace, "verbs-subpath-smoke.mjs"),
-    [
-      ...verbRuntimeImportLines,
-      ...verbRuntimeNamespaceImportLines,
-      `const verbNamespaces = {\n${verbRuntimeNamespaces.join("\n")}\n};`,
-      `const expectedVerbValueExports = ${JSON.stringify(verbValueExports)};`,
-      `const expectedVerbTypeOnlyExports = ${JSON.stringify(verbTypeOnlyExports)};`,
-      `const verbFunctions = { ${verbRuntimeEntries} };`,
-      'for (const [name, value] of Object.entries(verbFunctions)) {',
-      '  if (typeof value !== "function") throw new Error(`${name} subpath export failed`);',
-      '}',
-      'for (const [verb, namespace] of Object.entries(verbNamespaces)) {',
-      '  for (const name of expectedVerbValueExports[verb] ?? []) {',
-      '    if (!(name in namespace)) throw new Error(`${verb}.${name} runtime export missing`);',
-      '  }',
-      '  for (const name of expectedVerbTypeOnlyExports[verb] ?? []) {',
-      '    if (name in namespace) throw new Error(`${verb}.${name} type-only export leaked at runtime`);',
-      '  }',
-      '}',
     ].join("\n"),
   );
   await writeFile(
@@ -880,13 +792,6 @@ try {
     reactPublicExports,
     "react",
   );
-  for (const [verb, expectedExports] of Object.entries(verbPublicExports)) {
-    assertDeclarationExports(
-      await readFile(join(installedPackageRoot, "dist", "verbs", `${verb}.d.ts`), "utf8"),
-      expectedExports,
-      `verbs/${verb}`,
-    );
-  }
   await assertDeclarationSpecifiers(installedPackageRoot);
   await assertRuntimeSpecifiers(installedPackageRoot);
 
@@ -905,6 +810,7 @@ try {
     "core/patch",
     "hooks/useJSONDocument",
     "verbs",
+    "verbs/move",
   ];
   for (const privateSubpath of privateSubpaths) {
     expectCommandFailure(
@@ -916,7 +822,6 @@ try {
   }
 
   run("node", ["smoke.mjs"], workspace);
-  run("node", ["verbs-subpath-smoke.mjs"], workspace);
   run("node", ["readme-pure-core-example.mjs"], workspace);
   run("node", ["readme-serialization-example.mjs"], workspace);
   run(
@@ -964,24 +869,6 @@ try {
       "--target",
       "ES2022",
       "--module",
-      "NodeNext",
-      "--moduleResolution",
-      "NodeNext",
-      "--strict",
-      "--exactOptionalPropertyTypes",
-      "--noUncheckedIndexedAccess",
-      "verbs-subpath-smoke.ts",
-    ],
-    workspace,
-  );
-  run(
-    "node",
-    [
-      typeScriptBin,
-      "--noEmit",
-      "--target",
-      "ES2022",
-      "--module",
       "ESNext",
       "--moduleResolution",
       "Bundler",
@@ -991,7 +878,6 @@ try {
       ...readmeTypeScriptExamplePaths,
       "smoke.ts",
       "named-imports-smoke.ts",
-      "verbs-subpath-smoke.ts",
     ],
     workspace,
   );

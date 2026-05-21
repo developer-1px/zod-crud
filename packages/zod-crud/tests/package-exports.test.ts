@@ -1,16 +1,11 @@
 import { describe, expect, test } from "vitest";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const root = resolve(__dirname, "..");
 const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
   exports: Record<string, { import?: string; types?: string }>;
 };
-
-const publicVerbFiles = readdirSync(resolve(root, "src/verbs"))
-  .filter((name) => name.endsWith(".ts"))
-  .map((name) => name.slice(0, -".ts".length))
-  .sort();
 
 describe("package exports", () => {
   test("every export points at existing source, dist js, and dist type paths", () => {
@@ -38,16 +33,8 @@ describe("package exports", () => {
     }
   });
 
-  test("all public verb modules are exposed as package subpaths", () => {
-    for (const verb of publicVerbFiles) {
-      expect(packageJson.exports, `missing export: ./verbs/${verb}`).toHaveProperty(`./verbs/${verb}`);
-    }
-  });
-
-  test("package subpaths are limited to root, react, and public verbs", () => {
-    const expectedExports = [".", "./react", ...publicVerbFiles.map((verb) => `./verbs/${verb}`)].sort();
-
-    expect(Object.keys(packageJson.exports).sort()).toEqual(expectedExports);
+  test("package subpaths are limited to root and react", () => {
+    expect(Object.keys(packageJson.exports).sort()).toEqual([".", "./react"]);
   });
 
   test("root entrypoint stays headless and does not re-export React modules", () => {

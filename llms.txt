@@ -32,8 +32,8 @@ import { parsePointer, buildPointer, serialize, parse, safeParse } from "zod-cru
 
 ```
 
-Only import from package exports: `zod-crud`, `zod-crud/react`, or explicit
-`zod-crud/verbs/*` subpaths. Do not import `zod-crud/src/*` or `zod-crud/dist/*`.
+Only import from package exports: `zod-crud` or `zod-crud/react`. Do not
+import `zod-crud/src/*`, `zod-crud/dist/*`, or source-layout subpaths.
 
 ## Facade Surface
 

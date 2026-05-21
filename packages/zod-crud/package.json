@@ -1,7 +1,7 @@
 {
   "name": "zod-crud",
   "version": "0.12.0",
-  "description": "Flat JSON CRUD, clipboard, and history primitives guarded by Zod schemas.",
+  "description": "Headless JSON editing primitives guarded by Zod schemas.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -49,46 +49,6 @@
     "./react": {
       "types": "./dist/react.d.ts",
       "import": "./dist/react.js"
-    },
-    "./verbs/copy": {
-      "types": "./dist/verbs/copy.d.ts",
-      "import": "./dist/verbs/copy.js"
-    },
-    "./verbs/duplicate": {
-      "types": "./dist/verbs/duplicate.d.ts",
-      "import": "./dist/verbs/duplicate.js"
-    },
-    "./verbs/paste": {
-      "types": "./dist/verbs/paste.d.ts",
-      "import": "./dist/verbs/paste.js"
-    },
-    "./verbs/cut": {
-      "types": "./dist/verbs/cut.d.ts",
-      "import": "./dist/verbs/cut.js"
-    },
-    "./verbs/find": {
-      "types": "./dist/verbs/find.d.ts",
-      "import": "./dist/verbs/find.js"
-    },
-    "./verbs/move": {
-      "types": "./dist/verbs/move.d.ts",
-      "import": "./dist/verbs/move.js"
-    },
-    "./verbs/redo": {
-      "types": "./dist/verbs/redo.d.ts",
-      "import": "./dist/verbs/redo.js"
-    },
-    "./verbs/replace": {
-      "types": "./dist/verbs/replace.d.ts",
-      "import": "./dist/verbs/replace.js"
-    },
-    "./verbs/select": {
-      "types": "./dist/verbs/select.d.ts",
-      "import": "./dist/verbs/select.js"
-    },
-    "./verbs/undo": {
-      "types": "./dist/verbs/undo.d.ts",
-      "import": "./dist/verbs/undo.js"
     }
   },
   "scripts": {
