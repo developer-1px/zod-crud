@@ -520,7 +520,7 @@ function MarkdownBlockView({ block }: { block: MarkdownBlock }) {
   }
 
   return (
-    <pre className="m-0 max-h-[28rem] overflow-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
+    <pre className="m-0 overflow-x-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
       <code>{block.code}</code>
     </pre>
   );
