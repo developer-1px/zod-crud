@@ -10,7 +10,7 @@ type Route = { path: string; label: string; Component: ComponentType };
 
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 const ROUTES: Route[] = [
-  { path: "/playground", label: "Core", Component: Playground },
+  { path: "/playground", label: "Workbench", Component: Playground },
   { path: "/playground/outliner", label: "Outliner", Component: Outliner },
   { path: "/playground/mobile-cms", label: "Mobile CMS", Component: MobileCms },
   { path: "/playground/api-collection", label: "API collection", Component: ApiCollection },
