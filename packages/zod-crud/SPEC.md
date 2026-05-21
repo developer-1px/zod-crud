@@ -34,7 +34,7 @@ UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · syst
 
 ```
 hooks/      React-only. React API 의존 (useState/useMemo/useRef/MutableRefObject).
-            useJSONDocument/useJSON/useSelection/useJSONSlice/useDraft/useField
+            useJSONDocument/useJSON/useSelection/useJSONSlice
             facade hooks only.
    │ uses
 commands/   facade builders (pure). buildCommands → Commands<T> (edit command namespace),
@@ -938,7 +938,7 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
 React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs plus selection/remove/text helpers, boolean guard predicates, explainable dry-run checks, schema introspection, `commit`, read/query helpers 를 한 객체로 묶는다.
-React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice`, `useDraft`, `useField` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다. `useJSON` 은 headless `createJSON` 의 React facade 이고, `useSelection` 은 headless `createSelection` 의 React facade 이고, `useDraft` / `useField` 는 headless `createDraft` 의 React facade 다.
+React entrypoint 의 `useJSON`, `useSelection`, `useJSONSlice` 는 facade 아래의 조합용 low-level hook 이며, core 편집 모델의 소유자는 아니다. `useJSON` 은 headless `createJSON` 의 React facade 이고, `useSelection` 은 headless `createSelection` 의 React facade 다.
 Command, dry-run, and boolean guard builders are internal composition for the document facade. Public callers use `doc.commands`, `doc.check`, and `doc.can`.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
 clipboard 는 headless JSON fragment buffer 이며 DOM/system clipboard 호출은 사용자 layer 책임이다. multi-source `copy` / `cut` 은 selection 순서의 JSON array payload 를 만들고, 중복 source 는 첫 등장만 보존하며, ancestor source 가 descendant source 를 덮으면 descendant 는 실제 source 집합에서 제외한다. source 인자를 생략한 `doc.clipboard.copy()` / `doc.clipboard.cut()` 은 현재 selection source 를 사용하고, target 인자를 생략한 `doc.clipboard.paste()` 는 현재 primary selection target 을 사용한다. manual `doc.clipboard.write` 도 source metadata 가 제공되면 같은 규칙으로 검증/정규화한다. buffer 의 `source` 는 primary source, `sources` 는 전체 source-list 이며 `read()` 도 둘 다 반환한다. remove patch 는 array index shift 를 피하도록 적용 순서만 정렬한다. `doc.clipboard.paste` 는 multi-source buffer 를 array target 에 붙일 때 기본적으로 payload 를 여러 `add` op 로 spread 하며, `{ spread: false }` 로 array payload 를 하나의 값으로 붙일 수 있다. Standalone composition 은 `createClipboard(args)` 로 같은 buffer 를 직접 만든다. 이 factory 는 `JSONOps`, `getState`, optional selection source/target getter 를 받아 React 없이 동작한다.
@@ -1074,14 +1074,12 @@ react.ts              ─ React public export (`zod-crud/react`)
 createJSONDocument.ts ─ headless document facade (SPEC §5.9)
 createJSON.ts         ─ headless low-level JSON state owner (SPEC §5.1·§5.2)
 selection.ts          ─ headless selection state facade (SPEC §5.7)
-draft.ts              ─ headless draft/pending field state
 jsonOps.ts            ─ JSONOps boundary type
 hooks/
   useJSON.ts          ─ React data facade over createJSON (SPEC §5.1·§5.2)
   useJSONDocument.ts  ─ React document facade
   useSelection.ts     ─ React selection facade (SPEC §5.7)
   useJSONSlice.ts     ─ pointer slice hook
-  useDraft.ts         ─ React draft facade
 commands/
   buildCommands.ts    ─ commands namespace
   buildCan.ts         ─ can namespace

@@ -314,8 +314,8 @@ document history uses.
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
 
-For lower-level composition, use `createSelection(ops)`, `createClipboard(args)`,
-and `createDraft(doc)` headlessly, or `useSelection(ops)` / `useDraft(doc)` in React. See the
+For lower-level composition, use `createSelection(ops)` and `createClipboard(args)`
+headlessly, or `useSelection(ops)` in React. See the
 [`useJSON`](./SPEC.md#51-usejson--data-hook) and
 [`useSelection`](./SPEC.md#57-useselection--selection-state-hook) contracts in
 SPEC.
@@ -398,10 +398,6 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
 | `SelectionState<T>`, `UseSelectionOptions` from `zod-crud/react` | React selection hook return/options aliases |
-| `createDraft(doc, options?)` | headless draft/pending field state over a document facade |
-| `HeadlessDraftState<T>`, `DraftChangeListener<T>`, `DraftDocument<T>`, `CreateDraftOptions` | headless draft composition types |
-| `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
-| `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | React draft hook return aliases |
 | `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |

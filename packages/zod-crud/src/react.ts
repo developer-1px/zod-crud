@@ -5,7 +5,6 @@ export { useJSONDocument } from "./hooks/useJSONDocument.js";
 export { useJSON } from "./hooks/useJSON.js";
 export { useSelection } from "./hooks/useSelection.js";
 export { useJSONSlice } from "./hooks/useJSONSlice.js";
-export { useDraft, useField } from "./hooks/useDraft.js";
 
 export type {
   JSONDocument,
@@ -24,8 +23,3 @@ export type {
   SelectionState,
   UseSelectionOptions,
 } from "./hooks/useSelection.js";
-
-export type {
-  DraftFieldState,
-  DraftState,
-} from "./hooks/useDraft.js";

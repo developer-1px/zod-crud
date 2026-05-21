@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless JSON state, document, selection, clipboard, history, and draft facades.
-import { createClipboard, createDraft, createJSON, createJSONDocument, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
+// Headless JSON state, document, selection, clipboard, and history facades.
+import { createClipboard, createJSON, createJSONDocument, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -25,8 +25,6 @@ import {
   useJSON,
   useSelection,
   useJSONSlice,
-  useDraft,
-  useField,
 } from "zod-crud/react";
 
 // Pure core.
@@ -100,8 +98,6 @@ Use `createClipboard(args)` for standalone headless clipboard state.
 Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,
 `historyMergeLast`, `historyCanUndo`, and `historyCanRedo` for standalone
 headless undo/redo stack state.
-Use `createDraft(doc)` for standalone headless draft/pending field state;
-`useDraft(doc)` and `useField(doc, pointer)` are React facades over it.
 `doc.commands.select(action)`, `doc.commands.moveCursor(direction, options?)`,
 `doc.commands.extendCursor(direction, options?)`, and
 `doc.commands.selectScope(options?)` default to the document's configured

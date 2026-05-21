@@ -190,8 +190,6 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     ).flat().sort();
 
     expect(hooks).toEqual([
-      "useDraft",
-      "useField",
       "useJSON",
       "useJSONDocument",
       "useJSONSlice",

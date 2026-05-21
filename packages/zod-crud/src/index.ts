@@ -50,15 +50,6 @@ export type {
   SelectionState,
   UseSelectionOptions,
 } from "./selection.js";
-export { createDraft } from "./draft.js";
-export type {
-  CreateDraftOptions,
-  DraftChangeListener,
-  DraftDocument,
-  DraftFieldState,
-  DraftState,
-  HeadlessDraftState,
-} from "./draft.js";
 export { createClipboard } from "./clipboard.js";
 export type {
   ClipboardEmpty,
