@@ -1,5 +1,4 @@
-// P8.1 — RFC ↔ core/* 1:1 매핑 자동 검증.
-// STANDARDS.md 의 표 ↔ src/core/ 디렉터리 일치 확인.
+// RFC ↔ core/* substrate allow-list.
 import { describe, expect, test } from "vitest";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { posix, resolve } from "node:path";
@@ -70,7 +69,7 @@ function exportNames(block: string): string[] {
     });
 }
 
-describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
+describe("core/* substrate allow-list", () => {
   test("expected core/ 폴더가 모두 존재", () => {
     for (const dir of expectedCoreFolders) {
       const p = resolve(corePath, dir);
@@ -85,18 +84,18 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     }
   });
 
-  test("core/ 에 STANDARDS.md 미등재 폴더 없음 (정합 근거 없는 substrate 거부)", () => {
+  test("core/ 에 allow-list 미등재 substrate 없음", () => {
     const actual = readdirSync(corePath, { withFileTypes: true });
     for (const e of actual) {
       if (e.isDirectory()) {
         expect(
           expectedCoreFolders.includes(e.name),
-          `core/${e.name} 가 STANDARDS.md 표에 없음 — 표 갱신 또는 폴더 제거`,
+          `core/${e.name} 가 core substrate allow-list 에 없음`,
         ).toBe(true);
       } else if (e.name.endsWith(".ts")) {
         expect(
           expectedCoreFiles.includes(e.name),
-          `core/${e.name} 가 STANDARDS.md 표에 없음`,
+          `core/${e.name} 가 core substrate allow-list 에 없음`,
         ).toBe(true);
       }
     }
@@ -334,8 +333,6 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       "dist",
       "README.md",
       "SPEC.md",
-      "STANDARDS.md",
-      "CHANGELOG.md",
       "LICENSE",
     ]);
     expect(pkg.exports?.["."]?.import).toBe(pkg.main);
@@ -464,13 +461,5 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     expect(monorepoPackageJson.scripts["api-collection:build"]).toBeUndefined();
     expect(monorepoPackageJson.scripts["outliner:build"]).toBeUndefined();
     expect(monorepoPackageJson.scripts["mobile-cms:build"]).toBeUndefined();
-  });
-
-  test("CHANGELOG latest release matches package version", () => {
-    const changelog = readFileSync(resolve(root, "CHANGELOG.md"), "utf8");
-    const version = (packageJson as { version: string }).version;
-    const latestRelease = changelog.match(/^##\s+(\d+\.\d+\.\d+)\s+-\s+\d{4}-\d{2}-\d{2}$/m)?.[1];
-
-    expect(latestRelease, "CHANGELOG must start with a dated release entry").toBe(version);
   });
 });

@@ -13,8 +13,8 @@ and owns the edit command surface. `zod-crud/react` exposes `useJSONDocument`.
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
 code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
-conflicts with an RFC, in which case the RFC wins. The RFC ↔ `core/*` 1:1
-mapping is in [`STANDARDS.md`](./STANDARDS.md).
+conflicts with an RFC, in which case the RFC wins. `core/*` substrate
+boundaries are enforced by the package tests.
 
 ## Install
 

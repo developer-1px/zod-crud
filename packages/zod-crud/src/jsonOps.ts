@@ -47,7 +47,7 @@ export interface JSONOps<T> {
   copy<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JSONResult;
   test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
 
-  // Sugar — add/replace/remove 를 idempotent 하게 합성. RFC 6902 의 일부는 아님 (memory: STANDARDS.md 매핑 표 참조).
+  // Sugar — add/replace/remove 를 idempotent 하게 합성. RFC 6902 의 일부는 아님.
   // value === undefined → 존재 시 remove / 부재 시 no-op. defined → 부재 시 add / 동일 시 no-op / 다르면 replace.
   set<P extends PointerOf<T>>(path: P, value: ValueAt<T, P> | undefined): JSONResult;
 
