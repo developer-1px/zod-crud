@@ -266,6 +266,71 @@ describe("createSelection", () => {
     });
   });
 
+  test("reports additional text-edit planning failures through selection methods", () => {
+    const doc = createJSONDocument(Schema, initial);
+
+    const emptyQuerySelection = createSelection(doc.ops, {
+      mode: "single",
+      initial: [{ path: "/items/0/name", offset: 0 }],
+    });
+    expect(emptyQuerySelection.textEdits("x", { query: "$.missing[*]" })).toMatchObject({
+      ok: false,
+      code: "empty_scope",
+      pointer: null,
+      index: null,
+    });
+
+    const outOfOrderSelection = createSelection(doc.ops, {
+      mode: "single",
+      initial: [{ path: "/items/0/name", offset: 0 }],
+    });
+    expect(outOfOrderSelection.textEdits("x", { points: ["/items/1/name"] })).toMatchObject({
+      ok: false,
+      code: "point_not_in_order",
+      pointer: "/items/0/name",
+      index: 0,
+    });
+
+    const multiPointerDeleteSelection = createSelection(doc.ops, {
+      mode: "extended",
+      initial: [{
+        anchor: { path: "/items/0/name", offset: 0 },
+        focus: { path: "/items/1/name", offset: 1 },
+      }],
+    });
+    expect(multiPointerDeleteSelection.deleteText()).toMatchObject({
+      ok: false,
+      code: "multi_pointer_range",
+      pointer: "/items/0/name",
+      index: 0,
+    });
+
+    const stringPointDeleteSelection = createSelection(doc.ops, {
+      mode: "single",
+      initial: ["/items/0/name"],
+    });
+    expect(stringPointDeleteSelection.deleteText()).toMatchObject({
+      ok: false,
+      code: "missing_length",
+      pointer: "/items/0/name",
+      index: 0,
+    });
+
+    const forwardBoundarySelection = createSelection(doc.ops, {
+      mode: "single",
+      initial: [{
+        anchor: { path: "/items/0/name", offset: 1 },
+        focus: { path: "/items/0/name", offset: 1 },
+      }],
+    });
+    expect(forwardBoundarySelection.deleteText({ direction: "forward" })).toMatchObject({
+      ok: false,
+      code: "cursor_boundary",
+      pointer: "/items/0/name",
+      index: 0,
+    });
+  });
+
   test("selects scopes, explicit visible points, and JSONPath matches", () => {
     const doc = createJSONDocument(Schema, initial);
     const selection = createSelection(doc.ops, { mode: "multiple" });
@@ -376,5 +441,31 @@ describe("createSelection", () => {
 
     expect(selection.selectedPointers).toEqual(["/items/0", "/items/2", "/items/1"]);
     expect(selection.primaryPointer).toBe("/items/1");
+  });
+
+  test("range-shaped remove/toggle inputs and failed cursor resolution stay on public selection state", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const selection = createSelection(doc.ops, {
+      mode: "multiple",
+      initial: [
+        { anchor: "/items/0", focus: "/items/0" },
+        { anchor: "/items/1", focus: "/items/1" },
+      ],
+    });
+
+    selection.removeRange({ anchor: "/items/0", focus: "/items/0" });
+    expect(selection.selectedPointers).toEqual(["/items/1"]);
+
+    selection.toggleRange({ anchor: "/items/2", focus: "/items/2" });
+    expect(selection.selectedPointers).toEqual(["/items/1", "/items/2"]);
+
+    const before = selection.snapshot();
+    expect(selection.resolveCursor("first", { scope: "items" })).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      pointer: "items",
+      selection: before,
+    });
+    expect(selection.snapshot()).toEqual(before);
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
+import * as z from "zod";
 
-import { JSONCrudError } from "../src/index.js";
+import { createJSONDocument, JSONCrudError } from "../src/index.js";
 
 describe("JSONCrudError", () => {
   test("exposes op, result, name, and operation-specific message", () => {
@@ -28,5 +29,12 @@ describe("JSONCrudError", () => {
     );
 
     expect(error.message).toBe("zod-crud replace failed: schema_violation");
+  });
+
+  test("strict document operations throw JSONCrudError through the public facade", () => {
+    const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" });
+
+    expect(() => doc.ops.patch([{ op: "replace", path: "/name", value: 1 }])).toThrow(JSONCrudError);
+    expect(doc.value).toEqual({ name: "ok" });
   });
 });

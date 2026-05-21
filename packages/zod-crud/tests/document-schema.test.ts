@@ -79,6 +79,51 @@ describe("doc.schema — schema introspection facade", () => {
     });
   });
 
+  test("reports public schema kinds for scalar, union, optional, nullable, and unsupported JSON schema nodes", () => {
+    const KindsSchema = z.object({
+      n: z.number(),
+      ok: z.boolean(),
+      none: z.null(),
+      literal: z.literal("x"),
+      choice: z.enum(["a", "b"]),
+      union: z.union([z.string(), z.number()]),
+      optional: z.string().optional(),
+      nullable: z.string().nullable(),
+      any: z.any(),
+      transformed: z.string().transform((value) => value),
+    });
+    const doc = createJSONDocument(KindsSchema, {
+      n: 1,
+      ok: true,
+      none: null,
+      literal: "x",
+      choice: "a",
+      union: "u",
+      nullable: null,
+      any: { nested: true },
+      transformed: "t",
+    });
+
+    expect(doc.schema.kind("/n")).toMatchObject({ ok: true, kind: "number" });
+    expect(doc.schema.kind("/ok")).toMatchObject({ ok: true, kind: "boolean" });
+    expect(doc.schema.kind("/none")).toMatchObject({ ok: true, kind: "null" });
+    expect(doc.schema.kind("/literal")).toMatchObject({ ok: true, kind: "literal" });
+    expect(doc.schema.kind("/choice")).toMatchObject({ ok: true, kind: "enum" });
+    expect(doc.schema.kind("/union")).toMatchObject({ ok: true, kind: "union" });
+    expect(doc.schema.kind("/optional")).toMatchObject({ ok: true, kind: "optional" });
+    expect(doc.schema.kind("/nullable")).toMatchObject({ ok: true, kind: "nullable" });
+    expect(doc.schema.kind("/any")).toMatchObject({ ok: true, kind: "any" });
+
+    const transformed = doc.schema.describe("/transformed");
+    expect(transformed).toMatchObject({
+      ok: true,
+      description: {
+        kind: "unknown",
+        jsonSchema: null,
+      },
+    });
+  });
+
   test("checks whether a path accepts a value without mutating the document", () => {
     const doc = createJSONDocument(Schema, initial);
 
@@ -103,6 +148,18 @@ describe("doc.schema — schema introspection facade", () => {
       pointer: "title",
     });
     expect(doc.schema.kind("/missing")).toEqual({
+      ok: false,
+      code: "path_not_found",
+      reason: "schema path not found: /missing",
+      pointer: "/missing",
+    });
+    expect(doc.schema.accepts("title", "final")).toEqual({
+      ok: false,
+      code: "invalid_pointer",
+      reason: "invalid schema pointer: title",
+      pointer: "title",
+    });
+    expect(doc.schema.accepts("/missing", "final")).toEqual({
       ok: false,
       code: "path_not_found",
       reason: "schema path not found: /missing",

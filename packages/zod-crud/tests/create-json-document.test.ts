@@ -1016,6 +1016,51 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.history.undoDepth).toBe(0);
   });
 
+  test("commands copy and cut report invalid, missing, and non-JSON sources", () => {
+    const doc = createJSONDocument(Schema, initial, { strict: false });
+
+    expect(doc.commands.copy("items/0")).toEqual({
+      ok: false,
+      code: "invalid_pointer",
+      message: "invalid source pointer: items/0",
+    });
+    expect(doc.commands.copy("/items/9")).toEqual({
+      ok: false,
+      code: "path_not_found",
+      message: "source not found: /items/9",
+    });
+    expect(doc.commands.cut("items/0")).toEqual({
+      ok: false,
+      code: "invalid_pointer",
+      message: "invalid cut source pointer: items/0",
+    });
+    expect(doc.commands.cut("/items/9")).toEqual({
+      ok: false,
+      code: "path_not_found",
+      message: "cut source not found: /items/9",
+    });
+
+    const nonJsonDoc = createJSONDocument(z.any(), { bad: undefined }, { strict: false });
+    expect(nonJsonDoc.commands.copy("/bad")).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+    expect(nonJsonDoc.commands.cut("/bad")).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+    expect(doc.commands.copy([])).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "copy source selection is empty",
+    });
+    expect(doc.commands.cut([])).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "cut source selection is empty",
+    });
+  });
+
   test("doc.clipboard copy and cut default to the current selection source", () => {
     const copyDoc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple", initial: ["/items/0", "/items/1"] },
@@ -1072,6 +1117,44 @@ describe("createJSONDocument — headless facade", () => {
     });
     expect(doc.value).toEqual(initial);
     expect(doc.history.undoDepth).toBe(0);
+  });
+
+  test("doc.clipboard paste reports missing selection target without clearing its buffer", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    expect(doc.clipboard.copy("/items/0")).toMatchObject({ ok: true });
+    expect(doc.clipboard.paste()).toEqual({
+      ok: false,
+      code: "empty_selection",
+      message: "paste target selection is empty",
+    });
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
+  test("createClipboard reports patch failures from its composed ops", () => {
+    const emptyDoc = createJSONDocument(Schema, { items: [], meta: {} }, { strict: false });
+    const clipboard = createClipboard({
+      schema: Schema,
+      getState: () => initial,
+      ops: emptyDoc.ops,
+    });
+
+    expect(clipboard.cut("/items/0")).toEqual({
+      ok: false,
+      code: "path_not_found",
+      message: "op[0]: array index: 0",
+      violations: [],
+    });
+    expect(clipboard.hasData).toBe(false);
+    expect(emptyDoc.value.items).toEqual([]);
   });
 
   test("commands duplicate defaults to the current primary selection source", () => {
@@ -1141,6 +1224,27 @@ describe("createJSONDocument — headless facade", () => {
     expect(conflictDoc.value.meta).toEqual({ foo: "bar", baz: "taken" });
   });
 
+  test("commands duplicate reports invalid and missing sources without mutation", () => {
+    const doc = createJSONDocument(Schema, initial);
+
+    expect(doc.commands.duplicate("")).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      message: "cannot duplicate root",
+    });
+    expect(doc.commands.duplicate("/items/foo")).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      message: "array source must have integer index: /items/foo",
+    });
+    expect(doc.commands.duplicate("/items/9")).toMatchObject({
+      ok: false,
+      code: "path_not_found",
+      message: "source not found: /items/9",
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
   test("commands duplicate reports empty selection when source is omitted", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single" },
@@ -1188,6 +1292,49 @@ describe("createJSONDocument — headless facade", () => {
       message: "cannot mint id",
     });
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a-copy"]);
+  });
+
+  test("commands paste can rekey with uuid strategy through the document facade", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const pasted = doc.commands.paste(
+      { id: "a", name: "UUID copy" },
+      "/items/-",
+      { rekey: { fields: ["id"], strategy: "uuid" } },
+    );
+
+    expect(pasted).toMatchObject({ ok: true });
+    expect(doc.value.items).toHaveLength(3);
+    expect(doc.value.items[2]?.id).not.toBe("a");
+    expect(doc.value.items[2]?.id).not.toBe("b");
+  });
+
+  test("commands replace reports JSONPath syntax and schema failures without mutation", () => {
+    const doc = createJSONDocument(Schema, initial, { strict: false });
+
+    expect(doc.commands.replace("$.items[", "bad")).toMatchObject({
+      ok: false,
+      code: "syntax_error",
+    });
+    expect(doc.commands.replace("$.items[*].name", 1)).toMatchObject({
+      ok: false,
+      code: "schema_violation",
+    });
+    expect(doc.value).toEqual(initial);
+  });
+
+  test("commands find and move report failures through the document facade", () => {
+    const doc = createJSONDocument(Schema, initial, { strict: false });
+
+    expect(doc.commands.find("$.items[")).toMatchObject({
+      ok: false,
+      code: "syntax_error",
+    });
+    expect(doc.commands.move("/items/9", "/items/0")).toMatchObject({
+      ok: false,
+      code: "path_not_found",
+    });
+    expect(doc.value).toEqual(initial);
   });
 
   test("multi-source cut recovers selection without duplicate ranges", () => {
