@@ -18,7 +18,7 @@ import type {
   SelectionTextDeleteOptions,
   SelectionTextEditOptions,
 } from "../core/selection/textEdit.js";
-import type { PasteOptions } from "../verbs/paste.js";
+import type { PasteOptions, PasteTarget } from "../verbs/paste.js";
 import type { DuplicateOpts } from "../verbs/duplicate.js";
 import type { ClipboardSource } from "../verbs/copy.js";
 import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
@@ -37,7 +37,7 @@ export interface Can<T> {
   cut(source?: ClipboardSource): boolean;
   paste(
     payload: unknown,
-    target?: Pointer,
+    target?: PasteTarget,
     options?: PasteOptions,
   ): boolean;
   copy(source?: ClipboardSource): boolean;

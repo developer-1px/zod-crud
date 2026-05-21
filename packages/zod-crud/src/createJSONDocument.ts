@@ -39,7 +39,7 @@ import {
   type DuplicateError,
   type DuplicateOpts,
 } from "./verbs/duplicate.js";
-import type { PasteMode, PasteOptions } from "./verbs/paste.js";
+import type { PasteOptions, PasteTarget } from "./verbs/paste.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
 import type {
   HistoryTransactionOptions,
@@ -101,8 +101,8 @@ export type JSONDocumentDuplicateResult<T> =
   | JSONDocumentDuplicateOk<T>
   | DuplicateError
   | Extract<JSONResult, { ok: false }>;
-export type JSONDocumentPasteMode = PasteMode;
 export type JSONDocumentPasteOptions = PasteOptions;
+export type JSONDocumentPasteTarget = PasteTarget;
 
 export interface JSONDocument<T> {
   readonly value: T;
@@ -129,8 +129,8 @@ export interface JSONDocument<T> {
   canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
   canCopy(source: SelectionSource): JSONCapabilityResult;
   canCut(source: SelectionSource): JSONCapabilityResult;
-  canPaste(target: Pointer, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
-  canPastePayload(target: Pointer, payload: unknown, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
+  canPaste(target: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
+  canPastePayload(target: JSONDocumentPasteTarget, payload: unknown, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
   canUndo(): JSONCapabilityResult;
   canRedo(): JSONCapabilityResult;
 }

@@ -13,7 +13,7 @@ import {
   type CopyOk,
 } from "./verbs/copy.js";
 import { cut, type CutError } from "./verbs/cut.js";
-import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOptions } from "./verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOptions, type PasteTarget } from "./verbs/paste.js";
 
 interface ClipboardWriteOptions {
   source?: Pointer | null;
@@ -60,8 +60,8 @@ export interface ClipboardState<T> {
 
   copy(source?: ClipboardSource): CopyOk | CopyError;
   cut(source?: ClipboardSource): ClipboardCutResult<T>;
-  paste(target?: Pointer, options?: PasteOptions): ClipboardPasteResult<T>;
-  pastePayload(target: Pointer, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
+  paste(target?: PasteTarget, options?: PasteOptions): ClipboardPasteResult<T>;
+  pastePayload(target: PasteTarget, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
 }
 
 interface ClipboardBuffer {
@@ -221,7 +221,7 @@ export function createClipboard<S extends z.ZodType>(
 
   function runPaste(
     payload: unknown,
-    targetOrSelectionTarget: Pointer | undefined,
+    targetOrSelectionTarget: PasteTarget | undefined,
     options: PasteOptions | undefined,
     spreadByDefault: boolean,
   ): ClipboardPasteResult<z.output<S>> {

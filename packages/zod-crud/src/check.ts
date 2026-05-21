@@ -11,7 +11,7 @@ import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
 import { find } from "./verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
-import { paste, resolvePasteArgs, type PasteOptions } from "./verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteOptions, type PasteTarget } from "./verbs/paste.js";
 import { replace as replaceVerb } from "./verbs/replace.js";
 import {
   deleteSelectionText,
@@ -80,7 +80,7 @@ export interface Check<T> {
   copy(source?: ClipboardSource): CheckResult;
   paste(
     payload: unknown,
-    target?: Pointer,
+    target?: PasteTarget,
     options?: PasteOptions,
   ): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;

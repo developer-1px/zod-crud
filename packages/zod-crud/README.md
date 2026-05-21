@@ -174,12 +174,12 @@ For direct payload insertion, pass the payload explicitly.
 
 ```ts
 doc.clipboard.pastePayload("/lists/0/cards/-", { id: "new", title: "New card" });
-doc.clipboard.paste("/lists/0/cards/0", { mode: "after" });
+doc.clipboard.paste({ after: "/lists/0/cards/0" });
 ```
 
-For `before` and `after`, `target` is an existing item pointer. If you already
-have an insertion pointer such as `/cards/-`, use the default paste mode or
-`patch({ op: "add" })`.
+Use a pointer such as `/cards/-` when you already have an insertion position.
+Use `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }` when
+the target is an existing value.
 
 ## History
 
@@ -286,8 +286,8 @@ import {
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONDocumentMutationOk,
-  type JSONDocumentPasteMode,
   type JSONDocumentPasteOptions,
+  type JSONDocumentPasteTarget,
   type JSONChangeMetadata,
   type HistoryTransactionOptions,
   type JSONPatchOperation,

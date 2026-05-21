@@ -11,6 +11,12 @@ import { tryRekeyPayload, type RekeyOptions } from "../core/schema/rekey.js";
 export type { RekeyContext, RekeyOptions, RekeyResult, RekeyStrategy } from "../core/schema/rekey.js";
 
 export type PasteMode = "before" | "after" | "into" | "replace";
+export type PasteTarget =
+  | Pointer
+  | { at: Pointer }
+  | { before: Pointer }
+  | { after: Pointer }
+  | { replace: Pointer };
 
 export interface PasteOk<T> {
   ok: true;
@@ -39,9 +45,7 @@ export interface PastePayloadOptions {
   spread?: boolean;
 }
 
-export interface PasteOptions extends PastePayloadOptions {
-  mode?: PasteMode;
-}
+export interface PasteOptions extends PastePayloadOptions {}
 
 export interface ResolvedPasteArgs {
   target?: Pointer;
@@ -50,14 +54,20 @@ export interface ResolvedPasteArgs {
 }
 
 export function resolvePasteArgs(
-  target?: Pointer,
+  target?: PasteTarget,
   options: PasteOptions = {},
 ): ResolvedPasteArgs {
-  const { mode = "into", ...payloadOptions } = options;
+  if (typeof target === "object" && target !== null) {
+    if ("at" in target) return { target: target.at, mode: "into", options };
+    if ("before" in target) return { target: target.before, mode: "before", options };
+    if ("after" in target) return { target: target.after, mode: "after", options };
+    if ("replace" in target) return { target: target.replace, mode: "replace", options };
+    return { mode: "into", options };
+  }
   return {
     ...(target !== undefined ? { target } : {}),
-    mode,
-    options: payloadOptions,
+    mode: "into",
+    options,
   };
 }
 

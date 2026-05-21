@@ -73,8 +73,8 @@ import {
   type JSONDocumentHistory,
   type JSONDocumentLoadOptions,
   type JSONDocumentMutationOk,
-  type JSONDocumentPasteMode,
   type JSONDocumentPasteOptions,
+  type JSONDocumentPasteTarget,
   type JSONPatchInput,
   type JSONPatchOperation,
   type JSONResult,
@@ -137,8 +137,8 @@ interface JSONDocument<T> {
   canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
   canCopy(source: SelectionSource): JSONCapabilityResult;
   canCut(source: SelectionSource): JSONCapabilityResult;
-  canPaste(target: Pointer, options?: PasteOptions): JSONCapabilityResult;
-  canPastePayload(target: Pointer, payload: unknown, options?: PasteOptions): JSONCapabilityResult;
+  canPaste(target: JSONDocumentPasteTarget, options?: PasteOptions): JSONCapabilityResult;
+  canPastePayload(target: JSONDocumentPasteTarget, payload: unknown, options?: PasteOptions): JSONCapabilityResult;
   canUndo(): JSONCapabilityResult;
   canRedo(): JSONCapabilityResult;
 }
@@ -242,7 +242,7 @@ Clipboard owns JSON payload flow. It is a headless buffer and never calls `navig
 doc.clipboard.copy("/items/0");
 doc.clipboard.cut(["/items/0", "/items/1"]);
 doc.clipboard.paste("/items/-");
-doc.clipboard.paste("/items/0", { mode: "after" });
+doc.clipboard.paste({ after: "/items/0" });
 doc.clipboard.pastePayload("/items/-", { id: "new", name: "New" });
 doc.clipboard.clear();
 ```
@@ -251,7 +251,7 @@ doc.clipboard.clear();
 
 `cut`, `paste`, and `pastePayload` mutate immediately. On success, `value` is the current document value and `applied` is the patch record already applied by the document.
 
-`mode: "before" | "after"` treats `target` as an existing item pointer. `mode: "into"` treats `target` as an insertion pointer or container child path such as `/items/-`. `mode: "replace"` treats `target` as the value to replace.
+Use a pointer such as `/items/-` when the caller already has an insertion position. Use `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }` when the target is an existing value.
 
 Multi-source copy/cut stores an array payload. Pasting a multi-source buffer into an array target spreads by default. `{ spread: false }` keeps the array as one payload value.
 

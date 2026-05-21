@@ -23,8 +23,8 @@ export type {
   JSONDocumentHistory,
   JSONDocumentLoadOptions,
   JSONDocumentMutationOk,
-  JSONDocumentPasteMode,
   JSONDocumentPasteOptions,
+  JSONDocumentPasteTarget,
   JSONDocument,
   JSONPatchInput,
 } from "./createJSONDocument.js";

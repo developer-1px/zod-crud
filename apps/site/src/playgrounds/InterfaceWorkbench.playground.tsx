@@ -175,9 +175,9 @@ export function InterfaceWorkbench() {
     selectedPointers.length > 0 ? selectedPointers : target,
   );
 
-  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste(target, { mode: "after" });
+  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste({ after: target });
 
-  const pastePayloadAfterTarget = (): unknown => doc.clipboard.pastePayload(target, parsedPayload(), { mode: "after" });
+  const pastePayloadAfterTarget = (): unknown => doc.clipboard.pastePayload({ after: target }, parsedPayload());
 
   const selectTodoCards = (): unknown => {
     const matches = doc.query("$..cards[?(@.status=='todo')]");
@@ -417,7 +417,7 @@ export function InterfaceWorkbench() {
           <ActionButton onClick={() => run("canReplace ok", () => doc.canReplace(`${target}/points` as Pointer, 8))}>replace ok</ActionButton>
           <ActionButton onClick={() => run("canReplace bad", () => doc.canReplace(`${target}/points` as Pointer, -5))}>replace bad</ActionButton>
           <ActionButton onClick={() => run("canCopy", () => doc.canCopy(selectedPointers.length > 0 ? selectedPointers : target))}>copy</ActionButton>
-          <ActionButton onClick={() => run("canPastePayload", () => doc.canPastePayload(target, parsedPayload(), { mode: "after" }))}>paste</ActionButton>
+          <ActionButton onClick={() => run("canPastePayload", () => doc.canPastePayload({ after: target }, parsedPayload()))}>paste</ActionButton>
           <ActionButton onClick={() => run("canUndo/canRedo", () => ({ undo: doc.canUndo(), redo: doc.canRedo() }))}>stacks</ActionButton>
         </ActionGroup>
 

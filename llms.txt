@@ -46,6 +46,10 @@ Public mutating methods mutate immediately. `duplicate`, `clipboard.cut`,
 `clipboard.paste`, and `clipboard.pastePayload` return `value` plus `applied`
 records for inspection; do not pass `applied` to `commit` again.
 
+Clipboard paste targets are explicit. Use a pointer for an insertion position
+such as `/items/-`; use `{ before: pointer }`, `{ after: pointer }`, or
+`{ replace: pointer }` when the target is an existing value.
+
 For exact fields, types, and examples, read `packages/zod-crud/README.md`.
 For behavior rules, read `packages/zod-crud/SPEC.md`.
 

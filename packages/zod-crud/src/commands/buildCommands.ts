@@ -31,7 +31,7 @@ import type {
 } from "../core/selection/index.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type ClipboardSource, type CopyOk, type CopyError } from "../verbs/copy.js";
-import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteOptions } from "../verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteOptions, type PasteTarget } from "../verbs/paste.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
@@ -93,7 +93,7 @@ export interface Commands<T> {
   copy(source?: ClipboardSource): CopyOk | CopyError;
   paste(
     payload: unknown,
-    target?: Pointer,
+    target?: PasteTarget,
     options?: PasteOptions,
   ): PasteOk<T> | PasteError | PasteDuMismatch;
 

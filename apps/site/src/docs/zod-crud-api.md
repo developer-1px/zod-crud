@@ -177,12 +177,12 @@ if (copied.ok) {
 
 ```ts
 doc.clipboard.pastePayload("/lists/0/cards/-", { id: "new", title: "New card" });
-doc.clipboard.paste("/lists/0/cards/0", { mode: "after" });
+doc.clipboard.paste({ after: "/lists/0/cards/0" });
 ```
 
 `selection.copy()`는 쓰지 않습니다. selection은 대상 상태이고, clipboard가 payload 흐름을 맡습니다.
 `cut`, `paste`, `pastePayload`는 즉시 document에 적용됩니다. 성공 결과의 `applied`는 이미 적용된 patch 기록입니다.
-`before`/`after`의 target은 기존 item pointer입니다. 이미 `/cards/-` 같은 삽입 위치를 계산했다면 기본 `into`로 paste하거나 `patch({ op: "add" })`를 씁니다.
+이미 `/cards/-` 같은 삽입 위치가 있으면 pointer를 그대로 넘깁니다. 기존 값을 기준으로 붙이면 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 씁니다.
 
 ## history
 
@@ -269,8 +269,8 @@ import {
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONDocumentMutationOk,
-  type JSONDocumentPasteMode,
   type JSONDocumentPasteOptions,
+  type JSONDocumentPasteTarget,
   type JSONPatchInput,
   type HistoryTransactionOptions,
   type JSONPatchOperation,

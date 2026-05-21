@@ -59,7 +59,7 @@ describe("useJSONDocument doc.clipboard", () => {
 
     let failed: ReturnType<typeof hook.current.clipboard.paste> | undefined;
     act(() => {
-      failed = hook.current.clipboard.paste("/items/0/name", { mode: "replace" });
+      failed = hook.current.clipboard.paste({ replace: "/items/0/name" });
     });
 
     expect(failed?.ok).toBe(false);
