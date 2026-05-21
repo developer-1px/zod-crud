@@ -95,8 +95,11 @@ describe("createJSONDocument public interface", () => {
     expect(doc.canPatch({ op: "replace", path: "/title", value: "next" })).toEqual({ ok: true });
     expect(doc.canReplace("/items/0/name", 1)).toMatchObject({ ok: false, code: "schema_violation" });
     expect(doc.canCopy("/items/99")).toMatchObject({ ok: false, code: "path_not_found" });
-    expect(doc.canPaste("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.canPastePayload("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
     expect(doc.canUndo()).toMatchObject({ ok: false, code: "empty_stack" });
+
+    doc.clipboard.copy("/items/0");
+    expect(doc.canPaste("/items/-")).toEqual({ ok: true });
 
     doc.patch({ op: "replace", path: "/title", value: "next" });
     expect(doc.canUndo()).toEqual({ ok: true });
@@ -117,7 +120,7 @@ describe("createJSONDocument public interface", () => {
     expect(doc.clipboard.paste("/items/-")).toMatchObject({ ok: true });
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a", "b"]);
 
-    expect(doc.clipboard.paste("/items/-", { id: "x", name: "X" })).toMatchObject({ ok: true });
+    expect(doc.clipboard.pastePayload("/items/-", { id: "x", name: "X" })).toMatchObject({ ok: true });
     expect(doc.value.items.at(-1)).toEqual({ id: "x", name: "X" });
     expect(doc.history.undoDepth).toBe(2);
   });

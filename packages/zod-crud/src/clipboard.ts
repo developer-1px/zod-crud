@@ -13,7 +13,7 @@ import {
   type CopyOk,
 } from "./verbs/copy.js";
 import { cut, type CutError, type CutOk } from "./verbs/cut.js";
-import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk, type PasteOptions } from "./verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOk, type PasteOptions } from "./verbs/paste.js";
 
 interface ClipboardWriteOptions {
   source?: Pointer | null;
@@ -46,12 +46,8 @@ export interface ClipboardState<T> {
 
   copy(source?: ClipboardSource): CopyOk | CopyError;
   cut(source?: ClipboardSource): CutOk<T> | CutError;
-  paste(
-    targetOrMode?: Pointer | PasteMode,
-    payloadOrModeOrOptions?: unknown,
-    modeOrOptions?: PasteMode | PasteOptions,
-    maybeOptions?: PasteOptions,
-  ): ClipboardPasteResult<T>;
+  paste(target?: Pointer, options?: PasteOptions): ClipboardPasteResult<T>;
+  pastePayload(target: Pointer, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
 }
 
 interface ClipboardBuffer {
@@ -63,13 +59,6 @@ interface ClipboardBuffer {
 type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
-
-interface DirectPasteArgs {
-  targetOrMode: Pointer | PasteMode | undefined;
-  payload: unknown;
-  modeOrOptions?: PasteMode;
-  options?: PasteOptions;
-}
 
 interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
@@ -198,34 +187,40 @@ export function createClipboard<S extends z.ZodType>(
       return result;
     },
 
-    paste(targetOrMode, payloadOrModeOrOptions, modeOrOptions, maybeOptions) {
-      const direct = resolveDirectPaste(targetOrMode, payloadOrModeOrOptions, modeOrOptions, maybeOptions);
-      if (!direct && !buffer) return EMPTY_CLIPBOARD;
-      const args = direct
-        ? resolvePasteArgs(direct.targetOrMode, direct.modeOrOptions, direct.options)
-        : resolvePasteArgs(
-          targetOrMode,
-          payloadOrModeOrOptions as PasteMode | PasteOptions | undefined,
-          modeOrOptions as PasteOptions | undefined,
-        );
-      const target = targetOrSelection(args.target);
-      if (target === null) {
-        return {
-          ok: false,
-          code: "empty_selection",
-          message: "paste target selection is empty",
-        };
-      }
-      const spread = args.options.spread ?? (!direct && (buffer?.sources?.length ?? 0) > 1);
-      const result = paste(schema, getState(), direct ? direct.payload : buffer!.payload, target, args.mode, {
-        ...args.options,
-        spread,
-      });
-      if (!result.ok) return result;
-      const patchResult = ops.patch(result.patch);
-      return patchResult.ok ? result : patchError(patchResult);
+    paste(target, options) {
+      if (!buffer) return EMPTY_CLIPBOARD;
+      return runPaste(buffer.payload, target, options, (buffer.sources?.length ?? 0) > 1);
+    },
+
+    pastePayload(target, payload, options) {
+      return runPaste(payload, target, options, false);
     },
   };
+
+  function runPaste(
+    payload: unknown,
+    targetOrSelectionTarget: Pointer | undefined,
+    options: PasteOptions | undefined,
+    spreadByDefault: boolean,
+  ): ClipboardPasteResult<z.output<S>> {
+    const args = resolvePasteArgs(targetOrSelectionTarget, options);
+    const target = targetOrSelection(args.target);
+    if (target === null) {
+      return {
+        ok: false,
+        code: "empty_selection",
+        message: "paste target selection is empty",
+      };
+    }
+    const spread = args.options.spread ?? spreadByDefault;
+    const result = paste(schema, getState(), payload, target, args.mode, {
+      ...args.options,
+      spread,
+    });
+    if (!result.ok) return result;
+    const patchResult = ops.patch(result.patch);
+    return patchResult.ok ? result : patchError(patchResult);
+  }
 }
 
 function emptyCopySource(): CopyError {
@@ -242,28 +237,4 @@ function emptyCutSource(): CutError {
     code: "empty_selection",
     message: "cut source selection is empty",
   };
-}
-
-function resolveDirectPaste(
-  targetOrMode: Pointer | PasteMode | undefined,
-  payloadOrModeOrOptions: unknown,
-  modeOrOptions?: PasteMode | PasteOptions,
-  maybeOptions?: PasteOptions,
-): DirectPasteArgs | null {
-  if (payloadOrModeOrOptions === undefined || isPasteMode(payloadOrModeOrOptions)) return null;
-  const resolved: DirectPasteArgs = {
-    targetOrMode,
-    payload: payloadOrModeOrOptions,
-  };
-  if (isPasteMode(modeOrOptions)) {
-    resolved.modeOrOptions = modeOrOptions;
-    if (maybeOptions !== undefined) resolved.options = maybeOptions;
-    return resolved;
-  }
-  if (modeOrOptions !== undefined) resolved.options = modeOrOptions;
-  return resolved;
-}
-
-function isPasteMode(value: unknown): value is PasteMode {
-  return value === "before" || value === "after" || value === "into" || value === "replace";
 }

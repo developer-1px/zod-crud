@@ -163,8 +163,13 @@ if (copied.ok) {
 For direct payload insertion, pass the payload explicitly.
 
 ```ts
-doc.clipboard.paste("/lists/0/cards/-", { id: "new", title: "New card" });
+doc.clipboard.pastePayload("/lists/0/cards/-", { id: "new", title: "New card" });
+doc.clipboard.paste("/lists/0/cards/0", { mode: "after" });
 ```
+
+For `before` and `after`, `target` is an existing item pointer. If you already
+have an insertion pointer such as `/cards/-`, use the default paste mode or
+`patch({ op: "add" })`.
 
 ## History
 
@@ -189,9 +194,11 @@ doc.history.transaction({ label: "rename cards" }, () => {
 ## Capability Checks
 
 `can*` methods return a result object so UI and tests can inspect the reason.
+`canPaste` checks the current clipboard buffer. `canPastePayload` checks a
+direct payload.
 
 ```ts
-const result = doc.canPaste("/lists/0/cards/-", candidateCard);
+const result = doc.canPastePayload("/lists/0/cards/-", candidateCard);
 
 if (!result.ok) {
   console.log(result.code, result.reason);
@@ -199,7 +206,8 @@ if (!result.ok) {
 ```
 
 Available checks include `canPatch`, `canReplace`, `canRemove`, `canMove`,
-`canDuplicate`, `canCopy`, `canCut`, `canPaste`, `canUndo`, and `canRedo`.
+`canDuplicate`, `canCopy`, `canCut`, `canPaste`, `canPastePayload`, `canUndo`,
+and `canRedo`.
 
 ## Pure core (no React)
 
@@ -267,6 +275,8 @@ import {
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
+  type JSONDocumentPasteMode,
+  type JSONDocumentPasteOptions,
   type JSONChangeMetadata,
   type HistoryTransactionOptions,
   type JSONPatchOperation,

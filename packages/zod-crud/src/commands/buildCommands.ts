@@ -31,7 +31,7 @@ import type {
 } from "../core/selection/index.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type ClipboardSource, type CopyOk, type CopyError } from "../verbs/copy.js";
-import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode, type PasteOptions } from "../verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteOptions } from "../verbs/paste.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOk, type DuplicateError, type DuplicateOpts } from "../verbs/duplicate.js";
 import { move as moveVerb, resolveMoveArgs, type MoveError, type MoveResult } from "../verbs/move.js";
 import { find, type FindOk, type FindError } from "../verbs/find.js";
@@ -93,8 +93,7 @@ export interface Commands<T> {
   copy(source?: ClipboardSource): CopyOk | CopyError;
   paste(
     payload: unknown,
-    targetOrMode?: Pointer | PasteMode,
-    modeOrOptions?: PasteMode | PasteOptions,
+    target?: Pointer,
     options?: PasteOptions,
   ): PasteOk<T> | PasteError | PasteDuMismatch;
 
@@ -254,12 +253,12 @@ export function buildCommands<S extends z.ZodType>(
         ? emptyCopySource()
         : copy(ops.state, resolved);
     },
-    paste(payload, targetOrMode, modeOrOptions, maybeOptions) {
-      const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
-      const target = targetOrSelection(args.target);
-      return target === null
+    paste(payload, target, options) {
+      const args = resolvePasteArgs(target, options);
+      const resolvedTarget = targetOrSelection(args.target);
+      return resolvedTarget === null
         ? emptyPasteTarget()
-        : run(paste(schema, ops.state, payload, target, args.mode, args.options));
+        : run(paste(schema, ops.state, payload, resolvedTarget, args.mode, args.options));
     },
 
     undo() { return history.undo(); },

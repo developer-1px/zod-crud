@@ -11,7 +11,7 @@ import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
 import { find } from "./verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "./verbs/move.js";
-import { paste, resolvePasteArgs, type PasteMode, type PasteOptions } from "./verbs/paste.js";
+import { paste, resolvePasteArgs, type PasteOptions } from "./verbs/paste.js";
 import { replace as replaceVerb } from "./verbs/replace.js";
 import {
   deleteSelectionText,
@@ -47,7 +47,8 @@ export type CheckErrorCode =
   | "cursor_boundary"
   | "syntax_error"
   | "empty_stack"
-  | "apply_failed";
+  | "apply_failed"
+  | "empty_clipboard";
 
 export interface CheckViolation {
   path: string;
@@ -79,8 +80,7 @@ export interface Check<T> {
   copy(source?: ClipboardSource): CheckResult;
   paste(
     payload: unknown,
-    targetOrMode?: Pointer | PasteMode,
-    modeOrOptions?: PasteMode | PasteOptions,
+    target?: Pointer,
     options?: PasteOptions,
   ): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
@@ -191,12 +191,12 @@ export function buildCheck<S extends z.ZodType>(
       const resolved = sourceOrSelection(source);
       return resolved === null ? emptySelection("copy source selection is empty") : toCheckResult(copy(ops.state, resolved));
     },
-    paste(payload, targetOrMode, modeOrOptions, maybeOptions) {
-      const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
-      const target = targetOrSelection(args.target);
-      return target === null
+    paste(payload, target, options) {
+      const args = resolvePasteArgs(target, options);
+      const resolvedTarget = targetOrSelection(args.target);
+      return resolvedTarget === null
         ? emptySelection("paste target selection is empty")
-        : toCheckResult(paste(schema, ops.state, payload, target, args.mode, args.options));
+        : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, args.options));
     },
     patch(operations) {
       return toCheckResult(preFlight(schema, ops.state, operations));

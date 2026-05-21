@@ -175,9 +175,9 @@ export function InterfaceWorkbench() {
     selectedPointers.length > 0 ? selectedPointers : target,
   );
 
-  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste(target, "after");
+  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste(target, { mode: "after" });
 
-  const pastePayloadAfterTarget = (): unknown => doc.clipboard.paste(target, parsedPayload(), "after");
+  const pastePayloadAfterTarget = (): unknown => doc.clipboard.pastePayload(target, parsedPayload(), { mode: "after" });
 
   const selectTodoCards = (): unknown => {
     const matches = doc.query("$..cards[?(@.status=='todo')]");
@@ -372,7 +372,7 @@ export function InterfaceWorkbench() {
           <ActionButton onClick={() => run("doc.duplicate", () => doc.duplicate(target, { rekey: { fields: ["id"], strategy: "suffix" } }))}>duplicate</ActionButton>
           <ActionButton onClick={() => run("patch.move", () => doc.patch({ op: "move", from: target, path: "/lists/1/cards/0" as Pointer }))}>move</ActionButton>
           <ActionButton onClick={() => run("patch.replace", replaceSelectedTitle)}>replace</ActionButton>
-          <ActionButton onClick={() => run("clipboard.payload", pastePayloadAfterTarget)}>paste payload</ActionButton>
+          <ActionButton onClick={() => run("clipboard.pastePayload", pastePayloadAfterTarget)}>paste payload</ActionButton>
           <ActionButton onClick={() => run("patch.remove", removeTargets)}>remove</ActionButton>
           <ActionButton onClick={() => run("query.select", findAndSelect)}>find</ActionButton>
           <ActionButton onClick={() => run("selection.textPatch", replaceTitleText)}>replaceText</ActionButton>
@@ -417,7 +417,7 @@ export function InterfaceWorkbench() {
           <ActionButton onClick={() => run("canReplace ok", () => doc.canReplace(`${target}/points` as Pointer, 8))}>replace ok</ActionButton>
           <ActionButton onClick={() => run("canReplace bad", () => doc.canReplace(`${target}/points` as Pointer, -5))}>replace bad</ActionButton>
           <ActionButton onClick={() => run("canCopy", () => doc.canCopy(selectedPointers.length > 0 ? selectedPointers : target))}>copy</ActionButton>
-          <ActionButton onClick={() => run("canPaste", () => doc.canPaste(target, parsedPayload(), "after"))}>paste</ActionButton>
+          <ActionButton onClick={() => run("canPastePayload", () => doc.canPastePayload(target, parsedPayload(), { mode: "after" }))}>paste</ActionButton>
           <ActionButton onClick={() => run("canUndo/canRedo", () => ({ undo: doc.canUndo(), redo: doc.canRedo() }))}>stacks</ActionButton>
         </ActionGroup>
 

@@ -297,7 +297,7 @@ describe("useJSONDocument doc.selection", () => {
     }));
 
     act(() => {
-      hook.current.clipboard.paste("/items/0", { id: "x", name: "X" }, "after");
+      hook.current.clipboard.pastePayload("/items/0", { id: "x", name: "X" }, { mode: "after" });
     });
 
     expect(hook.current.value.items.map((item) => item.id)).toEqual(["a", "x", "b"]);

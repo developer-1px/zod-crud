@@ -18,7 +18,7 @@ import type {
   SelectionTextDeleteOptions,
   SelectionTextEditOptions,
 } from "../core/selection/textEdit.js";
-import type { PasteMode, PasteOptions } from "../verbs/paste.js";
+import type { PasteOptions } from "../verbs/paste.js";
 import type { DuplicateOpts } from "../verbs/duplicate.js";
 import type { ClipboardSource } from "../verbs/copy.js";
 import { buildCheck, type BuildCheckArgs, type Check } from "../check.js";
@@ -37,8 +37,7 @@ export interface Can<T> {
   cut(source?: ClipboardSource): boolean;
   paste(
     payload: unknown,
-    targetOrMode?: Pointer | PasteMode,
-    modeOrOptions?: PasteMode | PasteOptions,
+    target?: Pointer,
     options?: PasteOptions,
   ): boolean;
   copy(source?: ClipboardSource): boolean;
@@ -73,7 +72,7 @@ export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.outp
     replaceText(replacement, options) { return check.replaceText(replacement, options).ok; },
     deleteText(options) { return check.deleteText(options).ok; },
     cut(source) { return check.cut(source).ok; },
-    paste(payload, target, mode = "into", options = {}) { return check.paste(payload, target, mode, options).ok; },
+    paste(payload, target, options = {}) { return check.paste(payload, target, options).ok; },
     copy(source) { return check.copy(source).ok; },
 
     get undo() { return check.undo.ok; },

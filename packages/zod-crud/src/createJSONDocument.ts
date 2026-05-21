@@ -94,6 +94,8 @@ export type JSONDocumentDuplicateResult<T> =
   | DuplicateOk<T>
   | DuplicateError
   | Extract<JSONResult, { ok: false }>;
+export type JSONDocumentPasteMode = PasteMode;
+export type JSONDocumentPasteOptions = PasteOptions;
 
 export interface JSONDocument<T> {
   readonly value: T;
@@ -120,7 +122,8 @@ export interface JSONDocument<T> {
   canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
   canCopy(source: SelectionSource): JSONCapabilityResult;
   canCut(source: SelectionSource): JSONCapabilityResult;
-  canPaste(target: Pointer, payload: unknown, mode?: PasteMode, options?: PasteOptions): JSONCapabilityResult;
+  canPaste(target: Pointer, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
+  canPastePayload(target: Pointer, payload: unknown, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
   canUndo(): JSONCapabilityResult;
   canRedo(): JSONCapabilityResult;
 }
@@ -391,7 +394,19 @@ export function createJSONDocument<S extends z.ZodType>(
     canDuplicate: check.duplicate,
     canCopy: check.copy,
     canCut: check.cut,
-    canPaste: (target, payload, mode, canPasteOptions) => check.paste(payload, target, mode, canPasteOptions),
+    canPaste: (target, canPasteOptions) => {
+      const read = clipboard.read();
+      if (!read.ok) {
+        return {
+          ok: false,
+          code: "empty_clipboard",
+          reason: "clipboard is empty",
+        };
+      }
+      const spread = canPasteOptions?.spread ?? ((read.sources?.length ?? 0) > 1);
+      return check.paste(read.payload, target, { ...canPasteOptions, spread });
+    },
+    canPastePayload: (target, payload, canPasteOptions) => check.paste(payload, target, canPasteOptions),
     canUndo: () => check.undo,
     canRedo: () => check.redo,
   };

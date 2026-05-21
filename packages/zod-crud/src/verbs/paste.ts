@@ -33,37 +33,31 @@ export interface PasteDuMismatch {
   expected: { discriminator: string; allowed: unknown[] };
 }
 
-export interface PasteOptions {
+export interface PastePayloadOptions {
   rekey?: RekeyOptions;
   /** Array payload 를 array target 에 여러 add op 로 펼친다. Multi-source clipboard paste 에 사용. */
   spread?: boolean;
 }
 
+export interface PasteOptions extends PastePayloadOptions {
+  mode?: PasteMode;
+}
+
 export interface ResolvedPasteArgs {
   target?: Pointer;
   mode: PasteMode;
-  options: PasteOptions;
+  options: PastePayloadOptions;
 }
 
 export function resolvePasteArgs(
-  targetOrMode?: Pointer | PasteMode,
-  modeOrOptions?: PasteMode | PasteOptions,
-  maybeOptions?: PasteOptions,
+  target?: Pointer,
+  options: PasteOptions = {},
 ): ResolvedPasteArgs {
-  if (isPasteMode(targetOrMode)) {
-    return {
-      mode: targetOrMode,
-      options: isPasteMode(modeOrOptions) || modeOrOptions === undefined
-        ? maybeOptions ?? {}
-        : modeOrOptions,
-    };
-  }
+  const { mode = "into", ...payloadOptions } = options;
   return {
-    ...(targetOrMode !== undefined ? { target: targetOrMode } : {}),
-    mode: isPasteMode(modeOrOptions) ? modeOrOptions : "into",
-    options: isPasteMode(modeOrOptions) || modeOrOptions === undefined
-      ? maybeOptions ?? {}
-      : modeOrOptions,
+    ...(target !== undefined ? { target } : {}),
+    mode,
+    options: payloadOptions,
   };
 }
 
@@ -73,7 +67,7 @@ export function paste<S extends z.ZodType>(
   payload: unknown,
   target: Pointer,
   mode: PasteMode = "into",
-  options: PasteOptions = {},
+  options: PastePayloadOptions = {},
 ): PasteOk<z.output<S>> | PasteError | PasteDuMismatch {
   const rekeyed = tryRekeyPayload(payload, state, options.rekey);
   if (!rekeyed.ok) return rekeyed;
@@ -169,7 +163,7 @@ function shouldSpread(
   state: unknown,
   target: Pointer,
   mode: PasteMode,
-  options: PasteOptions,
+  options: PastePayloadOptions,
 ): payload is unknown[] {
   return options.spread === true
     && mode !== "replace"
@@ -207,8 +201,4 @@ function isArrayInsertionPath(state: unknown, path: Pointer): boolean {
 
   const parent = readAt(state, segments.slice(0, -1));
   return parent.ok && Array.isArray(parent.value);
-}
-
-function isPasteMode(value: unknown): value is PasteMode {
-  return value === "before" || value === "after" || value === "into" || value === "replace";
 }

@@ -49,7 +49,7 @@ describe("JSONDocument interface", () => {
     });
     expect(doc.canCopy("/items/0")).toEqual({ ok: true });
     expect(doc.canCut("/items/0")).toEqual({ ok: true });
-    expect(doc.canPaste("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.canPastePayload("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
     expect(doc.canUndo()).toEqual({ ok: false, code: "empty_stack", reason: "undo stack is empty" });
 
     expect(doc.patch({ op: "replace", path: "/items/0/name", value: "A1" })).toEqual({ ok: true });

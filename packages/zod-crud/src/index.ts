@@ -22,6 +22,8 @@ export type {
   JSONDocumentDuplicateResult,
   JSONDocumentHistory,
   JSONDocumentLoadOptions,
+  JSONDocumentPasteMode,
+  JSONDocumentPasteOptions,
   JSONDocument,
   JSONPatchInput,
 } from "./createJSONDocument.js";
