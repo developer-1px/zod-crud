@@ -71,7 +71,6 @@ function Sheet() {
 | **RFC 9535** — JSONPath | path 표현 (query·다중) | `core/jsonpath/` |
 | **W3C Selection API** + **WAI-ARIA APG** | selection 좌표 어휘 | `core/selection/` |
 | **RFC 8927** / draft-bhutton — JSON Schema | schema 외부 다리 (Zod) | `core/schema/` |
-| **RFC 5789** + **RFC 7396** | HTTP PATCH + JSON Merge Patch (wire only) | `sidecars/http.ts` |
 
 전체 매핑 표는 [STANDARDS.md](https://github.com/developer-1px/zod-crud/blob/main/packages/zod-crud/STANDARDS.md).
 

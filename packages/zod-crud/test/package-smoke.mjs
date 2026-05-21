@@ -947,7 +947,7 @@ try {
     "src/index.ts",
     "core/patch",
     "hooks/useJSON",
-    "sidecars/http",
+    "sidecars/recorder",
     "verbs",
   ];
   for (const privateSubpath of privateSubpaths) {

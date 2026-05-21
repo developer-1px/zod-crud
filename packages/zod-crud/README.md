@@ -395,7 +395,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
-| `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
+| `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | React document hook return/options aliases |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
 | `JSONOps<T>`, `UseJSONOptions` from `zod-crud/react` | React data hook return/options aliases; root `zod-crud` owns the headless ops contract |

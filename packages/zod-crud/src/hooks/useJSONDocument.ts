@@ -1,4 +1,4 @@
-// SPEC §5.10 — React facade over the headless createJSONDocument surface.
+// SPEC §5.9 — React facade over the headless createJSONDocument surface.
 
 import { useMemo, useReducer, useRef } from "react";
 import type * as z from "zod";
