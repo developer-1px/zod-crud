@@ -193,15 +193,6 @@ export type {
   ReplaySelectionTarget,
   ReplayTarget,
 } from "./sidecars/replayRecording.js";
-export { createDebugLog } from "./sidecars/createDebugLog.js";
-export type {
-  CreateDebugLogOptions,
-  DebugEvent,
-  DebugLog,
-  DebugLogApi,
-  DebugLogger,
-  HeadlessDebugLogApi,
-} from "./sidecars/createDebugLog.js";
 
 // === Clipboard verbs ===
 export {

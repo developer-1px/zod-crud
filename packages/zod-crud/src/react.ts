@@ -7,7 +7,6 @@ export { useSelection } from "./hooks/useSelection.js";
 export { useJSONSlice } from "./hooks/useJSONSlice.js";
 export { useDraft, useField } from "./hooks/useDraft.js";
 export { useRecorder } from "./sidecars/recorder.js";
-export { useDebugLog } from "./sidecars/debug-log.js";
 
 export type {
   JSONDocument,
@@ -33,4 +32,3 @@ export type {
 } from "./hooks/useDraft.js";
 
 export type { RecorderApi } from "./sidecars/recorder.js";
-export type { DebugLogApi } from "./sidecars/debug-log.js";

@@ -4,20 +4,17 @@
 //   click        = collapse
 
 import { useCallback } from "react";
-import type { DebugLogger, Pointer, SelectionState } from "zod-crud";
+import type { Pointer, SelectionState } from "zod-crud";
 import type { Mode } from "../keymap.js";
 
 export function useClickPolicy<T>(
   selection: SelectionState<T> | undefined,
   setMode: (m: Mode) => void,
-  logger?: DebugLogger,
 ) {
   const onClickText = useCallback((e: React.MouseEvent, p: Pointer) => {
     if (!selection) return;
     const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
     const meta = isMac ? e.metaKey : e.ctrlKey;
-    const kind = e.shiftKey && selection.anchor ? "shift" : meta ? "meta" : "plain";
-    logger?.log("click.text", { pointer: p, kind, anchorBefore: selection.anchor, focusBefore: selection.focus });
     if (e.shiftKey && selection.anchor) {
       e.preventDefault();
       selection.setBaseAndExtent(selection.anchor, p);
@@ -28,15 +25,14 @@ export function useClickPolicy<T>(
       selection.collapse(p);
     }
     setMode("select");
-  }, [selection, setMode, logger]);
+  }, [selection, setMode]);
 
   const onClickBullet = useCallback((e: React.MouseEvent, p: Pointer) => {
     if (!selection) return;
     e.preventDefault();
-    logger?.log("click.bullet", { pointer: p });
     selection.collapse(p);
     setMode("select");
-  }, [selection, setMode, logger]);
+  }, [selection, setMode]);
 
   return { onClickText, onClickBullet };
 }

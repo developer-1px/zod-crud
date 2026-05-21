@@ -12,7 +12,7 @@
 | 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 verbs 분류 기준. |
 | 10 verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |
 | hooks/commands/verbs/core | 현재 코드 위계. hooks 는 React, commands 는 facade builder, verbs 는 pure composer, core 는 RFC substrate. |
-| sidecars | 본체 데이터 흐름 밖의 횡단 관심사. `recorder`, `debug-log`, `http`. |
+| sidecars | 본체 데이터 흐름 밖의 횡단 관심사. `recorder`, `http`. |
 
 ## JSON Standards
 

@@ -11,7 +11,7 @@ State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
 `createJSON` owns low-level headless JSON state. `createJSONDocument` exposes
 the headless document facade. `zod-crud/react` exposes React hook facades only.
-`sidecars/` hold cross-cutting concerns (recorder, debug log, http).
+`sidecars/` hold cross-cutting concerns such as replay recording.
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
 code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
@@ -308,9 +308,8 @@ History metadata is serializable. Use
 command already knows the final caret/range after a patch. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user
 intent for synchronous multi-op batches.
-Use `createRecorder(doc.ops)` for headless recording and
-`createDebugLog(doc.ops, doc.selection)` for headless diagnostic timelines;
-`useRecorder` and `useDebugLog` are React facades over the same sidecars.
+Use `createRecorder(doc.ops)` for headless recording; `useRecorder` is the
+React facade over the same recorder.
 `replayRecording(recording, doc)` restores recorded selection metadata when it
 is present; pass `doc.ops` for state-only replay.
 For lower-level composition, `emptyHistory`, `historyCommit`, `historyBack`,
@@ -418,9 +417,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `serialize`, `parse`, `safeParse`, `jsonEqual`, `JSONPrimitive`, `JSONValue` | JSON helpers (SPEC §5.5) |
 | `createRecorder`, `replayRecording`, `RecorderApi<T>`, `HeadlessRecorderApi<T>`, `CreateRecorderOptions`, `Recording<T>`, `RecordedStep`, `ReplayTarget<T>`, `ReplayDocumentTarget<T>`, `ReplaySelectionTarget`, `ReplayOptions` | replayable JSON recording sidecar (SPEC §5) |
-| `createDebugLog`, `DebugLog<T>`, `DebugLogApi<T>`, `DebugLogger`, `DebugEvent`, `HeadlessDebugLogApi<T>`, `CreateDebugLogOptions` | headless diagnostic timeline sidecar (SPEC §5) |
 | `useRecorder`, `RecorderApi<T>` from `zod-crud/react` | React recording hook (SPEC §5) |
-| `useDebugLog`, `DebugLogApi<T>` from `zod-crud/react` | React diagnostic log hook (SPEC §5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `computeInverses` | RFC 6902 inverse helper |
 | `copy`, `toClipboardItems`, `toMarkdown`, `toTsv`, `paste`, `duplicate`, `cut`, `find`, `queryPointers`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |

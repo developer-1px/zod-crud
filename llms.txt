@@ -28,7 +28,6 @@ import {
   useDraft,
   useField,
   useRecorder,
-  useDebugLog,
 } from "zod-crud/react";
 
 // Pure core.
@@ -39,7 +38,6 @@ import { parsePointer, buildPointer, serialize, parse, safeParse } from "zod-cru
 
 // Headless sidecars.
 import {
-  createDebugLog,
   createRecorder,
   replayRecording,
 } from "zod-crud";
@@ -276,8 +274,6 @@ already-committed bursts, use `doc.history.mergeLast({ mergeKey })`. History
 metadata is serializable and recorder steps preserve it when present.
 Use `createRecorder(doc.ops)` for headless recording; `useRecorder(doc.ops)`
 is the React facade over the same recorder.
-Use `createDebugLog(doc.ops, doc.selection)` for headless diagnostic timelines;
-`useDebugLog` is the React facade over the same debug log.
 `replayRecording(recording, ops)` replays state only; `replayRecording(recording, doc)`
 also restores recorded selection metadata when present.
 

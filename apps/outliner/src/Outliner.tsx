@@ -13,7 +13,6 @@ import { useDispatch } from "./hooks/useDispatch.js";
 import { useGlobalKey } from "./hooks/useGlobalKey.js";
 import { useClickPolicy } from "./hooks/useClickPolicy.js";
 import { useRecorderUI } from "./hooks/useRecorderUI.js";
-import { useDebugUI } from "./hooks/useDebugUI.js";
 
 export function Outliner() {
   const [mode, setMode] = useState<Mode>("select");
@@ -26,8 +25,6 @@ export function Outliner() {
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
   const recorder = useRecorderUI(doc.ops);
-  const debug = useDebugUI(doc.ops, doc.selection);
-  const logger = { enabled: debug.enabled, log: debug.log };
   const toggleRecord = useCallback(() => {
     if (recorder.isRecording) recorder.stopAndShare();
     else recorder.start();
@@ -40,7 +37,6 @@ export function Outliner() {
     ctx, mode, setMode, pushToast,
     undo: doc.commands.undo, redo: doc.commands.redo,
     toggleRecord,
-    logger,
   });
 
   // row 의 onKeyDown — chord dispatcher. handled 면 preventDefault + stopPropagation
@@ -53,7 +49,7 @@ export function Outliner() {
   }, [mode, dispatch]);
 
   useGlobalKey(mode, dispatch);
-  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode, logger);
+  const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
 
   return (
     <div className="app">
@@ -100,19 +96,6 @@ export function Outliner() {
         <button onClick={recorder.loadAndReplay} disabled={recorder.replaying} title="Replay JSON recording">
           {recorder.replaying ? "replaying" : "replay"}
         </button>
-        {debug.enabled ? (
-          <button
-            onClick={() => debug.stopAndShare()}
-            title="Stop debug log and download JSON"
-            style={{ color: "#06c", fontWeight: 600 }}
-          >
-            stop debug ({debug.eventCount})
-          </button>
-        ) : (
-          <button onClick={debug.start} title="Record input, dispatch, commit, and selection traces">
-            debug
-          </button>
-        )}
       </details>
 
       <details className="keymap">

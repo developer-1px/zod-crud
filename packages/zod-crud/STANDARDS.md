@@ -59,14 +59,12 @@ hooks/commands/verbs/core 어디에도 속하지 않는 횡단 관심사 박스.
 | Sidecar | 역할 | 횡단 대상 | 위치 |
 |---------|------|-----------|------|
 | `recorder` | commit 된 patch 를 timestamp 와 함께 Recording JSON 으로 직렬화. replay API 제공. | useJSONDocument 의 commit stream (ops.subscribe) | `sidecars/recorder.ts` |
-| `debug-log` | 입력 → dispatch → commit → selection 의 trace. 디버깅·재현용. | useJSONDocument 의 모든 단계 (cross-cutting) | `sidecars/debug-log.ts` |
 | `http` | RFC 5789/6902/7396 wire format 빌더 + 파서. 서버 transport 어댑터. | RFC 6902 patch 의 wire 변환 (ops 와 직교) | `sidecars/http.ts` |
 
 ```
 sidecars/
 ├── http.ts       RFC 5789 + 6902 + 7396 wire format       (transport)
-├── recorder.ts   commit stream → Recording 직렬화 / replay   (observability)
-└── debug-log.ts  cross-cutting trace                         (observability)
+└── recorder.ts   commit stream → Recording 직렬화 / replay   (observability)
 ```
 
 **진입 거부 규칙:**
