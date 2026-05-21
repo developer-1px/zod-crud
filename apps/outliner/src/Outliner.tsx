@@ -5,7 +5,7 @@ import { useCallback, useState } from "react";
 import { useJSONDocument } from "zod-crud/react";
 import { OutlineSchema, SAMPLE } from "./schema.js";
 import { OutlineRow } from "./OutlineRow.js";
-import { eventToChord, findCommand, KEYMAP, type Mode } from "./keymap.js";
+import { eventToChord, findCommand, type Mode } from "./keymap.js";
 import { useClipboard } from "./clipboard.js";
 import { useToasts } from "./hooks/useToasts.js";
 import { useTextEditCoalesce } from "./hooks/useTextEditCoalesce.js";
@@ -71,20 +71,6 @@ export function Outliner() {
           onKeyDown={onKeyDown} ops={doc.ops} onTextEdit={onTextEdit}
         />
       </ul>
-
-      <details className="keymap">
-        <summary>Keymap ({KEYMAP.length} bindings)</summary>
-        <table><tbody>
-          {KEYMAP.map((b, i) => (
-            <tr key={`${b.chord}-${b.command}-${i}`}>
-              <td><kbd>{b.chord}</kbd></td>
-              <td>{b.label}</td>
-              <td className="cmd"><code>{b.command}</code></td>
-              <td className="modes">{b.modes.join(" / ")}</td>
-            </tr>
-          ))}
-        </tbody></table>
-      </details>
 
       <div className="toasts" role="status" aria-live="polite">
         {errors.map((m) => (

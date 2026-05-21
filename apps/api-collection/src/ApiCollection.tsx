@@ -149,8 +149,7 @@ export function ApiCollection() {
   return (
     <div style={S.root}>
       <header style={S.header}>
-        <h1 style={S.h1}>zod-crud · API collection</h1>
-        <div style={S.tag}>JSON Pointer tree editor</div>
+        <h1 style={S.h1}>API collection</h1>
       </header>
 
       <div style={S.toolbar}>
@@ -210,7 +209,7 @@ export function ApiCollection() {
         <aside style={S.right}>
           <h3 style={S.h3}>Selection</h3>
           {selectedPointers.length === 0 ? (
-            <div style={S.muted}>선택 없음 — 행 클릭, Shift/Ctrl+Click, 또는 위 JSONPath 사용</div>
+            <div style={S.muted}>—</div>
           ) : (
             <ul style={S.pointerList}>
               {selectedPointers.map((p) => (
@@ -266,7 +265,6 @@ function Tree(props: {
                   <span style={S.reqName}>{item.name}</span>
                   <code style={S.url}>{item.url}</code>
                   {item.headers.length > 0 && <span style={S.muted2}>· {item.headers.length} hdr</span>}
-                  <div style={S.reqDesc}>{item.description}</div>
                 </>
               )}
             </div>
@@ -285,14 +283,12 @@ const S = {
   root: { fontFamily: "ui-sans-serif, system-ui, sans-serif", color: "#111", padding: 16, maxWidth: 1100, margin: "0 auto" } as React.CSSProperties,
   header: { marginBottom: 12 } as React.CSSProperties,
   h1: { margin: 0, fontSize: 22 } as React.CSSProperties,
-  tag: { fontSize: 12, color: "#666", marginTop: 4 } as React.CSSProperties,
   toolbar: { display: "flex", gap: 6, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
   jsonpathBar: { display: "flex", gap: 6, alignItems: "center", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
   queryBar: { display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", padding: "8px 0", borderBottom: "1px solid #eee" } as React.CSSProperties,
-  chip: { fontFamily: "ui-monospace, monospace", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 999, border: "1px solid #ccc", background: "#fff", cursor: "pointer" } as React.CSSProperties,
+  chip: { fontFamily: "ui-monospace, monospace", fontSize: 11, fontWeight: 600, padding: "3px 9px", borderRadius: 4, border: "1px solid #ccc", background: "#fff", cursor: "pointer" } as React.CSSProperties,
   linkBtn: { background: "none", border: "none", color: "#06c", fontSize: 12, cursor: "pointer", marginLeft: "auto", textDecoration: "underline" } as React.CSSProperties,
   reqName: { fontWeight: 500 } as React.CSSProperties,
-  reqDesc: { fontSize: 12, color: "#888", marginLeft: 60, marginTop: 2, flexBasis: "100%" } as React.CSSProperties,
   jsonpathLabel: { fontSize: 11, color: "#666", textTransform: "uppercase" as const, letterSpacing: 1, marginRight: 4 },
   toolbarLabel: { fontSize: 10, color: "#999", textTransform: "uppercase" as const, letterSpacing: 1, marginRight: 2 },
   input: { flex: 1, fontFamily: "ui-monospace, monospace", fontSize: 13, padding: "4px 8px", border: "1px solid #ccc", borderRadius: 4 } as React.CSSProperties,
@@ -310,5 +306,5 @@ const S = {
   muted2: { color: "#aaa", fontSize: 12 } as React.CSSProperties,
   pointerList: { listStyle: "none", padding: 0, margin: 0, maxHeight: 180, overflow: "auto" } as React.CSSProperties,
   pointer: { fontFamily: "ui-monospace, monospace", fontSize: 11, color: "#333" } as React.CSSProperties,
-  toast: { position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#fff", padding: "8px 14px", borderRadius: 6, fontSize: 13, boxShadow: "0 4px 12px rgba(0,0,0,0.2)" } as React.CSSProperties,
+  toast: { position: "fixed", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "#111", color: "#fff", padding: "8px 14px", borderRadius: 4, fontSize: 13 } as React.CSSProperties,
 };

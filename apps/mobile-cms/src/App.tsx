@@ -76,11 +76,11 @@ const blockAllows: Partial<Record<BlockKind, BlockKind[]>> = {
 };
 
 const palette: BlockNode[] = [
-  block("hero", "Hero", { title: "Spring launch", body: "A page section built from safe blocks." }, [
+  block("hero", "Hero", { title: "Spring launch", body: "New arrivals." }, [
     block("text", "Headline", { text: "Spring launch" }),
     block("button", "Primary action", { label: "Shop now" }),
   ]),
-  block("mediaCard", "Media card", { title: "Lookbook", body: "Image, title, and action." }, [
+  block("mediaCard", "Media card", { title: "Lookbook", body: "Outerwear edit." }, [
     block("image", "Image", { alt: "Product image", src: "gradient" }),
     block("text", "Caption", { text: "New season essentials" }),
   ]),
@@ -109,7 +109,7 @@ const initialPage: PageNode = {
       sectionKind: "heroSection",
       name: "Launch hero",
       children: [
-        block("hero", "Hero story", { title: "Designed blocks, safe content", body: "Build a mobile page by composing schema-approved parts." }, [
+        block("hero", "Hero story", { title: "Spring launch", body: "New arrivals." }, [
           block("text", "Eyebrow", { text: "Mobile CMS" }),
           block("button", "Hero action", { label: "Preview page" }),
         ]),
@@ -121,7 +121,7 @@ const initialPage: PageNode = {
       sectionKind: "contentSection",
       name: "Editorial content",
       children: [
-        block("mediaCard", "Editorial card", { title: "Content block", body: "Copy this into content or commerce, but not inside text." }),
+        block("mediaCard", "Editorial card", { title: "Lookbook", body: "Outerwear edit." }),
       ],
     },
     {
@@ -292,34 +292,34 @@ export function App() {
   const [selectedId, setSelectedId] = useState("section-hero");
   const [paletteSelection, setPaletteSelection] = useState<PaletteSelection>(null);
   const [clipboard, setClipboard] = useState<Clipboard>(null);
-  const [message, setMessage] = useState("Select a block or collection. Cmd/Ctrl+C copies it, Cmd/Ctrl+V pastes into an allowed slot.");
+  const [message, setMessage] = useState("Ready.");
   const selected = useMemo(() => findNode(page, selectedId), [page, selectedId]);
 
   const copy = (node: CmsNode) => {
     if (node.kind === "page" || node.kind === "section") {
-      setMessage("Sections are paste targets. Copy a block or collection block instead.");
+      setMessage("Copy a block.");
       return;
     }
     setClipboard({ node: cloneNode(node), sourceId: node.id });
     const payload = serializeBlock(node);
     if (payload) void navigator.clipboard?.writeText(payload).catch(() => undefined);
-    setMessage(`Copied ${node.name}. Valid drop targets are now highlighted.`);
+    setMessage(`Copied ${node.name}.`);
   };
 
   const pasteInto = (target: CmsNode, incoming = clipboard?.node ?? null) => {
     if (!incoming) {
-      setMessage("Clipboard is empty. Copy a design block first.");
+      setMessage("Clipboard empty.");
       return;
     }
     const verdict = canAccept(target, incoming);
     if (!verdict.ok) {
-      setMessage(verdict.reason ?? "This block is not allowed here.");
+      setMessage(verdict.reason ?? "Blocked.");
       return;
     }
     const pasted = cloneNode(incoming as BlockNode);
     setPage((current) => insertInto(current, target.id, pasted));
     setSelectedId(pasted.id);
-    setMessage(`Pasted ${incoming.name} into ${target.name}.`);
+    setMessage(`Pasted ${incoming.name}.`);
   };
 
   const selectCanvasNode = (id: string) => {
@@ -330,7 +330,7 @@ export function App() {
   const selectPaletteNode = (node: BlockNode) => {
     setPaletteSelection({ source: "palette", node });
     setClipboard({ node: cloneNode(node), sourceId: node.id });
-    setMessage(`${node.name} is staged. Select a slot and press Cmd/Ctrl+V.`);
+    setMessage(`${node.name} staged.`);
   };
 
   const resetPage = () => {
@@ -338,7 +338,7 @@ export function App() {
     setSelectedId("section-hero");
     setPaletteSelection(null);
     setClipboard(null);
-    setMessage("Reset to the starter mobile page.");
+    setMessage("Reset.");
   };
 
   const removeSelected = () => {
@@ -366,7 +366,7 @@ export function App() {
     setPage((current) => removeNode(current, target.id));
     setPaletteSelection(null);
     setSelectedId(nextSelectedId);
-    setMessage(`Cut ${target.name}. Selection moved to the closest remaining item.`);
+    setMessage(`Cut ${target.name}.`);
   };
 
   const pasteFromSystemClipboard = async (target: CmsNode) => {
@@ -623,12 +623,12 @@ function PropEditor({ node, onChange }: { node: BlockNode; onChange: (props: Rec
 function ShortcutList() {
   return (
     <div className="shortcut-card">
-      <h3>Shortcuts</h3>
-      <div><kbd>Cmd/Ctrl+C</kbd><span>Copy selected block or collection</span></div>
-      <div><kbd>Cmd/Ctrl+X</kbd><span>Cut selected block and keep nearby selection</span></div>
-      <div><kbd>Cmd/Ctrl+V</kbd><span>Paste into selected schema slot</span></div>
-      <div><kbd>Delete</kbd><span>Remove selected block</span></div>
-      <div><kbd>R</kbd><span>Reset page</span></div>
+      <h3>Keys</h3>
+      <div><kbd>Cmd/Ctrl+C</kbd></div>
+      <div><kbd>Cmd/Ctrl+X</kbd></div>
+      <div><kbd>Cmd/Ctrl+V</kbd></div>
+      <div><kbd>Delete</kbd></div>
+      <div><kbd>R</kbd></div>
     </div>
   );
 }
@@ -638,9 +638,9 @@ function AllowedList({ selected, clipboard }: { selected: CmsNode; clipboard: Cl
   const verdict = clipboard ? canAccept(selected, clipboard.node) : null;
   return (
     <div className="rules-card">
-      <h3>Schema slot</h3>
-      <p>{allowed.length > 0 ? `Accepts ${allowed.map(label).join(", ")}.` : "This part does not accept children."}</p>
-      {clipboard && <strong className={verdict?.ok ? "ok" : "no"}>{verdict?.ok ? "Clipboard can be pasted here." : verdict?.reason}</strong>}
+      <h3>Slot</h3>
+      <p>{allowed.length > 0 ? allowed.map(label).join(", ") : "—"}</p>
+      {clipboard && <strong className={verdict?.ok ? "ok" : "no"}>{verdict?.ok ? "OK" : verdict?.reason}</strong>}
     </div>
   );
 }

@@ -92,7 +92,7 @@ describe("mobile CMS usable editing surface", () => {
     await user.click(screen.getByText("Editorial content"));
     await user.keyboard("{Control>}c{/Control}");
 
-    expect(screen.getByText("Sections are paste targets. Copy a block or collection block instead.")).toBeTruthy();
+    expect(screen.getByText("Copy a block.")).toBeTruthy();
     expect(writeTextSpy).not.toHaveBeenCalled();
   });
 
@@ -104,7 +104,7 @@ describe("mobile CMS usable editing surface", () => {
     await user.keyboard("{Control>}x{/Control}");
 
     expect(screen.queryByText("Eyebrow")).toBeNull();
-    expect(screen.getByText("Cut Eyebrow. Selection moved to the closest remaining item.")).toBeTruthy();
+    expect(screen.getByText("Cut Eyebrow.")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Hero action" })).toBeTruthy();
 
     await user.click(screen.getByText("Editorial content"));
