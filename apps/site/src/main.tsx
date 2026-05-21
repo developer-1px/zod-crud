@@ -1,9 +1,9 @@
 import { StrictMode, type ComponentType, type MouseEvent, useSyncExternalStore } from "react";
 import { createRoot } from "react-dom/client";
+import { ApiCollection } from "@zod-crud/api-collection";
+import { App as MobileCms } from "@zod-crud/mobile-cms";
+import { Outliner } from "@zod-crud/outliner";
 import "./index.css";
-import { ApiCollectionPage } from "./routes/ApiCollection";
-import { MobileCmsPage } from "./routes/MobileCms";
-import { OutlinerPage } from "./routes/Outliner";
 import { Playground } from "./routes/Playground";
 
 type Route = { path: string; label: string; Component: ComponentType };
@@ -11,9 +11,9 @@ type Route = { path: string; label: string; Component: ComponentType };
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 const ROUTES: Route[] = [
   { path: "/playground", label: "Core", Component: Playground },
-  { path: "/playground/outliner", label: "Outliner", Component: OutlinerPage },
-  { path: "/playground/mobile-cms", label: "Mobile CMS", Component: MobileCmsPage },
-  { path: "/playground/api-collection", label: "API collection", Component: ApiCollectionPage },
+  { path: "/playground/outliner", label: "Outliner", Component: Outliner },
+  { path: "/playground/mobile-cms", label: "Mobile CMS", Component: MobileCms },
+  { path: "/playground/api-collection", label: "API collection", Component: ApiCollection },
 ];
 
 function pathWithBase(path: string): string {
