@@ -10,7 +10,7 @@ JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
 State, actions, and change records are 100% serializable JSON. The core is
 pure RFC substrate. `verbs/*` compose substrate into the 10 edit verbs.
 `createJSON` owns low-level headless JSON state. `createJSONDocument` exposes
-the headless document facade. `zod-crud/react` exposes React hook facades only.
+the headless document facade. `zod-crud/react` exposes `useJSONDocument`.
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
 code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
@@ -142,8 +142,8 @@ doc.commands.undo();
 `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history`
 surface, plus `commit` and read/query helpers. React owns render lifecycle
 only; core owns JSON editing.
-`createJSON(schema, initial, options?)` exposes the same low-level JSON state
-owner and `JSONOps<T>` surface that `useJSON` renders in React.
+`createJSON(schema, initial, options?)` exposes the low-level JSON state owner
+and `JSONOps<T>` surface.
 
 Selection is headless. `JSONPoint` is either a JSON Pointer string or
 `{ path, offset?, edge?, affinity? }`, so list/tree item selection and text
@@ -315,9 +315,9 @@ document history uses.
 It is advisory; commits still go through the schema gate.
 
 For lower-level composition, use `createSelection(ops)` and `createClipboard(args)`
-headlessly, or `useSelection(ops)` in React. See the
-[`useJSON`](./SPEC.md#51-usejson--data-hook) and
-[`useSelection`](./SPEC.md#57-useselection--selection-state-hook) contracts in
+headlessly. See the
+[`createJSON`](./SPEC.md#51-createjson--low-level-data-owner) and
+[`createSelection`](./SPEC.md#57-createselection--selection-state) contracts in
 SPEC.
 
 ## Pure core (no React)
@@ -385,19 +385,14 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 
 | Export | Purpose |
 | --- | --- |
-| `createJSON(schema, initial, options?)` | headless low-level JSON state owner with the same `JSONOps<T>` surface as `useJSON` |
+| `createJSON(schema, initial, options?)` | headless low-level JSON state owner with the `JSONOps<T>` surface |
 | `JSONState<T>`, `HeadlessJSONState<T>`, `CreateJSONOptions`, `JSONChangeListener`, `JSONOps<T>`, `UseJSONOptions` | low-level JSON state and ops types |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | React document hook return/options aliases |
-| `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
-| `JSONOps<T>`, `UseJSONOptions` from `zod-crud/react` | React data hook return/options aliases; root `zod-crud` owns the headless ops contract |
-| `useJSONSlice(ops, pointer)` from `zod-crud/react` | render-safe pointer slice hook |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
-| `useSelection(ops, options?)` from `zod-crud/react` | lower-level React selection hook (SPEC §5.7) |
-| `SelectionState<T>`, `UseSelectionOptions` from `zod-crud/react` | React selection hook return/options aliases |
 | `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |

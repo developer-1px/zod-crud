@@ -42,7 +42,7 @@ describe("createJSON", () => {
     expect(changes).toHaveLength(6);
   });
 
-  test("load/reset and set match the low-level useJSON contract", () => {
+  test("load/reset and set match the low-level createJSON contract", () => {
     const json = createJSON(Schema, { title: "draft", tags: [] }, { strict: false });
 
     expect(json.ops.set("/tags/0", "first")).toEqual({ ok: true });

@@ -22,9 +22,6 @@ import { createClipboard, createJSON, createJSONDocument, createSelection, empty
 // React facade and React-only helpers.
 import {
   useJSONDocument,
-  useJSON,
-  useSelection,
-  useJSONSlice,
 } from "zod-crud/react";
 
 // Pure core.
@@ -63,8 +60,7 @@ document surface:
 React is a facade adapter, not the owner of the editing model. If a workflow can
 be expressed through `useJSONDocument`, it should also be expressible through
 `createJSONDocument` in core/headless code.
-Use `createSelection(ops)` for standalone headless selection/caret state;
-`useSelection(ops)` is the React facade over the same state.
+Use `createSelection(ops)` for standalone headless selection/caret state.
 Use `doc.commit(patch, { selection, label, origin, mergeKey })` when an editor
 engine already knows the final caret/range after a patch. Empty patch +
 selection updates selection without document patches or undo entries.
@@ -93,7 +89,7 @@ plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)` or
 document history directly; options may include `label`, `origin`, and
 `mergeKey` history metadata.
 Use `createJSON(schema, initial, options?)` for standalone low-level JSON state
-and `JSONOps<T>`; React `useJSON` is a facade over it.
+and `JSONOps<T>`.
 Use `createClipboard(args)` for standalone headless clipboard state.
 Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,
 `historyMergeLast`, `historyCanUndo`, and `historyCanRedo` for standalone

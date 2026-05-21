@@ -32,7 +32,7 @@ describe("G6 — purity", () => {
 });
 
 describe("G7 — history round-trip", () => {
-  // useJSON 훅의 history는 forward/inverse stack을 단일 root replace로 모델링한다.
+  // history는 forward/inverse stack을 단일 root replace로 모델링할 수 있다.
   // 동일 모델을 applyPatch로 재현해 round-trip을 검증한다.
   it("undo then redo restores state via root replace", () => {
     const initial = { a: 1, b: [1, 2] };

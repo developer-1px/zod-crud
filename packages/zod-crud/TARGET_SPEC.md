@@ -80,7 +80,6 @@ Rules:
 - `createJSONDocument` is authoritative for behavior.
 - `createJSON` is the standalone low-level state owner for `JSONOps<T>`.
 - `useJSONDocument` is an adapter over the same behavior.
-- `useJSON` is a React facade over `createJSON`.
 - Every facade field must be serializable or expose serializable snapshots.
 - No facade field may require React, DOM, browser APIs, or timers.
 
@@ -258,8 +257,7 @@ Acceptance evidence:
 Selection is a first-class engine subsystem. Current source of truth is
 `SPEC.md` §5.7. The target facade keeps selection headless, JSON-serializable,
 and shared by `createJSONDocument` and `useJSONDocument`.
-`createSelection(ops)` is the headless state owner; React `useSelection(ops)`
-is only a facade over it.
+`createSelection(ops)` is the headless state owner.
 
 ```ts
 type JSONPoint =
@@ -600,8 +598,7 @@ behavior as `orderPrimaryRange(options?)`, `orderRanges(options?)`,
 `spansForPointer(pointer, options?)`, `textEdits(replacement, options?)`,
 `textPatch(replacement, options?)`, and `deleteText(options?)`.
 Standalone headless composition uses `createSelection(ops)` and
-`createClipboard(args)`; `useSelection` adds React render invalidation but no
-separate selection model, and React has no separate clipboard model.
+`createClipboard(args)`. React has no separate selection or clipboard model.
 `subscribe` emits JSON-safe `SelectionSnap` transitions after manual selection
 actions and automatic op tracking.
 `selectedSource` is `null | Pointer | Pointer[]`. Document-facade

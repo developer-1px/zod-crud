@@ -1,5 +1,4 @@
 // Headless low-level JSON state owner.
-// React useJSON is a facade over this implementation.
 
 import type * as z from "zod";
 

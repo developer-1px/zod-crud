@@ -122,7 +122,7 @@ visibility (collapse 상태 등) 는 editor 별 결정. zod-crud 는 path arithm
 
 ## 4. Multi-select
 
-- `useSelection` mode = `"extended"`. anchor + focus + 펼친 range 보관.
+- `doc.selection` mode = `"extended"`. anchor + focus + 펼친 range 보관.
 - click handler 정본은 [`src/hooks/useClickPolicy.ts`](./src/hooks/useClickPolicy.ts).
 
 | 조작 | 효과 |

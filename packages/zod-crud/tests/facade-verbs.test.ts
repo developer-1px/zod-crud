@@ -1,4 +1,4 @@
-// 격차 1+2 해소 검증 — useJSONDocument facade 의 commands + can group (TipTap 식).
+// 격차 1+2 해소 검증 — document facade 의 commands + can group (TipTap 식).
 // React testing library 미사용 (노드 환경) — buildCommands + buildCan 직접 호출.
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
@@ -24,7 +24,7 @@ const initial: State = {
   meta: { foo: "bar" },
 };
 
-/** 테스트용 in-memory ops — useJSON 없이 commands wiring 만 검증. */
+/** 테스트용 in-memory ops — React 없이 commands wiring 만 검증. */
 function makeOps(s0: State): JSONDocumentOps<State> {
   let cur = s0;
   return {

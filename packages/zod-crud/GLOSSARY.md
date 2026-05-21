@@ -47,7 +47,7 @@
 
 | 용어 | 의미 |
 |------|------|
-| `SelectionState<T>` | `useSelection` 반환 타입. Pointer 집합과 anchor/focus, selection action methods 를 제공. |
+| `SelectionState<T>` | `createSelection` 반환 표면. Pointer 집합과 anchor/focus, selection action methods 를 제공. |
 | `SelectionSnap` | 순수 selection snapshot. `{ ranges, anchor, focus }`. |
 | `ranges` | 현재 선택된 Pointer 배열. |
 | `anchor` | W3C Selection API 의 range 시작 좌표. |

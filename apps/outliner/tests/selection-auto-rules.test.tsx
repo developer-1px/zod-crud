@@ -1,4 +1,4 @@
-// SPEC §5.7 — useSelection 자동 규칙 4 개의 시나리오 검증.
+// SPEC §5.7 — selection 자동 규칙 4 개의 시나리오 검증.
 // 다른 에이전트의 click→edit 가정 테스트와 분리해 selection 자동 규칙만 다룬다.
 //
 //   ① Mutation auto-target  add/copy/move 의 destination 이 새 selection
@@ -47,7 +47,7 @@ async function selectRow(text: string) {
   return user;
 }
 
-describe("useSelection auto-rules — outliner scenarios", () => {
+describe("selection auto-rules — outliner scenarios", () => {
   test("rule ① — insert-sibling 의 새 row 가 자동 selected (mutation auto-target)", async () => {
     renderOutliner();
     const user = await selectRow(firstItem);

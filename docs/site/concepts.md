@@ -180,12 +180,12 @@ doc.selection?.selectScope({ query: "$.tasks[*].title" });
 | `onError` | 실패했을 때 호출할 콜백 |
 | `selection` | 선택 상태 노출 여부와 설정 |
 
-## 언제 낮은 레벨 hook을 쓰나요?
+## 언제 headless facade를 쓰나요?
 
-낮은 레벨 hook은 이런 경우에 씁니다.
+React 밖에서는 같은 document surface의 `createJSONDocument`를 씁니다.
 
-- selection을 완전히 다른 컴포넌트 경계에서 따로 관리하고 싶을 때
-- document facade 없이 `useJSON`만 가볍게 쓰고 싶을 때
+- 테스트/CLI/서버에서 같은 편집 규칙을 재사용할 때
+- React render lifecycle 없이 JSON 편집 엔진만 필요할 때
 
 ## 타입 표면
 

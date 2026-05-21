@@ -14,7 +14,6 @@ const slugMeta = {
   "operations": { navLabel: "Editor State", order: 104 },
   "schema-safety": { navLabel: "Safety", order: 105 },
   "clipboard-history": { navLabel: "UI Recipes", order: 106 },
-  "examples": { navLabel: "Lower-level Hooks", order: 107 },
   "advanced": { navLabel: "Core & Design", order: 108 },
   "patterns": { navLabel: "Patterns", order: 110 },
   "why-not": { navLabel: "Why Not", order: 111 },

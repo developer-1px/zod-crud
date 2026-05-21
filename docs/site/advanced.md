@@ -123,10 +123,8 @@ Commands
 ├─ buildCommands
 └─ buildCan
 
-낮은 레벨 hook
-├─ useJSON
-├─ useSelection
-└─ useJSONSlice
+React facade
+└─ useJSONDocument
 
 Core
 ├─ applyPatch / applyOperation

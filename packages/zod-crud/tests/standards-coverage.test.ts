@@ -119,7 +119,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     const spec = readFileSync(resolve(root, "SPEC.md"), "utf8");
     const section = spec.slice(
       spec.indexOf("### 5.6 RFC 6901 Pointer 헬퍼"),
-      spec.indexOf("### 5.7 `useSelection`"),
+      spec.indexOf("### 5.7 `createSelection`"),
     );
     const helpers = Array.from(section.matchAll(/export function (\w+)\(/g), (match) => match[1]);
 
@@ -190,10 +190,7 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
     ).flat().sort();
 
     expect(hooks).toEqual([
-      "useJSON",
       "useJSONDocument",
-      "useJSONSlice",
-      "useSelection",
     ]);
 
     const apiSection = readme.slice(readme.indexOf("## API"), readme.indexOf("## Guarantees"));

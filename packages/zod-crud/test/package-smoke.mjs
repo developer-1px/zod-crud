@@ -786,7 +786,7 @@ try {
     join(workspace, "react-smoke.mjs"),
     [
       'import * as zcr from "zod-crud/react";',
-      'import { useJSONDocument, useJSON, useSelection, useJSONSlice } from "zod-crud/react";',
+      'import { useJSONDocument } from "zod-crud/react";',
       `const expectedReactValueExports = ${JSON.stringify(reactValueExports)};`,
       `const expectedReactTypeOnlyExports = ${JSON.stringify(reactTypeOnlyExports)};`,
       'for (const name of expectedReactValueExports) {',
@@ -796,36 +796,19 @@ try {
       '  if (name in zcr) throw new Error(`${name} type-only react export leaked at runtime`);',
       '}',
       'if (typeof useJSONDocument !== "function") throw new Error("useJSONDocument export failed");',
-      'if (typeof useJSON !== "function") throw new Error("useJSON export failed");',
-      'if (typeof useSelection !== "function") throw new Error("useSelection export failed");',
-      'if (typeof useJSONSlice !== "function") throw new Error("useJSONSlice export failed");',
     ].join("\n"),
   );
   await writeFile(
     join(workspace, "react-smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { type JSONDocument, type JSONOps, type SelectionState, type UseJSONDocumentOptions, type UseJSONOptions, type UseSelectionOptions, useJSON, useJSONDocument, useJSONSlice, useSelection } from "zod-crud/react";',
+      'import { type JSONDocument, type UseJSONDocumentOptions, useJSONDocument } from "zod-crud/react";',
       'const Schema = z.object({ name: z.string() });',
       'type Value = z.output<typeof Schema>;',
       'type Doc = JSONDocument<Value>;',
-      'type Ops = JSONOps<Value>;',
       'const _documentOptions = null as unknown as UseJSONDocumentOptions<Value>;',
-      'const _jsonOptions = null as unknown as UseJSONOptions;',
-      'const _selectionOptions = null as unknown as UseSelectionOptions;',
       'useJSONDocument satisfies (schema: typeof Schema, initial: Value, options?: UseJSONDocumentOptions<Value>) => Doc;',
-      'useJSON satisfies (schema: typeof Schema, initial: Value, options?: UseJSONOptions) => [Value, Ops];',
-      'useSelection satisfies (ops: Ops, options?: UseSelectionOptions) => SelectionState<z.output<typeof Schema>>;',
-      'useJSONSlice satisfies (ops: Ops, pointer: "/name") => string | undefined;',
-      'const _selection = null as unknown as SelectionState<Value>;',
-      'const _ops = null as unknown as Ops;',
       '_documentOptions.history satisfies number | undefined;',
-      '_jsonOptions.strict satisfies boolean | undefined;',
-      '_selectionOptions.mode satisfies "single" | "multiple" | "extended" | undefined;',
-      '_selection.ranges satisfies readonly string[];',
-      '_selection.togglePointer("/name") satisfies void;',
-      '_ops.state.name satisfies string;',
-      '_ops.reset() satisfies import("zod-crud").JSONResult;',
     ].join("\n"),
   );
   await writeFile(
@@ -920,7 +903,7 @@ try {
     "dist/react.js",
     "src/index.ts",
     "core/patch",
-    "hooks/useJSON",
+    "hooks/useJSONDocument",
     "verbs",
   ];
   for (const privateSubpath of privateSubpaths) {

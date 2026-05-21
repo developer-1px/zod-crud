@@ -2,9 +2,6 @@
 // types; pure/headless APIs live under `zod-crud`.
 
 export { useJSONDocument } from "./hooks/useJSONDocument.js";
-export { useJSON } from "./hooks/useJSON.js";
-export { useSelection } from "./hooks/useSelection.js";
-export { useJSONSlice } from "./hooks/useJSONSlice.js";
 
 export type {
   JSONDocument,
@@ -13,13 +10,3 @@ export type {
   JSONDocumentHistory,
   UseJSONDocumentOptions,
 } from "./hooks/useJSONDocument.js";
-
-export type {
-  JSONOps,
-  UseJSONOptions,
-} from "./hooks/useJSON.js";
-
-export type {
-  SelectionState,
-  UseSelectionOptions,
-} from "./hooks/useSelection.js";

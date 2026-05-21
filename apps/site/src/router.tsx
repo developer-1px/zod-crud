@@ -41,7 +41,6 @@ const NAV: NavGroup[] = [
       { to: "/docs/operations", label: "Editor State" },
       { to: "/docs/schema-safety", label: "Safety" },
       { to: "/docs/clipboard-history", label: "Patterns" },
-      { to: "/docs/examples", label: "Lower-level Hooks" },
       { to: "/docs/advanced", label: "Core & Design" },
     ],
   },
