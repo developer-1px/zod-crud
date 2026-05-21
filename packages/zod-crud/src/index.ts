@@ -7,11 +7,8 @@
 // === Boundary error + ops contract ===
 export { JSONCrudError } from "./JSONCrudError.js";
 export type {
-  HistoryMergeOptions,
   HistoryTransactionOptions,
-  JSONChangeListener,
   JSONChangeMetadata,
-  JSONLoadOptions,
   JSONOps,
 } from "./jsonOps.js";
 
@@ -27,7 +24,6 @@ export { createSelection } from "./selection.js";
 export type {
   CreateSelectionOptions,
   HeadlessSelectionState,
-  SelectionChangeListener,
   SelectionState,
   UseSelectionOptions,
 } from "./selection.js";

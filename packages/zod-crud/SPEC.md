@@ -305,11 +305,14 @@ export interface JSONOps<T> {
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 
   // lifecycle
-  load(value: T, options?: JSONLoadOptions): JSONResult;
+  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: T): JSONResult;
 
   // change subscription
-  subscribe(listener: JSONChangeListener): () => void;
+  subscribe(listener: (
+    applied: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ) => void): () => void;
   readonly state: T;
 }
 
@@ -319,22 +322,9 @@ export interface HistoryTransactionOptions {
   mergeKey?: string;
 }
 
-export interface HistoryMergeOptions {
-  mergeKey?: string;
-}
-
 export interface JSONChangeMetadata extends HistoryTransactionOptions {
   selectionBefore?: SelectionSnap;
   selectionAfter?: SelectionSnap;
-}
-
-export type JSONChangeListener = (
-  applied: ReadonlyArray<JSONPatchOperation>,
-  metadata?: JSONChangeMetadata,
-) => void;
-
-export interface JSONLoadOptions {
-  preserveHistory?: boolean;
 }
 ```
 
@@ -418,11 +408,6 @@ export interface UseSelectionOptions {
 export interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;
 }
-
-export type SelectionChangeListener = (
-  snapshot: SelectionSnap,
-  previous: SelectionSnap,
-) => void;
 
 export type JSONPoint =
   | Pointer
@@ -692,7 +677,7 @@ export interface SelectionState<T> {
   snapshot(): SelectionSnap;
   toJSON(): SelectionSnap;
   restore(snapshot: SelectionSnap): void;
-  subscribe(listener: SelectionChangeListener): () => void;
+  subscribe(listener: (snapshot: SelectionSnap, previous: SelectionSnap) => void): () => void;
 }
 
 export interface HeadlessSelectionState<T> extends SelectionState<T> {
