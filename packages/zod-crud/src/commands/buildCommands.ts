@@ -48,24 +48,24 @@ import {
   type SelectionTextEditOptions,
 } from "../core/selection/textEdit.js";
 
-export type ReplaceCommandResult<T = unknown> =
+type ReplaceCommandResult<T = unknown> =
   | JSONResult
   | ReplaceOk<T>
   | ReplaceError
   | { ok: false; code: "empty_selection"; reason: string };
 
-export type ReplaceTextCommandResult =
+type ReplaceTextCommandResult =
   | ReplaceSelectionTextResult
   | Extract<JSONResult, { ok: false }>;
 
-export type DeleteTextCommandResult =
+type DeleteTextCommandResult =
   | DeleteSelectionTextResult
   | Extract<JSONResult, { ok: false }>;
 
-export type ReplaceTextCommandOptions = SelectionTextEditOptions & HistoryTransactionOptions;
-export type DeleteTextCommandOptions = SelectionTextDeleteOptions & HistoryTransactionOptions;
+type ReplaceTextCommandOptions = SelectionTextEditOptions & HistoryTransactionOptions;
+type DeleteTextCommandOptions = SelectionTextDeleteOptions & HistoryTransactionOptions;
 
-export type RemoveCommandResult =
+type RemoveCommandResult =
   | {
       ok: true;
       patch: JSONPatchOperation[];
@@ -102,7 +102,7 @@ export interface Commands<T> {
   redo(): boolean;
 }
 
-export interface CommandSelectionState extends SelectionSnap {
+interface CommandSelectionState extends SelectionSnap {
   selectRanges?(
     ranges: ReadonlyArray<JSONPoint | SelectionRange>,
     anchor?: JSONPoint | null,
@@ -117,7 +117,7 @@ interface CommandHistoryControls {
   redo(): boolean;
 }
 
-export interface BuildCommandsArgs<S extends z.ZodType> {
+interface BuildCommandsArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONOps<z.output<S>>;
   history: CommandHistoryControls;

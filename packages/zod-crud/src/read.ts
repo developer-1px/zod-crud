@@ -12,9 +12,9 @@ export type QueryResult =
   | { ok: true; query: string; pointers: Pointer[] }
   | { ok: false; code: "invalid_query"; reason?: string };
 
-export type EntryKind = "root" | "object" | "array" | "record" | "primitive";
+type EntryKind = "root" | "object" | "array" | "record" | "primitive";
 
-export interface ReadEntry {
+interface ReadEntry {
   key: string;
   path: Pointer;
   value: unknown;
@@ -29,14 +29,14 @@ export type EntriesResult =
     }
   | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
 
-export interface ReadFacade {
+interface ReadFacade {
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
   entries(path: Pointer): EntriesResult;
 }
 
-export interface BuildReadFacadeArgs<S extends z.ZodType> {
+interface BuildReadFacadeArgs<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
 }

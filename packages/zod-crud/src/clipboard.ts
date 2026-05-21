@@ -15,7 +15,7 @@ import {
 import { cut, type CutError, type CutOk } from "./verbs/cut.js";
 import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteMode, type PasteOk, type PasteOptions } from "./verbs/paste.js";
 
-export interface ClipboardWriteOptions {
+interface ClipboardWriteOptions {
   source?: Pointer | null;
   sources?: ReadonlyArray<Pointer> | null;
 }
@@ -33,8 +33,8 @@ interface ClipboardEmpty {
   message: string;
 }
 
-export type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
-export type ClipboardPasteResult<T> = PasteOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
+type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
+type ClipboardPasteResult<T> = PasteOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
 
 export interface ClipboardState<T> {
   readonly hasData: boolean;
@@ -63,7 +63,7 @@ type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
 
-export interface CreateClipboardOptions<S extends z.ZodType> {
+interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
   ops: JSONOps<z.output<S>>;

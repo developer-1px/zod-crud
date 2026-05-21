@@ -47,7 +47,7 @@ export interface Can<T> {
   readonly redo: boolean;
 }
 
-export interface BuildCanArgs<S extends z.ZodType> extends BuildCheckArgs<S> {
+interface BuildCanArgs<S extends z.ZodType> extends BuildCheckArgs<S> {
   check?: Check<z.output<S>>;
 }
 

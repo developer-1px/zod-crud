@@ -11,9 +11,9 @@ import {
 } from "./core/schema/introspection.js";
 import { appendSegment, tryParsePointer, type Pointer } from "./core/pointer/index.js";
 
-export type SchemaPathMode = "value" | "insert";
+type SchemaPathMode = "value" | "insert";
 
-export type SchemaKind =
+type SchemaKind =
   | "unknown"
   | "string"
   | "number"
@@ -30,7 +30,7 @@ export type SchemaKind =
   | "nullable"
   | "any";
 
-export interface SchemaDescription {
+interface SchemaDescription {
   kind: SchemaKind;
   jsonSchema: unknown;
   keys?: string[];
@@ -40,16 +40,16 @@ export interface SchemaDescription {
   allowed?: unknown[];
 }
 
-export type SchemaErrorCode = "invalid_pointer" | "path_not_found";
+type SchemaErrorCode = "invalid_pointer" | "path_not_found";
 
-export interface SchemaErrorResult {
+interface SchemaErrorResult {
   ok: false;
   code: SchemaErrorCode;
   reason?: string;
   pointer: Pointer;
 }
 
-export type SchemaQueryResult =
+type SchemaQueryResult =
   | {
       ok: true;
       path: Pointer;
@@ -59,7 +59,7 @@ export type SchemaQueryResult =
     }
   | SchemaErrorResult;
 
-export type SchemaKindResult =
+type SchemaKindResult =
   | {
       ok: true;
       path: Pointer;
@@ -68,7 +68,7 @@ export type SchemaKindResult =
     }
   | SchemaErrorResult;
 
-export type SchemaDescriptionResult =
+type SchemaDescriptionResult =
   | {
       ok: true;
       path: Pointer;
@@ -84,7 +84,7 @@ export interface SchemaState<T> {
   describe(path: Pointer, mode?: SchemaPathMode): SchemaDescriptionResult;
 }
 
-export interface CreateSchemaOptions<S extends z.ZodType> {
+interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
 

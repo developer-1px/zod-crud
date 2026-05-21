@@ -73,50 +73,13 @@ import {
   type SelectionTextEditsResult,
 } from "./core/selection/textEdit.js";
 
-export type {
-  JSONPoint,
-  OrderedSelectionRange,
-  OrderedSelectionRangeEntry,
-  SelectionAction,
-  SelectionContext,
-  SelectionCursorDirection,
-  SelectionCursorErrorCode,
-  SelectionCursorOptions,
-  SelectionCursorResult,
-  SelectionDirection,
-  SelectionMode,
-  SelectionOrderErrorCode,
-  SelectionOrderOptions,
-  SelectionPointerSpan,
-  SelectionPointerSpansResult,
-  SelectionRange,
-  SelectionRangeInput,
-  SelectionRangeOrderResult,
-  SelectionRangesOrderResult,
-  DeleteSelectionTextResult,
-  ReplaceSelectionTextResult,
-  SelectionScopeErrorCode,
-  SelectionScopeOptions,
-  SelectionScopeResult,
-  SelectionScopeTarget,
-  SelectionSpanOptions,
-  SelectionTextEdit,
-  SelectionTextDeleteDirection,
-  SelectionTextDeleteOptions,
-  SelectionTextEditErrorCode,
-  SelectionTextEditOptions,
-  SelectionTextEditsResult,
-  SelectionSnap,
-  SelectionType,
-};
-
 export interface UseSelectionOptions {
   mode?: SelectionMode;
   initial?: ReadonlyArray<SelectionRangeInput>;
   context?: SelectionContext;
 }
 
-export interface CreateSelectionOptions extends UseSelectionOptions {
+interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;
 }
 
@@ -177,7 +140,7 @@ export interface SelectionState<T> extends SelectionSnap {
   subscribe(listener: SelectionChangeListener): () => void;
 }
 
-export interface HeadlessSelectionState<T> extends SelectionState<T> {
+interface HeadlessSelectionState<T> extends SelectionState<T> {
   dispose(): void;
 }
 

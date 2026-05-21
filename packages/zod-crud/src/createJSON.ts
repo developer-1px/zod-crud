@@ -13,7 +13,6 @@ import { handleResult, type ErrorPolicy } from "./JSONCrudError.js";
 import type {
   JSONChangeMetadata,
   JSONOps,
-  JSONRuntimeOptions,
 } from "./jsonOps.js";
 
 type JSONChangeListener = (
@@ -21,17 +20,17 @@ type JSONChangeListener = (
   metadata?: JSONChangeMetadata,
 ) => void;
 
-export interface CreateJSONOptions extends JSONRuntimeOptions {
+interface CreateJSONOptions extends ErrorPolicy {
   onChange?: () => void;
 }
 
-export interface JSONState<T> {
+interface JSONState<T> {
   readonly value: T;
   readonly ops: JSONOps<T>;
   subscribe(listener: JSONChangeListener): () => void;
 }
 
-export interface HeadlessJSONState<T> extends JSONState<T> {
+interface HeadlessJSONState<T> extends JSONState<T> {
   dispose(): void;
 }
 

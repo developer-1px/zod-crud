@@ -50,7 +50,7 @@ export interface UseJSONDocumentOptions<T> {
   onChange?: () => void;
 }
 
-export interface JSONDocumentHistory {
+interface JSONDocumentHistory {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly undoDepth: number;
@@ -62,7 +62,7 @@ export interface JSONDocumentHistory {
 
 type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
 
-export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
+interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   /**
    * Final model selection for this edit. When present, it overrides mutation
    * auto-selection and is recorded in the same history entry as the patch.
