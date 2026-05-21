@@ -8,7 +8,6 @@ import { buildCan } from "../src/commands/buildCan.js";
 import type { JSONOps } from "../src/jsonOps.js";
 import { applyPatch, type JSONPatchOperation } from "../src/core/patch/index.js";
 import { EMPTY_SELECTION } from "../src/core/selection/index.js";
-import { JSONCrudError } from "../src/JSONCrudError.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -38,11 +37,6 @@ function makeOps(s0: State): JSONOps<State> {
       const r = applyPatch(Schema, cur, operations);
       if (r.result.ok) cur = r.state;
       return r.result;
-    },
-    apply(operations) {
-      const r = applyPatch(Schema, cur, operations);
-      if (!r.result.ok) throw new JSONCrudError("patch", r.result);
-      cur = r.state;
     },
     load: () => ({ ok: true }),
     reset: () => ({ ok: true }),
@@ -196,11 +190,6 @@ describe("buildCan — TipTap 식 can group", () => {
       add: () => ({ ok: true }), remove: () => ({ ok: true }), replace: () => ({ ok: true }),
       move: () => ({ ok: true }), copy: () => ({ ok: true }), test: () => ({ ok: true }),
       patch(operations) { const r = applyPatch(NonEmpty, cur, operations); if (r.result.ok) cur = r.state; return r.result; },
-      apply(operations) {
-        const r = applyPatch(NonEmpty, cur, operations);
-        if (!r.result.ok) throw new JSONCrudError("patch", r.result);
-        cur = r.state;
-      },
       load: () => ({ ok: true }), reset: () => ({ ok: true }), subscribe: () => () => {},
       get state() { return cur; },
     };

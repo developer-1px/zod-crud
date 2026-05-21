@@ -48,8 +48,6 @@ export interface JSONOps<T> {
   test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
 
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
-  // fire-and-forget — schema 위반 등 실패 시 JSONCrudError throw. hot path (keystroke 등) 용.
-  apply(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void;
 
   load(value: T, options?: JSONLoadOptions): JSONResult;
   reset(value?: T): JSONResult;

@@ -153,7 +153,6 @@ describe("core/* substrate allow-list", () => {
 
     expect(members).toEqual([
       "add",
-      "apply",
       "copy",
       "load",
       "move",

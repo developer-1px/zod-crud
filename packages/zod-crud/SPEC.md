@@ -300,7 +300,6 @@ export interface JSONOps<T> {
 
   // RFC 6902 batch
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
-  apply(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void;
 
   // lifecycle
   load(value: T, options?: JSONLoadOptions): JSONResult;

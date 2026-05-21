@@ -30,7 +30,6 @@ import {
   mergeLast as mergeLastHistory,
   type HistoryStack,
 } from "./core/history.js";
-import { JSONCrudError } from "./JSONCrudError.js";
 import { createClipboard, type ClipboardState } from "./clipboard.js";
 import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
@@ -222,10 +221,6 @@ export function createJSONDocument<S extends z.ZodType>(
     copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
     test: rawOps.test,
     patch,
-    apply(operations, metadata) {
-      const r = patch(operations, metadata);
-      if (!r.ok) throw new JSONCrudError("patch", r);
-    },
     load(value, loadOptions?: JSONLoadOptions) {
       const r = rawOps.load(value);
       if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();

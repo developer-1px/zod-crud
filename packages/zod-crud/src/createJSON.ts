@@ -9,7 +9,7 @@ import {
   type JSONResult,
 } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
-import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.js";
+import { handleResult, type ErrorPolicy } from "./JSONCrudError.js";
 import type {
   JSONChangeListener,
   JSONChangeMetadata,
@@ -109,10 +109,6 @@ export function createJSON<S extends z.ZodType>(
     },
     patch(operations, metadata) {
       return dispatch("patch", operations, metadata);
-    },
-    apply(operations, metadata) {
-      const result = ops.patch(operations, metadata);
-      if (!result.ok) throw new JSONCrudError("patch", result);
     },
     load(value) {
       return replaceRoot("load", value);
