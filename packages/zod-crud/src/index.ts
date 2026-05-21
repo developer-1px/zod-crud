@@ -13,7 +13,6 @@ export type {
   JSONChangeMetadata,
   JSONLoadOptions,
   JSONOps,
-  UseJSONOptions,
 } from "./jsonOps.js";
 
 // === Headless document facade ===

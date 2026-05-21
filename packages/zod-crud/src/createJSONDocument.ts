@@ -35,16 +35,18 @@ import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
+import type { JSONCrudError } from "./JSONCrudError.js";
 import type {
   HistoryMergeOptions,
   HistoryTransactionOptions,
   JSONChangeMetadata,
   JSONLoadOptions,
   JSONOps,
-  UseJSONOptions,
 } from "./jsonOps.js";
 
-export interface UseJSONDocumentOptions<T> extends UseJSONOptions {
+export interface UseJSONDocumentOptions<T> {
+  strict?: boolean | undefined;
+  onError?: (error: JSONCrudError) => void;
   history?: number;
   selection?: boolean | UseSelectionOptions;
   onChange?: () => void;

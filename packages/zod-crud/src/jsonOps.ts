@@ -9,7 +9,7 @@ import type { SelectionSnap } from "./core/selection/index.js";
 import type { PointerOf, ValueAt } from "./core/pointer/types.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
 
-export interface UseJSONOptions {
+export interface JSONRuntimeOptions {
   strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
 }

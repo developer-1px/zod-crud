@@ -273,17 +273,20 @@ undo/redo stack 은 `JSONDocument.history` 와 `JSONDocument.commands.undo/redo`
 
 ## 5. Public API
 
-### 5.1 Shared JSON options
+### 5.1 Document options
 
 ```ts
-export interface UseJSONOptions {
+export interface UseJSONDocumentOptions<T> {
   strict?: boolean;     // dev=true, prod=false 기본
   onError?: (e: JSONCrudError) => void;
+  history?: number;
+  selection?: boolean | UseSelectionOptions;
+  onChange?: () => void;
 }
 ```
 
-`UseJSONOptions` is shared by the headless and React document facades. The
-public state owner is `createJSONDocument`; low-level mutation is reached
+`UseJSONDocumentOptions` is shared by the headless and React document facades.
+The public state owner is `createJSONDocument`; low-level mutation is reached
 through the document's `JSONOps<T>` surface.
 
 ### 5.2 `JSONOps` — 표준 6 op + lifecycle

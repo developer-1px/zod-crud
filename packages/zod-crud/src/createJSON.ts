@@ -14,10 +14,10 @@ import type {
   JSONChangeListener,
   JSONChangeMetadata,
   JSONOps,
-  UseJSONOptions,
+  JSONRuntimeOptions,
 } from "./jsonOps.js";
 
-export interface CreateJSONOptions extends UseJSONOptions {
+export interface CreateJSONOptions extends JSONRuntimeOptions {
   onChange?: () => void;
 }
 
