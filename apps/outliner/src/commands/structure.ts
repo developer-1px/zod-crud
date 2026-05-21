@@ -13,7 +13,7 @@ export function insertSibling(ctx: CommandContext): JSONResult {
   if (idx === null) return { ok: false, code: "path_not_found", reason: "root has no sibling" };
   const parent = parentOf(p);
   if (parent === null) return { ok: false, code: "path_not_found" };
-  return ctx.ops.patch([{ op: "add", path: `${parent}/${idx + 1}`, value: EMPTY_NODE }]);
+  return ctx.document.patch([{ op: "add", path: `${parent}/${idx + 1}`, value: EMPTY_NODE }]);
 }
 
 // 선택된 ROW 들을 DFS 정렬 후, 직전 ops 를 통과한 현재 위치를 trackPointer 로 따라가며
@@ -32,7 +32,7 @@ export function demote(ctx: CommandContext): JSONResult {
     if (idx === null || idx === 0) return { ok: false, code: "path_not_found", reason: "no previous sibling for one of selection" };
     ops.push({ op: "move", from: cur, path: `${siblingAt(cur, idx - 1)}/children/-` });
   }
-  return ctx.ops.patch(ops);
+  return ctx.document.patch(ops);
 }
 
 // 선택된 row 들을 자기 부모의 다음 형제로 끌어올림. trail-siblings 모델 — promoted row
@@ -79,7 +79,7 @@ export function promote(ctx: CommandContext): JSONResult {
       void origOwnerChildrenPath;
     }
   }
-  return ctx.ops.patch(ops);
+  return ctx.document.patch(ops);
 }
 
 export function remove(ctx: CommandContext): JSONResult {
@@ -87,7 +87,7 @@ export function remove(ctx: CommandContext): JSONResult {
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
   if (targets.includes("")) return { ok: false, code: "path_not_found", reason: "cannot remove root" };
   const batch: JSONPatchOperation[] = sortDfs(ctx, targets).slice().reverse().map((p) => ({ op: "remove", path: p }));
-  return ctx.ops.patch(batch);
+  return ctx.document.patch(batch);
 }
 
 export function moveUp(ctx: CommandContext): JSONResult {
@@ -95,7 +95,7 @@ export function moveUp(ctx: CommandContext): JSONResult {
   if (p === null) return { ok: false, code: "path_not_found" };
   const idx = lastIndex(p);
   if (idx === null || idx === 0) return { ok: false, code: "path_not_found", reason: "already first" };
-  return ctx.ops.patch([{ op: "move", from: p, path: siblingAt(p, idx - 1) }]);
+  return ctx.document.patch([{ op: "move", from: p, path: siblingAt(p, idx - 1) }]);
 }
 
 export function moveDown(ctx: CommandContext): JSONResult {
@@ -109,5 +109,5 @@ export function moveDown(ctx: CommandContext): JSONResult {
   if (idx >= readChildren(ctx.state, owner).length - 1) {
     return { ok: false, code: "path_not_found", reason: "already last" };
   }
-  return ctx.ops.patch([{ op: "move", from: p, path: siblingAt(p, idx + 1) }]);
+  return ctx.document.patch([{ op: "move", from: p, path: siblingAt(p, idx + 1) }]);
 }

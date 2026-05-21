@@ -48,8 +48,9 @@ export interface ClipboardState<T> {
   cut(source?: ClipboardSource): CutOk<T> | CutError;
   paste(
     targetOrMode?: Pointer | PasteMode,
+    payloadOrModeOrOptions?: unknown,
     modeOrOptions?: PasteMode | PasteOptions,
-    options?: PasteOptions,
+    maybeOptions?: PasteOptions,
   ): ClipboardPasteResult<T>;
 }
 
@@ -62,6 +63,13 @@ interface ClipboardBuffer {
 type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
+
+interface DirectPasteArgs {
+  targetOrMode: Pointer | PasteMode | undefined;
+  payload: unknown;
+  modeOrOptions?: PasteMode;
+  options?: PasteOptions;
+}
 
 interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
@@ -190,9 +198,16 @@ export function createClipboard<S extends z.ZodType>(
       return result;
     },
 
-    paste(targetOrMode, modeOrOptions, maybeOptions) {
-      if (!buffer) return EMPTY_CLIPBOARD;
-      const args = resolvePasteArgs(targetOrMode, modeOrOptions, maybeOptions);
+    paste(targetOrMode, payloadOrModeOrOptions, modeOrOptions, maybeOptions) {
+      const direct = resolveDirectPaste(targetOrMode, payloadOrModeOrOptions, modeOrOptions, maybeOptions);
+      if (!direct && !buffer) return EMPTY_CLIPBOARD;
+      const args = direct
+        ? resolvePasteArgs(direct.targetOrMode, direct.modeOrOptions, direct.options)
+        : resolvePasteArgs(
+          targetOrMode,
+          payloadOrModeOrOptions as PasteMode | PasteOptions | undefined,
+          modeOrOptions as PasteOptions | undefined,
+        );
       const target = targetOrSelection(args.target);
       if (target === null) {
         return {
@@ -201,8 +216,8 @@ export function createClipboard<S extends z.ZodType>(
           message: "paste target selection is empty",
         };
       }
-      const spread = args.options.spread ?? ((buffer.sources?.length ?? 0) > 1);
-      const result = paste(schema, getState(), buffer.payload, target, args.mode, {
+      const spread = args.options.spread ?? (!direct && (buffer?.sources?.length ?? 0) > 1);
+      const result = paste(schema, getState(), direct ? direct.payload : buffer!.payload, target, args.mode, {
         ...args.options,
         spread,
       });
@@ -227,4 +242,28 @@ function emptyCutSource(): CutError {
     code: "empty_selection",
     message: "cut source selection is empty",
   };
+}
+
+function resolveDirectPaste(
+  targetOrMode: Pointer | PasteMode | undefined,
+  payloadOrModeOrOptions: unknown,
+  modeOrOptions?: PasteMode | PasteOptions,
+  maybeOptions?: PasteOptions,
+): DirectPasteArgs | null {
+  if (payloadOrModeOrOptions === undefined || isPasteMode(payloadOrModeOrOptions)) return null;
+  const resolved: DirectPasteArgs = {
+    targetOrMode,
+    payload: payloadOrModeOrOptions,
+  };
+  if (isPasteMode(modeOrOptions)) {
+    resolved.modeOrOptions = modeOrOptions;
+    if (maybeOptions !== undefined) resolved.options = maybeOptions;
+    return resolved;
+  }
+  if (modeOrOptions !== undefined) resolved.options = modeOrOptions;
+  return resolved;
+}
+
+function isPasteMode(value: unknown): value is PasteMode {
+  return value === "before" || value === "after" || value === "into" || value === "replace";
 }

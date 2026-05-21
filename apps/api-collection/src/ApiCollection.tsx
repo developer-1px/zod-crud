@@ -123,17 +123,17 @@ export function ApiCollection() {
 
   // ── JSONPath bulk select (RFC 9535) ──────────────────────────────────────
   const runQuery = useCallback((expr: string) => {
-    const r = doc.commands.find(expr);
-    if (!("ok" in r) || !r.ok) {
-      flash(`JSONPath 오류: ${"reason" in r ? r.reason : "unknown"}`);
+    const r = doc.query(expr);
+    if (!r.ok) {
+      flash(`JSONPath 오류: ${r.reason}`);
       return;
     }
-    const pointers = r.matches.map((m) => m.pointer);
+    const pointers = r.pointers;
     if (pointers.length === 0) { flash("매칭 없음"); return; }
     doc.selection?.selectRanges(pointers, undefined, undefined, Math.max(0, pointers.length - 1));
     setRangeAnchor(pointers[0] ?? null);
     flash(`${pointers.length}개 매칭 — 선택됨`);
-  }, [doc.commands, doc.selection, flash]);
+  }, [doc, doc.selection, flash]);
 
   const selectByMethod = useCallback((method: Method) => {
     const expr = `$..items[?(@.method=='${method}')]`;
@@ -158,9 +158,9 @@ export function ApiCollection() {
       path: `${pointer}/headers`,
       value: [...item.headers, traceHeader],
     }));
-    doc.ops.patch(patch);
+    doc.patch(patch);
     flash(`${requests.length}개 request 에 X-Trace-Id 추가됨 (한 patch · 한 undo step)`);
-  }, [selectedEntries, doc.ops, flash]);
+  }, [selectedEntries, doc, flash]);
 
   // ── clipboard ────────────────────────────────────────────────────────────
   const copy = useCallback(() => {
@@ -175,11 +175,11 @@ export function ApiCollection() {
     // 역순 — 배열 인덱스 shift 방지.
     const patch: JSONPatchOperation[] = sortPointersDesc(selectedEntries.map(({ pointer }) => pointer))
       .map((pointer) => ({ op: "remove", path: pointer }));
-    doc.ops.patch(patch);
+    doc.patch(patch);
     doc.selection?.empty();
     setRangeAnchor(null);
     flash(`${selectedItems.length}개 잘라내기`);
-  }, [selectedItems, selectedEntries, doc.ops, doc.selection, flash]);
+  }, [selectedItems, selectedEntries, doc, doc.selection, flash]);
 
   // 선택된 첫 폴더 안에 paste. 없으면 root.
   const paste = useCallback(() => {
@@ -201,9 +201,9 @@ export function ApiCollection() {
       path: `${basePath}/${startIdx + i}`,
       value: cloneItem(it),
     }));
-    doc.ops.patch(patch);
+    doc.patch(patch);
     flash(`${cb.items.length}개 → ${targetPtr || "/"}/items 에 붙여넣기`);
-  }, [selectedEntries, doc.value, doc.ops, flash]);
+  }, [selectedEntries, doc, doc.value, flash]);
 
   const clearSelection = useCallback(() => {
     doc.selection?.empty();
@@ -219,15 +219,15 @@ export function ApiCollection() {
 
       <div style={S.toolbar}>
         <span style={S.toolbarLabel}>history</span>
-        <button onClick={() => doc.commands.undo()} disabled={!doc.history.canUndo}>undo</button>
-        <button onClick={() => doc.commands.redo()} disabled={!doc.history.canRedo}>redo</button>
+        <button onClick={() => doc.history.undo()} disabled={!doc.history.canUndo}>undo</button>
+        <button onClick={() => doc.history.redo()} disabled={!doc.history.canRedo}>redo</button>
         <span style={S.sep} />
         <span style={S.toolbarLabel}>clipboard</span>
         <button onClick={copy} disabled={selectedItems.length === 0}>copy ({selectedItems.length})</button>
         <button onClick={cut} disabled={selectedItems.length === 0}>cut</button>
         <button onClick={paste}>paste</button>
         <span style={S.sep} />
-        <button onClick={() => { doc.ops.reset(); setRangeAnchor(null); }}>reset</button>
+        <button onClick={() => { doc.reset(); setRangeAnchor(null); }}>reset</button>
       </div>
 
       <div style={S.queryBar}>

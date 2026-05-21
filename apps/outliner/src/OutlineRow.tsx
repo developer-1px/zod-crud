@@ -2,9 +2,8 @@
 // keydown 은 props 로 받는다 — chord dispatcher 는 부모 책임.
 
 import { useEffect, useRef } from "react";
-import type { Pointer } from "zod-crud";
-import { useJSONDocument } from "zod-crud/react";
-import type { OutlineNode, OutlineSchema } from "./schema.js";
+import type { JSONDocument, Pointer } from "zod-crud";
+import type { OutlineNode } from "./schema.js";
 import type { Mode } from "./keymap.js";
 
 export interface RowProps {
@@ -17,12 +16,12 @@ export interface RowProps {
   onClickText: (e: React.MouseEvent, p: Pointer) => void;
   onClickBullet: (e: React.MouseEvent, p: Pointer) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  ops: ReturnType<typeof useJSONDocument<typeof OutlineSchema>>["ops"];
+  doc: Pick<JSONDocument<OutlineNode>, "patch">;
   onTextEdit: (path: string) => void;
 }
 
 export function OutlineRow(props: RowProps) {
-  const { node, pointer, depth, focus, selection, mode, onClickText, onClickBullet, onKeyDown, ops, onTextEdit } = props;
+  const { node, pointer, depth, focus, selection, mode, onClickText, onClickBullet, onKeyDown, doc, onTextEdit } = props;
   const textPath = `${pointer}/text`;
   const isFocused = pointer === focus;
   const isSelected = selection.includes(pointer);
@@ -40,7 +39,7 @@ export function OutlineRow(props: RowProps) {
   }, [isFocused, isEditing]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    ops.patch([{ op: "replace", path: textPath, value: e.target.value }]);
+    doc.patch([{ op: "replace", path: textPath, value: e.target.value }]);
     onTextEdit(textPath);
   };
 

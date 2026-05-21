@@ -24,11 +24,11 @@ export function Outliner() {
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
   const ctx = doc.selection
-    ? { state: doc.value, ops: doc.ops, selection: doc.selection, clipboard }
+    ? { state: doc.value, document: doc, selection: doc.selection, clipboard }
     : null;
   const dispatch = useDispatch({
     ctx, mode, setMode, pushToast,
-    undo: doc.commands.undo, redo: doc.commands.redo,
+    undo: doc.history.undo, redo: doc.history.redo,
   });
 
   // row 의 onKeyDown — chord dispatcher. handled 면 preventDefault + stopPropagation
@@ -50,9 +50,9 @@ export function Outliner() {
       </header>
 
       <div className="toolbar">
-        <button onClick={doc.commands.undo} disabled={!doc.history.canUndo}>undo</button>
-        <button onClick={doc.commands.redo} disabled={!doc.history.canRedo}>redo</button>
-        <button onClick={() => { doc.ops.reset(); setMode("select"); }}>reset</button>
+        <button onClick={() => doc.history.undo()} disabled={!doc.history.canUndo}>undo</button>
+        <button onClick={() => doc.history.redo()} disabled={!doc.history.canRedo}>redo</button>
+        <button onClick={() => { doc.reset(); setMode("select"); }}>reset</button>
         <span className="status">
           mode = <code className={`mode mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focusPointer ?? "—"}</code>
@@ -68,7 +68,7 @@ export function Outliner() {
           selection={doc.selection?.selectedPointers ?? []}
           mode={mode}
           onClickText={onClickText} onClickBullet={onClickBullet}
-          onKeyDown={onKeyDown} ops={doc.ops} onTextEdit={onTextEdit}
+          onKeyDown={onKeyDown} doc={doc} onTextEdit={onTextEdit}
         />
       </ul>
 

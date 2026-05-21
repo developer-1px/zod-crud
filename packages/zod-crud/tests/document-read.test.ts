@@ -106,7 +106,7 @@ describe("doc read/query facade", () => {
   test("reads the current document state after edits", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
-    doc.commands.replace("/title", "final");
+    doc.patch({ op: "replace", path: "/title", value: "final" });
 
     expect(doc.at("/title")).toEqual({ ok: true, path: "/title", value: "final" });
     const rootEntries = doc.entries("");

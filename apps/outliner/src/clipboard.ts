@@ -2,7 +2,7 @@
 // 100% JSON 직렬화. paste 의미는 RFC 6902 batch 로 환원.
 
 import { useCallback, useState } from "react";
-import type { Pointer, JSONOps, JSONResult } from "zod-crud";
+import type { JSONDocument, Pointer, JSONResult } from "zod-crud";
 import type { OutlineNode } from "./schema.js";
 import { readNode, parentOf, lastIndex } from "./pointer-utils.js";
 
@@ -22,7 +22,7 @@ export interface ClipboardApi {
   sources: ReadonlyArray<Pointer>;
   copy(state: OutlineNode, sources: ReadonlyArray<Pointer>): void;
   cut(state: OutlineNode, sources: ReadonlyArray<Pointer>): void;
-  paste(target: Pointer, mode: PasteMode, ops: JSONOps<OutlineNode>): JSONResult;
+  paste(target: Pointer, mode: PasteMode, document: Pick<JSONDocument<OutlineNode>, "patch">): JSONResult;
   clear(): void;
 }
 
@@ -81,7 +81,7 @@ export function useClipboard(): ClipboardApi {
   }, []);
 
   const paste = useCallback(
-    (target: Pointer, mode: PasteMode, ops: JSONOps<OutlineNode>): JSONResult => {
+    (target: Pointer, mode: PasteMode, document: Pick<JSONDocument<OutlineNode>, "patch">): JSONResult => {
       // closure 로 잡힌 snap 이 아니라 현재 state 를 읽어야 하지만,
       // setSnap 콜백 안에서 처리하기 위해 일단 snap 로 처리 후 cut 모드면 비움.
       const cur = snap;
@@ -92,7 +92,7 @@ export function useClipboard(): ClipboardApi {
       // cmd.cut 이 원본을 이미 제거했으므로 paste 는 mode 무관 add 만.
       // mode = cut 일 때만 paste 후 클립보드 비움 (1회용 — Workflowy / Notion 표준).
       const batch = cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: v }));
-      const r = ops.patch(batch);
+      const r = document.patch(batch);
       if (r.ok && cur.mode === "cut") setSnap(EMPTY);
       return r;
     },

@@ -63,6 +63,11 @@ function Editor() {
 ```ts
 doc.value;
 doc.lastPatch;
+doc.load(nextValue);
+doc.reset();
+doc.subscribe((patch, metadata) => {
+  console.log(patch, metadata);
+});
 ```
 
 읽기는 document에 직접 둡니다.
@@ -150,8 +155,7 @@ if (copied.ok) {
 직접 payload를 넣을 수도 있습니다.
 
 ```ts
-doc.clipboard.write({ id: "new", title: "New card" });
-doc.clipboard.paste("/lists/0/cards/-");
+doc.clipboard.paste("/lists/0/cards/-", { id: "new", title: "New card" });
 ```
 
 `selection.copy()`는 쓰지 않습니다. selection은 대상 상태이고, clipboard가 payload 흐름을 맡습니다.
@@ -217,8 +221,6 @@ doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
 import {
   JSONCrudError,
   createJSONDocument,
-  createSelection,
-  createClipboard,
   applyOperation,
   applyPatch,
   parsePointer,
@@ -234,9 +236,11 @@ import {
   withLastSegment,
   trackPointer,
   type JSONCapabilityResult,
+  type JSONChangeMetadata,
   type JSONDocument,
+  type JSONDocumentHistory,
   type JSONPatchInput,
-  type JSONOps,
+  type HistoryTransactionOptions,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
@@ -254,7 +258,3 @@ React hook은 별도 entrypoint입니다.
 ```ts
 import { useJSONDocument } from "zod-crud/react";
 ```
-
-## Compatibility
-
-`doc.ops`, `doc.commands`, `doc.check`, `doc.can`, `createSelection`, `createClipboard`는 기존 통합을 위해 남아 있습니다. 새 문서와 데모의 중심 표면은 `patch`, `at/query`, `selection`, `clipboard`, `history`, `can*`입니다.

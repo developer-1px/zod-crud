@@ -38,7 +38,7 @@ async function clickRow(text: string) {
 }
 
 describe("stress — pre-flight (zod schema_violation)", () => {
-  test("ops.replace 의 값이 schema 모양과 어긋나면 거부 + onError", () => {
+  test("doc.patch 의 값이 schema 모양과 어긋나면 거부 + onError", () => {
     const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
@@ -46,7 +46,7 @@ describe("stress — pre-flight (zod schema_violation)", () => {
 
     // text 자리에 number 주입 — schema 위반
     act(() => {
-      result.current.ops.replace("/text" as never, 42 as never);
+      result.current.patch({ op: "replace", path: "/text", value: 42 });
     });
 
     expect(errors).toHaveLength(1);
@@ -55,14 +55,14 @@ describe("stress — pre-flight (zod schema_violation)", () => {
     expect(result.current.value.text).toBe(SAMPLE.text);
   });
 
-  test("ops.load 가 schema 모양 어긋난 JSON 거부", () => {
+  test("doc.load 가 schema 모양 어긋난 JSON 거부", () => {
     const errors: JSONCrudError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
 
     act(() => {
-      result.current.ops.load({ text: 1, children: [] } as never);
+      result.current.load({ text: 1, children: [] } as never);
     });
 
     expect(errors[0]!.result.code).toBe("schema_violation");
@@ -81,7 +81,7 @@ describe("stress — pre-flight (zod schema_violation)", () => {
     );
 
     act(() => {
-      result.current.ops.replace("/text" as never, "" as never);
+      result.current.patch({ op: "replace", path: "/text", value: "" });
     });
 
     expect(errors[0]!.result.code).toBe("schema_violation");
@@ -100,7 +100,7 @@ describe("stress — G8 batch atomicity", () => {
 
     // 두 op 묶인 batch — 첫 번째는 valid, 두 번째는 path_not_found
     act(() => {
-      result.current.ops.patch([
+      result.current.patch([
         { op: "replace", path: "/text", value: "OK_TEMP" },
         { op: "remove", path: "/children/999" }, // out of range
       ]);
@@ -121,7 +121,7 @@ describe("stress — G8 batch atomicity", () => {
     const before = JSON.stringify(result.current.value);
 
     act(() => {
-      result.current.ops.remove("" as never);
+      result.current.patch({ op: "remove", path: "" });
     });
 
     expect(errors[0]!.result.code).toBe("path_not_found");
@@ -136,7 +136,7 @@ describe("stress — G8 batch atomicity", () => {
     const before = JSON.stringify(result.current.value);
 
     act(() => {
-      result.current.ops.move("/children/0" as never, "/children/0/children/0" as never);
+      result.current.patch({ op: "move", from: "/children/0", path: "/children/0/children/0" });
     });
 
     expect(errors[0]!.result.code).toBe("move_into_self");
@@ -155,7 +155,7 @@ describe("stress — history depth & cycles", () => {
     // 100 회 mutation — coalesce 회피 위해 500ms 마다 한 entry 가 되도록은 못 하지만,
     // 각 op 가 독립이면 같은 entry 안에 합쳐질 수 있다. 그래도 전체 undo 는 initial 까지.
     for (let i = 0; i < 100; i++) {
-      act(() => { result.current.ops.add(`/children/-` as never, { text: `s${i}`, children: [] } as never); });
+      act(() => { result.current.patch({ op: "add", path: "/children/-", value: { text: `s${i}`, children: [] } }); });
     }
     const afterAll = JSON.stringify(result.current.value);
     expect(afterAll).not.toBe(initial);
@@ -163,14 +163,14 @@ describe("stress — history depth & cycles", () => {
     // 모든 undo 풀기
     let safety = 200;
     while (result.current.history.canUndo && safety-- > 0) {
-      act(() => { result.current.commands.undo(); });
+      act(() => { result.current.history.undo(); });
     }
     expect(JSON.stringify(result.current.value)).toBe(initial);
 
     // 모든 redo 풀기 → afterAll 로 복귀
     safety = 200;
     while (result.current.history.canRedo && safety-- > 0) {
-      act(() => { result.current.commands.redo(); });
+      act(() => { result.current.history.redo(); });
     }
     expect(JSON.stringify(result.current.value)).toBe(afterAll);
   });
@@ -184,7 +184,7 @@ describe("stress — history depth & cycles", () => {
     // 대신 limit 검증: undo 가 5 번까지만 가능.
     for (let i = 0; i < 10; i++) {
       // 다른 시간대 dispatch 시뮬레이션이 어려우므로 여기선 단순 mutation x10
-      act(() => { result.current.ops.replace(`/text` as never, `v${i}` as never); });
+      act(() => { result.current.patch({ op: "replace", path: "/text", value: `v${i}` }); });
     }
     // 모두 같은 500ms 창 안 → 한 entry 로 coalesce 됐을 수 있음. 그래도 canUndo true.
     expect(result.current.history.canUndo).toBe(true);
@@ -192,14 +192,14 @@ describe("stress — history depth & cycles", () => {
 });
 
 describe("stress — G1 JSON round-trip", () => {
-  test("doc.value 와 ops.state 가 항상 JSON.stringify 가능", () => {
+  test("doc.value 가 항상 JSON.stringify 가능", () => {
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { history: 10 })
     );
 
     // 다양한 mutation 적용
-    act(() => { result.current.ops.add("/children/-" as never, { text: "x", children: [{ text: "y", children: [] }] } as never); });
-    act(() => { result.current.ops.replace("/text" as never, "✓ unicode 한글 emoji 🎉" as never); });
+    act(() => { result.current.patch({ op: "add", path: "/children/-", value: { text: "x", children: [{ text: "y", children: [] }] } }); });
+    act(() => { result.current.patch({ op: "replace", path: "/text", value: "✓ unicode 한글 emoji 🎉" }); });
 
     const json = JSON.stringify(result.current.value);
     const parsed = JSON.parse(json);
@@ -214,14 +214,14 @@ describe("stress — G1 JSON round-trip", () => {
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { history: 10 })
     );
-    act(() => { result.current.ops.replace("/text" as never, "renamed" as never); });
+    act(() => { result.current.patch({ op: "replace", path: "/text", value: "renamed" }); });
 
     // undo → redo → undo 가 안전 (직렬화 깨지면 cycle 깨짐)
-    act(() => { result.current.commands.undo(); });
+    act(() => { result.current.history.undo(); });
     expect(result.current.value.text).toBe(SAMPLE.text);
-    act(() => { result.current.commands.redo(); });
+    act(() => { result.current.history.redo(); });
     expect(result.current.value.text).toBe("renamed");
-    act(() => { result.current.commands.undo(); });
+    act(() => { result.current.history.undo(); });
     expect(result.current.value.text).toBe(SAMPLE.text);
   });
 });

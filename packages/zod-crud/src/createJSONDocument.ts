@@ -3,9 +3,7 @@
 
 import type * as z from "zod";
 
-import { buildCan, type Can } from "./commands/buildCan.js";
-import { buildCommands, type Commands } from "./commands/buildCommands.js";
-import { buildCheck, type Check, type CheckResult } from "./check.js";
+import { buildCheck, type CheckResult } from "./check.js";
 import {
   applyPatch,
   type JSONPatchOperation,
@@ -53,7 +51,7 @@ export interface UseJSONDocumentOptions<T> {
   onChange?: () => void;
 }
 
-interface JSONDocumentHistory {
+export interface JSONDocumentHistory {
   readonly canUndo: boolean;
   readonly canRedo: boolean;
   readonly undoDepth: number;
@@ -65,9 +63,18 @@ interface JSONDocumentHistory {
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
 
-type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
+export type JSONDocumentChangeListener = (
+  applied: ReadonlyArray<JSONPatchOperation>,
+  metadata?: JSONChangeMetadata,
+) => void;
 
-interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
+export interface JSONDocumentLoadOptions {
+  preserveHistory?: boolean;
+}
+
+export type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
+
+export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   /**
    * Final model selection for this edit. When present, it overrides mutation
    * auto-selection and is recorded in the same history entry as the patch.
@@ -83,14 +90,13 @@ export interface JSONDocument<T> {
   readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
   readonly selection: SelectionState<T> | undefined;
   readonly history: JSONDocumentHistory;
-  readonly ops: JSONOps<T>;
-  readonly commands: Commands<T>;
-  readonly can: Can<T>;
-  readonly check: Check<T>;
   readonly clipboard: ClipboardState<T>;
   readonly schema: SchemaState<T>;
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
+  load(value: T, options?: JSONDocumentLoadOptions): JSONResult;
+  reset(value?: T): JSONResult;
+  subscribe(listener: JSONDocumentChangeListener): () => void;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
@@ -325,9 +331,7 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const selectionRef = { get current() { return selectionState; } };
-  const commands = buildCommands({ schema, ops, history: historyControls, selectionRef, selectionMode });
   const check = buildCheck({ schema, ops, history: historyControls, selectionRef });
-  const can = buildCan({ schema, ops, history: historyControls, check });
   const clipboardOptions = {
     schema,
     getState: () => rawOps.state,
@@ -346,14 +350,13 @@ export function createJSONDocument<S extends z.ZodType>(
     get lastPatch() { return [...lastPatch]; },
     get selection() { return selectionEnabled ? selectionState : undefined; },
     history,
-    ops,
-    commands,
-    can,
-    check,
     clipboard,
     schema: schemaState,
     patch,
     commit,
+    load: ops.load,
+    reset: ops.reset,
+    subscribe: ops.subscribe,
     at: read.at,
     exists: read.exists,
     query: read.query,

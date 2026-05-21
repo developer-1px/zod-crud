@@ -18,9 +18,9 @@ export function cut(ctx: CommandContext): void {
   ctx.clipboard.cut(ctx.state, sorted);
   // 2) 원본 row 즉시 제거 — selection 은 자동 규칙으로 회복
   const batch: JSONPatchOperation[] = sorted.slice().reverse().map((p) => ({ op: "remove", path: p }));
-  ctx.ops.patch(batch);
+  ctx.document.patch(batch);
 }
 
 export function paste(ctx: CommandContext, mode: PasteMode): JSONResult {
-  return ctx.clipboard.paste(focusOf(ctx) ?? "", mode, ctx.ops);
+  return ctx.clipboard.paste(focusOf(ctx) ?? "", mode, ctx.document);
 }

@@ -34,7 +34,7 @@ describe("JSONCrudError", () => {
   test("strict document operations throw JSONCrudError through the public facade", () => {
     const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" });
 
-    expect(() => doc.ops.patch([{ op: "replace", path: "/name", value: 1 }])).toThrow(JSONCrudError);
+    expect(() => doc.patch({ op: "replace", path: "/name", value: 1 })).toThrow(JSONCrudError);
     expect(doc.value).toEqual({ name: "ok" });
   });
 });

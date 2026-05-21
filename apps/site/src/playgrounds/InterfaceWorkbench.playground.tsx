@@ -5,16 +5,13 @@ import {
   applyOperation,
   applyPatch,
   buildPointer,
-  createClipboard,
   createJSONDocument,
-  createSelection,
   escapeSegment,
   parentPointer,
   parsePointer,
   trackPointer,
   unescapeSegment,
   type JSONPatchOperation,
-  type JSONOps,
   type Pointer,
 } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
@@ -180,10 +177,7 @@ export function InterfaceWorkbench() {
 
   const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste(target, "after");
 
-  const pastePayloadAfterTarget = (): unknown => {
-    const written = doc.clipboard.write(parsedPayload(), { source: target });
-    return written.ok ? doc.clipboard.paste(target, "after") : written;
-  };
+  const pastePayloadAfterTarget = (): unknown => doc.clipboard.paste(target, parsedPayload(), "after");
 
   const selectTodoCards = (): unknown => {
     const matches = doc.query("$..cards[?(@.status=='todo')]");
@@ -201,7 +195,10 @@ export function InterfaceWorkbench() {
     const selection = doc.selection?.snapshot();
     const hasTitleSelection = selection?.selectedPointers.includes("/title") ?? false;
     if (!hasTitleSelection) doc.selection?.collapse({ path: "/title", offset: 0 });
-    return doc.commands.replaceText("Bench", { mergeKey: "title-text" });
+    const planned = doc.selection?.textPatch("Bench");
+    return planned?.ok
+      ? doc.commit(planned.patch, { mergeKey: "title-text", selection: planned.selection })
+      : planned;
   };
 
   const commitAddWithSelection = (): unknown => {
@@ -238,34 +235,10 @@ export function InterfaceWorkbench() {
       history: 10,
       selection: { mode: "extended", initial: [cardPointer(0, 0)] },
     });
-    headless.commands.duplicate(cardPointer(0, 0));
-    const standaloneClipboard = createClipboard({
-      schema: BoardSchema,
-      getState: () => headless.value,
-      ops: headless.ops,
-      getSelectionSource: () => [cardPointer(0, 0), cardPointer(0, 1)],
-      getSelectionTarget: () => "/lists/1/cards/-",
-    });
-    standaloneClipboard.copy();
-    standaloneClipboard.paste();
-    const fakeOps: JSONOps<Board> = {
-      add: () => ({ ok: true }),
-      remove: () => ({ ok: true }),
-      replace: () => ({ ok: true }),
-      move: () => ({ ok: true }),
-      copy: () => ({ ok: true }),
-      test: () => ({ ok: true }),
-      patch: () => ({ ok: true }),
-      load: () => ({ ok: true }),
-      reset: () => ({ ok: true }),
-      subscribe: () => () => undefined,
-      get state() { return initialBoard; },
-    };
-    const standaloneSelection = createSelection(fakeOps, {
-      mode: "extended",
-      initial: [cardPointer(0, 0)],
-    });
-    standaloneSelection.togglePointer(cardPointer(0, 1));
+    headless.patch({ op: "copy", from: cardPointer(0, 0), path: "/lists/0/cards/-" });
+    headless.selection?.togglePointer(cardPointer(0, 1));
+    headless.clipboard.copy(headless.selection?.selectedPointers ?? []);
+    headless.clipboard.paste("/lists/1/cards/-");
 
     return {
       applyOperation: appliedOne.result,
@@ -276,8 +249,6 @@ export function InterfaceWorkbench() {
         selection: headless.selection?.selectedPointers,
         canUndo: headless.history.canUndo,
       },
-      createSelection: standaloneSelection.snapshot(),
-      createClipboard: standaloneClipboard.read(),
       pointer: {
         parse: parsePointer("/lists/0/cards/0"),
         build: buildPointer(["lists", 0, "cards", 0]),
@@ -298,11 +269,16 @@ export function InterfaceWorkbench() {
     return found;
   };
 
-  const loadFixture = (): unknown => doc.ops.load({
+  const loadFixture = (): unknown => doc.load({
     ...initialBoard,
     title: "Loaded fixture",
     settings: { archived: true, owner: "fixture" },
   });
+  const removeTargets = (): unknown => doc.patch(
+    [...(selectedPointers.length > 0 ? selectedPointers : [target])]
+      .reverse()
+      .map((path) => ({ op: "remove", path }) satisfies JSONPatchOperation),
+  );
 
   return (
     <div className="flex w-full flex-col gap-4">
@@ -388,18 +364,18 @@ export function InterfaceWorkbench() {
           <ActionButton onClick={() => run("patch.remove", () => doc.patch([{ op: "remove", path: target }]))}>remove</ActionButton>
           <ActionButton onClick={() => run("patch.batch", patchTwoFields)}>batch</ActionButton>
           <ActionButton onClick={() => run("patch.invalid", invalidPatch)}>invalid</ActionButton>
-          <ActionButton onClick={() => run("ops.load", loadFixture)}>load</ActionButton>
-          <ActionButton onClick={() => run("ops.reset", () => doc.ops.reset())}>reset</ActionButton>
+          <ActionButton onClick={() => run("doc.load", loadFixture)}>load</ActionButton>
+          <ActionButton onClick={() => run("doc.reset", () => doc.reset())}>reset</ActionButton>
         </ActionGroup>
 
-        <ActionGroup title="doc.commands">
-          <ActionButton onClick={() => run("commands.duplicate", () => doc.commands.duplicate(target))}>duplicate</ActionButton>
-          <ActionButton onClick={() => run("commands.move", () => doc.commands.move(target, "/lists/1/cards/0" as Pointer))}>move</ActionButton>
+        <ActionGroup title="document actions">
+          <ActionButton onClick={() => run("patch.copy", () => doc.patch({ op: "copy", from: target, path: "/lists/0/cards/-" as Pointer }))}>duplicate</ActionButton>
+          <ActionButton onClick={() => run("patch.move", () => doc.patch({ op: "move", from: target, path: "/lists/1/cards/0" as Pointer }))}>move</ActionButton>
           <ActionButton onClick={() => run("patch.replace", replaceSelectedTitle)}>replace</ActionButton>
           <ActionButton onClick={() => run("clipboard.payload", pastePayloadAfterTarget)}>paste payload</ActionButton>
-          <ActionButton onClick={() => run("commands.remove", () => doc.commands.remove(selectedPointers.length > 0 ? selectedPointers : target))}>remove</ActionButton>
+          <ActionButton onClick={() => run("patch.remove", removeTargets)}>remove</ActionButton>
           <ActionButton onClick={() => run("query.select", findAndSelect)}>find</ActionButton>
-          <ActionButton onClick={() => run("commands.replaceText", replaceTitleText)}>replaceText</ActionButton>
+          <ActionButton onClick={() => run("selection.textPatch", replaceTitleText)}>replaceText</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.selection">

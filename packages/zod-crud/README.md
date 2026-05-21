@@ -89,6 +89,9 @@ export function App() {
 | --- | --- |
 | `doc.value` | current schema-valid JSON value |
 | `doc.patch(patch)` | apply one JSON Patch operation or an operation array |
+| `doc.load(value)` | replace the document with a schema-valid value |
+| `doc.reset()` | restore the initial value or a provided value |
+| `doc.subscribe(listener)` | observe applied patch records |
 | `doc.at(pointer)` | read one JSON Pointer location |
 | `doc.exists(pointer)` | check whether a pointer resolves |
 | `doc.query(jsonPath)` | return pointer matches for a JSONPath query |
@@ -98,9 +101,6 @@ export function App() {
 | `doc.history` | undo/redo state and controls |
 | `doc.can*` | reasoned capability checks, not booleans |
 | `doc.schema` | schema introspection for a pointer |
-
-`doc.ops`, `doc.commands`, `doc.check`, and `doc.can` are lower-level
-compatibility surfaces. New code should start from the table above.
 
 ## Patch, Pointer, JSONPath
 
@@ -148,12 +148,10 @@ if (copied.ok) {
 }
 ```
 
-For direct payload insertion, write the payload first or use the lower-level
-command surface.
+For direct payload insertion, pass the payload explicitly.
 
 ```ts
-doc.clipboard.write({ id: "new", title: "New card" });
-doc.clipboard.paste("/lists/0/cards/-");
+doc.clipboard.paste("/lists/0/cards/-", { id: "new", title: "New card" });
 ```
 
 ## History
@@ -247,8 +245,6 @@ Root entrypoint:
 ```ts
 import {
   createJSONDocument,
-  createSelection,
-  createClipboard,
   applyOperation,
   applyPatch,
   parsePointer,
@@ -256,6 +252,9 @@ import {
   buildPointer,
   trackPointer,
   type JSONDocument,
+  type JSONDocumentHistory,
+  type JSONChangeMetadata,
+  type HistoryTransactionOptions,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,

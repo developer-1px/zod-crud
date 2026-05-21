@@ -73,17 +73,16 @@ describe("useJSONDocument doc.clipboard", () => {
   });
 });
 
-describe("useJSONDocument doc.check", () => {
+describe("useJSONDocument can* checks", () => {
   test("exposes the same dry-run guard as the headless facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, { history: 10 }));
 
-    let failed: ReturnType<typeof hook.current.check.replace> | undefined;
+    let failed: ReturnType<typeof hook.current.canReplace> | undefined;
     act(() => {
-      failed = hook.current.check.replace("/items/0/name", 1);
+      failed = hook.current.canReplace("/items/0/name", 1);
     });
 
     expect(failed).toMatchObject({ ok: false, code: "schema_violation" });
-    expect(failed?.ok).toBe(hook.current.can.replace("/items/0/name", 1));
     expect(hook.current.value).toEqual(initial);
     expect(hook.current.history.undoDepth).toBe(0);
   });

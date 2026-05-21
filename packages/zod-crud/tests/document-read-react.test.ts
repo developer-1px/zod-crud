@@ -47,7 +47,7 @@ describe("useJSONDocument read/query facade", () => {
     expect(hook.current.entries("/tasks")).toMatchObject({ ok: true, kind: "array" });
 
     act(() => {
-      hook.current.commands.replace("/title", "final");
+      hook.current.patch({ op: "replace", path: "/title", value: "final" });
     });
 
     expect(hook.current.at("/title")).toEqual({ ok: true, path: "/title", value: "final" });

@@ -21,7 +21,7 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByText("Interface bench")).toBeTruthy();
     for (const title of [
       "doc.patch",
-      "doc.commands",
+      "document actions",
       "doc.selection",
       "doc.clipboard",
       "doc.history",

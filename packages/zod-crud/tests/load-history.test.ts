@@ -21,22 +21,22 @@ afterEach(() => {
   }
 });
 
-describe("useJSONDocument ops.load history", () => {
+describe("useJSONDocument doc.load history", () => {
   test("load keeps existing history only when preserveHistory is true", () => {
     const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { history: 10 }));
 
     act(() => {
-      hook.current.ops.replace("/name", "b");
+      hook.current.patch({ op: "replace", path: "/name", value: "b" });
     });
     expect(hook.current.history.canUndo).toBe(true);
 
     act(() => {
-      hook.current.ops.load({ name: "c" }, { preserveHistory: true });
+      hook.current.load({ name: "c" }, { preserveHistory: true });
     });
     expect(hook.current.history.canUndo).toBe(true);
 
     act(() => {
-      hook.current.ops.load({ name: "d" });
+      hook.current.load({ name: "d" });
     });
     expect(hook.current.history.canUndo).toBe(false);
   });
@@ -45,13 +45,13 @@ describe("useJSONDocument ops.load history", () => {
     const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { history: 10, strict: false }));
 
     act(() => {
-      hook.current.ops.replace("/name", "b");
+      hook.current.patch({ op: "replace", path: "/name", value: "b" });
     });
     expect(hook.current.history.canUndo).toBe(true);
 
-    let result: ReturnType<typeof hook.current.ops.load> | undefined;
+    let result: ReturnType<typeof hook.current.load> | undefined;
     act(() => {
-      result = hook.current.ops.load({ name: 1 } as unknown as { name: string });
+      result = hook.current.load({ name: 1 } as unknown as { name: string });
     });
 
     expect(result?.ok).toBe(false);
@@ -66,13 +66,13 @@ describe("useJSONDocument ops.load history", () => {
     const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { history: 10, strict: false }));
 
     act(() => {
-      hook.current.ops.replace("/name", "b");
+      hook.current.patch({ op: "replace", path: "/name", value: "b" });
     });
     expect(hook.current.history.canUndo).toBe(true);
 
-    let result: ReturnType<typeof hook.current.ops.reset> | undefined;
+    let result: ReturnType<typeof hook.current.reset> | undefined;
     act(() => {
-      result = hook.current.ops.reset({ name: 1 } as unknown as { name: string });
+      result = hook.current.reset({ name: 1 } as unknown as { name: string });
     });
 
     expect(result?.ok).toBe(false);
@@ -87,9 +87,9 @@ describe("useJSONDocument ops.load history", () => {
     const onError = vi.fn();
     const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { strict: false, onError }));
 
-    let result: ReturnType<typeof hook.current.ops.replace> | undefined;
+    let result: ReturnType<typeof hook.current.patch> | undefined;
     act(() => {
-      result = hook.current.ops.replace("name" as never, "b" as never);
+      result = hook.current.patch({ op: "replace", path: "name" as never, value: "b" });
     });
 
     expect(result).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "name" });

@@ -4,20 +4,26 @@
 // Headless entrypoint. React APIs live under `zod-crud/react` so the optional
 // React peer is not required for pure JSON Patch / Pointer consumers.
 
-// === Boundary error + ops contract ===
+// === Boundary error + document metadata ===
 export { JSONCrudError } from "./JSONCrudError.js";
-export type { JSONOps } from "./jsonOps.js";
+export type {
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
+} from "./jsonOps.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONCapabilityResult,
+  JSONDocumentChangeListener,
+  JSONDocumentCommitOptions,
+  JSONDocumentCommitSelection,
+  JSONDocumentHistory,
+  JSONDocumentLoadOptions,
   JSONDocument,
   JSONPatchInput,
 } from "./createJSONDocument.js";
-export { createSelection } from "./selection.js";
 export type { SelectionState } from "./selection.js";
-export { createClipboard } from "./clipboard.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./core/patch/index.js";

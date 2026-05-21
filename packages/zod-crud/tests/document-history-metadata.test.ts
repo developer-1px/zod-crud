@@ -19,13 +19,13 @@ describe("doc.history metadata", () => {
       history: 10,
       selection: { mode: "single", initial: ["/title"] },
     });
-    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.ops.subscribe>[0]>[1]>> = [];
-    doc.ops.subscribe((_, changeMetadata) => {
+    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.subscribe>[0]>[1]>> = [];
+    doc.subscribe((_, changeMetadata) => {
       if (changeMetadata) metadata.push(changeMetadata);
     });
 
     doc.history.transaction({ label: "Rename title", origin: "keyboard", mergeKey: "title" }, () => {
-      doc.ops.replace("/title", "final");
+      doc.patch({ op: "replace", path: "/title", value: "final" });
     });
 
     expect(metadata).toHaveLength(1);
@@ -43,31 +43,31 @@ describe("doc.history metadata", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
     doc.history.transaction({ label: "Edit fields", origin: "programmatic", mergeKey: "batch" }, () => {
-      doc.ops.replace("/title", "final");
-      doc.ops.replace("/count", 1);
+      doc.patch({ op: "replace", path: "/title", value: "final" });
+      doc.patch({ op: "replace", path: "/count", value: 1 });
     });
 
     expect(doc.history.undoDepth).toBe(1);
     expect(doc.value).toEqual({ title: "final", count: 1 });
 
-    expect(doc.commands.undo()).toBe(true);
+    expect(doc.history.undo()).toBe(true);
     expect(doc.value).toEqual(initial);
     expect(doc.history.redoDepth).toBe(1);
 
-    expect(doc.commands.redo()).toBe(true);
+    expect(doc.history.redo()).toBe(true);
     expect(doc.value).toEqual({ title: "final", count: 1 });
   });
 
   test("mergeLast accepts merge metadata without changing stack behavior", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
-    doc.ops.replace("/title", "a");
-    doc.ops.replace("/title", "b");
+    doc.patch({ op: "replace", path: "/title", value: "a" });
+    doc.patch({ op: "replace", path: "/title", value: "b" });
 
     expect(doc.history.mergeLast({ mergeKey: "typing:title" })).toBe(true);
     expect(doc.history.undoDepth).toBe(1);
 
-    expect(doc.commands.undo()).toBe(true);
+    expect(doc.history.undo()).toBe(true);
     expect(doc.value.title).toBe("draft");
   });
 
@@ -82,32 +82,28 @@ describe("doc.history metadata", () => {
         }],
       },
     });
-    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.ops.subscribe>[0]>[1]>> = [];
-    doc.ops.subscribe((_, changeMetadata) => {
+    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.subscribe>[0]>[1]>> = [];
+    doc.subscribe((_, changeMetadata) => {
       if (changeMetadata) metadata.push(changeMetadata);
     });
 
-    expect(doc.check.replaceText("A", {
+    const insert = doc.selection?.textPatch("A");
+    expect(insert).toMatchObject({ ok: true });
+    if (insert?.ok) doc.commit(insert.patch, {
       label: "Insert title text",
       origin: "keyboard",
       mergeKey: "typing:title",
-    })).toEqual({ ok: true });
-    expect(doc.can.replaceText("A", {
-      label: "Insert title text",
-      origin: "keyboard",
-      mergeKey: "typing:title",
-    })).toBe(true);
-    expect(doc.commands.replaceText("A", {
-      label: "Insert title text",
-      origin: "keyboard",
-      mergeKey: "typing:title",
-    })).toMatchObject({ ok: true });
+      selection: insert.selection,
+    });
 
-    expect(doc.commands.deleteText({
+    const deletion = doc.selection?.deleteText();
+    expect(deletion).toMatchObject({ ok: true });
+    if (deletion?.ok) doc.commit(deletion.patch, {
       label: "Delete title text",
       origin: "keyboard",
       mergeKey: "typing:title",
-    })).toMatchObject({ ok: true });
+      selection: deletion.selection,
+    });
 
     expect(metadata).toHaveLength(2);
     expect(metadata[0]).toMatchObject({

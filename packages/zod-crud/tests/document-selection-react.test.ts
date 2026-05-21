@@ -32,14 +32,14 @@ afterEach(() => {
 });
 
 describe("useJSONDocument doc.selection", () => {
-  test("commands.select defaults to the configured selection mode", () => {
+  test("selection methods use the configured selection mode", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },
     }));
 
     act(() => {
-      hook.current.commands.select({ type: "addRange", pointer: "/items/0" });
-      hook.current.commands.select({ type: "addRange", pointer: "/items/1" });
+      hook.current.selection?.addRange("/items/0");
+      hook.current.selection?.addRange("/items/1");
     });
 
     expect(hook.current.selection?.selectedPointers).toEqual(["/items/0", "/items/1"]);
@@ -255,17 +255,20 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.primaryPointer).toBe("/items/0");
   });
 
-  test("commands and clipboard copy default to current selection through the React facade", () => {
+  test("clipboard copy defaults to current selection through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },
     }));
 
     act(() => {
-      hook.current.commands.select({ type: "addRange", pointer: "/items/0" });
-      hook.current.commands.select({ type: "addRange", pointer: "/items/1" });
+      hook.current.selection?.addRange("/items/0");
+      hook.current.selection?.addRange("/items/1");
     });
 
-    const copied = hook.current.commands.copy();
+    let copied: ReturnType<typeof hook.current.clipboard.copy> | undefined;
+    act(() => {
+      copied = hook.current.clipboard.copy();
+    });
     expect(copied).toMatchObject({
       ok: true,
       payload: [
@@ -274,10 +277,6 @@ describe("useJSONDocument doc.selection", () => {
       ],
       source: "/items/0",
       sources: ["/items/0", "/items/1"],
-    });
-
-    act(() => {
-      hook.current.clipboard.copy();
     });
 
     expect(hook.current.clipboard.read()).toEqual({
@@ -291,56 +290,58 @@ describe("useJSONDocument doc.selection", () => {
     });
   });
 
-  test("commands paste defaults to current selection target through the React facade", () => {
+  test("clipboard paste can use an explicit payload and the current selection target", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       history: 10,
       selection: { mode: "single", initial: ["/items/0"] },
     }));
 
     act(() => {
-      hook.current.commands.paste({ id: "x", name: "X" }, "after");
+      hook.current.clipboard.paste("/items/0", { id: "x", name: "X" }, "after");
     });
 
     expect(hook.current.value.items.map((item) => item.id)).toEqual(["a", "x", "b"]);
     expect(hook.current.history.undoDepth).toBe(1);
   });
 
-  test("commands replace defaults to current selection target through the React facade", () => {
+  test("patch replaces the current selection target through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       history: 10,
       selection: { mode: "single", initial: ["/items/0/name"] },
     }));
 
     act(() => {
-      hook.current.commands.replace("A1");
+      hook.current.patch({ op: "replace", path: hook.current.selection?.primaryPointer ?? "/items/0/name", value: "A1" });
     });
 
     expect(hook.current.value.items[0]?.name).toBe("A1");
     expect(hook.current.history.undoDepth).toBe(1);
   });
 
-  test("commands duplicate defaults to current primary selection through the React facade", () => {
+  test("JSON Patch copy duplicates the current primary selection through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       history: 10,
       selection: { mode: "single", initial: ["/items/0"] },
     }));
 
     act(() => {
-      hook.current.commands.duplicate();
+      const source = hook.current.selection?.primaryPointer ?? "/items/0";
+      hook.current.patch({ op: "copy", from: source, path: "/items/1" });
     });
 
     expect(hook.current.value.items.map((item) => item.id)).toEqual(["a", "a", "b"]);
     expect(hook.current.history.undoDepth).toBe(1);
   });
 
-  test("commands move defaults to current primary selection source through the React facade", () => {
+  test("JSON Patch move uses the current primary selection source through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       history: 10,
       selection: { mode: "single", initial: ["/items/0"] },
     }));
 
     act(() => {
-      hook.current.commands.move("/items/1");
+      const source = hook.current.selection?.primaryPointer ?? "/items/0";
+      hook.current.patch({ op: "move", from: source, path: "/items/1" });
     });
 
     expect(hook.current.value.items.map((item) => item.id)).toEqual(["b", "a"]);
