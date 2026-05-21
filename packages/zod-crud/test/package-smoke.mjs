@@ -42,6 +42,8 @@ const rootPublicExports = [
   "JSONDocumentChangeListener",
   "JSONDocumentCommitOptions",
   "JSONDocumentCommitSelection",
+  "JSONDocumentDuplicateOptions",
+  "JSONDocumentDuplicateResult",
   "JSONDocumentHistory",
   "JSONDocumentLoadOptions",
   "JSONPatchInput",
@@ -556,9 +558,9 @@ try {
     [
       'import * as z from "zod";',
       'import { applyOperation, applyPatch, tryParsePointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, type JSONPatchOperation, type Pointer } from "zod-crud";',
-      'import type { HistoryTransactionOptions, JSONCapabilityResult, JSONChangeMetadata, JSONDocument, JSONDocumentChangeListener, JSONDocumentCommitOptions, JSONDocumentCommitSelection, JSONDocumentHistory, JSONDocumentLoadOptions, JSONPatchInput, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionSource, SelectionState } from "zod-crud";',
+      'import type { HistoryTransactionOptions, JSONCapabilityResult, JSONChangeMetadata, JSONDocument, JSONDocumentChangeListener, JSONDocumentCommitOptions, JSONDocumentCommitSelection, JSONDocumentDuplicateOptions, JSONDocumentDuplicateResult, JSONDocumentHistory, JSONDocumentLoadOptions, JSONPatchInput, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionSource, SelectionState } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
-      'type PublicRootTypes = [HistoryTransactionOptions, JSONCapabilityResult, JSONChangeMetadata, JSONDocument<z.output<typeof schema>>, JSONDocumentChangeListener, JSONDocumentCommitOptions, JSONDocumentCommitSelection, JSONDocumentHistory, JSONDocumentLoadOptions, JSONPatchInput, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionSource, SelectionState<z.output<typeof schema>>];',
+      'type PublicRootTypes = [HistoryTransactionOptions, JSONCapabilityResult, JSONChangeMetadata, JSONDocument<z.output<typeof schema>>, JSONDocumentChangeListener, JSONDocumentCommitOptions, JSONDocumentCommitSelection, JSONDocumentDuplicateOptions, JSONDocumentDuplicateResult<z.output<typeof schema>>, JSONDocumentHistory, JSONDocumentLoadOptions, JSONPatchInput, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionSource, SelectionState<z.output<typeof schema>>];',
       'declare const publicRootTypes: PublicRootTypes;',
       'publicRootTypes satisfies readonly unknown[];',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',
@@ -716,6 +718,7 @@ try {
     "core/history",
     "hooks/useJSONDocument",
     "verbs",
+    "verbs/duplicate",
     "verbs/move",
   ];
   for (const privateSubpath of privateSubpaths) {

@@ -68,6 +68,8 @@ import {
   type JSONDocumentChangeListener,
   type JSONDocumentCommitOptions,
   type JSONDocumentCommitSelection,
+  type JSONDocumentDuplicateOptions,
+  type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONDocumentLoadOptions,
   type JSONPatchInput,
@@ -104,6 +106,7 @@ interface JSONDocument<T> {
 
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: readonly JSONPatchOperation[], options?: JSONDocumentCommitOptions): JSONResult;
+  duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
   load(value: T, options?: JSONDocumentLoadOptions): JSONResult;
   reset(value?: T): JSONResult;
   subscribe(listener: JSONDocumentChangeListener): () => void;
@@ -118,7 +121,7 @@ interface JSONDocument<T> {
   canReplace(path: Pointer, value: unknown): JSONCapabilityResult;
   canRemove(source: SelectionSource): JSONCapabilityResult;
   canMove(source: Pointer, target: Pointer): JSONCapabilityResult;
-  canDuplicate(source: Pointer, options?: DuplicateOpts): JSONCapabilityResult;
+  canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
   canCopy(source: SelectionSource): JSONCapabilityResult;
   canCut(source: SelectionSource): JSONCapabilityResult;
   canPaste(target: Pointer, payload: unknown, mode?: PasteMode, options?: PasteOptions): JSONCapabilityResult;
@@ -153,6 +156,16 @@ if (planned?.ok) {
     selection: planned.selection,
   });
 }
+```
+
+`duplicate` is the public high-level sibling duplication verb. Use it instead of
+reaching into internal verb modules when the caller wants duplicate semantics
+such as array "after source", object `newKey`, or `rekey`.
+
+```ts
+doc.duplicate("/items/0", {
+  rekey: { fields: ["id", "slug"], strategy: "suffix" },
+});
 ```
 
 `load` replaces the document with a schema-valid value. `reset` restores the initial value unless a value is provided. `subscribe` observes applied patch records and serializable metadata.

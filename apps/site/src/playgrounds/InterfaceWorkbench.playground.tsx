@@ -369,7 +369,7 @@ export function InterfaceWorkbench() {
         </ActionGroup>
 
         <ActionGroup title="document actions">
-          <ActionButton onClick={() => run("patch.copy", () => doc.patch({ op: "copy", from: target, path: "/lists/0/cards/-" as Pointer }))}>duplicate</ActionButton>
+          <ActionButton onClick={() => run("doc.duplicate", () => doc.duplicate(target, { rekey: { fields: ["id"], strategy: "suffix" } }))}>duplicate</ActionButton>
           <ActionButton onClick={() => run("patch.move", () => doc.patch({ op: "move", from: target, path: "/lists/1/cards/0" as Pointer }))}>move</ActionButton>
           <ActionButton onClick={() => run("patch.replace", replaceSelectedTitle)}>replace</ActionButton>
           <ActionButton onClick={() => run("clipboard.payload", pastePayloadAfterTarget)}>paste payload</ActionButton>

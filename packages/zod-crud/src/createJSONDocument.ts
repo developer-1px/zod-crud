@@ -34,7 +34,12 @@ import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
-import type { DuplicateOpts } from "./verbs/duplicate.js";
+import {
+  duplicate as duplicateVerb,
+  type DuplicateError,
+  type DuplicateOk,
+  type DuplicateOpts,
+} from "./verbs/duplicate.js";
 import type { PasteMode, PasteOptions } from "./verbs/paste.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
 import type {
@@ -84,6 +89,11 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 export type JSONCapabilityResult = CheckResult;
+export type JSONDocumentDuplicateOptions = DuplicateOpts;
+export type JSONDocumentDuplicateResult<T> =
+  | DuplicateOk<T>
+  | DuplicateError
+  | Extract<JSONResult, { ok: false }>;
 
 export interface JSONDocument<T> {
   readonly value: T;
@@ -94,6 +104,7 @@ export interface JSONDocument<T> {
   readonly schema: SchemaState<T>;
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
+  duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
   load(value: T, options?: JSONDocumentLoadOptions): JSONResult;
   reset(value?: T): JSONResult;
   subscribe(listener: JSONDocumentChangeListener): () => void;
@@ -106,7 +117,7 @@ export interface JSONDocument<T> {
   canReplace(path: Pointer, value: unknown): JSONCapabilityResult;
   canRemove(source: SelectionSource): JSONCapabilityResult;
   canMove(source: Pointer, target: Pointer): JSONCapabilityResult;
-  canDuplicate(source: Pointer, options?: DuplicateOpts): JSONCapabilityResult;
+  canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
   canCopy(source: SelectionSource): JSONCapabilityResult;
   canCut(source: SelectionSource): JSONCapabilityResult;
   canPaste(target: Pointer, payload: unknown, mode?: PasteMode, options?: PasteOptions): JSONCapabilityResult;
@@ -220,6 +231,16 @@ export function createJSONDocument<S extends z.ZodType>(
       recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
+  };
+
+  const duplicate = (
+    source: Pointer,
+    duplicateOptions?: JSONDocumentDuplicateOptions,
+  ): JSONDocumentDuplicateResult<z.output<S>> => {
+    const planned = duplicateVerb(schema, rawOps.state, source, duplicateOptions);
+    if (!planned.ok) return planned;
+    const r = applyDocumentPatch(planned.patch);
+    return r.ok ? planned : r;
   };
 
   const restore = (direction: "undo" | "redo"): boolean => {
@@ -354,6 +375,7 @@ export function createJSONDocument<S extends z.ZodType>(
     schema: schemaState,
     patch,
     commit,
+    duplicate,
     load: ops.load,
     reset: ops.reset,
     subscribe: ops.subscribe,

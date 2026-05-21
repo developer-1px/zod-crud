@@ -7,6 +7,7 @@ The public model is small:
 ```txt
 document
 ├─ patch(patch)              RFC 6902 JSON Patch
+├─ duplicate(pointer, opts)   sibling duplicate with optional rekey
 ├─ at(pointer)               RFC 6901 JSON Pointer
 ├─ query(jsonPath)           RFC 9535 JSONPath
 ├─ selection                 explicit JSON selection snapshots
@@ -89,6 +90,7 @@ export function App() {
 | --- | --- |
 | `doc.value` | current schema-valid JSON value |
 | `doc.patch(patch)` | apply one JSON Patch operation or an operation array |
+| `doc.duplicate(pointer, opts)` | duplicate one sibling and optionally rekey unique fields |
 | `doc.load(value)` | replace the document with a schema-valid value |
 | `doc.reset()` | restore the initial value or a provided value |
 | `doc.subscribe(listener)` | observe applied patch records |
@@ -117,6 +119,16 @@ doc.query("$..cards[?(@.status=='todo')]");
 
 Patch paths are JSON Pointers. JSONPath is only for query; use the returned
 pointers when you want to patch.
+
+Use `duplicate` when the intent is sibling duplication rather than a raw RFC
+`copy` operation. Arrays insert the duplicate after the source. Object members
+need `newKey`. `rekey` can mint new values for id-like fields.
+
+```ts
+doc.duplicate("/lists/0/cards/0", {
+  rekey: { fields: ["id", "slug"], strategy: "suffix" },
+});
+```
 
 ## Selection
 
@@ -252,6 +264,8 @@ import {
   buildPointer,
   trackPointer,
   type JSONDocument,
+  type JSONDocumentDuplicateOptions,
+  type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONChangeMetadata,
   type HistoryTransactionOptions,

@@ -55,6 +55,23 @@ describe("createJSONDocument public interface", () => {
     expect(doc.value.meta).toEqual({ editor: "core" });
   });
 
+  test("duplicates a sibling through the public document facade", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const result = doc.duplicate("/items/0", { rekey: { fields: ["id"], strategy: "suffix" } });
+
+    expect(result).toMatchObject({
+      ok: true,
+      duplicatedTo: "/items/1",
+      patch: [{ op: "add", path: "/items/1", value: { id: "a-copy", name: "A" } }],
+    });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a-copy", "b"]);
+    expect(doc.history.undoDepth).toBe(1);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
   test("keeps reads and query separate from pointer-based patching", () => {
     const doc = createJSONDocument(Schema, initial);
 

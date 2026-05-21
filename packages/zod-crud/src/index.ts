@@ -18,6 +18,8 @@ export type {
   JSONDocumentChangeListener,
   JSONDocumentCommitOptions,
   JSONDocumentCommitSelection,
+  JSONDocumentDuplicateOptions,
+  JSONDocumentDuplicateResult,
   JSONDocumentHistory,
   JSONDocumentLoadOptions,
   JSONDocument,
