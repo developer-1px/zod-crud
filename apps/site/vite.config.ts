@@ -59,7 +59,6 @@ export default defineConfig({
           if (id.includes("/apps/outliner/src/")) return "playground-outliner";
           if (id.includes("/apps/mobile-cms/src/")) return "playground-mobile-cms";
           if (id.includes("/apps/api-collection/src/")) return "playground-api-collection";
-          if (id.includes("/apps/site/src/routes/source-registry.ts")) return "package-sources";
         },
       },
     },

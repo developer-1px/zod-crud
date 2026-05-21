@@ -1,25 +1,18 @@
 import { useState, type ReactElement } from "react";
-import { SourceTabs } from "../code/SourceTabs";
 import { BasicCrud } from "../playgrounds/BasicCrud.playground";
 import { ClipboardArray } from "../playgrounds/ClipboardArray.playground";
 import { RejectedDrift } from "../playgrounds/RejectedDrift.playground";
 
-import basicSrc from "../playgrounds/BasicCrud.playground.tsx?raw";
-import clipboardSrc from "../playgrounds/ClipboardArray.playground.tsx?raw";
-import rejectSrc from "../playgrounds/RejectedDrift.playground.tsx?raw";
-
 type PlaygroundCase = {
   key: string;
   label: string;
-  filename: string;
-  source: string;
   render: () => ReactElement;
 };
 
 const cases: PlaygroundCase[] = [
-  { key: "basic", label: "Basic CRUD", filename: "BasicCrud.playground.tsx", source: basicSrc, render: BasicCrud },
-  { key: "clipboard", label: "Clipboard + history", filename: "ClipboardArray.playground.tsx", source: clipboardSrc, render: ClipboardArray },
-  { key: "reject", label: "Schema gate", filename: "RejectedDrift.playground.tsx", source: rejectSrc, render: RejectedDrift },
+  { key: "basic", label: "Basic CRUD", render: BasicCrud },
+  { key: "clipboard", label: "Clipboard + history", render: ClipboardArray },
+  { key: "reject", label: "Schema gate", render: RejectedDrift },
 ];
 
 export function Playground() {
@@ -52,16 +45,9 @@ export function Playground() {
           </div>
         </aside>
 
-        <section className="flex flex-1 min-h-0 flex-col gap-4 p-4 md:flex-row md:overflow-hidden">
-          <div className="flex flex-1 min-h-0 flex-col rounded-md border border-stone-200 bg-stone-50 p-4">
+        <section className="flex flex-1 min-h-0 p-4 md:overflow-auto">
+          <div className="flex min-h-0 w-full max-w-3xl flex-col rounded-md border border-stone-200 bg-stone-50 p-4">
             <Render />
-          </div>
-          <div className="flex flex-1 min-h-0">
-            <SourceTabs
-              key={active.key}
-              tabs={[{ key: active.key, label: active.filename, filename: active.filename, source: active.source }]}
-              filenamePrefix="apps/site/src/playgrounds/"
-            />
           </div>
         </section>
       </div>

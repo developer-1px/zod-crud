@@ -5,7 +5,6 @@ import {
   Link,
   Outlet,
 } from "@tanstack/react-router";
-import { ApiReference } from "./routes/ApiReference";
 import { Playground } from "./routes/Playground";
 import { OutlinerPage } from "./routes/Outliner";
 import { MobileCmsPage } from "./routes/MobileCms";
@@ -15,12 +14,6 @@ type NavItem = { to: string; label: string };
 type NavGroup = { title: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
-  {
-    title: "Source",
-    items: [
-      { to: "/api", label: "API reference" },
-    ],
-  },
   {
     title: "Playground",
     items: [
@@ -80,7 +73,6 @@ const indexRoute = createRoute({
   component: Playground,
 });
 
-const apiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api", component: ApiReference });
 const playgroundRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground", component: Playground });
 const outlinerRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground/outliner", component: OutlinerPage });
 const mobileCmsRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground/mobile-cms", component: MobileCmsPage });
@@ -88,7 +80,6 @@ const apiCollectionRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  apiRoute,
   playgroundRoute,
   outlinerRoute,
   mobileCmsRoute,
