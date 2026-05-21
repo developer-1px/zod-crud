@@ -334,7 +334,6 @@ describe("STANDARDS.md ↔ core/* 1:1 매핑", () => {
       "dist",
       "README.md",
       "SPEC.md",
-      "TARGET_SPEC.md",
       "STANDARDS.md",
       "CHANGELOG.md",
       "LICENSE",

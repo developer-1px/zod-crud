@@ -266,8 +266,6 @@ metadata is serializable.
   the RFC wins and code plus docs must be fixed.
 - `packages/zod-crud/SPEC.md` describes current behavior; update it with
   behavior changes.
-- `packages/zod-crud/TARGET_SPEC.md` describes target APIs; do not present
-  those APIs as current until the source exports exist.
 - Public export files: `packages/zod-crud/src/index.ts` and
   `packages/zod-crud/src/react.ts`.
 - Site docs support `::source{path="..." lines="..."}`; source references are

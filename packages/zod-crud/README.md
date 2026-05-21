@@ -17,10 +17,6 @@ code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
 conflicts with an RFC, in which case the RFC wins. The RFC ↔ `core/*` 1:1
 mapping is in [`STANDARDS.md`](./STANDARDS.md).
 
-The future engine target lives in [`TARGET_SPEC.md`](./TARGET_SPEC.md). It
-tracks the intended headless JSON editing surface and is not a current API
-claim.
-
 ## Install
 
 ```sh

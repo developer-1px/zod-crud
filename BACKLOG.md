@@ -1,7 +1,7 @@
 # Backlog
 
-진행 중이 아닌, 발견된 작업 항목 모음. 현재 동작 SPEC 은
-`packages/zod-crud/SPEC.md`, 목표 API 는 `packages/zod-crud/TARGET_SPEC.md` 를 따른다.
+진행 중이 아닌, 발견된 작업 항목 모음. 현재 동작과 public API 기준은
+`packages/zod-crud/SPEC.md` 를 따른다.
 
 ## reference editor
 
@@ -16,7 +16,7 @@
 > Clipboard / cut atomicity / system clipboard 통합 항목은 closure. `boundary` 정합: system clipboard 호출 자체는 본체 밖 (사용자 책임), fragment 직렬화 + RFC 6902 환원만 본체.
 > silent fail 정책은 P4 (#31-#34) 의 schema preFlight gate 결과로 흡수.
 
-목표 API 확장 순서:
+향후 확장 순서:
 
 - 현재 facade 확장 slice 는 closure. 다음은 standards / engine hardening.
 

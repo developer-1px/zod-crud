@@ -10,9 +10,6 @@ The behavior contract lives in `packages/zod-crud/SPEC.md`. It describes the
 current package behavior; on conflict, code behavior wins unless it conflicts
 with an RFC, in which case the RFC wins.
 
-The long-term engine target is tracked separately in
-`packages/zod-crud/TARGET_SPEC.md`; it is not a current-behavior contract.
-
 ## Package
 
 The publishable package lives in `packages/zod-crud`.
@@ -149,7 +146,5 @@ npm run verify
 
 - `packages/zod-crud/SPEC.md` describes current behavior. Code wins unless it
   conflicts with an RFC.
-- `packages/zod-crud/TARGET_SPEC.md` describes the intended headless JSON
-  editing engine surface.
 - `packages/zod-crud/src/index.ts` and `packages/zod-crud/src/react.ts` are the public export surfaces (SPEC §5).
 - `CONTRIBUTING.md` describes the change rules and verification checklist.
