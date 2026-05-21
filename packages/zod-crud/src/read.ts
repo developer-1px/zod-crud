@@ -36,15 +36,13 @@ export interface ReadFacade {
   entries(path: Pointer): EntriesResult;
 }
 
-export interface CreateReadOptions<S extends z.ZodType> {
+export interface BuildReadFacadeArgs<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
 }
 
-export type BuildReadFacadeArgs<S extends z.ZodType> = CreateReadOptions<S>;
-
 export function buildReadFacade<S extends z.ZodType>(
-  args: CreateReadOptions<S>,
+  args: BuildReadFacadeArgs<S>,
 ): ReadFacade {
   const { schema, getState } = args;
 
@@ -101,8 +99,6 @@ export function buildReadFacade<S extends z.ZodType>(
     },
   };
 }
-
-export const createRead = buildReadFacade;
 
 function entryKind(schema: z.ZodType, path: Pointer, value: unknown): EntryKind {
   if (path === "") return "root";

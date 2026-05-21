@@ -89,8 +89,6 @@ export interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
 
-export type CreateSchemaStateArgs<S extends z.ZodType> = CreateSchemaOptions<S>;
-
 interface ResolveSchemaOk {
   ok: true;
   schema: z.ZodType;
@@ -159,8 +157,6 @@ export function createSchemaState<S extends z.ZodType>(
     },
   };
 }
-
-export const createSchema = createSchemaState;
 
 function resolveSchema(
   schema: z.ZodType,

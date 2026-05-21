@@ -1,8 +1,8 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createRead } from "../src/read.js";
-import { createSchema } from "../src/schema.js";
+import { buildReadFacade } from "../src/read.js";
+import { createSchemaState } from "../src/schema.js";
 
 const Schema = z.object({
   title: z.string(),
@@ -18,9 +18,9 @@ const initial: z.output<typeof Schema> = {
 };
 
 describe("headless read and schema facades", () => {
-  test("createRead exposes pointer, entries, and JSONPath reads without document facade", () => {
+  test("buildReadFacade exposes pointer, entries, and JSONPath reads without document facade", () => {
     let state = initial;
-    const read = createRead({
+    const read = buildReadFacade({
       schema: Schema,
       getState: () => state,
     });
@@ -47,8 +47,8 @@ describe("headless read and schema facades", () => {
     });
   });
 
-  test("createSchema exposes serializable path introspection without document facade", () => {
-    const schema = createSchema({ schema: Schema });
+  test("createSchemaState exposes serializable path introspection without document facade", () => {
+    const schema = createSchemaState({ schema: Schema });
 
     expect(schema.kind("/items")).toEqual({
       ok: true,

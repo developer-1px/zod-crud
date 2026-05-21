@@ -117,7 +117,7 @@ interface CommandHistoryControls {
   redo(): boolean;
 }
 
-export interface CreateCommandsOptions<S extends z.ZodType> {
+export interface BuildCommandsArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONOps<z.output<S>>;
   history: CommandHistoryControls;
@@ -125,15 +125,13 @@ export interface CreateCommandsOptions<S extends z.ZodType> {
   selectionMode?: SelectionMode;
 }
 
-export type BuildCommandsArgs<S extends z.ZodType> = CreateCommandsOptions<S>;
-
 interface MutationResult<T> {
   ok: boolean;
   patch?: ReadonlyArray<JSONPatchOperation>;
 }
 
 export function buildCommands<S extends z.ZodType>(
-  args: CreateCommandsOptions<S>,
+  args: BuildCommandsArgs<S>,
 ): Commands<z.output<S>> {
   const { schema, ops, history, selectionRef, selectionMode = "single" } = args;
 
@@ -268,8 +266,6 @@ export function buildCommands<S extends z.ZodType>(
     redo() { return history.redo(); },
   };
 }
-
-export const createCommands = buildCommands;
 
 function historyMetadata(options: HistoryTransactionOptions | undefined): HistoryTransactionOptions | undefined {
   if (options === undefined) return undefined;

@@ -1,9 +1,9 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createCan } from "../src/commands/buildCan.js";
-import { createCommands } from "../src/commands/buildCommands.js";
-import { createCheck } from "../src/check.js";
+import { buildCan } from "../src/commands/buildCan.js";
+import { buildCommands } from "../src/commands/buildCommands.js";
+import { buildCheck } from "../src/check.js";
 import { createJSONDocument, createSelection } from "../src/index.js";
 
 const Schema = z.object({
@@ -17,8 +17,8 @@ const initial: z.output<typeof Schema> = {
   ],
 };
 
-describe("headless command/check/can factories", () => {
-  test("createCommands composes selection-aware edit verbs outside document facade", () => {
+describe("headless command/check/can builders", () => {
+  test("buildCommands composes selection-aware edit verbs outside document facade", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,
       selection: false,
@@ -29,9 +29,9 @@ describe("headless command/check/can factories", () => {
     });
     const selectionRef = { current: selection };
     const history = historyControls(doc);
-    const commands = createCommands({ schema: Schema, ops: doc.ops, history, selectionRef, selectionMode: "multiple" });
-    const check = createCheck({ schema: Schema, ops: doc.ops, history, selectionRef });
-    const can = createCan({ schema: Schema, ops: doc.ops, history, selectionRef, check });
+    const commands = buildCommands({ schema: Schema, ops: doc.ops, history, selectionRef, selectionMode: "multiple" });
+    const check = buildCheck({ schema: Schema, ops: doc.ops, history, selectionRef });
+    const can = buildCan({ schema: Schema, ops: doc.ops, history, selectionRef, check });
 
     expect(check.replace("A1")).toEqual({ ok: true });
     expect(can.replace("A1")).toBe(true);
@@ -150,9 +150,9 @@ describe("headless command/check/can factories", () => {
     expect(can.selectScope({ query: "$.items[" })).toBe(false);
   });
 
-  test("createCommands can be used without a selection ref when callers pass explicit pointers", () => {
+  test("buildCommands can be used without a selection ref when callers pass explicit pointers", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
-    const commands = createCommands({ schema: Schema, ops: doc.ops, history: historyControls(doc) });
+    const commands = buildCommands({ schema: Schema, ops: doc.ops, history: historyControls(doc) });
 
     expect(commands.copy()).toEqual({
       ok: false,

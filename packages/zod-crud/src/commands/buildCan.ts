@@ -51,9 +51,7 @@ export interface BuildCanArgs<S extends z.ZodType> extends BuildCheckArgs<S> {
   check?: Check<z.output<S>>;
 }
 
-export type CreateCanOptions<S extends z.ZodType> = BuildCanArgs<S>;
-
-export function buildCan<S extends z.ZodType>(args: CreateCanOptions<S>): Can<z.output<S>> {
+export function buildCan<S extends z.ZodType>(args: BuildCanArgs<S>): Can<z.output<S>> {
   const check = args.check ?? buildCheck(args);
   return {
     selectScope(options) { return check.selectScope(options).ok; },
@@ -82,5 +80,3 @@ export function buildCan<S extends z.ZodType>(args: CreateCanOptions<S>): Can<z.
     get redo() { return check.redo.ok; },
   };
 }
-
-export const createCan = buildCan;
