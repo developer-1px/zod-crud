@@ -29,9 +29,13 @@ describe("InterfaceWorkbench", () => {
       "check / can",
       "doc.schema",
       "pure exports",
+      "zod-crud API",
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
+    expect(screen.getAllByText(/createJSONDocument/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/SelectionState/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/useJSONDocument/).length).toBeGreaterThan(0);
   });
 
   test("runs representative ops, selection, clipboard, and schema actions", async () => {
@@ -56,6 +60,6 @@ describe("InterfaceWorkbench", () => {
 
     await user.click(within(group("pure exports")).getByRole("button", { name: "inspect" }));
     expect(screen.getAllByRole("heading", { name: "pure exports" }).length).toBeGreaterThan(1);
-    expect(screen.getByText(/applyPatch/)).toBeTruthy();
+    expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
   });
 });

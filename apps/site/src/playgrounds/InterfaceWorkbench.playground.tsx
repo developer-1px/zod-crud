@@ -43,6 +43,224 @@ const BoardSchema = z.object({
 type Board = z.infer<typeof BoardSchema>;
 type BenchResult = { label: string; value: unknown };
 
+const API_REFERENCE = [
+  {
+    title: "zod-crud",
+    code: `import {
+  JSONCrudError,
+  createJSONDocument,
+  createSelection,
+  createClipboard,
+  applyOperation,
+  applyPatch,
+  parsePointer,
+  tryParsePointer,
+  buildPointer,
+  escapeSegment,
+  unescapeSegment,
+  PointerSyntaxError,
+  parentPointer,
+  lastSegment,
+  lastSegmentIndex,
+  appendSegment,
+  withLastSegment,
+  trackPointer,
+  type JSONOps,
+  type JSONDocument,
+  type SelectionState,
+  type JSONPatchOperation,
+  type JSONResult,
+  type Pointer,
+  type JSONPoint,
+  type SelectionAction,
+  type SelectionRange,
+  type SelectionSnap,
+} from "zod-crud";`,
+  },
+  {
+    title: "JSONDocument<T>",
+    code: `type JSONDocument<T> = {
+  readonly value: T;
+  readonly lastPatch: readonly JSONPatchOperation[];
+  readonly selection: SelectionState<T> | undefined;
+  readonly history: {
+    readonly canUndo: boolean;
+    readonly canRedo: boolean;
+    readonly undoDepth: number;
+    readonly redoDepth: number;
+    mergeLast(options?: { mergeKey?: string }): boolean;
+    transaction(fn: () => void): void;
+    transaction(options: HistoryTransactionOptions, fn: () => void): void;
+  };
+  readonly ops: JSONOps<T>;
+  readonly commands: Commands<T>;
+  readonly can: Can<T>;
+  readonly check: Check<T>;
+  readonly clipboard: ClipboardState<T>;
+  readonly schema: SchemaState<T>;
+  commit(ops: readonly JSONPatchOperation[], options?: CommitOptions): JSONResult;
+  at(path: Pointer): ReadResult;
+  exists(path: Pointer): boolean;
+  query(jsonpath: string): QueryResult;
+  entries(path: Pointer): EntriesResult;
+};`,
+  },
+  {
+    title: "JSONOps<T>",
+    code: `type JSONOps<T> = {
+  add(path, value): JSONResult;
+  remove(path): JSONResult;
+  replace(path, value): JSONResult;
+  move(from, path): JSONResult;
+  copy(from, path): JSONResult;
+  test(path, value): JSONResult;
+  patch(ops, metadata?): JSONResult;
+  load(value, options?): JSONResult;
+  reset(value?): JSONResult;
+  subscribe(listener): () => void;
+  readonly state: T;
+};`,
+  },
+  {
+    title: "Commands<T>",
+    code: `type Commands<T> = {
+  select(action, mode?): SelectionSnap;
+  selectScope(options?): SelectionScopeResult;
+  moveCursor(direction, options?): SelectionCursorResult;
+  extendCursor(direction, options?): SelectionCursorResult;
+  find(jsonpath): FindResult;
+  move(fromOrTo, to?): MoveResult<T>;
+  duplicate(sourceOrOpts?, opts?): DuplicateResult<T>;
+  remove(source?): RemoveResult;
+  replace(pathOrValue, value?): ReplaceResult<T>;
+  replaceText(replacement, options?): ReplaceTextResult;
+  deleteText(options?): DeleteTextResult;
+  cut(source?): CutResult<T>;
+  copy(source?): CopyResult;
+  paste(payload, targetOrMode?, modeOrOptions?, options?): PasteResult<T>;
+  undo(): boolean;
+  redo(): boolean;
+};`,
+  },
+  {
+    title: "SelectionState<T>",
+    code: `type SelectionState<T> = SelectionSnap & {
+  readonly rangeCount: number;
+  readonly selectedCount: number;
+  readonly hasSelection: boolean;
+  readonly isCollapsed: boolean;
+  readonly type: SelectionType;
+  readonly primaryRange: SelectionRange | null;
+  readonly anchorPointer: Pointer | null;
+  readonly focusPointer: Pointer | null;
+  readonly selectedSource: SelectionSource | null;
+  readonly primaryPointer: Pointer | null;
+  readonly caret: JSONPoint | null;
+  readonly caretPointer: Pointer | null;
+  readonly context: SelectionContext | undefined;
+  collapse(point): void;
+  setBaseAndExtent(anchor, focus): void;
+  extend(point): void;
+  addRange(pointOrRange): void;
+  removeRange(pointOrRangeOrIndex): void;
+  toggleRange(pointOrRange): void;
+  togglePointer(pointer): void;
+  moveCursor(direction, options?): SelectionCursorResult;
+  extendCursor(direction, options?): SelectionCursorResult;
+  resolveCursor(direction, options?): SelectionCursorResult;
+  orderPrimaryRange(options?): SelectionRangeOrderResult;
+  orderRanges(options?): SelectionRangesOrderResult;
+  spansForPointer(pointer, options?): SelectionPointerSpansResult;
+  textEdits(replacement, options?): SelectionTextEditsResult;
+  textPatch(replacement, options?): ReplaceSelectionTextResult;
+  deleteText(options?): DeleteSelectionTextResult;
+  selectScope(options?): SelectionScopeResult;
+  resolveScope(options?): SelectionScopeTarget;
+  selectRanges(ranges, anchor?, focus?, primaryIndex?): void;
+  setContext(context): void;
+  clearContext(): void;
+  empty(): void;
+  isSelected(pointer): boolean;
+  snapshot(): SelectionSnap;
+  toJSON(): SelectionSnap;
+  restore(snapshot): void;
+  subscribe(listener): () => void;
+};`,
+  },
+  {
+    title: "ClipboardState<T>",
+    code: `type ClipboardState<T> = {
+  readonly hasData: boolean;
+  readonly source: Pointer | null;
+  readonly sources: readonly Pointer[] | null;
+  read(): ClipboardReadResult;
+  write(payload, options?): JSONResult;
+  clear(): void;
+  copy(source?): CopyResult;
+  cut(source?): CutResult<T>;
+  paste(targetOrMode?, modeOrOptions?, options?): ClipboardPasteResult<T>;
+};`,
+  },
+  {
+    title: "Check / Can / SchemaState",
+    code: `type Check<T> = {
+  selectScope(options?): CheckResult;
+  moveCursor(direction, options?): CheckResult;
+  extendCursor(direction, options?): CheckResult;
+  find(jsonpath): CheckResult;
+  move(fromOrTo, to?): CheckResult;
+  duplicate(sourceOrOpts?, opts?): CheckResult;
+  remove(source?): CheckResult;
+  replace(pathOrValue, value?): CheckResult;
+  replaceText(replacement, options?): CheckResult;
+  deleteText(options?): CheckResult;
+  cut(source?): CheckResult;
+  copy(source?): CheckResult;
+  paste(payload, targetOrMode?, modeOrOptions?, options?): CheckResult;
+  patch(ops): CheckResult;
+  readonly undo: CheckResult;
+  readonly redo: CheckResult;
+};
+
+type Can<T> = {
+  selectScope(options?): boolean;
+  moveCursor(direction, options?): boolean;
+  extendCursor(direction, options?): boolean;
+  find(jsonpath): boolean;
+  move(fromOrTo, to?): boolean;
+  duplicate(sourceOrOpts?, opts?): boolean;
+  remove(source?): boolean;
+  replace(pathOrValue, value?): boolean;
+  replaceText(replacement, options?): boolean;
+  deleteText(options?): boolean;
+  cut(source?): boolean;
+  copy(source?): boolean;
+  paste(payload, targetOrMode?, modeOrOptions?, options?): boolean;
+  readonly undo: boolean;
+  readonly redo: boolean;
+};
+
+type SchemaState<T> = {
+  at(path, mode?): SchemaQueryResult;
+  kind(path, mode?): SchemaKindResult;
+  accepts(path, value, mode?): CheckResult;
+  describe(path, mode?): SchemaDescriptionResult;
+};`,
+  },
+  {
+    title: "zod-crud/react",
+    code: `import { useJSONDocument } from "zod-crud/react";
+
+const doc = useJSONDocument(schema, initial, {
+  strict?: boolean;
+  onError?: (error: JSONCrudError) => void;
+  history?: number;
+  selection?: boolean | UseSelectionOptions;
+  onChange?: () => void;
+});`,
+  },
+] as const;
+
 const initialBoard: Board = {
   title: "Workbench board",
   settings: { archived: false, owner: "core" },
@@ -446,12 +664,32 @@ export function InterfaceWorkbench() {
         </ActionGroup>
       </section>
 
+      <ApiReference />
+
       <section className="grid gap-3 lg:grid-cols-3">
         <Inspect title="selection" value={{ selected: selectedLabel(selectedPointers), primary: primaryPointer, snapshot: doc.selection?.snapshot() }} />
         <Inspect title={result.label} value={result.value} />
         <Inspect title="state" value={{ value: doc.value, lastPatch: doc.lastPatch }} />
       </section>
     </div>
+  );
+}
+
+function ApiReference() {
+  return (
+    <section className="rounded border border-stone-200 bg-white p-3">
+      <h2 className="mb-3 mt-0 text-xs font-semibold uppercase tracking-wide text-stone-400">zod-crud API</h2>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {API_REFERENCE.map((item) => (
+          <div key={item.title} className="min-w-0">
+            <h3 className="mb-1 mt-0 text-[11px] font-semibold text-stone-500">{item.title}</h3>
+            <pre className="max-h-80 overflow-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
+              <code>{item.code}</code>
+            </pre>
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
