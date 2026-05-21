@@ -63,8 +63,17 @@ describe("createJSONDocument public interface", () => {
     expect(result).toMatchObject({
       ok: true,
       duplicatedTo: "/items/1",
-      patch: [{ op: "add", path: "/items/1", value: { id: "a-copy", name: "A" } }],
+      value: {
+        items: [
+          { id: "a", name: "A" },
+          { id: "a-copy", name: "A" },
+          { id: "b", name: "B" },
+        ],
+      },
+      applied: [{ op: "add", path: "/items/1", value: { id: "a-copy", name: "A" } }],
     });
+    expect("patch" in result).toBe(false);
+    expect("next" in result).toBe(false);
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a-copy", "b"]);
     expect(doc.history.undoDepth).toBe(1);
 
@@ -117,10 +126,24 @@ describe("createJSONDocument public interface", () => {
       source: "/items/0",
       sources: ["/items/0", "/items/1"],
     });
-    expect(doc.clipboard.paste("/items/-")).toMatchObject({ ok: true });
+    const pasted = doc.clipboard.paste("/items/-");
+    expect(pasted).toMatchObject({
+      ok: true,
+      value: { items: [{ id: "a" }, { id: "b" }, { id: "a" }, { id: "b" }] },
+      applied: [
+        { op: "add", path: "/items/2", value: { id: "a", name: "A" } },
+        { op: "add", path: "/items/3", value: { id: "b", name: "B" } },
+      ],
+    });
+    expect("patch" in pasted).toBe(false);
+    expect("next" in pasted).toBe(false);
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a", "b"]);
 
-    expect(doc.clipboard.pastePayload("/items/-", { id: "x", name: "X" })).toMatchObject({ ok: true });
+    expect(doc.clipboard.pastePayload("/items/-", { id: "x", name: "X" })).toMatchObject({
+      ok: true,
+      value: { items: [{ id: "a" }, { id: "b" }, { id: "a" }, { id: "b" }, { id: "x" }] },
+      applied: [{ op: "add", path: "/items/4", value: { id: "x", name: "X" } }],
+    });
     expect(doc.value.items.at(-1)).toEqual({ id: "x", name: "X" });
     expect(doc.history.undoDepth).toBe(2);
   });

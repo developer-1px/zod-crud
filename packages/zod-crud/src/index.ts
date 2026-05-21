@@ -22,6 +22,7 @@ export type {
   JSONDocumentDuplicateResult,
   JSONDocumentHistory,
   JSONDocumentLoadOptions,
+  JSONDocumentMutationOk,
   JSONDocumentPasteMode,
   JSONDocumentPasteOptions,
   JSONDocument,

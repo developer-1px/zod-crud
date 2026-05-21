@@ -1,7 +1,7 @@
 import type * as z from "zod";
 
 import { cloneJson, jsonSerializableError } from "./core/json.js";
-import type { JSONResult } from "./core/patch/index.js";
+import type { JSONPatchOperation, JSONResult } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
 import { normalizePointerSources } from "./core/pointer/sourceSet.js";
 import type { JSONOps } from "./jsonOps.js";
@@ -12,8 +12,8 @@ import {
   type CopyError,
   type CopyOk,
 } from "./verbs/copy.js";
-import { cut, type CutError, type CutOk } from "./verbs/cut.js";
-import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOk, type PasteOptions } from "./verbs/paste.js";
+import { cut, type CutError } from "./verbs/cut.js";
+import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOptions } from "./verbs/paste.js";
 
 interface ClipboardWriteOptions {
   source?: Pointer | null;
@@ -34,7 +34,21 @@ interface ClipboardEmpty {
 }
 
 type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
-type ClipboardPasteResult<T> = PasteOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
+
+interface ClipboardMutationOk<T> {
+  ok: true;
+  value: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
+interface ClipboardCutOk<T> extends ClipboardMutationOk<T> {
+  payload: unknown;
+  source: Pointer;
+  sources: ReadonlyArray<Pointer>;
+}
+
+type ClipboardCutResult<T> = ClipboardCutOk<T> | CutError;
+type ClipboardPasteResult<T> = ClipboardMutationOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
 
 export interface ClipboardState<T> {
   readonly hasData: boolean;
@@ -45,7 +59,7 @@ export interface ClipboardState<T> {
   clear(): void;
 
   copy(source?: ClipboardSource): CopyOk | CopyError;
-  cut(source?: ClipboardSource): CutOk<T> | CutError;
+  cut(source?: ClipboardSource): ClipboardCutResult<T>;
   paste(target?: Pointer, options?: PasteOptions): ClipboardPasteResult<T>;
   pastePayload(target: Pointer, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
 }
@@ -66,6 +80,7 @@ interface CreateClipboardOptions<S extends z.ZodType> {
   ops: JSONOps<z.output<S>>;
   getSelectionSource?: () => SelectionSource | null;
   getSelectionTarget?: () => Pointer | null;
+  getAppliedPatch?: () => ReadonlyArray<JSONPatchOperation>;
   onChange?: () => void;
 }
 
@@ -78,7 +93,7 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
 export function createClipboard<S extends z.ZodType>(
   args: CreateClipboardOptions<S>,
 ): ClipboardState<z.output<S>> {
-  const { schema, getState, ops, getSelectionSource, getSelectionTarget, onChange } = args;
+  const { schema, getState, ops, getSelectionSource, getSelectionTarget, getAppliedPatch, onChange } = args;
   let buffer: ClipboardBuffer | null = null;
 
   const setBuffer = (next: ClipboardBuffer | null): void => {
@@ -184,7 +199,14 @@ export function createClipboard<S extends z.ZodType>(
         source: result.source,
         sources: [...result.sources],
       });
-      return result;
+      return {
+        ok: true,
+        value: getState(),
+        applied: getAppliedPatch?.() ?? result.patch,
+        payload: result.payload,
+        source: result.source,
+        sources: result.sources,
+      };
     },
 
     paste(target, options) {
@@ -219,7 +241,13 @@ export function createClipboard<S extends z.ZodType>(
     });
     if (!result.ok) return result;
     const patchResult = ops.patch(result.patch);
-    return patchResult.ok ? result : patchError(patchResult);
+    return patchResult.ok
+      ? {
+          ok: true,
+          value: getState(),
+          applied: getAppliedPatch?.() ?? result.patch,
+        }
+      : patchError(patchResult);
   }
 }
 

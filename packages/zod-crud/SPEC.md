@@ -72,6 +72,7 @@ import {
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONDocumentLoadOptions,
+  type JSONDocumentMutationOk,
   type JSONDocumentPasteMode,
   type JSONDocumentPasteOptions,
   type JSONPatchInput,
@@ -98,6 +99,16 @@ import { useJSONDocument } from "zod-crud/react";
 ## 3. JSONDocument Surface
 
 ```ts
+interface JSONDocumentMutationOk<T> {
+  ok: true;
+  value: T;
+  applied: readonly JSONPatchOperation[];
+}
+
+interface JSONDocumentDuplicateOk<T> extends JSONDocumentMutationOk<T> {
+  duplicatedTo: Pointer;
+}
+
 interface JSONDocument<T> {
   readonly value: T;
   readonly lastPatch: readonly JSONPatchOperation[];
@@ -166,10 +177,12 @@ reaching into internal verb modules when the caller wants duplicate semantics
 such as array "after source", object `newKey`, or `rekey`.
 
 ```ts
-doc.duplicate("/items/0", {
+const duplicated = doc.duplicate("/items/0", {
   rekey: { fields: ["id", "slug"], strategy: "suffix" },
 });
 ```
+
+`duplicate` mutates immediately. On success, `value` is the current document value and `applied` is the patch record already applied by the document. Do not pass `applied` to `commit` again.
 
 `load` replaces the document with a schema-valid value. `reset` restores the initial value unless a value is provided. `subscribe` observes applied patch records and serializable metadata.
 
@@ -235,6 +248,8 @@ doc.clipboard.clear();
 ```
 
 `copy` and `cut` may omit `source`; then the current selection source is used. `paste` may omit `target`; then the current primary selection pointer is used. Direct payload paste uses `pastePayload` and does not require writing to the buffer first.
+
+`cut`, `paste`, and `pastePayload` mutate immediately. On success, `value` is the current document value and `applied` is the patch record already applied by the document.
 
 `mode: "before" | "after"` treats `target` as an existing item pointer. `mode: "into"` treats `target` as an insertion pointer or container child path such as `/items/-`. `mode: "replace"` treats `target` as the value to replace.
 

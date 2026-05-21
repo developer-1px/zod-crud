@@ -35,11 +35,16 @@ Do not import `zod-crud/src/*`, `zod-crud/dist/*`, or source-layout subpaths.
 The document surface centers on:
 
 - `value`, `lastPatch`
-- `ops`, `commands`, `can`, `check`
+- `patch`, `commit`, `duplicate`
 - `selection`, `clipboard`, `history`
 - `schema`
-- `commit(patch, { selection, label, origin, mergeKey })`
+- `canPatch`, `canReplace`, `canMove`, `canDuplicate`, `canCopy`, `canCut`,
+  `canPaste`, `canPastePayload`, `canUndo`, `canRedo`
 - `at`, `exists`, `query`, `entries`
+
+Public mutating methods mutate immediately. `duplicate`, `clipboard.cut`,
+`clipboard.paste`, and `clipboard.pastePayload` return `value` plus `applied`
+records for inspection; do not pass `applied` to `commit` again.
 
 For exact fields, types, and examples, read `packages/zod-crud/README.md`.
 For behavior rules, read `packages/zod-crud/SPEC.md`.

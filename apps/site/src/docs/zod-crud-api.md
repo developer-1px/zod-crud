@@ -101,11 +101,17 @@ Patch의 `path`와 `from`은 JSON Pointer입니다. JSONPath를 patch에 직접 
 `doc.duplicate`는 sibling 복제를 표현합니다. 배열에서는 source 바로 뒤에 삽입하고, object member를 복제할 때는 `newKey`를 명시합니다.
 
 ```ts
-doc.duplicate("/lists/0/cards/0", {
+const duplicated = doc.duplicate("/lists/0/cards/0", {
   rekey: { fields: ["id", "slug"], strategy: "suffix" },
 });
+
+if (duplicated.ok) {
+  duplicated.value;
+  duplicated.applied;
+}
 ```
 
+`doc.duplicate`는 즉시 적용됩니다. `applied`는 이미 적용된 patch 기록이므로 다시 `commit`하지 않습니다.
 `rekey`는 복제 payload 안의 id-like field 충돌을 피할 때 씁니다. 단순한 raw copy가 필요하면 `doc.patch({ op: "copy", from, path })`를 그대로 쓰면 됩니다.
 
 ## query
@@ -162,7 +168,8 @@ const source = doc.selection?.selectedPointers ?? [];
 const copied = doc.clipboard.copy(source);
 
 if (copied.ok) {
-  doc.clipboard.paste("/lists/1/cards/-");
+  const pasted = doc.clipboard.paste("/lists/1/cards/-");
+  if (pasted.ok) pasted.applied;
 }
 ```
 
@@ -174,6 +181,7 @@ doc.clipboard.paste("/lists/0/cards/0", { mode: "after" });
 ```
 
 `selection.copy()`는 쓰지 않습니다. selection은 대상 상태이고, clipboard가 payload 흐름을 맡습니다.
+`cut`, `paste`, `pastePayload`는 즉시 document에 적용됩니다. 성공 결과의 `applied`는 이미 적용된 patch 기록입니다.
 `before`/`after`의 target은 기존 item pointer입니다. 이미 `/cards/-` 같은 삽입 위치를 계산했다면 기본 `into`로 paste하거나 `patch({ op: "add" })`를 씁니다.
 
 ## history
@@ -260,6 +268,7 @@ import {
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
+  type JSONDocumentMutationOk,
   type JSONDocumentPasteMode,
   type JSONDocumentPasteOptions,
   type JSONPatchInput,

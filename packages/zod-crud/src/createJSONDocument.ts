@@ -37,7 +37,6 @@ import { createSelection, type SelectionState, type UseSelectionOptions } from "
 import {
   duplicate as duplicateVerb,
   type DuplicateError,
-  type DuplicateOk,
   type DuplicateOpts,
 } from "./verbs/duplicate.js";
 import type { PasteMode, PasteOptions } from "./verbs/paste.js";
@@ -90,8 +89,16 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 export type JSONCapabilityResult = CheckResult;
 export type JSONDocumentDuplicateOptions = DuplicateOpts;
+export interface JSONDocumentMutationOk<T> {
+  ok: true;
+  value: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+export interface JSONDocumentDuplicateOk<T> extends JSONDocumentMutationOk<T> {
+  duplicatedTo: Pointer;
+}
 export type JSONDocumentDuplicateResult<T> =
-  | DuplicateOk<T>
+  | JSONDocumentDuplicateOk<T>
   | DuplicateError
   | Extract<JSONResult, { ok: false }>;
 export type JSONDocumentPasteMode = PasteMode;
@@ -243,7 +250,14 @@ export function createJSONDocument<S extends z.ZodType>(
     const planned = duplicateVerb(schema, rawOps.state, source, duplicateOptions);
     if (!planned.ok) return planned;
     const r = applyDocumentPatch(planned.patch);
-    return r.ok ? planned : r;
+    return r.ok
+      ? {
+          ok: true,
+          value: rawOps.state,
+          applied: lastPatch,
+          duplicatedTo: planned.duplicatedTo,
+        }
+      : r;
   };
 
   const restore = (direction: "undo" | "redo"): boolean => {
@@ -362,6 +376,7 @@ export function createJSONDocument<S extends z.ZodType>(
     ops,
     getSelectionSource: () => selectionState.selectedSource,
     getSelectionTarget: () => selectionState.primaryPointer,
+    getAppliedPatch: () => lastPatch,
   };
   const clipboard = createClipboard(options.onChange === undefined
     ? clipboardOptions

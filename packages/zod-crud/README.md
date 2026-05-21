@@ -125,10 +125,19 @@ Use `duplicate` when the intent is sibling duplication rather than a raw RFC
 need `newKey`. `rekey` can mint new values for id-like fields.
 
 ```ts
-doc.duplicate("/lists/0/cards/0", {
+const duplicated = doc.duplicate("/lists/0/cards/0", {
   rekey: { fields: ["id", "slug"], strategy: "suffix" },
 });
+
+if (duplicated.ok) {
+  duplicated.value; // current document value after mutation
+  duplicated.applied; // already-applied patch records
+}
 ```
+
+`duplicate`, `clipboard.cut`, `clipboard.paste`, and `clipboard.pastePayload`
+mutate the document immediately. Their `applied` records are for inspection;
+do not pass them to `commit` again.
 
 ## Selection
 
@@ -156,7 +165,8 @@ const source = doc.selection?.selectedPointers ?? [];
 const copied = doc.clipboard.copy(source);
 
 if (copied.ok) {
-  doc.clipboard.paste("/lists/1/cards/-");
+  const pasted = doc.clipboard.paste("/lists/1/cards/-");
+  if (pasted.ok) pasted.applied;
 }
 ```
 
@@ -275,6 +285,7 @@ import {
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
+  type JSONDocumentMutationOk,
   type JSONDocumentPasteMode,
   type JSONDocumentPasteOptions,
   type JSONChangeMetadata,
