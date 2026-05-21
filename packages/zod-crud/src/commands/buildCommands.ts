@@ -2,10 +2,10 @@
 // 편집 verbs 와 selection/text helpers 를 단일 namespace 로 노출. doc.commands.X(...) 호출.
 //
 // commands 는 mutation 시 ops.patch (history commit + listener notify) 를 거친다.
-// undo/redo 는 ops.undo/redo (history stack 관리는 createJSONDocument 가 wiring).
+// undo/redo 는 createJSONDocument 가 넘기는 내부 history controls 를 호출한다.
 
 import type * as z from "zod";
-import type { HistoryTransactionOptions, JSONDocumentOps } from "../jsonOps.js";
+import type { HistoryTransactionOptions, JSONOps } from "../jsonOps.js";
 import type { Pointer } from "../core/pointer/index.js";
 import {
   EMPTY_SELECTION,
@@ -112,9 +112,15 @@ export interface CommandSelectionState extends SelectionSnap {
   restore?(snapshot: SelectionSnap): void;
 }
 
+interface CommandHistoryControls {
+  undo(): boolean;
+  redo(): boolean;
+}
+
 export interface CreateCommandsOptions<S extends z.ZodType> {
   schema: S;
-  ops: JSONDocumentOps<z.output<S>>;
+  ops: JSONOps<z.output<S>>;
+  history: CommandHistoryControls;
   selectionRef?: { current: CommandSelectionState };
   selectionMode?: SelectionMode;
 }
@@ -129,7 +135,7 @@ interface MutationResult<T> {
 export function buildCommands<S extends z.ZodType>(
   args: CreateCommandsOptions<S>,
 ): Commands<z.output<S>> {
-  const { schema, ops, selectionRef, selectionMode = "single" } = args;
+  const { schema, ops, history, selectionRef, selectionMode = "single" } = args;
 
   // mutating verb 의 결과를 받아 ok 면 history commit. result 그대로 반환.
   // commit 은 ops.patch 가 listener notify + history 등록까지 처리.
@@ -258,8 +264,8 @@ export function buildCommands<S extends z.ZodType>(
         : run(paste(schema, ops.state, payload, target, args.mode, args.options));
     },
 
-    undo() { return ops.undo(); },
-    redo() { return ops.redo(); },
+    undo() { return history.undo(); },
+    redo() { return history.redo(); },
   };
 }
 

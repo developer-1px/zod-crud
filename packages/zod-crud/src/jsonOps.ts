@@ -39,17 +39,6 @@ export interface JSONLoadOptions {
   preserveHistory?: boolean;
 }
 
-// Internal — history controls. Public surface 은 doc.commands.undo / doc.can.undo / doc.history.
-// createJSONDocument 가 wrapping 한 ops 에만 존재. JSONOps (외부) 표면에는 노출하지 않는다.
-export interface HistoryControls {
-  undo(): boolean;
-  redo(): boolean;
-  canUndo(): boolean;
-  canRedo(): boolean;
-}
-
-export type JSONDocumentOps<T> = JSONOps<T> & HistoryControls;
-
 export interface JSONOps<T> {
   add<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
   remove<P extends PointerOf<T>>(path: P): JSONResult;

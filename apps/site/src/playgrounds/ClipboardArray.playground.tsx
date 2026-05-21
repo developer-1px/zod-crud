@@ -12,11 +12,12 @@ const Schema = z.object({
 }) as unknown as ZodType<ClipboardArrayValue, ClipboardArrayValue>;
 
 export function ClipboardArray() {
-  const { value: json, ops } = useJSONDocument(
+  const doc = useJSONDocument(
     Schema,
     { tags: ["docs", "design", "ssot"] },
     { history: 50 },
   );
+  const { value: json, ops } = doc;
   const [selected, setSelected] = useState<number | null>(null);
 
   const onCopy = () => {
@@ -68,8 +69,8 @@ export function ClipboardArray() {
         <button onClick={onCut} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">cut</button>
         <button onClick={onDuplicateAtEnd} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">duplicate</button>
         <button onClick={onDelete} disabled={selected === null} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">delete</button>
-        <button onClick={() => ops.undo()} disabled={!ops.canUndo()} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
-        <button onClick={() => ops.redo()} disabled={!ops.canRedo()} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
+        <button onClick={() => doc.commands.undo()} disabled={!doc.history.canUndo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">undo</button>
+        <button onClick={() => doc.commands.redo()} disabled={!doc.history.canRedo} className="rounded border border-stone-300 bg-white px-2 py-1 disabled:opacity-50">redo</button>
       </div>
       <pre className="mt-1 rounded bg-stone-900 p-2 text-xs text-stone-100">
         {JSON.stringify(json, null, 2)}

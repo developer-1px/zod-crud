@@ -42,6 +42,10 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value.items).toHaveLength(2);
     expect(doc.selection?.focus).toBe("/items/0");
     expect(doc.can.copy("/items/0")).toBe(true);
+    expect("undo" in doc.ops).toBe(false);
+    expect("redo" in doc.ops).toBe(false);
+    expect("canUndo" in doc.ops).toBe(false);
+    expect("canRedo" in doc.ops).toBe(false);
 
     const copied = doc.commands.copy("/items/0");
     expect(copied.ok).toBe(true);

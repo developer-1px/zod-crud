@@ -28,9 +28,10 @@ describe("headless command/check/can factories", () => {
       initial: ["/items/0/name"],
     });
     const selectionRef = { current: selection };
-    const commands = createCommands({ schema: Schema, ops: doc.ops, selectionRef, selectionMode: "multiple" });
-    const check = createCheck({ schema: Schema, ops: doc.ops, selectionRef });
-    const can = createCan({ schema: Schema, ops: doc.ops, selectionRef, check });
+    const history = historyControls(doc);
+    const commands = createCommands({ schema: Schema, ops: doc.ops, history, selectionRef, selectionMode: "multiple" });
+    const check = createCheck({ schema: Schema, ops: doc.ops, history, selectionRef });
+    const can = createCan({ schema: Schema, ops: doc.ops, history, selectionRef, check });
 
     expect(check.replace("A1")).toEqual({ ok: true });
     expect(can.replace("A1")).toBe(true);
@@ -151,7 +152,7 @@ describe("headless command/check/can factories", () => {
 
   test("createCommands can be used without a selection ref when callers pass explicit pointers", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
-    const commands = createCommands({ schema: Schema, ops: doc.ops });
+    const commands = createCommands({ schema: Schema, ops: doc.ops, history: historyControls(doc) });
 
     expect(commands.copy()).toEqual({
       ok: false,
@@ -165,3 +166,15 @@ describe("headless command/check/can factories", () => {
     expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a"]);
   });
 });
+
+function historyControls(doc: {
+  commands: { undo(): boolean; redo(): boolean };
+  history: { readonly canUndo: boolean; readonly canRedo: boolean };
+}) {
+  return {
+    undo: () => doc.commands.undo(),
+    redo: () => doc.commands.redo(),
+    canUndo: () => doc.history.canUndo,
+    canRedo: () => doc.history.canRedo,
+  };
+}

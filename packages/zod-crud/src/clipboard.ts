@@ -5,7 +5,7 @@ import type { JSONResult } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
 import { normalizePointerSources } from "./core/pointer/sourceSet.js";
 import { schemaAtPointer } from "./core/schema/introspection.js";
-import type { JSONDocumentOps } from "./jsonOps.js";
+import type { JSONOps } from "./jsonOps.js";
 import type { SelectionSource } from "./core/selection/index.js";
 import {
   copy,
@@ -74,7 +74,7 @@ type ClipboardWriteSourcesResult =
 export interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
-  ops: JSONDocumentOps<z.output<S>>;
+  ops: JSONOps<z.output<S>>;
   getSelectionSource?: () => SelectionSource | null;
   getSelectionTarget?: () => Pointer | null;
   onChange?: () => void;

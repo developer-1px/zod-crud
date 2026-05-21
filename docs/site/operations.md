@@ -136,7 +136,7 @@ doc.commands.redo();
 </button>
 ```
 
-`doc.ops.undo()`와 `doc.ops.redo()`도 같은 history stack을 사용합니다. `doc.history`는 상태와 `mergeLast()`, `transaction(fn)`을 제공하는 표면입니다.
+`doc.history`는 상태와 `mergeLast()`, `transaction(fn)`을 제공하는 표면입니다. 실행은 `doc.commands.undo()` / `doc.commands.redo()`로 통일합니다.
 
 patch와 최종 selection을 함께 아는 편집 엔진은 `doc.commit()`으로 한 history entry를 만듭니다.
 

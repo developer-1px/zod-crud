@@ -40,7 +40,6 @@ import type {
   HistoryMergeOptions,
   HistoryTransactionOptions,
   JSONChangeMetadata,
-  JSONDocumentOps,
   JSONLoadOptions,
   JSONOps,
   UseJSONOptions,
@@ -77,7 +76,7 @@ export interface JSONDocument<T> {
   readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
   readonly selection: SelectionState<T> | undefined;
   readonly history: JSONDocumentHistory;
-  readonly ops: JSONDocumentOps<T>;
+  readonly ops: JSONOps<T>;
   readonly commands: Commands<T>;
   readonly can: Can<T>;
   readonly check: Check<T>;
@@ -215,7 +214,7 @@ export function createJSONDocument<S extends z.ZodType>(
     return true;
   };
 
-  const ops: JSONDocumentOps<z.output<S>> = {
+  const ops: JSONOps<z.output<S>> = {
     add: (path, value) => patch([{ op: "add", path: path as Pointer, value }]),
     remove: (path) => patch([{ op: "remove", path: path as Pointer }]),
     replace: (path, value) => patch([{ op: "replace", path: path as Pointer, value }]),
@@ -244,10 +243,6 @@ export function createJSONDocument<S extends z.ZodType>(
       const r = patch(operations, metadata);
       if (!r.ok) throw new JSONCrudError("patch", r);
     },
-    undo: () => restore("undo"),
-    redo: () => restore("redo"),
-    canUndo: () => canUndo(stack),
-    canRedo: () => canRedo(stack),
     load(value, loadOptions?: JSONLoadOptions) {
       const r = rawOps.load(value);
       if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();
@@ -267,6 +262,13 @@ export function createJSONDocument<S extends z.ZodType>(
       });
     },
     get state() { return rawOps.state; },
+  };
+
+  const historyControls = {
+    undo: () => restore("undo"),
+    redo: () => restore("redo"),
+    canUndo: () => canUndo(stack),
+    canRedo: () => canRedo(stack),
   };
 
   const mergeLast = (mergeOptions?: HistoryMergeOptions): boolean => {
@@ -312,8 +314,8 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const history: JSONDocumentHistory = {
-    get canUndo() { return ops.canUndo(); },
-    get canRedo() { return ops.canRedo(); },
+    get canUndo() { return historyControls.canUndo(); },
+    get canRedo() { return historyControls.canRedo(); },
     get undoDepth() { return stack.undo.length; },
     get redoDepth() { return stack.redo.length; },
     mergeLast,
@@ -321,9 +323,9 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const selectionRef = { get current() { return selectionState; } };
-  const commands = buildCommands({ schema, ops, selectionRef, selectionMode });
-  const check = buildCheck({ schema, ops, selectionRef });
-  const can = buildCan({ schema, ops, check });
+  const commands = buildCommands({ schema, ops, history: historyControls, selectionRef, selectionMode });
+  const check = buildCheck({ schema, ops, history: historyControls, selectionRef });
+  const can = buildCan({ schema, ops, history: historyControls, check });
   const clipboardOptions = {
     schema,
     getState: () => rawOps.state,

@@ -5,7 +5,7 @@ import { removeSourcesPatch } from "./core/patch/removeSources.js";
 import type { Pointer } from "./core/pointer/index.js";
 import type { PointerSourceError } from "./core/pointer/sourceSet.js";
 import { preFlight, type PreFlightErrorCode } from "./core/schema/preFlight.js";
-import type { HistoryTransactionOptions, JSONDocumentOps } from "./jsonOps.js";
+import type { HistoryTransactionOptions, JSONOps } from "./jsonOps.js";
 import { copy, type ClipboardSource } from "./verbs/copy.js";
 import { cut } from "./verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "./verbs/duplicate.js";
@@ -89,9 +89,15 @@ export interface Check<T> {
   readonly redo: CheckResult;
 }
 
+interface CheckHistoryControls {
+  canUndo(): boolean;
+  canRedo(): boolean;
+}
+
 export interface BuildCheckArgs<S extends z.ZodType> {
   schema: S;
-  ops: JSONDocumentOps<z.output<S>>;
+  ops: JSONOps<z.output<S>>;
+  history: CheckHistoryControls;
   selectionRef?: { current: SelectionSnap };
 }
 
@@ -113,7 +119,7 @@ const OK: CheckResult = { ok: true };
 export function buildCheck<S extends z.ZodType>(
   args: CreateCheckOptions<S>,
 ): Check<z.output<S>> {
-  const { schema, ops, selectionRef } = args;
+  const { schema, ops, history, selectionRef } = args;
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
   const targetOrSelection = (target?: Pointer): Pointer | null =>
@@ -199,10 +205,10 @@ export function buildCheck<S extends z.ZodType>(
     },
 
     get undo() {
-      return ops.canUndo() ? OK : emptyStack("undo");
+      return history.canUndo() ? OK : emptyStack("undo");
     },
     get redo() {
-      return ops.canRedo() ? OK : emptyStack("redo");
+      return history.canRedo() ? OK : emptyStack("redo");
     },
   };
 }

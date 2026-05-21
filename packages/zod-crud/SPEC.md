@@ -873,7 +873,7 @@ export interface JSONDocument<T> {
   selection: SelectionState<T> | undefined;
   clipboard: ClipboardState<T>;
   history: JSONDocumentHistory;
-  ops: JSONDocumentOps<T>;
+  ops: JSONOps<T>;
   commands: Commands<T>;
   can: Can<T>;
   check: Check<T>;

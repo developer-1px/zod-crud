@@ -45,7 +45,7 @@ document surface:
 | --- | --- |
 | `doc.value` | current schema-valid JSON value |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
-| `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe and facade undo/redo |
+| `doc.ops` | JSON Patch-like low-level operations plus load/reset/subscribe |
 | `doc.commands` | edit command namespace; `remove(source?)` commits structural JSON deletion without clipboard payload, `replaceText(replacement, options?)` and `deleteText(options?)` commit selection text edits, `moveCursor(direction, options?)` / `extendCursor(direction, options?)` expose keyboard-style cursor movement, and `selectScope(options?)` exposes Ctrl+A/select-visible selection through the same selection mode |
 | `doc.can` | command, JSONPath find, and selection guard namespace |
 | `doc.check` | explainable dry-run guard namespace for commands, JSONPath find, selection movement, and selection text edits; `can.x(...) === check.x(...).ok` |

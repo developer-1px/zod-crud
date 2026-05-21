@@ -5,7 +5,7 @@ import * as z from "zod";
 
 import { buildCommands } from "../src/commands/buildCommands.js";
 import { buildCan } from "../src/commands/buildCan.js";
-import type { JSONDocumentOps } from "../src/jsonOps.js";
+import type { JSONOps } from "../src/jsonOps.js";
 import { applyPatch, type JSONPatchOperation } from "../src/core/patch/index.js";
 import { EMPTY_SELECTION } from "../src/core/selection/index.js";
 import { JSONCrudError } from "../src/JSONCrudError.js";
@@ -25,7 +25,7 @@ const initial: State = {
 };
 
 /** 테스트용 in-memory ops — React 없이 commands wiring 만 검증. */
-function makeOps(s0: State): JSONDocumentOps<State> {
+function makeOps(s0: State): JSONOps<State> {
   let cur = s0;
   return {
     add: () => ({ ok: true }),
@@ -45,10 +45,6 @@ function makeOps(s0: State): JSONDocumentOps<State> {
       if (!r.result.ok) throw new JSONCrudError("patch", r.result);
       cur = r.state;
     },
-    undo: () => false,
-    redo: () => false,
-    canUndo: () => false,
-    canRedo: () => false,
     load: () => ({ ok: true }),
     reset: () => ({ ok: true }),
     subscribe: () => () => {},
@@ -57,11 +53,17 @@ function makeOps(s0: State): JSONDocumentOps<State> {
 }
 
 const emptySelectionRef = { current: EMPTY_SELECTION };
+const emptyHistoryControls = {
+  undo: () => false,
+  redo: () => false,
+  canUndo: () => false,
+  canRedo: () => false,
+};
 
 describe("buildCommands — TipTap 식 commands group", () => {
   test("commands.copy(source) — read-only payload", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.copy("/items/0");
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.payload).toEqual({ id: "a", name: "A" });
@@ -69,7 +71,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.cut(source) — atomic remove + payload", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.cut("/items/0");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -79,7 +81,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.remove(source) — structural delete without payload", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.remove("/items/0");
     expect(r.ok).toBe(true);
     if (!r.ok) return;
@@ -97,7 +99,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
       ],
       meta: { foo: "bar" },
     });
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.remove(["/items/0/name", "/items/0", "/items/1"]);
 
     expect(r.ok).toBe(true);
@@ -113,7 +115,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.remove(source) reports invalid pointers before mutation", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
 
     expect(commands.remove("items/0" as never)).toMatchObject({
       ok: false,
@@ -125,7 +127,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.paste(payload, target, mode)", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.paste({ id: "z", name: "Z" }, "/items/-", "into");
     expect(r.ok).toBe(true);
     expect(ops.state.items).toHaveLength(3);
@@ -133,7 +135,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.duplicate(source) — array next index", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.duplicate("/items/0");
     expect(r.ok).toBe(true);
     expect(ops.state.items).toHaveLength(3);
@@ -141,14 +143,14 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.move(from, to) — RFC 6902 move", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.move("/items/0", "/items/1");
     expect(r.ok).toBe(true);
   });
 
   test("commands.find(query) — RFC 9535", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.find("$.items[*].id");
     expect(r.ok).toBe(true);
     if (r.ok) expect(r.pointers).toEqual(["/items/0/id", "/items/1/id"]);
@@ -156,7 +158,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.replace(path, value) — RFC 6901 Pointer (어휘 일관성)", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const r = commands.replace("/items/0/name", "renamed");
     expect(r.ok).toBe(true);
     expect(ops.state.items[0]?.name).toBe("renamed");
@@ -164,7 +166,7 @@ describe("buildCommands — TipTap 식 commands group", () => {
 
   test("commands.replace multi-match — JSONPath batch", () => {
     const ops = makeOps(initial);
-    const commands = buildCommands({ schema: Schema, ops, selectionRef: emptySelectionRef });
+    const commands = buildCommands({ schema: Schema, ops, history: emptyHistoryControls, selectionRef: emptySelectionRef });
     const replaced = commands.replace("$.items[*].name", "renamed");
     expect(replaced).toMatchObject({
       ok: true,
@@ -177,13 +179,13 @@ describe("buildCommands — TipTap 식 commands group", () => {
 describe("buildCan — TipTap 식 can group", () => {
   test("can.cut(source) returns true for valid cut", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.cut("/items/0")).toBe(true);
   });
 
   test("can.remove(source) returns true for valid structural remove", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.remove("/items/0")).toBe(true);
   });
 
@@ -191,7 +193,7 @@ describe("buildCan — TipTap 식 can group", () => {
     const NonEmpty = z.object({ items: z.array(z.string()).min(2) });
     type S = z.output<typeof NonEmpty>;
     let cur: S = { items: ["a", "b"] };
-    const ops: JSONDocumentOps<S> = {
+    const ops: JSONOps<S> = {
       add: () => ({ ok: true }), remove: () => ({ ok: true }), replace: () => ({ ok: true }),
       move: () => ({ ok: true }), copy: () => ({ ok: true }), test: () => ({ ok: true }),
       set: () => ({ ok: true }),
@@ -201,39 +203,38 @@ describe("buildCan — TipTap 식 can group", () => {
         if (!r.result.ok) throw new JSONCrudError("patch", r.result);
         cur = r.state;
       },
-      undo: () => false, redo: () => false, canUndo: () => false, canRedo: () => false,
       load: () => ({ ok: true }), reset: () => ({ ok: true }), subscribe: () => () => {},
       get state() { return cur; },
     };
-    const can = buildCan({ schema: NonEmpty, ops });
+    const can = buildCan({ schema: NonEmpty, ops, history: emptyHistoryControls });
     expect(can.cut("/items/0")).toBe(false);
     expect(can.remove("/items/0")).toBe(false);
   });
 
   test("can.move(from, to) — preFlight gate", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.move("/items/0", "/items/1")).toBe(true);
     expect(can.move("/items/99", "/items/0")).toBe(false); // path 없음
   });
 
   test("can.find(query) — JSONPath syntax guard", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.find("$.items[*].id")).toBe(true);
     expect(can.find("$.items[")).toBe(false);
   });
 
   test("can.copy(source) — path 존재 확인", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.copy("/items/0")).toBe(true);
     expect(can.copy("/items/99")).toBe(false);
   });
 
   test("can.duplicate(source, opts) — array vs object", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.duplicate("/items/0")).toBe(true);
     expect(can.duplicate("/meta/foo")).toBe(false); // newKey 없음
     expect(can.duplicate("/meta/foo", { newKey: "baz" })).toBe(true);
@@ -241,7 +242,7 @@ describe("buildCan — TipTap 식 can group", () => {
 
   test("can.undo / can.redo — stack flags", () => {
     const ops = makeOps(initial);
-    const can = buildCan({ schema: Schema, ops });
+    const can = buildCan({ schema: Schema, ops, history: emptyHistoryControls });
     expect(can.undo).toBe(false); // 초기엔 비어있음
     expect(can.redo).toBe(false);
   });

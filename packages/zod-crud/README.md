@@ -89,7 +89,7 @@ export function App() {
 | --- | --- |
 | `doc.value` | current schema-valid state (`T`) |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
-| `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe`, plus facade undo/redo controls |
+| `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`set`/`patch`/`apply`/`load`/`reset`/`subscribe` |
 | `doc.commands` | edit commands plus selection/text helpers (`remove`, `replaceText`, `deleteText`, cursor movement, select scope) |
 | `doc.can` | mutation, JSONPath find, and selection guard predicates + `undo`/`redo` flags |
 | `doc.check` | explainable dry-run guard results for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
