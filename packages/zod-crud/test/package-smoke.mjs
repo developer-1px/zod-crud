@@ -685,7 +685,8 @@ try {
     join(workspace, "react-smoke.ts"),
     [
       'import * as z from "zod";',
-      'import { type JSONDocument, type UseJSONDocumentOptions, useJSONDocument } from "zod-crud/react";',
+      'import type { JSONDocument, UseJSONDocumentOptions } from "zod-crud";',
+      'import { useJSONDocument } from "zod-crud/react";',
       'const Schema = z.object({ name: z.string() });',
       'type Value = z.output<typeof Schema>;',
       'type Doc = JSONDocument<Value>;',

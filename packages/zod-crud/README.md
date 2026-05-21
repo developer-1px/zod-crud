@@ -380,7 +380,6 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardEmpty`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardState<T>`, `ClipboardWriteOptions`, `CreateClipboardOptions<S>`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
-| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | React document hook return/options aliases |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |

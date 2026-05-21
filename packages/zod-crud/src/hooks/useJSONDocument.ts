@@ -6,21 +6,8 @@ import type * as z from "zod";
 import {
   createJSONDocument,
   type JSONDocument,
-  type JSONDocumentCommitOptions,
-  type JSONDocumentCommitSelection,
-  type JSONDocumentHistory,
   type UseJSONDocumentOptions,
 } from "../createJSONDocument.js";
-import type { JSONCrudError } from "../JSONCrudError.js";
-
-export type {
-  JSONDocument,
-  JSONDocumentCommitOptions,
-  JSONDocumentCommitSelection,
-  JSONDocumentHistory,
-  UseJSONDocumentOptions,
-};
-export type { JSONCrudError };
 
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,
