@@ -12,7 +12,7 @@ import {
   type JSONResult,
 } from "./core/patch/index.js";
 import { computeInverses } from "./core/patch/inverse.js";
-import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
+import type { Pointer } from "./core/pointer/index.js";
 import {
   reduceSelection,
   restoreSelection,
@@ -221,23 +221,6 @@ export function createJSONDocument<S extends z.ZodType>(
     move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
     copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
     test: rawOps.test,
-    set(path, value) {
-      const p = path as Pointer;
-      let segments: string[];
-      try {
-        segments = parsePointer(p);
-      } catch {
-        return rawOps.set(path, value);
-      }
-      const current = readAt(rawOps.state, segments);
-      if (value === undefined) {
-        if (!current.ok) return { ok: true };
-        return patch([{ op: "remove", path: p }]);
-      }
-      if (!current.ok) return patch([{ op: "add", path: p, value }]);
-      if (current.value === value) return { ok: true };
-      return patch([{ op: "replace", path: p, value }]);
-    },
     patch,
     apply(operations, metadata) {
       const r = patch(operations, metadata);

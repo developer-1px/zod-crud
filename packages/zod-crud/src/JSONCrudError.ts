@@ -3,7 +3,7 @@
 
 import type { JSONPatchOperation, JSONResult } from "./core/patch/index.js";
 
-export type JSONCrudOpLabel = JSONPatchOperation | "load" | "reset" | "patch" | "set";
+export type JSONCrudOpLabel = JSONPatchOperation | "load" | "reset" | "patch";
 
 export class JSONCrudError extends Error {
   override readonly name = "JSONCrudError";

@@ -42,13 +42,8 @@ describe("internal createJSON state owner", () => {
     expect(changes).toHaveLength(6);
   });
 
-  test("load/reset and set match the internal low-level state contract", () => {
+  test("load/reset match the internal low-level state contract", () => {
     const json = createJSON(Schema, { title: "draft", tags: [] }, { strict: false });
-
-    expect(json.ops.set("/tags/0", "first")).toEqual({ ok: true });
-    expect(json.value.tags).toEqual(["first"]);
-    expect(json.ops.set("/tags/0", undefined)).toEqual({ ok: true });
-    expect(json.value.tags).toEqual([]);
 
     expect(json.ops.load({ title: "loaded", tags: ["x"] })).toEqual({ ok: true });
     expect(json.value).toEqual({ title: "loaded", tags: ["x"] });

@@ -161,7 +161,6 @@ describe("core/* substrate allow-list", () => {
       "remove",
       "replace",
       "reset",
-      "set",
       "state",
       "subscribe",
       "test",

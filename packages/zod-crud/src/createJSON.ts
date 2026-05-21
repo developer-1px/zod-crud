@@ -9,7 +9,6 @@ import {
   type JSONResult,
 } from "./core/patch/index.js";
 import type { Pointer } from "./core/pointer/index.js";
-import { parsePointer, readAt } from "./core/pointer/index.js";
 import { handleResult, JSONCrudError, type ErrorPolicy } from "./JSONCrudError.js";
 import type {
   JSONChangeListener,
@@ -107,28 +106,6 @@ export function createJSON<S extends z.ZodType>(
       const op: JSONPatchOperation = { op: "test", path: path as Pointer, value };
       const result = applyOperation(schema, state, op);
       return handleResult(policy, op, result.result);
-    },
-    set(path, value) {
-      const p = path as Pointer;
-      let segments: string[];
-      try {
-        segments = parsePointer(p);
-      } catch (error) {
-        return handleResult(policy, "set", {
-          ok: false,
-          code: "invalid_pointer",
-          reason: error instanceof Error ? error.message : "invalid JSON Pointer",
-          pointer: p,
-        });
-      }
-      const current = readAt(state, segments);
-      if (value === undefined) {
-        if (!current.ok) return { ok: true };
-        return single({ op: "remove", path: p });
-      }
-      if (!current.ok) return single({ op: "add", path: p, value });
-      if (current.value === value) return { ok: true };
-      return single({ op: "replace", path: p, value });
     },
     patch(operations, metadata) {
       return dispatch("patch", operations, metadata);

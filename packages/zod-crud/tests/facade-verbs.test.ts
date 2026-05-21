@@ -34,7 +34,6 @@ function makeOps(s0: State): JSONOps<State> {
     move: () => ({ ok: true }),
     copy: () => ({ ok: true }),
     test: () => ({ ok: true }),
-    set: () => ({ ok: true }),
     patch(operations: ReadonlyArray<JSONPatchOperation>) {
       const r = applyPatch(Schema, cur, operations);
       if (r.result.ok) cur = r.state;
@@ -196,7 +195,6 @@ describe("buildCan — TipTap 식 can group", () => {
     const ops: JSONOps<S> = {
       add: () => ({ ok: true }), remove: () => ({ ok: true }), replace: () => ({ ok: true }),
       move: () => ({ ok: true }), copy: () => ({ ok: true }), test: () => ({ ok: true }),
-      set: () => ({ ok: true }),
       patch(operations) { const r = applyPatch(NonEmpty, cur, operations); if (r.result.ok) cur = r.state; return r.result; },
       apply(operations) {
         const r = applyPatch(NonEmpty, cur, operations);

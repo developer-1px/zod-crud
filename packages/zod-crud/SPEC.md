@@ -302,9 +302,6 @@ export interface JSONOps<T> {
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
   apply(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): void;
 
-  // sugar: add/replace/remove 를 idempotent 하게 합성. RFC 6902 op 는 아님.
-  set<P extends PointerOf<T>>(path: P, value: ValueAt<T, P> | undefined): JSONResult;
-
   // lifecycle
   load(value: T, options?: JSONLoadOptions): JSONResult;
   reset(value?: T): JSONResult;
@@ -943,7 +940,7 @@ export type ErrorCode =
 ```ts
 export class JSONCrudError extends Error {
   constructor(
-    public op: JSONPatchOperation | "load" | "reset" | "patch" | "set",
+    public op: JSONPatchOperation | "load" | "reset" | "patch",
     public result: Extract<JSONResult, { ok: false }>,
   );
 }

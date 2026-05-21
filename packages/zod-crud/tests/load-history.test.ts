@@ -83,20 +83,20 @@ describe("useJSONDocument ops.load history", () => {
     expect(hook.current.history.canUndo).toBe(true);
   });
 
-  test("set returns invalid_pointer through the error policy", () => {
+  test("replace returns invalid_pointer through the error policy", () => {
     const onError = vi.fn();
     const hook = renderHook(() => useJSONDocument(Schema, { name: "a" }, { strict: false, onError }));
 
-    let result: ReturnType<typeof hook.current.ops.set> | undefined;
+    let result: ReturnType<typeof hook.current.ops.replace> | undefined;
     act(() => {
-      result = hook.current.ops.set("name" as never, "b" as never);
+      result = hook.current.ops.replace("name" as never, "b" as never);
     });
 
     expect(result).toMatchObject({ ok: false, code: "invalid_pointer", pointer: "name" });
     expect(onError).toHaveBeenCalledTimes(1);
     expect(onError.mock.calls[0]?.[0]).toMatchObject({
       name: "JSONCrudError",
-      op: "set",
+      op: "patch",
       result: { ok: false, code: "invalid_pointer", pointer: "name" },
     });
     expect(hook.current.value).toEqual({ name: "a" });
