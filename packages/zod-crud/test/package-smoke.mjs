@@ -616,9 +616,9 @@ try {
     [
       'import * as z from "zod";',
       'import { applyOperation, applyPatch, tryParsePointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, type JSONPatchOperation, type Pointer } from "zod-crud";',
-      'import type { JSONOps, JSONPoint, JSONResult, PointerOf, SelectionAction, SelectionRange, SelectionSnap, SelectionState, ValueAt } from "zod-crud";',
+      'import type { JSONOps, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
-      'type PublicRootTypes = [JSONOps<z.output<typeof schema>>, JSONPoint, JSONResult, PointerOf<z.output<typeof schema>>, SelectionAction, SelectionRange, SelectionSnap, SelectionState<z.output<typeof schema>>, ValueAt<z.output<typeof schema>, "/name">];',
+      'type PublicRootTypes = [JSONOps<z.output<typeof schema>>, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState<z.output<typeof schema>>];',
       'declare const publicRootTypes: PublicRootTypes;',
       'publicRootTypes satisfies readonly unknown[];',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',

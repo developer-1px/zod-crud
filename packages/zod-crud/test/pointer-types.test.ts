@@ -1,7 +1,8 @@
-// SPEC.md §5.4 — PointerOf<T>·ValueAt<T,P> 컴파일 타임 검증.
+// SPEC.md §5.4 — internal PointerOf<T>·ValueAt<T,P> 컴파일 타임 검증.
 
 import { describe, it, expect } from "vitest";
-import type { PointerOf, ValueAt, Pointer } from "../src/index.js";
+import type { Pointer } from "../src/index.js";
+import type { PointerOf, ValueAt } from "../src/core/pointer/types.js";
 
 type Todo = { title: string; done: boolean; tasks: { id: string; text: string }[] };
 

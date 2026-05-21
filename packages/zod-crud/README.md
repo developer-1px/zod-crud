@@ -377,7 +377,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
 | `JSONPatchOperation`, `JSONResult` | RFC 6902 types (SPEC §3, §5.3) |
-| `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
+| `Pointer` | RFC 6901 path type (SPEC §2) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `JSONPoint`, `SelectionRange`, `SelectionSnap`, `SelectionAction`, `SelectionState<T>` | selection state/action types |

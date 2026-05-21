@@ -37,7 +37,6 @@ export {
   withLastSegment,
 } from "./core/pointer/index.js";
 export type { Pointer } from "./core/pointer/index.js";
-export type { PointerOf, ValueAt } from "./core/pointer/types.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
