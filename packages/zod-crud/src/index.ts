@@ -116,37 +116,3 @@ export type {
   SelectionTextEditsResult,
 } from "./core/selection/textEdit.js";
 export { trackPointer } from "./core/track.js";
-export {
-  EMPTY_SELECTION,
-  anchorPointer,
-  caretPoint,
-  caretPointer,
-  extendSelectionCursor,
-  focusPointer,
-  hasSelection,
-  isCollapsed,
-  isSelected,
-  moveSelectionCursor,
-  compareSelectionPoints,
-  orderPrimarySelectionRange,
-  orderSelectionRange,
-  orderSelectionRanges,
-  selectionSpansForPointer,
-  pointPointer,
-  primaryPointer,
-  primaryRange,
-  rangeCount,
-  restoreSelection,
-  resolveSelectionScope,
-  resolveSelectionCursor,
-  selectedCount,
-  selectedSource,
-  selectSelectionScope,
-  selectionSnapshot,
-  selectionType,
-} from "./core/selection/index.js";
-export {
-  deleteSelectionText,
-  replaceSelectionText,
-  selectionTextEdits,
-} from "./core/selection/textEdit.js";

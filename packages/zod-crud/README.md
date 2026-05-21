@@ -160,38 +160,32 @@ JSON source-order within an optional `scope`; pass `query` to use RFC 9535
 JSONPath results, or `points` to use a filtered, folded, virtualized, or
 otherwise app-visible `JSONPoint[]` order. `points` takes precedence over
 `query`, and both bypass `scope` traversal. `resolveCursor` computes the next
-target without mutating. The pure helpers
-`moveSelectionCursor`, `extendSelectionCursor`, and `resolveSelectionCursor`
-provide the same cursor logic for standalone headless composition.
+target without mutating. The same cursor logic is available without React
+through `createSelection(ops)`.
 `doc.commands.moveCursor(direction, options?)` and
 `doc.commands.extendCursor(direction, options?)` expose keyboard-style cursor
 movement through the document command namespace.
 `doc.check.moveCursor` / `doc.can.moveCursor` and `doc.check.extendCursor` /
 `doc.can.extendCursor` answer whether the same cursor movement is available
 without mutating selection; boundary failures return `cursor_boundary`.
-`doc.selection.selectScope(options?)` and `selectSelectionScope(...)` build a
-whole selection from the same `scope`, `query`, or visible `points` options,
-covering Ctrl+A/select-visible and select-find-results flows without React.
+`doc.selection.selectScope(options?)` builds a whole selection from the same
+`scope`, `query`, or visible `points` options, covering Ctrl+A/select-visible
+and select-find-results flows without React.
 `doc.selection.orderPrimaryRange(options?)`, `doc.selection.orderRanges(options?)`,
-`orderSelectionRange(...)`, `orderPrimarySelectionRange(...)`, and
-`orderSelectionRanges(...)` convert directional anchor/focus ranges into
-document-order `start`/`end` ranges for delete, format, copy, and paste
-commands. The plural form sorts all ranges by document order while preserving
-their original range index and primary flag. They use JSON source-order by
-default, RFC 9535 `query` order when provided, or explicit visible `points`
+convert directional anchor/focus ranges into document-order `start`/`end`
+ranges for delete, format, copy, and paste commands. They use JSON source-order
+by default, RFC 9535 `query` order when provided, or explicit visible `points`
 order for folded/virtualized UIs.
-`doc.selection.spansForPointer(pointer, options?)` and
-`selectionSpansForPointer(...)` project selection ranges into pointer-local
-spans for rendering or offset-based commands. String values resolve offsets
-from current state; apps can provide `getLength` for non-string offset domains
-such as rich-text block paths.
-`doc.selection.textEdits(replacement, options?)` and `selectionTextEdits(...)`
-turn the current selection into ordered pointer-local replacement spans without
-mutating state. `doc.selection.textPatch(replacement, options?)` /
-`replaceSelectionText(...)` and `doc.selection.deleteText(options?)` /
-`deleteSelectionText(...)` build RFC 6902 `replace` patches plus the final
-collapsed selection for JSON string leaves; multi-pointer rich-text/block edits
-use the edit plan and app-specific patching. `doc.commands.replaceText(...)`
+`doc.selection.spansForPointer(pointer, options?)` projects selection ranges
+into pointer-local spans for rendering or offset-based commands. String values
+resolve offsets from current state; apps can provide `getLength` for non-string
+offset domains such as rich-text block paths.
+`doc.selection.textEdits(replacement, options?)` turns the current selection
+into ordered pointer-local replacement spans without mutating state.
+`doc.selection.textPatch(replacement, options?)` and
+`doc.selection.deleteText(options?)` build RFC 6902 `replace` patches plus the
+final collapsed selection for JSON string leaves; multi-pointer rich-text/block
+edits use the edit plan and app-specific patching. `doc.commands.replaceText(...)`
 and `doc.commands.deleteText(...)` commit those string-leaf patches through
 document history with final selection and optional `label` / `origin` /
 `mergeKey` metadata.
@@ -387,7 +381,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
-| `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `compareSelectionPoints`, `orderSelectionRange`, `orderPrimarySelectionRange`, `orderSelectionRanges`, `selectionSpansForPointer`, `selectionTextEdits`, `replaceSelectionText`, `deleteSelectionText`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionMode`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointOrderResult`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
+| `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionMode`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointOrderResult`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection types |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
 
 ## Guarantees

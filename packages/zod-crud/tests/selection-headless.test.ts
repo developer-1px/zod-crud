@@ -2,24 +2,28 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  EMPTY_SELECTION,
-  compareSelectionPoints,
   createJSONDocument,
   createSelection,
-  deleteSelectionText,
+} from "../src/index.js";
+import {
+  EMPTY_SELECTION,
+  compareSelectionPoints,
   extendSelectionCursor,
   moveSelectionCursor,
   orderPrimarySelectionRange,
   orderSelectionRange,
   orderSelectionRanges,
   primaryPointer,
-  replaceSelectionText,
   resolveSelectionCursor,
   resolveSelectionScope,
   selectSelectionScope,
   selectionSpansForPointer,
+} from "../src/core/selection/index.js";
+import {
+  deleteSelectionText,
+  replaceSelectionText,
   selectionTextEdits,
-} from "../src/index.js";
+} from "../src/core/selection/textEdit.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
