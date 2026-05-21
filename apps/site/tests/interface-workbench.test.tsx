@@ -33,6 +33,8 @@ describe("InterfaceWorkbench", () => {
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
+    expect(screen.getByText(/Zod schema를 기준으로 JSON 문서를 읽고 편집하는/)).toBeTruthy();
+    expect(screen.getByText(/실행 전에 가능한지 확인하는 표면/)).toBeTruthy();
     expect(screen.getAllByText(/createJSONDocument/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/SelectionState/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/useJSONDocument/).length).toBeGreaterThan(0);
