@@ -39,6 +39,7 @@ export type {
   ClipboardPasteResult,
   ClipboardReadOk,
   ClipboardReadResult,
+  ClipboardSource,
   ClipboardState,
   ClipboardWriteOptions,
   CreateClipboardOptions,
@@ -78,6 +79,7 @@ export type { JSONPrimitive, JSONValue } from "./core/json.js";
 // === Selection — W3C Selection API 정합 ===
 export type {
   JSONPoint,
+  SelectionAction,
   SelectionContext,
   SelectionAffinity,
   SelectionCursorDirection,
@@ -105,6 +107,7 @@ export type {
   SelectionScopeTarget,
   SelectionSource,
   SelectionSpanOptions,
+  SelectionSnap,
   SelectionType,
 } from "./core/selection/index.js";
 export type {
@@ -152,45 +155,3 @@ export {
   replaceSelectionText,
   selectionTextEdits,
 } from "./core/selection/textEdit.js";
-
-// === Clipboard verbs ===
-export {
-  copy,
-} from "./verbs/copy.js";
-export type {
-  ClipboardSource,
-  CopyError,
-  CopyOk,
-  CopyResult,
-} from "./verbs/copy.js";
-export { paste } from "./verbs/paste.js";
-export type {
-  PasteDuMismatch,
-  PasteError,
-  PasteMode,
-  PasteOk,
-  PasteOptions,
-  RekeyContext,
-  RekeyOptions,
-  RekeyResult,
-  RekeyStrategy,
-} from "./verbs/paste.js";
-export { duplicate } from "./verbs/duplicate.js";
-export type {
-  DuplicateError,
-  DuplicateOk,
-  DuplicateOpts,
-} from "./verbs/duplicate.js";
-export { cut } from "./verbs/cut.js";
-export type { CutError, CutOk } from "./verbs/cut.js";
-export { find } from "./verbs/find.js";
-export type { FindError, FindOk } from "./verbs/find.js";
-export { move } from "./verbs/move.js";
-export type { MoveError, MoveOk, MoveResult } from "./verbs/move.js";
-export { replace } from "./verbs/replace.js";
-export type { ReplaceError, ReplaceOk } from "./verbs/replace.js";
-export { select } from "./verbs/select.js";
-export type { SelectionAction, SelectionSnap } from "./verbs/select.js";
-
-// === Schema preflight ===
-export type { PreFlightErrorCode } from "./core/schema/preFlight.js";
