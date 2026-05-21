@@ -174,15 +174,3 @@ export function trackPointer(
   }
   return cur;
 }
-
-export function trackPointers(
-  pointers: ReadonlyArray<Pointer>,
-  applied: ReadonlyArray<JSONPatchOperation>,
-): Pointer[] {
-  const out: Pointer[] = [];
-  for (const p of pointers) {
-    const next = trackPointer(p, applied);
-    if (next !== null) out.push(next);
-  }
-  return out;
-}

@@ -2,7 +2,7 @@
 
 import { describe, expect, it } from "vitest";
 
-import { trackPointer, trackPointers } from "../src/core/track.js";
+import { trackPointer } from "../src/core/track.js";
 import type { JSONPatchOperation } from "../src/index.js";
 
 describe("trackPointer — add", () => {
@@ -84,9 +84,6 @@ describe("trackPointer — invalid pointers", () => {
     expect(trackPointer("/tasks/0", [{ op: "add", path: "tasks/0", value: null }])).toBeNull();
   });
 
-  it("drops invalid pointers in batch tracking", () => {
-    expect(trackPointers(["/tasks/0", "tasks/1"], [{ op: "add", path: "/tasks/2", value: null }])).toEqual(["/tasks/0"]);
-  });
 });
 
 describe("trackPointer — root replace cascades drop", () => {
@@ -96,19 +93,21 @@ describe("trackPointer — root replace cascades drop", () => {
   });
 });
 
-describe("trackPointers — sequence", () => {
+describe("trackPointer — sequence", () => {
   it("applies multiple ops in order", () => {
     const ops: JSONPatchOperation[] = [
       { op: "add", path: "/tasks/0", value: null },
       { op: "remove", path: "/tasks/2" },
     ];
     // /tasks/2 → /tasks/3 → /tasks/2
-    expect(trackPointers(["/tasks/2"], ops)).toEqual(["/tasks/2"]);
+    expect(trackPointer("/tasks/2", ops)).toBe("/tasks/2");
   });
 
   it("drops cascaded pointers", () => {
     const ops: JSONPatchOperation[] = [{ op: "remove", path: "/tasks/0" }];
-    expect(trackPointers(["/tasks/0", "/tasks/0/text", "/tasks/1"], ops)).toEqual(["/tasks/0"]);
+    expect(trackPointer("/tasks/0", ops)).toBeNull();
+    expect(trackPointer("/tasks/0/text", ops)).toBeNull();
+    expect(trackPointer("/tasks/1", ops)).toBe("/tasks/0");
   });
 });
 
