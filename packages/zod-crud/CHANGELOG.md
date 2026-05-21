@@ -13,6 +13,7 @@ All notable package changes are recorded here.
 - Kept edit verbs behind the document facade instead of standalone root exports.
 - Kept only the JSON boundary serializer instead of schema parse wrappers.
 - Kept JSON equality as an internal helper instead of a root export.
+- Kept inverse calculation behind document history instead of a root export.
 - Added tarball smoke checks for root, React, and private source-layout subpaths.
 - Added package export consistency checks and type-regression file coverage.
 

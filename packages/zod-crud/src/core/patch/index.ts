@@ -1,6 +1,6 @@
 // RFC 6902 — JSON Patch. SPEC.md §3.
-// 공개 표면: 타입 + applyOperation + applyPatch + computeInverses.
-// 구현 디테일: ./patch-internal · ./patch-apply · ./patch-inverse.
+// Root public surface: types + applyOperation + applyPatch.
+// computeInverses stays source-internal for document history.
 
 import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";

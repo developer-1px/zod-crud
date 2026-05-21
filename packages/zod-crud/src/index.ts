@@ -46,7 +46,7 @@ export type {
 } from "./clipboard.js";
 
 // === RFC 6902 — JSON Patch ===
-export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";
+export { applyOperation, applyPatch } from "./core/patch/index.js";
 export type {
   JSONPatchOperation,
   JSONResult,

@@ -25,7 +25,7 @@ import {
 } from "zod-crud/react";
 
 // Pure core.
-import { applyPatch, applyOperation, computeInverses } from "zod-crud";
+import { applyPatch, applyOperation } from "zod-crud";
 
 // Pointer / serialization.
 import { parsePointer, buildPointer, serialize } from "zod-crud";
@@ -164,10 +164,9 @@ doc.history.transaction(() => {
 
 ```ts
 const ops = [{ op: "replace", path: "/title", value: "final" }];
-const inverse = computeInverses(prev, ops);
 const applied = applyPatch(Schema, prev, ops);
 
-if (applied.result.ok && inverse.ok) {
+if (applied.result.ok) {
   commit(applied.state);
 }
 ```
