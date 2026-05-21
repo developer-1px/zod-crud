@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless document, selection, clipboard, and history facades.
-import { createClipboard, createJSONDocument, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
+// Headless document, selection, and clipboard facades.
+import { createClipboard, createJSONDocument, createSelection, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -92,9 +92,8 @@ Use `doc.ops` for low-level JSON operations through the document facade; the
 standalone `JSONOps<T>` type is the shared ops contract for headless
 composition.
 Use `createClipboard(args)` for standalone headless clipboard state.
-Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,
-`historyMergeLast`, `historyCanUndo`, and `historyCanRedo` for standalone
-headless undo/redo stack state.
+Use `doc.history` and `doc.commands.undo()` / `doc.commands.redo()` for
+headless undo/redo state.
 `doc.commands.select(action)`, `doc.commands.moveCursor(direction, options?)`,
 `doc.commands.extendCursor(direction, options?)`, and
 `doc.commands.selectScope(options?)` default to the document's configured

@@ -8,16 +8,16 @@
 
 ### 0.0 정체성 (정본 한 줄)
 
-zod-crud 의 비전은 **모든 FE 편집은 JSON 편집이다** 이다. zod-crud 는 FE 서비스가 매번 다시 만드는 편집 어휘
+zod-crud 의 비전은 **모든 FE 편집은 JSON 편집이다** 이다. zod-crud 는 FE 서비스가 매번 다시 만드는 command verbs
 (select / move / cut / copy / paste / duplicate / undo / redo / find / replace) 를 JSON 표준
 (RFC 6901 Pointer · 6902 Patch · 9535 JSONPath · W3C Selection · RFC 8927+Zod) 과 매핑하여
 재사용 가능한 표준 레이어로 정립한 headless JSON editing engine 이다.
 
 UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · system clipboard 호출 · 시각적 selection 표시는 본체가 아니다. JSON 데이터 편집만 본체.
 
-### 0.1 4대 기둥 ↔ 10 verbs ↔ RFC 매핑 (closure 검증 표)
+### 0.1 4대 기둥 ↔ 10 command verbs ↔ RFC 매핑 (closure 검증 표)
 
-10 verbs 가 4대 기둥 위에 닫힌다 (closure). 새 verb 후보가 등장하면 이 표 어느 칸에 귀속되는지로 본체 진입 여부를 판정한다.
+10 command verbs 가 4대 기둥 위에 닫힌다 (closure). 새 verb 후보가 등장하면 이 표 어느 칸에 귀속되는지로 본체 진입 여부를 판정한다.
 
 | 기둥 | verbs | RFC/표준 substrate |
 |------|-------|---------------------|
@@ -26,7 +26,9 @@ UI 렌더링 · 폼 라이브러리 · DOM 이벤트 · 키보드 매핑 · syst
 | **Clipboard** (외부 round-trip) | cut, copy, paste | RFC 6902 (remove/add) + RFC 8259 fragment 직렬화 |
 | **Undo** (되돌림) | undo, redo | RFC 6902 inverse + history stack |
 
-= 2 + 3 + 3 + 2 = **10 verbs**.
+= 2 + 3 + 3 + 2 = **10 command verbs**.
+
+`undo` / `redo` 는 standalone pure verb 파일이 아니라 `JSONDocument` history owner 의 command 다.
 
 합성 동사 (cut = copy⊗remove, replace = find⊗patch, duplicate = copy⊗paste) 는 **결과 기둥** 에 귀속. 합성 별도 행 두지 않는다 (표가 흐려짐).
 
@@ -41,8 +43,8 @@ commands/   facade builders (pure). buildCommands → Commands<T> (edit command 
 check.ts    buildCheck → Check<T> (explainable dry-run guard namespace). React 무관.
 read.ts     buildReadFacade → at/exists/query/entries. React 무관.
 schema.ts   createSchemaState → schema introspection facade. React 무관.
-verbs/      편집 어휘 composer (pure, React 무관). 1 파일 1 동사 = 10 verbs.
-   │ uses   verbs 끼리 import 금지 — 합성은 commands/ 또는 document facade 에서.
+verbs/      편집 어휘 composer (pure, React 무관). standalone pure composer 만 둔다.
+   │ uses   undo/redo 는 document facade history command 다. verbs 끼리 import 금지.
 core/       RFC 표준 substrate (pure). 1 substrate = 1 단위 (폴더 또는 파일).
    │       multi-file: pointer/, patch/, jsonpath/, selection/, schema/.
    │       single-file: history.ts, track.ts (derived substrate).
@@ -896,7 +898,7 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 ```
 
 `zod-crud` root 의 headless 정체성 표면은 `createJSONDocument` 다. `zod-crud/react` 의 `useJSONDocument` 는
-React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 verbs plus selection/remove/text helpers, boolean guard predicates, explainable dry-run checks, schema introspection, `commit`, read/query helpers 를 한 객체로 묶는다.
+React state/render lifecycle 을 얹은 같은 facade 이다. 둘 다 data, selection, clipboard, history, 10 command verbs plus selection/remove/text helpers, boolean guard predicates, explainable dry-run checks, schema introspection, `commit`, read/query helpers 를 한 객체로 묶는다.
 React entrypoint 는 `useJSONDocument` 만 노출한다.
 Command, dry-run, and boolean guard builders are internal composition for the document facade. Public callers use `doc.commands`, `doc.check`, and `doc.can`.
 selection 은 `{ selection: false }` 또는 미지정이면 facade 표면에서 `undefined`; 명시적으로 켜면 `SelectionState<T>` 를 노출한다.
@@ -906,8 +908,7 @@ read/query helpers 는 현재 state 를 Pointer/JSONPath 로 읽고, JSONPath qu
 schema introspection 은 serializable description/kind/accepts 결과를 제공하며 Zod 객체를 public API 로 노출하지 않는다.
 `commit(patch, { selection, label, origin, mergeKey })` 은 RFC 6902 patch 를 schema gate 로 적용하고, final `SelectionAction` 또는 `SelectionSnap` 을 같은 history entry 의 `selectionAfter` 로 기록한다. final selection 이 `context` 를 가지면 이 context 도 history metadata 에 포함되고 undo/redo 로 복원된다. 빈 patch 에 selection 만 넘기면 selection 은 바뀌지만 document patch 와 undo entry 는 만들지 않는다.
 `lastPatch` 는 마지막으로 적용된 normalized document patch 의 value snapshot 이다. commands, ops, load/reset, undo, redo 후 갱신되고, selection-only edit 같은 빈 patch commit 후에는 `[]` 로 비워진다.
-history 는 core reducer 를 사용하며 `undo`, `redo`, `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
-Standalone composition 은 `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo` 로 같은 순수 reducer 를 직접 쓴다. `HistoryStack<E>` 는 `{ undo, redo }` 로 이루어진 JSON 직렬화 가능한 스택 shape 이다.
+history 는 내부 core reducer 를 사용하며 public surface 는 `doc.history` 와 `doc.commands.undo()` / `doc.commands.redo()` 다. `mergeLast`, `transaction` 으로 batch 편집을 한 step 으로 다룰 수 있다.
 `transaction({ label, origin, mergeKey }, fn)` metadata 는 history entry 에 JSON 으로 보존된다.
 
 ---
@@ -1043,7 +1044,7 @@ check.ts              ─ explainable dry-run guard namespace
 read.ts               ─ read/query facade helpers
 schema.ts             ─ schema introspection facade
 verbs/
-  select.ts move.ts remove.ts cut.ts copy.ts paste.ts duplicate.ts undo.ts redo.ts find.ts replace.ts
+  select.ts move.ts cut.ts copy.ts paste.ts duplicate.ts find.ts replace.ts
 core/
   pointer/            ─ RFC 6901 + PointerOf/ValueAt + serialization helpers
   patch/              ─ RFC 6902 pure core (SPEC §5.3)

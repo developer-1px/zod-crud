@@ -705,10 +705,8 @@ interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 }
 ```
 
-Standalone lower-level composition uses `emptyHistory`, `historyCommit`,
-`historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, and
-`historyCanRedo`; these are the same pure reducer primitives used by document
-history.
+History's public surface is `doc.history` plus `doc.commands.undo()` /
+`doc.commands.redo()`. The reducer used by document history remains internal.
 
 Rules:
 

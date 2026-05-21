@@ -307,10 +307,6 @@ History metadata is serializable. Use
 command already knows the final caret/range after a patch. Use
 `doc.history.transaction({ label, origin, mergeKey }, fn)` to preserve user
 intent for synchronous multi-op batches.
-For lower-level composition, `emptyHistory`, `historyCommit`, `historyBack`,
-`historyForward`, and `historyMergeLast` expose the same pure stack reducer that
-document history uses.
-
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
 
@@ -391,7 +387,6 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | React document hook return/options aliases |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
-| `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
@@ -402,8 +397,8 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `serialize`, `parse`, `safeParse`, `jsonEqual`, `JSONPrimitive`, `JSONValue` | JSON helpers (SPEC §5.5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `computeInverses` | RFC 6902 inverse helper |
-| `copy`, `paste`, `duplicate`, `cut`, `find`, `move`, `redo`, `replace`, `select`, `undo` | headless edit verbs |
-| `ClipboardEmpty`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RedoResult`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `UndoEntry`, `UndoNoop`, `UndoResult` | headless edit verb types |
+| `copy`, `paste`, `duplicate`, `cut`, `find`, `move`, `replace`, `select` | headless edit verbs; undo/redo live on the document facade |
+| `ClipboardEmpty`, `ClipboardPasteResult`, `ClipboardReadOk`, `ClipboardReadResult`, `ClipboardSource`, `ClipboardWriteOptions`, `CopyError`, `CopyOk`, `CopyResult`, `CutError`, `CutOk`, `DuplicateError`, `DuplicateOk`, `DuplicateOpts`, `FindError`, `FindOk`, `MoveError`, `MoveOk`, `MoveResult`, `PasteDuMismatch`, `PasteError`, `PasteMode`, `PasteOk`, `PasteOptions`, `RekeyContext`, `RekeyOptions`, `RekeyResult`, `RekeyStrategy`, `ReplaceError`, `ReplaceOk`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource` | headless edit verb types |
 | `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `compareSelectionPoints`, `orderSelectionRange`, `orderPrimarySelectionRange`, `orderSelectionRanges`, `selectionSpansForPointer`, `selectionTextEdits`, `replaceSelectionText`, `deleteSelectionText`, `SelectionContext`, `SelectionMode`, `SelectionRangeInput`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointOrderResult`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
 | `PreFlightErrorCode` | schema preflight error code type |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |

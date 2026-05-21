@@ -12,8 +12,6 @@ const PILLAR: Record<string, { label: string; tone: string }> = {
   "verbs/cut.ts":       { label: "Clipboard", tone: "bg-amber-100 text-amber-800" },
   "verbs/copy.ts":      { label: "Clipboard", tone: "bg-amber-100 text-amber-800" },
   "verbs/paste.ts":     { label: "Clipboard", tone: "bg-amber-100 text-amber-800" },
-  "verbs/undo.ts":      { label: "Undo",      tone: "bg-rose-100 text-rose-800" },
-  "verbs/redo.ts":      { label: "Undo",      tone: "bg-rose-100 text-rose-800" },
 };
 
 type TreeNode =

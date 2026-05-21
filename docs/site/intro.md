@@ -1,8 +1,8 @@
 # zod-crud
 
-> **Zod 로 보호되는 headless JSON tree 라이브러리.** RFC 6901 (JSON Pointer) 과 RFC 6902 (JSON Patch) 위에 4기둥 / 10 verbs 의 편집 어휘를 매핑한 wrapper. State · actions · change records 모두 100% serializable JSON. Pure core, React 는 `zod-crud/react` entrypoint 에 한정.
+> **Zod 로 보호되는 headless JSON tree 라이브러리.** RFC 6901 (JSON Pointer) 과 RFC 6902 (JSON Patch) 위에 4기둥 / 10 command verbs 의 편집 어휘를 매핑한 wrapper. State · actions · change records 모두 100% serializable JSON. Pure core, React 는 `zod-crud/react` entrypoint 에 한정.
 
-## 4기둥 ↔ 10 verbs
+## 4기둥 ↔ 10 command verbs
 
 | 기둥 | Verbs | Substrate |
 |------|-------|-----------|
@@ -54,7 +54,7 @@ function Sheet() {
 | `lastPatch` | 마지막으로 적용된 문서 patch |
 | `ops` | RFC 6902 기반 저수준 편집 작업 (`add`/`remove`/`replace`/`move`/`copy`/`patch`) |
 | `commit` | patch와 최종 selection을 한 undo entry로 커밋 |
-| `commands` | 10 verbs 와 selection 기반 helper 의 제품 수준 명령 namespace |
+| `commands` | 10 command verbs 와 selection 기반 helper 의 제품 수준 명령 namespace |
 | `can` | 명령 실행 가능 여부 guard namespace |
 | `check` | 실패 코드가 있는 dry-run guard |
 | `schema` | serializable schema introspection |

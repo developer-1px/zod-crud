@@ -2,14 +2,14 @@ import { describe, expect, test } from "vitest";
 
 import {
   emptyHistory,
-  historyBack,
-  historyCanRedo,
-  historyCanUndo,
-  historyCommit,
-  historyForward,
-  historyMergeLast,
+  back,
+  canRedo,
+  canUndo,
+  commit,
+  forward,
+  mergeLast,
   type HistoryStack,
-} from "../src/index.js";
+} from "../src/core/history.js";
 
 interface Entry {
   id: string;
@@ -31,20 +31,20 @@ describe("headless history primitives", () => {
     };
 
     const initialStack: HistoryStack<Entry> = emptyHistory();
-    const committed = historyCommit(historyCommit(initialStack, first, 10), second, 10);
+    const committed = commit(commit(initialStack, first, 10), second, 10);
 
     expect(emptyHistory().undo).toEqual([]);
-    expect(historyCanUndo(committed)).toBe(true);
-    expect(historyCanRedo(committed)).toBe(false);
+    expect(canUndo(committed)).toBe(true);
+    expect(canRedo(committed)).toBe(false);
 
-    const undone = historyBack(committed);
+    const undone = back(committed);
 
     expect(undone?.entry.id).toBe("second");
     expect(undone?.next.undo.map((entry) => entry.id)).toEqual(["first"]);
     expect(undone?.next.redo.map((entry) => entry.id)).toEqual(["second"]);
-    expect(historyCanRedo(undone!.next)).toBe(true);
+    expect(canRedo(undone!.next)).toBe(true);
 
-    const redone = historyForward(undone!.next);
+    const redone = forward(undone!.next);
 
     expect(redone?.entry.id).toBe("second");
     expect(redone?.next.undo.map((entry) => entry.id)).toEqual(["first", "second"]);
@@ -58,13 +58,13 @@ describe("headless history primitives", () => {
       inverse: [{ op: "replace", path: "/title", value: "" }],
     }));
     const limited = entries.reduce(
-      (stack, entry) => historyCommit(stack, entry, 2),
+      (stack, entry) => commit(stack, entry, 2),
       emptyHistory<Entry>(),
     );
 
     expect(limited.undo.map((entry) => entry.id)).toEqual(["b", "c"]);
 
-    const merged = historyMergeLast(limited, (prev, top) => ({
+    const merged = mergeLast(limited, (prev, top) => ({
       id: `${prev.id}+${top.id}`,
       forward: [...prev.forward, ...top.forward],
       inverse: [...top.inverse, ...prev.inverse],

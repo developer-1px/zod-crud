@@ -3,8 +3,6 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { move } from "../src/verbs/move.js";
-import { undo } from "../src/verbs/undo.js";
-import { redo } from "../src/verbs/redo.js";
 import { select, EMPTY_SELECTION } from "../src/verbs/select.js";
 import {
   anchorPointer,
@@ -22,8 +20,6 @@ import {
   selectedSource,
   selectionSnapshot,
 } from "../src/core/selection/index.js";
-import { commit, emptyHistory } from "../src/core/history.js";
-import { computeInverses } from "../src/core/patch/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -49,37 +45,6 @@ describe("verbs/move", () => {
   test("invalid path 시 ok: false", () => {
     const r = move(Schema, initial, "/items/99", "/items/0");
     expect(r.ok).toBe(false);
-  });
-});
-
-describe("verbs/undo + verbs/redo", () => {
-  test("undo 가 inverse 를 적용하고 redo 가 forward 를 적용한다", () => {
-    const m = move(Schema, initial, "/items/0", "/items/2");
-    if (!m.ok) throw new Error("move failed");
-    const inv = computeInverses(initial, m.patch);
-    if (!inv.ok) throw new Error("inverse failed");
-    const stack = commit(emptyHistory<{ forward: typeof m.patch; inverse: typeof inv.inverses }>(), {
-      forward: m.patch,
-      inverse: inv.inverses,
-    }, 50);
-
-    const u = undo(Schema, m.next, stack);
-    expect(u.ok).toBe(true);
-    if (!u.ok) return;
-    expect(u.next).toEqual(initial);
-    expect(u.nextStack.undo.length).toBe(0);
-    expect(u.nextStack.redo.length).toBe(1);
-
-    const r = redo(Schema, u.next, u.nextStack);
-    expect(r.ok).toBe(true);
-    if (!r.ok) return;
-    expect(r.next).toEqual(m.next);
-  });
-
-  test("빈 스택 undo 는 empty_stack", () => {
-    const r = undo(Schema, initial, emptyHistory<{ forward: never[]; inverse: never[] }>());
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reason).toBe("empty_stack");
   });
 });
 

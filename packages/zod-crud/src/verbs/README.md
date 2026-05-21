@@ -1,6 +1,7 @@
 # verbs/ — 편집 어휘 composer (pure)
 
-SPEC §0 의 10 verbs 가 1 파일 1 동사로 매핑된다.
+SPEC §0 의 command verbs 중 standalone pure composer 로 의미가 있는 8개만 파일로 둔다.
+`undo` / `redo` 는 document history owner 의 command 이므로 `createJSONDocument` facade 에서 처리한다.
 
 ## 규약 (lint-equivalent rules)
 
@@ -9,16 +10,16 @@ SPEC §0 의 10 verbs 가 1 파일 1 동사로 매핑된다.
 3. **`verbs/*` 끼리 import 금지** — 합성은 `createCommands` / `createJSONDocument` facade 에서만. cut 이 copy 를 import 하지 않는다. 대신 facade 가 cut 의 결과로 copy 의 payload + remove 의 patch 를 같이 만든다.
 4. **`core/*` 만 의존** — 의존 방향: verbs/ → core/. 다른 verb / hook 의존 금지.
 
-## 4대 기둥 ↔ 10 verbs ↔ RFC 매핑
+## 4대 기둥 ↔ pure verb files ↔ RFC 매핑
 
 | 기둥 | verbs | RFC/표준 substrate |
 |------|-------|---------------------|
 | Selection (어디) | `select.ts`, `find.ts` | RFC 6901 + W3C Selection / RFC 9535 |
 | Edit (뭐를) | `move.ts`, `duplicate.ts`, `replace.ts` | RFC 6902 (move/copy/replace + 합성) |
 | Clipboard (외부 round-trip) | `cut.ts`, `copy.ts`, `paste.ts` | RFC 6902 (remove/add) + RFC 8259 fragment |
-| Undo (되돌림) | `undo.ts`, `redo.ts` | RFC 6902 inverse + history stack |
+| Undo (되돌림) | document facade command | RFC 6902 inverse + history stack |
 
-= 10. closure.
+= 8 files + 2 history-owned commands.
 
 ## 파일 시그니처 규약
 

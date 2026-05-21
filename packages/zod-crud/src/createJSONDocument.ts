@@ -21,13 +21,13 @@ import {
   type SelectionSnap,
 } from "./core/selection/index.js";
 import {
-  back as historyBack,
-  canRedo as historyCanRedo,
-  canUndo as historyCanUndo,
-  commit as historyCommit,
+  back,
+  canRedo,
+  canUndo,
+  commit as commitHistory,
   emptyHistory,
-  forward as historyForward,
-  mergeLast as historyMergeLast,
+  forward,
+  mergeLast as mergeLastHistory,
   type HistoryStack,
 } from "./core/history.js";
 import { JSONCrudError } from "./JSONCrudError.js";
@@ -148,7 +148,7 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionAfter,
     };
     if (metadata) entry.metadata = { ...metadata };
-    stack = historyCommit(stack, entry, historyLimit);
+    stack = commitHistory(stack, entry, historyLimit);
   };
 
   const patch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
@@ -197,7 +197,7 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const restore = (direction: "undo" | "redo"): boolean => {
-    const popped = direction === "undo" ? historyBack(stack) : historyForward(stack);
+    const popped = direction === "undo" ? back(stack) : forward(stack);
     if (!popped) return false;
     const entry = popped.entry;
     if (direction === "undo") entry.selectionAfter = snapSelection();
@@ -246,8 +246,8 @@ export function createJSONDocument<S extends z.ZodType>(
     },
     undo: () => restore("undo"),
     redo: () => restore("redo"),
-    canUndo: () => historyCanUndo(stack),
-    canRedo: () => historyCanRedo(stack),
+    canUndo: () => canUndo(stack),
+    canRedo: () => canRedo(stack),
     load(value, loadOptions?: JSONLoadOptions) {
       const r = rawOps.load(value);
       if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();
@@ -271,7 +271,7 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const mergeLast = (mergeOptions?: HistoryMergeOptions): boolean => {
     if (isRestoring) return false;
-    const next = historyMergeLast(stack, (prev, top) => {
+    const next = mergeLastHistory(stack, (prev, top) => {
       const metadata = mergeEntryMetadata(prev, top, mergeOptions);
       return {
         forward: [...prev.forward, ...top.forward],

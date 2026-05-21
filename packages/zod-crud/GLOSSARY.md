@@ -9,9 +9,9 @@
 | `createJSONDocument` | 루트 `zod-crud` 의 headless document facade. React 없이 `value`, `ops`, `selection`, `history`, `commands`, `can` 을 제공한다. |
 | `useJSONDocument` | `zod-crud/react` 의 React document facade. `createJSONDocument` 와 같은 표면을 React state/render lifecycle 위에 얹는다. |
 | `JSONDocument<T>` | `createJSONDocument` / `useJSONDocument` 반환 타입. |
-| 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 verbs 분류 기준. |
-| 10 verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |
-| hooks/commands/verbs/core | 현재 코드 위계. hooks 는 React, commands 는 facade builder, verbs 는 pure composer, core 는 RFC substrate. |
+| 4대 기둥 | Selection, Edit, Clipboard, Undo. 10 command verbs 분류 기준. |
+| 10 command verbs | `select`, `move`, `cut`, `copy`, `paste`, `duplicate`, `undo`, `redo`, `find`, `replace`. |
+| hooks/commands/verbs/core | 현재 코드 위계. hooks 는 React, commands 는 facade builder, verbs 는 standalone pure composer, core 는 RFC substrate. |
 
 ## JSON Standards
 
@@ -61,7 +61,7 @@
 
 | 용어 | 의미 |
 |------|------|
-| `commands` | 10 verbs 를 노출하는 facade namespace. |
+| `commands` | 10 command verbs 를 노출하는 facade namespace. |
 | `can` | mutation guard namespace. 현재 state 에서 command 가 가능한지 boolean 으로 답한다. |
 | `source` | copy/cut/duplicate 의 원본 Pointer. |
 | `target` | paste 의 목적지 Pointer. |

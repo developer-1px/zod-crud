@@ -15,16 +15,6 @@ export type {
   JSONOps,
   UseJSONOptions,
 } from "./jsonOps.js";
-export {
-  emptyHistory,
-  back as historyBack,
-  canRedo as historyCanRedo,
-  canUndo as historyCanUndo,
-  commit as historyCommit,
-  forward as historyForward,
-  mergeLast as historyMergeLast,
-} from "./core/history.js";
-export type { HistoryStack } from "./core/history.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";
@@ -197,14 +187,10 @@ export { find } from "./verbs/find.js";
 export type { FindError, FindOk } from "./verbs/find.js";
 export { move } from "./verbs/move.js";
 export type { MoveError, MoveOk, MoveResult } from "./verbs/move.js";
-export { redo } from "./verbs/redo.js";
-export type { RedoResult } from "./verbs/redo.js";
 export { replace } from "./verbs/replace.js";
 export type { ReplaceError, ReplaceOk } from "./verbs/replace.js";
 export { select } from "./verbs/select.js";
 export type { SelectionAction, SelectionSnap } from "./verbs/select.js";
-export { undo } from "./verbs/undo.js";
-export type { UndoEntry, UndoNoop, UndoResult } from "./verbs/undo.js";
 
 // === Schema preflight ===
 export type { PreFlightErrorCode } from "./core/schema/preFlight.js";
