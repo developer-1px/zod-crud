@@ -12,6 +12,7 @@ import {
   extendSelectionCursor,
   moveSelectionCursor,
   primaryPointer,
+  reduceSelection,
   selectedSource,
   selectSelectionScope,
 } from "../core/selection/index.js";
@@ -28,7 +29,6 @@ import type {
   SelectionSource,
   SelectionSnap,
 } from "../core/selection/index.js";
-import { select as selectVerb } from "../verbs/select.js";
 import { cut, type CutOk, type CutError } from "../verbs/cut.js";
 import { copy, type ClipboardSource, type CopyOk, type CopyError } from "../verbs/copy.js";
 import { paste, resolvePasteArgs, type PasteOk, type PasteError, type PasteDuMismatch, type PasteMode, type PasteOptions } from "../verbs/paste.js";
@@ -163,7 +163,7 @@ export function buildCommands<S extends z.ZodType>(
 
   return {
     select(action, mode = selectionMode) {
-      const next = selectVerb(selectionState(), action, mode, ops.state);
+      const next = reduceSelection(selectionState(), action, mode, ops.state);
       applySelection(next);
       return next;
     },

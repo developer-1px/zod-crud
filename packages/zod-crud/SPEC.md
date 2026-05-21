@@ -44,7 +44,8 @@ check.ts    buildCheck → Check<T> (explainable dry-run guard namespace). React
 read.ts     buildReadFacade → at/exists/query/entries. React 무관.
 schema.ts   createSchemaState → schema introspection facade. React 무관.
 verbs/      편집 어휘 composer (pure, React 무관). standalone pure composer 만 둔다.
-   │ uses   undo/redo 는 document facade history command 다. verbs 끼리 import 금지.
+   │ uses   select 는 core/selection reducer, undo/redo 는 document facade history command 다.
+   │        verbs 끼리 import 금지.
 core/       RFC 표준 substrate (pure). 1 substrate = 1 단위 (폴더 또는 파일).
    │       multi-file: pointer/, patch/, jsonpath/, selection/, schema/.
    │       single-file: history.ts, track.ts (derived substrate).
@@ -56,7 +57,7 @@ src/JSONCrudError.ts  throwable wrap. boundary error 어휘 (public API).
 - `core/*` → 외부 의존 0 (단 `core/schema/` 만 Zod 의존 허용)
 - `verbs/*` → `core/*` 만 의존. **verbs 끼리 import 금지 (lint rule, type-only 예외)**
 - `commands/*` → `verbs/*` + `core/*` + `jsonOps` type 만 의존. React 의존 0.
-- `hooks/*` → `commands/*` + `verbs/*` + `core/*` + `JSONCrudError` + React API.
+- `hooks/*` → `createJSONDocument` + React API.
 - 관찰·transport 도구는 라이브러리 본체 진입 거부. 앱/playground/debug tooling 에 둔다.
 
 **`hooks/` 엄격 정합:** React API 의존이 없는 pure 모듈은 `hooks/` 에 두지 않는다. 사용처 (`createJSONDocument` / `useJSONDocument` 가 import) 를 따르지 말고, **모듈 자신의 React 의존 여부** 가 위치 결정 기준.
@@ -87,7 +88,7 @@ src/JSONCrudError.ts  throwable wrap. boundary error 어휘 (public API).
 
 ### 0.5 Layer 규약
 
-- `verbs/*` — 명시 인자만 받는 pure 함수. selection 자동 사용 금지.
+- `verbs/*` — 명시 인자만 받는 pure 함수. selection 자동 사용 금지. `select` 는 `core/selection` reducer 가 정본이다.
 - `createJSONDocument` / `hooks/useJSONDocument` — value, lastPatch, ops, selection, clipboard, history, commands, can, check, `commit`, read/query helpers 를 한 객체로 묶는 facade. facade 의 `copy` / `cut` source 인자를 생략하면 현재 `selection.selectedSource` 를 사용하고, `move` / `duplicate` source 또는 `replace` / `paste` target 인자를 생략하면 현재 `selection.primaryPointer` 를 사용한다. `move` target 은 명시 pointer 인자를 받는다.
 - `verbs/*` 끼리 import 금지. 합성은 내부 command builder 또는 `createJSONDocument` facade 에서만.
 
@@ -1039,7 +1040,7 @@ check.ts              ─ explainable dry-run guard namespace
 read.ts               ─ read/query facade helpers
 schema.ts             ─ schema introspection facade
 verbs/
-  select.ts move.ts cut.ts copy.ts paste.ts duplicate.ts find.ts replace.ts
+  move.ts cut.ts copy.ts paste.ts duplicate.ts find.ts replace.ts
 core/
   pointer/            ─ RFC 6901 + PointerOf/ValueAt + serialization helpers
   patch/              ─ RFC 6902 pure core (SPEC §5.3)

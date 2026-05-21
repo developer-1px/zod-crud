@@ -1,10 +1,10 @@
-// verbs/ 단위 테스트 (P3 추가 — verbs/* pure 함수 검증).
+// pure verb 와 core selection reducer 단위 테스트.
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { move } from "../src/verbs/move.js";
-import { select, EMPTY_SELECTION } from "../src/verbs/select.js";
 import {
+  EMPTY_SELECTION,
   anchorPointer,
   caretPoint,
   caretPointer,
@@ -48,9 +48,9 @@ describe("verbs/move", () => {
   });
 });
 
-describe("verbs/select", () => {
+describe("core/selection reducer", () => {
   test("collapse action 이 caret selection 으로 환원", () => {
-    const s = select(EMPTY_SELECTION, { type: "collapse", pointer: "/items/0" }, "single");
+    const s = reduceSelection(EMPTY_SELECTION, { type: "collapse", pointer: "/items/0" }, "single");
     expect(s.ranges).toEqual(["/items/0"]);
     expect(s.selectedPointers).toEqual(["/items/0"]);
     expect(s.selectionRanges).toEqual([{ anchor: "/items/0", focus: "/items/0" }]);
@@ -73,7 +73,7 @@ describe("verbs/select", () => {
 
   test("JSONPoint caret preserves text offset separately from selected pointer", () => {
     const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
-    const s = select(EMPTY_SELECTION, { type: "collapse", point }, "single");
+    const s = reduceSelection(EMPTY_SELECTION, { type: "collapse", point }, "single");
 
     expect(s.ranges).toEqual(["/items/0/name"]);
     expect(s.selectedPointers).toEqual(["/items/0/name"]);
@@ -89,7 +89,7 @@ describe("verbs/select", () => {
 
   test("JSONPoint coordinates are stored and projected as value snapshots", () => {
     const point = { path: "/items/0/name" as const, offset: 1, affinity: "forward" as const };
-    const s = select(EMPTY_SELECTION, { type: "collapse", point }, "single");
+    const s = reduceSelection(EMPTY_SELECTION, { type: "collapse", point }, "single");
 
     point.offset = 99;
     expect(caretPoint(s)).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
@@ -132,8 +132,8 @@ describe("verbs/select", () => {
   });
 
   test("multiple mode stores independent ranges and primary range", () => {
-    const first = select(EMPTY_SELECTION, { type: "addRange", pointer: "/items/0" }, "multiple");
-    const second = select(first, { type: "addRange", range: { anchor: "/items/1/name", focus: "/items/1/name" } }, "multiple");
+    const first = reduceSelection(EMPTY_SELECTION, { type: "addRange", pointer: "/items/0" }, "multiple");
+    const second = reduceSelection(first, { type: "addRange", range: { anchor: "/items/1/name", focus: "/items/1/name" } }, "multiple");
 
     expect(second.ranges).toEqual(["/items/0", "/items/1/name"]);
     expect(second.selectionRanges).toEqual([
@@ -159,7 +159,7 @@ describe("verbs/select", () => {
   });
 
   test("togglePointer removes one selected item from an expanded range", () => {
-    const range = select(
+    const range = reduceSelection(
       EMPTY_SELECTION,
       { type: "setBaseAndExtent", anchor: "/items/0", focus: "/items/2" },
       "extended",
@@ -168,7 +168,7 @@ describe("verbs/select", () => {
 
     expect(range.selectedPointers).toEqual(["/items/0", "/items/1", "/items/2"]);
 
-    const removedMiddle = select(range, { type: "togglePointer", pointer: "/items/1" }, "extended", initial);
+    const removedMiddle = reduceSelection(range, { type: "togglePointer", pointer: "/items/1" }, "extended", initial);
 
     expect(removedMiddle.selectedPointers).toEqual(["/items/0", "/items/2"]);
     expect(removedMiddle.selectionRanges).toEqual([
@@ -177,14 +177,14 @@ describe("verbs/select", () => {
     ]);
     expect(primaryPointer(removedMiddle)).toBe("/items/2");
 
-    const addedBack = select(removedMiddle, { type: "togglePointer", pointer: "/items/1" }, "extended", initial);
+    const addedBack = reduceSelection(removedMiddle, { type: "togglePointer", pointer: "/items/1" }, "extended", initial);
 
     expect(addedBack.selectedPointers).toEqual(["/items/0", "/items/2", "/items/1"]);
     expect(primaryPointer(addedBack)).toBe("/items/1");
   });
 
   test("selectRanges dedupes ranges while preserving primary range intent", () => {
-    const s = select(EMPTY_SELECTION, {
+    const s = reduceSelection(EMPTY_SELECTION, {
       type: "selectRanges",
       ranges: ["/items/0", "/items/1", "/items/0"],
       primaryIndex: 2,
@@ -202,7 +202,7 @@ describe("verbs/select", () => {
 
   test("selectRanges accepts JSONPoint objects as collapsed ranges", () => {
     const point = { path: "/items/0/name" as const, offset: 99, affinity: "forward" as const };
-    const s = select(EMPTY_SELECTION, {
+    const s = reduceSelection(EMPTY_SELECTION, {
       type: "selectRanges",
       ranges: [point, { anchor: "/items/2", focus: "/items/2" }],
       primaryIndex: 0,

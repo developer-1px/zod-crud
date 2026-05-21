@@ -8,10 +8,10 @@ import { buildCommands, type Commands } from "./commands/buildCommands.js";
 import { buildCheck, type Check } from "./check.js";
 import {
   applyPatch,
-  computeInverses,
   type JSONPatchOperation,
   type JSONResult,
 } from "./core/patch/index.js";
+import { computeInverses } from "./core/patch/inverse.js";
 import { parsePointer, readAt, type Pointer } from "./core/pointer/index.js";
 import {
   reduceSelection,

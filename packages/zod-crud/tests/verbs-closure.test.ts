@@ -21,8 +21,8 @@ const commandVerbs = [
   "redo",       // Undo
 ];
 
+// select 는 core/selection reducer 가 정본이다. undo/redo 는 document history control 이다.
 const pureVerbFiles = [
-  "select",
   "find",
   "move",
   "duplicate",
@@ -34,7 +34,7 @@ const pureVerbFiles = [
 
 describe("verbs/ closure — pure composers only", () => {
   test("expected pure verb 파일이 모두 존재", () => {
-    expect(pureVerbFiles.length).toBe(8);
+    expect(pureVerbFiles.length).toBe(7);
     for (const v of pureVerbFiles) {
       expect(existsSync(resolve(verbsPath, `${v}.ts`)), `missing: verbs/${v}.ts`).toBe(true);
     }
@@ -44,7 +44,7 @@ describe("verbs/ closure — pure composers only", () => {
     const actual = readdirSync(verbsPath);
     const tsFiles = actual.filter((n) => n.endsWith(".ts"));
     const markdownFiles = actual.filter((n) => n.endsWith(".md"));
-    expect(tsFiles.length).toBe(8);
+    expect(tsFiles.length).toBe(pureVerbFiles.length);
     expect(markdownFiles).toEqual([]);
     for (const f of tsFiles) {
       const verb = f.replace(/\.ts$/, "");

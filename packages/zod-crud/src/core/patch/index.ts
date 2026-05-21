@@ -8,8 +8,6 @@ import type { Pointer } from "../pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeOp } from "./internal.js";
 
-export { computeInverses } from "./inverse.js";
-
 export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
   | { op: "remove";  path: Pointer }
