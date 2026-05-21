@@ -69,54 +69,6 @@ export type {
   ClipboardWriteOptions,
   CreateClipboardOptions,
 } from "./clipboard.js";
-export { createCommands } from "./commands/buildCommands.js";
-export type {
-  CommandSelectionState,
-  Commands,
-  CreateCommandsOptions,
-  DeleteTextCommandOptions,
-  DeleteTextCommandResult,
-  RemoveCommandResult,
-  ReplaceCommandResult,
-  ReplaceTextCommandOptions,
-  ReplaceTextCommandResult,
-} from "./commands/buildCommands.js";
-export { createCan } from "./commands/buildCan.js";
-export type {
-  Can,
-  CreateCanOptions,
-} from "./commands/buildCan.js";
-export { createCheck } from "./check.js";
-export type {
-  Check,
-  CheckErrorCode,
-  CheckResult,
-  CheckViolation,
-  CreateCheckOptions,
-} from "./check.js";
-export { createRead } from "./read.js";
-export type {
-  CreateReadOptions,
-  EntriesResult,
-  EntryKind,
-  QueryResult,
-  ReadEntry,
-  ReadFacade,
-  ReadResult,
-} from "./read.js";
-export { createSchema } from "./schema.js";
-export type {
-  CreateSchemaOptions,
-  SchemaDescription,
-  SchemaDescriptionResult,
-  SchemaErrorCode,
-  SchemaErrorResult,
-  SchemaKind,
-  SchemaKindResult,
-  SchemaPathMode,
-  SchemaQueryResult,
-  SchemaState,
-} from "./schema.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch, computeInverses } from "./core/patch/index.js";

@@ -1,13 +1,10 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import {
-  createCan,
-  createCheck,
-  createCommands,
-  createJSONDocument,
-  createSelection,
-} from "../src/index.js";
+import { createCan } from "../src/commands/buildCan.js";
+import { createCommands } from "../src/commands/buildCommands.js";
+import { createCheck } from "../src/check.js";
+import { createJSONDocument, createSelection } from "../src/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),

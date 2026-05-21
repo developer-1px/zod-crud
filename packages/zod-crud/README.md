@@ -143,9 +143,6 @@ doc.commands.undo();
 `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history`
 surface, plus `commit` and read/query helpers. React owns render lifecycle
 only; core owns JSON editing.
-For lower-level composition, `createCommands(args)`, `createCheck(args)`, and
-`createCan(args)` expose the same selection-aware command, dry-run, and boolean
-guard facades used by the document facade.
 `createJSON(schema, initial, options?)` exposes the same low-level JSON state
 owner and `JSONOps<T>` surface that `useJSON` renders in React.
 
@@ -322,9 +319,6 @@ document history uses.
 
 `doc.schema` answers what a path can contain without exposing Zod objects.
 It is advisory; commits still go through the schema gate.
-For standalone reads and schema introspection, use `createRead(args)` and
-`createSchema(args)` with the same headless implementations used by
-`createJSONDocument`.
 
 For lower-level composition, use `createSelection(ops)`, `createClipboard(args)`,
 and `createDraft(doc)` headlessly, or `useSelection(ops)` / `useDraft(doc)` in React. See the
@@ -400,10 +394,8 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `createJSON(schema, initial, options?)` | headless low-level JSON state owner with the same `JSONOps<T>` surface as `useJSON` |
 | `JSONState<T>`, `HeadlessJSONState<T>`, `CreateJSONOptions`, `JSONChangeListener`, `JSONOps<T>`, `UseJSONOptions` | low-level JSON state and ops types |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
-| `createCommands(args)`, `createCheck(args)`, `createCan(args)` | standalone headless command, dry-run, and boolean guard facades over `JSONDocumentOps` plus optional selection state |
-| `Commands<T>`, `Can<T>`, `CommandSelectionState`, `CreateCommandsOptions<S>`, `CreateCheckOptions<S>`, `CreateCanOptions<S>`, `ReplaceCommandResult`, `RemoveCommandResult`, `ReplaceTextCommandResult`, `DeleteTextCommandResult`, `ReplaceTextCommandOptions`, `DeleteTextCommandOptions` | standalone command/check/can composition types |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
-| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `Check<T>`, `CheckResult`, `CheckErrorCode`, `CheckViolation`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `ReadFacade`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
+| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>`, `ClipboardSource`, `ClipboardState<T>`, `CreateClipboardOptions<S>`, `HistoryTransactionOptions`, `HistoryMergeOptions`, `JSONChangeMetadata` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.10) |
 | `JSONDocument<T>`, `JSONDocumentCommitOptions`, `JSONDocumentCommitSelection`, `JSONDocumentHistory`, `UseJSONDocumentOptions<T>` from `zod-crud/react` | React document hook return/options aliases |
 | `useJSON(schema, initial, options?)` from `zod-crud/react` | lower-level React data hook facade over `createJSON` (SPEC §5.1) |
@@ -417,8 +409,6 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `useDraft(doc)`, `useField(doc, pointer)` from `zod-crud/react` | draft/pending field helpers |
 | `DraftState<T>`, `DraftFieldState<T>` from `zod-crud/react` | React draft hook return aliases |
 | `EMPTY_HISTORY`, `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`, `historyMergeLast`, `historyCanUndo`, `historyCanRedo`, `HistoryStack<E>` | pure headless undo/redo stack reducer used by document history |
-| `createRead(args)`, `ReadFacade`, `ReadResult`, `QueryResult`, `EntriesResult`, `EntryKind`, `ReadEntry`, `CreateReadOptions<S>` | standalone headless read/query facade |
-| `createSchema(args)`, `SchemaState<T>`, `SchemaKind`, `SchemaPathMode`, `SchemaQueryResult`, `SchemaKindResult`, `SchemaDescription`, `SchemaDescriptionResult`, `SchemaErrorCode`, `SchemaErrorResult`, `CreateSchemaOptions<S>` | standalone serializable schema introspection facade |
 | `JSONOps<T>` | low-level ops contract (SPEC §5.2) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |

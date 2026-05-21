@@ -16,8 +16,8 @@ and should not be described as an editor.
 ## Canonical Entry Points
 
 ```ts
-// Headless JSON state, document, commands, selection, clipboard, history, read, schema, and draft facades.
-import { createCan, createCheck, createClipboard, createCommands, createDraft, createJSON, createJSONDocument, createRead, createSchema, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
+// Headless JSON state, document, selection, clipboard, history, and draft facades.
+import { createClipboard, createDraft, createJSON, createJSONDocument, createSelection, emptyHistory, historyCommit, moveSelectionCursor, extendSelectionCursor, resolveSelectionCursor, selectSelectionScope, resolveSelectionScope, orderSelectionRange, orderPrimarySelectionRange, orderSelectionRanges, selectionSpansForPointer, selectionTextEdits, replaceSelectionText, deleteSelectionText } from "zod-crud";
 
 // React facade and React-only helpers.
 import {
@@ -106,20 +106,12 @@ plus final selection for `doc.commit`. Use `doc.commands.replaceText(...)` or
 `doc.commands.deleteText(...)` when the string-leaf edit should commit through
 document history directly; options may include `label`, `origin`, and
 `mergeKey` history metadata.
-Use `createCommands(args)`, `createCheck(args)`, and `createCan(args)` for
-standalone headless command, dry-run, and boolean guard facades; React
-re-exports the same factories without adding a separate command model.
 Use `createJSON(schema, initial, options?)` for standalone low-level JSON state
 and `JSONOps<T>`; React `useJSON` is a facade over it.
-Use `createClipboard(args)` for standalone headless clipboard state; React
-re-exports the same factory without adding a clipboard hook.
+Use `createClipboard(args)` for standalone headless clipboard state.
 Use `emptyHistory`, `historyCommit`, `historyBack`, `historyForward`,
 `historyMergeLast`, `historyCanUndo`, and `historyCanRedo` for standalone
-headless undo/redo stack state; React re-exports the same pure reducer
-primitives without adding a separate history model.
-Use `createRead(args)` and `createSchema(args)` for standalone headless
-read/query and schema introspection facades; React re-exports the same
-factories without adding separate read/schema models.
+headless undo/redo stack state.
 Use `createDraft(doc)` for standalone headless draft/pending field state;
 `useDraft(doc)` and `useField(doc, pointer)` are React facades over it.
 `doc.commands.select(action)`, `doc.commands.moveCursor(direction, options?)`,

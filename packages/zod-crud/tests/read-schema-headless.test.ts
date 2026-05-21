@@ -1,7 +1,8 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createRead, createSchema } from "../src/index.js";
+import { createRead } from "../src/read.js";
+import { createSchema } from "../src/schema.js";
 
 const Schema = z.object({
   title: z.string(),

@@ -743,10 +743,9 @@ Acceptance evidence:
 
 ## 7.1 Command / Guard Subsystem
 
-Standalone lower-level composition uses `createCommands(args)`,
-`createCheck(args)`, and `createCan(args)` for the same selection-aware command
-verbs, dry-run checks, and boolean guards exposed by `createJSONDocument`.
-React re-exports the same factories and does not own a separate command model.
+The public command/guard surface is `doc.commands`, `doc.check`, and `doc.can`
+on `createJSONDocument` / `useJSONDocument`. Lower-level command builders are
+internal composition, not a separate package contract.
 
 ## 8. Schema Subsystem
 
@@ -754,10 +753,10 @@ Generic editors need to ask what a path can contain. The target schema facade
 exposes read-only introspection without leaking Zod internals as the primary
 API.
 
-Standalone lower-level composition uses `createRead(args)` for current-value
-Pointer/JSONPath reads and `createSchema(args)` for serializable schema
-introspection. React re-exports the same factories and does not own a separate
-read/schema model.
+The public read/schema surface is `doc.at`, `doc.exists`, `doc.query`,
+`doc.entries`, and `doc.schema` on `createJSONDocument` / `useJSONDocument`.
+Lower-level read/schema builders are internal composition, not a separate
+package contract.
 
 ```ts
 interface SchemaState<T> {
