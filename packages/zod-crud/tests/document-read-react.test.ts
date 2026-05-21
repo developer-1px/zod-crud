@@ -4,7 +4,7 @@ import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import * as z from "zod";
 
-import { useJSONDocument } from "../src/hooks/useJSONDocument.js";
+import { useJSONDocument } from "../src/react.js";
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean;

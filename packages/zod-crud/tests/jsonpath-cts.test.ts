@@ -2,9 +2,10 @@
 // Source: https://github.com/jsonpath-standard/jsonpath-compliance-test-suite
 
 import { describe, expect, test } from "vitest";
+import * as z from "zod";
 
 import cts from "./conformance/jsonpath-cts.json" with { type: "json" };
-import { queryMatches } from "../src/core/jsonpath/index.js";
+import { createJSONDocument } from "../src/index.js";
 
 interface JsonPathCtsCase {
   name: string;
@@ -28,6 +29,7 @@ const EXPECTED_INVALID_SELECTORS = 247;
 const EXPECTED_PASSING_CASES = EXPECTED_TOTAL;
 
 const suite = cts as { tests: JsonPathCtsCase[] };
+const Any = z.unknown();
 
 describe("RFC 9535 JSONPath CTS — jsonpath-standard vendor", () => {
   test("full conformance does not regress", () => {
@@ -36,26 +38,32 @@ describe("RFC 9535 JSONPath CTS — jsonpath-standard vendor", () => {
     let passed = 0;
 
     for (const c of suite.tests) {
-      try {
-        const result = queryMatches(c.selector, c.document).map((match) => match.value);
-        if (c.invalid_selector) {
-          invalidSelectors += 1;
+      const doc = createJSONDocument(Any, c.document);
+      const queried = doc.query(c.selector);
+      if (c.invalid_selector) {
+        invalidSelectors += 1;
+        if (!queried.ok) {
+          passed += 1;
+        } else {
           failures.push(failure(c, "expected invalid selector"));
-          continue;
         }
+        continue;
+      }
 
-        if (matchesAllowedResult(result, c)) {
-          passed += 1;
-        } else {
-          failures.push(failure(c, "result mismatch"));
-        }
-      } catch (error) {
-        if (c.invalid_selector) {
-          invalidSelectors += 1;
-          passed += 1;
-        } else {
-          failures.push(failure(c, error instanceof Error ? error.message : "unexpected throw"));
-        }
+      if (!queried.ok) {
+        failures.push(failure(c, queried.reason ?? "invalid query"));
+        continue;
+      }
+
+      const result = queried.pointers.map((pointer) => {
+        const read = doc.at(pointer);
+        if (!read.ok) throw new Error(`query returned unreadable pointer: ${pointer}`);
+        return read.value;
+      });
+      if (matchesAllowedResult(result, c)) {
+        passed += 1;
+      } else {
+        failures.push(failure(c, "result mismatch"));
       }
     }
 

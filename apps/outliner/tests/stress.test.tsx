@@ -11,8 +11,7 @@ import userEvent from "@testing-library/user-event";
 import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import { z } from "zod";
-import { Outliner } from "../src/Outliner.js";
-import { OutlineSchema, SAMPLE } from "../src/schema.js";
+import { Outliner, OutlineSchema, SAMPLE } from "../src/index.js";
 import type { JSONCrudError } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
 

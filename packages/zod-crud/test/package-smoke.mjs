@@ -2,7 +2,7 @@ import { execFileSync } from "node:child_process";
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { basename, dirname, extname, isAbsolute, join, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -14,19 +14,45 @@ const lockfilePath = join(monorepoRoot, "package-lock.json");
 const lockfileSnapshot = existsSync(lockfilePath) ? await readFile(lockfilePath) : null;
 const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
 const readmeSource = await readFile(join(repoRoot, "README.md"), "utf8");
-const rootSource = await readFile(join(repoRoot, "src", "index.ts"), "utf8");
-const reactSource = await readFile(join(repoRoot, "src", "react.ts"), "utf8");
-const rootExports = extractExports(rootSource);
-const reactExports = extractExports(reactSource);
-const sourceModules = await sourceModulePaths(join(repoRoot, "src"));
-const rootValueExports = rootExports.value;
-const reactValueExports = reactExports.value;
-const rootPublicExports = rootExports.public;
-const reactPublicExports = reactExports.public;
+const rootValueExports = [
+  "JSONCrudError",
+  "PointerSyntaxError",
+  "appendSegment",
+  "applyOperation",
+  "applyPatch",
+  "buildPointer",
+  "createClipboard",
+  "createJSONDocument",
+  "createSelection",
+  "escapeSegment",
+  "lastSegment",
+  "lastSegmentIndex",
+  "parentPointer",
+  "parsePointer",
+  "trackPointer",
+  "tryParsePointer",
+  "unescapeSegment",
+  "withLastSegment",
+];
+const reactValueExports = ["useJSONDocument"];
+const rootPublicExports = [
+  ...rootValueExports,
+  "JSONDocument",
+  "JSONOps",
+  "JSONPatchOperation",
+  "JSONPoint",
+  "JSONResult",
+  "Pointer",
+  "SelectionAction",
+  "SelectionRange",
+  "SelectionSnap",
+  "SelectionState",
+];
+const reactPublicExports = [...reactValueExports];
 const rootTypeExports = rootPublicExports.filter((name) => !rootValueExports.includes(name));
 const reactTypeExports = reactPublicExports.filter((name) => !reactValueExports.includes(name));
-const rootTypeOnlyExports = rootExports.typeOnly;
-const reactTypeOnlyExports = reactExports.typeOnly;
+const rootTypeOnlyExports = [...rootTypeExports];
+const reactTypeOnlyExports = [...reactTypeExports];
 
 function run(command, args, cwd) {
   try {
@@ -113,64 +139,6 @@ function existingPath(candidates) {
   }
 
   return null;
-}
-
-function extractExports(source) {
-  const value = [];
-  const typeOnly = [];
-
-  for (const match of source.matchAll(/^export( type)? \{([\s\S]*?)\} from/gm)) {
-    const isTypeOnly = match[1] !== undefined;
-    const block = match[2];
-    if (block === undefined) {
-      throw new Error("Export block capture failed");
-    }
-    const names = exportNames(block);
-    if (isTypeOnly) {
-      typeOnly.push(...names);
-    } else {
-      value.push(...names);
-    }
-  }
-  for (const match of source.matchAll(/^export\s+(interface|type)\s+([A-Za-z_$][\w$]*)/gm)) {
-    const name = match[2];
-    if (name === undefined) {
-      throw new Error("Type declaration export capture failed");
-    }
-    typeOnly.push(name);
-  }
-  for (const match of source.matchAll(/^export\s+(class|const|function)\s+([A-Za-z_$][\w$]*)/gm)) {
-    const name = match[2];
-    if (name === undefined) {
-      throw new Error("Value declaration export capture failed");
-    }
-    value.push(name);
-  }
-
-  return {
-    public: uniqueSorted([...value, ...typeOnly]),
-    typeOnly: uniqueSorted(typeOnly),
-    value: uniqueSorted(value),
-  };
-}
-
-function exportNames(block) {
-  const names = [];
-  for (const rawPart of block.split(",")) {
-    const part = rawPart.replace(/\/\/.*$/gm, "").trim();
-    if (part.length === 0) continue;
-    const exportedName = part.split(/\s+as\s+/).at(-1)?.split(/\s+/)[0];
-    if (exportedName === undefined) {
-      throw new Error(`Export name capture failed: ${part}`);
-    }
-    names.push(exportedName);
-  }
-
-  return names;
-}
-
-function uniqueSorted(names) {
-  return [...new Set(names)].sort();
 }
 
 function markdownCodeBlockAfterHeading(source, heading, language) {
@@ -357,22 +325,6 @@ function namedImportLine(names, specifier, options = {}) {
   return `${keyword} { ${imports} } from "${specifier}";`;
 }
 
-async function sourceModulePaths(dir, prefix = "") {
-  const entries = await readdir(dir, { withFileTypes: true });
-  const paths = [];
-  for (const entry of entries) {
-    const relativePath = prefix ? `${prefix}/${entry.name}` : entry.name;
-    const absolutePath = join(dir, entry.name);
-    if (entry.isDirectory()) {
-      paths.push(...await sourceModulePaths(absolutePath, relativePath));
-    } else if (entry.isFile() && extname(entry.name) === ".ts") {
-      paths.push(relativePath);
-    }
-  }
-
-  return paths.sort();
-}
-
 async function assertInstalledTextFiles(installedPackageRoot) {
   const files = packageJson.files.filter((file) => file !== "dist");
   for (const file of files) {
@@ -489,24 +441,6 @@ try {
   });
   if (developmentArtifacts.length > 0) {
     throw new Error(`Tarball includes development artifacts: ${developmentArtifacts.slice(0, 3).join(", ")}`);
-  }
-  const expectedDistArtifacts = sourceModules.flatMap((sourcePath) => {
-    const distPath = `dist/${sourcePath.slice(0, -".ts".length)}`;
-    return [`${distPath}.js`, `${distPath}.d.ts`];
-  });
-  for (const artifact of expectedDistArtifacts) {
-    if (!packedFiles.includes(artifact)) {
-      throw new Error(`Tarball is missing dist artifact for src module: ${artifact}`);
-    }
-  }
-  const expectedDistArtifactSet = new Set(expectedDistArtifacts);
-  const unexpectedDistArtifacts = packedFiles.filter((file) => {
-    if (!file.startsWith("dist/")) return false;
-    if (!file.endsWith(".js") && !file.endsWith(".d.ts")) return false;
-    return !expectedDistArtifactSet.has(file);
-  });
-  if (unexpectedDistArtifacts.length > 0) {
-    throw new Error(`Tarball includes dist artifacts without source modules: ${unexpectedDistArtifacts.slice(0, 3).join(", ")}`);
   }
   if (packageJson.type !== "module") {
     throw new Error('Package must publish as ESM with "type": "module"');

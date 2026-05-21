@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { JSONCrudError } from "../src/JSONCrudError.js";
+import { JSONCrudError } from "../src/index.js";
 
 describe("JSONCrudError", () => {
   test("exposes op, result, name, and operation-specific message", () => {
