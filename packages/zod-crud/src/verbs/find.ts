@@ -2,7 +2,7 @@
 // pure. read-only.
 
 import type { Pointer } from "../core/pointer/index.js";
-import { query as jsonpathQuery, queryMatches as jsonpathQueryMatches, JSONPathSyntaxError } from "../core/jsonpath/index.js";
+import { queryMatches as jsonpathQueryMatches, JSONPathSyntaxError } from "../core/jsonpath/index.js";
 import type { Match } from "../core/jsonpath/index.js";
 
 export interface FindOk {
@@ -32,5 +32,3 @@ export function find(state: unknown, jsonpath: string): FindOk | FindError {
     throw e;
   }
 }
-
-export { jsonpathQuery as queryPointers };

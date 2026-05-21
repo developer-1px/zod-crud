@@ -194,7 +194,7 @@ export type {
 } from "./verbs/duplicate.js";
 export { cut } from "./verbs/cut.js";
 export type { CutError, CutOk } from "./verbs/cut.js";
-export { find, queryPointers } from "./verbs/find.js";
+export { find } from "./verbs/find.js";
 export type { FindError, FindOk } from "./verbs/find.js";
 export { move } from "./verbs/move.js";
 export type { MoveError, MoveOk, MoveResult } from "./verbs/move.js";
