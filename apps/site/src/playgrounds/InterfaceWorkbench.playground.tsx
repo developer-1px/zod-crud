@@ -152,12 +152,14 @@ export function InterfaceWorkbench() {
 
   const addCardToTodo = (): unknown => {
     const id = nextCardId(doc.value);
-    return doc.ops.add("/lists/0/cards/-" as never, { ...sampleCard, id, title: `Card ${id}` } as never);
+    return doc.patch([
+      { op: "add", path: "/lists/0/cards/-", value: { ...sampleCard, id, title: `Card ${id}` } },
+    ]);
   };
 
   const replaceSelectedTitle = (): unknown => {
     const path = `${primaryPointer ?? cardPointer(0, 0)}/title` as Pointer;
-    return doc.ops.replace(path as never, `Edited ${doc.history.undoDepth + 1}` as never);
+    return doc.run({ type: "replace", path, value: `Edited ${doc.history.undoDepth + 1}` });
   };
 
   const patchTwoFields = (): unknown => {
@@ -165,21 +167,29 @@ export function InterfaceWorkbench() {
       { op: "replace", path: "/settings/owner", value: "playground" },
       { op: "replace", path: "/lists/0/name", value: "Backlog" },
     ];
-    return doc.ops.patch(operations, { label: "ops.patch" });
+    return doc.patch(operations, { label: "doc.patch" });
   };
 
-  const invalidPatch = (): unknown => doc.ops.patch([
+  const invalidPatch = (): unknown => doc.patch([
     { op: "replace", path: "/lists/0/cards/0/points", value: -10 },
   ]);
 
-  const copySelection = (): unknown => doc.clipboard.copy(selectedPointers.length > 0 ? selectedPointers : undefined);
+  const copySelection = (): unknown => doc.run({
+    type: "copy",
+    source: selectedPointers.length > 0 ? selectedPointers : undefined,
+  });
 
-  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste(target, "after");
+  const pasteClipboardAfterTarget = (): unknown => doc.run({ type: "paste", target, mode: "after" });
 
-  const commandPastePayload = (): unknown => doc.commands.paste(parsedPayload(), target, "after");
+  const commandPastePayload = (): unknown => doc.run({
+    type: "paste",
+    payload: parsedPayload(),
+    target,
+    mode: "after",
+  });
 
   const selectTodoCards = (): unknown => {
-    const matches = doc.query("$..cards[?(@.status=='todo')]");
+    const matches = doc.read.query("$..cards[?(@.status=='todo')]");
     if (!matches.ok) return matches;
     doc.selection?.selectRanges(matches.pointers, undefined, undefined, Math.max(0, matches.pointers.length - 1));
     return matches;
@@ -194,7 +204,7 @@ export function InterfaceWorkbench() {
     const selection = doc.selection?.snapshot();
     const hasTitleSelection = selection?.selectedPointers.includes("/title") ?? false;
     if (!hasTitleSelection) doc.selection?.collapse({ path: "/title", offset: 0 });
-    return doc.commands.replaceText("Bench", { mergeKey: "title-text" });
+    return doc.run({ type: "replaceText", replacement: "Bench", options: { mergeKey: "title-text" } });
   };
 
   const commitAddWithSelection = (): unknown => {
@@ -208,13 +218,13 @@ export function InterfaceWorkbench() {
 
   const transactionRename = (): unknown => {
     doc.history.transaction({ label: "rename-two" }, () => {
-      doc.ops.replace("/lists/0/cards/0/title" as never, "Batch A" as never);
-      doc.ops.replace("/lists/0/cards/1/title" as never, "Batch B" as never);
+      doc.run({ type: "replace", path: "/lists/0/cards/0/title", value: "Batch A" });
+      doc.run({ type: "replace", path: "/lists/0/cards/1/title", value: "Batch B" });
     });
     return doc.value;
   };
 
-  const queryPointers = (): unknown => doc.query(query);
+  const queryPointers = (): unknown => doc.read.query(query);
 
   const inspectPureExports = (): unknown => {
     const patch: JSONPatchOperation[] = [
@@ -231,7 +241,7 @@ export function InterfaceWorkbench() {
       history: 10,
       selection: { mode: "extended", initial: [cardPointer(0, 0)] },
     });
-    headless.commands.duplicate();
+    headless.run({ type: "duplicate" });
     const standaloneClipboard = createClipboard({
       schema: BoardSchema,
       getState: () => headless.value,
@@ -284,7 +294,7 @@ export function InterfaceWorkbench() {
   };
 
   const findAndSelect = (): unknown => {
-    const found = doc.commands.find(query);
+    const found = doc.run({ type: "find", jsonpath: query }) as ReturnType<typeof doc.commands.find>;
     if (found.ok) {
       const pointers = found.matches.map((match) => match.pointer);
       doc.selection?.selectRanges(pointers, undefined, undefined, Math.max(0, pointers.length - 1));
@@ -376,24 +386,24 @@ export function InterfaceWorkbench() {
       </section>
 
       <section className="grid gap-3 xl:grid-cols-4">
-        <ActionGroup title="doc.ops">
-          <ActionButton onClick={() => run("ops.add", addCardToTodo)}>add</ActionButton>
-          <ActionButton onClick={() => run("ops.replace", replaceSelectedTitle)}>replace</ActionButton>
-          <ActionButton onClick={() => run("ops.remove", () => doc.ops.remove(target as never))}>remove</ActionButton>
-          <ActionButton onClick={() => run("ops.patch", patchTwoFields)}>patch</ActionButton>
-          <ActionButton onClick={() => run("ops.patch invalid", invalidPatch)}>invalid</ActionButton>
+        <ActionGroup title="doc.patch">
+          <ActionButton onClick={() => run("patch.add", addCardToTodo)}>add</ActionButton>
+          <ActionButton onClick={() => run("patch.replace", () => doc.patch([{ op: "replace", path: `${target}/title`, value: "Patch edit" }]))}>replace</ActionButton>
+          <ActionButton onClick={() => run("patch.remove", () => doc.patch([{ op: "remove", path: target }]))}>remove</ActionButton>
+          <ActionButton onClick={() => run("patch.batch", patchTwoFields)}>batch</ActionButton>
+          <ActionButton onClick={() => run("patch.invalid", invalidPatch)}>invalid</ActionButton>
           <ActionButton onClick={() => run("ops.load", loadFixture)}>load</ActionButton>
           <ActionButton onClick={() => run("ops.reset", () => doc.ops.reset())}>reset</ActionButton>
         </ActionGroup>
 
-        <ActionGroup title="doc.commands">
-          <ActionButton onClick={() => run("commands.duplicate", () => doc.commands.duplicate(target))}>duplicate</ActionButton>
-          <ActionButton onClick={() => run("commands.move", () => doc.commands.move(target, "/lists/1/cards/0" as Pointer))}>move</ActionButton>
-          <ActionButton onClick={() => run("commands.replace", () => doc.commands.replace(`${target}/title` as Pointer, "Command edit"))}>replace</ActionButton>
-          <ActionButton onClick={() => run("commands.paste", commandPastePayload)}>paste</ActionButton>
-          <ActionButton onClick={() => run("commands.remove", () => doc.commands.remove(selectedPointers.length > 0 ? selectedPointers : target))}>remove</ActionButton>
-          <ActionButton onClick={() => run("commands.find", findAndSelect)}>find</ActionButton>
-          <ActionButton onClick={() => run("commands.replaceText", replaceTitleText)}>replaceText</ActionButton>
+        <ActionGroup title="doc.run">
+          <ActionButton onClick={() => run("run.duplicate", () => doc.run({ type: "duplicate", source: target }))}>duplicate</ActionButton>
+          <ActionButton onClick={() => run("run.move", () => doc.run({ type: "move", source: target, target: "/lists/1/cards/0" as Pointer }))}>move</ActionButton>
+          <ActionButton onClick={() => run("run.replace", replaceSelectedTitle)}>replace</ActionButton>
+          <ActionButton onClick={() => run("run.paste", commandPastePayload)}>paste</ActionButton>
+          <ActionButton onClick={() => run("run.remove", () => doc.run({ type: "remove", source: selectedPointers.length > 0 ? selectedPointers : target }))}>remove</ActionButton>
+          <ActionButton onClick={() => run("run.find", findAndSelect)}>find</ActionButton>
+          <ActionButton onClick={() => run("run.replaceText", replaceTitleText)}>replaceText</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.selection">
@@ -407,36 +417,36 @@ export function InterfaceWorkbench() {
           <ActionButton onClick={() => run("selection.empty", () => { doc.selection?.empty(); return doc.selection?.snapshot(); })}>empty</ActionButton>
         </ActionGroup>
 
-        <ActionGroup title="doc.clipboard">
-          <ActionButton onClick={() => run("clipboard.copy", copySelection)}>copy</ActionButton>
-          <ActionButton onClick={() => run("clipboard.cut", () => doc.clipboard.cut(selectedPointers.length > 0 ? selectedPointers : target))}>cut</ActionButton>
-          <ActionButton onClick={() => run("clipboard.paste", pasteClipboardAfterTarget)}>paste</ActionButton>
+        <ActionGroup title="clipboard buffer">
+          <ActionButton onClick={() => run("run.copy", copySelection)}>copy</ActionButton>
+          <ActionButton onClick={() => run("run.cut", () => doc.run({ type: "cut", source: selectedPointers.length > 0 ? selectedPointers : target }))}>cut</ActionButton>
+          <ActionButton onClick={() => run("run.paste", pasteClipboardAfterTarget)}>paste</ActionButton>
           <ActionButton onClick={() => run("clipboard.write", () => doc.clipboard.write(parsedPayload(), { source: target }))}>write</ActionButton>
           <ActionButton onClick={() => run("clipboard.read", () => doc.clipboard.read())}>read</ActionButton>
           <ActionButton onClick={() => run("clipboard.clear", () => { doc.clipboard.clear(); return doc.clipboard.read(); })}>clear</ActionButton>
         </ActionGroup>
 
-        <ActionGroup title="history / commit">
-          <ActionButton onClick={() => run("history.undo", () => doc.commands.undo())} disabled={!doc.history.canUndo}>undo</ActionButton>
-          <ActionButton onClick={() => run("history.redo", () => doc.commands.redo())} disabled={!doc.history.canRedo}>redo</ActionButton>
+        <ActionGroup title="doc.history">
+          <ActionButton onClick={() => run("run.undo", () => doc.run({ type: "undo" }))} disabled={!doc.history.canUndo}>undo</ActionButton>
+          <ActionButton onClick={() => run("run.redo", () => doc.run({ type: "redo" }))} disabled={!doc.history.canRedo}>redo</ActionButton>
           <ActionButton onClick={() => run("history.transaction", transactionRename)}>transaction</ActionButton>
           <ActionButton onClick={() => run("history.mergeLast", () => doc.history.mergeLast({ mergeKey: "manual" }))}>mergeLast</ActionButton>
           <ActionButton onClick={() => run("doc.commit", commitAddWithSelection)}>commit</ActionButton>
         </ActionGroup>
 
-        <ActionGroup title="read / query">
-          <ActionButton onClick={() => run("doc.at", () => doc.at(target))}>at</ActionButton>
-          <ActionButton onClick={() => run("doc.exists", () => doc.exists(target))}>exists</ActionButton>
-          <ActionButton onClick={() => run("doc.entries", () => doc.entries("/lists/0/cards" as Pointer))}>entries</ActionButton>
-          <ActionButton onClick={() => run("doc.query", queryPointers)}>query</ActionButton>
+        <ActionGroup title="doc.read">
+          <ActionButton onClick={() => run("read.at", () => doc.read.at(target))}>at</ActionButton>
+          <ActionButton onClick={() => run("read.exists", () => doc.read.exists(target))}>exists</ActionButton>
+          <ActionButton onClick={() => run("read.entries", () => doc.read.entries("/lists/0/cards" as Pointer))}>entries</ActionButton>
+          <ActionButton onClick={() => run("read.query", queryPointers)}>query</ActionButton>
         </ActionGroup>
 
-        <ActionGroup title="check / can">
-          <ActionButton onClick={() => run("check.replace", () => doc.check.replace(`${target}/points` as Pointer, 8))}>check ok</ActionButton>
-          <ActionButton onClick={() => run("check.patch", () => doc.check.patch([{ op: "replace", path: `${target}/points`, value: -5 }]))}>check bad</ActionButton>
-          <ActionButton onClick={() => run("can.copy", () => doc.can.copy(selectedPointers.length > 0 ? selectedPointers : target))}>can copy</ActionButton>
-          <ActionButton onClick={() => run("can.paste", () => doc.can.paste(parsedPayload(), target, "after"))}>can paste</ActionButton>
-          <ActionButton onClick={() => run("can.undo/redo", () => ({ undo: doc.can.undo, redo: doc.can.redo }))}>stacks</ActionButton>
+        <ActionGroup title="doc.plan">
+          <ActionButton onClick={() => run("plan.replace ok", () => doc.plan({ type: "replace", path: `${target}/points` as Pointer, value: 8 }))}>replace ok</ActionButton>
+          <ActionButton onClick={() => run("plan.replace bad", () => doc.plan({ type: "replace", path: `${target}/points` as Pointer, value: -5 }))}>replace bad</ActionButton>
+          <ActionButton onClick={() => run("plan.copy", () => doc.plan({ type: "copy", source: selectedPointers.length > 0 ? selectedPointers : target }))}>copy</ActionButton>
+          <ActionButton onClick={() => run("plan.paste", () => doc.plan({ type: "paste", payload: parsedPayload(), target, mode: "after" }))}>paste</ActionButton>
+          <ActionButton onClick={() => run("plan.undo/redo", () => ({ undo: doc.plan({ type: "undo" }), redo: doc.plan({ type: "redo" }) }))}>stacks</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.schema">

@@ -8,8 +8,9 @@ JSONPath · W3C Selection · RFC 8927 + Zod**) so the vocabulary becomes a
 **reusable standard layer**.
 
 State, actions, and change records are 100% serializable JSON. The core is
-pure RFC substrate. `createJSONDocument` exposes the headless document facade
-and owns the edit command surface. `zod-crud/react` exposes `useJSONDocument`.
+pure RFC substrate. `createJSONDocument` exposes the headless document facade:
+`read` for queries, `plan` for dry-run checks, `run` for user intents, and
+`patch` for raw RFC 6902 edits. `zod-crud/react` exposes `useJSONDocument`.
 
 The behavior contract lives in [`SPEC.md`](./SPEC.md). It documents current
 code behavior; on conflict, SPEC §11 applies: code behavior wins unless it
@@ -52,16 +53,20 @@ export function App() {
     <>
       <input
         value={doc.value.title}
-        onChange={(e) => doc.ops.replace("/title", e.target.value)}
+        onChange={(e) => doc.run({ type: "replace", path: "/title", value: e.target.value })}
       />
       <button
         onClick={() =>
-          doc.ops.add("/tasks/-", { id: crypto.randomUUID(), done: false })
+          doc.run({
+            type: "paste",
+            payload: { id: crypto.randomUUID(), done: false },
+            target: "/tasks/-",
+          })
         }
       >
         add task
       </button>
-      <button onClick={doc.commands.undo} disabled={!doc.can.undo}>
+      <button onClick={() => doc.run({ type: "undo" })} disabled={!doc.plan({ type: "undo" }).ok}>
         undo
       </button>
       {doc.value.tasks.map((t, i) => (
@@ -70,10 +75,14 @@ export function App() {
             type="checkbox"
             checked={t.done}
             onChange={(e) =>
-              doc.ops.replace(`/tasks/${i}/done` as `/tasks/${number}/done`, e.target.checked)
+              doc.run({
+                type: "replace",
+                path: `/tasks/${i}/done` as `/tasks/${number}/done`,
+                value: e.target.checked,
+              })
             }
           />
-          <button onClick={() => doc.ops.remove(`/tasks/${i}` as `/tasks/${number}`)}>
+          <button onClick={() => doc.run({ type: "remove", source: `/tasks/${i}` as `/tasks/${number}` })}>
             remove
           </button>
         </div>
@@ -89,18 +98,20 @@ export function App() {
 | --- | --- |
 | `doc.value` | current schema-valid state (`T`) |
 | `doc.lastPatch` | value snapshot of the last applied document patch; `[]` after selection-only commits |
-| `doc.ops` | low-level `JSONOps` — `state` + `add`/`remove`/`replace`/`move`/`copy`/`test`/`patch`/`load`/`reset`/`subscribe` |
-| `doc.commands` | edit commands plus selection/text helpers (`remove`, `replaceText`, `deleteText`, cursor movement, select scope) |
-| `doc.can` | mutation, JSONPath find, and selection guard predicates + `undo`/`redo` flags |
-| `doc.check` | explainable dry-run guard results for commands, JSONPath find, and selection movement; `can.x(...) === check.x(...).ok` |
+| `doc.read` | non-mutating read helpers: `at`/`exists`/`query`/`entries` |
+| `doc.plan` | explainable dry-run check for an intent; `doc.plan(intent).ok` is the boolean guard |
+| `doc.run` | user-intent execution (`replace`, `move`, `copy`, `paste`, `undo`, etc.) |
+| `doc.patch` | low-level raw JSON Patch escape hatch |
 | `doc.schema` | serializable path introspection (`at`/`kind`/`accepts`/`describe`) |
 | `doc.selection` | W3C-shaped selection coordinates (`JSONPoint`, primary range, selected pointer projection) |
-| `doc.clipboard` | headless JSON clipboard buffer (`copy`/`cut`/`paste`) |
+| `doc.clipboard` | headless JSON clipboard buffer (`read`/`write`/`clear`; copy/cut/paste user intents go through `doc.run`) |
 | `doc.history` | `canUndo`/`canRedo`/depth flags, `mergeLast(options?)`, `transaction(options?, fn)` |
 | `doc.commit` | document-level patch commit with optional final `selection` and history metadata |
+| `doc.ops`, `doc.commands`, `doc.check`, `doc.can` | compatibility facades kept for low-level and existing integrations |
 
-The facade also exposes read/query helpers: `doc.at(path)`,
-`doc.exists(path)`, `doc.query(jsonpath)`, and `doc.entries(path)`.
+The facade also keeps read/query aliases: `doc.at(path)`,
+`doc.exists(path)`, `doc.query(jsonpath)`, and `doc.entries(path)`. Prefer
+`doc.read.*` in new code.
 
 Selection and history are first-class — they are not parallel hooks you wire
 up yourself. `commands.*` mutate through the history-aware path; `doc.commit`
@@ -121,21 +132,21 @@ const Schema = z.object({
 
 const doc = createJSONDocument(Schema, { title: "", tasks: [] }, { history: 50 });
 
-doc.ops.add("/tasks/-", { id: "a", done: false });
+doc.run({ type: "paste", payload: { id: "a", done: false }, target: "/tasks/-" });
 doc.commit(
   [{ op: "replace", path: "/title", value: "final" }],
   { label: "rename", origin: "editor", selection: { type: "collapse", pointer: "/title" } },
 );
 doc.history.transaction(() => {
-  doc.ops.add("/tasks/-", { id: "b", done: true });
-  doc.ops.add("/tasks/-", { id: "c", done: false });
+  doc.run({ type: "paste", payload: { id: "b", done: true }, target: "/tasks/-" });
+  doc.run({ type: "paste", payload: { id: "c", done: false }, target: "/tasks/-" });
 });
-doc.commands.undo();
+doc.run({ type: "undo" });
 ```
 
 `createJSONDocument` and `useJSONDocument` intentionally share the same
-`value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history`
-surface, plus `commit` and read/query helpers. React owns render lifecycle
+`value`/`lastPatch`/`read`/`plan`/`run`/`patch`/`schema`/`selection`/`clipboard`/`history`
+surface, plus `commit` and compatibility facades. React owns render lifecycle
 only; core owns JSON editing.
 Use `doc.ops` for low-level `JSONOps<T>` operations through the document
 facade.

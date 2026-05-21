@@ -38,6 +38,10 @@ const reactValueExports = ["useJSONDocument"];
 const rootPublicExports = [
   ...rootValueExports,
   "JSONDocument",
+  "JSONDocumentIntent",
+  "JSONDocumentPlanResult",
+  "JSONDocumentRead",
+  "JSONDocumentRunResult",
   "JSONOps",
   "JSONPatchOperation",
   "JSONPoint",
@@ -542,7 +546,9 @@ try {
       'if (typeof createJSONDocument !== "function") throw new Error("createJSONDocument export failed");',
       'if (typeof createSelection !== "function") throw new Error("createSelection export failed");',
       'const jsonDoc = createJSONDocument(schema, initial);',
-      'if (!jsonDoc.ops.replace("/name", "json").ok || jsonDoc.value.name !== "json") throw new Error("createJSONDocument runtime failed");',
+      'const jsonRun = jsonDoc.run({ type: "replace", path: "/name", value: "json" });',
+      'if (!jsonRun.ok || jsonDoc.value.name !== "json") throw new Error("createJSONDocument runtime failed");',
+      'if (!jsonDoc.read.at("/name").ok) throw new Error("createJSONDocument read facade failed");',
     ].join("\n"),
   );
   await writeFile(
@@ -550,9 +556,9 @@ try {
     [
       'import * as z from "zod";',
       'import { applyOperation, applyPatch, tryParsePointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, type JSONPatchOperation, type Pointer } from "zod-crud";',
-      'import type { JSONOps, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState } from "zod-crud";',
+      'import type { JSONDocumentIntent, JSONDocumentPlanResult, JSONDocumentRead, JSONDocumentRunResult, JSONOps, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState } from "zod-crud";',
       'const schema = z.object({ name: z.string() });',
-      'type PublicRootTypes = [JSONOps<z.output<typeof schema>>, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState<z.output<typeof schema>>];',
+      'type PublicRootTypes = [JSONDocumentIntent, JSONDocumentPlanResult, JSONDocumentRead, JSONDocumentRunResult<z.output<typeof schema>>, JSONOps<z.output<typeof schema>>, JSONPoint, JSONResult, SelectionAction, SelectionRange, SelectionSnap, SelectionState<z.output<typeof schema>>];',
       'declare const publicRootTypes: PublicRootTypes;',
       'publicRootTypes satisfies readonly unknown[];',
       'const r = applyOperation(schema, { name: "ok" }, { op: "replace", path: "/name", value: "next" });',

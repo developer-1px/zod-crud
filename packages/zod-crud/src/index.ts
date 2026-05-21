@@ -10,7 +10,13 @@ export type { JSONOps } from "./jsonOps.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";
-export type { JSONDocument } from "./createJSONDocument.js";
+export type {
+  JSONDocument,
+  JSONDocumentIntent,
+  JSONDocumentPlanResult,
+  JSONDocumentRead,
+  JSONDocumentRunResult,
+} from "./createJSONDocument.js";
 export { createSelection } from "./selection.js";
 export type { SelectionState } from "./selection.js";
 export { createClipboard } from "./clipboard.js";
