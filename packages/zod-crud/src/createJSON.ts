@@ -11,11 +11,15 @@ import {
 import type { Pointer } from "./core/pointer/index.js";
 import { handleResult, type ErrorPolicy } from "./JSONCrudError.js";
 import type {
-  JSONChangeListener,
   JSONChangeMetadata,
   JSONOps,
   JSONRuntimeOptions,
 } from "./jsonOps.js";
+
+type JSONChangeListener = (
+  applied: ReadonlyArray<JSONPatchOperation>,
+  metadata?: JSONChangeMetadata,
+) => void;
 
 export interface CreateJSONOptions extends JSONRuntimeOptions {
   onChange?: () => void;

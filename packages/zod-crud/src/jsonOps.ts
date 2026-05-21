@@ -20,23 +20,9 @@ export interface HistoryTransactionOptions {
   mergeKey?: string;
 }
 
-export interface HistoryMergeOptions {
-  mergeKey?: string;
-}
-
 export interface JSONChangeMetadata extends HistoryTransactionOptions {
   selectionBefore?: SelectionSnap;
   selectionAfter?: SelectionSnap;
-}
-
-export type JSONChangeListener = (
-  applied: ReadonlyArray<JSONPatchOperation>,
-  metadata?: JSONChangeMetadata,
-) => void;
-
-export interface JSONLoadOptions {
-  /** Keep useJSONDocument history instead of treating load as a hard reset. */
-  preserveHistory?: boolean;
 }
 
 export interface JSONOps<T> {
@@ -49,9 +35,12 @@ export interface JSONOps<T> {
 
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 
-  load(value: T, options?: JSONLoadOptions): JSONResult;
+  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: T): JSONResult;
 
-  subscribe(listener: JSONChangeListener): () => void;
+  subscribe(listener: (
+    applied: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ) => void): () => void;
   readonly state: T;
 }

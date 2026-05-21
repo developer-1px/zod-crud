@@ -124,7 +124,7 @@ interface InternalCreateSelectionOptions extends CreateSelectionOptions {
   applyMetadataSelectionAfter?: boolean;
 }
 
-export type SelectionChangeListener = (
+type SelectionChangeListener = (
   snapshot: SelectionSnap,
   previous: SelectionSnap,
 ) => void;

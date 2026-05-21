@@ -37,10 +37,8 @@ import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
 import type { JSONCrudError } from "./JSONCrudError.js";
 import type {
-  HistoryMergeOptions,
   HistoryTransactionOptions,
   JSONChangeMetadata,
-  JSONLoadOptions,
   JSONOps,
 } from "./jsonOps.js";
 
@@ -57,7 +55,7 @@ export interface JSONDocumentHistory {
   readonly canRedo: boolean;
   readonly undoDepth: number;
   readonly redoDepth: number;
-  mergeLast(options?: HistoryMergeOptions): boolean;
+  mergeLast(options?: { mergeKey?: string }): boolean;
   transaction(fn: () => void): void;
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
@@ -223,7 +221,7 @@ export function createJSONDocument<S extends z.ZodType>(
     copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
     test: rawOps.test,
     patch,
-    load(value, loadOptions?: JSONLoadOptions) {
+    load(value, loadOptions?: { preserveHistory?: boolean }) {
       const r = rawOps.load(value);
       if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();
       return r;
@@ -251,7 +249,7 @@ export function createJSONDocument<S extends z.ZodType>(
     canRedo: () => canRedo(stack),
   };
 
-  const mergeLast = (mergeOptions?: HistoryMergeOptions): boolean => {
+  const mergeLast = (mergeOptions?: { mergeKey?: string }): boolean => {
     if (isRestoring) return false;
     const next = mergeLastHistory(stack, (prev, top) => {
       const metadata = mergeEntryMetadata(prev, top, mergeOptions);
@@ -372,7 +370,7 @@ function buildChangeMetadata(
 function mergeEntryMetadata(
   prev: HistoryEntry,
   top: HistoryEntry,
-  options?: HistoryMergeOptions,
+  options?: { mergeKey?: string },
 ): HistoryTransactionOptions | undefined {
   const merged = { ...prev.metadata, ...top.metadata, ...options };
   return Object.keys(merged).length > 0 ? merged : undefined;
