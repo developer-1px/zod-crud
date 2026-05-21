@@ -1105,6 +1105,42 @@ describe("createJSONDocument — headless facade", () => {
     expect(doc.value.meta).toEqual({ foo: "bar", baz: "bar" });
   });
 
+  test("commands duplicate can rekey copied payloads through the document facade", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const duplicated = doc.commands.duplicate("/items/0", {
+      rekey: { fields: ["id"], strategy: "suffix" },
+    });
+
+    expect(duplicated).toMatchObject({
+      ok: true,
+      duplicatedTo: "/items/1",
+    });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a-copy", "b"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("commands duplicate reports object key planning errors without mutation", () => {
+    const doc = createJSONDocument(Schema, initial);
+    const conflictDoc = createJSONDocument(Schema, {
+      ...initial,
+      meta: { foo: "bar", baz: "taken" },
+    });
+
+    expect(doc.commands.duplicate("/meta/foo")).toEqual({
+      ok: false,
+      code: "missing_new_key",
+      message: "object duplicate requires opts.newKey (배열은 자동, object 는 명시)",
+    });
+    expect(conflictDoc.commands.duplicate("/meta/foo", { newKey: "baz" })).toEqual({
+      ok: false,
+      code: "key_conflict",
+      message: 'newKey "baz" already exists at /meta',
+    });
+    expect(doc.value).toEqual(initial);
+    expect(conflictDoc.value.meta).toEqual({ foo: "bar", baz: "taken" });
+  });
+
   test("commands duplicate reports empty selection when source is omitted", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single" },
@@ -1118,6 +1154,40 @@ describe("createJSONDocument — headless facade", () => {
       message: "duplicate source selection is empty",
     });
     expect(doc.value).toEqual(initial);
+  });
+
+  test("commands paste can rekey payloads and report rekey failures through the document facade", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    const pasted = doc.commands.paste(
+      { id: "a", name: "A copy" },
+      "/items/-",
+      { rekey: { fields: ["id"], strategy: "suffix" } },
+    );
+
+    expect(pasted).toMatchObject({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a-copy"]);
+    expect(doc.history.undoDepth).toBe(1);
+
+    const failed = doc.commands.paste(
+      { id: "a", name: "Bad copy" },
+      "/items/-",
+      {
+        rekey: {
+          fields: ["id"],
+          strategy() {
+            throw new Error("cannot mint id");
+          },
+        },
+      },
+    );
+
+    expect(failed).toEqual({
+      ok: false,
+      code: "rekey_failed",
+      message: "cannot mint id",
+    });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a-copy"]);
   });
 
   test("multi-source cut recovers selection without duplicate ranges", () => {
