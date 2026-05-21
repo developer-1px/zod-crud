@@ -6,17 +6,12 @@
 
 // === Boundary error + ops contract ===
 export { JSONCrudError } from "./JSONCrudError.js";
-export type {
-  HistoryTransactionOptions,
-  JSONChangeMetadata,
-  JSONOps,
-} from "./jsonOps.js";
+export type { JSONOps } from "./jsonOps.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONDocument,
-  JSONDocumentCommitOptions,
   UseJSONDocumentOptions,
 } from "./createJSONDocument.js";
 export { createSelection } from "./selection.js";
@@ -28,8 +23,6 @@ export { applyOperation, applyPatch } from "./core/patch/index.js";
 export type {
   JSONPatchOperation,
   JSONResult,
-  ErrorCode,
-  ApplyResult,
 } from "./core/patch/index.js";
 
 // === RFC 6901 — JSON Pointer ===

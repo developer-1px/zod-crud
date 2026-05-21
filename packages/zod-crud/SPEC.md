@@ -320,13 +320,13 @@ export interface JSONOps<T> {
   readonly state: T;
 }
 
-export interface HistoryTransactionOptions {
+interface HistoryTransactionOptions {
   label?: string;
   origin?: "keyboard" | "pointer" | "programmatic" | string;
   mergeKey?: string;
 }
 
-export interface JSONChangeMetadata extends HistoryTransactionOptions {
+interface JSONChangeMetadata extends HistoryTransactionOptions {
   selectionBefore?: SelectionSnap;
   selectionAfter?: SelectionSnap;
 }
@@ -347,7 +347,7 @@ export function applyPatch<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S>;
 
-export interface ApplyResult<S extends z.ZodType> {
+interface ApplyResult<S extends z.ZodType> {
   state: z.output<S>;
   result: JSONResult;
   applied: ReadonlyArray<JSONPatchOperation>;
@@ -751,7 +751,7 @@ export interface JSONDocument<T> {
   entries(path: Pointer): EntriesResult;
 }
 
-export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
+interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   selection?: SelectionAction | SelectionSnap;
 }
 ```
@@ -791,7 +791,7 @@ export type JSONResult =
   | { ok: true }
   | { ok: false; code: ErrorCode; reason?: string; pointer?: Pointer };
 
-export type ErrorCode =
+type ErrorCode =
   | "invalid_pointer"
   | "path_not_found"
   | "move_into_self"

@@ -368,15 +368,15 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | Export | Purpose |
 | --- | --- |
 | `createJSONDocument(schema, initial, options?)` | headless facade with the same `value`/`lastPatch`/`ops`/`commands`/`can`/`check`/`schema`/`selection`/`clipboard`/`history` surface, `commit`, and read/query helpers as `useJSONDocument` |
-| `JSONChangeMetadata`, `JSONOps<T>` | low-level ops contract and metadata types |
+| `JSONOps<T>` | low-level ops contract |
 | `createClipboard(args)` | standalone headless clipboard buffer; composes with independent `JSONOps` and optional selection source/target getters |
-| `JSONDocument<T>`, `JSONDocumentCommitOptions`, `UseJSONDocumentOptions<T>`, `HistoryTransactionOptions` | shared headless facade types |
+| `JSONDocument<T>`, `UseJSONDocumentOptions<T>` | shared headless facade types |
 | `useJSONDocument(schema, initial, options?)` from `zod-crud/react` | React facade (SPEC §5.9) |
 | `createSelection(ops, options?)` | headless selection/caret state over JSON ops (SPEC §5.7) |
 | `trackPointer` | low-level pointer tracking helper (SPEC §5.8) |
 | `applyOperation(schema, state, op)` | pure single-op (SPEC §5.3) |
 | `applyPatch(schema, state, ops)` | pure batch (SPEC §5.3) |
-| `JSONPatchOperation`, `JSONResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
+| `JSONPatchOperation`, `JSONResult` | RFC 6902 types (SPEC §3, §5.3) |
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |

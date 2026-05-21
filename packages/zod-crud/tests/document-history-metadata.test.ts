@@ -2,7 +2,6 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { createJSONDocument } from "../src/index.js";
-import type { JSONChangeMetadata } from "../src/index.js";
 
 const Schema = z.object({
   title: z.string(),
@@ -20,7 +19,7 @@ describe("doc.history metadata", () => {
       history: 10,
       selection: { mode: "single", initial: ["/title"] },
     });
-    const metadata: JSONChangeMetadata[] = [];
+    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.ops.subscribe>[0]>[1]>> = [];
     doc.ops.subscribe((_, changeMetadata) => {
       if (changeMetadata) metadata.push(changeMetadata);
     });
@@ -83,7 +82,7 @@ describe("doc.history metadata", () => {
         }],
       },
     });
-    const metadata: JSONChangeMetadata[] = [];
+    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.ops.subscribe>[0]>[1]>> = [];
     doc.ops.subscribe((_, changeMetadata) => {
       if (changeMetadata) metadata.push(changeMetadata);
     });
