@@ -575,7 +575,7 @@ try {
     [
       'import * as z from "zod";',
       'import * as zc from "zod-crud";',
-      'import { applyOperation, applyPatch, createClipboard, createJSONDocument, createSelection, emptyHistory, historyBack, historyCanRedo, historyCanUndo, historyCommit, historyForward, historyMergeLast, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, move, replace, toJSONSchema, fromJSONSchema } from "zod-crud";',
+      'import { applyOperation, applyPatch, createClipboard, createJSONDocument, createSelection, emptyHistory, historyBack, historyCanRedo, historyCanUndo, historyCommit, historyForward, historyMergeLast, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment, find, move, replace } from "zod-crud";',
       `const expectedRootValueExports = ${JSON.stringify(rootValueExports)};`,
       `const expectedRootTypeOnlyExports = ${JSON.stringify(rootTypeOnlyExports)};`,
       'for (const name of expectedRootValueExports) {',
@@ -620,10 +620,6 @@ try {
       'const historyMerged = historyMergeLast(historyCommit(historyStack, { id: "second" }, 10), (prev, top) => ({ id: `${prev.id}+${top.id}` }));',
       'if (historyMerged?.undo.at(-1)?.id !== "entry+second") throw new Error("historyMergeLast export failed");',
       'if (!move(schema, r2.state, "/tags/0", "/tags/0").ok) throw new Error("move export failed");',
-      'const jsonSchema = toJSONSchema(schema);',
-      'if (jsonSchema.type !== "object") throw new Error("toJSONSchema export failed");',
-      'const restoredSchema = fromJSONSchema(jsonSchema);',
-      'if (!restoredSchema.safeParse(initial).success) throw new Error("fromJSONSchema export failed");',
     ].join("\n"),
   );
   await writeFile(

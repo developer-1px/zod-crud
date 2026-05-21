@@ -6,6 +6,7 @@ All notable package changes are recorded here.
 
 - Split the React entrypoint to `zod-crud/react`, keeping root `zod-crud` importable without React.
 - Kept package exports limited to root `zod-crud` and `zod-crud/react`; verb modules remain source layout, not public subpaths.
+- Kept direct Zod JSON Schema conversion on Zod itself; zod-crud exposes schema introspection through the document facade.
 - Added tarball smoke checks for root, React, and private source-layout subpaths.
 - Added package export consistency checks and type-regression file coverage.
 

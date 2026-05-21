@@ -117,16 +117,9 @@ RFC 6901 Pointer[] 로 환원한다. `tests/conformance/jsonpath-cts.json` 는
 
 ### 1.1 JSON Schema 양방향 (외부 표준 다리)
 
-[`src/core/schema/bridge.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/src/core/schema/bridge.ts) 가 zod 4 의 `toJSONSchema` / `fromJSONSchema` 를 re-export 한다. 외부 도구 (Ajv · OpenAPI · AsyncAPI · 코드젠) 가 받는 표면이 JSON Schema (draft-2020-12) 이므로 이 다리 없으면 우리 schema 가 zod 안에 갇힌다.
+[`src/core/schema/bridge.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/src/core/schema/bridge.ts) 는 내부에서 zod 4 의 JSON Schema 변환을 사용한다. Public facade 는 `doc.schema.describe(pointer)` 의 JSON 직렬화 가능한 설명을 통해 schema 정보를 노출한다. Zod ↔ JSON Schema 직접 변환이 필요한 사용자는 zod 의 `toJSONSchema` / `fromJSONSchema` 를 직접 사용한다.
 
-```ts
-import { toJSONSchema, fromJSONSchema } from "zod-crud";
-
-const jsonSchema = toJSONSchema(myZodSchema);          // → JSON Schema draft-2020-12
-const restoredZod = fromJSONSchema(jsonSchemaFromAPI); // ← 서버 스펙 → 클라 검증
-```
-
-테스트: [`tests/schema-bridge.test.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/tests/schema-bridge.test.ts) — round-trip 후 substrate 가 변환된 schema 로 mutation 검증까지 통과.
+테스트: [`tests/schema-bridge.test.ts`](https://github.com/developer-1px/zod-crud/tree/main/packages/zod-crud/tests/schema-bridge.test.ts) — 내부 bridge round-trip 후 substrate 가 변환된 schema 로 mutation 검증까지 통과.
 
 ---
 
