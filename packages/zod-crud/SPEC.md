@@ -371,13 +371,11 @@ export type ValueAt<T, P extends string> = ...;
 
 깊이 한계: 5단. 그 이상은 `string`으로 fallback (TS 컴파일 비용 관리).
 
-### 5.5 직렬화 헬퍼
+### 5.5 JSON serializability boundary
 
-```ts
-export function serialize<T>(state: T): string;          // validates JSON, then JSON.stringify
-```
-
-`serialize` 는 non-JSON 값이 있으면 `TypeError` 를 던진다. valid JSON 값에서는 `JSON.stringify` 와 동일하다.
+Public document state, operations, selection snapshots, clipboard buffers, and
+history metadata are plain JSON. Use `JSON.stringify` / `JSON.parse` directly
+for transport. Mutating APIs reject non-JSON values with `not_serializable`.
 
 ### 5.6 RFC 6901 Pointer 헬퍼 (low-level)
 
@@ -759,7 +757,7 @@ export interface SelectionState<T> {
   selectedCount: number;               // selectedPointers.length
   hasSelection: boolean;               // selectedCount > 0
   primaryRange: SelectionRange | null; // selectionRanges[primaryIndex] 편의 getter
-  context: JSONValue | undefined;      // selection-local JSON editing context
+  context: SelectionContext | undefined;      // selection-local JSON editing context
   anchorPointer: Pointer | null;       // anchor 의 Pointer projection
   focusPointer: Pointer | null;        // focus 의 Pointer projection
   selectedSource: SelectionSource | null;  // copy/cut/remove source projection
@@ -794,7 +792,7 @@ export interface SelectionState<T> {
     focus?: JSONPoint | null,
     primaryIndex?: number,
   ): void;
-  setContext(context: JSONValue): void;
+  setContext(context: SelectionContext): void;
   clearContext(): void;
   empty(): void;
   isSelected(pointer: Pointer): boolean;

@@ -1,9 +1,10 @@
-// SPEC.md §5.5 — serialize round-trip + G1 보장.
+// Internal JSON serializability helper + G1 보장.
 
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
 
-import { serialize, applyPatch } from "../src/index.js";
+import { applyPatch } from "../src/index.js";
+import { serialize } from "../src/core/pointer/serialize.js";
 
 const Schema = z.object({
   title: z.string(),

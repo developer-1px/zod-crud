@@ -7,7 +7,6 @@ import * as z from "zod";
 import {
   applyOperation,
   applyPatch,
-  serialize,
   type JSONPatchOperation,
 } from "../src/index.js";
 
@@ -60,7 +59,7 @@ describe("G1 — JSON-only state and patch", () => {
     ];
     const r = applyPatch(Any, state, ops);
     expect(r.result.ok).toBe(true);
-    expect(JSON.parse(serialize(r.state))).toEqual(r.state);
-    expect(JSON.parse(serialize(ops))).toEqual(ops);
+    expect(JSON.parse(JSON.stringify(r.state))).toEqual(r.state);
+    expect(JSON.parse(JSON.stringify(ops))).toEqual(ops);
   });
 });

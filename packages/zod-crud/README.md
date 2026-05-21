@@ -341,20 +341,18 @@ special to serialize — `JSON.stringify` works directly:
 
 ```ts
 import * as z from "zod";
-import { serialize } from "zod-crud";
 
 const Schema = z.object({ title: z.string() });
 const state = { title: "draft" };
 
-const json = serialize(state);                // string
+const json = JSON.stringify(state);
 const restored = Schema.parse(JSON.parse(json));
 const safe = Schema.safeParse(JSON.parse(json));
 ```
 
-`serialize` throws `TypeError` for non-JSON values such as `undefined`,
+`applyOperation`/`applyPatch` reject non-JSON values such as `undefined`,
 functions, symbols, `BigInt`, `Date`, `NaN`, circular references, sparse
-arrays, and class instances. `applyOperation`/`applyPatch` reject the same
-values with `not_serializable`.
+arrays, and class instances with `not_serializable`.
 
 Operations are also pure JSON, so they can be sent over the wire and
 applied on the server with any RFC 6902 implementation:
@@ -388,7 +386,6 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `JSONPatchOperation`, `JSONResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
-| `serialize`, `JSONPrimitive`, `JSONValue` | JSON helpers (SPEC §5.5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `compareSelectionPoints`, `orderSelectionRange`, `orderPrimarySelectionRange`, `orderSelectionRanges`, `selectionSpansForPointer`, `selectionTextEdits`, `replaceSelectionText`, `deleteSelectionText`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionMode`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointOrderResult`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |
 | `JSONLoadOptions`, `UseJSONOptions`, `JSONChangeMetadata`, `HistoryTransactionOptions`, `HistoryMergeOptions` | low-level ops and history metadata options |
