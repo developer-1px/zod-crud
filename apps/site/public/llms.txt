@@ -28,7 +28,7 @@ import {
 import { applyPatch, applyOperation, computeInverses } from "zod-crud";
 
 // Pointer / serialization.
-import { parsePointer, buildPointer, serialize, parse, safeParse } from "zod-crud";
+import { parsePointer, buildPointer, serialize } from "zod-crud";
 
 ```
 

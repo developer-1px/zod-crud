@@ -11,6 +11,7 @@ All notable package changes are recorded here.
 - Removed unused standalone undo/redo verb composers; document history remains the undo/redo owner.
 - Removed the target-spec document so source, SPEC, and package docs remain the only public contract.
 - Kept edit verbs behind the document facade instead of standalone root exports.
+- Kept only the JSON boundary serializer instead of schema parse wrappers.
 - Added tarball smoke checks for root, React, and private source-layout subpaths.
 - Added package export consistency checks and type-regression file coverage.
 

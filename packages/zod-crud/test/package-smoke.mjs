@@ -731,7 +731,7 @@ try {
       readmeSerializationExample,
       'if (json !== JSON.stringify(state)) throw new Error("README serialization example JSON mismatch");',
       'if (restored.title !== "draft") throw new Error("README serialization example parse mismatch");',
-      'if (!safe.ok || safe.state.title !== "draft") throw new Error("README serialization example safeParse mismatch");',
+      'if (!safe.success || safe.data.title !== "draft") throw new Error("README serialization example safeParse mismatch");',
     ].join("\n"),
   );
 

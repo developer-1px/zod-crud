@@ -380,11 +380,6 @@ export type ValueAt<T, P extends string> = ...;
 
 ```ts
 export function serialize<T>(state: T): string;          // validates JSON, then JSON.stringify
-export function parse<S extends z.ZodType>(schema: S, json: string): z.output<S>;
-export function safeParse<S extends z.ZodType>(
-  schema: S,
-  json: string,
-): { ok: true; state: z.output<S> } | { ok: false; error: z.ZodError };
 ```
 
 `serialize` 는 non-JSON 값이 있으면 `TypeError` 를 던진다. valid JSON 값에서는 `JSON.stringify` 와 동일하다.

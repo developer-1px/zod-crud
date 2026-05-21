@@ -341,14 +341,14 @@ special to serialize — `JSON.stringify` works directly:
 
 ```ts
 import * as z from "zod";
-import { serialize, parse, safeParse } from "zod-crud";
+import { serialize } from "zod-crud";
 
 const Schema = z.object({ title: z.string() });
 const state = { title: "draft" };
 
 const json = serialize(state);                // string
-const restored = parse(Schema, json);         // throws on schema mismatch
-const safe = safeParse(Schema, json);         // returns { ok, ... }
+const restored = Schema.parse(JSON.parse(json));
+const safe = Schema.safeParse(JSON.parse(json));
 ```
 
 `serialize` throws `TypeError` for non-JSON values such as `undefined`,
@@ -389,7 +389,7 @@ See [`SPEC.md`](./SPEC.md) §5 for the public surface. Briefly:
 | `JSONPatchOperation`, `JSONResult`, `ErrorCode`, `ApplyResult` | RFC 6902 types (SPEC §3, §5.3) |
 | `Pointer`, `PointerOf<T>`, `ValueAt<T,P>` | path types (SPEC §2, §5.4) |
 | `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment` | RFC 6901 helpers (SPEC §5.6) |
-| `serialize`, `parse`, `safeParse`, `jsonEqual`, `JSONPrimitive`, `JSONValue` | JSON helpers (SPEC §5.5) |
+| `serialize`, `jsonEqual`, `JSONPrimitive`, `JSONValue` | JSON helpers (SPEC §5.5) |
 | `JSONCrudError`, `PointerSyntaxError` | error classes (SPEC §6.3) |
 | `computeInverses` | RFC 6902 inverse helper |
 | `EMPTY_SELECTION`, `anchorPointer`, `caretPoint`, `caretPointer`, `focusPointer`, `hasSelection`, `isCollapsed`, `isSelected`, `pointPointer`, `primaryPointer`, `primaryRange`, `rangeCount`, `restoreSelection`, `selectedCount`, `selectedSource`, `selectionSnapshot`, `selectionType`, `moveSelectionCursor`, `extendSelectionCursor`, `resolveSelectionCursor`, `selectSelectionScope`, `resolveSelectionScope`, `compareSelectionPoints`, `orderSelectionRange`, `orderPrimarySelectionRange`, `orderSelectionRanges`, `selectionSpansForPointer`, `selectionTextEdits`, `replaceSelectionText`, `deleteSelectionText`, `JSONPoint`, `SelectionAction`, `SelectionAffinity`, `SelectionContext`, `SelectionEdge`, `SelectionMode`, `SelectionRange`, `SelectionRangeInput`, `SelectionSnap`, `SelectionSource`, `SelectionType`, `SelectionCursorDirection`, `SelectionCursorErrorCode`, `SelectionCursorOptions`, `SelectionCursorResult`, `SelectionCursorTarget`, `SelectionDirection`, `SelectionOrderErrorCode`, `SelectionOrderOptions`, `SelectionPointOrderResult`, `SelectionPointerSpan`, `SelectionPointerSpansResult`, `SelectionSpanOptions`, `SelectionTextEdit`, `SelectionTextDeleteDirection`, `SelectionTextDeleteOptions`, `SelectionTextEditErrorCode`, `SelectionTextEditOptions`, `SelectionTextEditsResult`, `ReplaceSelectionTextResult`, `DeleteSelectionTextResult`, `OrderedSelectionRange`, `OrderedSelectionRangeEntry`, `SelectionRangeOrderResult`, `SelectionRangesOrderResult`, `SelectionScopeErrorCode`, `SelectionScopeOptions`, `SelectionScopeResult`, `SelectionScopeTarget`, `SelectionState<T>`, `HeadlessSelectionState<T>`, `SelectionChangeListener`, `UseSelectionOptions`, `CreateSelectionOptions` | selection primitives |

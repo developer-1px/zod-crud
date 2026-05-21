@@ -92,6 +92,6 @@ const text = JSON.stringify(doc.value);
 
 localStorage, 서버 전송, Worker 메시지, SSR hydration 같은 곳에 넘기기 쉽습니다.
 
-더 명시적인 helper가 필요하면 `serialize`, `parse`, `safeParse`를 씁니다.
+더 명시적인 JSON boundary 검증이 필요하면 `serialize`를 씁니다.
 
-::source{path="packages/zod-crud/src/core/pointer/serialize.ts" title="serialize helpers" lines="1-29"}
+::source{path="packages/zod-crud/src/core/pointer/serialize.ts" title="serialize helper" lines="1-8"}

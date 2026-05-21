@@ -71,10 +71,10 @@ state와 operation은 JSON입니다. 그래서 저장과 복원이 단순합니�
 
 ```ts
 const text = serialize(value);
-const restored = parse(Schema, text);
+const restored = Schema.parse(JSON.parse(text));
 ```
 
-::source{path="packages/zod-crud/src/core/pointer/serialize.ts" title="serialize helpers" lines="1-29"}
+::source{path="packages/zod-crud/src/core/pointer/serialize.ts" title="serialize helper" lines="1-8"}
 
 ## 왜 UI 컴포넌트가 아닌가요?
 
@@ -130,5 +130,5 @@ Core
 ├─ applyPatch / applyOperation
 ├─ Pointer helpers
 ├─ tracking helpers
-└─ serialize / parse
+└─ serialize
 ```

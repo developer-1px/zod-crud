@@ -1,41 +1,21 @@
-// SPEC.md §5.5 — serialize/parse/safeParse round-trip + G1 보장.
+// SPEC.md §5.5 — serialize round-trip + G1 보장.
 
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
 
-import { serialize, parse, safeParse, applyPatch } from "../src/index.js";
+import { serialize, applyPatch } from "../src/index.js";
 
 const Schema = z.object({
   title: z.string(),
   tasks: z.array(z.object({ id: z.string(), done: z.boolean() })),
 });
 
-describe("serialize / parse", () => {
+describe("serialize", () => {
   it("round-trips state through JSON", () => {
     const state = { title: "doc", tasks: [{ id: "a", done: false }] };
     const s = serialize(state);
     expect(typeof s).toBe("string");
-    expect(parse(Schema, s)).toEqual(state);
-  });
-
-  it("safeParse returns error on schema violation", () => {
-    const r = safeParse(Schema, JSON.stringify({ title: 123, tasks: [] }));
-    expect(r.ok).toBe(false);
-  });
-
-  it("safeParse returns a ZodError on invalid JSON even when schema accepts undefined", () => {
-    const r = safeParse(z.any(), "{");
-
-    expect(r.ok).toBe(false);
-    if (!r.ok) {
-      expect(r.error).toBeInstanceOf(z.ZodError);
-      expect(r.error.issues[0]?.code).toBe("custom");
-    }
-  });
-
-  it("safeParse returns ok on valid JSON", () => {
-    const r = safeParse(Schema, JSON.stringify({ title: "x", tasks: [] }));
-    expect(r.ok).toBe(true);
+    expect(Schema.parse(JSON.parse(s))).toEqual(state);
   });
 
   it("rejects non-JSON values instead of silently dropping data", () => {
