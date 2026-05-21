@@ -9,7 +9,6 @@ export type SourceTab = {
   source: string;
   lineStart?: number;
   lineEnd?: number;
-  symbols?: string[];
 };
 
 /**
@@ -69,7 +68,6 @@ export function SourceTabs({
           filename={active.filename}
           lineStart={active.lineStart}
           fitContent={fitContent}
-          highlightSymbols={active.symbols}
         />
       </div>
     </div>

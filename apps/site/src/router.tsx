@@ -10,8 +10,6 @@ import { Playground } from "./routes/Playground";
 import { OutlinerPage } from "./routes/Outliner";
 import { MobileCmsPage } from "./routes/MobileCms";
 import { ApiCollectionPage } from "./routes/ApiCollection";
-import { MarkdownDocPage } from "./docs/MarkdownDocPage";
-import { docsPagesBySlug, type DocsPageSlug } from "./docs/docs-pages";
 
 type NavItem = { to: string; label: string };
 type NavGroup = { title: string; items: NavItem[] };
@@ -30,18 +28,6 @@ const NAV: NavGroup[] = [
       { to: "/playground/outliner", label: "Outliner" },
       { to: "/playground/mobile-cms", label: "Mobile CMS" },
       { to: "/playground/api-collection", label: "API collection" },
-    ],
-  },
-  {
-    title: "Docs",
-    items: [
-      { to: "/docs/intro", label: "Overview" },
-      { to: "/docs/getting-started", label: "Quick Start" },
-      { to: "/docs/concepts", label: "useJSONDocument" },
-      { to: "/docs/operations", label: "Editor State" },
-      { to: "/docs/schema-safety", label: "Safety" },
-      { to: "/docs/clipboard-history", label: "Patterns" },
-      { to: "/docs/advanced", label: "Core & Design" },
     ],
   },
 ];
@@ -91,18 +77,8 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
-  component: () => <MarkdownDocPage page={docsPagesBySlug.intro} />,
+  component: Playground,
 });
-
-function makeDocRoute(slug: DocsPageSlug) {
-  return createRoute({
-    getParentRoute: () => rootRoute,
-    path: `/docs/${slug}`,
-    component: () => <MarkdownDocPage page={docsPagesBySlug[slug]} />,
-  });
-}
-
-const docRoutes = (Object.keys(docsPagesBySlug) as DocsPageSlug[]).map(makeDocRoute);
 
 const apiRoute = createRoute({ getParentRoute: () => rootRoute, path: "/api", component: ApiReference });
 const playgroundRoute = createRoute({ getParentRoute: () => rootRoute, path: "/playground", component: Playground });
@@ -112,7 +88,6 @@ const apiCollectionRoute = createRoute({ getParentRoute: () => rootRoute, path: 
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  ...docRoutes,
   apiRoute,
   playgroundRoute,
   outlinerRoute,

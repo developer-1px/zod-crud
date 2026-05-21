@@ -118,7 +118,7 @@ else if (v !== '' && cells[k] !== v) ops.replace(`/cells/${k}`, v);
 
 ### Drag / keystroke burst — undo entry 합치기
 
-burst 입력으로 history 가 폭증하면 `doc.history.mergeLast({ mergeKey })` 로 직전 두 entry 를 합치거나, drag/IME 같이 transient 한 입력은 local state 로 미리보기 후 drop/commit 시점에 한 번만 `doc.commit` 또는 `ops` 를 호출합니다. patch 와 최종 selection 이 함께 정해지는 editor command 는 `doc.commit(patch, { selection, label, origin })` 으로 한 undo entry 에 묶습니다. 의도가 있는 batch 는 `doc.history.transaction({ label, origin, mergeKey }, fn)` 로 recorder metadata 까지 남깁니다. 시나리오별 예제는 `docs/site/operations.md` 참조.
+burst 입력으로 history 가 폭증하면 `doc.history.mergeLast({ mergeKey })` 로 직전 두 entry 를 합치거나, drag/IME 같이 transient 한 입력은 local state 로 미리보기 후 drop/commit 시점에 한 번만 `doc.commit` 또는 `ops` 를 호출합니다. patch 와 최종 selection 이 함께 정해지는 editor command 는 `doc.commit(patch, { selection, label, origin })` 으로 한 undo entry 에 묶습니다. 의도가 있는 batch 는 `doc.history.transaction({ label, origin, mergeKey }, fn)` 로 recorder metadata 까지 남깁니다.
 
 ### Pure core (no React)
 
