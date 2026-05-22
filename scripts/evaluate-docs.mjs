@@ -37,11 +37,13 @@ const surfaces = {
 };
 const smoke = read("packages/zod-crud/test/package-smoke.mjs");
 const markdownViewer = read("apps/site/src/components/MarkdownViewer.tsx");
+const workbenchPlayground = read("apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx");
 const workbenchTest = read("apps/site/tests/interface-workbench.test.tsx");
 const siteHtml = read("apps/site/index.html");
 const siteFavicon = read("apps/site/public/favicon.svg");
 const siteManifest = read("apps/site/public/site.webmanifest");
 const siteViteConfig = read("apps/site/vite.config.ts");
+const siteApp = read("apps/site/src/App.tsx");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
 const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
@@ -140,6 +142,10 @@ if (!/\{ type: "table"; header: string\[\]; rows: string\[\]\[\] \}/.test(markdo
   fail("MarkdownViewer: table rendering support missing.");
 }
 
+if (/max-h-96/.test(workbenchPlayground)) {
+  fail("workbench playground: JSON code output must not pin a max height.");
+}
+
 if (!/getAllByRole\("table"\)/.test(workbenchTest)) {
   fail("workbench test: Markdown table rendering assertion missing.");
 }
@@ -177,6 +183,14 @@ if (!/direct route entry/.test(siteShellTest) || !/Skip to content/.test(siteShe
   fail("site shell test: missing production navigation/accessibility coverage.");
 }
 
+if (!/setRouteMetadata/.test(siteApp) || !/document\.title/.test(siteApp) || !/og:url/.test(siteApp) || !/canonicalUrl/.test(siteApp) || !/VITE_SITE_URL/.test(siteApp)) {
+  fail("site app: missing client-side route metadata updates.");
+}
+
+if (!/document\.title/.test(siteShellTest) || !/og:url/.test(siteShellTest) || !/canonical/.test(siteShellTest)) {
+  fail("site shell test: missing client-side route metadata coverage.");
+}
+
 if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/Documentation sections/.test(docsRoute) || !/작업별-진입점/.test(siteShellTest)) {
   fail("site docs: missing table-of-contents navigation coverage.");
 }
@@ -189,6 +203,14 @@ if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pages
   fail("pages workflow: missing production site verification or deployment base.");
 }
 
+if (!/VITE_SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
+  fail("pages workflow: site build must pass the canonical URL to the client bundle.");
+}
+
+if (!/Evaluate site artifact[\s\S]*SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud[\s\S]*run: npm run site:evaluate/.test(pagesWorkflow)) {
+  fail("pages workflow: artifact evaluation must use the production site URL.");
+}
+
 for (const pattern of [
   /404\.html/,
   /docs\/index\.html/,
@@ -199,6 +221,8 @@ for (const pattern of [
   /route title/,
   /route canonical/,
   /route og:url/,
+  /expectedSiteUrl/,
+  /routeUrl/,
   /robots\.txt/,
   /sitemap\.xml/,
   /site\.webmanifest/,
@@ -213,9 +237,24 @@ if (!/SITE_BASE/.test(siteEvaluator) || !/unexpanded Vite base placeholder/.test
   fail("site evaluator: missing production base path checks.");
 }
 
-for (const pattern of [/site:evaluate:live/, /live site evaluation ok/, /SITE_LIVE_ATTEMPTS/, /live_check/, /zod-crud API - zod-crud/, /fetchText\("\/docs", \[200, 404\]\)/]) {
+for (const pattern of [
+  /site:evaluate:live/,
+  /live site evaluation ok/,
+  /SITE_LIVE_ATTEMPTS/,
+  /live_check/,
+  /zod-crud API - zod-crud/,
+  /playground\/api-collection/,
+  /route canonical/,
+  /route og:url/,
+  /routeUrl/,
+  /fetchText\(route\.path\)/,
+]) {
   const source = pattern.source.includes("site:evaluate:live") ? rootPackageJson : liveSiteEvaluator;
   if (!pattern.test(source)) fail(`live site evaluator: missing ${pattern}.`);
+}
+
+if (/\[200, 404\]/.test(liveSiteEvaluator)) {
+  fail("live site evaluator: route pages must require HTTP 200, not 404 fallback.");
 }
 
 for (const surfaceName of ["readme", "spec", "site"]) {

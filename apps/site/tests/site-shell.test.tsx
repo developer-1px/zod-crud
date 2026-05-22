@@ -1,9 +1,14 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
 import { App } from "../src/App";
 
 beforeEach(() => {
+  document.head.innerHTML = [
+    '<meta property="og:title" content="" />',
+    '<meta property="og:url" content="" />',
+    '<link rel="canonical" href="" />',
+  ].join("");
   window.history.pushState(null, "", "/");
 });
 
@@ -31,6 +36,9 @@ describe("official site shell", () => {
     const nav = within(screen.getByRole("navigation", { name: "Site navigation" }));
 
     await user.click(nav.getByRole("link", { name: "API reference" }));
+    await waitFor(() => expect(document.title).toBe("zod-crud API - zod-crud"));
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs");
+    expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute("content")).toBe("https://developer-1px.github.io/zod-crud/docs");
     expect(screen.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();

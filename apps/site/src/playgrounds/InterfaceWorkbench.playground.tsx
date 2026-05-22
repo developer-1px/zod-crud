@@ -547,7 +547,7 @@ function Inspect({ title, value }: { title: string; value: unknown }) {
   return (
     <div className="min-h-64 rounded border border-stone-200 bg-stone-950 p-3 text-stone-100">
       <h2 className="mb-2 mt-0 text-xs font-semibold uppercase tracking-wide text-stone-400">{title}</h2>
-      <pre className="max-h-96 overflow-auto whitespace-pre-wrap text-xs leading-relaxed">{stringify(value)}</pre>
+      <pre className="overflow-auto whitespace-pre-wrap text-xs leading-relaxed">{stringify(value)}</pre>
     </div>
   );
 }

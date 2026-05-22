@@ -1,6 +1,14 @@
 const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
 const attempts = Number(process.env.SITE_LIVE_ATTEMPTS ?? "18");
 const delayMs = Number(process.env.SITE_LIVE_DELAY_MS ?? "10000");
+const routes = [
+  { path: "/", title: "zod-crud - Headless JSON editing" },
+  { path: "/docs", title: "zod-crud API - zod-crud" },
+  { path: "/playground", title: "Workbench - zod-crud" },
+  { path: "/playground/outliner", title: "Outliner demo - zod-crud" },
+  { path: "/playground/mobile-cms", title: "Mobile CMS demo - zod-crud" },
+  { path: "/playground/api-collection", title: "API collection demo - zod-crud" },
+];
 
 function fail(message) {
   throw new Error(message);
@@ -33,9 +41,18 @@ async function checkOnce() {
     if (!pattern.test(index)) fail(`live index missing ${pattern}.`);
   }
 
-  const docs = await fetchText("/docs", [200, 404]);
-  if (!/<title>zod-crud API - zod-crud<\/title>/.test(docs)) {
-    fail("live /docs shell is missing the route title.");
+  for (const route of routes) {
+    const routeHtml = route.path === "/" ? index : await fetchText(route.path);
+    const canonical = routeUrl(route.path);
+    if (!routeHtml.includes(`<title>${route.title}</title>`)) {
+      fail(`live ${route.path} shell is missing the route title.`);
+    }
+    if (!routeHtml.includes(`rel="canonical" href="${canonical}"`)) {
+      fail(`live ${route.path} shell is missing the route canonical.`);
+    }
+    if (!routeHtml.includes(`property="og:url" content="${canonical}"`)) {
+      fail(`live ${route.path} shell is missing the route og:url.`);
+    }
   }
 
   const llms = await fetchText("/llms.txt");
@@ -44,11 +61,16 @@ async function checkOnce() {
   }
 
   const sitemap = await fetchText("/sitemap.xml");
-  for (const path of ["/", "/docs", "/playground", "/playground/outliner"]) {
-    if (!sitemap.includes(`<loc>${siteUrl}${path === "/" ? "/" : path}</loc>`)) {
-      fail(`live sitemap missing ${path}.`);
+  for (const route of routes) {
+    const loc = routeUrl(route.path);
+    if (!sitemap.includes(`<loc>${loc}</loc>`)) {
+      fail(`live sitemap missing ${route.path}.`);
     }
   }
+}
+
+function routeUrl(path) {
+  return path === "/" ? `${siteUrl}/` : `${siteUrl}${path}`;
 }
 
 let lastError = null;

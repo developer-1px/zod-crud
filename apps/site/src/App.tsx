@@ -1,4 +1,4 @@
-import { type ComponentType, type MouseEvent, useSyncExternalStore } from "react";
+import { type ComponentType, type MouseEvent, useEffect, useSyncExternalStore } from "react";
 import { ApiCollection } from "@zod-crud/api-collection";
 import { App as MobileCms } from "@zod-crud/mobile-cms";
 import { Outliner } from "@zod-crud/outliner";
@@ -6,16 +6,23 @@ import { Docs } from "./routes/Docs";
 import { Home } from "./routes/Home";
 import { Playground } from "./routes/Playground";
 
-type Route = { path: string; label: string; Component: ComponentType; group: "Start" | "Demos" };
+type Route = {
+  path: string;
+  label: string;
+  title: string;
+  Component: ComponentType;
+  group: "Start" | "Demos";
+};
 
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
+const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
 const ROUTES: Route[] = [
-  { path: "/", label: "Overview", Component: Home, group: "Start" },
-  { path: "/docs", label: "API reference", Component: Docs, group: "Start" },
-  { path: "/playground", label: "Workbench", Component: Playground, group: "Demos" },
-  { path: "/playground/outliner", label: "Outliner", Component: Outliner, group: "Demos" },
-  { path: "/playground/mobile-cms", label: "Mobile CMS", Component: MobileCms, group: "Demos" },
-  { path: "/playground/api-collection", label: "API collection", Component: ApiCollection, group: "Demos" },
+  { path: "/", label: "Overview", title: "zod-crud - Headless JSON editing", Component: Home, group: "Start" },
+  { path: "/docs", label: "API reference", title: "zod-crud API - zod-crud", Component: Docs, group: "Start" },
+  { path: "/playground", label: "Workbench", title: "Workbench - zod-crud", Component: Playground, group: "Demos" },
+  { path: "/playground/outliner", label: "Outliner", title: "Outliner demo - zod-crud", Component: Outliner, group: "Demos" },
+  { path: "/playground/mobile-cms", label: "Mobile CMS", title: "Mobile CMS demo - zod-crud", Component: MobileCms, group: "Demos" },
+  { path: "/playground/api-collection", label: "API collection", title: "API collection demo - zod-crud", Component: ApiCollection, group: "Demos" },
 ];
 
 function pathWithBase(path: string): string {
@@ -41,6 +48,35 @@ function subscribePathname(listener: () => void): () => void {
 function navigate(path: string): void {
   window.history.pushState(null, "", pathWithBase(path));
   window.dispatchEvent(new Event("popstate"));
+}
+
+function canonicalUrl(path: string): string {
+  return path === "/" ? `${SITE_URL}/` : `${SITE_URL}${path}`;
+}
+
+function setMetaContent(selector: string, attribute: "name" | "property", key: string, content: string): void {
+  let meta = document.head.querySelector<HTMLMetaElement>(selector);
+  if (!meta) {
+    meta = document.createElement("meta");
+    meta.setAttribute(attribute, key);
+    document.head.append(meta);
+  }
+  meta.setAttribute("content", content);
+}
+
+function setRouteMetadata(route: Route): void {
+  const url = canonicalUrl(route.path);
+  document.title = route.title;
+  setMetaContent('meta[property="og:title"]', "property", "og:title", route.title);
+  setMetaContent('meta[property="og:url"]', "property", "og:url", url);
+
+  let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!canonical) {
+    canonical = document.createElement("link");
+    canonical.setAttribute("rel", "canonical");
+    document.head.append(canonical);
+  }
+  canonical.setAttribute("href", url);
 }
 
 function usePathname(): string {
@@ -91,6 +127,10 @@ export function App() {
     Start: ROUTES.filter((item) => item.group === "Start"),
     Demos: ROUTES.filter((item) => item.group === "Demos"),
   };
+
+  useEffect(() => {
+    setRouteMetadata(route);
+  }, [route]);
 
   return (
     <div className="flex min-h-screen flex-col bg-stone-50 text-stone-900 md:flex-row md:overflow-hidden">

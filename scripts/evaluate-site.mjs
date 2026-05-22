@@ -4,6 +4,15 @@ import { join } from "node:path";
 const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
 const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/");
+const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+const routes = [
+  { path: "/", file: "index.html", title: "zod-crud - Headless JSON editing" },
+  { path: "/docs", file: "docs/index.html", title: "zod-crud API - zod-crud" },
+  { path: "/playground", file: "playground/index.html", title: "Workbench - zod-crud" },
+  { path: "/playground/outliner", file: "playground/outliner/index.html", title: "Outliner demo - zod-crud" },
+  { path: "/playground/mobile-cms", file: "playground/mobile-cms/index.html", title: "Mobile CMS demo - zod-crud" },
+  { path: "/playground/api-collection", file: "playground/api-collection/index.html", title: "API collection demo - zod-crud" },
+];
 
 function read(path) {
   return readFileSync(join(dist, path), "utf8");
@@ -19,14 +28,13 @@ function normalizeBase(value) {
   return `/${value.replace(/^\/+|\/+$/g, "")}/`;
 }
 
+function routeUrl(path) {
+  return path === "/" ? `${expectedSiteUrl}/` : `${expectedSiteUrl}${path}`;
+}
+
 for (const file of [
-  "index.html",
+  ...routes.map((route) => route.file),
   "404.html",
-  "docs/index.html",
-  "playground/index.html",
-  "playground/outliner/index.html",
-  "playground/mobile-cms/index.html",
-  "playground/api-collection/index.html",
   "robots.txt",
   "sitemap.xml",
   "llms.txt",
@@ -58,33 +66,22 @@ for (const pattern of [
 if (/%BASE_URL%/.test(index)) fail("site dist index contains an unexpanded Vite base placeholder.");
 
 if (fallback !== index) fail("site dist 404.html must match index.html for SPA deep links.");
-for (const route of [
-  { file: "docs/index.html", title: "zod-crud API - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/docs" },
-  { file: "playground/index.html", title: "Workbench - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground" },
-  { file: "playground/outliner/index.html", title: "Outliner demo - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground/outliner" },
-  { file: "playground/mobile-cms/index.html", title: "Mobile CMS demo - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground/mobile-cms" },
-  { file: "playground/api-collection/index.html", title: "API collection demo - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground/api-collection" },
-]) {
+for (const route of routes) {
   const routeHtml = read(route.file);
+  const canonical = routeUrl(route.path);
   if (!routeHtml.includes(`<title>${route.title}</title>`)) fail(`site dist ${route.file} missing route title.`);
-  if (!routeHtml.includes(`rel="canonical" href="${route.canonical}"`)) fail(`site dist ${route.file} missing route canonical.`);
-  if (!routeHtml.includes(`property="og:url" content="${route.canonical}"`)) fail(`site dist ${route.file} missing route og:url.`);
+  if (!routeHtml.includes(`rel="canonical" href="${canonical}"`)) fail(`site dist ${route.file} missing route canonical.`);
+  if (!routeHtml.includes(`property="og:url" content="${canonical}"`)) fail(`site dist ${route.file} missing route og:url.`);
   verifyLocalAssets(routeHtml, route.file);
 }
 
-if (!/Sitemap: https:\/\/developer-1px\.github\.io\/zod-crud\/sitemap\.xml/.test(robots)) {
+if (!robots.includes(`Sitemap: ${expectedSiteUrl}/sitemap.xml`)) {
   fail("site dist robots.txt missing production sitemap URL.");
 }
 
-for (const route of [
-  "https://developer-1px.github.io/zod-crud/",
-  "https://developer-1px.github.io/zod-crud/docs",
-  "https://developer-1px.github.io/zod-crud/playground",
-  "https://developer-1px.github.io/zod-crud/playground/outliner",
-  "https://developer-1px.github.io/zod-crud/playground/mobile-cms",
-  "https://developer-1px.github.io/zod-crud/playground/api-collection",
-]) {
-  if (!sitemap.includes(`<loc>${route}</loc>`)) fail(`site dist sitemap missing ${route}.`);
+for (const route of routes) {
+  const loc = routeUrl(route.path);
+  if (!sitemap.includes(`<loc>${loc}</loc>`)) fail(`site dist sitemap missing ${loc}.`);
 }
 
 if (
