@@ -35,6 +35,12 @@ interface LocalSchemaCache {
   pointerSchemas: Map<string, z.ZodType | null>;
 }
 
+interface ArrayFieldPath {
+  arraySegments: string[];
+  index: number;
+  key: string;
+}
+
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
 
@@ -400,30 +406,58 @@ function sameArrayFieldReplaceOps(
       return null;
     }
 
-    let segments: string[];
-    try {
-      segments = parsePointer(op.path);
-    } catch {
-      return null;
-    }
-    if (segments.length < 2) return null;
-    const key = segments[segments.length - 1]!;
-    const index = numericSegment(segments[segments.length - 2]!);
-    if (index === null) return null;
+    const location = parseArrayFieldPath(op.path);
+    if (location === null) return null;
 
-    if (field === null) field = key;
-    else if (field !== key) return null;
+    if (field === null) field = location.key;
+    else if (field !== location.key) return null;
 
-    const nextArraySegments = segments.slice(0, -2);
+    const nextArraySegments = location.arraySegments;
     if (arraySegments === null) arraySegments = nextArraySegments;
     else if (!sameSegments(arraySegments, nextArraySegments)) return null;
 
-    if (seenIndexes.has(index)) return null;
-    seenIndexes.add(index);
-    parsed.push({ path: op.path, index, key, value: op.value });
+    if (seenIndexes.has(location.index)) return null;
+    seenIndexes.add(location.index);
+    parsed.push({ path: op.path, index: location.index, key: location.key, value: op.value });
   }
 
   return parsed;
+}
+
+function parseArrayFieldPath(path: Pointer): ArrayFieldPath | null {
+  const simple = parseSimpleArrayFieldPath(path);
+  if (simple !== null) return simple;
+
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  if (segments.length < 2) return null;
+  const index = numericSegment(segments[segments.length - 2]!);
+  return index === null
+    ? null
+    : {
+        arraySegments: segments.slice(0, -2),
+        index,
+        key: segments[segments.length - 1]!,
+      };
+}
+
+function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const keySlash = path.lastIndexOf("/");
+  if (keySlash <= 0) return null;
+  const indexSlash = path.lastIndexOf("/", keySlash - 1);
+  if (indexSlash < 0) return null;
+
+  const index = numericSegment(path.slice(indexSlash + 1, keySlash));
+  if (index === null) return null;
+
+  const arrayPath = path.slice(0, indexSlash);
+  const arraySegments = arrayPath === "" ? [] : arrayPath.slice(1).split("/");
+  return { arraySegments, index, key: path.slice(keySlash + 1) };
 }
 
 function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
