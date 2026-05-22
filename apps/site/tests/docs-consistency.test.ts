@@ -86,6 +86,17 @@ describe("public docs consistency", () => {
     expect(docs.llms).toMatch(/JSONPath is for search only/);
   });
 
+  test("document onboarding context before the API reference", () => {
+    expect(docs.site).toMatch(/## 배경/);
+    expect(docs.site).toMatch(/## Core concept/);
+    expect(docs.site).toMatch(/튜토리얼: 작은 카드 편집기 만들기/);
+    expect(docs.site).toMatch(/이걸로 할 수 있는 것들/);
+    expect(docs.site).toMatch(/프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일/);
+    expect(docs.site).toMatch(/검색: JSONPath -> Pointer\[\]/);
+    expect(docs.readme).toMatch(/왜 zod-crud인가/);
+    expect(docs.llms).toMatch(/Why \/ Core \/ Tutorial Context/);
+  });
+
   test("list the public root exports in human docs", () => {
     for (const name of publicExportNames) {
       expect(docs.readme, `README missing ${name}`).toContain(name);
@@ -114,5 +125,23 @@ describe("public docs consistency", () => {
     for (const [name, source] of Object.entries(docs)) {
       expect(source, `${name} missing canFind`).toContain("canFind");
     }
+  });
+
+  test("documents blind outliner implementation gotchas", () => {
+    expect(docs.readme).toMatch(/ReadResult/);
+    expect(docs.site).toMatch(/결과 객체/);
+    expect(docs.llms).toMatch(/ReadResult/);
+
+    expect(docs.readme).toMatch(/doc\.commit\(\.\.\.\)[\s\S]*operation arrays/);
+    expect(docs.site).toMatch(/`doc\.commit\(\.\.\.\)`과 `doc\.canPatch\(\.\.\.\)`는/);
+    expect(docs.llms).toMatch(/doc\.commit\(\.\.\.\)[\s\S]*operation arrays/);
+
+    expect(docs.readme).toMatch(/Pointer-array copy stores an array payload/);
+    expect(docs.site).toMatch(/Pointer 배열을 copy하면 clipboard payload도 배열/);
+    expect(docs.llms).toMatch(/Pointer-array copy\/cut stores an array payload/);
+
+    expect(docs.readme).toMatch(/Tree Editing Cookbook/);
+    expect(docs.site).toMatch(/tree editing cookbook/);
+    expect(docs.llms).toMatch(/Tree semantics are app-owned/);
   });
 });

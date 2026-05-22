@@ -66,14 +66,29 @@ for (const [name, source] of Object.entries(surfaces)) {
 }
 
 const required = [
+  ["site", /## 배경/],
+  ["site", /## Core concept/],
+  ["site", /튜토리얼: 작은 카드 편집기 만들기/],
+  ["site", /이걸로 할 수 있는 것들/],
+  ["readme", /왜 zod-crud인가/],
+  ["llms", /Why \/ Core \/ Tutorial Context/],
   ["site", /작업별 진입점/],
   ["site", /작업 레이어 예시/],
   ["site", /JSONPath는 변경 언어가 아닙니다/],
+  ["site", /결과 객체/],
+  ["site", /Pointer 배열을 copy하면 clipboard payload도 배열/],
+  ["site", /tree editing cookbook/],
   ["readme", /Task Entrypoints/],
   ["readme", /Use JSONPath to find values, not to mutate them directly/],
+  ["readme", /ReadResult/],
+  ["readme", /Pointer-array copy stores an array payload/],
+  ["readme", /Tree Editing Cookbook/],
   ["spec", /duplicate\(pointer, options\)/],
   ["spec", /JSONPath is a search language/],
   ["llms", /JSONPath is for search only/],
+  ["llms", /ReadResult/],
+  ["llms", /Pointer-array copy\/cut stores an array payload/],
+  ["llms", /Tree semantics are app-owned/],
 ];
 
 for (const [name, pattern] of required) {

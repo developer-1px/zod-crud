@@ -4,6 +4,12 @@ Headless JSON editing primitives guarded by Zod schemas.
 
 Official site and demos: https://developer-1px.github.io/zod-crud/
 
+## 왜 zod-crud인가
+
+프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. zod-crud는 patch, pointer, selection, clipboard, history, schema validation을 UI 코드에서 분리해 headless document facade로 묶습니다.
+
+공식 문서는 배경, core concept, 작은 카드 편집기 튜토리얼을 먼저 설명한 뒤 API reference로 이어집니다.
+
 The public model is small:
 
 ```txt

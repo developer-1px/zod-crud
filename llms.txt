@@ -15,6 +15,17 @@ Official site and demos: https://developer-1px.github.io/zod-crud/
   JSONPath (RFC 9535), JSON values (RFC 8259), W3C-shaped selection
   vocabulary, and Zod-backed schema validation.
 
+## Why / Core / Tutorial Context
+
+- Why: frontend editors usually mutate JSON state. zod-crud keeps patch,
+  pointer, selection, clipboard, history, and schema validation out of UI
+  component code.
+- How: keep roles separate. JSON Pointer addresses values, JSONPath finds
+  values, JSON Patch mutates values, Zod validates values, selection stores
+  selected pointers, clipboard owns payload flow, and history owns undo/redo.
+- Tutorial: the official Korean docs introduce a small card-board editor before
+  the API reference. Preserve that path when expanding onboarding docs.
+
 ## Import Boundary
 
 Only import package exports:
@@ -44,6 +55,12 @@ The document surface centers on:
   `canCopy`, `canCut`, `canPaste`, `canPastePayload`, `canUndo`, `canRedo`
 - `at`, `exists`, `query`, `entries`
 
+`doc.at(pointer)` returns a `ReadResult`; check `result.ok` before reading
+`result.value`.
+
+`doc.patch(...)` accepts one operation or an operation array. `doc.commit(...)`
+and `doc.canPatch(...)` take operation arrays.
+
 Public mutating methods mutate immediately. `duplicate`, `clipboard.cut`,
 `clipboard.paste`, and `clipboard.pastePayload` return `value` plus `applied`
 records for inspection; do not pass `applied` to `commit` again.
@@ -52,8 +69,16 @@ Clipboard paste targets are explicit. Use a pointer for an insertion position
 such as `/items/-`; use `{ before: pointer }`, `{ after: pointer }`, or
 `{ replace: pointer }` when the target is an existing value.
 
+Pointer-array copy/cut stores an array payload. If paste should insert each
+copied item as a separate array element, pass the same `{ spread: true, rekey }`
+options to both `canPaste(...)` and `clipboard.paste(...)`.
+
 JSONPath is for search only. Use `doc.query(jsonPath)` to get JSON Pointers,
 then use those pointers in `doc.patch(...)`.
+
+Tree semantics are app-owned. For outliners, tree flattening, visible-row
+focus, indent, outdent, and toolbar commands should be translated by the app
+into JSON Pointers and JSON Patch operations such as `add` and `move`.
 
 For exact fields, types, and examples, read `packages/zod-crud/README.md`.
 For behavior rules, read `packages/zod-crud/SPEC.md`.

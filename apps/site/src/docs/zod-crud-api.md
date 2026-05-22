@@ -14,6 +14,157 @@ document
 └─ can*
 ```
 
+## 배경
+
+프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. 폼, CMS block, kanban card, outliner, API collection은 UI는 달라도 결국 값 추가, 변경, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
+
+문제는 이 규칙을 앱마다 다시 만들 때 생깁니다. patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 서로 다른 레이어에 흩어지면 같은 편집 동작을 테스트하기 어렵고, UI 코드가 상태 변경 규칙까지 떠안게 됩니다.
+
+zod-crud는 UI component가 아닙니다. JSON 편집의 공통 규칙을 headless document facade로 고정하고, 제품 UI는 그 위에서 버튼, 단축키, drag, focus, rendering만 결정하게 합니다.
+
+## Core concept
+
+핵심은 역할을 섞지 않는 것입니다.
+
+| 개념 | 맡는 일 |
+| --- | --- |
+| JSON value | 편집 대상 state |
+| Zod schema | state와 payload 검증 |
+| JSON Pointer | 정확한 주소 |
+| JSONPath | 여러 위치 검색 |
+| JSON Patch | 변경 기록과 실행 형식 |
+| Selection | 무엇이 선택됐는지 나타내는 JSON-safe 상태 |
+| Clipboard | copy/cut/paste payload 흐름 |
+| History | patch와 inverse patch 기반 undo/redo |
+| `can*` | 실행 전 가능 여부와 실패 이유 |
+
+따라서 흐름은 아래처럼 유지합니다.
+
+```txt
+검색: JSONPath -> Pointer[]
+변경: Pointer -> JSON Patch
+검증: payload -> Zod schema
+상태: selection / clipboard / history -> JSON-safe snapshot
+```
+
+## 튜토리얼: 작은 카드 편집기 만들기
+
+먼저 domain state를 Zod schema로 정합니다. 이 예제는 list 안에 card가 들어 있는 작은 board입니다.
+
+```ts
+import { z } from "zod";
+import { createJSONDocument } from "zod-crud";
+
+const Card = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  status: z.enum(["todo", "doing", "done"]),
+});
+
+const Board = z.object({
+  lists: z.array(z.object({
+    id: z.string(),
+    title: z.string(),
+    cards: z.array(Card),
+  })),
+});
+
+const doc = createJSONDocument(Board, {
+  lists: [{
+    id: "inbox",
+    title: "Inbox",
+    cards: [{ id: "c1", title: "Write docs", status: "todo" }],
+  }],
+}, {
+  history: 100,
+  selection: true,
+});
+```
+
+값을 바꿀 때는 JSON Patch를 적용합니다. `path`는 JSON Pointer입니다.
+
+```ts
+doc.patch({
+  op: "add",
+  path: "/lists/0/cards/-",
+  value: { id: "c2", title: "Review API", status: "todo" },
+});
+
+doc.patch({
+  op: "replace",
+  path: "/lists/0/cards/0/status",
+  value: "doing",
+});
+```
+
+여러 위치를 찾을 때는 JSONPath로 검색하고, 반환된 Pointer로 patch를 만듭니다.
+
+```ts
+const todos = doc.query("$..cards[?(@.status=='todo')]");
+
+if (todos.ok) {
+  doc.patch(todos.pointers.map((path) => ({
+    op: "replace",
+    path: `${path}/status`,
+    value: "done",
+  })));
+}
+```
+
+선택과 clipboard는 분리합니다. Selection은 무엇이 선택됐는지 보관하고, clipboard가 payload 흐름을 맡습니다.
+
+```ts
+doc.selection?.selectRanges(["/lists/0/cards/0"]);
+
+const source = doc.selection?.selectedPointers ?? [];
+doc.clipboard.copy(source);
+
+doc.clipboard.paste("/lists/0/cards/-", {
+  spread: true,
+  rekey: { fields: ["id"], strategy: "suffix" },
+});
+```
+
+사용자 action을 실행하기 전에는 `can*`로 같은 조건을 미리 확인할 수 있습니다.
+
+```ts
+const candidate = { id: "c3", title: "", status: "todo" };
+const canPaste = doc.canPastePayload("/lists/0/cards/-", candidate);
+
+if (!canPaste.ok) {
+  canPaste.code;
+  canPaste.reason;
+  canPaste.violations;
+}
+```
+
+되돌리기는 document history에 둡니다.
+
+```ts
+if (doc.canUndo().ok) {
+  doc.history.undo();
+}
+```
+
+React에서는 같은 document 표면을 hook으로 받습니다.
+
+```tsx
+import { useJSONDocument } from "zod-crud/react";
+
+const doc = useJSONDocument(Board, initialBoard, {
+  history: 100,
+  selection: true,
+});
+```
+
+## 이걸로 할 수 있는 것들
+
+- CMS block editor: block 추가, 이동, 복제, schema-safe paste.
+- Kanban/card editor: card 검색, multi-select, duplicate, list 간 paste.
+- Outliner/tree editor: indent/outdent를 JSON Pointer와 `move` patch로 번역.
+- API collection editor: request/response JSON 검색, batch replace, clipboard flow.
+- Settings editor: schema validation, reasoned `can*` 결과, undo/redo.
+
 ## 기준
 
 - JSON Patch는 변경 형식입니다. 실행 진입점은 `doc.patch(...)`입니다.
@@ -93,6 +244,15 @@ doc.query("$..cards[?(@.status=='todo')]");
 doc.entries("/lists/0/cards");
 ```
 
+`doc.at(pointer)`는 raw value가 아니라 결과 객체를 반환합니다.
+
+```ts
+const result = doc.at("/lists/0/cards/0/title");
+if (result.ok) {
+  result.value;
+}
+```
+
 ## patch
 
 `doc.patch`는 RFC 6902 JSON Patch를 적용합니다. 단일 operation과 operation 배열을 모두 받을 수 있습니다.
@@ -107,6 +267,14 @@ doc.patch([
 ```
 
 Patch의 `path`와 `from`은 JSON Pointer입니다. JSONPath를 patch에 직접 넣지 않습니다.
+
+`doc.commit(...)`과 `doc.canPatch(...)`는 batch를 계획하거나 기록하므로 operation 배열을 받습니다.
+
+```ts
+doc.patch({ op: "replace", path: "/title", value: "Ready" });
+doc.canPatch([{ op: "replace", path: "/title", value: "Ready" }]);
+doc.commit([{ op: "replace", path: "/title", value: "Ready" }], { label: "rename" });
+```
 
 ## duplicate
 
@@ -225,6 +393,77 @@ doc.clipboard.paste({ after: "/lists/0/cards/0" });
 `selection.copy()`는 쓰지 않습니다. selection은 대상 상태이고, clipboard가 payload 흐름을 맡습니다.
 `cut`, `paste`, `pastePayload`는 즉시 document에 적용됩니다. 성공 결과의 `applied`는 이미 적용된 patch 기록입니다.
 이미 `/cards/-` 같은 삽입 위치가 있으면 pointer를 그대로 넘깁니다. 기존 값을 기준으로 붙이면 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 씁니다.
+
+Pointer 배열을 copy하면 clipboard payload도 배열입니다. 붙여넣을 때 각 항목을 sibling으로 펼쳐 넣으려면 `spread: true`를 넘깁니다. pointer 배열이 1개만 담아도 같은 규칙입니다.
+
+```ts
+doc.clipboard.copy(["/lists/0/cards/0"]);
+
+const target = "/lists/1/cards/-";
+const options = {
+  spread: true,
+  rekey: { fields: ["id"], strategy: "suffix" },
+} as const;
+
+if (doc.canPaste(target, options).ok) {
+  doc.clipboard.paste(target, options);
+}
+```
+
+## tree editing cookbook
+
+Tree 의미는 앱 책임입니다. zod-crud는 JSON을 검증하고 patch/selection/clipboard/history를 처리합니다. indent, outdent, visible row focus, toolbar action은 앱이 JSON Pointer와 JSON Patch로 번역합니다.
+
+```ts
+type Node = { id: string; text: string; children: Node[] };
+
+const NodeSchema: z.ZodType<Node> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    text: z.string(),
+    children: z.array(NodeSchema),
+  }),
+);
+
+const OutlineSchema = z.object({ nodes: z.array(NodeSchema) });
+```
+
+Tree pointer는 보통 아래처럼 생깁니다.
+
+```txt
+/nodes/0
+/nodes/0/children/0
+/nodes/0/children/0/children/0
+```
+
+자주 쓰는 tree action은 patch로 충분합니다.
+
+```ts
+// child 추가
+doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });
+
+// /nodes/0 뒤에 sibling 추가
+doc.patch({ op: "add", path: "/nodes/1", value: node });
+
+// 같은 배열 안에서 위/아래 이동
+doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0" }); // up
+doc.patch({ op: "move", from: "/nodes/0", path: "/nodes/1" }); // down one
+
+// 이전 sibling 밑으로 indent
+doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0/children/-" });
+
+// parent 다음 sibling 자리로 outdent
+doc.patch({ op: "move", from: "/nodes/0/children/1", path: "/nodes/1" });
+```
+
+같은 배열 move는 RFC 6902처럼 source를 먼저 제거한 뒤 destination에 add합니다. `/nodes/0`을 한 칸 아래로 내릴 때는 `/nodes/2`가 아니라 `/nodes/1`을 씁니다.
+
+Selection은 DOM focus가 아니라 headless JSON 상태입니다. 보이는 row focus는 앱의 local state나 DOM focus와 같이 관리하고, 선택 사실은 pointer로 동기화합니다.
+
+```ts
+doc.selection?.selectRanges(["/nodes/0"]);
+const selected = doc.selection?.primaryPointer;
+```
 
 ## history
 

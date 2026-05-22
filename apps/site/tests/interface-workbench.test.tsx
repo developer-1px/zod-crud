@@ -24,6 +24,10 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
     expect(screen.getByText(/외부 payload 붙여넣기/)).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "배경" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Core concept" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "튜토리얼: 작은 카드 편집기 만들기" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "이걸로 할 수 있는 것들" })).toBeTruthy();
     for (const title of [
       "doc.patch",
       "document actions",
@@ -39,6 +43,9 @@ describe("InterfaceWorkbench", () => {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
     expect(screen.getByText(/Zod schema로 보호되는 JSON 편집 엔진/)).toBeTruthy();
+    expect(screen.getByText(/프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일/)).toBeTruthy();
+    expect(screen.getByText(/검색: JSONPath -> Pointer\[\]/)).toBeTruthy();
+    expect(screen.getByText(/작은 카드 편집기 만들기/)).toBeTruthy();
     expect(screen.getByRole("heading", { name: "기준" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "clipboard" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "can*" })).toBeTruthy();
@@ -92,7 +99,7 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
 
     await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy to insert" }));
-    expect(screen.getByText(/doc\.clipboard\.copy\(source\); doc\.clipboard\.paste/)).toBeTruthy();
+    expect(screen.getAllByText(/doc\.clipboard\.copy\(source\); doc\.clipboard\.paste/).length).toBeGreaterThan(0);
 
     await user.click(within(group("doc.can*")).getByRole("button", { name: "patch" }));
     expect(screen.getAllByText(/doc\.canPatch/).length).toBeGreaterThan(0);
