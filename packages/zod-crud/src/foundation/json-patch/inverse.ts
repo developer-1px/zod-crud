@@ -46,6 +46,8 @@ export function computeInverses(
   ops: ReadonlyArray<JSONPatchOperation>,
 ): { ok: true; inverses: JSONPatchOperation[] } | { ok: false } {
   if (ops.length === 1 && 0 in ops) return computeSingleInverse(state, ops[0]!);
+  const appendOnly = computeAppendOnlyAddInverses(state, ops);
+  if (appendOnly) return appendOnly;
   const arrayFieldReplace = computeSameArrayFieldReplaceInverses(state, ops);
   if (arrayFieldReplace) return arrayFieldReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
@@ -72,6 +74,47 @@ function computeSingleInverse(
   const inverse = inverseOp(op, state);
   if (inverse === null) return op.op === "test" ? { ok: true, inverses: [] } : { ok: false };
   return { ok: true, inverses: [inverse] };
+}
+
+function computeAppendOnlyAddInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let parent: string | undefined;
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      op === null
+      || typeof op !== "object"
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || !op.path.endsWith("/-")
+    ) {
+      return null;
+    }
+    const nextParent = op.path.slice(0, -2);
+    if (parent === undefined) parent = nextParent;
+    else if (parent !== nextParent) return null;
+  }
+
+  if (parent === undefined) return null;
+  let array: { ok: true; value: unknown } | { ok: false };
+  try {
+    array = readValueAtPointer(state, parent);
+  } catch {
+    return null;
+  }
+  if (!array.ok || !Array.isArray(array.value)) return null;
+
+  const initialLength = array.value.length;
+  const inverses = new Array<JSONPatchOperation>(ops.length);
+  for (let opIndex = ops.length - 1, inverseIndex = 0; opIndex >= 0; opIndex -= 1, inverseIndex += 1) {
+    inverses[inverseIndex] = { op: "remove", path: appendSegment(parent, initialLength + opIndex) };
+  }
+  return { ok: true, inverses };
 }
 
 function computeSameArrayFieldReplaceInverses(
