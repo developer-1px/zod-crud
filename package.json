@@ -12,7 +12,7 @@
     "test": "npm test -w zod-crud",
     "typecheck": "npm run typecheck -w zod-crud",
     "smoke:package": "npm run smoke:package -w zod-crud",
-    "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package && npm run docs:evaluate && npm run playground:typecheck && npm run playground:test && npm run playground:build && npm run site:evaluate",
+    "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package && npm run docs:evaluate && npm run playground:typecheck && npm run playground:test && npm run playground:build && npm run site:evaluate && npm run site:verify:pages",
     "pack:library": "npm pack -w zod-crud --cache ./.npm-cache",
     "playground:dev": "npm run dev -w @zod-crud/site",
     "playground:build": "npm run build -w @zod-crud/site",
@@ -20,6 +20,9 @@
     "playground:test": "npm test -w @zod-crud/site && npm test -w @zod-crud/api-collection && npm test -w @zod-crud/outliner && npm test -w @zod-crud/mobile-cms",
     "docs:evaluate": "node scripts/evaluate-docs.mjs",
     "site:evaluate": "node scripts/evaluate-site.mjs",
+    "site:build:pages": "SITE_BASE=/zod-crud/ SITE_URL=https://developer-1px.github.io/zod-crud VITE_SITE_URL=https://developer-1px.github.io/zod-crud npm run build -w @zod-crud/site",
+    "site:evaluate:pages": "SITE_BASE=/zod-crud/ SITE_URL=https://developer-1px.github.io/zod-crud npm run site:evaluate",
+    "site:verify:pages": "npm run site:build:pages && npm run site:evaluate:pages",
     "site:evaluate:live": "node scripts/evaluate-live-site.mjs"
   }
 }

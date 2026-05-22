@@ -24,19 +24,8 @@ jobs:
           node-version: "22"
       - name: Install
         run: npm ci --no-audit --no-fund
-      - name: Verify workspace
+      - name: Verify workspace and build Pages artifact
         run: npm run verify
-      - name: Build site
-        env:
-          SITE_BASE: /zod-crud/
-          SITE_URL: https://developer-1px.github.io/zod-crud
-          VITE_SITE_URL: https://developer-1px.github.io/zod-crud
-        run: npm run playground:build
-      - name: Evaluate site artifact
-        env:
-          SITE_BASE: /zod-crud/
-          SITE_URL: https://developer-1px.github.io/zod-crud
-        run: npm run site:evaluate
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/site/dist

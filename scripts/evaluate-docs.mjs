@@ -195,20 +195,27 @@ if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/
   fail("site docs: missing table-of-contents navigation coverage.");
 }
 
-if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson)) {
+if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson) || !/site:verify:pages/.test(rootPackageJson)) {
   fail("root verify: missing playground production site gates.");
 }
 
-if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pagesWorkflow) || !/npm run site:evaluate:live/.test(pagesWorkflow) || !/actions\/checkout@v4/.test(pagesWorkflow) || !/actions\/setup-node@v4/.test(pagesWorkflow) || !/SITE_BASE: \/zod-crud\//.test(pagesWorkflow) || !/SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
-  fail("pages workflow: missing production site verification or deployment base.");
+for (const pattern of [
+  /site:build:pages/,
+  /site:evaluate:pages/,
+  /site:verify:pages/,
+  /SITE_BASE=\/zod-crud\//,
+  /SITE_URL=https:\/\/developer-1px\.github\.io\/zod-crud/,
+  /VITE_SITE_URL=https:\/\/developer-1px\.github\.io\/zod-crud/,
+]) {
+  if (!pattern.test(rootPackageJson)) fail(`root package: missing ${pattern}.`);
 }
 
-if (!/VITE_SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
-  fail("pages workflow: site build must pass the canonical URL to the client bundle.");
+if (!/npm run verify/.test(pagesWorkflow) || !/site:evaluate:live/.test(rootPackageJson) || !/actions\/checkout@v4/.test(pagesWorkflow) || !/actions\/setup-node@v4/.test(pagesWorkflow) || !/upload-pages-artifact@v3/.test(pagesWorkflow)) {
+  fail("pages workflow: missing production site verification, artifact upload, or live evaluation support.");
 }
 
-if (!/Evaluate site artifact[\s\S]*SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud[\s\S]*run: npm run site:evaluate/.test(pagesWorkflow)) {
-  fail("pages workflow: artifact evaluation must use the production site URL.");
+if (!/Verify workspace and build Pages artifact/.test(pagesWorkflow)) {
+  fail("pages workflow: npm run verify must leave a Pages-ready artifact.");
 }
 
 for (const pattern of [
