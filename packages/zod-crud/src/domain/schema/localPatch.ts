@@ -153,25 +153,29 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
     ) {
       return null;
     }
-    const location = arrayLocation(schema, op.path);
-    if (!location) return null;
+    let pathIndex: number | "-";
     if (parent === null) {
+      const location = arrayLocation(schema, op.path);
+      if (!location) return null;
       parent = location.parent;
       elementSchema = location.element;
-    } else if (location.parent !== parent) {
-      return null;
+      pathIndex = location.index;
+    } else {
+      const location = arrayIndexInParent(op.path, parent);
+      if (!location) return null;
+      pathIndex = location.index;
     }
     if (op.op === "add") {
-      parsedOps.push({ op: "add", path: op.path, index: location.index, value: op.value });
+      parsedOps.push({ op: "add", path: op.path, index: pathIndex, value: op.value });
     } else if (op.op === "remove") {
-      if (location.index === "-") return null;
-      parsedOps.push({ op: "remove", path: op.path, index: location.index });
+      if (pathIndex === "-") return null;
+      parsedOps.push({ op: "remove", path: op.path, index: pathIndex });
     } else {
-      const fromLocation = arrayLocation(schema, op.from);
+      const parentPath = parent;
+      if (parentPath === null) return null;
+      const fromLocation = arrayIndexInParent(op.from, parentPath);
       if (
         !fromLocation
-        || fromLocation.parent !== parent
-        || fromLocation.element !== elementSchema
         || fromLocation.index === "-"
       ) {
         return null;
@@ -181,7 +185,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
         from: op.from,
         path: op.path,
         fromIndex: fromLocation.index,
-        index: location.index,
+        index: pathIndex,
       });
     }
   }
@@ -293,6 +297,20 @@ function arrayLocation(
   const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   const element = parentSchema ? getArrayElement(parentSchema) : null;
   return element ? { parent, element, index } : null;
+}
+
+function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "-" } | null {
+  if (parentPointer(path) !== parent) return null;
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  const segment = segments[segments.length - 1];
+  if (segment === undefined) return null;
+  const index = segment === "-" ? "-" : numericSegment(segment);
+  return index === null ? null : { index };
 }
 
 function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {
