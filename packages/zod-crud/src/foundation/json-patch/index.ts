@@ -4,7 +4,7 @@
 
 import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
-import { appendSegment, parentPointer, type Pointer } from "../json-pointer/index.js";
+import { appendSegment, buildPointer, parentPointer, type Pointer } from "../json-pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import {
   deepCloneTrusted,
@@ -56,7 +56,7 @@ type FastPatchResult =
   | { handled: false };
 
 interface ArrayFieldPath {
-  arraySegments: string[];
+  arrayPath: Pointer;
   index: number;
   key: string;
 }
@@ -343,13 +343,14 @@ function applySameArrayFieldReplacePatch(
 ): FastPatchResult {
   if (ops.length < 2) return { handled: false };
 
+  let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   let seenIndexes: Set<number> | null = null;
   let previousIndex: number | null = null;
   let monotonicDirection: -1 | 0 | 1 = 0;
   let next: unknown[] | null = null;
-  const applied: JSONPatchOperation[] = [];
+  const applied = new Array<JSONPatchOperation>(ops.length);
   const appliedIndexes: number[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
@@ -365,14 +366,16 @@ function applySameArrayFieldReplacePatch(
     if (field === null) field = location.key;
     else if (field !== location.key) return { handled: false };
 
-    const nextArraySegments = location.arraySegments;
-    if (arraySegments === null) arraySegments = nextArraySegments;
-    else if (!sameSegments(arraySegments, nextArraySegments)) return { handled: false };
-
     if (next === null) {
+      arrayPath = location.arrayPath;
+      const parsedArray = parseSafe(arrayPath);
+      if (!("ok" in parsedArray)) return { handled: false };
+      arraySegments = parsedArray.segs;
       const current = getValueAt(state, arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return { handled: false };
       next = current.value.slice();
+    } else if (arrayPath !== location.arrayPath) {
+      return { handled: false };
     }
 
     if (seenIndexes === null) {
@@ -413,7 +416,7 @@ function applySameArrayFieldReplacePatch(
       replaced[location.key] = normalized.value;
     }
     next[location.index] = replaced;
-    applied.push(normalized);
+    applied[opIndex] = normalized;
     appliedIndexes.push(location.index);
   }
 
@@ -869,10 +872,6 @@ function hasIndependentPaths(paths: ReadonlyArray<{ path: string }>): boolean {
   return true;
 }
 
-function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
-  return left.length === right.length && left.every((segment, index) => segment === right[index]);
-}
-
 function arrayLocation(path: Pointer): { parent: Pointer; index: number | "-" } | null {
   const parent = parentPointer(path);
   if (parent === null) return null;
@@ -913,7 +912,7 @@ function parseArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   const index = numericSegment(parsed.segs[parsed.segs.length - 2]!);
   return index === null
     ? null
-    : { arraySegments: parsed.segs.slice(0, -2), index, key };
+    : { arrayPath: buildPointer(parsed.segs.slice(0, -2)), index, key };
 }
 
 function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
@@ -926,9 +925,7 @@ function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   const index = numericSegment(path.slice(indexSlash + 1, keySlash));
   if (index === null) return null;
 
-  const arrayPath = path.slice(0, indexSlash);
-  const arraySegments = arrayPath === "" ? [] : arrayPath.slice(1).split("/");
-  return { arraySegments, index, key: path.slice(keySlash + 1) };
+  return { arrayPath: path.slice(0, indexSlash), index, key: path.slice(keySlash + 1) };
 }
 
 function parseSimpleArrayElementPath(path: Pointer): { parent: Pointer; index: number } | null {

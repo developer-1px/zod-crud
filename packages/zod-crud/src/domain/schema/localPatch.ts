@@ -8,6 +8,7 @@ import {
 } from "../../foundation/json-patch/index.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
 import {
+  buildPointer,
   parentPointer,
   parsePointer,
   readAt,
@@ -46,7 +47,7 @@ interface LocalSchemaCache {
 type KnownJsonValueValidator = (value: unknown, seen: WeakSet<object>) => boolean;
 
 interface ArrayFieldPath {
-  arraySegments: string[];
+  arrayPath: Pointer;
   index: number;
   key: string;
 }
@@ -164,7 +165,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   let parentSegments: string[] | null = null;
   let elementSchema: z.ZodType | null = null;
   let next: unknown[] | null = null;
-  const applied: JSONPatchOperation[] = [];
+  const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return null;
@@ -196,7 +197,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
     if (!elementSchema || !acceptsKnownJsonValue(elementSchema, op.value)) return null;
     if (next === null || location.index < 0 || location.index >= next.length) return null;
     next[location.index] = op.value;
-    applied.push(op);
+    applied[opIndex] = op;
   }
 
   if (parentSegments === null || next === null) return null;
@@ -217,6 +218,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
 ): LocalPatchResult<S> {
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
+  let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   let valueSchema: z.ZodType | null = null;
@@ -245,19 +247,23 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     if (field === null) field = location.key;
     else if (field !== location.key) return null;
 
-    const nextArraySegments = location.arraySegments;
-    if (arraySegments === null) arraySegments = nextArraySegments;
-    else if (!sameSegments(arraySegments, nextArraySegments)) return null;
-
     if (valueSchema === null) {
       valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
       if (!valueSchema) return null;
     }
 
     if (next === null) {
+      arrayPath = location.arrayPath;
+      try {
+        arraySegments = parsePointer(arrayPath);
+      } catch {
+        return null;
+      }
       const current = readAt(state, arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return null;
       next = current.value.slice();
+    } else if (arrayPath !== location.arrayPath) {
+      return null;
     }
 
     if (seenIndexes === null) {
@@ -700,7 +706,7 @@ function parseArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   return index === null
     ? null
     : {
-        arraySegments: segments.slice(0, -2),
+        arrayPath: buildPointer(segments.slice(0, -2)),
         index,
         key: segments[segments.length - 1]!,
       };
@@ -716,13 +722,7 @@ function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   const index = numericSegment(path.slice(indexSlash + 1, keySlash));
   if (index === null) return null;
 
-  const arrayPath = path.slice(0, indexSlash);
-  const arraySegments = arrayPath === "" ? [] : arrayPath.slice(1).split("/");
-  return { arraySegments, index, key: path.slice(keySlash + 1) };
-}
-
-function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
-  return left.length === right.length && left.every((segment, index) => segment === right[index]);
+  return { arrayPath: path.slice(0, indexSlash), index, key: path.slice(keySlash + 1) };
 }
 
 function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
