@@ -241,7 +241,8 @@ export function cloneTrustedJson<T>(value: T): T {
   }
 
   const next: Record<string, unknown> = {};
-  for (const key of Object.keys(value as Record<string, unknown>)) {
+  for (const key in value as Record<string, unknown>) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
     const cloned = cloneTrustedJson((value as Record<string, unknown>)[key]);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
