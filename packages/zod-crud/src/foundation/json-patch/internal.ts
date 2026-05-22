@@ -146,7 +146,10 @@ export function mutateContainer(parent: unknown, key: string, verb: Verb, value?
     if (idx === null || idx === -1) return { error: "path_not_found", reason: `array index: ${key}` };
     if (verb === "set") {
       if (idx > parent.length) return { error: "path_not_found", reason: `out of range: ${key}` };
-      return { value: [...parent.slice(0, idx), value, ...parent.slice(idx)] };
+      if (idx === parent.length) return { value: [...parent, value] };
+      const next = parent.slice();
+      next.splice(idx, 0, value);
+      return { value: next };
     }
     if (idx >= parent.length) return { error: "path_not_found", reason: `array index: ${key}` };
     if (verb === "replace") {
@@ -154,7 +157,10 @@ export function mutateContainer(parent: unknown, key: string, verb: Verb, value?
       next[idx] = value;
       return { value: next };
     }
-    return { value: [...parent.slice(0, idx), ...parent.slice(idx + 1)] };
+    if (idx === parent.length - 1) return { value: parent.slice(0, idx) };
+    const next = parent.slice();
+    next.splice(idx, 1);
+    return { value: next };
   }
   const obj = parent as Record<string, unknown>;
   if (verb === "set") return { value: { ...obj, [key]: value } };

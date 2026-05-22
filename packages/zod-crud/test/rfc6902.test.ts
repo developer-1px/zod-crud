@@ -57,6 +57,20 @@ describe("RFC 6902 — add", () => {
     expect(r.state).toEqual([1, 9, 2, 3]);
   });
 
+  it("inserts into arrays without mutating existing elements", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const initial = { items: [first, second] };
+    const inserted = { id: "x" };
+    const r = applyOperation(Any, initial, { op: "add", path: "/items/1", value: inserted });
+
+    expect(r.result.ok).toBe(true);
+    expect(initial.items).toEqual([first, second]);
+    expect((r.state as typeof initial).items).toEqual([first, inserted, second]);
+    expect((r.state as typeof initial).items[0]).toBe(first);
+    expect((r.state as typeof initial).items[2]).toBe(second);
+  });
+
   it("appends with /-", () => {
     const r = applyOperation(Any, [1, 2], { op: "add", path: "/-", value: 9 });
     expect(r.state).toEqual([1, 2, 9]);
@@ -77,6 +91,20 @@ describe("RFC 6902 — remove", () => {
   it("removes array element and shifts", () => {
     const r = applyOperation(Any, [1, 2, 3], { op: "remove", path: "/1" });
     expect(r.state).toEqual([1, 3]);
+  });
+
+  it("removes array elements without mutating retained elements", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const third = { id: "c" };
+    const initial = { items: [first, second, third] };
+    const r = applyOperation(Any, initial, { op: "remove", path: "/items/1" });
+
+    expect(r.result.ok).toBe(true);
+    expect(initial.items).toEqual([first, second, third]);
+    expect((r.state as typeof initial).items).toEqual([first, third]);
+    expect((r.state as typeof initial).items[0]).toBe(first);
+    expect((r.state as typeof initial).items[1]).toBe(third);
   });
 
   it("fails on missing key", () => {
