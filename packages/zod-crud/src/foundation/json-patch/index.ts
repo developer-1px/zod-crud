@@ -478,7 +478,7 @@ function applyAppendOnlyAddPatch(
     state: stateWithArray,
     applied: values.map((value, index): JSONPatchOperation => ({
       op: "add",
-      path: appendSegment(parent, initialLength + index),
+      path: appendArrayIndexPath(parent, initialLength + index),
       value,
     })),
   };
@@ -896,6 +896,10 @@ function arrayRemoveLocation(path: Pointer): { parent: Pointer; index: number } 
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function appendArrayIndexPath(parent: Pointer, index: number): Pointer {
+  return parent === "" ? `/${index}` : `${parent}/${index}`;
 }
 
 function indexDirection(previous: number, current: number): -1 | 0 | 1 {

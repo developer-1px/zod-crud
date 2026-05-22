@@ -8,7 +8,6 @@ import {
 } from "../../foundation/json-patch/index.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
 import {
-  appendSegment,
   buildPointer,
   parentPointer,
   parsePointer,
@@ -502,11 +501,11 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     }
     if (!valueAccepted) {
       const parsed = elementSchema.safeParse(value);
-      if (!parsed.success) return schemaViolation(state, appendSegment(parent, initialLength + index), parsed.error.issues);
+      if (!parsed.success) return schemaViolation(state, appendArrayIndexPath(parent, initialLength + index), parsed.error.issues);
     }
     applied[index] = {
       op: "add",
-      path: appendSegment(parent, initialLength + index),
+      path: appendArrayIndexPath(parent, initialLength + index),
       value,
     };
   }
@@ -1179,6 +1178,10 @@ function prefixIssues(
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function appendArrayIndexPath(parent: Pointer, index: number): Pointer {
+  return parent === "" ? `/${index}` : `${parent}/${index}`;
 }
 
 function indexDirection(previous: number, current: number): -1 | 0 | 1 {
