@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../src/index.js";
+import { createJSONDocument, type JSONPatchOperation } from "../src/index.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -91,5 +91,15 @@ describe("JSONDocument interface", () => {
     expect(doc.value.items[1]?.name).toBe("B1");
     expect(doc.lastPatch).toEqual([{ op: "replace", path: "/items/1/name", value: "B1" }]);
     expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("returns lastPatch as a defensive array", () => {
+    const doc = createJSONDocument(Schema, initial);
+
+    expect(doc.patch({ op: "replace", path: "/items/0/name", value: "A1" })).toEqual({ ok: true });
+    const patch = doc.lastPatch as JSONPatchOperation[];
+    patch.length = 0;
+
+    expect(doc.lastPatch).toEqual([{ op: "replace", path: "/items/0/name", value: "A1" }]);
   });
 });

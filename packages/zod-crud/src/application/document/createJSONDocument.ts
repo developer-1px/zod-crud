@@ -148,7 +148,7 @@ export function createJSONDocument<S extends z.ZodType>(
   let stack: MutableHistoryStack<HistoryEntry> = emptyMutableHistory<HistoryEntry>();
   let isRestoring = false;
   let activeHistoryMetadata: HistoryTransactionOptions | undefined;
-  let lastPatch: JSONPatchOperation[] = [];
+  let lastPatch: ReadonlyArray<JSONPatchOperation> = [];
   let documentSubscriberCount = 0;
 
   const selectionEnabled = options.selection !== undefined && options.selection !== false;
@@ -170,7 +170,7 @@ export function createJSONDocument<S extends z.ZodType>(
     ? createSelection<z.output<S>>(rawOps, createSelectionOptions)
     : undefined;
   rawOps.subscribe((applied) => {
-    lastPatch = [...applied];
+    lastPatch = applied;
   });
   const snapSelection = (): SelectionSnap => selectionState?.snapshot() ?? EMPTY_SELECTION;
   const shouldCaptureSelectionMetadata = (
