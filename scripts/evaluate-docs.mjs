@@ -39,8 +39,11 @@ const smoke = read("packages/zod-crud/test/package-smoke.mjs");
 const markdownViewer = read("apps/site/src/components/MarkdownViewer.tsx");
 const workbenchTest = read("apps/site/tests/interface-workbench.test.tsx");
 const siteHtml = read("apps/site/index.html");
+const siteFavicon = read("apps/site/public/favicon.svg");
+const siteManifest = read("apps/site/public/site.webmanifest");
 const siteViteConfig = read("apps/site/vite.config.ts");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
+const siteEvaluator = read("scripts/evaluate-site.mjs");
 const rootPackageJson = read("package.json");
 const pagesWorkflow = read(".github/workflows/pages.yml");
 
@@ -139,8 +142,22 @@ if (!/getAllByRole\("table"\)/.test(workbenchTest)) {
   fail("workbench test: Markdown table rendering assertion missing.");
 }
 
-for (const pattern of [/name="description"/, /name="theme-color"/, /Headless JSON editing/]) {
+for (const pattern of [
+  /name="description"/,
+  /name="theme-color"/,
+  /property="og:title"/,
+  /property="og:description"/,
+  /name="twitter:card"/,
+  /rel="canonical"/,
+  /rel="icon"/,
+  /rel="manifest"/,
+  /Headless JSON editing/,
+]) {
   if (!pattern.test(siteHtml)) fail(`site html: missing ${pattern}.`);
+}
+
+if (!/<svg/.test(siteFavicon) || !/zod-crud/.test(siteManifest)) {
+  fail("site public assets: missing favicon or web manifest.");
 }
 
 for (const pattern of [/fileName: "404\.html"/, /fileName: "robots\.txt"/, /fileName: "sitemap\.xml"/]) {
@@ -151,12 +168,16 @@ if (!/direct route entry/.test(siteShellTest) || !/Skip to content/.test(siteShe
   fail("site shell test: missing production navigation/accessibility coverage.");
 }
 
-if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson)) {
+if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson)) {
   fail("root verify: missing playground production site gates.");
 }
 
-if (!/npm run verify/.test(pagesWorkflow) || !/SITE_BASE: \/zod-crud\//.test(pagesWorkflow) || !/SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
+if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pagesWorkflow) || !/SITE_BASE: \/zod-crud\//.test(pagesWorkflow) || !/SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
   fail("pages workflow: missing production site verification or deployment base.");
+}
+
+for (const pattern of [/404\.html/, /robots\.txt/, /sitemap\.xml/, /site\.webmanifest/, /site evaluation ok/]) {
+  if (!pattern.test(siteEvaluator)) fail(`site evaluator: missing ${pattern}.`);
 }
 
 for (const surfaceName of ["readme", "spec", "site"]) {

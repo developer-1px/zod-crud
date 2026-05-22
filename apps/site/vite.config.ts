@@ -28,7 +28,14 @@ function rootLlmsTxt(): Plugin {
 
 function productionSiteAssets(): Plugin {
   const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-  const sitemapRoutes = ["/", "/docs", "/playground"];
+  const sitemapRoutes = [
+    "/",
+    "/docs",
+    "/playground",
+    "/playground/outliner",
+    "/playground/mobile-cms",
+    "/playground/api-collection",
+  ];
 
   return {
     name: "production-site-assets",

@@ -1,0 +1,16 @@
+{
+  "name": "zod-crud",
+  "short_name": "zod-crud",
+  "description": "Zod-guarded headless JSON editing.",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fafaf9",
+  "theme_color": "#fafaf9",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

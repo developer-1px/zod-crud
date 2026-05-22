@@ -1,0 +1,75 @@
+import { existsSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+
+const root = new URL("..", import.meta.url).pathname;
+const dist = join(root, "apps/site/dist");
+
+function read(path) {
+  return readFileSync(join(dist, path), "utf8");
+}
+
+function fail(message) {
+  console.error(message);
+  process.exitCode = 1;
+}
+
+for (const file of [
+  "index.html",
+  "404.html",
+  "robots.txt",
+  "sitemap.xml",
+  "llms.txt",
+  "favicon.svg",
+  "site.webmanifest",
+]) {
+  if (!existsSync(join(dist, file))) fail(`site dist missing ${file}.`);
+}
+
+const index = read("index.html");
+const fallback = read("404.html");
+const robots = read("robots.txt");
+const sitemap = read("sitemap.xml");
+const manifest = JSON.parse(read("site.webmanifest"));
+
+for (const pattern of [
+  /<title>zod-crud - Headless JSON editing<\/title>/,
+  /name="description"/,
+  /property="og:title"/,
+  /property="og:description"/,
+  /name="twitter:card"/,
+  /rel="canonical"/,
+  /rel="icon"/,
+  /rel="manifest"/,
+]) {
+  if (!pattern.test(index)) fail(`site dist index missing ${pattern}.`);
+}
+
+if (fallback !== index) fail("site dist 404.html must match index.html for SPA deep links.");
+if (!/Sitemap: https:\/\/developer-1px\.github\.io\/zod-crud\/sitemap\.xml/.test(robots)) {
+  fail("site dist robots.txt missing production sitemap URL.");
+}
+
+for (const route of [
+  "https://developer-1px.github.io/zod-crud/",
+  "https://developer-1px.github.io/zod-crud/docs",
+  "https://developer-1px.github.io/zod-crud/playground",
+  "https://developer-1px.github.io/zod-crud/playground/outliner",
+  "https://developer-1px.github.io/zod-crud/playground/mobile-cms",
+  "https://developer-1px.github.io/zod-crud/playground/api-collection",
+]) {
+  if (!sitemap.includes(`<loc>${route}</loc>`)) fail(`site dist sitemap missing ${route}.`);
+}
+
+if (
+  manifest.name !== "zod-crud"
+  || manifest.short_name !== "zod-crud"
+  || manifest.theme_color !== "#fafaf9"
+  || !Array.isArray(manifest.icons)
+  || manifest.icons.length === 0
+) {
+  fail("site dist manifest is incomplete.");
+}
+
+if (process.exitCode === undefined) {
+  console.log("site evaluation ok");
+}
