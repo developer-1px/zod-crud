@@ -108,7 +108,7 @@ export function App() {
 | `doc.load(value)` | replace the document with a schema-valid value |
 | `doc.reset()` | restore the initial value or a provided value |
 | `doc.subscribe(listener)` | observe applied patch records |
-| `doc.at(pointer)` | read one JSON Pointer location |
+| `doc.at(pointer)` | read one JSON Pointer location as a `ReadResult` |
 | `doc.exists(pointer)` | check whether a pointer resolves |
 | `doc.query(jsonPath)` | return pointer matches for a JSONPath query |
 | `doc.entries(pointer)` | list object/array child entries |
@@ -133,6 +133,25 @@ doc.query("$..cards[?(@.status=='todo')]");
 
 Patch paths are JSON Pointers. JSONPath is only for query; use the returned
 pointers when you want to patch.
+
+`doc.at(pointer)` returns a result object, not the raw value.
+
+```ts
+const result = doc.at("/lists/0/cards/0/title");
+if (result.ok) {
+  result.value;
+}
+```
+
+`doc.patch(...)` accepts one operation or an operation array. `doc.commit(...)`
+and `doc.canPatch(...)` take operation arrays because they plan or record a
+batch.
+
+```ts
+doc.patch({ op: "replace", path: "/title", value: "Ready" });
+doc.canPatch([{ op: "replace", path: "/title", value: "Ready" }]);
+doc.commit([{ op: "replace", path: "/title", value: "Ready" }], { label: "rename" });
+```
 
 Use JSONPath to find values, not to mutate them directly.
 
@@ -223,6 +242,87 @@ doc.clipboard.paste({ after: "/lists/0/cards/0" });
 Use a pointer such as `/cards/-` when you already have an insertion position.
 Use `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }` when
 the target is an existing value.
+
+Pointer-array copy stores an array payload. When the paste should insert each
+copied item as a separate sibling, pass `spread: true`. This matters even when
+the pointer array has one item.
+
+```ts
+doc.clipboard.copy(["/lists/0/cards/0"]);
+doc.clipboard.paste("/lists/1/cards/-", {
+  spread: true,
+  rekey: { fields: ["id"], strategy: "suffix" },
+});
+```
+
+Use the same paste options in `canPaste(...)` that you will use in
+`paste(...)`.
+
+```ts
+const target = "/lists/1/cards/-";
+const options = { spread: true, rekey: { fields: ["id"], strategy: "suffix" } } as const;
+if (doc.canPaste(target, options).ok) doc.clipboard.paste(target, options);
+```
+
+## Tree Editing Cookbook
+
+Tree semantics belong to the app. zod-crud stores and validates JSON; the app
+turns UI actions such as indent, outdent, visible-row focus, and toolbar
+commands into JSON Pointers and JSON Patch operations.
+
+```ts
+type Node = { id: string; text: string; children: Node[] };
+
+const NodeSchema: z.ZodType<Node> = z.lazy(() =>
+  z.object({
+    id: z.string(),
+    text: z.string(),
+    children: z.array(NodeSchema),
+  }),
+);
+
+const OutlineSchema = z.object({ nodes: z.array(NodeSchema) });
+```
+
+Useful tree pointers look like this:
+
+```txt
+/nodes/0
+/nodes/0/children/0
+/nodes/0/children/0/children/0
+```
+
+Common tree actions are plain patch operations:
+
+```ts
+// Add child.
+doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });
+
+// Add sibling after /nodes/0.
+doc.patch({ op: "add", path: "/nodes/1", value: node });
+
+// Move up or down within the same array.
+doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0" }); // up
+doc.patch({ op: "move", from: "/nodes/0", path: "/nodes/1" }); // down one
+
+// Indent under previous sibling.
+doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0/children/-" });
+
+// Outdent to the parent's next sibling slot.
+doc.patch({ op: "move", from: "/nodes/0/children/1", path: "/nodes/1" });
+```
+
+For same-array moves, RFC 6902 removes the source first and then adds at the
+destination path. To move `/nodes/0` down one row, use `/nodes/1`, not
+`/nodes/2`.
+
+Selection is still headless JSON state. Pair it with DOM focus or local UI state
+when the product needs visible-row focus.
+
+```ts
+doc.selection?.selectRanges(["/nodes/0"]);
+const selected = doc.selection?.primaryPointer;
+```
 
 ## History
 
