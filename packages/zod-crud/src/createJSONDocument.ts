@@ -67,23 +67,12 @@ export interface JSONDocumentHistory {
   transaction(options: HistoryTransactionOptions, fn: () => void): void;
 }
 
-export type JSONDocumentChangeListener = (
-  applied: ReadonlyArray<JSONPatchOperation>,
-  metadata?: JSONChangeMetadata,
-) => void;
-
-export interface JSONDocumentLoadOptions {
-  preserveHistory?: boolean;
-}
-
-export type JSONDocumentCommitSelection = SelectionAction | SelectionSnap;
-
 export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   /**
    * Final model selection for this edit. When present, it overrides mutation
    * auto-selection and is recorded in the same history entry as the patch.
    */
-  selection?: JSONDocumentCommitSelection;
+  selection?: SelectionAction | SelectionSnap;
 }
 
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
@@ -111,9 +100,12 @@ export interface JSONDocument<T> {
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
-  load(value: T, options?: JSONDocumentLoadOptions): JSONResult;
+  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: T): JSONResult;
-  subscribe(listener: JSONDocumentChangeListener): () => void;
+  subscribe(listener: (
+    applied: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ) => void): () => void;
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;
   query(jsonpath: string): QueryResult;
@@ -434,7 +426,7 @@ function isPatchArray(operations: JSONPatchInput): operations is ReadonlyArray<J
 
 function resolveCommitSelection(
   current: SelectionSnap,
-  selection: JSONDocumentCommitSelection,
+  selection: SelectionAction | SelectionSnap,
   state: unknown,
   mode: SelectionMode,
 ): SelectionSnap {
@@ -443,7 +435,7 @@ function resolveCommitSelection(
     : reduceSelection(current, selection, mode, state);
 }
 
-function isSelectionSnap(selection: JSONDocumentCommitSelection): selection is SelectionSnap {
+function isSelectionSnap(selection: SelectionAction | SelectionSnap): selection is SelectionSnap {
   return typeof selection === "object"
     && selection !== null
     && "selectionRanges" in selection

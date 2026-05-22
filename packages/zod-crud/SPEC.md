@@ -66,13 +66,10 @@ import {
   type JSONCapabilityResult,
   type JSONChangeMetadata,
   type JSONDocument,
-  type JSONDocumentChangeListener,
   type JSONDocumentCommitOptions,
-  type JSONDocumentCommitSelection,
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
-  type JSONDocumentLoadOptions,
   type JSONDocumentPasteOptions,
   type JSONDocumentPasteTarget,
   type JSONPatchInput,
@@ -110,9 +107,9 @@ interface JSONDocument<T> {
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: readonly JSONPatchOperation[], options?: JSONDocumentCommitOptions): JSONResult;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
-  load(value: T, options?: JSONDocumentLoadOptions): JSONResult;
+  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: T): JSONResult;
-  subscribe(listener: JSONDocumentChangeListener): () => void;
+  subscribe(listener: (applied: readonly JSONPatchOperation[], metadata?: JSONChangeMetadata) => void): () => void;
 
   at(path: Pointer): ReadResult;
   exists(path: Pointer): boolean;

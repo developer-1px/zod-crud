@@ -15,13 +15,10 @@ export type {
 export { createJSONDocument } from "./createJSONDocument.js";
 export type {
   JSONCapabilityResult,
-  JSONDocumentChangeListener,
   JSONDocumentCommitOptions,
-  JSONDocumentCommitSelection,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
   JSONDocumentHistory,
-  JSONDocumentLoadOptions,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONDocument,
