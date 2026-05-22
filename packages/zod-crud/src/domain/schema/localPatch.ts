@@ -38,10 +38,7 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (isIndependentReplacePatch(ops)) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops);
   }
-  if (ops.length === 1 && 0 in ops) {
-    return applySingleArrayPatchWithLocalSchemaValidation(schema, state, ops[0]!);
-  }
-  return null;
+  return applySequentialPatchWithLocalSchemaValidation(schema, state, ops);
 }
 
 function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -75,45 +72,79 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   };
 }
 
-function applySingleArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
+function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
-  op: JSONPatchOperation,
+  ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
-  if (!op || typeof op !== "object") return null;
+  if (!Array.isArray(ops) || ops.length === 0) return null;
 
-  const sourceValue = sourceValueForValidation(state, op);
-  const applied = applyTrustedPatch(state, [op]);
-  if (!applied.result.ok) {
-    return {
-      state,
-      result: applied.result,
-      applied: [],
-    };
+  let cur: unknown = state;
+  const appliedOps: JSONPatchOperation[] = [];
+  for (let index = 0; index < ops.length; index++) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (!isSupportedLocalOpCandidate(op)) return null;
+
+    const sourceValue = sourceValueForValidation(cur, op);
+    const applied = applyTrustedPatch(cur, [op]);
+    if (!applied.result.ok) {
+      return {
+        state,
+        result: applied.result,
+        applied: [],
+      };
+    }
+
+    const appliedOp = applied.applied[0];
+    if (!appliedOp) return null;
+    const validation = validateAppliedLocalOp(schema, state, appliedOp, sourceValue);
+    if (validation === null || !validation.result.ok) return validation;
+    cur = applied.state;
+    appliedOps.push(appliedOp);
   }
 
-  const appliedOp = applied.applied[0];
-  if (!appliedOp) return null;
+  return {
+    state: cur as z.output<S>,
+    result: { ok: true },
+    applied: appliedOps,
+  };
+}
 
+function validateAppliedLocalOp<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  appliedOp: JSONPatchOperation,
+  sourceValue: { ok: true; value: unknown } | { ok: false },
+): LocalPatchResult<S> {
   switch (appliedOp.op) {
+    case "replace": {
+      if (appliedOp.path === "") return null;
+      const valueSchema = schemaAtPointer(schema, appliedOp.path, "value");
+      if (!valueSchema) return null;
+      const parsed = valueSchema.safeParse(appliedOp.value);
+      return parsed.success
+        ? okLocalPatch(state, [appliedOp])
+        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+    }
     case "add": {
       const element = arrayElementSchemaAtPath(schema, appliedOp.path);
       if (!element) return null;
       const parsed = element.safeParse(appliedOp.value);
       return parsed.success
-        ? acceptedLocalPatch(applied)
+        ? okLocalPatch(state, [appliedOp])
         : schemaViolation(state, appliedOp.path, parsed.error.issues);
     }
     case "remove":
       return arrayElementSchemaAtPath(schema, appliedOp.path)
-        ? acceptedLocalPatch(applied)
+        ? okLocalPatch(state, [appliedOp])
         : null;
     case "copy": {
       const element = arrayElementSchemaAtPath(schema, appliedOp.path);
       if (!element || !sourceValue.ok) return null;
       const parsed = element.safeParse(sourceValue.value);
       return parsed.success
-        ? acceptedLocalPatch(applied)
+        ? okLocalPatch(state, [appliedOp])
         : schemaViolation(state, appliedOp.path, parsed.error.issues);
     }
     case "move": {
@@ -121,12 +152,25 @@ function applySingleArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
       if (!element || !sourceValue.ok || !arrayElementSchemaAtPath(schema, appliedOp.from)) return null;
       const parsed = element.safeParse(sourceValue.value);
       return parsed.success
-        ? acceptedLocalPatch(applied)
+        ? okLocalPatch(state, [appliedOp])
         : schemaViolation(state, appliedOp.path, parsed.error.issues);
     }
     default:
       return null;
   }
+}
+
+function isSupportedLocalOpCandidate(op: JSONPatchOperation): boolean {
+  return !!op
+    && typeof op === "object"
+    && (
+      op.op === "replace"
+      || op.op === "add"
+      || op.op === "remove"
+      || op.op === "copy"
+      || op.op === "move"
+    )
+    && typeof op.path === "string";
 }
 
 function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {
@@ -175,16 +219,14 @@ function sourceValueForValidation(
   }
 }
 
-function acceptedLocalPatch<S extends z.ZodType>(
-  applied: {
-    state: unknown;
-    applied: ReadonlyArray<JSONPatchOperation>;
-  },
+function okLocalPatch<S extends z.ZodType>(
+  state: z.output<S>,
+  applied: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S> {
   return {
-    state: applied.state as z.output<S>,
+    state,
     result: { ok: true },
-    applied: applied.applied,
+    applied,
   };
 }
 

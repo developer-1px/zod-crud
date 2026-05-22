@@ -46,6 +46,17 @@ for (const size of sizes) {
     value: true,
   }));
   const insertedItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => makeItem(size + index));
+  const mixedArrayOps = [
+    ...insertedItems.slice(0, Math.floor(insertedItems.length / 2)).map((item) => ({
+      op: "add",
+      path: "/items/-",
+      value: item,
+    })),
+    ...Array.from({ length: insertedItems.length - Math.floor(insertedItems.length / 2) }, (_, index) => ({
+      op: "remove",
+      path: `/items/${size - index - 1}`,
+    })),
+  ];
 
   console.log(`\nitems=${size}`);
   bench("applyPatch single leaf replace", rounds, (index) =>
@@ -180,6 +191,12 @@ for (const size of sizes) {
       }
     });
     console.log(`doc.patch individual remove ${Math.min(individualCount, size)} history=0: ${elapsed.toFixed(2)}ms`);
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench(`doc.patch mixed array batch ${mixedArrayOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(mixedArrayOps));
   }
 }
 

@@ -202,6 +202,49 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(1);
   });
 
+  test("mixed plain structural array patches validate locally and stay atomic", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { id: "a", done: false },
+        { id: "b", done: true },
+        { id: "c", done: false },
+      ],
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "add", path: "/items/-", value: { id: "d", done: false } },
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "move", from: "/items/4", path: "/items/1" },
+      { op: "remove", path: "/items/2" },
+      { op: "replace", path: "/items/0/done", value: true },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items).toEqual([
+      { id: "a", done: true },
+      { id: "a", done: false },
+      { id: "c", done: false },
+      { id: "d", done: false },
+    ]);
+    expect(rootParses).toBe(0);
+
+    const before = doc.value;
+    const rejected = doc.patch([
+      { op: "add", path: "/items/-", value: { id: "e", done: false } },
+      { op: "add", path: "/items/-", value: { id: 1, done: false } },
+    ]);
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toBe(before);
+    expect(rootParses).toBe(0);
+  });
+
   test("schema checks fall back to full validation for local-looking patches", () => {
     let validations = 0;
     const Schema = z.object({
