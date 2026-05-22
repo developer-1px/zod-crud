@@ -309,6 +309,35 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state.settings).toBe(settings);
   });
 
+  it("applies single same-array append and tail remove patches with sharing", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const settings = { owner: "core" };
+    const initial = { items: [first, second], settings };
+
+    const appended = applyPatch(Any, initial, [
+      { op: "add", path: "/items/-", value: { id: "c" } },
+    ]);
+    expect(appended.result.ok).toBe(true);
+    expect(appended.applied).toEqual([{ op: "add", path: "/items/2", value: { id: "c" } }]);
+    expect(appended.state.items).toEqual([first, second, { id: "c" }]);
+    expect(appended.state.items).not.toBe(initial.items);
+    expect(appended.state.items[0]).toBe(first);
+    expect(appended.state.items[1]).toBe(second);
+    expect(appended.state.settings).toBe(settings);
+
+    const removed = applyPatch(Any, initial, [
+      { op: "remove", path: "/items/1" },
+    ]);
+    expect(removed.result.ok).toBe(true);
+    expect(removed.applied).toEqual([{ op: "remove", path: "/items/1" }]);
+    expect(removed.state.items).toEqual([first]);
+    expect(removed.state.items).not.toBe(initial.items);
+    expect(removed.state.items[0]).toBe(first);
+    expect(removed.state.settings).toBe(settings);
+    expect(initial.items).toEqual([first, second]);
+  });
+
   it("applies adjacent same-array moves with remove then add semantics", () => {
     const first = { id: "a" };
     const second = { id: "b" };

@@ -276,6 +276,52 @@ function applySameArrayStructuralPatch(
   const current = getValueAt(state, parsedParent.segs);
   if (!current.ok || !Array.isArray(current.value)) return { handled: false };
 
+  if (items.length === 1) {
+    const item = items[0]!;
+    if (item.op === "add") {
+      const index = item.index === "-" ? current.value.length : item.index;
+      if (index < 0 || index > current.value.length) return { handled: false };
+      if (index === current.value.length) {
+        const stateWithArray = replaceValueAtSegments(
+          state,
+          parsedParent.segs,
+          0,
+          current.value.concat([item.value]),
+        );
+        return stateWithArray === null
+          ? { handled: false }
+          : {
+              handled: true,
+              state: stateWithArray,
+              applied: [{ op: "add", path: appendSegment(parent, index), value: item.value }],
+            };
+      }
+    } else if (item.op === "remove") {
+      if (item.index < 0 || item.index >= current.value.length) return { handled: false };
+      if (item.index === current.value.length - 1) {
+        const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, current.value.slice(0, item.index));
+        return stateWithArray === null
+          ? { handled: false }
+          : { handled: true, state: stateWithArray, applied: [{ op: "remove", path: item.path }] };
+      }
+    } else if (item.op === "copy") {
+      if (item.fromIndex < 0 || item.fromIndex >= current.value.length) return { handled: false };
+      const index = item.index === "-" ? current.value.length : item.index;
+      if (index < 0 || index > current.value.length) return { handled: false };
+      if (index === current.value.length) {
+        const value = deepCloneTrusted(current.value[item.fromIndex]);
+        const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, current.value.concat([value]));
+        return stateWithArray === null
+          ? { handled: false }
+          : {
+              handled: true,
+              state: stateWithArray,
+              applied: [{ op: "copy", from: item.from, path: appendSegment(parent, index) }],
+            };
+      }
+    }
+  }
+
   const next = current.value.slice();
   const applied: JSONPatchOperation[] = [];
   for (const item of items) {
