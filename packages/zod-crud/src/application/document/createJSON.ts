@@ -3,6 +3,7 @@
 import type * as z from "zod";
 
 import {
+  applyAcceptedPatch,
   applyOperation,
   applyPatch,
   applySingleTrustedValuePatchToTrustedState,
@@ -93,7 +94,7 @@ export function createJSON<S extends z.ZodType>(
     metadata?: JSONChangeMetadata,
   ): JSONResult => {
     const before = state;
-    const applied = applyTrustedPatch(before, operations);
+    const applied = applyAcceptedPatch(before, operations);
     if (!applied.result.ok) return handleResult(policy, "patch", applied.result);
     if (applied.state === before) return applied.result;
     state = applied.state;

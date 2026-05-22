@@ -251,6 +251,45 @@ export function applyTrustedPatch<T>(
   return { state: cur as T, result: ok, applied: normalized };
 }
 
+// Internal replay for entries that already passed document commit validation.
+// This keeps applyTrustedPatch's stricter value checks for local preflight users.
+export function applyAcceptedPatch<T>(
+  state: T,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): TrustedApplyResult<T> {
+  if (!Array.isArray(ops)) {
+    return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
+  }
+
+  if (ops.length === 1 && 0 in ops) {
+    const op = ops[0]!;
+    if (
+      op !== null
+      && typeof op === "object"
+      && (op.op === "add" || op.op === "replace")
+      && typeof op.path === "string"
+      && "value" in op
+    ) {
+      const normalized = op.op === "add" && op.path.endsWith("/-")
+        ? normalizeOp(op, state)
+        : op;
+      if (normalized.op === "add" || normalized.op === "replace") {
+        const applied = applyTrustedValueMutation(state, normalized);
+        if ("error" in applied) {
+          return {
+            state,
+            result: fail(applied.error, applied.reason ? `op[0]: ${applied.reason}` : "op[0]", applied.pointer),
+            applied: [],
+          };
+        }
+        return { state: applied.state as T, result: ok, applied: [normalized] };
+      }
+    }
+  }
+
+  return applyTrustedPatch(state, ops);
+}
+
 function applySameArrayFieldReplacePatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
@@ -604,9 +643,13 @@ function applyTrustedValueMutation(
   state: unknown,
   op: Extract<JSONPatchOperation, { op: "add" | "replace" }>,
 ): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } {
+  if (op.path === "") return { state: op.value };
+
+  const singleSegment = applySingleSegmentTrustedValueMutation(state, op);
+  if (singleSegment !== null) return singleSegment;
+
   const parsed = parseSafe(op.path);
   if ("error" in parsed) return parsed;
-  if (parsed.segs.length === 0) return { state: op.value };
 
   const verb = op.op === "add" ? "set" : "replace";
   const result = withMutated(
@@ -615,6 +658,16 @@ function applyTrustedValueMutation(
     (parent, key) => mutateContainer(parent, key, verb, op.value),
   );
   return "error" in result ? { ...result, pointer: op.path } : result;
+}
+
+function applySingleSegmentTrustedValueMutation(
+  state: unknown,
+  op: Extract<JSONPatchOperation, { op: "add" | "replace" }>,
+): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } | null {
+  if (op.path[0] !== "/" || op.path.includes("~") || op.path.indexOf("/", 1) !== -1) return null;
+  const verb = op.op === "add" ? "set" : "replace";
+  const result = mutateContainer(state, op.path.slice(1), verb, op.value);
+  return "error" in result ? { ...result, pointer: op.path } : { state: result.value };
 }
 
 function replaceValueAtSegments(
