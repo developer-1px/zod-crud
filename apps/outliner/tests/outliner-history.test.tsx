@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
 
-const firstItem = "Enter — insert sibling after focus";
+const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
 const secondItem = "Tab — demote (move into prev sibling)";
 const editedFirstItem = "Edited first item";
 
@@ -42,8 +42,8 @@ async function editFirstItemAndInsertSibling() {
   await waitFor(() => expect((firstInput as HTMLInputElement).readOnly).toBe(false));
   fireEvent.change(firstInput, { target: { value: editedFirstItem } });
   await waitFor(() => expect((firstInput as HTMLInputElement).value).toBe(editedFirstItem));
-  // edit 모드의 Enter = insert-sibling
-  await user.keyboard("{Enter}");
+  // edit 모드에서 sibling 추가는 Shift+Enter.
+  await user.keyboard("{Shift>}{Enter}{/Shift}");
   await waitFor(() => expect(treeTexts()).toContain(""));
 
   return user;
@@ -74,7 +74,7 @@ describe("outliner editor history", () => {
     expect(treeTexts()).toContain("");
 
     // 새 정책: 각 사용자 액션이 별 entry. 텍스트 편집은 같은 path 안에서 coalesce 됨.
-    // 텍스트 편집 + Enter (insert-sibling) 은 2 개 entry → 2 회 undo 필요.
+    // 텍스트 편집 + Shift+Enter(insert-sibling) 는 2 개 entry → 2 회 undo 필요.
     await user.keyboard("{Control>}z{/Control}"); // insert-sibling 원복
     await user.keyboard("{Control>}z{/Control}"); // 텍스트 편집 원복
 

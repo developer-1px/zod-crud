@@ -8,7 +8,7 @@ import { Outliner } from "../src/index.js";
 
 afterEach(cleanup);
 
-const firstItem = "Enter — insert sibling after focus";
+const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
 const secondItem = "Tab — demote (move into prev sibling)";
 const lastTopItem = "History";
 const sectionTitle = "Selection";

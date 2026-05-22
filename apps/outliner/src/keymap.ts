@@ -43,10 +43,11 @@ export interface KeyBinding {
 export const KEYMAP: ReadonlyArray<KeyBinding> = [
   // ── Mode 전환 ────────────────────────────────────────────────────────────
   { chord: "Enter",        command: "enter-edit",     label: "Edit",                modes: ["select"] },
-  { chord: "Enter",        command: "insert-sibling", label: "Insert sibling",      modes: ["edit"] },
   { chord: "Escape",       command: "exit-edit",      label: "Exit edit mode",      modes: ["edit"] },
 
   // ── 구조 명령 (mode 무관) ──────────────────────────────────────────────
+  { chord: "Shift+Enter",  command: "insert-sibling", label: "Insert sibling",      modes: ["select", "edit"] },
+  { chord: "Mod+Enter",    command: "insert-sibling", label: "Insert sibling",      modes: ["select", "edit"] },
   { chord: "Tab",          command: "demote",         label: "Demote",              modes: ["select", "edit"] },
   { chord: "Shift+Tab",    command: "promote",        label: "Promote",             modes: ["select", "edit"] },
 

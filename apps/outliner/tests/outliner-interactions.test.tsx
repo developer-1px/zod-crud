@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
 
-const firstItem = "Enter — insert sibling after focus";
+const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
 const secondItem = "Tab — demote (move into prev sibling)";
 const thirdItem = "Shift+Tab — promote (move out to parent's sibling)";
 const selectionItem = "Selection";
@@ -35,6 +35,10 @@ function treeTexts() {
 
 function treeItems() {
   return within(tree()).getAllByRole("treeitem");
+}
+
+function modKey() {
+  return /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? "Meta" : "Control";
 }
 
 function selectedRows() {
@@ -105,6 +109,29 @@ describe("outliner keyboard and mouse interactions", () => {
 
     await user.keyboard("{Home}");
     expect(statusText()).toMatch(/focus =\s*\/children\/0/);
+  });
+
+  test("plain Enter edits only; Shift+Enter and Mod+Enter insert siblings", async () => {
+    renderOutliner();
+    const user = await clickText(firstItem);
+    const before = treeTexts().length;
+
+    await user.keyboard("{Enter}");
+    expect(statusText()).toMatch(/mode = edit/);
+    expect(statusText()).toMatch(/focus =\s*\/children\/0/);
+
+    await user.keyboard("{Enter}");
+    expect(treeTexts()).toHaveLength(before);
+    expect(statusText()).toMatch(/focus =\s*\/children\/0/);
+
+    await user.keyboard("{Shift>}{Enter}{/Shift}");
+    expect(treeTexts()).toHaveLength(before + 1);
+    expect(statusText()).toMatch(/focus =\s*\/children\/1/);
+
+    const mod = modKey();
+    await user.keyboard(`{${mod}>}{Enter}{/${mod}}`);
+    expect(treeTexts()).toHaveLength(before + 2);
+    expect(statusText()).toMatch(/focus =\s*\/children\/2/);
   });
 
   test("ArrowRight and ArrowLeft navigate between a parent row and its first child", async () => {

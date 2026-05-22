@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const firstItem = "Enter — insert sibling after focus";
+const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
 const editedFirstItem = "Edited first item";
 
 test("outliner supports keyboard editing and undo in a real browser", async ({ page }) => {
@@ -25,6 +25,10 @@ test("outliner supports keyboard editing and undo in a real browser", async ({ p
   await expect(firstRowText).toHaveValue(editedFirstItem);
 
   await firstRowText.press("Enter");
+  await expect(page.locator(".status")).toContainText("focus = /children/0");
+  await expect(treeTextboxes).toHaveCount(18);
+
+  await firstRowText.press("Shift+Enter");
   await expect(page.locator(".status")).toContainText("focus = /children/1");
 
   await page.keyboard.press("ControlOrMeta+Z");

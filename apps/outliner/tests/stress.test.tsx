@@ -17,7 +17,7 @@ import { useJSONDocument } from "zod-crud/react";
 
 afterEach(cleanup);
 
-const firstItem = "Enter — insert sibling after focus";
+const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
 
 function tree() {
   return screen.getByRole("tree");

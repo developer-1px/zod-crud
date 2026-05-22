@@ -12,7 +12,7 @@ export const OutlineSchema: z.ZodType<OutlineNode> = z.object({
 export const SAMPLE: OutlineNode = {
   text: "zod-crud outliner",
   children: [
-    { text: "Enter — insert sibling after focus", children: [] },
+    { text: "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling", children: [] },
     { text: "Tab — demote (move into prev sibling)", children: [] },
     { text: "Shift+Tab — promote (move out to parent's sibling)", children: [] },
     { text: "Backspace on empty — remove", children: [] },
