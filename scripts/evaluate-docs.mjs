@@ -45,6 +45,7 @@ const siteViteConfig = read("apps/site/vite.config.ts");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
 const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
+const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
 const rootPackageJson = read("package.json");
 const pagesWorkflow = read(".github/workflows/pages.yml");
 
@@ -177,7 +178,7 @@ if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(roo
   fail("root verify: missing playground production site gates.");
 }
 
-if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pagesWorkflow) || !/SITE_BASE: \/zod-crud\//.test(pagesWorkflow) || !/SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
+if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pagesWorkflow) || !/npm run site:evaluate:live/.test(pagesWorkflow) || !/actions\/checkout@v4/.test(pagesWorkflow) || !/actions\/setup-node@v4/.test(pagesWorkflow) || !/SITE_BASE: \/zod-crud\//.test(pagesWorkflow) || !/SITE_URL: https:\/\/developer-1px\.github\.io\/zod-crud/.test(pagesWorkflow)) {
   fail("pages workflow: missing production site verification or deployment base.");
 }
 
@@ -187,6 +188,11 @@ for (const pattern of [/404\.html/, /robots\.txt/, /sitemap\.xml/, /site\.webman
 
 if (!/SITE_BASE/.test(siteEvaluator) || !/unexpanded Vite base placeholder/.test(siteEvaluator)) {
   fail("site evaluator: missing production base path checks.");
+}
+
+for (const pattern of [/site:evaluate:live/, /live site evaluation ok/, /SITE_LIVE_ATTEMPTS/, /fetchText\("\/docs", \[200, 404\]\)/]) {
+  const source = pattern.source.includes("site:evaluate:live") ? rootPackageJson : liveSiteEvaluator;
+  if (!pattern.test(source)) fail(`live site evaluator: missing ${pattern}.`);
 }
 
 for (const surfaceName of ["readme", "spec", "site"]) {
