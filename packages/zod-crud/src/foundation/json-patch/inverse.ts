@@ -5,6 +5,8 @@ import type { JSONPatchOperation } from "./index.js";
 import { applyOpRaw } from "./apply.js";
 import { deepCloneTrusted, getValueAt, resolveAppendPath } from "./internal.js";
 
+const objectHasOwn = Object.prototype.hasOwnProperty;
+
 function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation | null {
   switch (op.op) {
     case "add":
@@ -37,6 +39,8 @@ export function computeInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): { ok: true; inverses: JSONPatchOperation[] } | { ok: false } {
+  const arrayFieldReplace = computeSameArrayFieldReplaceInverses(state, ops);
+  if (arrayFieldReplace) return arrayFieldReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
   const arrayOnly = computeSameArrayStructuralInverses(state, ops);
@@ -52,6 +56,60 @@ export function computeInverses(
     cur = r.state;
   }
   return { ok: true, inverses: out.reverse() };
+}
+
+function computeSameArrayFieldReplaceInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let arraySegments: string[] | null = null;
+  let field: string | null = null;
+  const seenIndexes = new Set<number>();
+  const items: Array<{ path: string; index: number; key: string }> = [];
+
+  for (const op of ops) {
+    if (op.op === "test") continue;
+    if (op.op !== "replace" || op.path === "") return null;
+    let segments: string[];
+    try {
+      segments = parsePointer(op.path);
+    } catch {
+      return null;
+    }
+    if (segments.length < 2) return null;
+
+    const key = segments[segments.length - 1]!;
+    const index = numericSegment(segments[segments.length - 2]!);
+    if (index === null) return null;
+    if (field === null) field = key;
+    else if (field !== key) return null;
+
+    const nextArraySegments = segments.slice(0, -2);
+    if (arraySegments === null) arraySegments = nextArraySegments;
+    else if (!sameSegments(arraySegments, nextArraySegments)) return null;
+
+    if (seenIndexes.has(index)) return null;
+    seenIndexes.add(index);
+    items.push({ path: op.path, index, key });
+  }
+
+  if (arraySegments === null || field === null) return null;
+  const array = readAt(state, arraySegments);
+  if (!array.ok || !Array.isArray(array.value)) return null;
+
+  const inverses: JSONPatchOperation[] = [];
+  for (let itemIndex = items.length - 1; itemIndex >= 0; itemIndex -= 1) {
+    const item = items[itemIndex]!;
+    if (item.index < 0 || item.index >= array.value.length) return null;
+    const row = array.value[item.index];
+    if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
+    if (!objectHasOwn.call(row, item.key)) return null;
+    inverses.push({ op: "replace", path: item.path, value: (row as Record<string, unknown>)[item.key] });
+  }
+
+  return { ok: true, inverses };
 }
 
 type SameArrayStructuralOp =
@@ -224,6 +282,10 @@ function hasIndependentPaths(paths: ReadonlyArray<{ path: string; segments: stri
     }
   }
   return true;
+}
+
+function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
+  return left.length === right.length && left.every((segment, index) => segment === right[index]);
 }
 
 function arrayLocation(path: string): { parent: string; index: number | "-" } | null {

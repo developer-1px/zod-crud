@@ -67,6 +67,39 @@ describe("doc.history performance contract", () => {
     });
   });
 
+  test("same-array field replace batch history restores without schema validation", () => {
+    let validations = 0;
+    const Schema = z.object({
+      items: z.array(z.object({ title: z.string(), done: z.boolean() })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = {
+      items: [
+        { title: "a", done: false },
+        { title: "b", done: false },
+        { title: "c", done: false },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/done", value: true },
+      { op: "replace", path: "/items/1/done", value: true },
+    ])).toEqual({ ok: true });
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterPatch = validations;
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(validations).toBe(validationsAfterPatch);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.done)).toEqual([true, true, false]);
+    expect(validations).toBe(validationsAfterPatch);
+  });
+
   test("commit with explicit selection validates once and replays the accepted patch", () => {
     let validations = 0;
     const Schema = z.object({

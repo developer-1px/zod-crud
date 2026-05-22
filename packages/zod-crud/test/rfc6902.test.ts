@@ -267,6 +267,43 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state.settings).not.toBe(settings);
   });
 
+  it("applies same-array field replace batches without changing applied order or untouched references", () => {
+    const first = { title: "a", done: false };
+    const second = { title: "b", done: false };
+    const third = { title: "c", done: false };
+    const settings = { theme: "light" };
+    const state = { items: [first, second, third], settings };
+    const ops: JSONPatchOperation[] = [
+      { op: "replace", path: "/items/0/done", value: true },
+      { op: "replace", path: "/items/1/done", value: true },
+    ];
+
+    const r = applyPatch(Any, state, ops);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual(ops);
+    expect(r.state).toEqual({
+      items: [
+        { title: "a", done: true },
+        { title: "b", done: true },
+        third,
+      ],
+      settings,
+    });
+    expect(r.state.items).not.toBe(state.items);
+    expect(r.state.items[0]).not.toBe(first);
+    expect(r.state.items[1]).not.toBe(second);
+    expect(r.state.items[2]).toBe(third);
+    expect(r.state.settings).toBe(settings);
+
+    const repeated = applyPatch(Any, { items: [{ done: false }] }, [
+      { op: "replace", path: "/items/0/done", value: true },
+      { op: "replace", path: "/items/0/done", value: false },
+    ]);
+    expect(repeated.result.ok).toBe(true);
+    expect(repeated.state).toEqual({ items: [{ done: false }] });
+  });
+
   it("preserves ordered semantics for repeated and nested replace batches", () => {
     const repeated = applyPatch(Any, { title: "a" }, [
       { op: "replace", path: "/title", value: "b" },
