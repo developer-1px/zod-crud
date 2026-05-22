@@ -16,7 +16,7 @@ export default defineConfig({
     baseURL,
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
-    video: "retain-on-failure",
+    video: "off",
   },
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined

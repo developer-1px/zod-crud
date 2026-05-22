@@ -262,6 +262,10 @@ if (!/testDir: "\.\/tests\/browser"/.test(playwrightConfig) || !/webServer/.test
   fail("playwright config: missing browser test directory or dev server setup.");
 }
 
+if (!/video:\s*"off"/.test(playwrightConfig)) {
+  fail("playwright config: video must stay off so CI does not require ffmpeg.");
+}
+
 if (!/defers demo and engine code/.test(browserSiteTest) || !/InterfaceWorkbench\.playground/.test(browserSiteTest) || !/toHaveTitle\("zod-crud API - zod-crud"\)/.test(browserSiteTest)) {
   fail("browser site test: missing production route split and metadata coverage.");
 }
