@@ -21,13 +21,13 @@ function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation 
       return { op: "remove", path };
     }
     case "remove": {
-      const prev = readAt(before, parsePointer(op.path));
+      const prev = readValueAtPointer(before, op.path);
       if (!prev.ok) return null;
       return { op: "add", path: op.path, value: prev.value };
     }
     case "replace": {
       if (op.path === "") return { op: "replace", path: "", value: before };
-      const prev = readAt(before, parsePointer(op.path));
+      const prev = readValueAtPointer(before, op.path);
       if (!prev.ok) return null;
       return { op: "replace", path: op.path, value: prev.value };
     }
@@ -45,6 +45,7 @@ export function computeInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): { ok: true; inverses: JSONPatchOperation[] } | { ok: false } {
+  if (ops.length === 1 && 0 in ops) return computeSingleInverse(state, ops[0]!);
   const arrayFieldReplace = computeSameArrayFieldReplaceInverses(state, ops);
   if (arrayFieldReplace) return arrayFieldReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
@@ -62,6 +63,15 @@ export function computeInverses(
     cur = r.state;
   }
   return { ok: true, inverses: out.reverse() };
+}
+
+function computeSingleInverse(
+  state: unknown,
+  op: JSONPatchOperation,
+): { ok: true; inverses: JSONPatchOperation[] } | { ok: false } {
+  const inverse = inverseOp(op, state);
+  if (inverse === null) return op.op === "test" ? { ok: true, inverses: [] } : { ok: false };
+  return { ok: true, inverses: [inverse] };
 }
 
 function computeSameArrayFieldReplaceInverses(
@@ -302,6 +312,44 @@ function arrayLocation(path: string): { parent: string; index: number | "-" } | 
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function readValueAtPointer(
+  state: unknown,
+  path: string,
+): { ok: true; value: unknown } | { ok: false } {
+  const simple = readSimplePointerValue(state, path);
+  return simple ?? readAt(state, parsePointer(path));
+}
+
+function readSimplePointerValue(
+  state: unknown,
+  path: string,
+): { ok: true; value: unknown } | { ok: false } | null {
+  if (path === "") return { ok: true, value: state };
+  if (path[0] !== "/" || path.includes("~")) return null;
+
+  let current = state;
+  let start = 1;
+  while (true) {
+    const nextSlash = path.indexOf("/", start);
+    const segment = nextSlash === -1 ? path.slice(start) : path.slice(start, nextSlash);
+
+    if (current === null || current === undefined) return { ok: false };
+    if (Array.isArray(current)) {
+      const index = numericSegment(segment);
+      if (index === null || index >= current.length) return { ok: false };
+      current = current[index];
+    } else if (typeof current === "object") {
+      if (!objectHasOwn.call(current, segment)) return { ok: false };
+      current = (current as Record<string, unknown>)[segment];
+    } else {
+      return { ok: false };
+    }
+
+    if (nextSlash === -1) return { ok: true, value: current };
+    start = nextSlash + 1;
+  }
 }
 
 function parseArrayFieldPath(path: string): ArrayFieldPath | null {
