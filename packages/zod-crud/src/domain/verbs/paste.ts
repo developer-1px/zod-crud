@@ -5,7 +5,7 @@ import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
-import { getDiscriminatedUnionInfo, getObjectLiteralValues, schemaAtPointer } from "../schema/introspection.js";
+import { getDef, getDiscriminatedUnionInfo, getObjectShape, schemaAtPointer } from "../schema/introspection.js";
 import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
 
 type PasteMode = "before" | "after" | "into" | "replace";
@@ -54,6 +54,11 @@ interface ResolvedPasteArgs {
   target?: Pointer;
   mode: PasteMode;
   options: PastePayloadOptions;
+}
+
+interface LiteralField {
+  key: string;
+  allowed: unknown[];
 }
 
 export function resolvePasteArgs(
@@ -138,25 +143,36 @@ function createPayloadMismatchChecker(targetSchema: z.ZodType): (payload: unknow
     };
   }
 
-  const literalValues = new Map<string, unknown[]>();
+  const literalFields = objectLiteralFields(targetSchema);
+  if (literalFields.length === 0) return () => null;
   return (payload) => {
     if (!isRecord(payload)) return null;
-    return findLiteralMismatch(targetSchema, payload, literalValues);
+    return findLiteralMismatch(payload, literalFields);
   };
 }
 
-function findLiteralMismatch(
-  targetSchema: z.ZodType,
-  payload: Record<string, unknown>,
-  literalValues: Map<string, unknown[]>,
-): PasteDuMismatch | null {
-  for (const key of Object.keys(payload)) {
-    let allowed = literalValues.get(key);
-    if (allowed === undefined) {
-      allowed = getObjectLiteralValues(targetSchema, key);
-      literalValues.set(key, allowed);
+function objectLiteralFields(targetSchema: z.ZodType): LiteralField[] {
+  const shape = getObjectShape(targetSchema);
+  if (shape === null) return [];
+
+  const fields: LiteralField[] = [];
+  for (const key of Object.keys(shape)) {
+    const valueSchema = shape[key];
+    if (valueSchema === undefined) continue;
+    const def = getDef(valueSchema);
+    if (Array.isArray(def.values) && def.values.length > 0) {
+      fields.push({ key, allowed: def.values });
     }
-    if (allowed.length === 0) continue;
+  }
+  return fields;
+}
+
+function findLiteralMismatch(
+  payload: Record<string, unknown>,
+  literalFields: ReadonlyArray<LiteralField>,
+): PasteDuMismatch | null {
+  for (const { key, allowed } of literalFields) {
+    if (!Object.prototype.hasOwnProperty.call(payload, key)) continue;
 
     const value = payload[key];
     if (allowed.some((allowedValue) => Object.is(allowedValue, value))) return null;

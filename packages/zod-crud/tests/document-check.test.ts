@@ -93,4 +93,25 @@ describe("JSONDocument can* interface", () => {
     });
     expect(doc.value.blocks).toEqual([{ kind: "text", text: "hello" }]);
   });
+
+  test("reports spread paste literal field mismatch before commit", () => {
+    const BlockSchema = z.object({
+      blocks: z.array(z.object({
+        kind: z.literal("text"),
+        text: z.string(),
+      })),
+    });
+    const doc = createJSONDocument(BlockSchema, {
+      blocks: [{ kind: "text", text: "hello" }],
+    }, { history: 10 });
+
+    expect(doc.clipboard.pastePayload("/blocks/-", [
+      { kind: "image", text: "bad" },
+    ], { spread: true })).toMatchObject({
+      ok: false,
+      code: "du_branch_mismatch",
+      source: { discriminator: "kind", value: "image" },
+    });
+    expect(doc.value.blocks).toEqual([{ kind: "text", text: "hello" }]);
+  });
 });
