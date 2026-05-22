@@ -50,6 +50,7 @@ const siteApp = read("apps/site/src/App.tsx");
 const siteRoutesJson = read("apps/site/src/site-routes.json");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
 const docsRoute = read("apps/site/src/routes/Docs.tsx");
+const playgroundRoute = read("apps/site/src/routes/Playground.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
 const siteHttpEvaluator = read("scripts/evaluate-site-http.mjs");
 const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
@@ -242,6 +243,18 @@ if (/import\s+\{[^}]*ApiCollection|import\s+\{[^}]*Outliner|from "@zod-crud\/mob
   fail("site app: demo packages must not be statically imported into the overview bundle.");
 }
 
+if (/md:overflow-hidden/.test(siteApp) || /id="main-content" className="[^"]*overflow/.test(siteApp)) {
+  fail("site app: window must be the official vertical scroll owner.");
+}
+
+if (!/window\.scrollTo\(\{ left: 0, top: 0 \}\)/.test(siteApp) || !/md:sticky md:top-0 md:h-screen/.test(siteApp)) {
+  fail("site app: route navigation and desktop sidebar must match the window scroll model.");
+}
+
+if (/md:overflow-auto/.test(playgroundRoute)) {
+  fail("playground route: must not create a nested vertical scroll owner.");
+}
+
 if (!/document\.title/.test(siteShellTest) || !/name="description"/.test(siteShellTest) || !/og:description/.test(siteShellTest) || !/og:url/.test(siteShellTest) || !/twitter:description/.test(siteShellTest) || !/canonical/.test(siteShellTest)) {
   fail("site shell test: missing client-side route metadata coverage.");
 }
@@ -266,7 +279,16 @@ if (!/video:\s*"off"/.test(playwrightConfig)) {
   fail("playwright config: video must stay off so CI does not require ffmpeg.");
 }
 
-if (!/defers demo and engine code/.test(browserSiteTest) || !/InterfaceWorkbench\.playground/.test(browserSiteTest) || !/toHaveTitle\("zod-crud API - zod-crud"\)/.test(browserSiteTest)) {
+if (
+  !/defers demo and engine code/.test(browserSiteTest)
+  || !/InterfaceWorkbench\.playground/.test(browserSiteTest)
+  || !/toHaveTitle\("zod-crud API - zod-crud"\)/.test(browserSiteTest)
+  || !/sticky desktop navigation/.test(browserSiteTest)
+  || !/mainOverflowY/.test(browserSiteTest)
+  || !/siteNavTop/.test(browserSiteTest)
+  || !/docsNavTop/.test(browserSiteTest)
+  || !/window\.scrollY/.test(browserSiteTest)
+) {
   fail("browser site test: missing production route split and metadata coverage.");
 }
 

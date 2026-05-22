@@ -59,6 +59,7 @@ function subscribePathname(listener: () => void): () => void {
 
 function navigate(path: string): void {
   window.history.pushState(null, "", pathWithBase(path));
+  window.scrollTo({ left: 0, top: 0 });
   window.dispatchEvent(new Event("popstate"));
 }
 
@@ -149,7 +150,7 @@ export function App() {
   }, [route]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-stone-50 text-stone-900 md:flex-row md:overflow-hidden">
+    <div className="flex min-h-screen flex-col bg-stone-50 text-stone-900 md:flex-row">
       <a
         href="#main-content"
         className="sr-only z-50 rounded bg-stone-950 px-3 py-2 text-sm font-medium text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
@@ -158,7 +159,7 @@ export function App() {
       </a>
       <nav
         aria-label="Site navigation"
-        className="shrink-0 border-b border-stone-200 bg-white text-sm md:h-screen md:w-56 md:overflow-y-auto md:border-b-0 md:border-r"
+        className="shrink-0 border-b border-stone-200 bg-white text-sm md:sticky md:top-0 md:h-screen md:w-56 md:self-start md:overflow-y-auto md:border-b-0 md:border-r"
       >
         <NavLink to="/" className="block px-4 py-3 font-mono text-stone-950 no-underline hover:bg-stone-100">
           zod-crud
@@ -183,7 +184,7 @@ export function App() {
           ))}
         </div>
       </nav>
-      <div id="main-content" className="flex-1 md:overflow-auto">
+      <div id="main-content" className="min-w-0 flex-1">
         <Suspense fallback={<div className="p-4 text-sm text-stone-500">Loading</div>}>
           <Page />
         </Suspense>

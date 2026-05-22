@@ -1,6 +1,6 @@
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { App } from "../src/App";
 
 beforeEach(() => {
@@ -13,6 +13,7 @@ beforeEach(() => {
     '<meta name="twitter:description" content="" />',
     '<link rel="canonical" href="" />',
   ].join("");
+  Object.defineProperty(window, "scrollTo", { configurable: true, value: vi.fn() });
   window.history.pushState(null, "", "/");
 });
 
