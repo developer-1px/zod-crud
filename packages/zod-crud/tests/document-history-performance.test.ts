@@ -1,9 +1,47 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../src/index.js";
+import { applyPatch, createJSONDocument } from "../src/index.js";
 
 describe("doc.history performance contract", () => {
+  test("public applyPatch validates plain structural leaf edits locally", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const state = Schema.parse({
+      items: Array.from({ length: 100 }, (_, index) => ({ id: `item-${index}`, done: false })),
+    });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    const result = applyPatch(Schema, state, [{ op: "replace", path: "/items/50/done", value: true }]);
+
+    expect(result.result).toEqual({ ok: true });
+    expect(result.state.items[50]?.done).toBe(true);
+    expect(rootParses).toBe(0);
+  });
+
+  test("public applyPatch keeps whole-schema validation for refinements", () => {
+    let rootParses = 0;
+    const Schema = z.object({ count: z.number() }).superRefine((value, context) => {
+      rootParses += 1;
+      if (value.count > 1) {
+        context.addIssue({ code: "custom", message: "count too high" });
+      }
+    });
+    const state = Schema.parse({ count: 0 });
+    rootParses = 0;
+
+    const result = applyPatch(Schema, state, [{ op: "replace", path: "/count", value: 2 }]);
+
+    expect(result.result).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(rootParses).toBeGreaterThan(0);
+  });
+
   test("large history depth preserves undo and redo order", () => {
     const Schema = z.object({
       value: z.number(),
