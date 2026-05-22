@@ -7,6 +7,8 @@ type MarkdownBlock =
   | { type: "table"; header: string[]; rows: string[][] }
   | { type: "code"; language: string; code: string };
 
+export type MarkdownHeading = { id: string; level: number; text: string };
+
 export function MarkdownViewer({ source }: { source: string }) {
   const blocks = useMemo(() => parseMarkdown(source), [source]);
 
@@ -29,7 +31,7 @@ function MarkdownBlockView({ block }: { block: MarkdownBlock }) {
         : "mb-0 mt-1 text-xs font-semibold uppercase tracking-wide text-stone-500";
 
     return (
-      <HeadingTag className={className}>
+      <HeadingTag id={headingId(block.text)} className={className}>
         <InlineMarkdown text={block.text} />
       </HeadingTag>
     );
@@ -109,6 +111,25 @@ function InlineMarkdown({ text }: { text: string }) {
 
   if (cursor < text.length) nodes.push(text.slice(cursor));
   return <>{nodes}</>;
+}
+
+export function markdownHeadings(source: string): MarkdownHeading[] {
+  return parseMarkdown(source)
+    .filter((block): block is Extract<MarkdownBlock, { type: "heading" }> => block.type === "heading")
+    .map((block) => ({
+      id: headingId(block.text),
+      level: block.level,
+      text: block.text,
+    }));
+}
+
+function headingId(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{Letter}\p{Number}]+/gu, "-")
+    .replace(/^-+|-+$/g, "")
+    || "section";
 }
 
 function parseMarkdown(source: string): MarkdownBlock[] {

@@ -35,6 +35,12 @@ export function Home() {
               <a className="rounded border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 no-underline hover:bg-stone-100" href={sitePath("/playground")}>
                 Workbench
               </a>
+              <a className="rounded border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 no-underline hover:bg-stone-100" href="https://www.npmjs.com/package/zod-crud">
+                npm
+              </a>
+              <a className="rounded border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 no-underline hover:bg-stone-100" href="https://github.com/developer-1px/zod-crud">
+                GitHub
+              </a>
             </div>
           </div>
 

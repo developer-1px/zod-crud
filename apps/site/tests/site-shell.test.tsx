@@ -20,6 +20,8 @@ describe("official site shell", () => {
     expect(screen.getByText(/Zod-guarded JSON editing/)).toBeTruthy();
     expect(screen.getByText("npm install zod-crud zod")).toBeTruthy();
     expect(screen.getByText("npm run verify")).toBeTruthy();
+    expect(screen.getByRole("link", { name: "npm" }).getAttribute("href")).toBe("https://www.npmjs.com/package/zod-crud");
+    expect(screen.getByRole("link", { name: "GitHub" }).getAttribute("href")).toBe("https://github.com/developer-1px/zod-crud");
     expect(screen.queryByText("Interface bench")).toBeNull();
   });
 
@@ -31,6 +33,8 @@ describe("official site shell", () => {
     await user.click(nav.getByRole("link", { name: "API reference" }));
     expect(screen.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "작업별 진입점" }).getAttribute("href")).toBe("#작업별-진입점");
 
     await user.click(nav.getByRole("link", { name: "Workbench" }));
     expect(screen.getByText("Interface bench")).toBeTruthy();
@@ -38,10 +42,11 @@ describe("official site shell", () => {
   });
 
   test("supports direct route entry for static-hosting fallbacks", () => {
-    window.history.pushState(null, "", "/docs");
+    window.history.pushState(null, "", "/docs/");
     render(<App />);
 
     expect(screen.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "API reference" }).getAttribute("aria-current")).toBe("page");
+    expect(document.getElementById("작업별-진입점")).toBeTruthy();
   });
 });

@@ -30,7 +30,7 @@ function stripBase(pathname: string): string {
 }
 
 function readPathname(): string {
-  return stripBase(window.location.pathname) || "/";
+  return normalizePath(stripBase(window.location.pathname) || "/");
 }
 
 function subscribePathname(listener: () => void): () => void {
@@ -45,6 +45,11 @@ function navigate(path: string): void {
 
 function usePathname(): string {
   return useSyncExternalStore(subscribePathname, readPathname, () => "/");
+}
+
+function normalizePath(path: string): string {
+  if (path === "/") return path;
+  return path.replace(/\/+$/g, "") || "/";
 }
 
 function NavLink(props: { to: string; children: string; className: string; activePath?: string }) {

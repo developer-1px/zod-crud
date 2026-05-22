@@ -43,6 +43,7 @@ const siteFavicon = read("apps/site/public/favicon.svg");
 const siteManifest = read("apps/site/public/site.webmanifest");
 const siteViteConfig = read("apps/site/vite.config.ts");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
+const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
 const rootPackageJson = read("package.json");
 const pagesWorkflow = read(".github/workflows/pages.yml");
@@ -166,6 +167,10 @@ for (const pattern of [/fileName: "404\.html"/, /fileName: "robots\.txt"/, /file
 
 if (!/direct route entry/.test(siteShellTest) || !/Skip to content/.test(siteShellTest)) {
   fail("site shell test: missing production navigation/accessibility coverage.");
+}
+
+if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/작업별-진입점/.test(siteShellTest)) {
+  fail("site docs: missing table-of-contents navigation coverage.");
 }
 
 if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson)) {
