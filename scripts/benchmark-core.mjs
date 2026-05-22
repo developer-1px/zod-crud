@@ -3,13 +3,15 @@ import { performance } from "node:perf_hooks";
 import * as z from "zod";
 
 const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
+const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/index.js", import.meta.url);
 
-if (!existsSync(distEntry)) {
+if (!existsSync(distEntry) || !existsSync(distPatchEntry)) {
   console.error("Missing package dist. Run `npm run build -w zod-crud` first.");
   process.exit(1);
 }
 
 const { applyPatch, createJSONDocument } = await import(distEntry.href);
+const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 
 const Item = z.object({
   id: z.string(),
@@ -432,6 +434,21 @@ for (const size of sizes) {
 }
 
 {
+  const rootReplaceCount = envNumber("PERF_ROOT_KEYS", batchSize);
+  const rootState = makeRootObjectState(rootReplaceCount);
+  const rootReplaceOps = Array.from({ length: rootReplaceCount }, (_, index) => ({
+    op: "replace",
+    path: `/k${index}`,
+    value: makeRootObjectValue(rootReplaceCount + index),
+  }));
+  console.log(`\nroot keys=${rootReplaceCount}`);
+  bench(`accepted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyAcceptedPatch(rootState, rootReplaceOps));
+  bench(`trusted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyTrustedPatch(rootState, rootReplaceOps, { valuesTrusted: true }));
+}
+
+{
   const historyDepth = envNumber("PERF_HISTORY_DEPTH", 10000);
   const historyEdits = envNumber("PERF_HISTORY_EDITS", historyDepth * 5);
   const TinySchema = z.object({ value: z.number() });
@@ -489,6 +506,23 @@ function makeItem(index) {
   };
 }
 
+function makeRootObjectState(size) {
+  return Object.fromEntries(
+    Array.from({ length: size }, (_, index) => [`k${index}`, makeRootObjectValue(index)]),
+  );
+}
+
+function makeRootObjectValue(index) {
+  return {
+    id: `id-${index}`,
+    done: false,
+    meta: {
+      rank: index,
+      tag: `tag-${index % 10}`,
+    },
+  };
+}
+
 function bench(label, sampleCount, fn) {
   const samples = [];
   let last;
@@ -498,7 +532,7 @@ function bench(label, sampleCount, fn) {
     samples.push(performance.now() - started);
   }
   const { avg, min, p50, max } = sampleStats(samples);
-  const ok = typeof last === "object" && last !== null && "ok" in last ? last.ok : "n/a";
+  const ok = resultOk(last);
   console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
 }
 
@@ -512,8 +546,22 @@ function benchWithSetup(label, sampleCount, setup, fn) {
     samples.push(performance.now() - started);
   }
   const { avg, min, p50, max } = sampleStats(samples);
-  const ok = typeof last === "object" && last !== null && "ok" in last ? last.ok : "n/a";
+  const ok = resultOk(last);
   console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
+}
+
+function resultOk(value) {
+  if (typeof value !== "object" || value === null) return "n/a";
+  if ("ok" in value) return value.ok;
+  if (
+    "result" in value
+    && typeof value.result === "object"
+    && value.result !== null
+    && "ok" in value.result
+  ) {
+    return value.result.ok;
+  }
+  return "n/a";
 }
 
 function sampleStats(samples) {
