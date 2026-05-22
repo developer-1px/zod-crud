@@ -86,6 +86,7 @@ interface Check {
     payload: unknown,
     target?: PasteTarget,
     options?: PasteOptions,
+    executionOptions?: CheckPasteExecutionOptions,
   ): CheckResult;
   patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
 
@@ -102,9 +103,14 @@ interface BuildCheckArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONOps<z.output<S>>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   getStateJsonTrusted?: () => boolean;
   history: CheckHistoryControls;
   selectionRef?: { current: SelectionSnap };
+}
+
+interface CheckPasteExecutionOptions {
+  trustedPayload?: boolean;
 }
 
 type CheckableResult =
@@ -123,7 +129,7 @@ const OK: CheckResult = { ok: true };
 export function buildCheck<S extends z.ZodType>(
   args: BuildCheckArgs<S>,
 ): Check {
-  const { schema, ops, previewPatch, getStateJsonTrusted, history, selectionRef } = args;
+  const { schema, ops, previewPatch, previewTrustedValuesPatch, getStateJsonTrusted, history, selectionRef } = args;
   const checkPatch = (patch: ReadonlyArray<JSONPatchOperation>) => previewPatch
     ? preFlightFromApplyResult(previewPatch(patch))
     : preFlight(schema, ops.state, patch);
@@ -215,14 +221,18 @@ export function buildCheck<S extends z.ZodType>(
             clonePayload: false,
           }));
     },
-    paste(payload, target, options) {
+    paste(payload, target, options, executionOptions) {
       const args = resolvePasteArgs(target, options);
       const resolvedTarget = targetOrSelection(args.target);
+      const pastePreview = executionOptions?.trustedPayload && previewTrustedValuesPatch
+        ? previewTrustedValuesPatch
+        : previewPatch;
       return resolvedTarget === null
         ? emptySelection("paste target selection is empty")
         : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, {
             ...args.options,
-            previewPatch,
+            previewPatch: pastePreview,
+            ...(executionOptions?.trustedPayload ? { trustedPayload: true } : {}),
           }));
     },
     patch(operations) {

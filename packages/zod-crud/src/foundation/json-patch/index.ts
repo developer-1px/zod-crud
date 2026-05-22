@@ -6,7 +6,14 @@ import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
 import { appendSegment, parentPointer, type Pointer } from "../json-pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
-import { deepCloneTrusted, getValueAt, normalizeOp, parseSafe } from "./internal.js";
+import {
+  deepCloneTrusted,
+  getValueAt,
+  mutateContainer,
+  normalizeOp,
+  parseSafe,
+  withMutated,
+} from "./internal.js";
 
 export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
@@ -145,6 +152,46 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 cur 반환.
   return { state: cur as z.output<S>, result: ok, applied: normalized };
+}
+
+// Internal document path for a trusted JSON state plus a trusted JSON op value.
+// This is intentionally narrow: public patch input and untrusted clipboard
+// payloads still go through the normal JSON boundary.
+export function applySingleTrustedValuePatchToTrustedState<S extends z.ZodTypeAny>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): ApplyResult<S> | null {
+  if (!Array.isArray(ops) || ops.length !== 1 || !(0 in ops)) return null;
+
+  const op = ops[0]!;
+  if (op === null || typeof op !== "object") return null;
+  if (op.op !== "add" && op.op !== "replace") return null;
+
+  const shape = validateOperationShape(op);
+  if (shape) {
+    return {
+      state,
+      result: fail(shape.error, `op[0]: ${shape.reason}`),
+      applied: [],
+    };
+  }
+
+  const normalized = normalizeOp(op, state);
+  if (normalized.op !== "add" && normalized.op !== "replace") return null;
+
+  const applied = applyTrustedValueMutation(state, normalized);
+  if ("error" in applied) {
+    return {
+      state,
+      result: fail(applied.error, applied.reason ? `op[0]: ${applied.reason}` : "op[0]", applied.pointer),
+      applied: [],
+    };
+  }
+
+  const parsed = schema.safeParse(applied.state);
+  if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+  return { state: applied.state as z.output<S>, result: ok, applied: [normalized] };
 }
 
 // Internal replay path for history entries that were already accepted by
@@ -521,6 +568,23 @@ function arrayLocation(path: Pointer): { parent: Pointer; index: number | "-" } 
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function applyTrustedValueMutation(
+  state: unknown,
+  op: Extract<JSONPatchOperation, { op: "add" | "replace" }>,
+): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } {
+  const parsed = parseSafe(op.path);
+  if ("error" in parsed) return parsed;
+  if (parsed.segs.length === 0) return { state: op.value };
+
+  const verb = op.op === "add" ? "set" : "replace";
+  const result = withMutated(
+    state,
+    parsed.segs,
+    (parent, key) => mutateContainer(parent, key, verb, op.value),
+  );
+  return "error" in result ? { ...result, pointer: op.path } : result;
 }
 
 function replaceValueAtSegments(

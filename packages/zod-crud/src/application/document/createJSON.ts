@@ -5,6 +5,7 @@ import type * as z from "zod";
 import {
   applyOperation,
   applyPatch,
+  applySingleTrustedValuePatchToTrustedState,
   applyPatchToTrustedState,
   applyTrustedPatch,
   type ApplyResult,
@@ -42,6 +43,7 @@ interface HeadlessJSONState<T> extends JSONState<T> {
 interface TrustedJSONOps<T> extends JSONOps<T> {
   readonly stateJsonTrusted: boolean;
   previewPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
+  previewTrustedValuesPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
   trustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
   trustedApply(state: T, applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 }
@@ -118,6 +120,15 @@ export function createJSON<S extends z.ZodType>(
     return applyPatchWithLocalSchemaValidation(schema, from, operations)
       ?? applyPatchToTrustedState(schema, from, operations);
   };
+  const previewTrustedValuesPatchFrom = (
+    from: z.output<S>,
+    operations: ReadonlyArray<JSONPatchOperation>,
+  ): ApplyResult<S> => {
+    if (!stateJsonTrusted) return applyPatch(schema, from, operations);
+    return applySingleTrustedValuePatchToTrustedState(schema, from, operations)
+      ?? applyPatchWithLocalSchemaValidation(schema, from, operations)
+      ?? applyPatchToTrustedState(schema, from, operations);
+  };
 
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
 
@@ -162,6 +173,9 @@ export function createJSON<S extends z.ZodType>(
     },
     previewPatch(operations) {
       return previewPatchFrom(state, operations);
+    },
+    previewTrustedValuesPatch(operations) {
+      return previewTrustedValuesPatchFrom(state, operations);
     },
     trustedPatch(operations, metadata) {
       return dispatchTrusted(operations, metadata);

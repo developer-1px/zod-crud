@@ -85,6 +85,7 @@ interface CreateClipboardOptions<S extends z.ZodType> {
   getState(): z.output<S>;
   ops: JSONOps<z.output<S>>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   applyPreviewedPatch?: (
     next: z.output<S>,
     operations: ReadonlyArray<JSONPatchOperation>,
@@ -111,6 +112,7 @@ export function createClipboard<S extends z.ZodType>(
     getState,
     ops,
     previewPatch,
+    previewTrustedValuesPatch,
     applyPreviewedPatch,
     getSelectionSource,
     getSelectionTarget,
@@ -275,10 +277,13 @@ export function createClipboard<S extends z.ZodType>(
       };
     }
     const spread = args.options.spread ?? spreadByDefault;
+    const pastePreview = trustedPayload && previewTrustedValuesPatch
+      ? previewTrustedValuesPatch
+      : previewPatch;
     const result = paste(schema, getState(), payload, target, args.mode, {
       ...args.options,
       spread,
-      previewPatch,
+      previewPatch: pastePreview,
       trustedPayload,
     });
     if (!result.ok) return result;

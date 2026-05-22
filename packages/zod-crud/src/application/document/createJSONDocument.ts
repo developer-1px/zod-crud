@@ -395,6 +395,7 @@ export function createJSONDocument<S extends z.ZodType>(
     schema,
     ops,
     previewPatch: rawOps.previewPatch,
+    previewTrustedValuesPatch: rawOps.previewTrustedValuesPatch,
     getStateJsonTrusted: () => rawOps.stateJsonTrusted,
     history: historyControls,
     ...(selectionRef ? { selectionRef } : {}),
@@ -404,6 +405,7 @@ export function createJSONDocument<S extends z.ZodType>(
     getState: () => rawOps.state,
     ops,
     previewPatch: rawOps.previewPatch,
+    previewTrustedValuesPatch: rawOps.previewTrustedValuesPatch,
     applyPreviewedPatch: applyPreviewedDocumentPatch,
     getSelectionSource: () => selectionState?.selectedSource ?? null,
     getSelectionTarget: () => selectionState?.primaryPointer ?? null,
@@ -451,7 +453,12 @@ export function createJSONDocument<S extends z.ZodType>(
         };
       }
       const spread = canPasteOptions?.spread ?? ((read.sources?.length ?? 0) > 1);
-      return check.paste(read.payload, target, { ...canPasteOptions, spread });
+      return check.paste(
+        read.payload,
+        target,
+        { ...canPasteOptions, spread },
+        { trustedPayload: true },
+      );
     },
     canPastePayload: (target, payload, canPasteOptions) => check.paste(payload, target, canPasteOptions),
     canUndo: () => check.undo,
