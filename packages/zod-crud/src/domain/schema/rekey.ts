@@ -81,10 +81,7 @@ function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): R
   if (fields.length === 1) {
     const field = fields[0]!;
     const existing = new Set<string>();
-    walk(value, (entry) => {
-      const current = scalarText(entry[field]);
-      if (current !== null) existing.add(current);
-    });
+    collectSingleExistingField(value, field, existing);
     return [{ field, existing }];
   }
 
@@ -99,6 +96,30 @@ function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): R
   });
 
   return existing;
+}
+
+function collectSingleExistingField(value: unknown, field: string, existing: Set<string>): void {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const item = value[index];
+      if (item !== null && typeof item === "object") {
+        collectSingleExistingField(item, field, existing);
+      }
+    }
+    return;
+  }
+  if (!isRecord(value)) return;
+
+  const current = scalarText(value[field]);
+  if (current !== null) existing.add(current);
+
+  for (const key in value) {
+    if (!hasOwn.call(value, key)) continue;
+    const item = value[key];
+    if (item !== null && typeof item === "object") {
+      collectSingleExistingField(item, field, existing);
+    }
+  }
 }
 
 function collectSuffixExistingValues(
@@ -162,14 +183,40 @@ function collectSingleSuffixField(state: unknown, suffixField: SuffixRekeyField)
   const base = suffixField.bases.values().next().value as string;
   const exact = `${base}-copy`;
   const nested = `${exact}-`;
-  const field = suffixField.field;
-  const existing = suffixField.existing;
-  walk(state, (entry) => {
-    const value = scalarText(entry[field]);
-    if (value !== null && (value === base || value === exact || value.startsWith(nested))) {
-      existing.add(value);
+  scanSingleSuffixField(state, suffixField.field, suffixField.existing, base, exact, nested);
+}
+
+function scanSingleSuffixField(
+  value: unknown,
+  field: string,
+  existing: Set<string>,
+  base: string,
+  exact: string,
+  nested: string,
+): void {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const item = value[index];
+      if (item !== null && typeof item === "object") {
+        scanSingleSuffixField(item, field, existing, base, exact, nested);
+      }
     }
-  });
+    return;
+  }
+  if (!isRecord(value)) return;
+
+  const text = scalarText(value[field]);
+  if (text !== null && (text === base || text === exact || text.startsWith(nested))) {
+    existing.add(text);
+  }
+
+  for (const key in value) {
+    if (!hasOwn.call(value, key)) continue;
+    const item = value[key];
+    if (item !== null && typeof item === "object") {
+      scanSingleSuffixField(item, field, existing, base, exact, nested);
+    }
+  }
 }
 
 function matchesSuffixCandidate(value: string, field: SuffixRekeyField): boolean {
