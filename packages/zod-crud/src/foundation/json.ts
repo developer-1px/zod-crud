@@ -106,14 +106,128 @@ function arrayPropertyPathSegment(key: string): string | number {
   return isArrayIndexKey(key) ? Number(key) : key;
 }
 
-function assertJsonSerializable(value: unknown): void {
-  const reason = jsonSerializableError(value);
-  if (reason !== null) throw new TypeError(`Value is not JSON-serializable: ${reason}`);
-}
+export type CloneJsonResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; reason: string };
 
 export function cloneJson<T>(value: T): T {
-  assertJsonSerializable(value);
-  return cloneTrustedJson(value);
+  const result = cloneJsonSerializable(value);
+  if (!result.ok) throw new TypeError(`Value is not JSON-serializable: ${result.reason}`);
+  return result.value;
+}
+
+export function cloneJsonSerializable<T>(value: T): CloneJsonResult<T> {
+  const seen = new WeakSet<object>();
+  const path: Array<string | number> = [];
+  const at = (): string => buildPointer(path);
+  let error: string | null = null;
+  const fail = (reason: string): undefined => {
+    error = reason;
+    return undefined;
+  };
+
+  const visit = (v: unknown): unknown => {
+    if (v === null) return null;
+    const t = typeof v;
+    if (t === "string" || t === "boolean") return v;
+    if (t === "number") {
+      return Number.isFinite(v) ? v : fail(`${at()}: non-finite number`);
+    }
+    if (t === "undefined" || t === "function" || t === "symbol" || t === "bigint") {
+      return fail(`${at()}: ${t} is not JSON`);
+    }
+    if (t !== "object") return v;
+
+    const obj = v as object;
+    if (seen.has(obj)) return fail(`${at()}: circular reference`);
+    seen.add(obj);
+
+    if (Array.isArray(v)) {
+      if (Object.getOwnPropertySymbols(v).length > 0) {
+        return fail(`${at()}: symbol keys are not JSON`);
+      }
+
+      const next = new Array(v.length);
+      for (let index = 0; index < v.length; index += 1) {
+        path.push(index);
+        const descriptor = Object.getOwnPropertyDescriptor(v, String(index));
+        if (!descriptor) {
+          const reason = `${at()}: sparse array hole`;
+          path.pop();
+          return fail(reason);
+        }
+        if (!descriptor.enumerable) {
+          const reason = `${at()}: non-enumerable property is not JSON`;
+          path.pop();
+          return fail(reason);
+        }
+        if ("get" in descriptor || "set" in descriptor) {
+          const reason = `${at()}: accessor property is not JSON`;
+          path.pop();
+          return fail(reason);
+        }
+        const cloned = visit(descriptor.value);
+        path.pop();
+        if (error) return undefined;
+        next[index] = cloned;
+      }
+
+      if (Object.getOwnPropertyNames(v).length !== v.length + 1) {
+        for (const key of Object.getOwnPropertyNames(v)) {
+          if (key === "length" || isArrayIndexKey(key)) continue;
+          path.push(arrayPropertyPathSegment(key));
+          const reason = `${at()}: non-index array property is not JSON`;
+          path.pop();
+          return fail(reason);
+        }
+      }
+      return next;
+    }
+
+    const proto = Object.getPrototypeOf(v);
+    if (proto !== Object.prototype && proto !== null) {
+      const name = proto?.constructor?.name ?? "unknown";
+      return fail(`${at()}: non-plain object (${name})`);
+    }
+
+    if (Object.getOwnPropertySymbols(v).length > 0) {
+      return fail(`${at()}: symbol keys are not JSON`);
+    }
+
+    const next: Record<string, unknown> = {};
+    for (const key of Object.getOwnPropertyNames(v)) {
+      const descriptor = Object.getOwnPropertyDescriptor(v, key);
+      if (!descriptor) continue;
+      path.push(key);
+      if (!descriptor.enumerable) {
+        const reason = `${at()}: non-enumerable property is not JSON`;
+        path.pop();
+        return fail(reason);
+      }
+      if ("get" in descriptor || "set" in descriptor) {
+        const reason = `${at()}: accessor property is not JSON`;
+        path.pop();
+        return fail(reason);
+      }
+      const cloned = visit(descriptor.value);
+      path.pop();
+      if (error) return undefined;
+      if (key === "__proto__") {
+        Object.defineProperty(next, key, {
+          value: cloned,
+          enumerable: true,
+          configurable: true,
+          writable: true,
+        });
+      } else {
+        next[key] = cloned;
+      }
+    }
+    return next;
+  };
+
+  const cloned = visit(value);
+  return error === null ? { ok: true, value: cloned as T } : { ok: false, reason: error };
 }
 
 export function cloneTrustedJson<T>(value: T): T {

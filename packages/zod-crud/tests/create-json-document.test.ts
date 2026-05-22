@@ -164,6 +164,49 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("clipboard write validates and clones external payloads", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const payload: Record<string, unknown> = {
+      nested: { name: "A" },
+    };
+    Object.defineProperty(payload, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    expect(doc.clipboard.write(payload)).toEqual({ ok: true });
+    (payload.nested as { name: string }).name = "mutated";
+
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({
+      ok: true,
+      payload: { nested: { name: "A" } },
+    });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(read.payload as object, "__proto__")).toBe(true);
+    expect((read.payload as Record<string, unknown>).__proto__).toEqual({ safe: true });
+  });
+
+  test("clipboard write rejects non-JSON payload shapes", () => {
+    const accessor: Record<string, unknown> = { ok: true };
+    Object.defineProperty(accessor, "computed", {
+      get: () => true,
+      enumerable: true,
+      configurable: true,
+    });
+    const sparse = [1, 2, 3];
+    delete sparse[1];
+
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.clipboard.write(accessor)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.write(sparse)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.hasData).toBe(false);
+  });
+
   test("commits selection-aware text patches with serializable history metadata", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,
