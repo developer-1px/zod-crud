@@ -12,7 +12,7 @@ import {
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
-  options: UseJSONDocumentOptions<z.output<S>> = {},
+  options: UseJSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
   const [, force] = useReducer((version: number) => version + 1, 0);
   const optionsRef = useRef(options);
@@ -20,7 +20,7 @@ export function useJSONDocument<S extends z.ZodType>(
 
   return useMemo(
     () => {
-      const documentOptions: UseJSONDocumentOptions<z.output<S>> = {
+      const documentOptions: UseJSONDocumentOptions = {
         get strict() { return optionsRef.current.strict; },
         onError(error) { optionsRef.current.onError?.(error); },
         onChange: force,

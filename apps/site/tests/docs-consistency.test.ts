@@ -47,7 +47,6 @@ const publicExportNames = [
   "JSONDocumentDuplicateResult",
   "JSONDocumentHistory",
   "JSONDocumentLoadOptions",
-  "JSONDocumentMutationOk",
   "JSONDocumentPasteOptions",
   "JSONDocumentPasteTarget",
   "JSONPatchInput",

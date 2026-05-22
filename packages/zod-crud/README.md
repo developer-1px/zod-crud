@@ -483,7 +483,6 @@ import {
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONDocumentLoadOptions,
-  type JSONDocumentMutationOk,
   type JSONDocumentPasteOptions,
   type JSONDocumentPasteTarget,
   type JSONPatchInput,

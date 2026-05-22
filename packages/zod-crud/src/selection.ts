@@ -82,7 +82,7 @@ type SelectionChangeListener = (
   previous: SelectionSnap,
 ) => void;
 
-export interface SelectionState<T> extends SelectionSnap {
+export interface SelectionState extends SelectionSnap {
   readonly rangeCount: number;
   readonly selectedCount: number;
   readonly hasSelection: boolean;
@@ -130,14 +130,14 @@ export interface SelectionState<T> extends SelectionSnap {
   subscribe(listener: SelectionChangeListener): () => void;
 }
 
-interface HeadlessSelectionState<T> extends SelectionState<T> {
+interface HeadlessSelectionState extends SelectionState {
   dispose(): void;
 }
 
 export function createSelection<T>(
   ops: JSONOps<T>,
   options: CreateSelectionOptions = {},
-): HeadlessSelectionState<T> {
+): HeadlessSelectionState {
   const mode: SelectionMode = options.mode ?? "single";
   const applyMetadataSelectionAfter =
     (options as InternalCreateSelectionOptions).applyMetadataSelectionAfter === true;

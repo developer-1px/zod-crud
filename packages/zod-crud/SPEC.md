@@ -73,7 +73,6 @@ import {
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
   type JSONDocumentLoadOptions,
-  type JSONDocumentMutationOk,
   type JSONDocumentPasteOptions,
   type JSONDocumentPasteTarget,
   type JSONPatchInput,
@@ -100,23 +99,13 @@ import { useJSONDocument } from "zod-crud/react";
 ## 3. JSONDocument Surface
 
 ```ts
-interface JSONDocumentMutationOk<T> {
-  ok: true;
-  value: T;
-  applied: readonly JSONPatchOperation[];
-}
-
-interface JSONDocumentDuplicateOk<T> extends JSONDocumentMutationOk<T> {
-  duplicatedTo: Pointer;
-}
-
 interface JSONDocument<T> {
   readonly value: T;
   readonly lastPatch: readonly JSONPatchOperation[];
-  readonly selection: SelectionState<T> | undefined;
+  readonly selection: SelectionState | undefined;
   readonly clipboard: ClipboardState<T>;
   readonly history: JSONDocumentHistory;
-  readonly schema: SchemaState<T>;
+  readonly schema: SchemaState;
 
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: readonly JSONPatchOperation[], options?: JSONDocumentCommitOptions): JSONResult;

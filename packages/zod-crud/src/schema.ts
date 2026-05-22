@@ -77,7 +77,7 @@ type SchemaDescriptionResult =
     }
   | SchemaErrorResult;
 
-export interface SchemaState<T> {
+export interface SchemaState {
   at(path: Pointer, mode?: SchemaPathMode): SchemaQueryResult;
   kind(path: Pointer, mode?: SchemaPathMode): SchemaKindResult;
   accepts(path: Pointer, value: unknown, mode?: SchemaPathMode): CheckResult;
@@ -97,7 +97,7 @@ type ResolveSchemaResult = ResolveSchemaOk | SchemaErrorResult;
 
 export function createSchemaState<S extends z.ZodType>(
   args: CreateSchemaOptions<S>,
-): SchemaState<z.output<S>> {
+): SchemaState {
   const rootSchema = args.schema;
 
   const at = (path: Pointer, mode: SchemaPathMode = "value"): SchemaQueryResult => {

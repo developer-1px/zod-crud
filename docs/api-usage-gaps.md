@@ -228,8 +228,8 @@ Priority: P1
 
 Evidence:
 
-- `JSONDocument<T>` exposes `clipboard: ClipboardState<T>`, `schema: SchemaState<T>`, `at(): ReadResult`, `query(): QueryResult`, and `entries(): EntriesResult`.
-- `SelectionState<T>` exposes methods whose option/result types include cursor, scope, order, span, and text-edit types.
+- `JSONDocument<T>` exposes `clipboard: ClipboardState<T>`, `schema: SchemaState`, `at(): ReadResult`, `query(): QueryResult`, and `entries(): EntriesResult`.
+- `SelectionState` exposes methods whose option/result types include cursor, scope, order, span, and text-edit types.
 - `UseJSONDocumentOptions` and `UseSelectionOptions` are part of the public factory/hook signature.
 - SPEC shows names such as `ClipboardState`, `SchemaState`, `ReadResult`, `QueryResult`, `EntriesResult`, and `PasteOptions`, but not all of those are root named exports.
 

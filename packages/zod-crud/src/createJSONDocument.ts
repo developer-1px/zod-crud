@@ -47,7 +47,7 @@ import type {
   JSONOps,
 } from "./jsonOps.js";
 
-export interface UseJSONDocumentOptions<T> {
+export interface UseJSONDocumentOptions {
   strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
   history?: number;
@@ -89,16 +89,13 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 export type JSONCapabilityResult = CheckResult;
 export type JSONDocumentDuplicateOptions = DuplicateOpts;
-export interface JSONDocumentMutationOk<T> {
-  ok: true;
-  value: T;
-  applied: ReadonlyArray<JSONPatchOperation>;
-}
-interface JSONDocumentDuplicateOk<T> extends JSONDocumentMutationOk<T> {
-  duplicatedTo: Pointer;
-}
 export type JSONDocumentDuplicateResult<T> =
-  | JSONDocumentDuplicateOk<T>
+  | {
+      ok: true;
+      value: T;
+      applied: ReadonlyArray<JSONPatchOperation>;
+      duplicatedTo: Pointer;
+    }
   | DuplicateError
   | Extract<JSONResult, { ok: false }>;
 export type JSONDocumentPasteOptions = PasteOptions;
@@ -107,10 +104,10 @@ export type JSONDocumentPasteTarget = PasteTarget;
 export interface JSONDocument<T> {
   readonly value: T;
   readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
-  readonly selection: SelectionState<T> | undefined;
+  readonly selection: SelectionState | undefined;
   readonly history: JSONDocumentHistory;
   readonly clipboard: ClipboardState<T>;
-  readonly schema: SchemaState<T>;
+  readonly schema: SchemaState;
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
@@ -146,7 +143,7 @@ interface HistoryEntry {
 export function createJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
-  options: UseJSONDocumentOptions<z.output<S>> = {},
+  options: UseJSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
   const json = createJSON(schema, initial, options);
   const rawOps = json.ops;

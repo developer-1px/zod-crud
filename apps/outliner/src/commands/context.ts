@@ -8,7 +8,7 @@ import { comparePointer } from "../pointer-utils.js";
 export interface CommandContext {
   state: OutlineNode;
   document: Pick<JSONDocument<OutlineNode>, "patch" | "duplicate">;
-  selection: SelectionState<OutlineNode>;
+  selection: SelectionState;
   clipboard: ClipboardApi;
 }
 

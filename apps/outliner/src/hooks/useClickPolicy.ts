@@ -7,8 +7,8 @@ import { useCallback } from "react";
 import type { Pointer, SelectionState } from "zod-crud";
 import type { Mode } from "../keymap.js";
 
-export function useClickPolicy<T>(
-  selection: SelectionState<T> | undefined,
+export function useClickPolicy(
+  selection: SelectionState | undefined,
   setMode: (m: Mode) => void,
 ) {
   const onClickText = useCallback((e: React.MouseEvent, p: Pointer) => {
