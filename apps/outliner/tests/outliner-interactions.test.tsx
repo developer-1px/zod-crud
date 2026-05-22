@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
@@ -35,10 +35,6 @@ function treeTexts() {
 
 function treeItems() {
   return within(tree()).getAllByRole("treeitem");
-}
-
-function modKey() {
-  return /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? "Meta" : "Control";
 }
 
 function selectedRows() {
@@ -128,8 +124,9 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(treeTexts()).toHaveLength(before + 1);
     expect(statusText()).toMatch(/focus =\s*\/children\/1/);
 
-    const mod = modKey();
-    await user.keyboard(`{${mod}>}{Enter}{/${mod}}`);
+    const active = document.activeElement;
+    if (!(active instanceof HTMLElement)) throw new Error("No active element for Mod+Enter");
+    fireEvent.keyDown(active, { key: "Enter", code: "Enter", ctrlKey: true, metaKey: true });
     expect(treeTexts()).toHaveLength(before + 2);
     expect(statusText()).toMatch(/focus =\s*\/children\/2/);
   });
