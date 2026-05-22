@@ -239,7 +239,7 @@ export function applyTrustedPatch<T>(
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
-  const fast = applyIndependentReplacePatch(state, ops);
+  const fast = applyIndependentReplacePatch(state, ops, valuesTrusted);
   if (fast.handled) {
     return { state: fast.state as T, result: ok, applied: fast.applied };
   }
@@ -527,6 +527,7 @@ function applyTailRemovePatch(
 function applyIndependentReplacePatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
 ): FastPatchResult {
   if (ops.length < 2) return { handled: false };
 
@@ -542,7 +543,7 @@ function applyIndependentReplacePatch(
     const parsed = parseSafe(normalized.path);
     if (!("ok" in parsed)) return { handled: false };
     if (!getValueAt(state, parsed.segs).ok) return { handled: false };
-    if (jsonSerializableError(normalized.value) !== null) return { handled: false };
+    if (!valuesTrusted && jsonSerializableError(normalized.value) !== null) return { handled: false };
     items.push({ op: normalized, path: normalized.path, segments: parsed.segs, value: normalized.value });
   }
 
