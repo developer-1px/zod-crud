@@ -32,6 +32,8 @@ jobs:
           SITE_URL: https://developer-1px.github.io/zod-crud
         run: npm run playground:build
       - name: Evaluate site artifact
+        env:
+          SITE_BASE: /zod-crud/
         run: npm run site:evaluate
       - uses: actions/upload-pages-artifact@v3
         with:

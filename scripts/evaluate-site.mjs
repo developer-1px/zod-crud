@@ -3,6 +3,7 @@ import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
+const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/");
 
 function read(path) {
   return readFileSync(join(dist, path), "utf8");
@@ -11,6 +12,11 @@ function read(path) {
 function fail(message) {
   console.error(message);
   process.exitCode = 1;
+}
+
+function normalizeBase(value) {
+  if (value === "" || value === "/") return "/";
+  return `/${value.replace(/^\/+|\/+$/g, "")}/`;
 }
 
 for (const file of [
@@ -44,6 +50,8 @@ for (const pattern of [
   if (!pattern.test(index)) fail(`site dist index missing ${pattern}.`);
 }
 
+if (/%BASE_URL%/.test(index)) fail("site dist index contains an unexpanded Vite base placeholder.");
+
 if (fallback !== index) fail("site dist 404.html must match index.html for SPA deep links.");
 if (!/Sitemap: https:\/\/developer-1px\.github\.io\/zod-crud\/sitemap\.xml/.test(robots)) {
   fail("site dist robots.txt missing production sitemap URL.");
@@ -68,6 +76,16 @@ if (
   || manifest.icons.length === 0
 ) {
   fail("site dist manifest is incomplete.");
+}
+
+if (expectedBase !== "/") {
+  for (const path of [
+    `${expectedBase}assets/`,
+    `${expectedBase}favicon.svg`,
+    `${expectedBase}site.webmanifest`,
+  ]) {
+    if (!index.includes(path)) fail(`site dist index missing expected base path ${path}.`);
+  }
 }
 
 if (process.exitCode === undefined) {

@@ -169,7 +169,7 @@ if (!/direct route entry/.test(siteShellTest) || !/Skip to content/.test(siteShe
   fail("site shell test: missing production navigation/accessibility coverage.");
 }
 
-if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/작업별-진입점/.test(siteShellTest)) {
+if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/Documentation sections/.test(docsRoute) || !/작업별-진입점/.test(siteShellTest)) {
   fail("site docs: missing table-of-contents navigation coverage.");
 }
 
@@ -183,6 +183,10 @@ if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pages
 
 for (const pattern of [/404\.html/, /robots\.txt/, /sitemap\.xml/, /site\.webmanifest/, /site evaluation ok/]) {
   if (!pattern.test(siteEvaluator)) fail(`site evaluator: missing ${pattern}.`);
+}
+
+if (!/SITE_BASE/.test(siteEvaluator) || !/unexpanded Vite base placeholder/.test(siteEvaluator)) {
+  fail("site evaluator: missing production base path checks.");
 }
 
 for (const surfaceName of ["readme", "spec", "site"]) {

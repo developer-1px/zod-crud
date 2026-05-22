@@ -29,6 +29,20 @@ export function Docs() {
         </aside>
 
         <div className="min-w-0">
+          <nav aria-label="Documentation sections" className="mb-4 overflow-x-auto rounded border border-stone-200 bg-white p-2 text-xs lg:hidden">
+            <div className="flex gap-1 whitespace-nowrap">
+              {headings.map((heading) => (
+                <a
+                  key={`${heading.id}-${heading.text}`}
+                  href={`#${heading.id}`}
+                  className="rounded px-2 py-1 text-stone-600 no-underline hover:bg-stone-100 hover:text-stone-950"
+                >
+                  {heading.text}
+                </a>
+              ))}
+            </div>
+          </nav>
+
           <div className="mb-5 border-b border-stone-200 pb-4">
             <p className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-400">Reference</p>
             <h1 className="mb-0 mt-1 text-2xl font-semibold text-stone-950">zod-crud API</h1>
