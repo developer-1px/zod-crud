@@ -44,12 +44,14 @@ const siteFavicon = read("apps/site/public/favicon.svg");
 const siteManifest = read("apps/site/public/site.webmanifest");
 const siteViteConfig = read("apps/site/vite.config.ts");
 const siteApp = read("apps/site/src/App.tsx");
+const siteRoutesJson = read("apps/site/src/site-routes.json");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
 const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
 const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
 const rootPackageJson = read("package.json");
 const pagesWorkflow = read(".github/workflows/pages.yml");
+const siteRoutes = JSON.parse(siteRoutesJson);
 
 for (const [name, source] of Object.entries(surfaces)) {
   if (/\{\s*at\s*:/.test(source)) fail(`${name}: legacy paste target { at } found.`);
@@ -168,12 +170,25 @@ if (!/<svg/.test(siteFavicon) || !/zod-crud/.test(siteManifest)) {
   fail("site public assets: missing favicon or web manifest.");
 }
 
+for (const route of [
+  ["/", "zod-crud - Headless JSON editing"],
+  ["/docs", "zod-crud API - zod-crud"],
+  ["/playground", "Workbench - zod-crud"],
+  ["/playground/outliner", "Outliner demo - zod-crud"],
+  ["/playground/mobile-cms", "Mobile CMS demo - zod-crud"],
+  ["/playground/api-collection", "API collection demo - zod-crud"],
+]) {
+  if (!siteRoutes.some((item) => item.path === route[0] && item.title === route[1])) {
+    fail(`site routes: missing ${route[0]} ${route[1]}.`);
+  }
+}
+
 for (const pattern of [
   /fileName: "404\.html"/,
   /fileName: "robots\.txt"/,
   /fileName: "sitemap\.xml"/,
+  /site-routes\.json/,
   /routeHtml/,
-  /playground\/api-collection/,
   /og:url/,
 ]) {
   if (!pattern.test(siteViteConfig)) fail(`site vite config: missing ${pattern}.`);
@@ -183,7 +198,7 @@ if (!/direct route entry/.test(siteShellTest) || !/Skip to content/.test(siteShe
   fail("site shell test: missing production navigation/accessibility coverage.");
 }
 
-if (!/setRouteMetadata/.test(siteApp) || !/document\.title/.test(siteApp) || !/og:url/.test(siteApp) || !/canonicalUrl/.test(siteApp) || !/VITE_SITE_URL/.test(siteApp)) {
+if (!/site-routes\.json/.test(siteApp) || !/setRouteMetadata/.test(siteApp) || !/document\.title/.test(siteApp) || !/og:url/.test(siteApp) || !/canonicalUrl/.test(siteApp) || !/VITE_SITE_URL/.test(siteApp)) {
   fail("site app: missing client-side route metadata updates.");
 }
 
@@ -220,11 +235,8 @@ if (!/Verify workspace and build Pages artifact/.test(pagesWorkflow)) {
 
 for (const pattern of [
   /404\.html/,
-  /docs\/index\.html/,
-  /playground\/index\.html/,
-  /playground\/outliner\/index\.html/,
-  /playground\/mobile-cms\/index\.html/,
-  /playground\/api-collection\/index\.html/,
+  /site-routes\.json/,
+  /routeFile/,
   /route title/,
   /route canonical/,
   /route og:url/,
@@ -249,8 +261,8 @@ for (const pattern of [
   /live site evaluation ok/,
   /SITE_LIVE_ATTEMPTS/,
   /live_check/,
-  /zod-crud API - zod-crud/,
-  /playground\/api-collection/,
+  /readFileSync/,
+  /site-routes\.json/,
   /route canonical/,
   /route og:url/,
   /routeUrl/,

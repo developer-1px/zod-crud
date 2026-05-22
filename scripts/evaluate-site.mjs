@@ -5,14 +5,8 @@ const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
 const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/");
 const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-const routes = [
-  { path: "/", file: "index.html", title: "zod-crud - Headless JSON editing" },
-  { path: "/docs", file: "docs/index.html", title: "zod-crud API - zod-crud" },
-  { path: "/playground", file: "playground/index.html", title: "Workbench - zod-crud" },
-  { path: "/playground/outliner", file: "playground/outliner/index.html", title: "Outliner demo - zod-crud" },
-  { path: "/playground/mobile-cms", file: "playground/mobile-cms/index.html", title: "Mobile CMS demo - zod-crud" },
-  { path: "/playground/api-collection", file: "playground/api-collection/index.html", title: "API collection demo - zod-crud" },
-];
+const routes = JSON.parse(readFileSync(join(root, "apps/site/src/site-routes.json"), "utf8"))
+  .map((route) => ({ ...route, file: routeFile(route.path) }));
 
 function read(path) {
   return readFileSync(join(dist, path), "utf8");
@@ -30,6 +24,10 @@ function normalizeBase(value) {
 
 function routeUrl(path) {
   return path === "/" ? `${expectedSiteUrl}/` : `${expectedSiteUrl}${path}`;
+}
+
+function routeFile(path) {
+  return path === "/" ? "index.html" : `${path.slice(1)}/index.html`;
 }
 
 for (const file of [

@@ -1,0 +1,38 @@
+[
+  {
+    "path": "/",
+    "label": "Overview",
+    "title": "zod-crud - Headless JSON editing",
+    "group": "Start"
+  },
+  {
+    "path": "/docs",
+    "label": "API reference",
+    "title": "zod-crud API - zod-crud",
+    "group": "Start"
+  },
+  {
+    "path": "/playground",
+    "label": "Workbench",
+    "title": "Workbench - zod-crud",
+    "group": "Demos"
+  },
+  {
+    "path": "/playground/outliner",
+    "label": "Outliner",
+    "title": "Outliner demo - zod-crud",
+    "group": "Demos"
+  },
+  {
+    "path": "/playground/mobile-cms",
+    "label": "Mobile CMS",
+    "title": "Mobile CMS demo - zod-crud",
+    "group": "Demos"
+  },
+  {
+    "path": "/playground/api-collection",
+    "label": "API collection",
+    "title": "API collection demo - zod-crud",
+    "group": "Demos"
+  }
+]

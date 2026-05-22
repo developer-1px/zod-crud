@@ -3,6 +3,7 @@ import { defineConfig, type Plugin } from "vite";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import siteRoutes from "./src/site-routes.json";
 
 function rootLlmsTxt(): Plugin {
   const path = fileURLToPath(new URL("../../llms.txt", import.meta.url));
@@ -28,14 +29,7 @@ function rootLlmsTxt(): Plugin {
 
 function productionSiteAssets(): Plugin {
   const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-  const routePages = [
-    { path: "/", title: "zod-crud - Headless JSON editing" },
-    { path: "/docs", title: "zod-crud API - zod-crud" },
-    { path: "/playground", title: "Workbench - zod-crud" },
-    { path: "/playground/outliner", title: "Outliner demo - zod-crud" },
-    { path: "/playground/mobile-cms", title: "Mobile CMS demo - zod-crud" },
-    { path: "/playground/api-collection", title: "API collection demo - zod-crud" },
-  ];
+  const routePages = siteRoutes;
 
   return {
     name: "production-site-assets",

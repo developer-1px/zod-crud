@@ -1,14 +1,9 @@
+import { readFileSync } from "node:fs";
+
 const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
 const attempts = Number(process.env.SITE_LIVE_ATTEMPTS ?? "18");
 const delayMs = Number(process.env.SITE_LIVE_DELAY_MS ?? "10000");
-const routes = [
-  { path: "/", title: "zod-crud - Headless JSON editing" },
-  { path: "/docs", title: "zod-crud API - zod-crud" },
-  { path: "/playground", title: "Workbench - zod-crud" },
-  { path: "/playground/outliner", title: "Outliner demo - zod-crud" },
-  { path: "/playground/mobile-cms", title: "Mobile CMS demo - zod-crud" },
-  { path: "/playground/api-collection", title: "API collection demo - zod-crud" },
-];
+const routes = JSON.parse(readFileSync(new URL("../apps/site/src/site-routes.json", import.meta.url), "utf8"));
 
 function fail(message) {
   throw new Error(message);

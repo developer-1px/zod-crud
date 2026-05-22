@@ -5,25 +5,36 @@ import { Outliner } from "@zod-crud/outliner";
 import { Docs } from "./routes/Docs";
 import { Home } from "./routes/Home";
 import { Playground } from "./routes/Playground";
+import siteRoutes from "./site-routes.json";
 
-type Route = {
+type SiteRoute = {
   path: string;
   label: string;
   title: string;
-  Component: ComponentType;
   group: "Start" | "Demos";
 };
+type Route = SiteRoute & { Component: ComponentType };
 
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-const ROUTES: Route[] = [
-  { path: "/", label: "Overview", title: "zod-crud - Headless JSON editing", Component: Home, group: "Start" },
-  { path: "/docs", label: "API reference", title: "zod-crud API - zod-crud", Component: Docs, group: "Start" },
-  { path: "/playground", label: "Workbench", title: "Workbench - zod-crud", Component: Playground, group: "Demos" },
-  { path: "/playground/outliner", label: "Outliner", title: "Outliner demo - zod-crud", Component: Outliner, group: "Demos" },
-  { path: "/playground/mobile-cms", label: "Mobile CMS", title: "Mobile CMS demo - zod-crud", Component: MobileCms, group: "Demos" },
-  { path: "/playground/api-collection", label: "API collection", title: "API collection demo - zod-crud", Component: ApiCollection, group: "Demos" },
-];
+const routeComponents: Record<string, ComponentType> = {
+  "/": Home,
+  "/docs": Docs,
+  "/playground": Playground,
+  "/playground/outliner": Outliner,
+  "/playground/mobile-cms": MobileCms,
+  "/playground/api-collection": ApiCollection,
+};
+const ROUTES: Route[] = (siteRoutes as SiteRoute[]).map((route) => ({
+  ...route,
+  Component: routeComponent(route.path),
+}));
+
+function routeComponent(path: string): ComponentType {
+  const Component = routeComponents[path];
+  if (!Component) throw new Error(`Missing site route component for ${path}.`);
+  return Component;
+}
 
 function pathWithBase(path: string): string {
   return `${BASE_PATH}${path}` || "/";
