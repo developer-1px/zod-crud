@@ -66,6 +66,22 @@ async function checkOnce() {
     fail("live llms.txt is missing expected content.");
   }
 
+  const manifest = JSON.parse(await fetchText("/site.webmanifest"));
+  if (
+    manifest.name !== "zod-crud"
+    || manifest.short_name !== "zod-crud"
+    || manifest.theme_color !== "#fafaf9"
+    || !Array.isArray(manifest.icons)
+    || !manifest.icons.some((icon) => icon.src === "favicon.svg" && icon.type === "image/svg+xml")
+  ) {
+    fail("live site.webmanifest is incomplete.");
+  }
+
+  const favicon = await fetchText("/favicon.svg");
+  if (!/<svg/.test(favicon) || !/aria-label="zod-crud"/.test(favicon)) {
+    fail("live favicon.svg is missing expected SVG content.");
+  }
+
   const sitemap = await fetchText("/sitemap.xml");
   for (const route of routes) {
     const loc = routeUrl(route.path);

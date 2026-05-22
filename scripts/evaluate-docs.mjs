@@ -321,6 +321,9 @@ for (const pattern of [
   /route og:url/,
   /route twitter:description/,
   /hasMetaContent/,
+  /site\.webmanifest/,
+  /favicon\.svg/,
+  /aria-label="zod-crud"/,
   /routeUrl/,
   /fetchText\(route\.path\)/,
 ]) {
