@@ -197,6 +197,12 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.write document items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.write(doc.value.items));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     const written = doc.clipboard.write(state.items);
     if (!written.ok) throw new Error(`clipboard write setup failed: ${JSON.stringify(written)}`);
     bench("doc.clipboard.read items payload", Math.max(3, Math.ceil(rounds / 2)), () =>

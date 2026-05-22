@@ -163,6 +163,19 @@ export function createClipboard<S extends z.ZodType>(
       },
     };
   };
+  const isTrustedWritePayload = (payload: unknown): boolean => {
+    if (getStateJsonTrusted?.() !== true) return false;
+    const state = getState();
+    if (payload === state) return true;
+    if (state === null || typeof state !== "object" || Array.isArray(state)) return false;
+    for (const key in state as Record<string, unknown>) {
+      if (Object.prototype.hasOwnProperty.call(state, key)
+        && (state as Record<string, unknown>)[key] === payload) {
+        return true;
+      }
+    }
+    return false;
+  };
 
   return {
     get hasData() { return buffer !== null; },
@@ -191,7 +204,9 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     write(payload, options = {}) {
-      const cloned = cloneJsonSerializable(payload);
+      const cloned = isTrustedWritePayload(payload)
+        ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
+        : cloneJsonSerializable(payload);
       if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
       const writtenSources = writeSources(options);
       if (!writtenSources.ok) return writtenSources.result;

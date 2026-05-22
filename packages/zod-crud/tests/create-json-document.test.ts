@@ -238,6 +238,21 @@ describe("createJSONDocument public interface", () => {
     ]);
   });
 
+  test("clipboard write clones trusted document field payloads", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.clipboard.write(doc.value.items)).toEqual({ ok: true });
+    expect(doc.patch({ op: "replace", path: "/items/0/name", value: "changed" })).toEqual({ ok: true });
+
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(read.payload).toEqual([
+      { id: "a", name: "A" },
+      { id: "b", name: "B" },
+    ]);
+  });
+
   test("clipboard clones ignore enumerable Object.prototype keys", () => {
     const key = "__zodCrudInherited";
     Object.defineProperty(Object.prototype, key, {
