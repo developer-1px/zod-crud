@@ -3,9 +3,9 @@
 // 단일 history commit 으로 전체 replace — undo 한 번에 전체 되돌림.
 
 import type * as z from "zod";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { preFlight, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
 // note: verbs/* 끼리 import 금지 (lint rule). 여기서는 jsonpath 의 query 를 직접 호출.
 import { query as jsonpathQuery } from "../../foundation/jsonpath/index.js";
 import { JSONPathSyntaxError } from "../../foundation/jsonpath/index.js";
@@ -24,11 +24,16 @@ export interface ReplaceError {
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
+interface ReplaceOptions {
+  previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
+}
+
 export function replace<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   jsonpath: string,
   value: unknown,
+  options: ReplaceOptions = {},
 ): ReplaceOk<z.output<S>> | ReplaceError {
   let pointers: Pointer[];
   try {
@@ -46,9 +51,11 @@ export function replace<S extends z.ZodType>(
   // 깊은 path 부터 적용하여 얕은 path 변경이 깊은 path 를 invalidate 하지 않도록.
   const sorted = [...pointers].sort((a, b) => b.length - a.length);
   const patch: JSONPatchOperation[] = sorted.map((p) => ({ op: "replace", path: p, value }));
-  const r = preFlight(schema, state, patch);
+  const r = options.previewPatch
+    ? preFlightFromApplyResult(options.previewPatch(patch))
+    : preFlight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.draft, patch, pointers };
+  return { ok: true, next: r.draft as z.output<S>, patch, pointers };
 }

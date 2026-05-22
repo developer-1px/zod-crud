@@ -101,6 +101,30 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canDuplicate middle", rounds, () =>
+      doc.canDuplicate(`/items/${middle}`));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.duplicate middle", rounds, () =>
+      doc.duplicate(`/items/${middle}`));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canMove adjacent", rounds, () =>
+      doc.canMove(`/items/${middle}`, `/items/${middle + 1}`));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canReplace jsonpath one", rounds, (index) =>
+      doc.canReplace(`$.items[${middle}].done`, index % 2 === 0));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.canCopy /items", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.canCopy("/items"));
   }

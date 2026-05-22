@@ -1,8 +1,8 @@
 // verbs/move — Edit 기둥, RFC 6902 move op.
 // pure composer. preFlight gate 통과 후 next + patch 산출.
 
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { preFlight, type PreFlightErrorCode } from "../schema/preFlight.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import type * as z from "zod";
 
@@ -26,6 +26,10 @@ interface ResolvedMoveArgs {
   to: Pointer;
 }
 
+interface MoveOptions {
+  previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
+}
+
 export function resolveMoveArgs(
   fromOrTo: Pointer,
   to: Pointer | undefined,
@@ -43,11 +47,14 @@ export function move<S extends z.ZodType>(
   state: z.output<S>,
   from: Pointer,
   to: Pointer,
+  options: MoveOptions = {},
 ): MoveResult<z.output<S>> {
   const op: JSONPatchOperation = { op: "move", from, path: to };
-  const r = preFlight(schema, state, [op]);
+  const r = options.previewPatch
+    ? preFlightFromApplyResult(options.previewPatch([op]))
+    : preFlight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.draft, patch: [op] };
+  return { ok: true, next: r.draft as z.output<S>, patch: [op] };
 }

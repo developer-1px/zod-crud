@@ -154,14 +154,14 @@ export function buildCheck<S extends z.ZodType>(
       const source = primarySourceOrSelection(args.from);
       return source === null
         ? emptySelection("move source selection is empty")
-        : toCheckResult(moveVerb(schema, ops.state, source, args.to));
+        : toCheckResult(moveVerb(schema, ops.state, source, args.to, { previewPatch }));
     },
     duplicate(sourceOrOpts, opts) {
       const args = resolveDuplicateArgs(sourceOrOpts, opts);
       const source = primarySourceOrSelection(args.source);
       return source === null
         ? emptySelection("duplicate source selection is empty")
-        : toCheckResult(duplicate(schema, ops.state, source, args.opts));
+        : toCheckResult(duplicate(schema, ops.state, source, args.opts, { previewPatch }));
     },
     remove(source) {
       const resolved = sourceOrSelection(source);
@@ -174,7 +174,7 @@ export function buildCheck<S extends z.ZodType>(
     replace(pathOrValue, maybeValue) {
       const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
       if (args.target !== undefined && isJSONPath(args.target)) {
-        return toCheckResult(replaceVerb(schema, ops.state, args.target, args.value));
+        return toCheckResult(replaceVerb(schema, ops.state, args.target, args.value, { previewPatch }));
       }
       const target = targetOrSelection(args.target);
       return target === null

@@ -226,6 +226,46 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toEqual({ items: [bad] });
   });
 
+  test("document duplicate, move, and JSONPath replace checks use trusted preview on plain structural schemas", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [{ id: "a" }, { id: "b" }, { id: "c" }],
+    }, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.canDuplicate("/items/0")).toEqual({ ok: true });
+    expect(doc.duplicate("/items/0")).toMatchObject({
+      ok: true,
+      duplicatedTo: "/items/1",
+      applied: [{ op: "copy", from: "/items/0", path: "/items/1" }],
+    });
+    expect(doc.canMove("/items/1", "/items/3")).toEqual({ ok: true });
+    expect(doc.canReplace("$.items[0].id", "z")).toEqual({ ok: true });
+
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a", "b", "c"]);
+    expect(doc.history.undoDepth).toBe(1);
+    expect(rootParses).toBe(0);
+  });
+
+  test("document duplicate, move, and JSONPath replace keep the JSON guard for untrusted schema output", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const bad = () => "bad";
+    const doc = createJSONDocument(Schema, { items: [bad, 1] }, { strict: false });
+
+    expect(doc.canDuplicate("/items/0")).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.canMove("/items/1", "/items/0")).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.canReplace("$.items[1]", 2)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.duplicate("/items/0")).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.value).toEqual({ items: [bad, 1] });
+  });
+
   test("plain structural leaf replace validates locally without rerunning root schema parse", () => {
     const Schema = z.object({
       items: z.array(z.object({ done: z.boolean() })),

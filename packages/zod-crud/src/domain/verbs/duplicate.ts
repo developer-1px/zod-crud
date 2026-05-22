@@ -4,10 +4,10 @@
 // 내부적으로 RFC 6902 copy op 으로 환원.
 
 import type * as z from "zod";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { preFlight, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
 import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
 
 export interface DuplicateOpts {
@@ -45,6 +45,10 @@ interface ResolvedDuplicateArgs {
   opts: DuplicateOpts;
 }
 
+interface DuplicateExecutionOptions {
+  previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
+}
+
 export function resolveDuplicateArgs(
   sourceOrOpts?: Pointer | DuplicateOpts,
   opts: DuplicateOpts = {},
@@ -59,6 +63,7 @@ export function duplicate<S extends z.ZodType>(
   state: z.output<S>,
   source: Pointer,
   opts: DuplicateOpts = {},
+  options: DuplicateExecutionOptions = {},
 ): DuplicateOk<z.output<S>> | DuplicateError {
   const parent = parentPointer(source);
   if (parent === null) {
@@ -114,11 +119,13 @@ export function duplicate<S extends z.ZodType>(
   if (!rekeyed.ok) return rekeyed;
   const payload = rekeyed.payload;
   const op: JSONPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };
-  const r = preFlight(schema, state, [op]);
+  const r = options.previewPatch
+    ? preFlightFromApplyResult(options.previewPatch([op]))
+    : preFlight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.draft, patch: [op], duplicatedTo: target };
+  return { ok: true, next: r.draft as z.output<S>, patch: [op], duplicatedTo: target };
 }
 
 /** unused helper hint to silence linter for lastSegment import — also useful in error messages. */
