@@ -2,7 +2,6 @@
 // 모든 mutation 후 focus·selection 은 zod-crud 자동 규칙 (SPEC §5.7 / §5.8) 에 맡긴다.
 
 import { trackPointer, type JSONPatchOperation, type JSONResult, type Pointer } from "zod-crud";
-import { EMPTY_NODE } from "../schema.js";
 import { parentOf, lastIndex, siblingAt, readChildren } from "../pointer-utils.js";
 import { focusOf, type CommandContext, targetsOf, sortDfs } from "./context.js";
 
@@ -13,7 +12,7 @@ export function insertSibling(ctx: CommandContext): JSONResult {
   if (idx === null) return { ok: false, code: "path_not_found", reason: "root has no sibling" };
   const parent = parentOf(p);
   if (parent === null) return { ok: false, code: "path_not_found" };
-  return ctx.document.patch([{ op: "add", path: `${parent}/${idx + 1}`, value: EMPTY_NODE }]);
+  return ctx.document.patch([{ op: "add", path: `${parent}/${idx + 1}`, value: { text: "", children: [] } }]);
 }
 
 // 선택된 ROW 들을 DFS 정렬 후, 직전 ops 를 통과한 현재 위치를 trackPointer 로 따라가며

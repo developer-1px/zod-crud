@@ -31,6 +31,10 @@ test("outliner supports keyboard editing and undo in a real browser", async ({ p
   await firstRowText.press("Shift+Enter");
   await expect(page.locator(".status")).toContainText("focus = /children/1");
 
+  await page.keyboard.press("ControlOrMeta+Enter");
+  await expect(page.locator(".status")).toContainText("focus = /children/2");
+
+  await page.keyboard.press("ControlOrMeta+Z");
   await page.keyboard.press("ControlOrMeta+Z");
   await page.keyboard.press("ControlOrMeta+Z");
 

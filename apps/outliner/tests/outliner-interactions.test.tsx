@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
+import { findCommand } from "../src/keymap.js";
 
 const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
 const secondItem = "Tab — demote (move into prev sibling)";
@@ -121,14 +122,17 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(statusText()).toMatch(/focus =\s*\/children\/0/);
 
     await user.keyboard("{Shift>}{Enter}{/Shift}");
-    expect(treeTexts()).toHaveLength(before + 1);
-    expect(statusText()).toMatch(/focus =\s*\/children\/1/);
+    await waitFor(() => expect(treeTexts()).toHaveLength(before + 1));
+    await waitFor(() => expect(statusText()).toMatch(/focus =\s*\/children\/1/));
 
-    const active = document.activeElement;
-    if (!(active instanceof HTMLElement)) throw new Error("No active element for Mod+Enter");
-    fireEvent.keyDown(active, { key: "Enter", code: "Enter", ctrlKey: true, metaKey: true });
+    fireEvent.keyDown(tree(), { key: "Enter", code: "Enter", ctrlKey: true, metaKey: true });
     expect(treeTexts()).toHaveLength(before + 2);
     expect(statusText()).toMatch(/focus =\s*\/children\/2/);
+  });
+
+  test("Mod+Enter is an insert-sibling chord in select and edit modes", () => {
+    expect(findCommand("Mod+Enter", "select")).toBe("insert-sibling");
+    expect(findCommand("Mod+Enter", "edit")).toBe("insert-sibling");
   });
 
   test("ArrowRight and ArrowLeft navigate between a parent row and its first child", async () => {
