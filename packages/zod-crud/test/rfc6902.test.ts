@@ -428,4 +428,60 @@ describe("Serializability (G1)", () => {
     if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
     expect(r.state).toBe(initial);
   });
+
+  it("rejects non-enumerable and accessor state properties", () => {
+    const hidden = { ok: true };
+    Object.defineProperty(hidden, "secret", {
+      value: true,
+      enumerable: false,
+      configurable: true,
+    });
+    const hiddenResult = applyPatch(Any, hidden, [{ op: "replace", path: "/ok", value: false }]);
+    expect(hiddenResult.result.ok).toBe(false);
+    if (!hiddenResult.result.ok) expect(hiddenResult.result.code).toBe("not_serializable");
+
+    const accessor: Record<string, unknown> = { ok: true };
+    Object.defineProperty(accessor, "computed", {
+      get: () => true,
+      enumerable: true,
+      configurable: true,
+    });
+    const accessorResult = applyPatch(Any, accessor, [{ op: "replace", path: "/ok", value: false }]);
+    expect(accessorResult.result.ok).toBe(false);
+    if (!accessorResult.result.ok) expect(accessorResult.result.code).toBe("not_serializable");
+  });
+
+  it("rejects sparse, non-enumerable, accessor, and extra-property arrays", () => {
+    const sparse = [1, 2, 3];
+    delete sparse[1];
+    const sparseResult = applyPatch(Any, { items: sparse }, [{ op: "replace", path: "/items/0", value: 9 }]);
+    expect(sparseResult.result.ok).toBe(false);
+    if (!sparseResult.result.ok) expect(sparseResult.result.code).toBe("not_serializable");
+
+    const hidden = [1];
+    Object.defineProperty(hidden, "0", {
+      value: 1,
+      enumerable: false,
+      configurable: true,
+    });
+    const hiddenResult = applyPatch(Any, { items: hidden }, [{ op: "replace", path: "/items/0", value: 9 }]);
+    expect(hiddenResult.result.ok).toBe(false);
+    if (!hiddenResult.result.ok) expect(hiddenResult.result.code).toBe("not_serializable");
+
+    const accessor = [1];
+    Object.defineProperty(accessor, "0", {
+      get: () => 1,
+      enumerable: true,
+      configurable: true,
+    });
+    const accessorResult = applyPatch(Any, { items: accessor }, [{ op: "replace", path: "/items/0", value: 9 }]);
+    expect(accessorResult.result.ok).toBe(false);
+    if (!accessorResult.result.ok) expect(accessorResult.result.code).toBe("not_serializable");
+
+    const extra = [1] as unknown[] & { extra?: boolean };
+    extra.extra = true;
+    const extraResult = applyPatch(Any, { items: extra }, [{ op: "replace", path: "/items/0", value: 9 }]);
+    expect(extraResult.result.ok).toBe(false);
+    if (!extraResult.result.ok) expect(extraResult.result.code).toBe("not_serializable");
+  });
 });

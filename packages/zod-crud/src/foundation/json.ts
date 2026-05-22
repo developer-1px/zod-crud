@@ -10,39 +10,56 @@ export type JSONValue =
 
 export function jsonSerializableError(value: unknown): string | null {
   const seen = new WeakSet<object>();
+  const path: Array<string | number> = [];
 
-  const at = (path: ReadonlyArray<string | number>): string => buildPointer(path);
+  const at = (): string => buildPointer(path);
 
-  const visit = (v: unknown, path: ReadonlyArray<string | number>): string | null => {
+  const visit = (v: unknown): string | null => {
     if (v === null) return null;
     const t = typeof v;
     if (t === "string" || t === "boolean") return null;
-    if (t === "number") return Number.isFinite(v) ? null : `${at(path)}: non-finite number`;
+    if (t === "number") return Number.isFinite(v) ? null : `${at()}: non-finite number`;
     if (t === "undefined" || t === "function" || t === "symbol" || t === "bigint") {
-      return `${at(path)}: ${t} is not JSON`;
+      return `${at()}: ${t} is not JSON`;
     }
     if (t !== "object") return null;
 
     const obj = v as object;
-    if (seen.has(obj)) return `${at(path)}: circular reference`;
+    if (seen.has(obj)) return `${at()}: circular reference`;
     seen.add(obj);
 
     if (Array.isArray(v)) {
-      for (const key of Object.getOwnPropertyNames(v)) {
-        if (key === "length") continue;
-        const descriptor = Object.getOwnPropertyDescriptor(v, key);
-        if (!descriptor) continue;
-        const childPath = [...path, arrayPropertyPathSegment(key)];
-        if (!isArrayIndexKey(key)) return `${at(childPath)}: non-index array property is not JSON`;
-        if (!descriptor.enumerable) return `${at(childPath)}: non-enumerable property is not JSON`;
-        if ("get" in descriptor || "set" in descriptor) return `${at(childPath)}: accessor property is not JSON`;
-      }
-      if (Object.getOwnPropertySymbols(v).length > 0) return `${at(path)}: symbol keys are not JSON`;
+      if (Object.getOwnPropertySymbols(v).length > 0) return `${at()}: symbol keys are not JSON`;
       for (let i = 0; i < v.length; i++) {
-        const childPath = [...path, i];
-        if (!Object.prototype.hasOwnProperty.call(v, i)) return `${at(childPath)}: sparse array hole`;
-        const err = visit(v[i], childPath);
+        path.push(i);
+        const descriptor = Object.getOwnPropertyDescriptor(v, String(i));
+        if (!descriptor) {
+          const message = `${at()}: sparse array hole`;
+          path.pop();
+          return message;
+        }
+        if (!descriptor.enumerable) {
+          const message = `${at()}: non-enumerable property is not JSON`;
+          path.pop();
+          return message;
+        }
+        if ("get" in descriptor || "set" in descriptor) {
+          const message = `${at()}: accessor property is not JSON`;
+          path.pop();
+          return message;
+        }
+        const err = visit(descriptor.value);
+        path.pop();
         if (err) return err;
+      }
+      if (Object.getOwnPropertyNames(v).length !== v.length + 1) {
+        for (const key of Object.getOwnPropertyNames(v)) {
+          if (key === "length" || isArrayIndexKey(key)) continue;
+          path.push(arrayPropertyPathSegment(key));
+          const message = `${at()}: non-index array property is not JSON`;
+          path.pop();
+          return message;
+        }
       }
       return null;
     }
@@ -50,27 +67,33 @@ export function jsonSerializableError(value: unknown): string | null {
     const proto = Object.getPrototypeOf(v);
     if (proto !== Object.prototype && proto !== null) {
       const name = proto?.constructor?.name ?? "unknown";
-      return `${at(path)}: non-plain object (${name})`;
+      return `${at()}: non-plain object (${name})`;
     }
 
-    if (Object.getOwnPropertySymbols(v).length > 0) return `${at(path)}: symbol keys are not JSON`;
+    if (Object.getOwnPropertySymbols(v).length > 0) return `${at()}: symbol keys are not JSON`;
 
     for (const key of Object.getOwnPropertyNames(v)) {
       const descriptor = Object.getOwnPropertyDescriptor(v, key);
       if (!descriptor) continue;
-      const childPath = [...path, key];
-      if (!descriptor.enumerable) return `${at(childPath)}: non-enumerable property is not JSON`;
-      if ("get" in descriptor || "set" in descriptor) return `${at(childPath)}: accessor property is not JSON`;
-    }
-
-    for (const key of Object.keys(v as Record<string, unknown>)) {
-      const err = visit((v as Record<string, unknown>)[key], [...path, key]);
+      path.push(key);
+      if (!descriptor.enumerable) {
+        const message = `${at()}: non-enumerable property is not JSON`;
+        path.pop();
+        return message;
+      }
+      if ("get" in descriptor || "set" in descriptor) {
+        const message = `${at()}: accessor property is not JSON`;
+        path.pop();
+        return message;
+      }
+      const err = visit(descriptor.value);
+      path.pop();
       if (err) return err;
     }
     return null;
   };
 
-  return visit(value, []);
+  return visit(value);
 }
 
 function isArrayIndexKey(key: string): boolean {
