@@ -423,11 +423,8 @@ export function cloneTrustedJson<T>(value: T): T {
 }
 
 // Fast clone for values that already passed this module's JSON boundary.
-// If Object.prototype was polluted with enumerable keys, keep the defensive path.
 export function cloneTrustedPlainJson<T>(value: T): T {
-  return Object.keys(Object.prototype).length === 0
-    ? cloneTrustedPlainJsonFast(value)
-    : cloneTrustedJson(value);
+  return cloneTrustedPlainJsonFast(value);
 }
 
 function cloneTrustedPlainJsonFast<T>(value: T): T {
@@ -443,21 +440,13 @@ function cloneTrustedPlainJsonFast<T>(value: T): T {
     return next as T;
   }
 
-  const next: Record<string, unknown> = {};
-  for (const key in value as Record<string, unknown>) {
-    const child = (value as Record<string, unknown>)[key];
-    const cloned = child === null || typeof child !== "object"
-      ? child
-      : cloneTrustedPlainJsonFast(child);
-    if (key === "__proto__") {
-      Object.defineProperty(next, key, {
-        value: cloned,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      next[key] = cloned;
+  const next = { ...(value as Record<string, unknown>) };
+  const keys = Object.keys(next);
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index]!;
+    const child = next[key];
+    if (child !== null && typeof child === "object") {
+      next[key] = cloneTrustedPlainJsonFast(child);
     }
   }
   return next as T;

@@ -321,6 +321,25 @@ describe("createJSONDocument public interface", () => {
     ]);
   });
 
+  test("clipboard copy preserves __proto__ as trusted JSON data", () => {
+    const doc = createJSONDocument(z.any(), {
+      item: Object.defineProperty({ id: "a" }, "__proto__", {
+        value: { safe: true },
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      }),
+    });
+
+    expect(doc.clipboard.copy("/item")).toMatchObject({ ok: true });
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(read.payload as object, "__proto__")).toBe(true);
+    expect((read.payload as Record<string, unknown>).__proto__).toEqual({ safe: true });
+  });
+
   test("clipboard write clones trusted nested document source payloads", () => {
     const NestedSchema = z.object({
       wrapper: z.object({
@@ -346,7 +365,7 @@ describe("createJSONDocument public interface", () => {
   test("clipboard clones ignore enumerable Object.prototype keys", () => {
     const key = "__zodCrudInherited";
     Object.defineProperty(Object.prototype, key, {
-      value: "inherited",
+      value: { inherited: true },
       enumerable: true,
       configurable: true,
       writable: true,
