@@ -245,6 +245,35 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("same-array copy and move batches validate locally", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { id: "a", done: false },
+        { id: "b", done: true },
+        { id: "c", done: false },
+      ],
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "move", from: "/items/3", path: "/items/1" },
+      { op: "move", from: "/items/2", path: "/items/0" },
+      { op: "remove", path: "/items/3" },
+      { op: "add", path: "/items/-", value: { id: "d", done: false } },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a", "a", "d"]);
+    expect(rootParses).toBe(0);
+  });
+
   test("same-array batch rejects non-serializable add values atomically", () => {
     const Schema = z.object({ items: z.array(z.unknown()) });
     const doc = createJSONDocument(Schema, { items: [1] }, { strict: false });
@@ -283,6 +312,35 @@ describe("doc.history performance contract", () => {
 
     expect(doc.history.redo()).toBe(true);
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "c", "d"]);
+    expect(validations).toBe(validationsAfterPatch);
+  });
+
+  test("same-array copy/move batch history restores without schema validation", () => {
+    let validations = 0;
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = { items: [{ id: "a" }, { id: "b" }, { id: "c" }] };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch([
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "move", from: "/items/3", path: "/items/1" },
+      { op: "remove", path: "/items/2" },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a", "c"]);
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterPatch = validations;
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(validations).toBe(validationsAfterPatch);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "a", "c"]);
     expect(validations).toBe(validationsAfterPatch);
   });
 

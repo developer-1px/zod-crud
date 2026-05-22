@@ -57,6 +57,19 @@ for (const size of sizes) {
       path: `/items/${size - index - 1}`,
     })),
   ];
+  const copyMoveCount = Math.min(individualCount, size);
+  const copyMoveOps = [
+    ...Array.from({ length: Math.floor(copyMoveCount / 2) }, (_, index) => ({
+      op: "copy",
+      from: `/items/${index}`,
+      path: "/items/-",
+    })),
+    ...Array.from({ length: copyMoveCount - Math.floor(copyMoveCount / 2) }, () => ({
+      op: "move",
+      from: "/items/1",
+      path: "/items/0",
+    })),
+  ];
 
   console.log(`\nitems=${size}`);
   bench("applyPatch single leaf replace", rounds, (index) =>
@@ -221,6 +234,51 @@ for (const size of sizes) {
       if (!doc.history.canRedo) {
         const undone = doc.history.undo();
         if (!undone) throw new Error("mixed undo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    const elapsed = time(() => {
+      for (const op of copyMoveOps) {
+        const result = doc.patch(op);
+        if (!result.ok) throw new Error(`individual copy/move failed: ${JSON.stringify(result)}`);
+      }
+    });
+    console.log(`doc.patch individual copy/move ${copyMoveOps.length} history=0: ${elapsed.toFixed(2)}ms`);
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench(`doc.patch copy/move array batch ${copyMoveOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(copyMoveOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench(`doc.patch copy/move array batch ${copyMoveOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(copyMoveOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    const result = doc.patch(copyMoveOps);
+    if (!result.ok) throw new Error(`setup copy/move batch failed: ${JSON.stringify(result)}`);
+    benchWithSetup(`history undo copy/move array batch ${copyMoveOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canUndo) {
+        const redone = doc.history.redo();
+        if (!redone) throw new Error("copy/move redo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo copy/move array batch ${copyMoveOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canRedo) {
+        const undone = doc.history.undo();
+        if (!undone) throw new Error("copy/move undo setup failed");
       }
     }, () => {
       return { ok: doc.history.redo() };

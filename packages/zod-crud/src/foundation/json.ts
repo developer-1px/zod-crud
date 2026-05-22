@@ -93,6 +93,10 @@ export function cloneJson<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T;
 }
 
+export function cloneTrustedJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
 export function jsonEqual(left: JSONValue | undefined, right: JSONValue | undefined): boolean {
   if (left === undefined || right === undefined) return left === right;
   if (left === right) return true;

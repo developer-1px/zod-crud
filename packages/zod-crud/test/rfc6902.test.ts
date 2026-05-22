@@ -243,6 +243,41 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(nested.state).toEqual({ item: { title: "b", done: false } });
   });
 
+  it("applies same-array copy and move batches with RFC ordering", () => {
+    const first = { id: "a", nested: { count: 1 } };
+    const second = { id: "b", nested: { count: 2 } };
+    const third = { id: "c", nested: { count: 3 } };
+    const settings = { owner: "core" };
+    const initial = { items: [first, second, third], settings };
+
+    const r = applyPatch(Any, initial, [
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "move", from: "/items/3", path: "/items/1" },
+      { op: "remove", path: "/items/2" },
+    ]);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual([
+      { op: "copy", from: "/items/0", path: "/items/3" },
+      { op: "move", from: "/items/3", path: "/items/1" },
+      { op: "remove", path: "/items/2" },
+    ]);
+    expect(r.state).toEqual({
+      items: [
+        { id: "a", nested: { count: 1 } },
+        { id: "a", nested: { count: 1 } },
+        { id: "c", nested: { count: 3 } },
+      ],
+      settings,
+    });
+    expect(r.state.items).not.toBe(initial.items);
+    expect(r.state.items[0]).toBe(first);
+    expect(r.state.items[1]).not.toBe(first);
+    expect(r.state.items[1]?.nested).not.toBe(first.nested);
+    expect(r.state.items[2]).toBe(third);
+    expect(r.state.settings).toBe(settings);
+  });
+
   it("keeps independent replace batches atomic when a later value is not JSON-serializable", () => {
     const initial = { items: [1, 2] };
     const r = applyPatch(Any, initial, [

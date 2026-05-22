@@ -3,7 +3,7 @@
 import { appendSegment, parentPointer, parsePointer, readAt } from "../json-pointer/index.js";
 import type { JSONPatchOperation } from "./index.js";
 import { applyOpRaw } from "./apply.js";
-import { getValueAt, resolveAppendPath } from "./internal.js";
+import { deepCloneTrusted, getValueAt, resolveAppendPath } from "./internal.js";
 
 function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation | null {
   switch (op.op) {
@@ -39,7 +39,7 @@ export function computeInverses(
 ): { ok: true; inverses: JSONPatchOperation[] } | { ok: false } {
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
-  const arrayOnly = computeSameArrayAddRemoveInverses(state, ops);
+  const arrayOnly = computeSameArrayStructuralInverses(state, ops);
   if (arrayOnly) return arrayOnly;
 
   const out: JSONPatchOperation[] = [];
@@ -54,7 +54,7 @@ export function computeInverses(
   return { ok: true, inverses: out };
 }
 
-function computeSameArrayAddRemoveInverses(
+function computeSameArrayStructuralInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): { ok: true; inverses: JSONPatchOperation[] } | null {
@@ -64,10 +64,12 @@ function computeSameArrayAddRemoveInverses(
   const parsed: Array<
     | { op: "add"; path: string; index: number | "-"; value: unknown }
     | { op: "remove"; path: string; index: number }
+    | { op: "copy"; from: string; path: string; fromIndex: number; index: number | "-" }
+    | { op: "move"; from: string; path: string; fromIndex: number; index: number | "-" }
   > = [];
 
   for (const op of ops) {
-    if (op.op !== "add" && op.op !== "remove") return null;
+    if (op.op !== "add" && op.op !== "remove" && op.op !== "copy" && op.op !== "move") return null;
     const location = arrayLocation(op.path);
     if (!location) return null;
     if (parent === null) {
@@ -77,9 +79,19 @@ function computeSameArrayAddRemoveInverses(
     }
     if (op.op === "add") {
       parsed.push({ op: "add", path: op.path, index: location.index, value: op.value });
-    } else {
+    } else if (op.op === "remove") {
       if (location.index === "-") return null;
       parsed.push({ op: "remove", path: op.path, index: location.index });
+    } else {
+      const fromLocation = arrayLocation(op.from);
+      if (!fromLocation || fromLocation.parent !== parent || fromLocation.index === "-") return null;
+      parsed.push({
+        op: op.op,
+        from: op.from,
+        path: op.path,
+        fromIndex: fromLocation.index,
+        index: location.index,
+      });
     }
   }
 
@@ -98,10 +110,29 @@ function computeSameArrayAddRemoveInverses(
       continue;
     }
 
-    if (op.index < 0 || op.index >= cur.length) return null;
-    const value = cur[op.index];
-    cur.splice(op.index, 1);
-    inverses.unshift({ op: "add", path: op.path, value });
+    if (op.op === "remove") {
+      if (op.index < 0 || op.index >= cur.length) return null;
+      const value = cur[op.index];
+      cur.splice(op.index, 1);
+      inverses.unshift({ op: "add", path: op.path, value });
+      continue;
+    }
+
+    if (op.fromIndex < 0 || op.fromIndex >= cur.length) return null;
+    const index = op.index === "-" ? cur.length : op.index;
+    const concretePath = appendSegment(parent, index);
+    if (op.op === "copy") {
+      if (index < 0 || index > cur.length) return null;
+      cur.splice(index, 0, deepCloneTrusted(cur[op.fromIndex]));
+      inverses.unshift({ op: "remove", path: concretePath });
+      continue;
+    }
+
+    inverses.unshift({ op: "move", from: concretePath, path: op.from });
+    if (op.fromIndex === index) continue;
+    const [value] = cur.splice(op.fromIndex, 1);
+    if (index < 0 || index > cur.length) return null;
+    cur.splice(index, 0, value);
   }
 
   return { ok: true, inverses };

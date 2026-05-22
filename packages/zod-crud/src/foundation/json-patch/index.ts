@@ -6,7 +6,7 @@ import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
 import { appendSegment, parentPointer, type Pointer } from "../json-pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
-import { getValueAt, normalizeOp, parseSafe } from "./internal.js";
+import { deepCloneTrusted, getValueAt, normalizeOp, parseSafe } from "./internal.js";
 
 export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
@@ -101,7 +101,7 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: fast.state as z.output<S>, result: ok, applied: fast.applied };
   }
-  const arrayFast = applySameArrayAddRemovePatch(state, ops);
+  const arrayFast = applySameArrayStructuralPatch(state, ops);
   if (arrayFast.handled) {
     const parsed = schema.safeParse(arrayFast.state);
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
@@ -153,7 +153,7 @@ export function applyTrustedPatch<T>(
   if (fast.handled) {
     return { state: fast.state as T, result: ok, applied: fast.applied };
   }
-  const arrayFast = applySameArrayAddRemovePatch(state, ops);
+  const arrayFast = applySameArrayStructuralPatch(state, ops);
   if (arrayFast.handled) {
     return { state: arrayFast.state as T, result: ok, applied: arrayFast.applied };
   }
@@ -213,7 +213,7 @@ function applyIndependentReplacePatch(
   return { handled: true, state: applyReplaceTree(state, buildReplaceTree(items)), applied: items.map((item) => item.op) };
 }
 
-function applySameArrayAddRemovePatch(
+function applySameArrayStructuralPatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): FastPatchResult {
@@ -223,12 +223,23 @@ function applySameArrayAddRemovePatch(
   const items: Array<
     | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
     | { op: "remove"; path: Pointer; index: number }
+    | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
+    | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
   > = [];
 
   for (let index = 0; index < ops.length; index++) {
     if (!(index in ops)) return { handled: false };
     const op = ops[index]!;
-    if (validateOperationShape(op) !== null || (op.op !== "add" && op.op !== "remove") || op.path === "") {
+    if (
+      validateOperationShape(op) !== null
+      || (
+        op.op !== "add"
+        && op.op !== "remove"
+        && op.op !== "copy"
+        && op.op !== "move"
+      )
+      || op.path === ""
+    ) {
       return { handled: false };
     }
     const location = arrayLocation(op.path);
@@ -241,9 +252,21 @@ function applySameArrayAddRemovePatch(
     if (op.op === "add") {
       if (jsonSerializableError(op.value) !== null) return { handled: false };
       items.push({ op: "add", path: op.path, index: location.index, value: op.value });
-    } else {
+    } else if (op.op === "remove") {
       if (location.index === "-") return { handled: false };
       items.push({ op: "remove", path: op.path, index: location.index });
+    } else {
+      const fromLocation = arrayLocation(op.from);
+      if (!fromLocation || fromLocation.parent !== parent || fromLocation.index === "-") {
+        return { handled: false };
+      }
+      items.push({
+        op: op.op,
+        from: op.from,
+        path: op.path,
+        fromIndex: fromLocation.index,
+        index: location.index,
+      });
     }
   }
 
@@ -264,9 +287,30 @@ function applySameArrayAddRemovePatch(
       continue;
     }
 
-    if (item.index < 0 || item.index >= next.length) return { handled: false };
-    next.splice(item.index, 1);
-    applied.push({ op: "remove", path: item.path });
+    if (item.op === "remove") {
+      if (item.index < 0 || item.index >= next.length) return { handled: false };
+      next.splice(item.index, 1);
+      applied.push({ op: "remove", path: item.path });
+      continue;
+    }
+
+    if (item.fromIndex < 0 || item.fromIndex >= next.length) return { handled: false };
+    const index = item.index === "-" ? next.length : item.index;
+    if (item.op === "copy") {
+      if (index < 0 || index > next.length) return { handled: false };
+      next.splice(index, 0, deepCloneTrusted(next[item.fromIndex]));
+      applied.push({ op: "copy", from: item.from, path: appendSegment(parent, index) });
+      continue;
+    }
+
+    if (item.fromIndex === index) {
+      applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
+      continue;
+    }
+    const [value] = next.splice(item.fromIndex, 1);
+    if (index < 0 || index > next.length) return { handled: false };
+    next.splice(index, 0, value);
+    applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
   }
 
   const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, next);
