@@ -119,6 +119,7 @@ describe("outliner keyboard and mouse interactions", () => {
 
     await user.keyboard("{Enter}");
     expect(treeTexts()).toHaveLength(before);
+    expect(statusText()).toMatch(/mode = select/);
     expect(statusText()).toMatch(/focus =\s*\/children\/0/);
 
     await user.keyboard("{Shift>}{Enter}{/Shift}");
@@ -133,6 +134,18 @@ describe("outliner keyboard and mouse interactions", () => {
   test("Mod+Enter is an insert-sibling chord in select and edit modes", () => {
     expect(findCommand("Mod+Enter", "select")).toBe("insert-sibling");
     expect(findCommand("Mod+Enter", "edit")).toBe("insert-sibling");
+  });
+
+  test("Cmd+D duplicates the focused row", async () => {
+    renderOutliner();
+    const user = await clickText(firstItem);
+    const before = treeTexts().length;
+
+    await user.keyboard("{Control>}d{/Control}");
+
+    expect(treeTexts()).toHaveLength(before + 1);
+    expect(treeTexts().filter((text) => text === firstItem)).toHaveLength(2);
+    expect(statusText()).toMatch(/focus =\s*\/children\/1/);
   });
 
   test("ArrowRight and ArrowLeft navigate between a parent row and its first child", async () => {
@@ -216,8 +229,10 @@ describe("outliner keyboard and mouse interactions", () => {
 
     await user.click(markerForText(secondItem));
     await user.keyboard("{Control>}v{/Control}");
+    await user.keyboard("{Control>}v{/Control}");
 
-    expect(treeTexts().filter((text) => text === firstItem)).toHaveLength(2);
+    expect(treeTexts().filter((text) => text === firstItem)).toHaveLength(3);
+    expect(document.querySelector(".toast")?.textContent ?? "").not.toMatch(/not_serializable|circular/i);
   });
 
   test("Tab demotes a row and Shift+Tab promotes it back through keyboard input", async () => {

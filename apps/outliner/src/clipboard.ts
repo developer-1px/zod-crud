@@ -91,7 +91,7 @@ export function useClipboard(): ClipboardApi {
       const targets = expandTargets(target, mode, cur.values.length);
       // cmd.cut 이 원본을 이미 제거했으므로 paste 는 mode 무관 add 만.
       // mode = cut 일 때만 paste 후 클립보드 비움 (1회용 — Workflowy / Notion 표준).
-      const batch = cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: v }));
+      const batch = cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: deepClone(v) }));
       const r = document.patch(batch);
       if (r.ok && cur.mode === "cut") setSnap(EMPTY);
       return r;

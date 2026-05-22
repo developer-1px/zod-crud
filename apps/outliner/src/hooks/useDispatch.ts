@@ -27,6 +27,7 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
       case "enter-edit":     setMode("edit"); return true;
       case "exit-edit":      setMode("select"); return true;
       case "insert-sibling": surface(cmd.insertSibling(ctx)); setMode("edit"); return true;
+      case "duplicate":      surface(cmd.duplicateRow(ctx)); return true;
       // edit 모드 Backspace: 빈 텍스트일 때만 row 제거. 그 외는 DOM 기본 (글자 삭제) 통과.
       case "remove-if-empty": {
         const f = focusOf(ctx);

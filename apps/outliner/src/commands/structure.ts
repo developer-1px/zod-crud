@@ -15,6 +15,12 @@ export function insertSibling(ctx: CommandContext): JSONResult {
   return ctx.document.patch([{ op: "add", path: `${parent}/${idx + 1}`, value: { text: "", children: [] } }]);
 }
 
+export function duplicateRow(ctx: CommandContext): { ok: boolean; code?: string; reason?: string } {
+  const p = focusOf(ctx);
+  if (p === null) return { ok: false, code: "path_not_found", reason: "no focus" };
+  return ctx.document.duplicate(p);
+}
+
 // 선택된 ROW 들을 DFS 정렬 후, 직전 ops 를 통과한 현재 위치를 trackPointer 로 따라가며
 // 각각 자기 prev sibling 의 children 끝에 append 한다. 결과: Workflowy 처럼
 // 모두 같은 prev sibling 아래의 형제로 들어감 (top-down 처리 + applyPatch 정규화 덕).

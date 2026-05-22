@@ -25,6 +25,7 @@ test("outliner supports keyboard editing and undo in a real browser", async ({ p
   await expect(firstRowText).toHaveValue(editedFirstItem);
 
   await firstRowText.press("Enter");
+  await expect(page.locator(".status")).toContainText("mode = select");
   await expect(page.locator(".status")).toContainText("focus = /children/0");
   await expect(treeTextboxes).toHaveCount(18);
 
@@ -40,4 +41,27 @@ test("outliner supports keyboard editing and undo in a real browser", async ({ p
 
   await expect(treeTextboxes).toHaveCount(18);
   await expect(treeTextboxes.nth(1)).toHaveValue(firstItem);
+
+  await treeTextboxes.nth(1).click();
+  await page.keyboard.press("ControlOrMeta+D");
+  await expect(treeTextboxes).toHaveCount(19);
+  await expect(page.locator(".status")).toContainText("focus = /children/1");
+
+  await page.keyboard.press("ControlOrMeta+Z");
+  await expect(treeTextboxes).toHaveCount(18);
+
+  await treeTextboxes.nth(1).click();
+  await page.keyboard.press("ControlOrMeta+C");
+  await treeTextboxes.nth(2).click();
+  await page.keyboard.press("ControlOrMeta+V");
+  await page.keyboard.press("ControlOrMeta+V");
+  await expect(treeTextboxes).toHaveCount(20);
+  await expect.poll(() =>
+    treeTextboxes.evaluateAll(
+      (inputs, expected) =>
+        inputs.filter((input) => input instanceof HTMLInputElement && input.value === expected).length,
+      firstItem,
+    ),
+  ).toBe(3);
+  await expect(page.locator(".toast")).not.toContainText(/not_serializable|circular/i);
 });

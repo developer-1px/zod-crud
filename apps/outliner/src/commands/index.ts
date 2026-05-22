@@ -7,7 +7,7 @@
 export { focusOf } from "./context.js";
 export type { CommandContext } from "./context.js";
 export {
-  insertSibling, demote, promote, remove, moveUp, moveDown,
+  insertSibling, duplicateRow, demote, promote, remove, moveUp, moveDown,
 } from "./structure.js";
 export { copy, cut, paste } from "./clipboard.js";
 export { selectAll, extendSelection } from "./selection.js";
