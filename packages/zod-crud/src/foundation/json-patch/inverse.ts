@@ -125,11 +125,16 @@ function computeSameArrayFieldReplaceInverses(
 
   let arrayPath: string | null = null;
   let field: string | null = null;
+  let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
   let previousIndex = -1;
-  const items: Array<{ path: string; index: number; key: string }> = [];
+  const appliedIndexes: number[] = [];
+  const inverses = new Array<JSONPatchOperation | undefined>(ops.length);
+  let inverseCount = 0;
 
-  for (const op of ops) {
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
     if (op.op === "test") continue;
     if (op.op !== "replace" || op.path === "") return null;
     const location = parseArrayFieldPath(op.path);
@@ -137,12 +142,18 @@ function computeSameArrayFieldReplaceInverses(
     if (field === null) field = location.key;
     else if (field !== location.key) return null;
 
-    if (arrayPath === null) arrayPath = location.arrayPath;
-    else if (arrayPath !== location.arrayPath) return null;
+    if (arrayPath === null) {
+      arrayPath = location.arrayPath;
+      const array = readValueAtPointer(state, arrayPath);
+      if (!array.ok || !Array.isArray(array.value)) return null;
+      arrayValue = array.value;
+    } else if (arrayPath !== location.arrayPath) {
+      return null;
+    }
 
     if (seenIndexes === null) {
       if (location.index <= previousIndex) {
-        seenIndexes = new Set(items.map((item) => item.index));
+        seenIndexes = new Set(appliedIndexes);
         if (seenIndexes.has(location.index)) return null;
         seenIndexes.add(location.index);
       } else {
@@ -152,24 +163,28 @@ function computeSameArrayFieldReplaceInverses(
       if (seenIndexes.has(location.index)) return null;
       seenIndexes.add(location.index);
     }
-    items.push({ path: op.path, index: location.index, key: location.key });
-  }
 
-  if (arrayPath === null || field === null) return null;
-  const array = readValueAtPointer(state, arrayPath);
-  if (!array.ok || !Array.isArray(array.value)) return null;
-
-  const inverses: JSONPatchOperation[] = [];
-  for (let itemIndex = items.length - 1; itemIndex >= 0; itemIndex -= 1) {
-    const item = items[itemIndex]!;
-    if (item.index < 0 || item.index >= array.value.length) return null;
-    const row = array.value[item.index];
+    if (arrayValue === null || location.index < 0 || location.index >= arrayValue.length) return null;
+    const row = arrayValue[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
-    if (!objectHasOwn.call(row, item.key)) return null;
-    inverses.push({ op: "replace", path: item.path, value: (row as Record<string, unknown>)[item.key] });
+    if (!objectHasOwn.call(row, location.key)) return null;
+    inverses[ops.length - opIndex - 1] = {
+      op: "replace",
+      path: op.path,
+      value: (row as Record<string, unknown>)[location.key],
+    };
+    inverseCount += 1;
+    appliedIndexes.push(location.index);
   }
 
-  return { ok: true, inverses };
+  if (arrayPath === null || field === null || arrayValue === null) return null;
+  if (inverseCount === inverses.length) return { ok: true, inverses: inverses as JSONPatchOperation[] };
+
+  const compacted: JSONPatchOperation[] = [];
+  for (const inverse of inverses) {
+    if (inverse !== undefined) compacted.push(inverse);
+  }
+  return { ok: true, inverses: compacted };
 }
 
 type SameArrayStructuralOp =
