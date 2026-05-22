@@ -642,6 +642,63 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("plain structural root record add batches validate locally", () => {
+    const Value = z.object({
+      id: z.string(),
+      done: z.boolean(),
+    });
+    const Schema = z.record(z.string(), Value);
+    const doc = createJSONDocument(Schema, {
+      a: { id: "a", done: false },
+    }, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+    const originalValueSafeParse = Value.safeParse.bind(Value);
+    let valueParses = 0;
+    Value.safeParse = ((value: unknown) => {
+      valueParses += 1;
+      return originalValueSafeParse(value);
+    }) as typeof Value.safeParse;
+
+    expect(doc.patch([
+      { op: "add", path: "/b", value: { id: "b", done: true } },
+      { op: "add", path: "/c", value: { id: "c", done: false } },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toEqual({
+      a: { id: "a", done: false },
+      b: { id: "b", done: true },
+      c: { id: "c", done: false },
+    });
+    expect(rootParses).toBe(0);
+    expect(valueParses).toBe(0);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual({
+      a: { id: "a", done: false },
+    });
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value).toEqual({
+      a: { id: "a", done: false },
+      b: { id: "b", done: true },
+      c: { id: "c", done: false },
+    });
+    expect(rootParses).toBe(0);
+
+    const before = doc.value;
+    const rejected = doc.patch([
+      { op: "add", path: "/d", value: { id: "d", done: false } },
+      { op: "add", path: "/e", value: { id: 1, done: true } },
+    ]);
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toBe(before);
+    expect(rootParses).toBe(0);
+    expect(valueParses).toBe(1);
+  });
+
   test("plain structural same-array field replace batches reuse local field validation", () => {
     const Schema = z.object({
       items: z.array(z.object({ done: z.boolean(), title: z.string() })),

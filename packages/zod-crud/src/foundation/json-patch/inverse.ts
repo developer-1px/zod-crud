@@ -56,6 +56,8 @@ export function computeInverses(
   if (rootObjectReplace) return rootObjectReplace;
   const rootObjectRemove = computeRootObjectRemoveInverses(state, ops);
   if (rootObjectRemove) return rootObjectRemove;
+  const rootObjectAdd = computeRootObjectAddInverses(state, ops);
+  if (rootObjectAdd) return rootObjectAdd;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
   const arrayOnly = computeSameArrayStructuralInverses(state, ops);
@@ -519,6 +521,49 @@ function computeRootObjectRemoveInverses(
       path: op.path,
       value: (state as Record<string, unknown>)[key],
     };
+  }
+
+  return { ok: true, inverses };
+}
+
+function computeRootObjectAddInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (
+    ops.length < 2
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+  ) {
+    return null;
+  }
+
+  let seenKeys: Set<string> | null = null;
+  const source = state as Record<string, unknown>;
+  const inverses = new Array<JSONPatchOperation>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      op.op !== "add"
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return null;
+    }
+
+    const key = op.path.slice(1);
+    if (seenKeys === null) seenKeys = new Set();
+    else if (seenKeys.has(key)) return null;
+    seenKeys.add(key);
+
+    inverses[ops.length - index - 1] = objectHasOwn.call(source, key)
+      ? { op: "replace", path: op.path, value: source[key] }
+      : { op: "remove", path: op.path };
   }
 
   return { ok: true, inverses };

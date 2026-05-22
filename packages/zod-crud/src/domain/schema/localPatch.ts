@@ -69,6 +69,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
   const rootObjectReplace = applyRootObjectReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (rootObjectReplace) return rootObjectReplace;
+  const rootRecordAdd = applyRootRecordAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+  if (rootRecordAdd) return rootRecordAdd;
   const rootRecordRemove = applyRootRecordRemovePatchWithLocalSchemaValidation(schema, state, ops);
   if (rootRecordRemove) return rootRecordRemove;
   if (isIndependentReplacePatch(ops)) {
@@ -455,6 +457,83 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
 
     if (next === null) next = { ...(state as Record<string, unknown>) };
     delete next[key];
+    applied[index] = op;
+  }
+
+  return next === null
+    ? null
+    : {
+        state: next as z.output<S>,
+        result: { ok: true },
+        applied,
+      };
+}
+
+function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): LocalPatchResult<S> {
+  if (
+    !Array.isArray(ops)
+    || ops.length === 0
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+  ) {
+    return null;
+  }
+
+  const rootDef = getDef(schema) as ExtendedDef;
+  if (
+    rootDef.type !== "record"
+    || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))
+    || !rootDef.valueType
+  ) {
+    return null;
+  }
+
+  let next: Record<string, unknown> | null = null;
+  const applied = new Array<JSONPatchOperation>(ops.length);
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return null;
+    }
+
+    const valueAccepted = acceptsKnownJsonValue(rootDef.valueType, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const result = rootDef.valueType.safeParse(op.value);
+      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    }
+
+    const key = op.path.slice(1);
+    if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: op.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = op.value;
+    }
     applied[index] = op;
   }
 

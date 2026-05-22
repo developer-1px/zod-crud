@@ -508,6 +508,11 @@ for (const size of sizes) {
     path: `/k${index}`,
     value: makeRootObjectValue(rootReplaceCount + index),
   }));
+  const rootAddOps = Array.from({ length: rootReplaceCount }, (_, index) => ({
+    op: "add",
+    path: `/n${index}`,
+    value: makeRootObjectValue(rootReplaceCount + index),
+  }));
   const rootRemoveOps = Array.from({ length: rootReplaceCount }, (_, index) => ({
     op: "remove",
     path: `/k${index}`,
@@ -548,6 +553,41 @@ for (const size of sizes) {
     applyAcceptedPatch(rootState, rootReplaceOps));
   bench(`trusted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
     applyTrustedPatch(rootState, rootReplaceOps, { valuesTrusted: true }));
+  {
+    let doc;
+    benchWithSetup(`doc.patch root object add batch ${rootReplaceCount} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(RootRecord, rootState, { history: 0 });
+    }, () => doc.patch(rootAddOps));
+  }
+  {
+    let doc;
+    benchWithSetup(`doc.patch root object add batch ${rootReplaceCount} history=100`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(RootRecord, rootState, { history: 100 });
+    }, () => doc.patch(rootAddOps));
+  }
+  {
+    let doc;
+    benchWithSetup(`history undo root object add batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(RootRecord, rootState, { history: 100 });
+      const patched = doc.patch(rootAddOps);
+      if (!patched.ok) throw new Error(`setup root add batch failed: ${JSON.stringify(patched)}`);
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo root object add batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(RootRecord, rootState, { history: 100 });
+      const patched = doc.patch(rootAddOps);
+      if (!patched.ok) throw new Error(`setup root add batch failed: ${JSON.stringify(patched)}`);
+      const undone = doc.history.undo();
+      if (!undone) throw new Error("root add undo setup failed");
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
+  }
+  bench(`accepted root object add batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyAcceptedPatch(rootState, rootAddOps));
+  bench(`trusted root object add batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyTrustedPatch(rootState, rootAddOps, { valuesTrusted: true }));
   {
     let doc;
     benchWithSetup(`doc.patch root object remove batch ${rootReplaceCount} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
