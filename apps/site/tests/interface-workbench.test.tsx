@@ -19,6 +19,8 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
 
     expect(screen.getByText("Interface bench")).toBeTruthy();
+    expect(screen.getByLabelText("value target")).toBeTruthy();
+    expect(screen.getByLabelText("insert target")).toBeTruthy();
     for (const title of [
       "doc.patch",
       "document actions",
@@ -50,21 +52,24 @@ describe("InterfaceWorkbench", () => {
     await user.click(within(group("doc.patch")).getByRole("button", { name: "add" }));
     expect(screen.getByText("Card c4")).toBeTruthy();
 
-    await user.click(within(group("doc.selection")).getByRole("button", { name: "todo" }));
+    await user.click(within(group("doc.selection")).getByRole("button", { name: "select todo" }));
     expect(screen.getByText("selected: 3")).toBeTruthy();
 
     await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy" }));
     expect(screen.getByText("clipboard: set")).toBeTruthy();
 
-    await user.click(within(group("doc.clipboard")).getByRole("button", { name: "paste" }));
+    await user.click(within(group("doc.clipboard")).getByRole("button", { name: "paste after" }));
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
 
+    await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy to insert" }));
+    expect(screen.getByText(/"call": "copy \+ paste insert"/)).toBeTruthy();
+
     await user.click(within(group("doc.schema")).getByRole("button", { name: "rejects" }));
-    expect(screen.getByRole("heading", { name: "schema.rejects" })).toBeTruthy();
+    expect(screen.getByText(/schema\.rejects/)).toBeTruthy();
     expect(screen.getByText(/schema_violation/)).toBeTruthy();
 
     await user.click(within(group("pure exports")).getByRole("button", { name: "inspect" }));
-    expect(screen.getAllByRole("heading", { name: "pure exports" }).length).toBeGreaterThan(1);
+    expect(screen.getAllByText(/pure exports/).length).toBeGreaterThan(1);
     expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
   });
 });

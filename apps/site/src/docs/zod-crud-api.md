@@ -232,6 +232,52 @@ doc.canUndo();
 doc.canRedo();
 ```
 
+## 작업 레이어 예시
+
+앱 코드는 보통 public API를 얇게 감싸서 도메인 액션을 만듭니다. patch를 직접 만들 때는 `canPatch`를 먼저 보고, `duplicate`와 clipboard mutation은 성공 결과를 다시 commit하지 않습니다.
+
+```ts
+type Card = { id: string; slug: string; title: string; status: "todo" | "doing" | "done" };
+type Board = { lists: { id: string; title: string; cards: Card[] }[] };
+
+const rekey = { fields: ["id", "slug"], strategy: "suffix" as const };
+
+function createBoardActions(doc: JSONDocument<Board>) {
+  return {
+    addCard(listIndex: number, card: Card) {
+      const patch = [{ op: "add", path: `/lists/${listIndex}/cards/-`, value: card }];
+      const can = doc.canPatch(patch);
+      return can.ok ? doc.commit(patch, { label: "addCard" }) : can;
+    },
+
+    duplicateCard(cardPointer: Pointer) {
+      const can = doc.canDuplicate(cardPointer, { rekey });
+      return can.ok ? doc.duplicate(cardPointer, { rekey }) : can;
+    },
+
+    copySelectedCardsTo(sourcePointers: readonly Pointer[], targetListIndex: number) {
+      const copied = doc.clipboard.copy(sourcePointers);
+      if (!copied.ok) return copied;
+
+      return doc.clipboard.paste(`/lists/${targetListIndex}/cards/-`, {
+        spread: true,
+        rekey,
+      });
+    },
+
+    pastePayloadAfter(cardPointer: Pointer, payload: unknown) {
+      return doc.clipboard.pastePayload({ after: cardPointer }, payload, { rekey });
+    },
+
+    undo() {
+      return doc.canUndo().ok ? doc.history.undo() : false;
+    },
+  };
+}
+```
+
+여기서 `/cards/-`는 삽입 위치입니다. `{ after: cardPointer }`는 이미 존재하는 card를 기준으로 붙인다는 뜻입니다.
+
 ## schema
 
 Schema helper는 특정 pointer가 어떤 값을 받을 수 있는지 확인합니다.

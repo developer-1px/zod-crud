@@ -39,7 +39,7 @@ const BoardSchema = z.object({
 });
 
 type Board = z.infer<typeof BoardSchema>;
-type BenchResult = { label: string; value: unknown };
+type BenchResult = { call: string; value: unknown };
 type MarkdownBlock =
   | { type: "heading"; level: number; text: string }
   | { type: "paragraph"; text: string }
@@ -109,6 +109,10 @@ function selectedLabel(selected: readonly string[]): string {
   return selected.length === 0 ? "none" : selected.join(", ");
 }
 
+function cardRekey() {
+  return { fields: ["id"], strategy: "suffix" as const };
+}
+
 export function InterfaceWorkbench() {
   const doc = useJSONDocument(BoardSchema, initialBoard, {
     history: 100,
@@ -117,10 +121,11 @@ export function InterfaceWorkbench() {
   });
   const selectedPointers = doc.selection?.selectedPointers ?? [];
   const primaryPointer = doc.selection?.primaryPointer ?? null;
-  const [target, setTarget] = useState<Pointer>(cardPointer(0, 0));
+  const [valueTarget, setValueTarget] = useState<Pointer>(cardPointer(0, 0));
+  const [insertTarget, setInsertTarget] = useState<Pointer>("/lists/0/cards/-" as Pointer);
   const [query, setQuery] = useState("$..cards[?(@.status=='todo')]");
   const [payload, setPayload] = useState(stringify(sampleCard));
-  const [result, setResult] = useState<BenchResult>({ label: "ready", value: doc.value });
+  const [result, setResult] = useState<BenchResult>({ call: "ready", value: doc.value });
 
   const pointers = useMemo(
     () => doc.value.lists.flatMap((list, listIndex) =>
@@ -131,13 +136,21 @@ export function InterfaceWorkbench() {
     ),
     [doc.value],
   );
+  const insertPointers = useMemo(
+    () => doc.value.lists.map((list, listIndex) => ({
+      pointer: `/lists/${listIndex}/cards/-` as Pointer,
+      label: `${list.name} /cards/-`,
+    })),
+    [doc.value],
+  );
+  const clipboardSnapshot = doc.clipboard.read();
 
-  const run = (label: string, action: () => unknown): void => {
+  const run = (call: string, action: () => unknown): void => {
     try {
       const value = action();
-      setResult({ label, value: value ?? doc.value });
+      setResult({ call, value: value ?? doc.value });
     } catch (error) {
-      setResult({ label, value: error instanceof Error ? error.message : error });
+      setResult({ call, value: error instanceof Error ? error.message : error });
     }
   };
 
@@ -172,12 +185,37 @@ export function InterfaceWorkbench() {
   ]);
 
   const copySelection = (): unknown => doc.clipboard.copy(
-    selectedPointers.length > 0 ? selectedPointers : target,
+    selectedPointers.length > 0 ? selectedPointers : valueTarget,
   );
 
-  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste({ after: target });
+  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste({ after: valueTarget });
 
-  const pastePayloadAfterTarget = (): unknown => doc.clipboard.pastePayload({ after: target }, parsedPayload());
+  const pasteClipboardToInsertTarget = (): unknown => doc.clipboard.paste(insertTarget, {
+    spread: true,
+    rekey: cardRekey(),
+  });
+
+  const pastePayloadAfterTarget = (): unknown => doc.clipboard.pastePayload(
+    { after: valueTarget },
+    parsedPayload(),
+    { rekey: cardRekey() },
+  );
+
+  const pastePayloadToInsertTarget = (): unknown => doc.clipboard.pastePayload(
+    insertTarget,
+    parsedPayload(),
+    { rekey: cardRekey() },
+  );
+
+  const copySelectionToInsertTarget = (): unknown => {
+    const source = selectedPointers.length > 0 ? selectedPointers : valueTarget;
+    const copied = doc.clipboard.copy(source);
+    if (!copied.ok) return copied;
+    return doc.clipboard.paste(insertTarget, {
+      spread: Array.isArray(source),
+      rekey: cardRekey(),
+    });
+  };
 
   const selectTodoCards = (): unknown => {
     const matches = doc.query("$..cards[?(@.status=='todo')]");
@@ -275,7 +313,7 @@ export function InterfaceWorkbench() {
     settings: { archived: true, owner: "fixture" },
   });
   const removeTargets = (): unknown => doc.patch(
-    [...(selectedPointers.length > 0 ? selectedPointers : [target])]
+    [...(selectedPointers.length > 0 ? selectedPointers : [valueTarget])]
       .reverse()
       .map((path) => ({ op: "remove", path }) satisfies JSONPatchOperation),
   );
@@ -304,7 +342,7 @@ export function InterfaceWorkbench() {
                         key={pointer}
                         aria-selected={selected}
                         onClick={(event) => {
-                          setTarget(pointer);
+                          setValueTarget(pointer);
                           if (event.shiftKey && primaryPointer) doc.selection?.setBaseAndExtent(primaryPointer, pointer);
                           else if (event.metaKey || event.ctrlKey) doc.selection?.togglePointer(pointer);
                           else doc.selection?.collapse(pointer);
@@ -325,18 +363,28 @@ export function InterfaceWorkbench() {
         </div>
 
         <aside className="rounded border border-stone-200 bg-white p-3">
-          <Field label="target">
+          <Field label="value target">
             <select
-              value={target}
-              onChange={(event) => setTarget(event.target.value as Pointer)}
+              value={valueTarget}
+              onChange={(event) => setValueTarget(event.target.value as Pointer)}
               className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs"
             >
               {pointers.map((item) => (
                 <option key={item.pointer} value={item.pointer}>{item.pointer}</option>
               ))}
-              <option value="/lists/0/cards/-">/lists/0/cards/-</option>
               <option value="/title">/title</option>
               <option value="/settings/archived">/settings/archived</option>
+            </select>
+          </Field>
+          <Field label="insert target">
+            <select
+              value={insertTarget}
+              onChange={(event) => setInsertTarget(event.target.value as Pointer)}
+              className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs"
+            >
+              {insertPointers.map((item) => (
+                <option key={item.pointer} value={item.pointer}>{item.label}</option>
+              ))}
             </select>
           </Field>
           <Field label="jsonpath">
@@ -360,8 +408,8 @@ export function InterfaceWorkbench() {
       <section className="grid gap-3 xl:grid-cols-4">
         <ActionGroup title="doc.patch">
           <ActionButton onClick={() => run("patch.add", addCardToTodo)}>add</ActionButton>
-          <ActionButton onClick={() => run("patch.replace", () => doc.patch([{ op: "replace", path: `${target}/title`, value: "Patch edit" }]))}>replace</ActionButton>
-          <ActionButton onClick={() => run("patch.remove", () => doc.patch([{ op: "remove", path: target }]))}>remove</ActionButton>
+          <ActionButton onClick={() => run("patch.replace", () => doc.patch([{ op: "replace", path: `${valueTarget}/title`, value: "Patch edit" }]))}>replace</ActionButton>
+          <ActionButton onClick={() => run("patch.remove", () => doc.patch([{ op: "remove", path: valueTarget }]))}>remove</ActionButton>
           <ActionButton onClick={() => run("patch.batch", patchTwoFields)}>batch</ActionButton>
           <ActionButton onClick={() => run("patch.invalid", invalidPatch)}>invalid</ActionButton>
           <ActionButton onClick={() => run("doc.load", loadFixture)}>load</ActionButton>
@@ -369,19 +417,19 @@ export function InterfaceWorkbench() {
         </ActionGroup>
 
         <ActionGroup title="document actions">
-          <ActionButton onClick={() => run("doc.duplicate", () => doc.duplicate(target, { rekey: { fields: ["id"], strategy: "suffix" } }))}>duplicate</ActionButton>
-          <ActionButton onClick={() => run("patch.move", () => doc.patch({ op: "move", from: target, path: "/lists/1/cards/0" as Pointer }))}>move</ActionButton>
+          <ActionButton onClick={() => run("doc.duplicate", () => doc.duplicate(valueTarget, { rekey: cardRekey() }))}>duplicate</ActionButton>
+          <ActionButton onClick={() => run("patch.move", () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }))}>move</ActionButton>
           <ActionButton onClick={() => run("patch.replace", replaceSelectedTitle)}>replace</ActionButton>
-          <ActionButton onClick={() => run("clipboard.pastePayload", pastePayloadAfterTarget)}>paste payload</ActionButton>
+          <ActionButton onClick={() => run("clipboard.pastePayload after", pastePayloadAfterTarget)}>paste payload after</ActionButton>
           <ActionButton onClick={() => run("patch.remove", removeTargets)}>remove</ActionButton>
-          <ActionButton onClick={() => run("query.select", findAndSelect)}>find</ActionButton>
+          <ActionButton onClick={() => run("query.select", findAndSelect)}>select query</ActionButton>
           <ActionButton onClick={() => run("selection.textPatch", replaceTitleText)}>replaceText</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.selection">
-          <ActionButton onClick={() => run("selection.collapse", () => { doc.selection?.collapse(target); return doc.selection?.snapshot(); })}>collapse</ActionButton>
-          <ActionButton onClick={() => run("selection.togglePointer", () => { doc.selection?.togglePointer(target); return doc.selection?.snapshot(); })}>toggle</ActionButton>
-          <ActionButton onClick={() => run("selection.selectRanges", selectTodoCards)}>todo</ActionButton>
+          <ActionButton onClick={() => run("selection.collapse", () => { doc.selection?.collapse(valueTarget); return doc.selection?.snapshot(); })}>collapse</ActionButton>
+          <ActionButton onClick={() => run("selection.togglePointer", () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); })}>toggle target</ActionButton>
+          <ActionButton onClick={() => run("selection.selectRanges", selectTodoCards)}>select todo</ActionButton>
           <ActionButton onClick={() => run("selection.moveCursor", () => doc.selection?.moveCursor("next"))}>next</ActionButton>
           <ActionButton onClick={() => run("selection.extendCursor", () => doc.selection?.extendCursor("next"))}>extend</ActionButton>
           <ActionButton onClick={() => run("selection.selectScope", () => doc.selection?.selectScope({ scope: "/lists/0/cards" }))}>scope</ActionButton>
@@ -391,9 +439,12 @@ export function InterfaceWorkbench() {
 
         <ActionGroup title="doc.clipboard">
           <ActionButton onClick={() => run("clipboard.copy", copySelection)}>copy</ActionButton>
-          <ActionButton onClick={() => run("clipboard.cut", () => doc.clipboard.cut(selectedPointers.length > 0 ? selectedPointers : target))}>cut</ActionButton>
-          <ActionButton onClick={() => run("clipboard.paste", pasteClipboardAfterTarget)}>paste</ActionButton>
-          <ActionButton onClick={() => run("clipboard.write", () => doc.clipboard.write(parsedPayload(), { source: target }))}>write</ActionButton>
+          <ActionButton onClick={() => run("clipboard.cut", () => doc.clipboard.cut(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>cut</ActionButton>
+          <ActionButton onClick={() => run("clipboard.paste after", pasteClipboardAfterTarget)}>paste after</ActionButton>
+          <ActionButton onClick={() => run("clipboard.paste insert", pasteClipboardToInsertTarget)}>paste insert</ActionButton>
+          <ActionButton onClick={() => run("clipboard.pastePayload insert", pastePayloadToInsertTarget)}>payload insert</ActionButton>
+          <ActionButton onClick={() => run("copy + paste insert", copySelectionToInsertTarget)}>copy to insert</ActionButton>
+          <ActionButton onClick={() => run("clipboard.write", () => doc.clipboard.write(parsedPayload(), { source: valueTarget }))}>write</ActionButton>
           <ActionButton onClick={() => run("clipboard.read", () => doc.clipboard.read())}>read</ActionButton>
           <ActionButton onClick={() => run("clipboard.clear", () => { doc.clipboard.clear(); return doc.clipboard.read(); })}>clear</ActionButton>
         </ActionGroup>
@@ -407,26 +458,27 @@ export function InterfaceWorkbench() {
         </ActionGroup>
 
         <ActionGroup title="doc.query">
-          <ActionButton onClick={() => run("doc.at", () => doc.at(target))}>at</ActionButton>
-          <ActionButton onClick={() => run("doc.exists", () => doc.exists(target))}>exists</ActionButton>
+          <ActionButton onClick={() => run("doc.at", () => doc.at(valueTarget))}>at</ActionButton>
+          <ActionButton onClick={() => run("doc.exists", () => doc.exists(valueTarget))}>exists</ActionButton>
           <ActionButton onClick={() => run("doc.entries", () => doc.entries("/lists/0/cards" as Pointer))}>entries</ActionButton>
           <ActionButton onClick={() => run("doc.query", queryPointers)}>query</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.can*">
-          <ActionButton onClick={() => run("canReplace ok", () => doc.canReplace(`${target}/points` as Pointer, 8))}>replace ok</ActionButton>
-          <ActionButton onClick={() => run("canReplace bad", () => doc.canReplace(`${target}/points` as Pointer, -5))}>replace bad</ActionButton>
-          <ActionButton onClick={() => run("canCopy", () => doc.canCopy(selectedPointers.length > 0 ? selectedPointers : target))}>copy</ActionButton>
-          <ActionButton onClick={() => run("canPastePayload", () => doc.canPastePayload({ after: target }, parsedPayload()))}>paste</ActionButton>
+          <ActionButton onClick={() => run("canReplace ok", () => doc.canReplace(`${valueTarget}/points` as Pointer, 8))}>replace ok</ActionButton>
+          <ActionButton onClick={() => run("canReplace bad", () => doc.canReplace(`${valueTarget}/points` as Pointer, -5))}>replace bad</ActionButton>
+          <ActionButton onClick={() => run("canCopy", () => doc.canCopy(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>copy</ActionButton>
+          <ActionButton onClick={() => run("canPastePayload after", () => doc.canPastePayload({ after: valueTarget }, parsedPayload()))}>paste after</ActionButton>
+          <ActionButton onClick={() => run("canPastePayload insert", () => doc.canPastePayload(insertTarget, parsedPayload()))}>paste insert</ActionButton>
           <ActionButton onClick={() => run("canUndo/canRedo", () => ({ undo: doc.canUndo(), redo: doc.canRedo() }))}>stacks</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.schema">
-          <ActionButton onClick={() => run("schema.kind", () => doc.schema.kind(target))}>kind</ActionButton>
-          <ActionButton onClick={() => run("schema.at", () => doc.schema.at(target))}>at</ActionButton>
-          <ActionButton onClick={() => run("schema.describe", () => doc.schema.describe("/lists/0/cards/-" as Pointer, "insert"))}>describe</ActionButton>
-          <ActionButton onClick={() => run("schema.accepts", () => doc.schema.accepts("/lists/0/cards/-" as Pointer, parsedPayload(), "insert"))}>accepts</ActionButton>
-          <ActionButton onClick={() => run("schema.rejects", () => doc.schema.accepts("/lists/0/cards/-" as Pointer, invalidCard, "insert"))}>rejects</ActionButton>
+          <ActionButton onClick={() => run("schema.kind", () => doc.schema.kind(valueTarget))}>kind</ActionButton>
+          <ActionButton onClick={() => run("schema.at", () => doc.schema.at(valueTarget))}>at</ActionButton>
+          <ActionButton onClick={() => run("schema.describe", () => doc.schema.describe(insertTarget, "insert"))}>describe insert</ActionButton>
+          <ActionButton onClick={() => run("schema.accepts", () => doc.schema.accepts(insertTarget, parsedPayload(), "insert"))}>accepts</ActionButton>
+          <ActionButton onClick={() => run("schema.rejects", () => doc.schema.accepts(insertTarget, invalidCard, "insert"))}>rejects</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="pure exports">
@@ -438,8 +490,9 @@ export function InterfaceWorkbench() {
 
       <section className="grid gap-3 lg:grid-cols-3">
         <Inspect title="selection" value={{ selected: selectedLabel(selectedPointers), primary: primaryPointer, snapshot: doc.selection?.snapshot() }} />
-        <Inspect title={result.label} value={result.value} />
-        <Inspect title="state" value={{ value: doc.value, lastPatch: doc.lastPatch }} />
+        <Inspect title="clipboard buffer" value={clipboardSnapshot} />
+        <Inspect title="result" value={result} />
+        <Inspect title="state" value={{ valueTarget, insertTarget, value: doc.value, lastPatch: doc.lastPatch }} />
       </section>
     </div>
   );
