@@ -146,7 +146,10 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     const initial = { a: () => "bad", b: 1 };
     const r = applyPatch(Any, initial, [{ op: "replace", path: "/b", value: 2 }]);
     expect(r.result.ok).toBe(false);
-    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    if (!r.result.ok) {
+      expect(r.result.code).toBe("not_serializable");
+      expect(r.result.reason).toBe("/a: function is not JSON");
+    }
     expect(r.state).toBe(initial);
   });
 
@@ -448,7 +451,10 @@ describe("Serializability (G1)", () => {
     });
     const accessorResult = applyPatch(Any, accessor, [{ op: "replace", path: "/ok", value: false }]);
     expect(accessorResult.result.ok).toBe(false);
-    if (!accessorResult.result.ok) expect(accessorResult.result.code).toBe("not_serializable");
+    if (!accessorResult.result.ok) {
+      expect(accessorResult.result.code).toBe("not_serializable");
+      expect(accessorResult.result.reason).toBe("/computed: accessor property is not JSON");
+    }
   });
 
   it("rejects sparse, non-enumerable, accessor, and extra-property arrays", () => {
