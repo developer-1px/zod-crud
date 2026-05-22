@@ -52,6 +52,7 @@ const siteHttpEvaluator = read("scripts/evaluate-site-http.mjs");
 const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
 const siteRouteChecks = read("scripts/site-route-checks.mjs");
 const rootPackageJson = read("package.json");
+const packageJson = JSON.parse(read("packages/zod-crud/package.json"));
 const pagesWorkflow = read(".github/workflows/pages.yml");
 const siteRoutes = JSON.parse(siteRoutesJson);
 
@@ -132,6 +133,21 @@ for (const exportName of publicExports) {
 
 for (const [name, source] of Object.entries(surfaces)) {
   if (!source.includes("docs:evaluate")) fail(`${name}: missing docs:evaluate release gate.`);
+}
+
+for (const [name, source] of Object.entries({ readme: surfaces.readme, llms: surfaces.llms })) {
+  if (!source.includes("https://developer-1px.github.io/zod-crud/")) {
+    fail(`${name}: missing official site URL.`);
+  }
+}
+
+if (
+  packageJson.homepage !== "https://developer-1px.github.io/zod-crud/"
+  || packageJson.repository?.url !== "git+https://github.com/developer-1px/zod-crud.git"
+  || packageJson.repository?.directory !== "packages/zod-crud"
+  || packageJson.bugs?.url !== "https://github.com/developer-1px/zod-crud/issues"
+) {
+  fail("package metadata: missing official site, repository, or issue tracker URL.");
 }
 
 if (!/@ts-expect-error \{ at \} is intentionally not a public paste target/.test(smoke)) {

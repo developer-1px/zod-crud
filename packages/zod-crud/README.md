@@ -2,6 +2,8 @@
 
 Headless JSON editing primitives guarded by Zod schemas.
 
+Official site and demos: https://developer-1px.github.io/zod-crud/
+
 The public model is small:
 
 ```txt

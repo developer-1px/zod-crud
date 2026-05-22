@@ -3,6 +3,8 @@
 All frontend editing is JSON editing. zod-crud is a Zod-guarded headless JSON
 editing engine over JSON standards, not a UI component library.
 
+Official site and demos: https://developer-1px.github.io/zod-crud/
+
 ## Stable Identity
 
 - Root `zod-crud` is React-free.
