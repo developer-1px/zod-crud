@@ -6,5 +6,7 @@ dist/
 packages/*/dist/
 apps/*/dist/
 apps/*/coverage/
+test-results/
+playwright-report/
 *.tgz
 *.tsbuildinfo

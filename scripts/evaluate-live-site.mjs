@@ -37,6 +37,9 @@ async function checkOnce() {
   ]) {
     if (!pattern.test(index)) fail(`live index missing ${pattern}.`);
   }
+  if (/rel="modulepreload"[^>]+\/assets\/(?:playground-|zod-crud-)/.test(index)) {
+    fail("live index must not preload playground or engine chunks before a demo route is opened.");
+  }
 
   for (const route of routes) {
     const routeHtml = route.path === "/" ? index : await fetchText(route.path);

@@ -39,6 +39,9 @@ const smoke = read("packages/zod-crud/test/package-smoke.mjs");
 const markdownViewer = read("apps/site/src/components/MarkdownViewer.tsx");
 const workbenchPlayground = read("apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx");
 const workbenchTest = read("apps/site/tests/interface-workbench.test.tsx");
+const playwrightConfig = read("playwright.config.ts");
+const browserSiteTest = read("tests/browser/site.spec.ts");
+const browserOutlinerTest = read("tests/browser/outliner.spec.ts");
 const siteHtml = read("apps/site/index.html");
 const siteFavicon = read("apps/site/public/favicon.svg");
 const siteManifest = read("apps/site/public/site.webmanifest");
@@ -247,8 +250,24 @@ if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/
   fail("site docs: missing table-of-contents navigation coverage.");
 }
 
-if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson) || !/site:verify:pages/.test(rootPackageJson) || !/site:smoke:pages/.test(rootPackageJson)) {
+if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson) || !/site:verify:pages/.test(rootPackageJson) || !/site:smoke:pages/.test(rootPackageJson) || !/browser:test/.test(rootPackageJson)) {
   fail("root verify: missing playground production site gates.");
+}
+
+if (!/"verify": ".*browser:test/.test(rootPackageJson)) {
+  fail("root verify: missing real-browser site gate.");
+}
+
+if (!/testDir: "\.\/tests\/browser"/.test(playwrightConfig) || !/webServer/.test(playwrightConfig) || !/PLAYWRIGHT_BASE_URL/.test(playwrightConfig)) {
+  fail("playwright config: missing browser test directory or dev server setup.");
+}
+
+if (!/defers demo and engine code/.test(browserSiteTest) || !/InterfaceWorkbench\.playground/.test(browserSiteTest) || !/toHaveTitle\("zod-crud API - zod-crud"\)/.test(browserSiteTest)) {
+  fail("browser site test: missing production route split and metadata coverage.");
+}
+
+if (!/keyboard editing and undo in a real browser/.test(browserOutlinerTest)) {
+  fail("browser outliner test: missing real-browser editing coverage.");
 }
 
 for (const pattern of [
@@ -339,6 +358,7 @@ for (const pattern of [
   /site\.webmanifest/,
   /favicon\.svg/,
   /aria-label="zod-crud"/,
+  /must not preload playground or engine chunks/,
   /routeUrl/,
   /fetchText\(route\.path\)/,
 ]) {
