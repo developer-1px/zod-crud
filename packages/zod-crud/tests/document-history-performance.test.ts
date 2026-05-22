@@ -217,6 +217,23 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toEqual({ items: [1] });
   });
 
+  test("same-array field replace batches keep the public JSON guard", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ value: z.unknown() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [{ value: 1 }, { value: 2 }],
+    }, { strict: false });
+
+    const result = doc.patch([
+      { op: "replace", path: "/items/0/value", value: 3 },
+      { op: "replace", path: "/items/1/value", value: () => "bad" },
+    ]);
+
+    expect(result).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.value).toEqual({ items: [{ value: 1 }, { value: 2 }] });
+  });
+
   test("document patch keeps the public JSON guard for untrusted schema output", () => {
     const Schema = z.object({ items: z.array(z.unknown()) });
     const bad = () => "bad";

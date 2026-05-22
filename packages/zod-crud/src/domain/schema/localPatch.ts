@@ -239,7 +239,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
   }
 
-  const applied = applyTrustedPatch(state, ops);
+  const applied = applyTrustedPatch(state, ops, { valuesTrusted: true });
   if (!applied.result.ok) {
     return {
       state,

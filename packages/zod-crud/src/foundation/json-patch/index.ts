@@ -47,6 +47,10 @@ interface TrustedApplyResult<T> {
   applied: ReadonlyArray<JSONPatchOperation>;
 }
 
+interface TrustedPatchOptions {
+  valuesTrusted?: boolean;
+}
+
 type FastPatchResult =
   | { handled: true; state: unknown; applied: ReadonlyArray<JSONPatchOperation> }
   | { handled: false };
@@ -205,11 +209,13 @@ export function applySingleTrustedValuePatchToTrustedState<S extends z.ZodTypeAn
 export function applyTrustedPatch<T>(
   state: T,
   ops: ReadonlyArray<JSONPatchOperation>,
+  options: TrustedPatchOptions = {},
 ): TrustedApplyResult<T> {
   if (!Array.isArray(ops)) {
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }
-  const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops);
+  const valuesTrusted = options.valuesTrusted === true;
+  const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, valuesTrusted);
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
@@ -217,7 +223,7 @@ export function applyTrustedPatch<T>(
   if (fast.handled) {
     return { state: fast.state as T, result: ok, applied: fast.applied };
   }
-  const arrayFast = applySameArrayStructuralPatch(state, ops);
+  const arrayFast = applySameArrayStructuralPatch(state, ops, valuesTrusted);
   if (arrayFast.handled) {
     return { state: arrayFast.state as T, result: ok, applied: arrayFast.applied };
   }
@@ -292,7 +298,7 @@ export function applyAcceptedPatch<T>(
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
 
-  return applyTrustedPatch(state, ops);
+  return applyTrustedPatch(state, ops, { valuesTrusted: true });
 }
 
 function applySameArrayFieldReplacePatch(
@@ -389,6 +395,7 @@ function applyIndependentReplacePatch(
 function applySameArrayStructuralPatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
 ): FastPatchResult {
   if (ops.length < 1) return { handled: false };
 
@@ -423,7 +430,7 @@ function applySameArrayStructuralPatch(
       return { handled: false };
     }
     if (op.op === "add") {
-      if (jsonSerializableError(op.value) !== null) return { handled: false };
+      if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
       items.push({ op: "add", path: op.path, index: location.index, value: op.value });
     } else if (op.op === "remove") {
       if (location.index === "-") return { handled: false };

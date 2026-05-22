@@ -45,6 +45,11 @@ for (const size of sizes) {
     path: `/items/${index}/done`,
     value: true,
   }));
+  const addBatchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "add",
+    path: "/items/-",
+    value: makeItem(size + index),
+  }));
   const insertedItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => makeItem(size + index));
   const mixedArrayOps = [
     ...insertedItems.slice(0, Math.floor(insertedItems.length / 2)).map((item) => ({
@@ -236,6 +241,40 @@ for (const size of sizes) {
         const undone = doc.history.undo();
         if (!undone) throw new Error("undo setup failed");
       }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
+  }
+
+  {
+    let doc;
+    benchWithSetup(`doc.patch add batch ${addBatchOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () => doc.patch(addBatchOps));
+  }
+
+  {
+    let doc;
+    benchWithSetup(`doc.patch add batch ${addBatchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 100 });
+    }, () => doc.patch(addBatchOps));
+  }
+
+  {
+    let doc;
+    benchWithSetup(`history undo add batch ${addBatchOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 100 });
+      const patched = doc.patch(addBatchOps);
+      if (!patched.ok) throw new Error(`setup add batch failed: ${JSON.stringify(patched)}`);
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo add batch ${addBatchOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 100 });
+      const patched = doc.patch(addBatchOps);
+      if (!patched.ok) throw new Error(`setup add batch failed: ${JSON.stringify(patched)}`);
+      const undone = doc.history.undo();
+      if (!undone) throw new Error("add batch undo setup failed");
     }, () => {
       return { ok: doc.history.redo() };
     });
