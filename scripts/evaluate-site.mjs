@@ -88,6 +88,34 @@ if (expectedBase !== "/") {
   }
 }
 
+for (const publicPath of localAssetPaths(index)) {
+  const relativePath = relativeDistPath(publicPath);
+  if (relativePath === null) continue;
+  if (!existsSync(join(dist, relativePath))) {
+    fail(`site dist index references missing asset ${publicPath}.`);
+  }
+}
+
 if (process.exitCode === undefined) {
   console.log("site evaluation ok");
+}
+
+function localAssetPaths(source) {
+  return Array.from(
+    source.matchAll(/\b(?:src|href)="([^"]+)"/g),
+    (match) => match[1],
+  ).filter((path) => path && !/^(?:https?:|mailto:|#)/.test(path));
+}
+
+function relativeDistPath(publicPath) {
+  if (expectedBase === "/") {
+    return publicPath.startsWith("/") ? publicPath.slice(1) : publicPath;
+  }
+
+  if (!publicPath.startsWith(expectedBase)) {
+    fail(`site dist index local asset does not use expected base ${expectedBase}: ${publicPath}.`);
+    return null;
+  }
+
+  return publicPath.slice(expectedBase.length);
 }

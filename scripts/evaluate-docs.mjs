@@ -182,7 +182,7 @@ if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pages
   fail("pages workflow: missing production site verification or deployment base.");
 }
 
-for (const pattern of [/404\.html/, /robots\.txt/, /sitemap\.xml/, /site\.webmanifest/, /site evaluation ok/]) {
+for (const pattern of [/404\.html/, /robots\.txt/, /sitemap\.xml/, /site\.webmanifest/, /site evaluation ok/, /localAssetPaths/, /references missing asset/]) {
   if (!pattern.test(siteEvaluator)) fail(`site evaluator: missing ${pattern}.`);
 }
 
@@ -190,7 +190,7 @@ if (!/SITE_BASE/.test(siteEvaluator) || !/unexpanded Vite base placeholder/.test
   fail("site evaluator: missing production base path checks.");
 }
 
-for (const pattern of [/site:evaluate:live/, /live site evaluation ok/, /SITE_LIVE_ATTEMPTS/, /fetchText\("\/docs", \[200, 404\]\)/]) {
+for (const pattern of [/site:evaluate:live/, /live site evaluation ok/, /SITE_LIVE_ATTEMPTS/, /live_check/, /fetchText\("\/docs", \[200, 404\]\)/]) {
   const source = pattern.source.includes("site:evaluate:live") ? rootPackageJson : liveSiteEvaluator;
   if (!pattern.test(source)) fail(`live site evaluator: missing ${pattern}.`);
 }

@@ -55,4 +55,6 @@ jobs:
       - name: Evaluate live site
         env:
           SITE_URL: ${{ steps.deployment.outputs.page_url }}
+          SITE_LIVE_ATTEMPTS: "18"
+          SITE_LIVE_DELAY_MS: "10000"
         run: npm run site:evaluate:live

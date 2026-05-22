@@ -1,5 +1,5 @@
 const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-const attempts = Number(process.env.SITE_LIVE_ATTEMPTS ?? "6");
+const attempts = Number(process.env.SITE_LIVE_ATTEMPTS ?? "18");
 const delayMs = Number(process.env.SITE_LIVE_DELAY_MS ?? "10000");
 
 function fail(message) {
@@ -11,7 +11,8 @@ async function sleep(ms) {
 }
 
 async function fetchText(path, allowedStatuses = [200]) {
-  const response = await fetch(`${siteUrl}${path}`, {
+  const separator = path.includes("?") ? "&" : "?";
+  const response = await fetch(`${siteUrl}${path}${separator}live_check=${Date.now()}`, {
     headers: { "cache-control": "no-cache" },
   });
   if (!allowedStatuses.includes(response.status)) {
@@ -59,7 +60,10 @@ for (let attempt = 1; attempt <= attempts; attempt += 1) {
     break;
   } catch (error) {
     lastError = error;
-    if (attempt < attempts) await sleep(delayMs);
+    if (attempt < attempts) {
+      console.log(`live site evaluation retry ${attempt}/${attempts}: ${error instanceof Error ? error.message : String(error)}`);
+      await sleep(delayMs);
+    }
   }
 }
 
