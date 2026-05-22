@@ -674,6 +674,38 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("plain structural add batches keep the fast path when child schemas are reused", () => {
+    const Text = z.string();
+    const Item = z.object({ id: Text, title: Text, done: z.boolean() });
+    const Schema = z.object({ items: z.array(Item) });
+    const doc = createJSONDocument(Schema, { items: [] }, { strict: false });
+    const originalItemSafeParse = Item.safeParse.bind(Item);
+    let itemParses = 0;
+    Item.safeParse = ((value: unknown) => {
+      itemParses += 1;
+      return originalItemSafeParse(value);
+    }) as typeof Item.safeParse;
+
+    expect(doc.patch([
+      { op: "add", path: "/items/-", value: { id: "a", title: "A", done: false } },
+      { op: "add", path: "/items/-", value: { id: "b", title: "B", done: true } },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items).toEqual([
+      { id: "a", title: "A", done: false },
+      { id: "b", title: "B", done: true },
+    ]);
+    expect(itemParses).toBe(0);
+
+    const before = doc.value;
+    const rejected = doc.patch([
+      { op: "add", path: "/items/-", value: { id: "c", title: "C", done: false } },
+      { op: "add", path: "/items/-", value: { id: "d", title: 1, done: true } },
+    ]);
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toBe(before);
+    expect(itemParses).toBe(1);
+  });
+
   test("object key removals fall back to full validation", () => {
     const Schema = z.object({ title: z.string() });
     const doc = createJSONDocument(Schema, { title: "draft" }, { strict: false });

@@ -684,7 +684,15 @@ function buildKnownJsonValueValidator(
 ): KnownJsonValueValidator | null {
   if (seenSchemas.has(schema as object)) return null;
   seenSchemas.add(schema as object);
+  const validator = buildKnownJsonValueValidatorUnchecked(schema, seenSchemas);
+  seenSchemas.delete(schema as object);
+  return validator;
+}
 
+function buildKnownJsonValueValidatorUnchecked(
+  schema: z.ZodType,
+  seenSchemas: WeakSet<object>,
+): KnownJsonValueValidator | null {
   const def = getDef(schema) as ExtendedDef;
   if (def.coerce || (Array.isArray(def.checks) && def.checks.length > 0)) return null;
 
