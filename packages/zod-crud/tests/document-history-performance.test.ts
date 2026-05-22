@@ -31,6 +31,32 @@ describe("doc.history performance contract", () => {
     expect(doc.history.redoDepth).toBe(0);
   });
 
+  test("capped history drops old entries without changing latest undo order", () => {
+    const Schema = z.object({
+      value: z.number(),
+    });
+    const limit = 32;
+    const edits = 128;
+    const doc = createJSONDocument(Schema, { value: 0 }, { history: limit });
+
+    for (let index = 1; index <= edits; index += 1) {
+      expect(doc.patch({ op: "replace", path: "/value", value: index })).toEqual({ ok: true });
+    }
+
+    expect(doc.history.undoDepth).toBe(limit);
+    for (let index = edits - 1; index >= edits - limit; index -= 1) {
+      expect(doc.history.undo()).toBe(true);
+      expect(doc.value.value).toBe(index);
+    }
+    expect(doc.history.undo()).toBe(false);
+    expect(doc.value.value).toBe(edits - limit);
+
+    for (let index = edits - limit + 1; index <= edits; index += 1) {
+      expect(doc.history.redo()).toBe(true);
+      expect(doc.value.value).toBe(index);
+    }
+  });
+
   test("undo and redo replay trusted history without revalidating the whole schema", () => {
     let validations = 0;
     const Schema = z.object({

@@ -20,15 +20,17 @@ import {
   type SelectionSnap,
 } from "../../domain/selection/index.js";
 import {
-  canRedo,
-  canUndo,
   backEntry,
+  canRedoMutable,
+  canUndoMutable,
   commitMutable as commitHistory,
   emptyMutableHistory,
   forwardEntry,
+  historyDepth,
   mergeLastMutable,
   moveBack,
   moveForward,
+  redoDepth,
   type MutableHistoryStack,
 } from "../../foundation/history.js";
 import { createClipboard, type ClipboardState } from "./clipboard.js";
@@ -331,8 +333,8 @@ export function createJSONDocument<S extends z.ZodType>(
   const historyControls = {
     undo: () => restore("undo"),
     redo: () => restore("redo"),
-    canUndo: () => canUndo(stack),
-    canRedo: () => canRedo(stack),
+    canUndo: () => canUndoMutable(stack),
+    canRedo: () => canRedoMutable(stack),
   };
 
   const mergeLast = (mergeOptions?: { mergeKey?: string }): boolean => {
@@ -367,9 +369,9 @@ export function createJSONDocument<S extends z.ZodType>(
     const transactionOptions = hasOptions ? optionsOrFn : undefined;
     const fn = hasOptions ? maybeFn : optionsOrFn;
     if (!fn) return;
-    const depthBefore = stack.undo.length;
+    const depthBefore = historyDepth(stack);
     withHistoryMetadata(transactionOptions, fn);
-    while (stack.undo.length > depthBefore + 1) {
+    while (historyDepth(stack) > depthBefore + 1) {
       if (!mergeLast()) break;
     }
   };
@@ -377,8 +379,8 @@ export function createJSONDocument<S extends z.ZodType>(
   const history: JSONDocumentHistory = {
     get canUndo() { return historyControls.canUndo(); },
     get canRedo() { return historyControls.canRedo(); },
-    get undoDepth() { return stack.undo.length; },
-    get redoDepth() { return stack.redo.length; },
+    get undoDepth() { return historyDepth(stack); },
+    get redoDepth() { return redoDepth(stack); },
     undo: () => restore("undo"),
     redo: () => restore("redo"),
     mergeLast,

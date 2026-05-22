@@ -68,23 +68,26 @@ export function canRedo<E>(stack: HistoryStack<E>): boolean {
 export interface MutableHistoryStack<E> {
   undo: E[];
   redo: E[];
+  undoStart: number;
 }
 
 export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
-  return { undo: [], redo: [] };
+  return { undo: [], redo: [], undoStart: 0 };
 }
 
 export function commitMutable<E>(stack: MutableHistoryStack<E>, entry: E, limit: number): void {
   if (limit <= 0) return;
   stack.undo.push(entry);
-  if (stack.undo.length > limit) {
-    stack.undo.splice(0, stack.undo.length - limit);
+  const depth = historyDepth(stack);
+  if (depth > limit) {
+    stack.undoStart += depth - limit;
+    compactUndoPrefix(stack);
   }
   stack.redo.length = 0;
 }
 
 export function backEntry<E>(stack: MutableHistoryStack<E>): E | null {
-  return stack.undo.length === 0 ? null : stack.undo[stack.undo.length - 1]!;
+  return historyDepth(stack) === 0 ? null : stack.undo[stack.undo.length - 1]!;
 }
 
 export function forwardEntry<E>(stack: MutableHistoryStack<E>): E | null {
@@ -92,8 +95,13 @@ export function forwardEntry<E>(stack: MutableHistoryStack<E>): E | null {
 }
 
 export function moveBack<E>(stack: MutableHistoryStack<E>): void {
+  if (historyDepth(stack) === 0) return;
   const entry = stack.undo.pop();
   if (entry !== undefined) stack.redo.push(entry);
+  if (stack.undo.length === stack.undoStart) {
+    stack.undo.length = 0;
+    stack.undoStart = 0;
+  }
 }
 
 export function moveForward<E>(stack: MutableHistoryStack<E>): void {
@@ -105,10 +113,33 @@ export function mergeLastMutable<E>(
   stack: MutableHistoryStack<E>,
   merge: (prev: E, top: E) => E,
 ): boolean {
-  if (stack.undo.length < 2) return false;
+  if (historyDepth(stack) < 2) return false;
   const top = stack.undo[stack.undo.length - 1]!;
   const prev = stack.undo[stack.undo.length - 2]!;
   const merged = merge(prev, top);
   stack.undo.splice(stack.undo.length - 2, 2, merged);
   return true;
+}
+
+export function historyDepth<E>(stack: MutableHistoryStack<E>): number {
+  return stack.undo.length - stack.undoStart;
+}
+
+export function redoDepth<E>(stack: MutableHistoryStack<E>): number {
+  return stack.redo.length;
+}
+
+export function canUndoMutable<E>(stack: MutableHistoryStack<E>): boolean {
+  return historyDepth(stack) > 0;
+}
+
+export function canRedoMutable<E>(stack: MutableHistoryStack<E>): boolean {
+  return stack.redo.length > 0;
+}
+
+function compactUndoPrefix<E>(stack: MutableHistoryStack<E>): void {
+  if (stack.undoStart === 0) return;
+  if (stack.undoStart < 1024 && stack.undoStart * 2 < stack.undo.length) return;
+  stack.undo.splice(0, stack.undoStart);
+  stack.undoStart = 0;
 }

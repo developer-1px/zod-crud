@@ -386,6 +386,7 @@ for (const size of sizes) {
 
 {
   const historyDepth = envNumber("PERF_HISTORY_DEPTH", 10000);
+  const historyEdits = envNumber("PERF_HISTORY_EDITS", historyDepth * 5);
   const TinySchema = z.object({ value: z.number() });
   const doc = createJSONDocument(TinySchema, { value: 0 }, { history: historyDepth });
   const commitElapsed = time(() => {
@@ -407,6 +408,15 @@ for (const size of sizes) {
   console.log(`history depth ${historyDepth} commit: ${commitElapsed.toFixed(2)}ms`);
   console.log(`history depth ${historyDepth} undo all: ${undoElapsed.toFixed(2)}ms`);
   console.log(`history depth ${historyDepth} redo all: ${redoElapsed.toFixed(2)}ms`);
+
+  const overflowDoc = createJSONDocument(TinySchema, { value: 0 }, { history: historyDepth });
+  const overflowElapsed = time(() => {
+    for (let index = 1; index <= historyEdits; index += 1) {
+      const result = overflowDoc.patch({ op: "replace", path: "/value", value: index });
+      if (!result.ok) throw new Error(`history overflow patch failed: ${JSON.stringify(result)}`);
+    }
+  });
+  console.log(`history limit ${historyDepth} overflow ${historyEdits} commits: ${overflowElapsed.toFixed(2)}ms`);
 }
 
 function makeState(size) {
