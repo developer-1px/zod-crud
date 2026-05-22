@@ -105,7 +105,8 @@ function computeSameArrayStructuralInverses(
     if (op.op === "add") {
       const index = op.index === "-" ? cur.length : op.index;
       if (index < 0 || index > cur.length) return null;
-      cur.splice(index, 0, op.value);
+      if (index === cur.length) cur.push(op.value);
+      else cur.splice(index, 0, op.value);
       inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
       continue;
     }
@@ -113,7 +114,8 @@ function computeSameArrayStructuralInverses(
     if (op.op === "remove") {
       if (op.index < 0 || op.index >= cur.length) return null;
       const value = cur[op.index];
-      cur.splice(op.index, 1);
+      if (op.index === cur.length - 1) cur.pop();
+      else cur.splice(op.index, 1);
       inverses.unshift({ op: "add", path: op.path, value });
       continue;
     }
@@ -123,7 +125,9 @@ function computeSameArrayStructuralInverses(
     const concretePath = appendSegment(parent, index);
     if (op.op === "copy") {
       if (index < 0 || index > cur.length) return null;
-      cur.splice(index, 0, deepCloneTrusted(cur[op.fromIndex]));
+      const value = deepCloneTrusted(cur[op.fromIndex]);
+      if (index === cur.length) cur.push(value);
+      else cur.splice(index, 0, value);
       inverses.unshift({ op: "remove", path: concretePath });
       continue;
     }
@@ -131,9 +135,15 @@ function computeSameArrayStructuralInverses(
     if (index < 0 || index >= cur.length) return null;
     inverses.unshift({ op: "move", from: concretePath, path: op.from });
     if (op.fromIndex === index) continue;
-    const [value] = cur.splice(op.fromIndex, 1);
-    if (index < 0 || index > cur.length) return null;
-    cur.splice(index, 0, value);
+    if (Math.abs(op.fromIndex - index) === 1) {
+      const value = cur[op.fromIndex];
+      cur[op.fromIndex] = cur[index];
+      cur[index] = value;
+    } else {
+      const [value] = cur.splice(op.fromIndex, 1);
+      if (index < 0 || index > cur.length) return null;
+      cur.splice(index, 0, value);
+    }
   }
 
   return { ok: true, inverses };

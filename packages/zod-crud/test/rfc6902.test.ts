@@ -309,6 +309,27 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state.settings).toBe(settings);
   });
 
+  it("applies adjacent same-array moves with remove then add semantics", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const third = { id: "c" };
+    const initial = { items: [first, second, third] };
+
+    const r = applyPatch(Any, initial, [
+      { op: "move", from: "/items/1", path: "/items/0" },
+      { op: "move", from: "/items/1", path: "/items/2" },
+    ]);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual([
+      { op: "move", from: "/items/1", path: "/items/0" },
+      { op: "move", from: "/items/1", path: "/items/2" },
+    ]);
+    expect(r.state.items).toEqual([second, third, first]);
+    expect(r.state.items).not.toBe(initial.items);
+    expect(initial.items).toEqual([first, second, third]);
+  });
+
   it("keeps independent replace batches atomic when a later value is not JSON-serializable", () => {
     const initial = { items: [1, 2] };
     const r = applyPatch(Any, initial, [

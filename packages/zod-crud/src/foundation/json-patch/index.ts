@@ -282,14 +282,16 @@ function applySameArrayStructuralPatch(
     if (item.op === "add") {
       const index = item.index === "-" ? next.length : item.index;
       if (index < 0 || index > next.length) return { handled: false };
-      next.splice(index, 0, item.value);
+      if (index === next.length) next.push(item.value);
+      else next.splice(index, 0, item.value);
       applied.push({ op: "add", path: appendSegment(parent, index), value: item.value });
       continue;
     }
 
     if (item.op === "remove") {
       if (item.index < 0 || item.index >= next.length) return { handled: false };
-      next.splice(item.index, 1);
+      if (item.index === next.length - 1) next.pop();
+      else next.splice(item.index, 1);
       applied.push({ op: "remove", path: item.path });
       continue;
     }
@@ -298,7 +300,9 @@ function applySameArrayStructuralPatch(
     const index = item.index === "-" ? next.length : item.index;
     if (item.op === "copy") {
       if (index < 0 || index > next.length) return { handled: false };
-      next.splice(index, 0, deepCloneTrusted(next[item.fromIndex]));
+      const value = deepCloneTrusted(next[item.fromIndex]);
+      if (index === next.length) next.push(value);
+      else next.splice(index, 0, value);
       applied.push({ op: "copy", from: item.from, path: appendSegment(parent, index) });
       continue;
     }
@@ -308,9 +312,15 @@ function applySameArrayStructuralPatch(
       applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
       continue;
     }
-    const [value] = next.splice(item.fromIndex, 1);
-    if (index < 0 || index > next.length) return { handled: false };
-    next.splice(index, 0, value);
+    if (Math.abs(item.fromIndex - index) === 1) {
+      const value = next[item.fromIndex];
+      next[item.fromIndex] = next[index];
+      next[index] = value;
+    } else {
+      const [value] = next.splice(item.fromIndex, 1);
+      if (index < 0 || index > next.length) return { handled: false };
+      next.splice(index, 0, value);
+    }
     applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
   }
 
