@@ -153,6 +153,32 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("same-array field replace history handles unordered indexes", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ title: z.string(), done: z.boolean() })),
+    });
+    const initial = {
+      items: [
+        { title: "a", done: false },
+        { title: "b", done: false },
+        { title: "c", done: false },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/2/done", value: true },
+      { op: "replace", path: "/items/0/done", value: true },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.done)).toEqual([true, false, true]);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.done)).toEqual([true, false, true]);
+  });
+
   test("same-array field replace batch history handles escaped field names", () => {
     const Schema = z.object({
       items: z.array(z.object({ "d/one": z.boolean() })),

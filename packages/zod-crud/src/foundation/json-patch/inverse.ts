@@ -125,7 +125,8 @@ function computeSameArrayFieldReplaceInverses(
 
   let arrayPath: string | null = null;
   let field: string | null = null;
-  const seenIndexes = new Set<number>();
+  let seenIndexes: Set<number> | null = null;
+  let previousIndex = -1;
   const items: Array<{ path: string; index: number; key: string }> = [];
 
   for (const op of ops) {
@@ -139,13 +140,23 @@ function computeSameArrayFieldReplaceInverses(
     if (arrayPath === null) arrayPath = location.arrayPath;
     else if (arrayPath !== location.arrayPath) return null;
 
-    if (seenIndexes.has(location.index)) return null;
-    seenIndexes.add(location.index);
+    if (seenIndexes === null) {
+      if (location.index <= previousIndex) {
+        seenIndexes = new Set(items.map((item) => item.index));
+        if (seenIndexes.has(location.index)) return null;
+        seenIndexes.add(location.index);
+      } else {
+        previousIndex = location.index;
+      }
+    } else {
+      if (seenIndexes.has(location.index)) return null;
+      seenIndexes.add(location.index);
+    }
     items.push({ path: op.path, index: location.index, key: location.key });
   }
 
   if (arrayPath === null || field === null) return null;
-  const array = readAt(state, parsePointer(arrayPath));
+  const array = readValueAtPointer(state, arrayPath);
   if (!array.ok || !Array.isArray(array.value)) return null;
 
   const inverses: JSONPatchOperation[] = [];
