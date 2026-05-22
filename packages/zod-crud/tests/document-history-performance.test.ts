@@ -4,6 +4,33 @@ import * as z from "zod";
 import { createJSONDocument } from "../src/index.js";
 
 describe("doc.history performance contract", () => {
+  test("large history depth preserves undo and redo order", () => {
+    const Schema = z.object({
+      value: z.number(),
+    });
+    const depth = 1000;
+    const doc = createJSONDocument(Schema, { value: 0 }, { history: depth });
+
+    for (let index = 1; index <= depth; index += 1) {
+      expect(doc.patch({ op: "replace", path: "/value", value: index })).toEqual({ ok: true });
+    }
+    expect(doc.value.value).toBe(depth);
+    expect(doc.history.undoDepth).toBe(depth);
+
+    for (let index = depth - 1; index >= 0; index -= 1) {
+      expect(doc.history.undo()).toBe(true);
+      expect(doc.value.value).toBe(index);
+    }
+    expect(doc.history.undoDepth).toBe(0);
+    expect(doc.history.redoDepth).toBe(depth);
+
+    for (let index = 1; index <= depth; index += 1) {
+      expect(doc.history.redo()).toBe(true);
+      expect(doc.value.value).toBe(index);
+    }
+    expect(doc.history.redoDepth).toBe(0);
+  });
+
   test("undo and redo replay trusted history without revalidating the whole schema", () => {
     let validations = 0;
     const Schema = z.object({

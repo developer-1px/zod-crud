@@ -384,6 +384,31 @@ for (const size of sizes) {
   }
 }
 
+{
+  const historyDepth = envNumber("PERF_HISTORY_DEPTH", 10000);
+  const TinySchema = z.object({ value: z.number() });
+  const doc = createJSONDocument(TinySchema, { value: 0 }, { history: historyDepth });
+  const commitElapsed = time(() => {
+    for (let index = 1; index <= historyDepth; index += 1) {
+      const result = doc.patch({ op: "replace", path: "/value", value: index });
+      if (!result.ok) throw new Error(`history depth patch failed: ${JSON.stringify(result)}`);
+    }
+  });
+  const undoElapsed = time(() => {
+    for (let index = 0; index < historyDepth; index += 1) {
+      if (!doc.history.undo()) throw new Error("history depth undo failed");
+    }
+  });
+  const redoElapsed = time(() => {
+    for (let index = 0; index < historyDepth; index += 1) {
+      if (!doc.history.redo()) throw new Error("history depth redo failed");
+    }
+  });
+  console.log(`history depth ${historyDepth} commit: ${commitElapsed.toFixed(2)}ms`);
+  console.log(`history depth ${historyDepth} undo all: ${undoElapsed.toFixed(2)}ms`);
+  console.log(`history depth ${historyDepth} redo all: ${redoElapsed.toFixed(2)}ms`);
+}
+
 function makeState(size) {
   return {
     items: Array.from({ length: size }, (_, index) => makeItem(index)),

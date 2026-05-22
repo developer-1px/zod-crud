@@ -64,3 +64,51 @@ export function canUndo<E>(stack: HistoryStack<E>): boolean {
 export function canRedo<E>(stack: HistoryStack<E>): boolean {
   return stack.redo.length > 0;
 }
+
+export interface MutableHistoryStack<E> {
+  undo: E[];
+  redo: E[];
+}
+
+export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
+  return { undo: [], redo: [] };
+}
+
+export function commitMutable<E>(stack: MutableHistoryStack<E>, entry: E, limit: number): void {
+  if (limit <= 0) return;
+  stack.undo.push(entry);
+  if (stack.undo.length > limit) {
+    stack.undo.splice(0, stack.undo.length - limit);
+  }
+  stack.redo.length = 0;
+}
+
+export function backEntry<E>(stack: MutableHistoryStack<E>): E | null {
+  return stack.undo.length === 0 ? null : stack.undo[stack.undo.length - 1]!;
+}
+
+export function forwardEntry<E>(stack: MutableHistoryStack<E>): E | null {
+  return stack.redo.length === 0 ? null : stack.redo[stack.redo.length - 1]!;
+}
+
+export function moveBack<E>(stack: MutableHistoryStack<E>): void {
+  const entry = stack.undo.pop();
+  if (entry !== undefined) stack.redo.push(entry);
+}
+
+export function moveForward<E>(stack: MutableHistoryStack<E>): void {
+  const entry = stack.redo.pop();
+  if (entry !== undefined) stack.undo.push(entry);
+}
+
+export function mergeLastMutable<E>(
+  stack: MutableHistoryStack<E>,
+  merge: (prev: E, top: E) => E,
+): boolean {
+  if (stack.undo.length < 2) return false;
+  const top = stack.undo[stack.undo.length - 1]!;
+  const prev = stack.undo[stack.undo.length - 2]!;
+  const merged = merge(prev, top);
+  stack.undo.splice(stack.undo.length - 2, 2, merged);
+  return true;
+}

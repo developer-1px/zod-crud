@@ -20,14 +20,16 @@ import {
   type SelectionSnap,
 } from "../../domain/selection/index.js";
 import {
-  back,
   canRedo,
   canUndo,
-  commit as commitHistory,
-  emptyHistory,
-  forward,
-  mergeLast as mergeLastHistory,
-  type HistoryStack,
+  backEntry,
+  commitMutable as commitHistory,
+  emptyMutableHistory,
+  forwardEntry,
+  mergeLastMutable,
+  moveBack,
+  moveForward,
+  type MutableHistoryStack,
 } from "../../foundation/history.js";
 import { createClipboard, type ClipboardState } from "./clipboard.js";
 import { createJSON } from "./createJSON.js";
@@ -140,7 +142,7 @@ export function createJSONDocument<S extends z.ZodType>(
   const json = createJSON(schema, initial, options);
   const rawOps = json.ops;
   const historyLimit = options.history ?? 0;
-  let stack: HistoryStack<HistoryEntry> = emptyHistory<HistoryEntry>();
+  let stack: MutableHistoryStack<HistoryEntry> = emptyMutableHistory<HistoryEntry>();
   let isRestoring = false;
   let activeHistoryMetadata: HistoryTransactionOptions | undefined;
   let lastPatch: JSONPatchOperation[] = [];
@@ -184,7 +186,7 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionAfter,
     };
     if (metadata) entry.metadata = { ...metadata };
-    stack = commitHistory(stack, entry, historyLimit);
+    commitHistory(stack, entry, historyLimit);
   };
 
   const applyDocumentPatch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
@@ -279,9 +281,8 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const restore = (direction: "undo" | "redo"): boolean => {
-    const popped = direction === "undo" ? back(stack) : forward(stack);
-    if (!popped) return false;
-    const entry = popped.entry;
+    const entry = direction === "undo" ? backEntry(stack) : forwardEntry(stack);
+    if (!entry) return false;
     if (direction === "undo") entry.selectionAfter = snapSelection();
     isRestoring = true;
     try {
@@ -292,7 +293,8 @@ export function createJSONDocument<S extends z.ZodType>(
     } finally {
       isRestoring = false;
     }
-    stack = popped.next;
+    if (direction === "undo") moveBack(stack);
+    else moveForward(stack);
     selectionState?.restore(direction === "undo" ? entry.selectionBefore : entry.selectionAfter);
     return true;
   };
@@ -307,12 +309,12 @@ export function createJSONDocument<S extends z.ZodType>(
     patch: applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {
       const r = rawOps.load(value);
-      if (r.ok && !loadOptions?.preserveHistory) stack = emptyHistory<HistoryEntry>();
+      if (r.ok && !loadOptions?.preserveHistory) stack = emptyMutableHistory<HistoryEntry>();
       return r;
     },
     reset(value) {
       const r = rawOps.reset(value);
-      if (r.ok) stack = emptyHistory<HistoryEntry>();
+      if (r.ok) stack = emptyMutableHistory<HistoryEntry>();
       return r;
     },
     subscribe(listener) {
@@ -335,7 +337,7 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const mergeLast = (mergeOptions?: { mergeKey?: string }): boolean => {
     if (isRestoring) return false;
-    const next = mergeLastHistory(stack, (prev, top) => {
+    return mergeLastMutable(stack, (prev, top) => {
       const metadata = mergeEntryMetadata(prev, top, mergeOptions);
       return {
         forward: [...prev.forward, ...top.forward],
@@ -345,9 +347,6 @@ export function createJSONDocument<S extends z.ZodType>(
         ...(metadata ? { metadata } : {}),
       };
     });
-    if (!next) return false;
-    stack = next;
-    return true;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
