@@ -322,7 +322,9 @@ function applySameArrayFieldReplacePatch(
   let field: string | null = null;
   let seenIndexes: Set<number> | null = null;
   let previousIndex = -1;
-  const items: Array<{ op: JSONPatchOperation; index: number; key: string; value: unknown }> = [];
+  let next: unknown[] | null = null;
+  const applied: JSONPatchOperation[] = [];
+  const appliedIndexes: number[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return { handled: false };
@@ -341,9 +343,15 @@ function applySameArrayFieldReplacePatch(
     if (arraySegments === null) arraySegments = nextArraySegments;
     else if (!sameSegments(arraySegments, nextArraySegments)) return { handled: false };
 
+    if (next === null) {
+      const current = getValueAt(state, arraySegments);
+      if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+      next = current.value.slice();
+    }
+
     if (seenIndexes === null) {
       if (location.index <= previousIndex) {
-        seenIndexes = new Set(items.map((item) => item.index));
+        seenIndexes = new Set(appliedIndexes);
         if (seenIndexes.has(location.index)) return { handled: false };
         seenIndexes.add(location.index);
       } else {
@@ -354,37 +362,32 @@ function applySameArrayFieldReplacePatch(
       seenIndexes.add(location.index);
     }
     if (!valuesTrusted && jsonSerializableError(normalized.value) !== null) return { handled: false };
-    items.push({ op: normalized, index: location.index, key: location.key, value: normalized.value });
-  }
 
-  if (arraySegments === null || field === null) return { handled: false };
-  const current = getValueAt(state, arraySegments);
-  if (!current.ok || !Array.isArray(current.value)) return { handled: false };
-
-  const next = current.value.slice();
-  for (const item of items) {
-    if (item.index < 0 || item.index >= next.length) return { handled: false };
-    const row = next[item.index];
+    if (location.index < 0 || location.index >= next.length) return { handled: false };
+    const row = next[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return { handled: false };
-    if (!objectHasOwn.call(row, item.key)) return { handled: false };
+    if (!objectHasOwn.call(row, location.key)) return { handled: false };
     const replaced = { ...(row as Record<string, unknown>) };
-    if (item.key === "__proto__") {
-      Object.defineProperty(replaced, item.key, {
-        value: item.value,
+    if (location.key === "__proto__") {
+      Object.defineProperty(replaced, location.key, {
+        value: normalized.value,
         enumerable: true,
         configurable: true,
         writable: true,
       });
     } else {
-      replaced[item.key] = item.value;
+      replaced[location.key] = normalized.value;
     }
-    next[item.index] = replaced;
+    next[location.index] = replaced;
+    applied.push(normalized);
+    appliedIndexes.push(location.index);
   }
 
+  if (arraySegments === null || field === null || next === null) return { handled: false };
   const stateWithArray = replaceValueAtSegments(state, arraySegments, 0, next);
   return stateWithArray === null
     ? { handled: false }
-    : { handled: true, state: stateWithArray, applied: items.map((item) => item.op) };
+    : { handled: true, state: stateWithArray, applied };
 }
 
 function applyAppendOnlyAddPatch(

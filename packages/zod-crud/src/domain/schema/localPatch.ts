@@ -110,6 +110,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   const current = readAt(state, parsed.arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
 
+  const next = current.value.slice();
   for (const item of parsed.items) {
     if (item.index < 0 || item.index >= current.value.length) return null;
     const row = current.value[item.index];
@@ -119,12 +120,9 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
     const result = valueSchema.safeParse(item.value);
     if (!result.success) return schemaViolation(state, item.path, result.error.issues);
-  }
 
-  const next = current.value.slice();
-  for (const item of parsed.items) {
-    const row = current.value[item.index] as Record<string, unknown>;
-    const replaced = { ...row };
+    const sourceRow = row as Record<string, unknown>;
+    const replaced = { ...sourceRow };
     if (item.key === "__proto__") {
       Object.defineProperty(replaced, item.key, {
         value: item.value,
