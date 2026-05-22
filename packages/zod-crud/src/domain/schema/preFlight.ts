@@ -4,7 +4,12 @@
 // cross-field refine/superRefine 위반도 commit 전에 schema_violation 으로 거부한다.
 
 import * as z from "zod";
-import { applyPatch, type JSONPatchOperation, type ErrorCode } from "../../foundation/json-patch/index.js";
+import {
+  applyPatch,
+  type ApplyResult,
+  type JSONPatchOperation,
+  type ErrorCode,
+} from "../../foundation/json-patch/index.js";
 import { buildPointer } from "../../foundation/json-pointer/index.js";
 
 export interface PreFlightOk<T> {
@@ -32,7 +37,12 @@ export function preFlight<S extends z.ZodType>(
   state: z.output<S>,
   patch: ReadonlyArray<JSONPatchOperation>,
 ): PreFlightResult<z.output<S>> {
-  const r = applyPatch(schema, state, patch);
+  return preFlightFromApplyResult(applyPatch(schema, state, patch));
+}
+
+export function preFlightFromApplyResult<S extends z.ZodType>(
+  r: ApplyResult<S>,
+): PreFlightResult<z.output<S>> {
   if (r.result.ok) {
     return { ok: true, draft: r.state };
   }

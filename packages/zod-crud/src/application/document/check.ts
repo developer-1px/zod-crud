@@ -1,10 +1,14 @@
 import type * as z from "zod";
 
-import type { JSONPatchOperation, ErrorCode } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation, ErrorCode } from "../../foundation/json-patch/index.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import type { PointerSourceError } from "../../foundation/json-pointer/sourceSet.js";
-import { preFlight, type PreFlightErrorCode } from "../../domain/schema/preFlight.js";
+import {
+  preFlight,
+  preFlightFromApplyResult,
+  type PreFlightErrorCode,
+} from "../../domain/schema/preFlight.js";
 import type { HistoryTransactionOptions, JSONOps } from "./ops.js";
 import { copy, type ClipboardSource } from "../../domain/verbs/copy.js";
 import { cut } from "../../domain/verbs/cut.js";
@@ -97,6 +101,7 @@ interface CheckHistoryControls {
 interface BuildCheckArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONOps<z.output<S>>;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   history: CheckHistoryControls;
   selectionRef?: { current: SelectionSnap };
 }
@@ -117,7 +122,10 @@ const OK: CheckResult = { ok: true };
 export function buildCheck<S extends z.ZodType>(
   args: BuildCheckArgs<S>,
 ): Check {
-  const { schema, ops, history, selectionRef } = args;
+  const { schema, ops, previewPatch, history, selectionRef } = args;
+  const checkPatch = (patch: ReadonlyArray<JSONPatchOperation>) => previewPatch
+    ? preFlightFromApplyResult(previewPatch(patch))
+    : preFlight(schema, ops.state, patch);
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
   const targetOrSelection = (target?: Pointer): Pointer | null =>
@@ -158,7 +166,7 @@ export function buildCheck<S extends z.ZodType>(
       if (resolved === null) return emptySelection("remove source selection is empty");
       const planned = removeSourcesPatch(resolved);
       return planned.ok
-        ? toCheckResult(preFlight(schema, ops.state, planned.patch))
+        ? toCheckResult(checkPatch(planned.patch))
         : toCheckResult(pointerSourceCheckError(planned, "remove"));
     },
     replace(pathOrValue, maybeValue) {
@@ -169,18 +177,18 @@ export function buildCheck<S extends z.ZodType>(
       const target = targetOrSelection(args.target);
       return target === null
         ? emptySelection("replace target selection is empty")
-        : toCheckResult(preFlight(schema, ops.state, [{ op: "replace", path: target, value: args.value }]));
+        : toCheckResult(checkPatch([{ op: "replace", path: target, value: args.value }]));
     },
     replaceText(replacement, textOptions) {
       const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
       return planned.ok
-        ? toCheckResult(preFlight(schema, ops.state, planned.patch))
+        ? toCheckResult(checkPatch(planned.patch))
         : toCheckResult(planned);
     },
     deleteText(textOptions) {
       const planned = deleteSelectionText(selectionState(), ops.state, textOptions);
       return planned.ok
-        ? toCheckResult(preFlight(schema, ops.state, planned.patch))
+        ? toCheckResult(checkPatch(planned.patch))
         : toCheckResult(planned);
     },
     cut(source) {
@@ -199,7 +207,7 @@ export function buildCheck<S extends z.ZodType>(
         : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, args.options));
     },
     patch(operations) {
-      return toCheckResult(preFlight(schema, ops.state, operations));
+      return toCheckResult(checkPatch(operations));
     },
 
     get undo() {

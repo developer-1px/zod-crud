@@ -357,7 +357,13 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const selectionRef = { get current() { return selectionState; } };
-  const check = buildCheck({ schema, ops, history: historyControls, selectionRef });
+  const check = buildCheck({
+    schema,
+    ops,
+    previewPatch: rawOps.previewPatch,
+    history: historyControls,
+    selectionRef,
+  });
   const clipboardOptions = {
     schema,
     getState: () => rawOps.state,

@@ -117,4 +117,15 @@ describe("doc.history performance contract", () => {
     expect(result).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.value).toEqual({ items: [bad] });
   });
+
+  test("document capability preview keeps the public JSON guard for untrusted schema output", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const bad = () => "bad";
+    const doc = createJSONDocument(Schema, { items: [bad] }, { strict: false });
+
+    const result = doc.canPatch({ op: "add", path: "/items/-", value: 2 });
+
+    expect(result).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.value).toEqual({ items: [bad] });
+  });
 });

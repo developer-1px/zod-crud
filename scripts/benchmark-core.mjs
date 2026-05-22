@@ -65,6 +65,16 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench("doc.canPatch single leaf", rounds, (index) =>
+      doc.canPatch({
+        op: "replace",
+        path: `/items/${middle}/done`,
+        value: index % 2 === 0,
+      }));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, {
       history: 100,
       selection: { mode: "single", initial: [`/items/${middle}/done`] },
