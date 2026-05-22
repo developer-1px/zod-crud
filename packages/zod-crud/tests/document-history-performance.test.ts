@@ -152,6 +152,22 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toEqual({ items: [bad] });
   });
 
+  test("default documents do not keep hidden selection targets after patches", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [{ id: "a" }],
+    }, { strict: false });
+
+    expect(doc.selection).toBeUndefined();
+    expect(doc.patch({ op: "add", path: "/items/-", value: { id: "b" } })).toEqual({ ok: true });
+    expect(doc.clipboard.copy()).toMatchObject({ ok: false, code: "empty_selection" });
+
+    expect(doc.clipboard.write({ id: "c" })).toEqual({ ok: true });
+    expect(doc.clipboard.paste()).toMatchObject({ ok: false, code: "empty_selection" });
+  });
+
   test("document clipboard cut keeps the JSON guard for untrusted schema output", () => {
     const Schema = z.object({ items: z.array(z.unknown()) });
     const bad = () => "bad";

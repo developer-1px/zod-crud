@@ -11,6 +11,7 @@ import type {
 import { computeInverses } from "../../foundation/json-patch/inverse.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import {
+  EMPTY_SELECTION,
   reduceSelection,
   restoreSelection,
   type SelectionAction,
@@ -156,14 +157,16 @@ export function createJSONDocument<S extends z.ZodType>(
     ...selectionOptions,
     applyMetadataSelectionAfter: true,
   };
-  if (selectionEnabled && options.onChange !== undefined) {
+  if (options.onChange !== undefined) {
     createSelectionOptions.onChange = options.onChange;
   }
-  const selectionState = createSelection<z.output<S>>(rawOps, createSelectionOptions);
+  const selectionState = selectionEnabled
+    ? createSelection<z.output<S>>(rawOps, createSelectionOptions)
+    : undefined;
   rawOps.subscribe((applied) => {
     lastPatch = [...applied];
   });
-  const snapSelection = (): SelectionSnap => selectionState.snapshot();
+  const snapSelection = (): SelectionSnap => selectionState?.snapshot() ?? EMPTY_SELECTION;
 
   const recordHistory = (
     before: z.output<S>,
@@ -224,7 +227,7 @@ export function createJSONDocument<S extends z.ZodType>(
     if (!r.ok) return r;
 
     if (operations.length === 0) lastPatch = [];
-    selectionState.restore(selectionAfter);
+    selectionState?.restore(selectionAfter);
     if (historyLimit > 0 && !isRestoring && operations.length > 0) {
       recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
     }
@@ -273,7 +276,7 @@ export function createJSONDocument<S extends z.ZodType>(
       isRestoring = false;
     }
     stack = popped.next;
-    selectionState.restore(direction === "undo" ? entry.selectionBefore : entry.selectionAfter);
+    selectionState?.restore(direction === "undo" ? entry.selectionBefore : entry.selectionAfter);
     return true;
   };
 
@@ -366,22 +369,25 @@ export function createJSONDocument<S extends z.ZodType>(
     transaction,
   };
 
-  const selectionRef = { get current() { return selectionState; } };
+  const activeSelection = selectionState;
+  const selectionRef = activeSelection
+    ? { get current() { return activeSelection; } }
+    : undefined;
   const check = buildCheck({
     schema,
     ops,
     previewPatch: rawOps.previewPatch,
     getStateJsonTrusted: () => rawOps.stateJsonTrusted,
     history: historyControls,
-    selectionRef,
+    ...(selectionRef ? { selectionRef } : {}),
   });
   const clipboardOptions = {
     schema,
     getState: () => rawOps.state,
     ops,
     previewPatch: rawOps.previewPatch,
-    getSelectionSource: () => selectionState.selectedSource,
-    getSelectionTarget: () => selectionState.primaryPointer,
+    getSelectionSource: () => selectionState?.selectedSource ?? null,
+    getSelectionTarget: () => selectionState?.primaryPointer ?? null,
     getAppliedPatch: () => lastPatch,
     getStateJsonTrusted: () => rawOps.stateJsonTrusted,
   };
