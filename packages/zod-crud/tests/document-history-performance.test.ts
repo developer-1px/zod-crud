@@ -503,6 +503,13 @@ describe("doc.history performance contract", () => {
     expect(doc.value.items.map((item) => item.done)).toEqual([true, true, false]);
     expect(rootParses).toBe(0);
 
+    expect(doc.patch([
+      { op: "replace", path: "/items/2/done", value: true },
+      { op: "replace", path: "/items/0/done", value: false },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.done)).toEqual([false, true, true]);
+    expect(rootParses).toBe(0);
+
     const before = doc.value;
     const rejected = doc.patch([
       { op: "replace", path: "/items/0/done", value: false },

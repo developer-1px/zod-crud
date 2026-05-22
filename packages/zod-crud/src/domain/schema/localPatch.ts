@@ -41,11 +41,6 @@ interface ArrayFieldPath {
   key: string;
 }
 
-interface SameArrayFieldReplaceOps {
-  arraySegments: string[];
-  items: Array<{ op: JSONPatchOperation; path: Pointer; index: number; key: string; value: unknown }>;
-}
-
 const objectHasOwn = Object.prototype.hasOwnProperty;
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
@@ -102,46 +97,96 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
-  const parsed = sameArrayFieldReplaceOps(ops);
-  if (parsed === null) return null;
+  if (!Array.isArray(ops) || ops.length < 2) return null;
 
-  const valueSchema = cachedSchemaAtPointer(schema, parsed.items[0]!.path, "value");
-  if (!valueSchema) return null;
-  const current = readAt(state, parsed.arraySegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
+  let arraySegments: string[] | null = null;
+  let field: string | null = null;
+  let valueSchema: z.ZodType | null = null;
+  let seenIndexes: Set<number> | null = null;
+  let previousIndex = -1;
+  let next: unknown[] | null = null;
+  const applied: JSONPatchOperation[] = [];
+  const appliedIndexes: number[] = [];
 
-  const next = current.value.slice();
-  for (const item of parsed.items) {
-    if (item.index < 0 || item.index >= current.value.length) return null;
-    const row = current.value[item.index];
+  for (let opIndex = 0; opIndex < ops.length; opIndex++) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path === ""
+    ) {
+      return null;
+    }
+
+    const location = parseArrayFieldPath(op.path);
+    if (location === null) return null;
+
+    if (field === null) field = location.key;
+    else if (field !== location.key) return null;
+
+    const nextArraySegments = location.arraySegments;
+    if (arraySegments === null) arraySegments = nextArraySegments;
+    else if (!sameSegments(arraySegments, nextArraySegments)) return null;
+
+    if (valueSchema === null) {
+      valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
+      if (!valueSchema) return null;
+    }
+
+    if (next === null) {
+      const current = readAt(state, arraySegments);
+      if (!current.ok || !Array.isArray(current.value)) return null;
+      next = current.value.slice();
+    }
+
+    if (seenIndexes === null) {
+      if (location.index <= previousIndex) {
+        seenIndexes = new Set(appliedIndexes);
+        if (seenIndexes.has(location.index)) return null;
+        seenIndexes.add(location.index);
+      } else {
+        previousIndex = location.index;
+      }
+    } else {
+      if (seenIndexes.has(location.index)) return null;
+      seenIndexes.add(location.index);
+    }
+
+    if (location.index < 0 || location.index >= next.length) return null;
+    const row = next[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
-    if (!objectHasOwn.call(row, item.key)) return null;
-    const jsonError = jsonSerializableError(item.value);
+    if (!objectHasOwn.call(row, location.key)) return null;
+    const jsonError = jsonSerializableError(op.value);
     if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
-    const result = valueSchema.safeParse(item.value);
-    if (!result.success) return schemaViolation(state, item.path, result.error.issues);
+    const result = valueSchema.safeParse(op.value);
+    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
 
     const sourceRow = row as Record<string, unknown>;
     const replaced = { ...sourceRow };
-    if (item.key === "__proto__") {
-      Object.defineProperty(replaced, item.key, {
-        value: item.value,
+    if (location.key === "__proto__") {
+      Object.defineProperty(replaced, location.key, {
+        value: op.value,
         enumerable: true,
         configurable: true,
         writable: true,
       });
     } else {
-      replaced[item.key] = item.value;
+      replaced[location.key] = op.value;
     }
-    next[item.index] = replaced;
+    next[location.index] = replaced;
+    applied.push(op);
+    appliedIndexes.push(location.index);
   }
 
-  const nextState = replaceValueAtSegments(state, parsed.arraySegments, 0, next);
+  if (arraySegments === null || field === null || valueSchema === null || next === null) return null;
+  const nextState = replaceValueAtSegments(state, arraySegments, 0, next);
   if (nextState === null) return null;
   return {
     state: nextState as z.output<S>,
     result: { ok: true },
-    applied: parsed.items.map((item) => item.op),
+    applied,
   };
 }
 
@@ -405,46 +450,6 @@ function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): bool
     if (current === previous || current.startsWith(`${previous}/`)) return false;
   }
   return true;
-}
-
-function sameArrayFieldReplaceOps(
-  ops: ReadonlyArray<JSONPatchOperation>,
-): SameArrayFieldReplaceOps | null {
-  if (!Array.isArray(ops) || ops.length < 2) return null;
-
-  let arraySegments: string[] | null = null;
-  let field: string | null = null;
-  const seenIndexes = new Set<number>();
-  const parsed: SameArrayFieldReplaceOps["items"] = [];
-
-  for (let opIndex = 0; opIndex < ops.length; opIndex++) {
-    if (!(opIndex in ops)) return null;
-    const op = ops[opIndex]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "replace"
-      || typeof op.path !== "string"
-      || op.path === ""
-    ) {
-      return null;
-    }
-
-    const location = parseArrayFieldPath(op.path);
-    if (location === null) return null;
-
-    if (field === null) field = location.key;
-    else if (field !== location.key) return null;
-
-    const nextArraySegments = location.arraySegments;
-    if (arraySegments === null) arraySegments = nextArraySegments;
-    else if (!sameSegments(arraySegments, nextArraySegments)) return null;
-
-    if (seenIndexes.has(location.index)) return null;
-    seenIndexes.add(location.index);
-    parsed.push({ op, path: op.path, index: location.index, key: location.key, value: op.value });
-  }
-
-  return arraySegments === null ? null : { arraySegments, items: parsed };
 }
 
 function parseArrayFieldPath(path: Pointer): ArrayFieldPath | null {
