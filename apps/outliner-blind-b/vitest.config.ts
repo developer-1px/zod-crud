@@ -9,11 +9,11 @@ export default defineConfig({
     alias: [
       {
         find: "zod-crud/react",
-        replacement: new URL("../../packages/zod-crud/src/react.ts", import.meta.url).pathname,
+        replacement: new URL("../../packages/zod-crud/src/api/react.ts", import.meta.url).pathname,
       },
       {
         find: "zod-crud",
-        replacement: new URL("../../packages/zod-crud/src/index.ts", import.meta.url).pathname,
+        replacement: new URL("../../packages/zod-crud/src/api/index.ts", import.meta.url).pathname,
       },
     ],
   },
