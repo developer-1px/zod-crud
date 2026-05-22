@@ -781,6 +781,9 @@ function applySameArrayStructuralPatch(
 ): FastPatchResult {
   if (ops.length < 1) return { handled: false };
 
+  const increasingAddFast = applyIncreasingArrayAddOpsPatch(state, ops, valuesTrusted);
+  if (increasingAddFast !== null) return increasingAddFast;
+
   let parent: Pointer | null = null;
   const items: SameArrayStructuralItem[] = [];
 
@@ -833,14 +836,14 @@ function applySameArrayStructuralPatch(
   const current = getValueAt(state, parsedParent.segs);
   if (!current.ok || !Array.isArray(current.value)) return { handled: false };
 
-  const increasingAddFast = applyIncreasingArrayAddPatch(
+  const parsedIncreasingAddFast = applyIncreasingArrayAddPatch(
     state,
     parent,
     parsedParent.segs,
     current.value,
     items,
   );
-  if (increasingAddFast !== null) return increasingAddFast;
+  if (parsedIncreasingAddFast !== null) return parsedIncreasingAddFast;
 
   if (items.length === 1) {
     const item = items[0]!;
@@ -936,6 +939,70 @@ function applySameArrayStructuralPatch(
     applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
   }
 
+  const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, next);
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
+}
+
+function applyIncreasingArrayAddOpsPatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): FastPatchResult | null {
+  if (ops.length < 2) return null;
+  const first = ops[0];
+  if (
+    first === undefined
+    || validateOperationShape(first) !== null
+    || first.op !== "add"
+    || first.path === ""
+    || first.path.endsWith("/-")
+  ) {
+    return null;
+  }
+
+  const firstLocation = arrayLocation(first.path);
+  if (firstLocation === null || firstLocation.index === "-") return null;
+
+  const parent = firstLocation.parent;
+  const start = firstLocation.index;
+  const values = new Array<unknown>(ops.length);
+  const applied = new Array<JSONPatchOperation>(ops.length);
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || op.path === ""
+      || op.path.endsWith("/-")
+    ) {
+      return null;
+    }
+
+    const location = arrayLocation(op.path);
+    if (location === null || location.index === "-" || location.parent !== parent) return null;
+    if (location.index !== start + index) return null;
+    if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
+    values[index] = op.value;
+    applied[index] = {
+      op: "add",
+      path: appendSegment(parent, location.index),
+      value: op.value,
+    };
+  }
+
+  const parsedParent = parseSafe(parent);
+  if (!("ok" in parsedParent)) return { handled: false };
+  const current = getValueAt(state, parsedParent.segs);
+  if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+  if (start < 0 || start > current.value.length) return { handled: false };
+
+  const next = start === current.value.length
+    ? current.value.concat(values)
+    : current.value.slice(0, start).concat(values, current.value.slice(start));
   const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, next);
   return stateWithArray === null
     ? { handled: false }

@@ -80,6 +80,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   }
   const appendOnlyAdd = applyAppendOnlyAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (appendOnlyAdd) return appendOnlyAdd;
+  const increasingAdd = applyIncreasingArrayAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+  if (increasingAdd) return increasingAdd;
   const arrayBatch = applySameArrayPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (arrayBatch) return arrayBatch;
   return applySequentialPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
@@ -631,6 +633,94 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     parentSegments,
     0,
     current.value.concat(values),
+  );
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): LocalPatchResult<S> {
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  const first = ops[0];
+  if (
+    first === undefined
+    || validateOperationShape(first) !== null
+    || first.op !== "add"
+    || typeof first.path !== "string"
+    || first.path.endsWith("/-")
+  ) {
+    return null;
+  }
+
+  const firstLocation = arrayLocation(schema, first.path);
+  if (firstLocation === null || firstLocation.index === "-") return null;
+
+  const parent = firstLocation.parent;
+  const elementSchema = firstLocation.element;
+  const start = firstLocation.index;
+  let parentSegments: string[];
+  try {
+    parentSegments = parsePointer(parent);
+  } catch {
+    return null;
+  }
+
+  const current = readAt(state, parentSegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+  if (start < 0 || start > current.value.length) return null;
+
+  const values = new Array<unknown>(ops.length);
+  const applied = new Array<JSONPatchOperation>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || op.path.endsWith("/-")
+    ) {
+      return null;
+    }
+
+    const location = index === 0
+      ? { index: start }
+      : arrayIndexInParent(op.path, parent);
+    if (location === null || location.index === "-" || location.index !== start + index) return null;
+
+    const valueAccepted = acceptsKnownJsonValue(elementSchema, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const parsed = elementSchema.safeParse(op.value);
+      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    }
+    values[index] = op.value;
+    applied[index] = {
+      op: "add",
+      path: appendArrayIndexPath(parent, start + index),
+      value: op.value,
+    };
+  }
+
+  const nextState = replaceValueAtSegments(
+    state,
+    parentSegments,
+    0,
+    start === current.value.length
+      ? current.value.concat(values)
+      : current.value.slice(0, start).concat(values, current.value.slice(start)),
   );
   if (nextState === null) return null;
   return {
