@@ -65,4 +65,32 @@ describe("JSONDocument can* interface", () => {
     expect(doc.value).toEqual(initial);
     expect(doc.history.undoDepth).toBe(0);
   });
+
+  test("reports spread paste discriminated union mismatch before commit", () => {
+    const BlockSchema = z.object({
+      blocks: z.array(z.discriminatedUnion("kind", [
+        z.object({ kind: z.literal("text"), text: z.string() }),
+        z.object({ kind: z.literal("image"), src: z.string() }),
+      ])),
+    });
+    const doc = createJSONDocument(BlockSchema, {
+      blocks: [{ kind: "text", text: "hello" }],
+    }, { history: 10 });
+
+    const payload = [
+      { kind: "text", text: "ok" },
+      { kind: "video", src: "bad" },
+    ];
+
+    expect(doc.canPastePayload("/blocks/-", payload, { spread: true })).toMatchObject({
+      ok: false,
+      code: "du_branch_mismatch",
+    });
+    expect(doc.clipboard.pastePayload("/blocks/-", payload, { spread: true })).toMatchObject({
+      ok: false,
+      code: "du_branch_mismatch",
+      source: { discriminator: "kind", value: "video" },
+    });
+    expect(doc.value.blocks).toEqual([{ kind: "text", text: "hello" }]);
+  });
 });

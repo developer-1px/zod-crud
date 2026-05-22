@@ -87,9 +87,7 @@ export function paste<S extends z.ZodType>(
   if (!rekeyed.ok) return rekeyed;
   const nextPayload = rekeyed.payload;
   const spread = shouldSpread(nextPayload, state, target, mode, options);
-  const mismatch = spread
-    ? nextPayload.map((item) => findDuMismatch(schema, item, target, mode)).find((item): item is PasteDuMismatch => item !== null) ?? null
-    : findDuMismatch(schema, nextPayload, target, mode);
+  const mismatch = findPasteMismatch(schema, nextPayload, target, mode, spread);
   if (mismatch) return mismatch;
 
   const patch = spread ? buildSpreadPasteOps(nextPayload, target, mode) : [buildPasteOp(nextPayload, target, mode)];
@@ -102,37 +100,62 @@ export function paste<S extends z.ZodType>(
   return { ok: true, next: r.draft as z.output<S>, patch, applied: r.applied };
 }
 
-function findDuMismatch<S extends z.ZodType>(
+function findPasteMismatch<S extends z.ZodType>(
   schema: S,
   payload: unknown,
   target: Pointer,
   mode: PasteMode,
+  spread: boolean,
 ): PasteDuMismatch | null {
   const targetSchema = schemaAtPointer(schema, target, mode === "into" || mode === "before" || mode === "after" ? "insert" : "value");
   if (!targetSchema) return null;
 
-  const info = getDiscriminatedUnionInfo(targetSchema);
-  if (!isRecord(payload)) return null;
+  const checkPayload = createPayloadMismatchChecker(targetSchema);
+  if (!spread) return checkPayload(payload);
+  if (!Array.isArray(payload)) return null;
+  for (const item of payload) {
+    const mismatch = checkPayload(item);
+    if (mismatch) return mismatch;
+  }
+  return null;
+}
 
-  if (!info) {
-    return findLiteralMismatch(targetSchema, payload);
+function createPayloadMismatchChecker(targetSchema: z.ZodType): (payload: unknown) => PasteDuMismatch | null {
+  const info = getDiscriminatedUnionInfo(targetSchema);
+  if (info) {
+    return (payload) => {
+      if (!isRecord(payload)) return null;
+      const value = payload[info.discriminator];
+      if (info.allowed.some((allowed) => Object.is(allowed, value))) return null;
+
+      return {
+        ok: false,
+        code: "du_branch_mismatch",
+        message: `${String(value)} cannot be pasted where ${info.allowed.map(String).join(" | ")} is expected`,
+        source: { discriminator: info.discriminator, value },
+        expected: { discriminator: info.discriminator, allowed: info.allowed },
+      };
+    };
   }
 
-  const value = payload[info.discriminator];
-  if (info.allowed.some((allowed) => Object.is(allowed, value))) return null;
-
-  return {
-    ok: false,
-    code: "du_branch_mismatch",
-    message: `${String(value)} cannot be pasted where ${info.allowed.map(String).join(" | ")} is expected`,
-    source: { discriminator: info.discriminator, value },
-    expected: { discriminator: info.discriminator, allowed: info.allowed },
+  const literalValues = new Map<string, unknown[]>();
+  return (payload) => {
+    if (!isRecord(payload)) return null;
+    return findLiteralMismatch(targetSchema, payload, literalValues);
   };
 }
 
-function findLiteralMismatch(targetSchema: z.ZodType, payload: Record<string, unknown>): PasteDuMismatch | null {
+function findLiteralMismatch(
+  targetSchema: z.ZodType,
+  payload: Record<string, unknown>,
+  literalValues: Map<string, unknown[]>,
+): PasteDuMismatch | null {
   for (const key of Object.keys(payload)) {
-    const allowed = getObjectLiteralValues(targetSchema, key);
+    let allowed = literalValues.get(key);
+    if (allowed === undefined) {
+      allowed = getObjectLiteralValues(targetSchema, key);
+      literalValues.set(key, allowed);
+    }
     if (allowed.length === 0) continue;
 
     const value = payload[key];
