@@ -127,7 +127,8 @@ function computeSameArrayFieldReplaceInverses(
   let field: string | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
-  let previousIndex = -1;
+  let previousIndex: number | null = null;
+  let monotonicDirection: -1 | 0 | 1 = 0;
   const appliedIndexes: number[] = [];
   const inverses = new Array<JSONPatchOperation | undefined>(ops.length);
   let inverseCount = 0;
@@ -152,13 +153,21 @@ function computeSameArrayFieldReplaceInverses(
     }
 
     if (seenIndexes === null) {
-      if (location.index <= previousIndex) {
+      const direction = previousIndex === null
+        ? 0
+        : indexDirection(previousIndex, location.index);
+      if (direction === 0 && previousIndex !== null) {
         seenIndexes = new Set(appliedIndexes);
         if (seenIndexes.has(location.index)) return null;
         seenIndexes.add(location.index);
-      } else {
-        previousIndex = location.index;
+      } else if (monotonicDirection === 0) {
+        monotonicDirection = direction;
+      } else if (direction !== monotonicDirection) {
+        seenIndexes = new Set(appliedIndexes);
+        if (seenIndexes.has(location.index)) return null;
+        seenIndexes.add(location.index);
       }
+      previousIndex = location.index;
     } else {
       if (seenIndexes.has(location.index)) return null;
       seenIndexes.add(location.index);
@@ -381,6 +390,10 @@ function arrayLocation(path: string): { parent: string; index: number | "-" } | 
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function indexDirection(previous: number, current: number): -1 | 0 | 1 {
+  return current > previous ? 1 : current < previous ? -1 : 0;
 }
 
 function readValueAtPointer(
