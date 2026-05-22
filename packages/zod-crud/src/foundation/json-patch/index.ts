@@ -4,9 +4,9 @@
 
 import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
-import type { Pointer } from "../json-pointer/index.js";
+import { readAt, type Pointer } from "../json-pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
-import { normalizeOp } from "./internal.js";
+import { normalizeOp, parseSafe } from "./internal.js";
 
 export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
@@ -39,6 +39,10 @@ interface TrustedApplyResult<T> {
   result: JSONResult;
   applied: ReadonlyArray<JSONPatchOperation>;
 }
+
+type FastPatchResult =
+  | { handled: true; state: unknown; applied: ReadonlyArray<JSONPatchOperation> }
+  | { handled: false };
 
 const ok: JSONResult = { ok: true };
 const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult => {
@@ -83,6 +87,15 @@ export function applyPatch<S extends z.ZodTypeAny>(
   if (!Array.isArray(ops)) {
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }
+  const fast = applyIndependentReplacePatch(state, ops);
+  if (fast.handled) {
+    const jsonErr = jsonSerializableError(fast.state);
+    if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
+    const parsed = schema.safeParse(fast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: fast.state as z.output<S>, result: ok, applied: fast.applied };
+  }
+
   let cur: unknown = state;
   const normalized: JSONPatchOperation[] = [];
   for (let i = 0; i < ops.length; i++) {
@@ -126,6 +139,11 @@ export function applyTrustedPatch<T>(
   if (!Array.isArray(ops)) {
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }
+  const fast = applyIndependentReplacePatch(state, ops);
+  if (fast.handled) {
+    return { state: fast.state as T, result: ok, applied: fast.applied };
+  }
+
   let cur: unknown = state;
   const normalized: JSONPatchOperation[] = [];
   for (let i = 0; i < ops.length; i++) {
@@ -153,4 +171,77 @@ export function applyTrustedPatch<T>(
     cur = r.state;
   }
   return { state: cur as T, result: ok, applied: normalized };
+}
+
+function applyIndependentReplacePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): FastPatchResult {
+  if (ops.length < 2) return { handled: false };
+
+  const items: Array<{ op: JSONPatchOperation; path: Pointer; segments: string[]; value: unknown }> = [];
+  for (let index = 0; index < ops.length; index++) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (validateOperationShape(op) !== null || op.op !== "replace" || op.path === "") {
+      return { handled: false };
+    }
+    const normalized = normalizeOp(op, state);
+    if (normalized.op !== "replace") return { handled: false };
+    const parsed = parseSafe(normalized.path);
+    if (!("ok" in parsed)) return { handled: false };
+    if (!readAt(state, parsed.segs).ok) return { handled: false };
+    items.push({ op: normalized, path: normalized.path, segments: parsed.segs, value: normalized.value });
+  }
+
+  if (!hasIndependentPaths(items)) return { handled: false };
+  return { handled: true, state: applyReplaceTree(state, buildReplaceTree(items)), applied: items.map((item) => item.op) };
+}
+
+interface ReplaceTree {
+  value?: unknown;
+  children: Map<string, ReplaceTree>;
+}
+
+function buildReplaceTree(items: ReadonlyArray<{ segments: string[]; value: unknown }>): ReplaceTree {
+  const root: ReplaceTree = { children: new Map() };
+  for (const item of items) {
+    let node = root;
+    for (const segment of item.segments) {
+      let child = node.children.get(segment);
+      if (!child) {
+        child = { children: new Map() };
+        node.children.set(segment, child);
+      }
+      node = child;
+    }
+    node.value = item.value;
+  }
+  return root;
+}
+
+function applyReplaceTree(value: unknown, tree: ReplaceTree): unknown {
+  if (tree.children.size === 0) return tree.value;
+  if (Array.isArray(value)) {
+    const next = value.slice();
+    for (const [segment, child] of tree.children) {
+      next[Number(segment)] = applyReplaceTree(next[Number(segment)], child);
+    }
+    return next;
+  }
+  const next = { ...(value as Record<string, unknown>) };
+  for (const [segment, child] of tree.children) {
+    next[segment] = applyReplaceTree(next[segment], child);
+  }
+  return next;
+}
+
+function hasIndependentPaths(paths: ReadonlyArray<{ path: string }>): boolean {
+  const sorted = paths.map((item) => item.path).sort();
+  for (let index = 1; index < sorted.length; index++) {
+    const previous = sorted[index - 1]!;
+    const current = sorted[index]!;
+    if (current === previous || current.startsWith(`${previous}/`)) return false;
+  }
+  return true;
 }

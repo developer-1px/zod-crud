@@ -187,6 +187,65 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.result.ok).toBe(true);
     expect(r.state).toEqual({ a: 10, c: 3 });
   });
+
+  it("applies independent replace batches without changing applied order or untouched references", () => {
+    const first = { title: "a", done: false };
+    const second = { title: "b", done: false };
+    const third = { title: "c", done: false };
+    const settings = { theme: "light", density: "compact" };
+    const state = { items: [first, second, third], settings };
+    const ops: JSONPatchOperation[] = [
+      { op: "replace", path: "/items/0/done", value: true },
+      { op: "replace", path: "/items/1/title", value: "B" },
+      { op: "replace", path: "/settings/theme", value: "dark" },
+    ];
+
+    const r = applyPatch(Any, state, ops);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual(ops);
+    expect(r.state).toEqual({
+      items: [
+        { title: "a", done: true },
+        { title: "B", done: false },
+        { title: "c", done: false },
+      ],
+      settings: { theme: "dark", density: "compact" },
+    });
+    expect(r.state.items).not.toBe(state.items);
+    expect(r.state.items[0]).not.toBe(first);
+    expect(r.state.items[1]).not.toBe(second);
+    expect(r.state.items[2]).toBe(third);
+    expect(r.state.settings).not.toBe(settings);
+  });
+
+  it("preserves ordered semantics for repeated and nested replace batches", () => {
+    const repeated = applyPatch(Any, { title: "a" }, [
+      { op: "replace", path: "/title", value: "b" },
+      { op: "replace", path: "/title", value: "c" },
+    ]);
+    expect(repeated.result.ok).toBe(true);
+    expect(repeated.state).toEqual({ title: "c" });
+
+    const nested = applyPatch(Any, { item: { title: "a", done: false } }, [
+      { op: "replace", path: "/item", value: { title: "b", done: true } },
+      { op: "replace", path: "/item/done", value: false },
+    ]);
+    expect(nested.result.ok).toBe(true);
+    expect(nested.state).toEqual({ item: { title: "b", done: false } });
+  });
+
+  it("keeps independent replace batches atomic when a later value is not JSON-serializable", () => {
+    const initial = { items: [1, 2] };
+    const r = applyPatch(Any, initial, [
+      { op: "replace", path: "/items/0", value: 10 },
+      { op: "replace", path: "/items/1", value: () => "bad" },
+    ]);
+
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
 });
 
 describe("Schema validation (G3)", () => {
