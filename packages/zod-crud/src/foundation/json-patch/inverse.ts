@@ -7,6 +7,12 @@ import { deepCloneTrusted, getValueAt, resolveAppendPath } from "./internal.js";
 
 const objectHasOwn = Object.prototype.hasOwnProperty;
 
+interface ArrayFieldPath {
+  arrayPath: string;
+  index: number;
+  key: string;
+}
+
 function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation | null {
   switch (op.op) {
     case "add":
@@ -64,7 +70,7 @@ function computeSameArrayFieldReplaceInverses(
 ): { ok: true; inverses: JSONPatchOperation[] } | null {
   if (ops.length < 2) return null;
 
-  let arraySegments: string[] | null = null;
+  let arrayPath: string | null = null;
   let field: string | null = null;
   const seenIndexes = new Set<number>();
   const items: Array<{ path: string; index: number; key: string }> = [];
@@ -72,31 +78,21 @@ function computeSameArrayFieldReplaceInverses(
   for (const op of ops) {
     if (op.op === "test") continue;
     if (op.op !== "replace" || op.path === "") return null;
-    let segments: string[];
-    try {
-      segments = parsePointer(op.path);
-    } catch {
-      return null;
-    }
-    if (segments.length < 2) return null;
+    const location = parseArrayFieldPath(op.path);
+    if (location === null) return null;
+    if (field === null) field = location.key;
+    else if (field !== location.key) return null;
 
-    const key = segments[segments.length - 1]!;
-    const index = numericSegment(segments[segments.length - 2]!);
-    if (index === null) return null;
-    if (field === null) field = key;
-    else if (field !== key) return null;
+    if (arrayPath === null) arrayPath = location.arrayPath;
+    else if (arrayPath !== location.arrayPath) return null;
 
-    const nextArraySegments = segments.slice(0, -2);
-    if (arraySegments === null) arraySegments = nextArraySegments;
-    else if (!sameSegments(arraySegments, nextArraySegments)) return null;
-
-    if (seenIndexes.has(index)) return null;
-    seenIndexes.add(index);
-    items.push({ path: op.path, index, key });
+    if (seenIndexes.has(location.index)) return null;
+    seenIndexes.add(location.index);
+    items.push({ path: op.path, index: location.index, key: location.key });
   }
 
-  if (arraySegments === null || field === null) return null;
-  const array = readAt(state, arraySegments);
+  if (arrayPath === null || field === null) return null;
+  const array = readAt(state, parsePointer(arrayPath));
   if (!array.ok || !Array.isArray(array.value)) return null;
 
   const inverses: JSONPatchOperation[] = [];
@@ -306,4 +302,41 @@ function arrayLocation(path: string): { parent: string; index: number | "-" } | 
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function parseArrayFieldPath(path: string): ArrayFieldPath | null {
+  const simple = parseSimpleArrayFieldPath(path);
+  if (simple !== null) return simple;
+
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  if (segments.length < 2) return null;
+
+  const index = numericSegment(segments[segments.length - 2]!);
+  if (index === null) return null;
+  const arrayPath = segments.length === 2
+    ? ""
+    : `/${segments.slice(0, -2).map(escapePointerSegment).join("/")}`;
+  return { arrayPath, index, key: segments[segments.length - 1]! };
+}
+
+function parseSimpleArrayFieldPath(path: string): ArrayFieldPath | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const keySlash = path.lastIndexOf("/");
+  if (keySlash <= 0) return null;
+  const indexSlash = path.lastIndexOf("/", keySlash - 1);
+  if (indexSlash < 0) return null;
+
+  const index = numericSegment(path.slice(indexSlash + 1, keySlash));
+  return index === null
+    ? null
+    : { arrayPath: path.slice(0, indexSlash), index, key: path.slice(keySlash + 1) };
+}
+
+function escapePointerSegment(segment: string): string {
+  return segment.replaceAll("~", "~0").replaceAll("/", "~1");
 }

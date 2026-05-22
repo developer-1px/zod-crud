@@ -51,6 +51,12 @@ type FastPatchResult =
   | { handled: true; state: unknown; applied: ReadonlyArray<JSONPatchOperation> }
   | { handled: false };
 
+interface ArrayFieldPath {
+  arraySegments: string[];
+  index: number;
+  key: string;
+}
+
 const ok: JSONResult = { ok: true };
 const objectHasOwn = Object.prototype.hasOwnProperty;
 const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult => {
@@ -264,23 +270,19 @@ function applySameArrayFieldReplacePatch(
     }
     const normalized = normalizeOp(op, state);
     if (normalized.op !== "replace") return { handled: false };
-    const parsed = parseSafe(normalized.path);
-    if (!("ok" in parsed) || parsed.segs.length < 2) return { handled: false };
+    const location = parseArrayFieldPath(normalized.path);
+    if (location === null) return { handled: false };
+    if (field === null) field = location.key;
+    else if (field !== location.key) return { handled: false };
 
-    const key = parsed.segs[parsed.segs.length - 1]!;
-    const index = numericSegment(parsed.segs[parsed.segs.length - 2]!);
-    if (index === null) return { handled: false };
-    if (field === null) field = key;
-    else if (field !== key) return { handled: false };
-
-    const nextArraySegments = parsed.segs.slice(0, -2);
+    const nextArraySegments = location.arraySegments;
     if (arraySegments === null) arraySegments = nextArraySegments;
     else if (!sameSegments(arraySegments, nextArraySegments)) return { handled: false };
 
-    if (seenIndexes.has(index)) return { handled: false };
+    if (seenIndexes.has(location.index)) return { handled: false };
     if (jsonSerializableError(normalized.value) !== null) return { handled: false };
-    seenIndexes.add(index);
-    items.push({ op: normalized, index, key, value: normalized.value });
+    seenIndexes.add(location.index);
+    items.push({ op: normalized, index: location.index, key: location.key, value: normalized.value });
   }
 
   if (arraySegments === null || field === null) return { handled: false };
@@ -568,6 +570,34 @@ function arrayLocation(path: Pointer): { parent: Pointer; index: number | "-" } 
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
+}
+
+function parseArrayFieldPath(path: Pointer): ArrayFieldPath | null {
+  const simple = parseSimpleArrayFieldPath(path);
+  if (simple !== null) return simple;
+
+  const parsed = parseSafe(path);
+  if (!("ok" in parsed) || parsed.segs.length < 2) return null;
+  const key = parsed.segs[parsed.segs.length - 1]!;
+  const index = numericSegment(parsed.segs[parsed.segs.length - 2]!);
+  return index === null
+    ? null
+    : { arraySegments: parsed.segs.slice(0, -2), index, key };
+}
+
+function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const keySlash = path.lastIndexOf("/");
+  if (keySlash <= 0) return null;
+  const indexSlash = path.lastIndexOf("/", keySlash - 1);
+  if (indexSlash < 0) return null;
+
+  const index = numericSegment(path.slice(indexSlash + 1, keySlash));
+  if (index === null) return null;
+
+  const arrayPath = path.slice(0, indexSlash);
+  const arraySegments = arrayPath === "" ? [] : arrayPath.slice(1).split("/");
+  return { arraySegments, index, key: path.slice(keySlash + 1) };
 }
 
 function applyTrustedValueMutation(

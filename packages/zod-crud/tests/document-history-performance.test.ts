@@ -153,6 +153,30 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("same-array field replace batch history handles escaped field names", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ "d/one": z.boolean() })),
+    });
+    const initial = {
+      items: [
+        { "d/one": false },
+        { "d/one": false },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/d~1one", value: true },
+      { op: "replace", path: "/items/1/d~1one", value: true },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item["d/one"])).toEqual([true, true]);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item["d/one"])).toEqual([true, true]);
+  });
+
   test("commit with explicit selection validates once and replays the accepted patch", () => {
     let validations = 0;
     const Schema = z.object({
