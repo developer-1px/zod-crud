@@ -186,6 +186,14 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    const copied = doc.clipboard.copy("/items");
+    if (!copied.ok) throw new Error(`clipboard copy setup failed: ${JSON.stringify(copied)}`);
+    bench("doc.canPaste clipboard replace /items", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.canPaste({ replace: "/items" }));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, {
       history: 100,
       selection: { mode: "single", initial: [`/items/${middle}/done`] },

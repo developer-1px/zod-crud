@@ -33,7 +33,7 @@ import {
   redoDepth,
   type MutableHistoryStack,
 } from "../../foundation/history.js";
-import { createClipboard, type ClipboardState } from "./clipboard.js";
+import { INTERNAL_CLIPBOARD_PEEK, createClipboard, type ClipboardState } from "./clipboard.js";
 import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
@@ -442,7 +442,7 @@ export function createJSONDocument<S extends z.ZodType>(
     canCopy: check.copy,
     canCut: check.cut,
     canPaste: (target, canPasteOptions) => {
-      const read = clipboard.read();
+      const read = clipboard[INTERNAL_CLIPBOARD_PEEK]();
       if (!read.ok) {
         return {
           ok: false,

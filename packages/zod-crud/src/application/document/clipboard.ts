@@ -15,6 +15,8 @@ import {
 import { cut, type CutError } from "../../domain/verbs/cut.js";
 import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOptions, type PasteTarget } from "../../domain/verbs/paste.js";
 
+export const INTERNAL_CLIPBOARD_PEEK: unique symbol = Symbol("zod-crud.internal.clipboard.peek");
+
 interface ClipboardWriteOptions {
   source?: Pointer | null;
   sources?: ReadonlyArray<Pointer> | null;
@@ -64,6 +66,10 @@ export interface ClipboardState<T> {
   pastePayload(target: PasteTarget, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
 }
 
+interface InternalClipboardState<T> extends ClipboardState<T> {
+  [INTERNAL_CLIPBOARD_PEEK](): ClipboardReadResult;
+}
+
 interface ClipboardBuffer {
   payload: unknown;
   source: Pointer | null;
@@ -99,7 +105,7 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
 
 export function createClipboard<S extends z.ZodType>(
   args: CreateClipboardOptions<S>,
-): ClipboardState<z.output<S>> {
+): InternalClipboardState<z.output<S>> {
   const {
     schema,
     getState,
@@ -160,6 +166,16 @@ export function createClipboard<S extends z.ZodType>(
       return {
         ok: true,
         payload: cloneTrustedJson(buffer.payload),
+        source: buffer.source,
+        sources: buffer.sources ? [...buffer.sources] : null,
+      };
+    },
+
+    [INTERNAL_CLIPBOARD_PEEK]() {
+      if (!buffer) return EMPTY_CLIPBOARD;
+      return {
+        ok: true,
+        payload: buffer.payload,
         source: buffer.source,
         sources: buffer.sources ? [...buffer.sources] : null,
       };
