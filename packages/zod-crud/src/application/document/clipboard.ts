@@ -163,19 +163,17 @@ export function createClipboard<S extends z.ZodType>(
       },
     };
   };
-  const isTrustedWritePayload = (payload: unknown, options: ClipboardWriteOptions): boolean => {
+  const isTrustedWritePayload = (payload: unknown, sources: ReadonlyArray<Pointer> | null): boolean => {
     if (getStateJsonTrusted?.() !== true) return false;
     const state = getState();
     if (payload === state) return true;
-    const isSourcePayload = (source: Pointer | null | undefined): boolean => {
-      if (source === undefined || source === null) return false;
+    const isSourcePayload = (source: Pointer): boolean => {
       const segments = tryParsePointer(source);
       if (segments === null) return false;
       const value = readAt(state, segments);
       return value.ok && value.value === payload;
     };
-    if (isSourcePayload(options.source)) return true;
-    for (const source of options.sources ?? []) {
+    for (const source of sources ?? []) {
       if (isSourcePayload(source)) return true;
     }
     if (state !== null && typeof state === "object" && !Array.isArray(state)) {
@@ -216,13 +214,13 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     write(payload, options = {}) {
-      const cloned = isTrustedWritePayload(payload, options)
-        ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
-        : cloneJsonSerializable(payload);
-      if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
       const writtenSources = writeSources(options);
       if (!writtenSources.ok) return writtenSources.result;
       const sources = writtenSources.sources;
+      const cloned = isTrustedWritePayload(payload, sources)
+        ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
+        : cloneJsonSerializable(payload);
+      if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
       const source = sources?.[0] ?? null;
       setBuffer({
         payload: cloned.value,

@@ -331,6 +331,23 @@ describe("createJSONDocument public interface", () => {
     expect(doc.clipboard.hasData).toBe(false);
   });
 
+  test("clipboard write rejects invalid sources before payload cloning", () => {
+    const payload: Record<string, unknown> = { ok: true };
+    Object.defineProperty(payload, "computed", {
+      get: () => true,
+      enumerable: true,
+      configurable: true,
+    });
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.clipboard.write(payload, { source: "items/0" })).toMatchObject({
+      ok: false,
+      code: "invalid_pointer",
+      pointer: "items/0",
+    });
+    expect(doc.clipboard.hasData).toBe(false);
+  });
+
   test("commits selection-aware text patches with serializable history metadata", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,
