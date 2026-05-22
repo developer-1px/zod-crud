@@ -5,12 +5,15 @@ import {
   type ApplyResult,
   type JSONPatchOperation,
 } from "../../foundation/json-patch/index.js";
+import { validateOperationShape } from "../../foundation/json-patch/apply.js";
 import {
   parentPointer,
+  appendSegment,
   parsePointer,
   readAt,
   type Pointer,
 } from "../../foundation/json-pointer/index.js";
+import { jsonSerializableError } from "../../foundation/json.js";
 import {
   getArrayElement,
   getDef,
@@ -38,6 +41,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (isIndependentReplacePatch(ops)) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops);
   }
+  const arrayBatch = applySameArrayAddRemovePatchWithLocalSchemaValidation(schema, state, ops);
+  if (arrayBatch) return arrayBatch;
   return applySequentialPatchWithLocalSchemaValidation(schema, state, ops);
 }
 
@@ -111,6 +116,79 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   };
 }
 
+function applySameArrayAddRemovePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): LocalPatchResult<S> {
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  let parent: Pointer | null = null;
+  let elementSchema: z.ZodType | null = null;
+  const parsedOps: Array<
+    | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
+    | { op: "remove"; path: Pointer; index: number }
+  > = [];
+
+  for (let index = 0; index < ops.length; index++) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || (op.op !== "add" && op.op !== "remove")
+      || typeof op.path !== "string"
+    ) {
+      return null;
+    }
+    const location = arrayLocation(schema, op.path);
+    if (!location) return null;
+    if (parent === null) {
+      parent = location.parent;
+      elementSchema = location.element;
+    } else if (location.parent !== parent) {
+      return null;
+    }
+    if (op.op === "add") {
+      parsedOps.push({ op: "add", path: op.path, index: location.index, value: op.value });
+    } else {
+      if (location.index === "-") return null;
+      parsedOps.push({ op: "remove", path: op.path, index: location.index });
+    }
+  }
+
+  if (parent === null || elementSchema === null) return null;
+  const current = readAt(state, parsePointer(parent));
+  if (!current.ok || !Array.isArray(current.value)) return null;
+
+  const next = current.value.slice();
+  const applied: JSONPatchOperation[] = [];
+  for (const op of parsedOps) {
+    if (op.op === "add") {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+      const parsed = elementSchema.safeParse(op.value);
+      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+      const index = op.index === "-" ? next.length : op.index;
+      if (index < 0 || index > next.length) return null;
+      next.splice(index, 0, op.value);
+      applied.push({ op: "add", path: appendSegment(parent, index), value: op.value });
+      continue;
+    }
+
+    if (op.index < 0 || op.index >= next.length) return null;
+    next.splice(op.index, 1);
+    applied.push({ op: "remove", path: op.path });
+  }
+
+  const patched = replaceTrustedValueAtPath(state, parent, next);
+  if (patched === null) return null;
+  return {
+    state: patched as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
 function validateAppliedLocalOp<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
@@ -163,6 +241,7 @@ function validateAppliedLocalOp<S extends z.ZodType>(
 function isSupportedLocalOpCandidate(op: JSONPatchOperation): boolean {
   return !!op
     && typeof op === "object"
+    && validateOperationShape(op) === null
     && (
       op.op === "replace"
       || op.op === "add"
@@ -173,13 +252,39 @@ function isSupportedLocalOpCandidate(op: JSONPatchOperation): boolean {
     && typeof op.path === "string";
 }
 
+function arrayLocation(
+  schema: z.ZodType,
+  path: Pointer,
+): { parent: Pointer; element: z.ZodType; index: number | "-" } | null {
+  const parent = parentPointer(path);
+  if (parent === null) return null;
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  const segment = segments[segments.length - 1];
+  if (segment === undefined) return null;
+  const index = segment === "-" ? "-" : numericSegment(segment);
+  if (index === null) return null;
+  const parentSchema = schemaAtPointer(schema, parent, "value");
+  const element = parentSchema ? getArrayElement(parentSchema) : null;
+  return element ? { parent, element, index } : null;
+}
+
 function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {
   if (!Array.isArray(ops) || ops.length === 0) return false;
   const paths: string[] = [];
   for (let index = 0; index < ops.length; index++) {
     if (!(index in ops)) return false;
     const op = ops[index]!;
-    if (!op || typeof op !== "object" || op.op !== "replace" || typeof op.path !== "string" || op.path === "") {
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path === ""
+    ) {
       return false;
     }
     try {
@@ -243,6 +348,57 @@ function schemaViolation<S extends z.ZodType>(
       reason: JSON.stringify(prefixIssues(path, issues)),
     },
     applied: [],
+  };
+}
+
+function operationFailure<S extends z.ZodType>(
+  state: z.output<S>,
+  code: "not_serializable",
+  reason: string,
+): ApplyResult<S> {
+  return {
+    state,
+    result: { ok: false, code, reason },
+    applied: [],
+  };
+}
+
+function replaceTrustedValueAtPath(state: unknown, path: Pointer, value: unknown): unknown | null {
+  const segments = parsePointer(path);
+  return replaceTrustedValueAtSegments(state, segments, 0, value);
+}
+
+function replaceTrustedValueAtSegments(
+  current: unknown,
+  segments: ReadonlyArray<string>,
+  index: number,
+  value: unknown,
+): unknown | null {
+  if (index === segments.length) return value;
+  if (current === null || typeof current !== "object") return null;
+
+  const segment = segments[index]!;
+  if (Array.isArray(current)) {
+    const childIndex = numericSegment(segment);
+    if (childIndex === null || childIndex >= current.length) return null;
+    const child = replaceTrustedValueAtSegments(current[childIndex], segments, index + 1, value);
+    if (child === null) return null;
+    const next = current.slice();
+    next[childIndex] = child;
+    return next;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(current, segment)) return null;
+  const child = replaceTrustedValueAtSegments(
+    (current as Record<string, unknown>)[segment],
+    segments,
+    index + 1,
+    value,
+  );
+  if (child === null) return null;
+  return {
+    ...(current as Record<string, unknown>),
+    [segment]: child,
   };
 }
 

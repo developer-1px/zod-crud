@@ -245,6 +245,19 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("same-array batch rejects non-serializable add values atomically", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const doc = createJSONDocument(Schema, { items: [1] }, { strict: false });
+
+    const result = doc.patch([
+      { op: "add", path: "/items/-", value: 2 },
+      { op: "add", path: "/items/-", value: () => "bad" },
+    ]);
+
+    expect(result).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.value).toEqual({ items: [1] });
+  });
+
   test("schema checks fall back to full validation for local-looking patches", () => {
     let validations = 0;
     const Schema = z.object({
