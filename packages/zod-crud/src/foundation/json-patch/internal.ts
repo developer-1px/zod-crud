@@ -141,12 +141,12 @@ export function mutateContainer(parent: unknown, key: string, verb: Verb, value?
     return { error: "path_not_found", reason: "parent is not a container" };
   }
   if (Array.isArray(parent)) {
-    if (verb === "set" && key === "-") return { value: [...parent, value] };
+    if (verb === "set" && key === "-") return { value: parent.concat([value]) };
     const idx = parseArrayIndex(key);
     if (idx === null || idx === -1) return { error: "path_not_found", reason: `array index: ${key}` };
     if (verb === "set") {
       if (idx > parent.length) return { error: "path_not_found", reason: `out of range: ${key}` };
-      if (idx === parent.length) return { value: [...parent, value] };
+      if (idx === parent.length) return { value: parent.concat([value]) };
       const next = parent.slice();
       next.splice(idx, 0, value);
       return { value: next };

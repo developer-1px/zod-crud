@@ -72,8 +72,17 @@ describe("RFC 6902 — add", () => {
   });
 
   it("appends with /-", () => {
-    const r = applyOperation(Any, [1, 2], { op: "add", path: "/-", value: 9 });
-    expect(r.state).toEqual([1, 2, 9]);
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const appended = { id: "c" };
+    const initial = [first, second];
+    const r = applyOperation(Any, initial, { op: "add", path: "/-", value: appended });
+
+    expect(r.state).toEqual([first, second, appended]);
+    expect(r.state).not.toBe(initial);
+    expect((r.state as typeof initial)[0]).toBe(first);
+    expect((r.state as typeof initial)[1]).toBe(second);
+    expect(initial).toEqual([first, second]);
   });
 
   it("replaces root with empty path", () => {
