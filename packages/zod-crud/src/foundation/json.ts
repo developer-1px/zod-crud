@@ -9,6 +9,7 @@ export type JSONValue =
   | ReadonlyArray<JSONValue>;
 
 const LARGE_ARRAY_CLONE_THRESHOLD = 1024;
+const objectHasOwn = Object.prototype.hasOwnProperty;
 
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);
@@ -392,15 +393,17 @@ export function cloneTrustedJson<T>(value: T): T {
   if (Array.isArray(value)) {
     const next = new Array(value.length);
     for (let index = 0; index < value.length; index += 1) {
-      next[index] = cloneTrustedJson(value[index]);
+      const child = value[index];
+      next[index] = child === null || typeof child !== "object" ? child : cloneTrustedJson(child);
     }
     return next as T;
   }
 
   const next: Record<string, unknown> = {};
   for (const key in value as Record<string, unknown>) {
-    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
-    const cloned = cloneTrustedJson((value as Record<string, unknown>)[key]);
+    if (!objectHasOwn.call(value, key)) continue;
+    const child = (value as Record<string, unknown>)[key];
+    const cloned = child === null || typeof child !== "object" ? child : cloneTrustedJson(child);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: cloned,

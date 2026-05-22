@@ -552,5 +552,15 @@ describe("Serializability (G1)", () => {
     const extraResult = applyPatch(Any, { items: extra }, [{ op: "replace", path: "/items/0", value: 9 }]);
     expect(extraResult.result.ok).toBe(false);
     if (!extraResult.result.ok) expect(extraResult.result.code).toBe("not_serializable");
+
+    const hiddenExtra = [1];
+    Object.defineProperty(hiddenExtra, "secret", {
+      value: true,
+      enumerable: false,
+      configurable: true,
+    });
+    const hiddenExtraResult = applyPatch(Any, { items: hiddenExtra }, [{ op: "replace", path: "/items/0", value: 9 }]);
+    expect(hiddenExtraResult.result.ok).toBe(false);
+    if (!hiddenExtraResult.result.ok) expect(hiddenExtraResult.result.code).toBe("not_serializable");
   });
 });
