@@ -116,13 +116,21 @@ function randomId(): string {
 }
 
 function walk(value: unknown, visit: (value: unknown) => void): void {
-  visit(value);
   if (Array.isArray(value)) {
-    for (const item of value) walk(item, visit);
+    for (let index = 0; index < value.length; index += 1) {
+      const item = value[index];
+      if (item !== null && typeof item === "object") walk(item, visit);
+    }
     return;
   }
   if (isRecord(value)) {
-    for (const item of Object.values(value)) walk(item, visit);
+    visit(value);
+    for (const key in value) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        const item = value[key];
+        if (item !== null && typeof item === "object") walk(item, visit);
+      }
+    }
   }
 }
 
