@@ -339,8 +339,7 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   }
 
   let next: Record<string, unknown> | null = null;
-  let seenKeys: Set<string> | null = null;
-  const applied: JSONPatchOperation[] = [];
+  const applied = new Array<JSONPatchOperation>(ops.length);
   const shape = getObjectShape(schema);
   const rootDef = shape === null ? getDef(schema) as ExtendedDef : null;
   const recordValueSchema = rootDef?.type === "record" ? (rootDef.valueType ?? null) : null;
@@ -361,9 +360,6 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
 
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(state, key)) return null;
-    if (seenKeys === null) seenKeys = new Set();
-    else if (seenKeys.has(key)) return null;
-    seenKeys.add(key);
 
     const valueSchema = shape
       ? (objectHasOwn.call(shape, key) ? (shape[key] ?? null) : null)
@@ -390,7 +386,7 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     } else {
       next[key] = op.value;
     }
-    applied.push(op);
+    applied[index] = op;
   }
 
   return next === null

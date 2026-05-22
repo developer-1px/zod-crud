@@ -548,8 +548,7 @@ function applyRootObjectReplacePatch(
   }
 
   let next: Record<string, unknown> | null = null;
-  let seenKeys: Set<string> | null = null;
-  const applied: JSONPatchOperation[] = [];
+  const applied = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
     const op = ops[index]!;
@@ -566,9 +565,6 @@ function applyRootObjectReplacePatch(
 
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };
-    if (seenKeys === null) seenKeys = new Set();
-    else if (seenKeys.has(key)) return { handled: false };
-    seenKeys.add(key);
 
     if (next === null) next = { ...(state as Record<string, unknown>) };
     if (key === "__proto__") {
@@ -581,7 +577,7 @@ function applyRootObjectReplacePatch(
     } else {
       next[key] = op.value;
     }
-    applied.push(op);
+    applied[index] = op;
   }
 
   return next === null
