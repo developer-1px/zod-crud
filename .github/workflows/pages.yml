@@ -24,12 +24,13 @@ jobs:
           node-version: "22"
       - name: Install
         run: npm ci --no-audit --no-fund
+      - name: Verify workspace
+        run: npm run verify
       - name: Build site
         env:
           SITE_BASE: /zod-crud/
+          SITE_URL: https://developer-1px.github.io/zod-crud
         run: npm run playground:build
-      - name: SPA fallback (404.html)
-        run: cp apps/site/dist/index.html apps/site/dist/404.html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: apps/site/dist

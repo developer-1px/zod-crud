@@ -38,8 +38,8 @@ The document surface centers on:
 - `patch`, `commit`, `duplicate`
 - `selection`, `clipboard`, `history`
 - `schema`
-- `canPatch`, `canReplace`, `canMove`, `canDuplicate`, `canCopy`, `canCut`,
-  `canPaste`, `canPastePayload`, `canUndo`, `canRedo`
+- `canPatch`, `canFind`, `canReplace`, `canMove`, `canDuplicate`,
+  `canCopy`, `canCut`, `canPaste`, `canPastePayload`, `canUndo`, `canRedo`
 - `at`, `exists`, `query`, `entries`
 
 Public mutating methods mutate immediately. `duplicate`, `clipboard.cut`,
@@ -49,6 +49,9 @@ records for inspection; do not pass `applied` to `commit` again.
 Clipboard paste targets are explicit. Use a pointer for an insertion position
 such as `/items/-`; use `{ before: pointer }`, `{ after: pointer }`, or
 `{ replace: pointer }` when the target is an existing value.
+
+JSONPath is for search only. Use `doc.query(jsonPath)` to get JSON Pointers,
+then use those pointers in `doc.patch(...)`.
 
 For exact fields, types, and examples, read `packages/zod-crud/README.md`.
 For behavior rules, read `packages/zod-crud/SPEC.md`.
@@ -77,8 +80,11 @@ For behavior rules, read `packages/zod-crud/SPEC.md`.
 
 ```sh
 npm run verify
+npm run docs:evaluate
 npm run playground:typecheck
 npm run playground:build
 ```
 
 Package publish is guarded by `npm run verify` through `prepublishOnly`.
+The root `verify` script also runs `docs:evaluate` so docs drift and the
+100-loop ledger are release-gated.

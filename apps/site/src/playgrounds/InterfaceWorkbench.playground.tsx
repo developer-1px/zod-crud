@@ -15,6 +15,7 @@ import {
   type Pointer,
 } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
+import { MarkdownViewer } from "../components/MarkdownViewer";
 import apiReferenceMarkdown from "../docs/zod-crud-api.md?raw";
 
 const Card = z.object({
@@ -40,11 +41,6 @@ const BoardSchema = z.object({
 
 type Board = z.infer<typeof BoardSchema>;
 type BenchResult = { call: string; value: unknown };
-type MarkdownBlock =
-  | { type: "heading"; level: number; text: string }
-  | { type: "paragraph"; text: string }
-  | { type: "list"; items: string[] }
-  | { type: "code"; language: string; code: string };
 
 const initialBoard: Board = {
   title: "Workbench board",
@@ -407,82 +403,89 @@ export function InterfaceWorkbench() {
 
       <section className="grid gap-3 xl:grid-cols-4">
         <ActionGroup title="doc.patch">
-          <ActionButton onClick={() => run("patch.add", addCardToTodo)}>add</ActionButton>
-          <ActionButton onClick={() => run("patch.replace", () => doc.patch([{ op: "replace", path: `${valueTarget}/title`, value: "Patch edit" }]))}>replace</ActionButton>
-          <ActionButton onClick={() => run("patch.remove", () => doc.patch([{ op: "remove", path: valueTarget }]))}>remove</ActionButton>
-          <ActionButton onClick={() => run("patch.batch", patchTwoFields)}>batch</ActionButton>
-          <ActionButton onClick={() => run("patch.invalid", invalidPatch)}>invalid</ActionButton>
-          <ActionButton onClick={() => run("doc.load", loadFixture)}>load</ActionButton>
-          <ActionButton onClick={() => run("doc.reset", () => doc.reset())}>reset</ActionButton>
+          <ActionButton onClick={() => run('doc.patch([{ op: "add", path: "/lists/0/cards/-", value: card }])', addCardToTodo)}>add</ActionButton>
+          <ActionButton onClick={() => run(`doc.patch([{ op: "replace", path: "${valueTarget}/title", value: "Patch edit" }])`, () => doc.patch([{ op: "replace", path: `${valueTarget}/title`, value: "Patch edit" }]))}>replace</ActionButton>
+          <ActionButton onClick={() => run(`doc.patch([{ op: "remove", path: "${valueTarget}" }])`, () => doc.patch([{ op: "remove", path: valueTarget }]))}>remove</ActionButton>
+          <ActionButton onClick={() => run("doc.patch([...operations], { label: \"doc.patch\" })", patchTwoFields)}>batch</ActionButton>
+          <ActionButton onClick={() => run('doc.patch([{ op: "replace", path: "/lists/0/cards/0/points", value: -10 }])', invalidPatch)}>invalid</ActionButton>
+          <ActionButton onClick={() => run("doc.load(nextValue)", loadFixture)}>load</ActionButton>
+          <ActionButton onClick={() => run("doc.reset()", () => doc.reset())}>reset</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="document actions">
-          <ActionButton onClick={() => run("doc.duplicate", () => doc.duplicate(valueTarget, { rekey: cardRekey() }))}>duplicate</ActionButton>
-          <ActionButton onClick={() => run("patch.move", () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }))}>move</ActionButton>
-          <ActionButton onClick={() => run("patch.replace", replaceSelectedTitle)}>replace</ActionButton>
-          <ActionButton onClick={() => run("clipboard.pastePayload after", pastePayloadAfterTarget)}>paste payload after</ActionButton>
-          <ActionButton onClick={() => run("patch.remove", removeTargets)}>remove</ActionButton>
-          <ActionButton onClick={() => run("query.select", findAndSelect)}>select query</ActionButton>
-          <ActionButton onClick={() => run("selection.textPatch", replaceTitleText)}>replaceText</ActionButton>
+          <ActionButton onClick={() => run(`doc.duplicate("${valueTarget}", { rekey })`, () => doc.duplicate(valueTarget, { rekey: cardRekey() }))}>duplicate</ActionButton>
+          <ActionButton onClick={() => run(`doc.patch({ op: "move", from: "${valueTarget}", path: "${insertTarget}" })`, () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }))}>move</ActionButton>
+          <ActionButton onClick={() => run(`doc.patch({ op: "replace", path: "${primaryPointer ?? cardPointer(0, 0)}/title", value })`, replaceSelectedTitle)}>replace</ActionButton>
+          <ActionButton onClick={() => run(`doc.clipboard.pastePayload({ after: "${valueTarget}" }, payload, { rekey })`, pastePayloadAfterTarget)}>paste payload after</ActionButton>
+          <ActionButton onClick={() => run("doc.patch(selectedPointers.map((path) => ({ op: \"remove\", path })))", removeTargets)}>remove</ActionButton>
+          <ActionButton onClick={() => run("doc.query(jsonPath); doc.selection?.selectRanges(pointers)", findAndSelect)}>select query</ActionButton>
+          <ActionButton onClick={() => run('doc.selection?.textPatch("Bench")', replaceTitleText)}>replaceText</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.selection">
-          <ActionButton onClick={() => run("selection.collapse", () => { doc.selection?.collapse(valueTarget); return doc.selection?.snapshot(); })}>collapse</ActionButton>
-          <ActionButton onClick={() => run("selection.togglePointer", () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); })}>toggle target</ActionButton>
-          <ActionButton onClick={() => run("selection.selectRanges", selectTodoCards)}>select todo</ActionButton>
-          <ActionButton onClick={() => run("selection.moveCursor", () => doc.selection?.moveCursor("next"))}>next</ActionButton>
-          <ActionButton onClick={() => run("selection.extendCursor", () => doc.selection?.extendCursor("next"))}>extend</ActionButton>
-          <ActionButton onClick={() => run("selection.selectScope", () => doc.selection?.selectScope({ scope: "/lists/0/cards" }))}>scope</ActionButton>
-          <ActionButton onClick={() => run("selection.text", selectTitleText)}>text point</ActionButton>
-          <ActionButton onClick={() => run("selection.empty", () => { doc.selection?.empty(); return doc.selection?.snapshot(); })}>empty</ActionButton>
+          <ActionButton onClick={() => run(`doc.selection?.collapse("${valueTarget}")`, () => { doc.selection?.collapse(valueTarget); return doc.selection?.snapshot(); })}>collapse</ActionButton>
+          <ActionButton onClick={() => run(`doc.selection?.togglePointer("${valueTarget}")`, () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); })}>toggle target</ActionButton>
+          <ActionButton onClick={() => run("doc.selection?.selectRanges(todoPointers)", selectTodoCards)}>select todo</ActionButton>
+          <ActionButton onClick={() => run('doc.selection?.moveCursor("next")', () => doc.selection?.moveCursor("next"))}>next</ActionButton>
+          <ActionButton onClick={() => run('doc.selection?.extendCursor("next")', () => doc.selection?.extendCursor("next"))}>extend</ActionButton>
+          <ActionButton onClick={() => run('doc.selection?.selectScope({ scope: "/lists/0/cards" })', () => doc.selection?.selectScope({ scope: "/lists/0/cards" }))}>scope</ActionButton>
+          <ActionButton onClick={() => run('doc.selection?.collapse({ path: "/title", offset: 0 })', selectTitleText)}>text point</ActionButton>
+          <ActionButton onClick={() => run("doc.selection?.empty()", () => { doc.selection?.empty(); return doc.selection?.snapshot(); })}>empty</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.clipboard">
-          <ActionButton onClick={() => run("clipboard.copy", copySelection)}>copy</ActionButton>
-          <ActionButton onClick={() => run("clipboard.cut", () => doc.clipboard.cut(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>cut</ActionButton>
-          <ActionButton onClick={() => run("clipboard.paste after", pasteClipboardAfterTarget)}>paste after</ActionButton>
-          <ActionButton onClick={() => run("clipboard.paste insert", pasteClipboardToInsertTarget)}>paste insert</ActionButton>
-          <ActionButton onClick={() => run("clipboard.pastePayload insert", pastePayloadToInsertTarget)}>payload insert</ActionButton>
-          <ActionButton onClick={() => run("copy + paste insert", copySelectionToInsertTarget)}>copy to insert</ActionButton>
-          <ActionButton onClick={() => run("clipboard.write", () => doc.clipboard.write(parsedPayload(), { source: valueTarget }))}>write</ActionButton>
-          <ActionButton onClick={() => run("clipboard.read", () => doc.clipboard.read())}>read</ActionButton>
-          <ActionButton onClick={() => run("clipboard.clear", () => { doc.clipboard.clear(); return doc.clipboard.read(); })}>clear</ActionButton>
+          <ActionButton onClick={() => run("doc.clipboard.copy(source)", copySelection)}>copy</ActionButton>
+          <ActionButton onClick={() => run("doc.clipboard.cut(source)", () => doc.clipboard.cut(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>cut</ActionButton>
+          <ActionButton onClick={() => run(`doc.clipboard.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget)}>paste after</ActionButton>
+          <ActionButton onClick={() => run(`doc.clipboard.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget)}>paste insert</ActionButton>
+          <ActionButton onClick={() => run(`doc.clipboard.pastePayload("${insertTarget}", payload, { rekey })`, pastePayloadToInsertTarget)}>payload insert</ActionButton>
+          <ActionButton onClick={() => run(`doc.clipboard.copy(source); doc.clipboard.paste("${insertTarget}", { spread: true, rekey })`, copySelectionToInsertTarget)}>copy to insert</ActionButton>
+          <ActionButton onClick={() => run(`doc.clipboard.write(payload, { source: "${valueTarget}" })`, () => doc.clipboard.write(parsedPayload(), { source: valueTarget }))}>write</ActionButton>
+          <ActionButton onClick={() => run("doc.clipboard.read()", () => doc.clipboard.read())}>read</ActionButton>
+          <ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return doc.clipboard.read(); })}>clear</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.history">
-          <ActionButton onClick={() => run("history.undo", () => doc.history.undo())} disabled={!doc.history.canUndo}>undo</ActionButton>
-          <ActionButton onClick={() => run("history.redo", () => doc.history.redo())} disabled={!doc.history.canRedo}>redo</ActionButton>
-          <ActionButton onClick={() => run("history.transaction", transactionRename)}>transaction</ActionButton>
-          <ActionButton onClick={() => run("history.mergeLast", () => doc.history.mergeLast({ mergeKey: "manual" }))}>mergeLast</ActionButton>
-          <ActionButton onClick={() => run("doc.commit", commitAddWithSelection)}>commit</ActionButton>
+          <ActionButton onClick={() => run("doc.history.undo()", () => doc.history.undo())} disabled={!doc.history.canUndo}>undo</ActionButton>
+          <ActionButton onClick={() => run("doc.history.redo()", () => doc.history.redo())} disabled={!doc.history.canRedo}>redo</ActionButton>
+          <ActionButton onClick={() => run("doc.history.transaction(options, fn)", transactionRename)}>transaction</ActionButton>
+          <ActionButton onClick={() => run('doc.history.mergeLast({ mergeKey: "manual" })', () => doc.history.mergeLast({ mergeKey: "manual" }))}>mergeLast</ActionButton>
+          <ActionButton onClick={() => run("doc.commit(patch, { selection })", commitAddWithSelection)}>commit</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.query">
-          <ActionButton onClick={() => run("doc.at", () => doc.at(valueTarget))}>at</ActionButton>
-          <ActionButton onClick={() => run("doc.exists", () => doc.exists(valueTarget))}>exists</ActionButton>
-          <ActionButton onClick={() => run("doc.entries", () => doc.entries("/lists/0/cards" as Pointer))}>entries</ActionButton>
-          <ActionButton onClick={() => run("doc.query", queryPointers)}>query</ActionButton>
+          <ActionButton onClick={() => run(`doc.at("${valueTarget}")`, () => doc.at(valueTarget))}>at</ActionButton>
+          <ActionButton onClick={() => run(`doc.exists("${valueTarget}")`, () => doc.exists(valueTarget))}>exists</ActionButton>
+          <ActionButton onClick={() => run('doc.entries("/lists/0/cards")', () => doc.entries("/lists/0/cards" as Pointer))}>entries</ActionButton>
+          <ActionButton onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers)}>query</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.can*">
-          <ActionButton onClick={() => run("canReplace ok", () => doc.canReplace(`${valueTarget}/points` as Pointer, 8))}>replace ok</ActionButton>
-          <ActionButton onClick={() => run("canReplace bad", () => doc.canReplace(`${valueTarget}/points` as Pointer, -5))}>replace bad</ActionButton>
-          <ActionButton onClick={() => run("canCopy", () => doc.canCopy(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>copy</ActionButton>
-          <ActionButton onClick={() => run("canPastePayload after", () => doc.canPastePayload({ after: valueTarget }, parsedPayload()))}>paste after</ActionButton>
-          <ActionButton onClick={() => run("canPastePayload insert", () => doc.canPastePayload(insertTarget, parsedPayload()))}>paste insert</ActionButton>
-          <ActionButton onClick={() => run("canUndo/canRedo", () => ({ undo: doc.canUndo(), redo: doc.canRedo() }))}>stacks</ActionButton>
+          <ActionButton onClick={() => run('doc.canPatch([{ op: "replace", path: "/title", value: "Ready" }])', () => doc.canPatch([{ op: "replace", path: "/title", value: "Ready" }]))}>patch</ActionButton>
+          <ActionButton onClick={() => run(`doc.canFind(${JSON.stringify(query)})`, () => doc.canFind(query))}>find</ActionButton>
+          <ActionButton onClick={() => run(`doc.canReplace("${valueTarget}/points", 8)`, () => doc.canReplace(`${valueTarget}/points` as Pointer, 8))}>replace ok</ActionButton>
+          <ActionButton onClick={() => run(`doc.canReplace("${valueTarget}/points", -5)`, () => doc.canReplace(`${valueTarget}/points` as Pointer, -5))}>replace bad</ActionButton>
+          <ActionButton onClick={() => run(`doc.canRemove("${valueTarget}")`, () => doc.canRemove(valueTarget))}>remove</ActionButton>
+          <ActionButton onClick={() => run(`doc.canMove("${valueTarget}", "${insertTarget}")`, () => doc.canMove(valueTarget, insertTarget))}>move</ActionButton>
+          <ActionButton onClick={() => run(`doc.canDuplicate("${valueTarget}", { rekey })`, () => doc.canDuplicate(valueTarget, { rekey: cardRekey() }))}>duplicate</ActionButton>
+          <ActionButton onClick={() => run("doc.canCopy(source)", () => doc.canCopy(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>copy</ActionButton>
+          <ActionButton onClick={() => run("doc.canCut(source)", () => doc.canCut(selectedPointers.length > 0 ? selectedPointers : valueTarget))}>cut</ActionButton>
+          <ActionButton onClick={() => run(`doc.canPaste("${insertTarget}", { spread: true, rekey })`, () => doc.canPaste(insertTarget, { spread: true, rekey: cardRekey() }))}>paste buffer</ActionButton>
+          <ActionButton onClick={() => run(`doc.canPastePayload({ after: "${valueTarget}" }, payload)`, () => doc.canPastePayload({ after: valueTarget }, parsedPayload()))}>paste after</ActionButton>
+          <ActionButton onClick={() => run(`doc.canPastePayload("${insertTarget}", payload)`, () => doc.canPastePayload(insertTarget, parsedPayload()))}>paste insert</ActionButton>
+          <ActionButton onClick={() => run("({ undo: doc.canUndo(), redo: doc.canRedo() })", () => ({ undo: doc.canUndo(), redo: doc.canRedo() }))}>stacks</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="doc.schema">
-          <ActionButton onClick={() => run("schema.kind", () => doc.schema.kind(valueTarget))}>kind</ActionButton>
-          <ActionButton onClick={() => run("schema.at", () => doc.schema.at(valueTarget))}>at</ActionButton>
-          <ActionButton onClick={() => run("schema.describe", () => doc.schema.describe(insertTarget, "insert"))}>describe insert</ActionButton>
-          <ActionButton onClick={() => run("schema.accepts", () => doc.schema.accepts(insertTarget, parsedPayload(), "insert"))}>accepts</ActionButton>
-          <ActionButton onClick={() => run("schema.rejects", () => doc.schema.accepts(insertTarget, invalidCard, "insert"))}>rejects</ActionButton>
+          <ActionButton onClick={() => run(`doc.schema.kind("${valueTarget}")`, () => doc.schema.kind(valueTarget))}>kind</ActionButton>
+          <ActionButton onClick={() => run(`doc.schema.at("${valueTarget}")`, () => doc.schema.at(valueTarget))}>at</ActionButton>
+          <ActionButton onClick={() => run(`doc.schema.describe("${insertTarget}", "insert")`, () => doc.schema.describe(insertTarget, "insert"))}>describe insert</ActionButton>
+          <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", payload, "insert")`, () => doc.schema.accepts(insertTarget, parsedPayload(), "insert"))}>accepts</ActionButton>
+          <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", invalidCard, "insert")`, () => doc.schema.accepts(insertTarget, invalidCard, "insert"))}>rejects</ActionButton>
         </ActionGroup>
 
         <ActionGroup title="pure exports">
-          <ActionButton onClick={() => run("pure exports", inspectPureExports)}>inspect</ActionButton>
+          <ActionButton onClick={() => run("applyPatch(schema, state, patch)", inspectPureExports)}>inspect</ActionButton>
         </ActionGroup>
       </section>
 
@@ -504,148 +507,6 @@ function ApiReference() {
       <MarkdownViewer source={apiReferenceMarkdown} />
     </section>
   );
-}
-
-function MarkdownViewer({ source }: { source: string }) {
-  const blocks = useMemo(() => parseMarkdown(source), [source]);
-
-  return (
-    <article className="grid gap-4 text-sm text-stone-700">
-      {blocks.map((block, index) => (
-        <MarkdownBlockView key={`${block.type}-${index}`} block={block} />
-      ))}
-    </article>
-  );
-}
-
-function MarkdownBlockView({ block }: { block: MarkdownBlock }) {
-  if (block.type === "heading") {
-    const HeadingTag = (block.level === 1 ? "h2" : block.level === 2 ? "h3" : "h4") as "h2" | "h3" | "h4";
-    const className = block.level === 1
-      ? "mb-0 mt-0 text-base font-semibold text-stone-900"
-      : block.level === 2
-        ? "mb-0 mt-2 border-t border-stone-200 pt-4 text-sm font-semibold text-stone-900"
-        : "mb-0 mt-1 text-xs font-semibold uppercase tracking-wide text-stone-500";
-
-    return (
-      <HeadingTag className={className}>
-        <InlineMarkdown text={block.text} />
-      </HeadingTag>
-    );
-  }
-
-  if (block.type === "paragraph") {
-    return (
-      <p className="m-0 max-w-3xl leading-6 text-stone-600">
-        <InlineMarkdown text={block.text} />
-      </p>
-    );
-  }
-
-  if (block.type === "list") {
-    return (
-      <ul className="m-0 max-w-3xl list-disc pl-5 text-sm leading-6 text-stone-600">
-        {block.items.map((item) => (
-          <li key={item}>
-            <InlineMarkdown text={item} />
-          </li>
-        ))}
-      </ul>
-    );
-  }
-
-  return (
-    <pre className="m-0 overflow-x-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
-      <code>{block.code}</code>
-    </pre>
-  );
-}
-
-function InlineMarkdown({ text }: { text: string }) {
-  const nodes: ReactNode[] = [];
-  const pattern = /`([^`]+)`/g;
-  let cursor = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = pattern.exec(text)) !== null) {
-    if (match.index > cursor) nodes.push(text.slice(cursor, match.index));
-    nodes.push(
-      <code key={`${match.index}-${match[1]}`} className="rounded bg-stone-100 px-1 py-0.5 font-mono text-[0.85em] text-stone-800">
-        {match[1]}
-      </code>,
-    );
-    cursor = match.index + match[0].length;
-  }
-
-  if (cursor < text.length) nodes.push(text.slice(cursor));
-  return <>{nodes}</>;
-}
-
-function parseMarkdown(source: string): MarkdownBlock[] {
-  const lines = source.replace(/\r\n/g, "\n").split("\n");
-  const blocks: MarkdownBlock[] = [];
-  let index = 0;
-
-  while (index < lines.length) {
-    const line = lines[index] ?? "";
-    const trimmed = line.trim();
-
-    if (trimmed === "") {
-      index += 1;
-      continue;
-    }
-
-    if (trimmed.startsWith("```")) {
-      const language = trimmed.slice(3).trim();
-      const code: string[] = [];
-      index += 1;
-      while (index < lines.length && !(lines[index] ?? "").trim().startsWith("```")) {
-        code.push(lines[index] ?? "");
-        index += 1;
-      }
-      blocks.push({ type: "code", language, code: code.join("\n") });
-      index += 1;
-      continue;
-    }
-
-    const heading = /^(#{1,3})\s+(.+)$/.exec(trimmed);
-    if (heading) {
-      blocks.push({ type: "heading", level: heading[1]?.length ?? 1, text: heading[2] ?? "" });
-      index += 1;
-      continue;
-    }
-
-    if (trimmed.startsWith("- ")) {
-      const items: string[] = [];
-      while (index < lines.length) {
-        const item = (lines[index] ?? "").trim();
-        if (!item.startsWith("- ")) break;
-        items.push(item.slice(2).trim());
-        index += 1;
-      }
-      blocks.push({ type: "list", items });
-      continue;
-    }
-
-    const paragraph: string[] = [];
-    while (index < lines.length) {
-      const paragraphLine = lines[index] ?? "";
-      const paragraphTrimmed = paragraphLine.trim();
-      if (
-        paragraphTrimmed === ""
-        || paragraphTrimmed.startsWith("```")
-        || paragraphTrimmed.startsWith("- ")
-        || /^(#{1,3})\s+/.test(paragraphTrimmed)
-      ) {
-        break;
-      }
-      paragraph.push(paragraphTrimmed);
-      index += 1;
-    }
-    blocks.push({ type: "paragraph", text: paragraph.join(" ") });
-  }
-
-  return blocks;
 }
 
 function Badge({ children }: { children: ReactNode }) {

@@ -9,6 +9,7 @@ zod-crud는 Zod schema로 보호되는 headless JSON editing engine이다. publi
 ```txt
 document
 ├─ patch(patch)
+├─ duplicate(pointer, options)
 ├─ at(pointer)
 ├─ query(jsonPath)
 ├─ selection
@@ -206,6 +207,9 @@ if (found.ok) {
 }
 ```
 
+JSONPath is a search language in this package. Mutation inputs remain JSON
+Patch operations with JSON Pointer `path` and `from` fields.
+
 ## 6. Selection
 
 Selection is JSON-safe state, not a command namespace. It answers "what is selected" and provides selection planning helpers.
@@ -291,6 +295,8 @@ Required verification before release:
 - `npm test -w zod-crud`
 - `npm run build -w zod-crud`
 - `npm run smoke:package -w zod-crud`
+- `npm run docs:evaluate`
+- `npm run verify`
 - `npm run playground:typecheck`
 - `npm run playground:test`
 - `npm run build -w @zod-crud/site`

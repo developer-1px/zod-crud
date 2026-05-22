@@ -25,6 +25,18 @@ document
 - History는 patch 기록입니다. undo/redo는 `doc.history`에 둡니다.
 - `can*`는 boolean이 아니라 이유가 있는 결과입니다.
 
+## 작업별 진입점
+
+| 작업 | 진입점 |
+| --- | --- |
+| 값 추가, 변경, 제거, 이동 | `doc.patch(...)` |
+| sibling 복제 | `doc.duplicate(pointer, options)` |
+| 여러 위치 찾기 | `doc.query(jsonPath)` 후 반환 Pointer로 patch |
+| 멀티셀렉 복사/이동 | `doc.selection?.selectedPointers`를 `doc.clipboard.copy/cut`에 전달 |
+| 외부 payload 붙여넣기 | `doc.clipboard.pastePayload(target, payload, options)` |
+| 실행 전 검증 | `doc.can*` |
+| 되돌리기/다시하기 | `doc.canUndo()` 확인 후 `doc.history.undo()` |
+
 ## 시작
 
 ```ts
@@ -137,6 +149,15 @@ query: JSONPath -> Pointer[]
 patch: Pointer -> 변경
 ```
 
+자주 쓰는 검색은 아래 형태로 둡니다.
+
+```ts
+doc.query("$..cards[?(@.status=='todo')]");
+doc.query("$.lists[*].cards[*]");
+```
+
+JSONPath는 변경 언어가 아닙니다. `doc.query(...)`로 Pointer를 찾은 뒤, 그 Pointer로 `doc.patch(...)`를 만듭니다.
+
 ## selection
 
 Selection은 선택 상태입니다. 방향은 `anchor`/`focus`로 보존하고, 멀티셀렉은 `selectionRanges`로 표현합니다.
@@ -150,6 +171,17 @@ doc.selection?.selectRanges([
 const selection = doc.selection?.snapshot();
 ```
 
+자주 보는 selection 표면은 아래와 같습니다.
+
+| 필요 | API |
+| --- | --- |
+| 현재 선택 읽기 | `selectedPointers`, `primaryPointer`, `anchorPointer`, `focusPointer`, `caret` |
+| 접기와 확장 | `collapse(point)`, `setBaseAndExtent(anchor, focus)`, `extend(point)` |
+| 멀티셀렉 | `addRange(range)`, `removeRange(range)`, `togglePointer(pointer)`, `selectRanges(ranges)` |
+| cursor 이동 | `moveCursor(direction)`, `extendCursor(direction)`, `resolveCursor(direction)` |
+| 텍스트 편집 계획 | `textPatch(replacement)`, `deleteText(options)` |
+| 직렬화 | `snapshot()`, `toJSON()`, `restore(snapshot)`, `subscribe(listener)` |
+
 Object member는 JSON 표준상 순서가 없으므로 range보다 명시 pointer 목록이 안전합니다.
 
 ```ts
@@ -158,6 +190,16 @@ doc.selection?.selectRanges([
   "/user/email",
 ]);
 ```
+
+멀티셀렉을 복사하거나 자를 때는 선택 상태에서 Pointer 목록을 꺼내 clipboard에 넘깁니다.
+
+```ts
+const source = doc.selection?.selectedPointers ?? [];
+doc.clipboard.copy(source);
+doc.clipboard.cut(source);
+```
+
+`copy()`와 `cut()`은 source를 생략하면 현재 selection을 사용합니다. 하지만 앱 코드와 테스트에서는 source를 명시하는 쪽이 읽기 쉽습니다.
 
 ## clipboard
 
@@ -203,6 +245,19 @@ doc.history.transaction({ label: "rename cards" }, () => {
 });
 ```
 
+History metadata는 JSON으로 직렬화 가능한 patch entry metadata입니다.
+
+```ts
+doc.commit(patch, {
+  label: "typing",
+  origin: "keyboard",
+  mergeKey: "title",
+  selection: nextSelection,
+});
+
+doc.history.mergeLast({ mergeKey: "title" });
+```
+
 selection 이동만으로는 history entry를 만들지 않습니다. document 변경 entry 안에 selection before/after가 같이 저장됩니다.
 
 ## can*
@@ -218,10 +273,24 @@ if (!result.ok) {
 }
 ```
 
+실패 결과는 UI validation 메시지로 바로 쓸 수 있습니다.
+
+```ts
+const blocked = doc.canPastePayload("/lists/0/cards/-", invalidCard);
+
+if (!blocked.ok && blocked.code === "schema_violation") {
+  blocked.violations?.map((violation) => ({
+    path: violation.path,
+    message: violation.message,
+  }));
+}
+```
+
 대표 메서드:
 
 ```ts
 doc.canPatch([{ op: "replace", path: "/title", value: "Ready" }]);
+doc.canFind("$..cards[?(@.status=='todo')]");
 doc.canReplace("/title", "Ready");
 doc.canDuplicate("/lists/0/cards/0", { rekey: { fields: ["id"], strategy: "suffix" } });
 doc.canCopy(["/lists/0/cards/0"]);
@@ -288,6 +357,14 @@ doc.schema.describe("/lists/0/cards/-", "insert");
 doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
 ```
 
+## verification
+
+배포 전에는 root gate를 기준으로 봅니다. `npm run verify`는 package 검증 뒤 `docs:evaluate`를 실행해서 README, SPEC, 이 문서, `llms.txt`, 100-loop ledger drift를 같이 막습니다.
+
+```sh
+npm run verify
+```
+
 ## Public exports
 
 ```ts
@@ -311,9 +388,13 @@ import {
   type JSONCapabilityResult,
   type JSONChangeMetadata,
   type JSONDocument,
+  type JSONDocumentChangeListener,
+  type JSONDocumentCommitOptions,
+  type JSONDocumentCommitSelection,
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
+  type JSONDocumentLoadOptions,
   type JSONDocumentMutationOk,
   type JSONDocumentPasteOptions,
   type JSONDocumentPasteTarget,

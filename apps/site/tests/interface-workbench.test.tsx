@@ -21,6 +21,9 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByText("Interface bench")).toBeTruthy();
     expect(screen.getByLabelText("value target")).toBeTruthy();
     expect(screen.getByLabelText("insert target")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
+    expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
+    expect(screen.getByText(/외부 payload 붙여넣기/)).toBeTruthy();
     for (const title of [
       "doc.patch",
       "document actions",
@@ -40,9 +43,36 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByRole("heading", { name: "clipboard" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "can*" })).toBeTruthy();
     expect(screen.getByText(/query: JSONPath -> Pointer/)).toBeTruthy();
+    expect(screen.getByText(/JSONPath는 변경 언어가 아닙니다/)).toBeTruthy();
+    expect(screen.getByText(/doc\.query\("\$\.lists\[\*\]\.cards\[\*\]"\)/)).toBeTruthy();
+    expect(screen.getByText(/source를 생략하면 현재 selection을 사용합니다/)).toBeTruthy();
+    expect(screen.getByText(/blocked\.violations/)).toBeTruthy();
     expect(screen.getAllByText(/createJSONDocument/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/SelectionState/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/useJSONDocument/).length).toBeGreaterThan(0);
+  });
+
+  test("keeps the public document controls discoverable", () => {
+    render(<InterfaceWorkbench />);
+
+    const expectedControls = {
+      "doc.patch": ["add", "replace", "remove", "batch", "invalid", "load", "reset"],
+      "document actions": ["duplicate", "move", "replace", "paste payload after", "remove", "select query", "replaceText"],
+      "doc.selection": ["collapse", "toggle target", "select todo", "next", "extend", "scope", "text point", "empty"],
+      "doc.clipboard": ["copy", "cut", "paste after", "paste insert", "payload insert", "copy to insert", "write", "read", "clear"],
+      "doc.history": ["undo", "redo", "transaction", "mergeLast", "commit"],
+      "doc.query": ["at", "exists", "entries", "query"],
+      "doc.can*": ["patch", "find", "replace ok", "replace bad", "remove", "move", "duplicate", "copy", "cut", "paste buffer", "paste after", "paste insert", "stacks"],
+      "doc.schema": ["kind", "at", "describe insert", "accepts", "rejects"],
+      "pure exports": ["inspect"],
+    } as const;
+
+    for (const [groupName, controls] of Object.entries(expectedControls)) {
+      const controlsGroup = within(group(groupName));
+      for (const control of controls) {
+        expect(controlsGroup.getByRole("button", { name: control })).toBeTruthy();
+      }
+    }
   });
 
   test("runs representative ops, selection, clipboard, and schema actions", async () => {
@@ -62,14 +92,25 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
 
     await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy to insert" }));
-    expect(screen.getByText(/"call": "copy \+ paste insert"/)).toBeTruthy();
+    expect(screen.getByText(/doc\.clipboard\.copy\(source\); doc\.clipboard\.paste/)).toBeTruthy();
+
+    await user.click(within(group("doc.can*")).getByRole("button", { name: "patch" }));
+    expect(screen.getAllByText(/doc\.canPatch/).length).toBeGreaterThan(0);
+
+    await user.click(within(group("doc.can*")).getByRole("button", { name: "find" }));
+    expect(screen.getAllByText(/doc\.canFind/).length).toBeGreaterThan(0);
+
+    await user.click(within(group("doc.can*")).getByRole("button", { name: "move" }));
+    expect(screen.getAllByText(/doc\.canMove/).length).toBeGreaterThan(0);
+
+    await user.click(within(group("doc.can*")).getByRole("button", { name: "paste buffer" }));
+    expect(screen.getAllByText(/doc\.canPaste/).length).toBeGreaterThan(0);
 
     await user.click(within(group("doc.schema")).getByRole("button", { name: "rejects" }));
-    expect(screen.getByText(/schema\.rejects/)).toBeTruthy();
-    expect(screen.getByText(/schema_violation/)).toBeTruthy();
+    expect(screen.getAllByText(/doc\.schema\.accepts/).length).toBeGreaterThan(1);
+    expect(screen.getAllByText(/schema_violation/).length).toBeGreaterThan(1);
 
     await user.click(within(group("pure exports")).getByRole("button", { name: "inspect" }));
-    expect(screen.getAllByText(/pure exports/).length).toBeGreaterThan(1);
-    expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(1);
   });
 });

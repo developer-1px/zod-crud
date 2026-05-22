@@ -25,6 +25,18 @@ npm install zod-crud zod
 `zod` is a peer dependency. `react >=18` is optional and only needed for
 `zod-crud/react`.
 
+## Task Entrypoints
+
+| Task | API |
+| --- | --- |
+| Add, update, remove, or move JSON values | `doc.patch(...)` |
+| Duplicate a sibling | `doc.duplicate(pointer, options)` |
+| Find multiple locations | `doc.query(jsonPath)`, then patch returned pointers |
+| Copy or cut a multi-selection | pass `doc.selection?.selectedPointers` to `doc.clipboard.copy/cut` |
+| Paste external payload | `doc.clipboard.pastePayload(target, payload, options)` |
+| Validate before applying | `doc.can*` |
+| Undo or redo | check `doc.canUndo()` / `doc.canRedo()`, then call `doc.history` |
+
 ## React — `useJSONDocument`
 
 ```tsx
@@ -120,6 +132,13 @@ doc.query("$..cards[?(@.status=='todo')]");
 Patch paths are JSON Pointers. JSONPath is only for query; use the returned
 pointers when you want to patch.
 
+Use JSONPath to find values, not to mutate them directly.
+
+```ts
+doc.query("$..cards[?(@.status=='todo')]");
+doc.query("$.lists[*].cards[*]");
+```
+
 Use `duplicate` when the intent is sibling duplication rather than a raw RFC
 `copy` operation. Arrays insert the duplicate after the source. Object members
 need `newKey`. `rekey` can mint new values for id-like fields.
@@ -153,8 +172,30 @@ doc.selection?.selectRanges([
 const selection = doc.selection?.snapshot();
 ```
 
+Common selection surface:
+
+| Need | API |
+| --- | --- |
+| Read current selection | `selectedPointers`, `primaryPointer`, `anchorPointer`, `focusPointer`, `caret` |
+| Collapse or extend | `collapse(point)`, `setBaseAndExtent(anchor, focus)`, `extend(point)` |
+| Multi-select | `addRange(range)`, `removeRange(range)`, `togglePointer(pointer)`, `selectRanges(ranges)` |
+| Cursor movement | `moveCursor(direction)`, `extendCursor(direction)`, `resolveCursor(direction)` |
+| Text editing plans | `textPatch(replacement)`, `deleteText(options)` |
+| Serialization | `snapshot()`, `toJSON()`, `restore(snapshot)`, `subscribe(listener)` |
+
 For object members, prefer explicit pointer lists. JSON objects are unordered
 by the JSON RFC, so object child ranges should not carry ordering semantics.
+
+Use selected pointers as clipboard sources when the user has made a multi-select.
+
+```ts
+const source = doc.selection?.selectedPointers ?? [];
+doc.clipboard.copy(source);
+doc.clipboard.cut(source);
+```
+
+`copy()` and `cut()` can fall back to the current selection when the source is
+omitted, but explicit sources are easier to audit in app code and tests.
 
 ## Clipboard
 
@@ -201,6 +242,19 @@ doc.history.transaction({ label: "rename cards" }, () => {
 });
 ```
 
+History metadata is serializable and follows the patch entry.
+
+```ts
+doc.commit(patch, {
+  label: "typing",
+  origin: "keyboard",
+  mergeKey: "title",
+  selection: nextSelection,
+});
+
+doc.history.mergeLast({ mergeKey: "title" });
+```
+
 ## Capability Checks
 
 `can*` methods return a result object so UI and tests can inspect the reason.
@@ -215,9 +269,19 @@ if (!result.ok) {
 }
 ```
 
-Available checks include `canPatch`, `canReplace`, `canRemove`, `canMove`,
-`canDuplicate`, `canCopy`, `canCut`, `canPaste`, `canPastePayload`, `canUndo`,
-and `canRedo`.
+Schema failures expose `violations` for UI messages.
+
+```ts
+const blocked = doc.canPastePayload("/lists/0/cards/-", invalidCard);
+
+if (!blocked.ok && blocked.code === "schema_violation") {
+  blocked.violations?.map((violation) => [violation.path, violation.message]);
+}
+```
+
+Available checks include `canPatch`, `canFind`, `canReplace`, `canRemove`,
+`canMove`, `canDuplicate`, `canCopy`, `canCut`, `canPaste`,
+`canPastePayload`, `canUndo`, and `canRedo`.
 
 ## Pure core (no React)
 
@@ -268,32 +332,62 @@ fetch("/api/save", {
 });
 ```
 
+## Verification
+
+Before release, run the root gate. It includes package checks and
+`docs:evaluate`, which guards this README, the site API doc, SPEC, `llms.txt`,
+and the 100-loop ledger.
+
+```sh
+npm run verify
+```
+
 ## Public Exports
 
 Root entrypoint:
 
 ```ts
 import {
+  JSONCrudError,
   createJSONDocument,
   applyOperation,
   applyPatch,
   parsePointer,
   tryParsePointer,
   buildPointer,
+  escapeSegment,
+  unescapeSegment,
+  PointerSyntaxError,
+  parentPointer,
+  lastSegment,
+  lastSegmentIndex,
+  appendSegment,
+  withLastSegment,
   trackPointer,
+  type HistoryTransactionOptions,
+  type JSONCapabilityResult,
+  type JSONChangeMetadata,
   type JSONDocument,
+  type JSONDocumentChangeListener,
+  type JSONDocumentCommitOptions,
+  type JSONDocumentCommitSelection,
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
+  type JSONDocumentLoadOptions,
   type JSONDocumentMutationOk,
   type JSONDocumentPasteOptions,
   type JSONDocumentPasteTarget,
-  type JSONChangeMetadata,
-  type HistoryTransactionOptions,
+  type JSONPatchInput,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
+  type JSONPoint,
+  type SelectionAction,
+  type SelectionRange,
+  type SelectionSource,
   type SelectionSnap,
+  type SelectionState,
 } from "zod-crud";
 ```
 
