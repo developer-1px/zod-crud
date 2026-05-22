@@ -41,6 +41,12 @@ interface ArrayFieldPath {
   key: string;
 }
 
+interface SameArrayFieldReplaceOps {
+  arraySegments: string[];
+  items: Array<{ op: JSONPatchOperation; path: Pointer; index: number; key: string; value: unknown }>;
+}
+
+const objectHasOwn = Object.prototype.hasOwnProperty;
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
 
@@ -99,26 +105,45 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   const parsed = sameArrayFieldReplaceOps(ops);
   if (parsed === null) return null;
 
-  const applied = applyTrustedPatch(state, ops);
-  if (!applied.result.ok) {
-    return {
-      state,
-      result: applied.result,
-      applied: [],
-    };
-  }
-
-  const valueSchema = cachedSchemaAtPointer(schema, parsed[0]!.path, "value");
+  const valueSchema = cachedSchemaAtPointer(schema, parsed.items[0]!.path, "value");
   if (!valueSchema) return null;
-  for (const op of parsed) {
-    const result = valueSchema.safeParse(op.value);
-    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+  const current = readAt(state, parsed.arraySegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+
+  for (const item of parsed.items) {
+    if (item.index < 0 || item.index >= current.value.length) return null;
+    const row = current.value[item.index];
+    if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
+    if (!objectHasOwn.call(row, item.key)) return null;
+    const jsonError = jsonSerializableError(item.value);
+    if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const result = valueSchema.safeParse(item.value);
+    if (!result.success) return schemaViolation(state, item.path, result.error.issues);
   }
 
+  const next = current.value.slice();
+  for (const item of parsed.items) {
+    const row = current.value[item.index] as Record<string, unknown>;
+    const replaced = { ...row };
+    if (item.key === "__proto__") {
+      Object.defineProperty(replaced, item.key, {
+        value: item.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      replaced[item.key] = item.value;
+    }
+    next[item.index] = replaced;
+  }
+
+  const nextState = replaceValueAtSegments(state, parsed.arraySegments, 0, next);
+  if (nextState === null) return null;
   return {
-    state: applied.state as z.output<S>,
+    state: nextState as z.output<S>,
     result: { ok: true },
-    applied: applied.applied,
+    applied: parsed.items.map((item) => item.op),
   };
 }
 
@@ -386,13 +411,13 @@ function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): bool
 
 function sameArrayFieldReplaceOps(
   ops: ReadonlyArray<JSONPatchOperation>,
-): Array<{ path: Pointer; index: number; key: string; value: unknown }> | null {
+): SameArrayFieldReplaceOps | null {
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   const seenIndexes = new Set<number>();
-  const parsed: Array<{ path: Pointer; index: number; key: string; value: unknown }> = [];
+  const parsed: SameArrayFieldReplaceOps["items"] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex++) {
     if (!(opIndex in ops)) return null;
@@ -418,10 +443,10 @@ function sameArrayFieldReplaceOps(
 
     if (seenIndexes.has(location.index)) return null;
     seenIndexes.add(location.index);
-    parsed.push({ path: op.path, index: location.index, key: location.key, value: op.value });
+    parsed.push({ op, path: op.path, index: location.index, key: location.key, value: op.value });
   }
 
-  return parsed;
+  return arraySegments === null ? null : { arraySegments, items: parsed };
 }
 
 function parseArrayFieldPath(path: Pointer): ArrayFieldPath | null {
@@ -481,6 +506,37 @@ function sourceValueForValidation(
   } catch {
     return { ok: false };
   }
+}
+
+function replaceValueAtSegments(
+  current: unknown,
+  segments: ReadonlyArray<string>,
+  index: number,
+  value: unknown,
+): unknown | null {
+  if (index === segments.length) return value;
+  if (current === null || typeof current !== "object") return null;
+
+  const segment = segments[index]!;
+  if (Array.isArray(current)) {
+    const childIndex = numericSegment(segment);
+    if (childIndex === null || childIndex >= current.length) return null;
+    const child = replaceValueAtSegments(current[childIndex], segments, index + 1, value);
+    if (child === null) return null;
+    const next = current.slice();
+    next[childIndex] = child;
+    return next;
+  }
+
+  if (!objectHasOwn.call(current, segment)) return null;
+  const child = replaceValueAtSegments(
+    (current as Record<string, unknown>)[segment],
+    segments,
+    index + 1,
+    value,
+  );
+  if (child === null) return null;
+  return { ...(current as Record<string, unknown>), [segment]: child };
 }
 
 function okLocalPatch<S extends z.ZodType>(
