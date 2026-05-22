@@ -54,6 +54,11 @@ for (const size of sizes) {
     path: `/items/${index}/done`,
     value: true,
   }));
+  const repeatedFieldReplaceOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "replace",
+    path: "/items/0/done",
+    value: index % 2 === 0,
+  }));
   const addBatchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "add",
     path: "/items/-",
@@ -248,6 +253,12 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch batch ${batchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench(`doc.patch repeated field replace batch ${repeatedFieldReplaceOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(repeatedFieldReplaceOps));
   }
 
   {

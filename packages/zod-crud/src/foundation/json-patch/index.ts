@@ -376,12 +376,8 @@ function applySameArrayFieldReplacePatch(
   let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
   let field: string | null = null;
-  let seenIndexes: Set<number> | null = null;
-  let previousIndex: number | null = null;
-  let monotonicDirection: -1 | 0 | 1 = 0;
   let next: unknown[] | null = null;
   const applied = new Array<JSONPatchOperation>(ops.length);
-  const appliedIndexes: number[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return { handled: false };
@@ -408,26 +404,6 @@ function applySameArrayFieldReplacePatch(
       return { handled: false };
     }
 
-    if (seenIndexes === null) {
-      const direction = previousIndex === null
-        ? 0
-        : indexDirection(previousIndex, location.index);
-      if (direction === 0 && previousIndex !== null) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return { handled: false };
-        seenIndexes.add(location.index);
-      } else if (monotonicDirection === 0) {
-        monotonicDirection = direction;
-      } else if (direction !== monotonicDirection) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return { handled: false };
-        seenIndexes.add(location.index);
-      }
-      previousIndex = location.index;
-    } else {
-      if (seenIndexes.has(location.index)) return { handled: false };
-      seenIndexes.add(location.index);
-    }
     if (!valuesTrusted && jsonSerializableError(normalized.value) !== null) return { handled: false };
 
     if (location.index < 0 || location.index >= next.length) return { handled: false };
@@ -447,7 +423,6 @@ function applySameArrayFieldReplacePatch(
     }
     next[location.index] = replaced;
     applied[opIndex] = normalized;
-    appliedIndexes.push(location.index);
   }
 
   if (arraySegments === null || field === null || next === null) return { handled: false };

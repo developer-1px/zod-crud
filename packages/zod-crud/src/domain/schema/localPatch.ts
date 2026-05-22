@@ -228,12 +228,8 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   let valueSchema: z.ZodType | null = null;
-  let seenIndexes: Set<number> | null = null;
-  let previousIndex: number | null = null;
-  let monotonicDirection: -1 | 0 | 1 = 0;
   let next: unknown[] | null = null;
   const applied: JSONPatchOperation[] = [];
-  const appliedIndexes: number[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex++) {
     if (!(opIndex in ops)) return null;
@@ -272,27 +268,6 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
       return null;
     }
 
-    if (seenIndexes === null) {
-      const direction = previousIndex === null
-        ? 0
-        : indexDirection(previousIndex, location.index);
-      if (direction === 0 && previousIndex !== null) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return null;
-        seenIndexes.add(location.index);
-      } else if (monotonicDirection === 0) {
-        monotonicDirection = direction;
-      } else if (direction !== monotonicDirection) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return null;
-        seenIndexes.add(location.index);
-      }
-      previousIndex = location.index;
-    } else {
-      if (seenIndexes.has(location.index)) return null;
-      seenIndexes.add(location.index);
-    }
-
     if (location.index < 0 || location.index >= next.length) return null;
     const row = next[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
@@ -321,7 +296,6 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     }
     next[location.index] = replaced;
     applied.push(op);
-    appliedIndexes.push(location.index);
   }
 
   if (arraySegments === null || field === null || valueSchema === null || next === null) return null;

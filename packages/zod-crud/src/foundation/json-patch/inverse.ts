@@ -135,13 +135,9 @@ function computeSameArrayFieldReplaceInverses(
   let field: string | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
-  let previousIndex: number | null = null;
-  let monotonicDirection: -1 | 0 | 1 = 0;
-  const appliedIndexes: number[] = [];
-  const inverses = new Array<JSONPatchOperation | undefined>(ops.length);
-  let inverseCount = 0;
+  const inverses: JSONPatchOperation[] = [];
 
-  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+  for (let opIndex = ops.length - 1; opIndex >= 0; opIndex -= 1) {
     if (!(opIndex in ops)) return null;
     const op = ops[opIndex]!;
     if (op.op === "test") continue;
@@ -160,48 +156,22 @@ function computeSameArrayFieldReplaceInverses(
       return null;
     }
 
-    if (seenIndexes === null) {
-      const direction = previousIndex === null
-        ? 0
-        : indexDirection(previousIndex, location.index);
-      if (direction === 0 && previousIndex !== null) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return null;
-        seenIndexes.add(location.index);
-      } else if (monotonicDirection === 0) {
-        monotonicDirection = direction;
-      } else if (direction !== monotonicDirection) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return null;
-        seenIndexes.add(location.index);
-      }
-      previousIndex = location.index;
-    } else {
-      if (seenIndexes.has(location.index)) return null;
-      seenIndexes.add(location.index);
-    }
-
     if (arrayValue === null || location.index < 0 || location.index >= arrayValue.length) return null;
     const row = arrayValue[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
     if (!objectHasOwn.call(row, location.key)) return null;
-    inverses[ops.length - opIndex - 1] = {
+    if (seenIndexes === null) seenIndexes = new Set();
+    else if (seenIndexes.has(location.index)) continue;
+    seenIndexes.add(location.index);
+    inverses.push({
       op: "replace",
       path: op.path,
       value: (row as Record<string, unknown>)[location.key],
-    };
-    inverseCount += 1;
-    appliedIndexes.push(location.index);
+    });
   }
 
   if (arrayPath === null || field === null || arrayValue === null) return null;
-  if (inverseCount === inverses.length) return { ok: true, inverses: inverses as JSONPatchOperation[] };
-
-  const compacted: JSONPatchOperation[] = [];
-  for (const inverse of inverses) {
-    if (inverse !== undefined) compacted.push(inverse);
-  }
-  return { ok: true, inverses: compacted };
+  return { ok: true, inverses };
 }
 
 function computeSameArrayElementReplaceInverses(
