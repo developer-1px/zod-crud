@@ -338,6 +338,18 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0, selection: true });
+    bench(`doc.patch copy/move array batch ${copyMoveOps.length} selection=single`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(copyMoveOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0, selection: { mode: "multiple" } });
+    bench(`doc.patch copy/move array batch ${copyMoveOps.length} selection=multiple`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(copyMoveOps));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch copy/move array batch ${copyMoveOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(copyMoveOps));
