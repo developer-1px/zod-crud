@@ -212,23 +212,34 @@ function shouldSpread(
 
 function buildSpreadPasteOps(payload: ReadonlyArray<unknown>, target: Pointer, mode: PasteMode): JSONPatchOperation[] {
   const path = insertionTarget(target, mode);
-  return payload.map((value, index) => ({
-    op: "add",
-    path: offsetInsertionPath(path, index),
-    value,
-  }));
+  const ops = new Array<JSONPatchOperation>(payload.length);
+  if (path.endsWith("/-")) {
+    for (let index = 0; index < payload.length; index += 1) {
+      ops[index] = { op: "add", path, value: payload[index] };
+    }
+    return ops;
+  }
+
+  const numericTarget = path.match(/^(.*\/)([0-9]+)$/);
+  if (numericTarget) {
+    const prefix = numericTarget[1]!;
+    const start = Number(numericTarget[2]);
+    for (let index = 0; index < payload.length; index += 1) {
+      ops[index] = { op: "add", path: prefix + String(start + index), value: payload[index] };
+    }
+    return ops;
+  }
+
+  for (let index = 0; index < payload.length; index += 1) {
+    ops[index] = { op: "add", path, value: payload[index] };
+  }
+  return ops;
 }
 
 function insertionTarget(target: Pointer, mode: PasteMode): Pointer {
   if (mode !== "after") return target;
   const m = target.match(/^(.*\/)([0-9]+)$/);
   return m ? m[1] + String(Number(m[2]) + 1) : target;
-}
-
-function offsetInsertionPath(path: Pointer, offset: number): Pointer {
-  if (offset === 0 || path.endsWith("/-")) return path;
-  const m = path.match(/^(.*\/)([0-9]+)$/);
-  return m ? m[1] + String(Number(m[2]) + offset) : path;
 }
 
 function isArrayInsertionPath(state: unknown, path: Pointer): boolean {

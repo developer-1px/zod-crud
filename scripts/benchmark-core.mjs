@@ -213,6 +213,12 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench(`doc.clipboard.pastePayload spread ${insertedItems.length} before middle`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.pastePayload(`/items/${middle}`, insertedItems, { spread: true }));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.copy /items", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.copy("/items"));
   }

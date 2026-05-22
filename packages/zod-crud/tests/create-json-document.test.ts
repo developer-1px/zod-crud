@@ -177,6 +177,23 @@ describe("createJSONDocument public interface", () => {
     expect(doc.history.undoDepth).toBe(2);
   });
 
+  test("spread paste offsets numeric insertion paths", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.clipboard.pastePayload("/items/1", [
+      { id: "x", name: "X" },
+      { id: "y", name: "Y" },
+    ], { spread: true })).toMatchObject({
+      ok: true,
+      applied: [
+        { op: "add", path: "/items/1", value: { id: "x", name: "X" } },
+        { op: "add", path: "/items/2", value: { id: "y", name: "Y" } },
+      ],
+    });
+
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "x", "y", "b"]);
+  });
+
   test("clipboard read returns a cloned payload", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
