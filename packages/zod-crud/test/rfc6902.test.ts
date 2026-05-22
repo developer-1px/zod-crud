@@ -267,6 +267,30 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state.settings).not.toBe(settings);
   });
 
+  it("applies root object replace batches without prototype mutation", () => {
+    const state: Record<string, unknown> = { a: 1, b: 2 };
+    Object.defineProperty(state, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    const ops: JSONPatchOperation[] = [
+      { op: "replace", path: "/a", value: 10 },
+      { op: "replace", path: "/__proto__", value: { safe: false } },
+    ];
+
+    const r = applyPatch(Any, state, ops);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual(ops);
+    expect((r.state as Record<string, unknown>).a).toBe(10);
+    expect((r.state as Record<string, unknown>).b).toBe(2);
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(r.state as object, "__proto__")).toBe(true);
+    expect((r.state as Record<string, unknown>).__proto__).toEqual({ safe: false });
+  });
+
   it("applies same-array field replace batches without changing applied order or untouched references", () => {
     const first = { title: "a", done: false };
     const second = { title: "b", done: false };

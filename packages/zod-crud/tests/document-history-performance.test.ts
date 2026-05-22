@@ -120,6 +120,33 @@ describe("doc.history performance contract", () => {
     });
   });
 
+  test("root object replace history keeps __proto__ as data", () => {
+    const initial: Record<string, unknown> = { a: 1, b: 2 };
+    Object.defineProperty(initial, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    const doc = createJSONDocument(z.any(), initial, { history: 10 });
+
+    expect(doc.patch([
+      { op: "replace", path: "/a", value: 10 },
+      { op: "replace", path: "/__proto__", value: { safe: false } },
+    ])).toEqual({ ok: true });
+    expect(doc.history.undo()).toBe(true);
+    expect((doc.value as Record<string, unknown>).a).toBe(1);
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: true });
+
+    expect(doc.history.redo()).toBe(true);
+    expect((doc.value as Record<string, unknown>).a).toBe(10);
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: false });
+  });
+
   test("same-array field replace batch history restores without schema validation", () => {
     let validations = 0;
     const Schema = z.object({

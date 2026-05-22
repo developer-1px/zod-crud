@@ -239,6 +239,12 @@ export function applyTrustedPatch<T>(
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
+  if (valuesTrusted) {
+    const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops);
+    if (rootObjectReplaceFast.handled) {
+      return { state: rootObjectReplaceFast.state as T, result: ok, applied: rootObjectReplaceFast.applied };
+    }
+  }
   const fast = applyIndependentReplacePatch(state, ops, valuesTrusted);
   if (fast.handled) {
     return { state: fast.state as T, result: ok, applied: fast.applied };
@@ -522,6 +528,56 @@ function applyTailRemovePatch(
   return stateWithArray === null
     ? { handled: false }
     : { handled: true, state: stateWithArray, applied };
+}
+
+function applyRootObjectReplacePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): FastPatchResult {
+  if (ops.length < 2 || state === null || typeof state !== "object" || Array.isArray(state)) {
+    return { handled: false };
+  }
+
+  let next: Record<string, unknown> | null = null;
+  let seenKeys: Set<string> | null = null;
+  const applied: JSONPatchOperation[] = [];
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return { handled: false };
+    }
+
+    const key = op.path.slice(1);
+    if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };
+    if (seenKeys === null) seenKeys = new Set();
+    else if (seenKeys.has(key)) return { handled: false };
+    seenKeys.add(key);
+
+    if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: op.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = op.value;
+    }
+    applied.push(op);
+  }
+
+  return next === null
+    ? { handled: false }
+    : { handled: true, state: next, applied };
 }
 
 function applyIndependentReplacePatch(
