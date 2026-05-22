@@ -320,7 +320,8 @@ function applySameArrayFieldReplacePatch(
 
   let arraySegments: string[] | null = null;
   let field: string | null = null;
-  const seenIndexes = new Set<number>();
+  let seenIndexes: Set<number> | null = null;
+  let previousIndex = -1;
   const items: Array<{ op: JSONPatchOperation; index: number; key: string; value: unknown }> = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
@@ -340,9 +341,19 @@ function applySameArrayFieldReplacePatch(
     if (arraySegments === null) arraySegments = nextArraySegments;
     else if (!sameSegments(arraySegments, nextArraySegments)) return { handled: false };
 
-    if (seenIndexes.has(location.index)) return { handled: false };
+    if (seenIndexes === null) {
+      if (location.index <= previousIndex) {
+        seenIndexes = new Set(items.map((item) => item.index));
+        if (seenIndexes.has(location.index)) return { handled: false };
+        seenIndexes.add(location.index);
+      } else {
+        previousIndex = location.index;
+      }
+    } else {
+      if (seenIndexes.has(location.index)) return { handled: false };
+      seenIndexes.add(location.index);
+    }
     if (!valuesTrusted && jsonSerializableError(normalized.value) !== null) return { handled: false };
-    seenIndexes.add(location.index);
     items.push({ op: normalized, index: location.index, key: location.key, value: normalized.value });
   }
 

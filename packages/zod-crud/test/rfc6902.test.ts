@@ -302,6 +302,24 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     ]);
     expect(repeated.result.ok).toBe(true);
     expect(repeated.state).toEqual({ items: [{ done: false }] });
+
+    const unordered = applyPatch(Any, state, [
+      { op: "replace", path: "/items/2/done", value: true },
+      { op: "replace", path: "/items/0/done", value: true },
+    ]);
+    expect(unordered.result.ok).toBe(true);
+    expect(unordered.applied).toEqual([
+      { op: "replace", path: "/items/2/done", value: true },
+      { op: "replace", path: "/items/0/done", value: true },
+    ]);
+    expect(unordered.state).toEqual({
+      items: [
+        { title: "a", done: true },
+        second,
+        { title: "c", done: true },
+      ],
+      settings,
+    });
   });
 
   it("preserves ordered semantics for repeated and nested replace batches", () => {
