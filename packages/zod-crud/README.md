@@ -361,13 +361,14 @@ doc.history.undo();
 doc.history.redo();
 ```
 
-Group synchronous edits with `transaction`.
+For many known edits, build one operation array and commit it once. This keeps
+schema validation, history recording, and subscribers on one document change.
 
 ```ts
-doc.history.transaction({ label: "rename cards" }, () => {
-  doc.patch({ op: "replace", path: "/lists/0/cards/0/title", value: "A" });
-  doc.patch({ op: "replace", path: "/lists/0/cards/1/title", value: "B" });
-});
+doc.commit([
+  { op: "replace", path: "/lists/0/cards/0/title", value: "A" },
+  { op: "replace", path: "/lists/0/cards/1/title", value: "B" },
+], { label: "rename cards" });
 ```
 
 History metadata is serializable and follows the patch entry.
@@ -382,6 +383,10 @@ doc.commit(patch, {
 
 doc.history.mergeLast({ mergeKey: "title" });
 ```
+
+Use `history.transaction` only when each step must observe the intermediate
+document state. It groups history entries, but it does not turn repeated
+`doc.patch(...)` calls into one schema validation pass.
 
 ## Capability Checks
 

@@ -61,6 +61,10 @@ The document surface centers on:
 `doc.patch(...)` accepts one operation or an operation array. `doc.commit(...)`
 and `doc.canPatch(...)` take operation arrays.
 
+For burst edits, build one operation array and call `doc.patch(...)` or
+`doc.commit(...)` once. `history.transaction` groups history entries, but
+repeated `doc.patch(...)` calls still validate repeatedly.
+
 Public mutating methods mutate immediately. `duplicate`, `clipboard.cut`,
 `clipboard.paste`, and `clipboard.pastePayload` return `value` plus `applied`
 records for inspection; do not pass `applied` to `commit` again.

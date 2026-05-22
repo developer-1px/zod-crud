@@ -270,11 +270,15 @@ History stores forward and inverse patch records with selection metadata.
 doc.history.undo();
 doc.history.redo();
 doc.history.mergeLast({ mergeKey: "typing:title" });
-doc.history.transaction({ label: "rename" }, () => {
-  doc.patch({ op: "replace", path: "/items/0/name", value: "A" });
-  doc.patch({ op: "replace", path: "/items/1/name", value: "B" });
-});
+doc.commit([
+  { op: "replace", path: "/items/0/name", value: "A" },
+  { op: "replace", path: "/items/1/name", value: "B" },
+], { label: "rename" });
 ```
+
+Known burst edits should be committed as one operation array. `history.transaction`
+groups history entries for workflows that must observe intermediate document
+state, but repeated `doc.patch(...)` calls still validate repeatedly.
 
 `history.canUndo` and `history.canRedo` are booleans for UI disabled states. `canUndo()` and `canRedo()` return reasoned capability results.
 

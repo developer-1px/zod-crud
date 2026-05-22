@@ -148,6 +148,10 @@ describe("public docs consistency", () => {
     expect(docs.readme).toMatch(/doc\.commit\(\.\.\.\)[\s\S]*operation arrays/);
     expect(docs.site).toMatch(/`doc\.commit\(\.\.\.\)`과 `doc\.canPatch\(\.\.\.\)`는/);
     expect(docs.llms).toMatch(/doc\.commit\(\.\.\.\)[\s\S]*operation arrays/);
+    expect(docs.readme).toMatch(/history\.transaction[\s\S]*does not turn repeated\s+`doc\.patch\(\.\.\.\)` calls into one schema validation pass/);
+    expect(docs.site).toMatch(/history\.transaction[\s\S]*반복 `doc\.patch\(\.\.\.\)` 호출을 한 번의 schema validation/);
+    expect(docs.spec).toMatch(/Known burst edits[\s\S]*repeated `doc\.patch\(\.\.\.\)` calls still validate repeatedly/);
+    expect(docs.llms).toMatch(/For burst edits[\s\S]*repeated `doc\.patch\(\.\.\.\)` calls still validate repeatedly/);
 
     expect(docs.readme).toMatch(/Pointer-array copy stores an array payload/);
     expect(docs.site).toMatch(/Pointer 배열을 copy하면 clipboard payload도 배열/);

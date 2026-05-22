@@ -338,13 +338,13 @@ doc.history.undo();
 doc.history.redo();
 ```
 
-여러 변경을 한 undo entry로 묶을 수 있습니다.
+알고 있는 여러 변경은 operation 배열로 한 번 commit합니다. schema validation, history 기록, subscriber 알림이 한 번의 document change로 묶입니다.
 
 ```ts
-doc.history.transaction({ label: "rename cards" }, () => {
-  doc.patch({ op: "replace", path: "/lists/0/cards/0/title", value: "A" });
-  doc.patch({ op: "replace", path: "/lists/0/cards/1/title", value: "B" });
-});
+doc.commit([
+  { op: "replace", path: "/lists/0/cards/0/title", value: "A" },
+  { op: "replace", path: "/lists/0/cards/1/title", value: "B" },
+], { label: "rename cards" });
 ```
 
 History metadata는 JSON으로 직렬화 가능한 patch entry metadata입니다.
@@ -359,6 +359,8 @@ doc.commit(patch, {
 
 doc.history.mergeLast({ mergeKey: "title" });
 ```
+
+`history.transaction`은 각 단계가 중간 document state를 읽어야 할 때만 씁니다. history entry는 묶지만 반복 `doc.patch(...)` 호출을 한 번의 schema validation으로 바꾸지는 않습니다.
 
 selection 이동만으로는 history entry를 만들지 않습니다. document 변경 entry 안에 selection before/after가 같이 저장됩니다.
 

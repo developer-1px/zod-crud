@@ -451,6 +451,19 @@ for (const surfaceName of ["readme", "spec", "site"]) {
   if (!/mergeLast/.test(source)) fail(`${surfaceName}: missing history mergeLast.`);
 }
 
+if (!/history\.transaction[\s\S]*does not turn repeated\s+`doc\.patch\(\.\.\.\)` calls into one schema validation pass/.test(surfaces.readme)) {
+  fail("readme: missing burst-edit guidance that transaction is not a validation batch.");
+}
+if (!/history\.transaction[\s\S]*반복 `doc\.patch\(\.\.\.\)` 호출을 한 번의 schema validation/.test(surfaces.site)) {
+  fail("site: missing burst-edit guidance that transaction is not a validation batch.");
+}
+if (!/Known burst edits[\s\S]*repeated `doc\.patch\(\.\.\.\)` calls still validate repeatedly/.test(surfaces.spec)) {
+  fail("spec: missing burst-edit guidance that transaction is not a validation batch.");
+}
+if (!/For burst edits[\s\S]*repeated `doc\.patch\(\.\.\.\)` calls still validate repeatedly/.test(surfaces.llms)) {
+  fail("llms: missing burst-edit guidance that transaction is not a validation batch.");
+}
+
 if (process.exitCode === undefined) {
   console.log(`docs evaluation ok: ${completed}/100 loops recorded`);
 }
