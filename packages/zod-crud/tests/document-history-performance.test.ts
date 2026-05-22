@@ -147,6 +147,28 @@ describe("doc.history performance contract", () => {
     expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: false });
   });
 
+  test("root object replace history preserves repeated key semantics", () => {
+    const Schema = z.object({
+      a: z.number(),
+      b: z.number(),
+    });
+    const initial = { a: 1, b: 2 };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.patch([
+      { op: "replace", path: "/a", value: 10 },
+      { op: "replace", path: "/a", value: 20 },
+      { op: "replace", path: "/b", value: 30 },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toEqual({ a: 20, b: 30 });
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value).toEqual({ a: 20, b: 30 });
+  });
+
   test("same-array field replace batch history restores without schema validation", () => {
     let validations = 0;
     const Schema = z.object({

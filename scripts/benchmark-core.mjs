@@ -461,6 +461,27 @@ for (const size of sizes) {
     bench(`doc.patch root object replace batch ${rootReplaceCount} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(rootReplaceOps));
   }
+  {
+    const doc = createJSONDocument(RootRecord, rootState, { history: 100 });
+    const result = doc.patch(rootReplaceOps);
+    if (!result.ok) throw new Error(`setup root replace batch failed: ${JSON.stringify(result)}`);
+    benchWithSetup(`history undo root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canUndo) {
+        const redone = doc.history.redo();
+        if (!redone) throw new Error("root replace redo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canRedo) {
+        const undone = doc.history.undo();
+        if (!undone) throw new Error("root replace undo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
+  }
   bench(`accepted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
     applyAcceptedPatch(rootState, rootReplaceOps));
   bench(`trusted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>

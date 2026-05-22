@@ -50,6 +50,8 @@ export function computeInverses(
   if (appendOnly) return appendOnly;
   const arrayFieldReplace = computeSameArrayFieldReplaceInverses(state, ops);
   if (arrayFieldReplace) return arrayFieldReplace;
+  const rootObjectReplace = computeRootObjectReplaceInverses(state, ops);
+  if (rootObjectReplace) return rootObjectReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
   const arrayOnly = computeSameArrayStructuralInverses(state, ops);
@@ -354,6 +356,60 @@ function computeIndependentReplaceInverses(
     out.push({ op: "replace", path: item.path, value: prev.value });
   }
   return { ok: true, inverses: out };
+}
+
+function computeRootObjectReplaceInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (
+    ops.length < 2
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+  ) {
+    return null;
+  }
+
+  let seenKeys: Set<string> | null = null;
+  let inverseCount = 0;
+  const inverses = new Array<JSONPatchOperation | undefined>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (op.op === "test") continue;
+    if (
+      op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return null;
+    }
+
+    const key = op.path.slice(1);
+    if (key === "" || !objectHasOwn.call(state, key)) return null;
+    if (seenKeys === null) seenKeys = new Set();
+    else if (seenKeys.has(key)) return null;
+    seenKeys.add(key);
+
+    inverses[ops.length - index - 1] = {
+      op: "replace",
+      path: op.path,
+      value: (state as Record<string, unknown>)[key],
+    };
+    inverseCount += 1;
+  }
+
+  if (inverseCount === 0) return null;
+  if (inverseCount === inverses.length) return { ok: true, inverses: inverses as JSONPatchOperation[] };
+
+  const compacted: JSONPatchOperation[] = [];
+  for (const inverse of inverses) {
+    if (inverse !== undefined) compacted.push(inverse);
+  }
+  return { ok: true, inverses: compacted };
 }
 
 function hasIndependentPaths(paths: ReadonlyArray<{ path: string; segments: string[] }>): boolean {
