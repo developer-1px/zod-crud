@@ -17,6 +17,9 @@ export function pickAutoTargets(
   applied: ReadonlyArray<JSONPatchOperation>,
   _after: unknown,
 ): Pointer[] {
+  const sameArray = pickSameArrayAutoTargets(applied);
+  if (sameArray !== null) return sameArray;
+
   const out: Pointer[] = [];
   for (let i = 0; i < applied.length; i++) {
     const op = applied[i]!;
@@ -26,6 +29,67 @@ export function pickAutoTargets(
     if (tracked !== null) out.push(tracked);
   }
   return out;
+}
+
+function pickSameArrayAutoTargets(
+  applied: ReadonlyArray<JSONPatchOperation>,
+): Pointer[] | null {
+  let parent: Pointer | null = null;
+  const targets: number[] = [];
+
+  for (let index = 0; index < applied.length; index += 1) {
+    const op = applied[index]!;
+    if (op.op !== "add" && op.op !== "remove" && op.op !== "copy" && op.op !== "move") return null;
+
+    const location = arrayElementLocation(op.path);
+    if (location === null) return null;
+    if (parent === null) parent = location.parent;
+    else if (location.parent !== parent) return null;
+
+    if (op.op === "add" || op.op === "copy") {
+      shiftTargetsForInsert(targets, location.index);
+      targets.push(location.index);
+    } else if (op.op === "remove") {
+      removeTargetIndex(targets, location.index);
+    } else {
+      const from = arrayElementLocation(op.from);
+      if (from === null || from.parent !== parent) return null;
+      shiftTargetsForMove(targets, from.index, location.index);
+      targets.push(location.index);
+    }
+  }
+
+  return parent === null ? [] : targets.map((index) => appendArrayIndex(parent, index));
+}
+
+function shiftTargetsForInsert(targets: number[], index: number): void {
+  for (let target = 0; target < targets.length; target += 1) {
+    if (targets[target]! >= index) targets[target]! += 1;
+  }
+}
+
+function removeTargetIndex(targets: number[], index: number): void {
+  let write = 0;
+  for (let read = 0; read < targets.length; read += 1) {
+    const target = targets[read]!;
+    if (target === index) continue;
+    targets[write] = target > index ? target - 1 : target;
+    write += 1;
+  }
+  targets.length = write;
+}
+
+function shiftTargetsForMove(targets: number[], from: number, to: number): void {
+  for (let target = 0; target < targets.length; target += 1) {
+    let index = targets[target]!;
+    if (index === from) {
+      targets[target] = to;
+      continue;
+    }
+    if (index > from) index -= 1;
+    if (index >= to) index += 1;
+    targets[target] = index;
+  }
 }
 
 export function pickPrimaryAutoTarget(
@@ -73,6 +137,22 @@ export function recoverLostPointer(
 
 function isArrayIndex(seg: string): boolean {
   return /^(0|[1-9][0-9]*)$/.test(seg);
+}
+
+function arrayElementLocation(path: Pointer): { parent: Pointer; index: number } | null {
+  if (path === "" || path[0] !== "/") return null;
+  const segments = tryParsePointer(path);
+  if (segments === null) return null;
+  const segment = segments[segments.length - 1];
+  if (segment === undefined || !isArrayIndex(segment)) return null;
+  return {
+    parent: buildPointer(segments.slice(0, -1)),
+    index: Number(segment),
+  };
+}
+
+function appendArrayIndex(parent: Pointer, index: number): Pointer {
+  return parent === "" ? `/${index}` : `${parent}/${index}`;
 }
 
 // at = parent + [pivotSeg]. target 이 같은 array 부모를 공유하고 그 위치의 인덱스가
