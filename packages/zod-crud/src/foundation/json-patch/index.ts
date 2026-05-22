@@ -82,6 +82,16 @@ export function applyPatch<S extends z.ZodTypeAny>(
 ): ApplyResult<S> {
   const stateJsonErr = jsonSerializableError(state);
   if (stateJsonErr) return { state, result: fail("not_serializable", stateJsonErr), applied: [] };
+  return applyPatchToTrustedState(schema, state, ops);
+}
+
+// Internal document path for callers that already verified `state` is JSON.
+// Op values and schema validity are still checked for every patch.
+export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): ApplyResult<S> {
   if (!Array.isArray(ops)) {
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }

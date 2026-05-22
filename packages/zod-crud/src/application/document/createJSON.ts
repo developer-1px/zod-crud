@@ -5,11 +5,14 @@ import type * as z from "zod";
 import {
   applyOperation,
   applyPatch,
+  applyPatchToTrustedState,
   applyTrustedPatch,
+  type ApplyResult,
   type JSONPatchOperation,
   type JSONResult,
 } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
+import { jsonSerializableError } from "../../foundation/json.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
 import type {
   JSONChangeMetadata,
@@ -36,6 +39,7 @@ interface HeadlessJSONState<T> extends JSONState<T> {
 }
 
 interface TrustedJSONOps<T> extends JSONOps<T> {
+  previewPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
   trustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
   trustedApply(state: T, applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 }
@@ -51,6 +55,7 @@ export function createJSON<S extends z.ZodType>(
   if (!parsed.success) throw parsed.error;
 
   let state = parsed.data as z.output<S>;
+  let stateJsonTrusted = jsonSerializableError(state) === null;
   const initialState = state;
   const policy: ErrorPolicy = options;
   const listeners = new Set<JSONChangeListener>();
@@ -71,8 +76,9 @@ export function createJSON<S extends z.ZodType>(
     metadata?: JSONChangeMetadata,
   ): JSONResult => {
     const before = state;
-    const applied = applyPatch(schema, before, operations);
+    const applied = previewPatchFrom(before, operations);
     if (!applied.result.ok) return handleResult(policy, label, applied.result);
+    stateJsonTrusted = true;
     if (applied.state === before) return applied.result;
     state = applied.state;
     notify(applied.applied, metadata);
@@ -87,6 +93,7 @@ export function createJSON<S extends z.ZodType>(
     if (!applied.result.ok) return handleResult(policy, "patch", applied.result);
     if (applied.state === before) return applied.result;
     state = applied.state;
+    if (!stateJsonTrusted) stateJsonTrusted = jsonSerializableError(state) === null;
     notify(applied.applied, metadata);
     return applied.result;
   };
@@ -97,9 +104,16 @@ export function createJSON<S extends z.ZodType>(
   ): JSONResult => {
     if (next === state) return { ok: true };
     state = next;
+    stateJsonTrusted = true;
     notify(applied, metadata);
     return { ok: true };
   };
+  const previewPatchFrom = (
+    from: z.output<S>,
+    operations: ReadonlyArray<JSONPatchOperation>,
+  ): ApplyResult<S> => stateJsonTrusted
+    ? applyPatchToTrustedState(schema, from, operations)
+    : applyPatch(schema, from, operations);
 
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
 
@@ -113,6 +127,7 @@ export function createJSON<S extends z.ZodType>(
       });
     }
     state = next.data as z.output<S>;
+    stateJsonTrusted = jsonSerializableError(state) === null;
     notify([ROOT_REPLACE(state)]);
     return { ok: true };
   };
@@ -140,6 +155,9 @@ export function createJSON<S extends z.ZodType>(
     },
     patch(operations, metadata) {
       return dispatch("patch", operations, metadata);
+    },
+    previewPatch(operations) {
+      return previewPatchFrom(state, operations);
     },
     trustedPatch(operations, metadata) {
       return dispatchTrusted(operations, metadata);

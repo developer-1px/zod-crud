@@ -142,6 +142,14 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state).toBe(initial);
   });
 
+  it("rejects non-serializable input state before applying a patch", () => {
+    const initial = { a: () => "bad", b: 1 };
+    const r = applyPatch(Any, initial, [{ op: "replace", path: "/b", value: 2 }]);
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
+    expect(r.state).toBe(initial);
+  });
+
   it("rejects sparse patch arrays at runtime", () => {
     const initial = { a: 1 };
     const ops = [] as unknown as JSONPatchOperation[];

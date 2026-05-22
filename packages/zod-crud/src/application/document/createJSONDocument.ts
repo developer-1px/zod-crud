@@ -4,10 +4,9 @@
 import type * as z from "zod";
 
 import { buildCheck, type CheckResult } from "./check.js";
-import {
-  applyPatch,
-  type JSONPatchOperation,
-  type JSONResult,
+import type {
+  JSONPatchOperation,
+  JSONResult,
 } from "../../foundation/json-patch/index.js";
 import { computeInverses } from "../../foundation/json-patch/inverse.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
@@ -209,7 +208,7 @@ export function createJSONDocument<S extends z.ZodType>(
 
     const before = rawOps.state;
     const selectionBefore = snapSelection();
-    const predicted = applyPatch(schema, before, operations);
+    const predicted = rawOps.previewPatch(operations);
     if (!predicted.result.ok) return patch(operations, metadataOptions);
 
     const selectionAfter = resolveCommitSelection(selectionBefore, selection, predicted.state, selectionMode);
