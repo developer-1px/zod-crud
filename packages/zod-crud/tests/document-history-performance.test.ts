@@ -129,6 +129,30 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toEqual({ items: [bad] });
   });
 
+  test("document clipboard copy keeps the JSON guard for untrusted schema output", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const bad = () => "bad";
+    const doc = createJSONDocument(Schema, { items: [bad] }, { strict: false });
+
+    const result = doc.clipboard.copy("/items/0");
+
+    expect(result).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.hasData).toBe(false);
+    expect(doc.value).toEqual({ items: [bad] });
+  });
+
+  test("document clipboard cut keeps the JSON guard for untrusted schema output", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const bad = () => "bad";
+    const doc = createJSONDocument(Schema, { items: [bad] }, { strict: false });
+
+    const result = doc.clipboard.cut("/items/0");
+
+    expect(result).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.hasData).toBe(false);
+    expect(doc.value).toEqual({ items: [bad] });
+  });
+
   test("plain structural leaf replace validates locally without rerunning root schema parse", () => {
     const Schema = z.object({
       items: z.array(z.object({ done: z.boolean() })),

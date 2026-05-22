@@ -40,6 +40,7 @@ interface HeadlessJSONState<T> extends JSONState<T> {
 }
 
 interface TrustedJSONOps<T> extends JSONOps<T> {
+  readonly stateJsonTrusted: boolean;
   previewPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
   trustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
   trustedApply(state: T, applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
@@ -180,6 +181,7 @@ export function createJSON<S extends z.ZodType>(
       return () => { listeners.delete(listener); };
     },
     get state() { return state; },
+    get stateJsonTrusted() { return stateJsonTrusted; },
   };
 
   return {

@@ -81,6 +81,7 @@ interface CreateClipboardOptions<S extends z.ZodType> {
   getSelectionSource?: () => SelectionSource | null;
   getSelectionTarget?: () => Pointer | null;
   getAppliedPatch?: () => ReadonlyArray<JSONPatchOperation>;
+  getStateJsonTrusted?: () => boolean;
   onChange?: () => void;
 }
 
@@ -93,7 +94,16 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
 export function createClipboard<S extends z.ZodType>(
   args: CreateClipboardOptions<S>,
 ): ClipboardState<z.output<S>> {
-  const { schema, getState, ops, getSelectionSource, getSelectionTarget, getAppliedPatch, onChange } = args;
+  const {
+    schema,
+    getState,
+    ops,
+    getSelectionSource,
+    getSelectionTarget,
+    getAppliedPatch,
+    getStateJsonTrusted,
+    onChange,
+  } = args;
   let buffer: ClipboardBuffer | null = null;
 
   const setBuffer = (next: ClipboardBuffer | null): void => {
@@ -169,7 +179,7 @@ export function createClipboard<S extends z.ZodType>(
     copy(source) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCopySource();
-      const result = copy(getState(), resolved);
+      const result = copy(getState(), resolved, { trusted: getStateJsonTrusted?.() === true });
       if (result.ok) {
         setBuffer({
           payload: result.payload,
@@ -183,7 +193,7 @@ export function createClipboard<S extends z.ZodType>(
     cut(source) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCutSource();
-      const result = cut(schema, getState(), resolved);
+      const result = cut(schema, getState(), resolved, { trusted: getStateJsonTrusted?.() === true });
       if (!result.ok) return result;
       const patchResult = ops.patch(result.patch);
       if (!patchResult.ok) {

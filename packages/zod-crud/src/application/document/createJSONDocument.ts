@@ -371,6 +371,7 @@ export function createJSONDocument<S extends z.ZodType>(
     getSelectionSource: () => selectionState.selectedSource,
     getSelectionTarget: () => selectionState.primaryPointer,
     getAppliedPatch: () => lastPatch,
+    getStateJsonTrusted: () => rawOps.stateJsonTrusted,
   };
   const clipboard = createClipboard(options.onChange === undefined
     ? clipboardOptions

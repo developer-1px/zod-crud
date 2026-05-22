@@ -26,28 +26,37 @@ export interface CopyError {
 type CopyResult = CopyOk | CopyError;
 export type ClipboardSource = PointerSource;
 
+interface CopyOptions {
+  trusted?: boolean;
+}
+
 /**
  * selection 의 source pointer 위치의 값을 JSON fragment payload 로 추출한다.
  * pure. state 는 변하지 않는다 (read-only).
  */
-export function copy(state: unknown, source: ClipboardSource): CopyResult {
+export function copy(state: unknown, source: ClipboardSource, options: CopyOptions = {}): CopyResult {
   const sources = normalizeSources(source);
   if (!sources.ok) return sources;
 
   if (typeof source === "string") {
-    return copyOne(state, source, sources.sources);
+    return copyOne(state, source, sources.sources, options);
   }
 
   const payload: unknown[] = [];
   for (const item of sources.sources) {
-    const r = copyOne(state, item, [item]);
+    const r = copyOne(state, item, [item], options);
     if (!r.ok) return r;
     payload.push(r.payload);
   }
   return { ok: true, payload, source: sources.sources[0]!, sources: sources.sources };
 }
 
-function copyOne(state: unknown, source: Pointer, sources: ReadonlyArray<Pointer>): CopyResult {
+function copyOne(
+  state: unknown,
+  source: Pointer,
+  sources: ReadonlyArray<Pointer>,
+  options: CopyOptions,
+): CopyResult {
   const segments = tryParsePointer(source);
   if (segments === null) {
     return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
@@ -56,11 +65,12 @@ function copyOne(state: unknown, source: Pointer, sources: ReadonlyArray<Pointer
   if (!r.ok) {
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
   }
-  const jsonErr = jsonSerializableError(r.value);
-  if (jsonErr) {
-    return { ok: false, code: "not_serializable", message: jsonErr };
+  if (!options.trusted) {
+    const jsonErr = jsonSerializableError(r.value);
+    if (jsonErr) {
+      return { ok: false, code: "not_serializable", message: jsonErr };
+    }
   }
-  // deep clone via JSON round-trip — payload 가 외부 round-trip 후에도 정합한지 보장.
   return { ok: true, payload: cloneTrustedJson(r.value), source, sources };
 }
 

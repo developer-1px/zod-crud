@@ -30,17 +30,22 @@ export interface CutError {
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
+interface CutOptions {
+  trusted?: boolean;
+}
+
 export function cut<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   source: ClipboardSource,
+  options: CutOptions = {},
 ): CutOk<z.output<S>> | CutError {
   const removePlan = removeSourcesPatch(source);
   if (!removePlan.ok) return cutSourceError(removePlan);
 
   const payloads: unknown[] = [];
   for (const item of removePlan.sources) {
-    const r = readPayload(state, item);
+    const r = readPayload(state, item, options);
     if (!r.ok) return r;
     payloads.push(r.payload);
   }
@@ -58,7 +63,11 @@ export function cut<S extends z.ZodType>(
   return { ok: true, next: r.draft, patch, payload, source: removePlan.source, sources: removePlan.sources };
 }
 
-function readPayload(state: unknown, source: Pointer): { ok: true; payload: unknown } | CutError {
+function readPayload(
+  state: unknown,
+  source: Pointer,
+  options: CutOptions,
+): { ok: true; payload: unknown } | CutError {
   const segments = tryParsePointer(source);
   if (segments === null) {
     return { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${source}` };
@@ -67,9 +76,11 @@ function readPayload(state: unknown, source: Pointer): { ok: true; payload: unkn
   if (!v.ok) {
     return { ok: false, code: "path_not_found", message: `cut source not found: ${source}` };
   }
-  const jsonErr = jsonSerializableError(v.value);
-  if (jsonErr) {
-    return { ok: false, code: "not_serializable", message: jsonErr };
+  if (!options.trusted) {
+    const jsonErr = jsonSerializableError(v.value);
+    if (jsonErr) {
+      return { ok: false, code: "not_serializable", message: jsonErr };
+    }
   }
   const payload = cloneTrustedJson(v.value);
   return { ok: true, payload };
