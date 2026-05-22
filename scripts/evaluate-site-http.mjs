@@ -2,12 +2,14 @@ import { createReadStream, existsSync, readFileSync, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { extname, join, normalize, sep } from "node:path";
 import { once } from "node:events";
+import { validateSiteRoutes } from "./site-route-checks.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
 const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/zod-crud/");
 const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
 const routes = JSON.parse(readFileSync(join(root, "apps/site/src/site-routes.json"), "utf8"));
+validateSiteRoutes(routes, fail);
 const seenAssets = new Set();
 
 function fail(message) {

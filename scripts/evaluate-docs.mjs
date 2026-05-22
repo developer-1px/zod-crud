@@ -50,6 +50,7 @@ const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
 const siteHttpEvaluator = read("scripts/evaluate-site-http.mjs");
 const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
+const siteRouteChecks = read("scripts/site-route-checks.mjs");
 const rootPackageJson = read("package.json");
 const pagesWorkflow = read(".github/workflows/pages.yml");
 const siteRoutes = JSON.parse(siteRoutesJson);
@@ -242,6 +243,7 @@ if (!/Verify workspace and build Pages artifact/.test(pagesWorkflow)) {
 for (const pattern of [
   /404\.html/,
   /site-routes\.json/,
+  /validateSiteRoutes/,
   /routeFile/,
   /route title/,
   /route canonical/,
@@ -261,6 +263,7 @@ for (const pattern of [
 for (const pattern of [
   /createServer/,
   /site-routes\.json/,
+  /validateSiteRoutes/,
   /SITE_BASE/,
   /fetchRequiredText/,
   /localAssetPaths/,
@@ -282,6 +285,7 @@ for (const pattern of [
   /live_check/,
   /readFileSync/,
   /site-routes\.json/,
+  /validateSiteRoutes/,
   /route canonical/,
   /route og:url/,
   /routeUrl/,
@@ -293,6 +297,17 @@ for (const pattern of [
 
 if (/\[200, 404\]/.test(liveSiteEvaluator)) {
   fail("live site evaluator: route pages must require HTTP 200, not 404 fallback.");
+}
+
+for (const pattern of [
+  /validateSiteRoutes/,
+  /duplicate path/,
+  /duplicate output file/,
+  /invalid group/,
+  /overview route/,
+  /routeFile/,
+]) {
+  if (!pattern.test(siteRouteChecks)) fail(`site route checks: missing ${pattern}.`);
 }
 
 for (const surfaceName of ["readme", "spec", "site"]) {

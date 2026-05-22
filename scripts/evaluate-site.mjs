@@ -1,12 +1,14 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { routeFile, validateSiteRoutes } from "./site-route-checks.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
 const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/");
 const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-const routes = JSON.parse(readFileSync(join(root, "apps/site/src/site-routes.json"), "utf8"))
-  .map((route) => ({ ...route, file: routeFile(route.path) }));
+const siteRoutes = JSON.parse(readFileSync(join(root, "apps/site/src/site-routes.json"), "utf8"));
+validateSiteRoutes(siteRoutes, fail);
+const routes = siteRoutes.map((route) => ({ ...route, file: routeFile(route.path) }));
 
 function read(path) {
   return readFileSync(join(dist, path), "utf8");
@@ -24,10 +26,6 @@ function normalizeBase(value) {
 
 function routeUrl(path) {
   return path === "/" ? `${expectedSiteUrl}/` : `${expectedSiteUrl}${path}`;
-}
-
-function routeFile(path) {
-  return path === "/" ? "index.html" : `${path.slice(1)}/index.html`;
 }
 
 for (const file of [
