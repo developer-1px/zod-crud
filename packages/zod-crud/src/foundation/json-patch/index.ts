@@ -113,6 +113,12 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   if (!Array.isArray(ops)) {
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }
+  const appendFast = applyAppendOnlyAddPatch(state, ops);
+  if (appendFast.handled) {
+    const parsed = schema.safeParse(appendFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: appendFast.state as z.output<S>, result: ok, applied: appendFast.applied };
+  }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops);
   if (arrayReplaceFast.handled) {
     const parsed = schema.safeParse(arrayReplaceFast.state);
@@ -215,6 +221,10 @@ export function applyTrustedPatch<T>(
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }
   const valuesTrusted = options.valuesTrusted === true;
+  const appendFast = applyAppendOnlyAddPatch(state, ops, valuesTrusted);
+  if (appendFast.handled) {
+    return { state: appendFast.state as T, result: ok, applied: appendFast.applied };
+  }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, valuesTrusted);
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
@@ -364,6 +374,63 @@ function applySameArrayFieldReplacePatch(
   return stateWithArray === null
     ? { handled: false }
     : { handled: true, state: stateWithArray, applied: items.map((item) => item.op) };
+}
+
+function applyAppendOnlyAddPatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
+): FastPatchResult {
+  if (ops.length < 2) return { handled: false };
+
+  let parent: Pointer | null = null;
+  const values: unknown[] = [];
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (
+      op === null
+      || typeof op !== "object"
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || !("value" in op)
+      || !op.path.endsWith("/-")
+    ) {
+      return { handled: false };
+    }
+
+    const nextParent = op.path.slice(0, -2);
+    if (parent === null) parent = nextParent;
+    else if (parent !== nextParent) return { handled: false };
+
+    if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
+    values.push(op.value);
+  }
+
+  if (parent === null) return { handled: false };
+  const parsedParent = parseSafe(parent);
+  if (!("ok" in parsedParent)) return { handled: false };
+  const current = getValueAt(state, parsedParent.segs);
+  if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+
+  const initialLength = current.value.length;
+  const stateWithArray = replaceValueAtSegments(
+    state,
+    parsedParent.segs,
+    0,
+    current.value.concat(values),
+  );
+  if (stateWithArray === null) return { handled: false };
+
+  return {
+    handled: true,
+    state: stateWithArray,
+    applied: values.map((value, index): JSONPatchOperation => ({
+      op: "add",
+      path: appendSegment(parent, initialLength + index),
+      value,
+    })),
+  };
 }
 
 function applyIndependentReplacePatch(

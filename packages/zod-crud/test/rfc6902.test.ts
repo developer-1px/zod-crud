@@ -384,6 +384,31 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(initial.items).toEqual([first, second]);
   });
 
+  it("applies append-only add batches with concrete applied paths", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const settings = { owner: "core" };
+    const initial = { items: [first, second], settings };
+
+    const r = applyPatch(Any, initial, [
+      { op: "add", path: "/items/-", value: { id: "c" } },
+      { op: "add", path: "/items/-", value: { id: "d" } },
+      { op: "add", path: "/items/-", value: { id: "e" } },
+    ]);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual([
+      { op: "add", path: "/items/2", value: { id: "c" } },
+      { op: "add", path: "/items/3", value: { id: "d" } },
+      { op: "add", path: "/items/4", value: { id: "e" } },
+    ]);
+    expect(r.state.items).toEqual([first, second, { id: "c" }, { id: "d" }, { id: "e" }]);
+    expect(r.state.items).not.toBe(initial.items);
+    expect(r.state.items[0]).toBe(first);
+    expect(r.state.items[1]).toBe(second);
+    expect(r.state.settings).toBe(settings);
+  });
+
   it("applies adjacent same-array moves with remove then add semantics", () => {
     const first = { id: "a" };
     const second = { id: "b" };
