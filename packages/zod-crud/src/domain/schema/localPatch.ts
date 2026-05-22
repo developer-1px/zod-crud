@@ -44,6 +44,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
   if (!isPlainStructuralSchema(schema)) return null;
+  const sameArrayFieldReplace = applySameArrayFieldReplacePatchWithLocalSchemaValidation(schema, state, ops);
+  if (sameArrayFieldReplace) return sameArrayFieldReplace;
   if (isIndependentReplacePatch(ops)) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops);
   }
@@ -74,6 +76,37 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (!parsed.success) {
       return schemaViolation(state, op.path, parsed.error.issues);
     }
+  }
+
+  return {
+    state: applied.state as z.output<S>,
+    result: { ok: true },
+    applied: applied.applied,
+  };
+}
+
+function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): LocalPatchResult<S> {
+  const parsed = sameArrayFieldReplaceOps(ops);
+  if (parsed === null) return null;
+
+  const applied = applyTrustedPatch(state, ops);
+  if (!applied.result.ok) {
+    return {
+      state,
+      result: applied.result,
+      applied: [],
+    };
+  }
+
+  const valueSchema = cachedSchemaAtPointer(schema, parsed[0]!.path, "value");
+  if (!valueSchema) return null;
+  for (const op of parsed) {
+    const result = valueSchema.safeParse(op.value);
+    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
   }
 
   return {
@@ -343,6 +376,58 @@ function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): bool
     if (current === previous || current.startsWith(`${previous}/`)) return false;
   }
   return true;
+}
+
+function sameArrayFieldReplaceOps(
+  ops: ReadonlyArray<JSONPatchOperation>,
+): Array<{ path: Pointer; index: number; key: string; value: unknown }> | null {
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  let arraySegments: string[] | null = null;
+  let field: string | null = null;
+  const seenIndexes = new Set<number>();
+  const parsed: Array<{ path: Pointer; index: number; key: string; value: unknown }> = [];
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex++) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path === ""
+    ) {
+      return null;
+    }
+
+    let segments: string[];
+    try {
+      segments = parsePointer(op.path);
+    } catch {
+      return null;
+    }
+    if (segments.length < 2) return null;
+    const key = segments[segments.length - 1]!;
+    const index = numericSegment(segments[segments.length - 2]!);
+    if (index === null) return null;
+
+    if (field === null) field = key;
+    else if (field !== key) return null;
+
+    const nextArraySegments = segments.slice(0, -2);
+    if (arraySegments === null) arraySegments = nextArraySegments;
+    else if (!sameSegments(arraySegments, nextArraySegments)) return null;
+
+    if (seenIndexes.has(index)) return null;
+    seenIndexes.add(index);
+    parsed.push({ path: op.path, index, key, value: op.value });
+  }
+
+  return parsed;
+}
+
+function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
+  return left.length === right.length && left.every((segment, index) => segment === right[index]);
 }
 
 function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {

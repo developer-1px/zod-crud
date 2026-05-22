@@ -358,6 +358,41 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("plain structural same-array field replace batches reuse local field validation", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ done: z.boolean(), title: z.string() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { done: false, title: "a" },
+        { done: false, title: "b" },
+        { done: false, title: "c" },
+      ],
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/done", value: true },
+      { op: "replace", path: "/items/1/done", value: true },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.done)).toEqual([true, true, false]);
+    expect(rootParses).toBe(0);
+
+    const before = doc.value;
+    const rejected = doc.patch([
+      { op: "replace", path: "/items/0/done", value: false },
+      { op: "replace", path: "/items/2/done", value: "bad" },
+    ]);
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toBe(before);
+    expect(rootParses).toBe(0);
+  });
+
   test("plain structural array mutations validate locally without rerunning root schema parse", () => {
     const Schema = z.object({
       items: z.array(z.object({ id: z.string(), done: z.boolean() })),
