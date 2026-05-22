@@ -191,6 +191,41 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("document paste checks and clipboard paste use trusted preview on plain structural schemas", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [{ id: "a" }, { id: "b" }],
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.canPastePayload("/items/-", { id: "c" })).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
+
+    expect(doc.clipboard.pastePayload("/items/-", { id: "c" })).toMatchObject({
+      ok: true,
+      applied: [{ op: "add", path: "/items/2", value: { id: "c" } }],
+    });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+    expect(rootParses).toBe(0);
+  });
+
+  test("document paste checks keep the JSON guard for untrusted schema output", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const bad = () => "bad";
+    const doc = createJSONDocument(Schema, { items: [bad] }, { strict: false });
+
+    expect(doc.canPastePayload("/items/-", 1)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.pastePayload("/items/-", 1)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.value).toEqual({ items: [bad] });
+  });
+
   test("plain structural leaf replace validates locally without rerunning root schema parse", () => {
     const Schema = z.object({
       items: z.array(z.object({ done: z.boolean() })),

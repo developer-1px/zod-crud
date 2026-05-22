@@ -2,9 +2,9 @@
 // (schema, state, payload, target, mode) → { next, patch }.
 
 import type * as z from "zod";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
-import { preFlight, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
 import { getDiscriminatedUnionInfo, getObjectLiteralValues, schemaAtPointer } from "../schema/introspection.js";
 import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
 
@@ -44,6 +44,10 @@ interface PastePayloadOptions {
 
 export interface PasteOptions extends PastePayloadOptions {}
 
+interface PasteExecutionOptions extends PastePayloadOptions {
+  previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
+}
+
 interface ResolvedPasteArgs {
   target?: Pointer;
   mode: PasteMode;
@@ -73,7 +77,7 @@ export function paste<S extends z.ZodType>(
   payload: unknown,
   target: Pointer,
   mode: PasteMode = "into",
-  options: PastePayloadOptions = {},
+  options: PasteExecutionOptions = {},
 ): PasteOk<z.output<S>> | PasteError | PasteDuMismatch {
   const rekeyed = tryRekeyPayload(payload, state, options.rekey);
   if (!rekeyed.ok) return rekeyed;
@@ -85,11 +89,13 @@ export function paste<S extends z.ZodType>(
   if (mismatch) return mismatch;
 
   const patch = spread ? buildSpreadPasteOps(nextPayload, target, mode) : [buildPasteOp(nextPayload, target, mode)];
-  const r = preFlight(schema, state, patch);
+  const r = options.previewPatch
+    ? preFlightFromApplyResult(options.previewPatch(patch))
+    : preFlight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.draft, patch };
+  return { ok: true, next: r.draft as z.output<S>, patch };
 }
 
 function findDuMismatch<S extends z.ZodType>(

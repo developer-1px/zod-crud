@@ -253,6 +253,7 @@ export function createClipboard<S extends z.ZodType>(
     const result = paste(schema, getState(), payload, target, args.mode, {
       ...args.options,
       spread,
+      previewPatch,
     });
     if (!result.ok) return result;
     const patchResult = ops.patch(result.patch);

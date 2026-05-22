@@ -113,6 +113,18 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canPastePayload single append", rounds, (index) =>
+      doc.canPastePayload("/items/-", makeItem(size + index)));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.pastePayload single append", rounds, (index) =>
+      doc.clipboard.pastePayload("/items/-", makeItem(size + index)));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.copy /items", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.copy("/items"));
   }

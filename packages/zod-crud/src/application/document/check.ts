@@ -217,7 +217,10 @@ export function buildCheck<S extends z.ZodType>(
       const resolvedTarget = targetOrSelection(args.target);
       return resolvedTarget === null
         ? emptySelection("paste target selection is empty")
-        : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, args.options));
+        : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, {
+            ...args.options,
+            previewPatch,
+          }));
     },
     patch(operations) {
       return toCheckResult(checkPatch(operations));
