@@ -125,6 +125,9 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
 ): LocalPatchResult<S> {
   if (!Array.isArray(ops) || ops.length === 0) return null;
 
+  const sameArrayElementReplace = applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation(schema, state, ops);
+  if (sameArrayElementReplace) return sameArrayElementReplace;
+
   for (const op of ops) {
     if (
       validateOperationShape(op) !== null
@@ -149,6 +152,60 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
     state: applied.state as z.output<S>,
     result: { ok: true },
     applied: applied.applied,
+  };
+}
+
+function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): LocalPatchResult<S> {
+  let parent: Pointer | null = null;
+  let parentSegments: string[] | null = null;
+  let elementSchema: z.ZodType | null = null;
+  let next: unknown[] | null = null;
+  const applied: JSONPatchOperation[] = [];
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+    ) {
+      return null;
+    }
+
+    const location = arrayElementReplaceLocation(op.path);
+    if (location === null) return null;
+    if (parent === null) {
+      parent = location.parent;
+      parentSegments = location.parentSegments;
+      const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
+      elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+      if (!elementSchema) return null;
+
+      const current = readAt(state, parentSegments);
+      if (!current.ok || !Array.isArray(current.value)) return null;
+      next = current.value.slice();
+    } else if (parent !== location.parent) {
+      return null;
+    }
+
+    if (!elementSchema || !acceptsKnownJsonValue(elementSchema, op.value)) return null;
+    if (next === null || location.index < 0 || location.index >= next.length) return null;
+    next[location.index] = op.value;
+    applied.push(op);
+  }
+
+  if (parentSegments === null || next === null) return null;
+  const nextState = replaceValueAtSegments(state, parentSegments, 0, next);
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
   };
 }
 
@@ -580,6 +637,24 @@ function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "
   if (segment === undefined) return null;
   const index = segment === "-" ? "-" : numericSegment(segment);
   return index === null ? null : { index };
+}
+
+function arrayElementReplaceLocation(
+  path: Pointer,
+): { parent: Pointer; parentSegments: string[]; index: number } | null {
+  const parent = parentPointer(path);
+  if (parent === null) return null;
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  const segment = segments[segments.length - 1];
+  if (segment === undefined) return null;
+  const index = numericSegment(segment);
+  if (index === null) return null;
+  return { parent, parentSegments: segments.slice(0, -1), index };
 }
 
 function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {
