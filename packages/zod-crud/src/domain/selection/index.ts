@@ -809,8 +809,7 @@ export function applySelectionAutoRules(
   }
   const targets = pickAutoTargets(applied, after);
   if (targets.length > 0) {
-    const compact = compactPointerTargets(targets);
-    return withPreviousContext(prev, snapFromRanges(compact.targets.map(collapsedRange), compact.primaryIndex, mode, after));
+    return withPreviousContext(prev, snapFromPointerTargets(targets, mode));
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
@@ -840,9 +839,22 @@ export function applySelectionAutoRules(
   return sameSelectionSnap(prev, withContext) ? prev : withContext;
 }
 
-function compactPointerTargets(targets: ReadonlyArray<Pointer>): { targets: Pointer[]; primaryIndex: number } {
+function snapFromPointerTargets(targets: ReadonlyArray<Pointer>, mode: SelectionMode): SelectionSnap {
+  if (targets.length === 0) return EMPTY_SELECTION;
+  if (mode === "single") {
+    const target = targets[targets.length - 1]!;
+    return {
+      selectedPointers: [target],
+      selectionRanges: [{ anchor: target, focus: target }],
+      primaryIndex: 0,
+      anchor: target,
+      focus: target,
+    };
+  }
+
   const primaryTargetIndex = targets.length - 1;
-  const unique: Pointer[] = [];
+  const selectedPointers: Pointer[] = [];
+  const selectionRanges: SelectionRange[] = [];
   const indexes = new Map<Pointer, number>();
   let primaryIndex = -1;
 
@@ -854,15 +866,22 @@ function compactPointerTargets(targets: ReadonlyArray<Pointer>): { targets: Poin
       continue;
     }
 
-    const nextIndex = unique.length;
+    const nextIndex = selectedPointers.length;
     indexes.set(target, nextIndex);
-    unique.push(target);
+    selectedPointers.push(target);
+    selectionRanges.push({ anchor: target, focus: target });
     if (index === primaryTargetIndex) primaryIndex = nextIndex;
   }
 
+  if (selectionRanges.length === 0) return EMPTY_SELECTION;
+  const nextPrimary = primaryIndex >= 0 ? primaryIndex : selectionRanges.length - 1;
+  const primary = selectionRanges[nextPrimary]!;
   return {
-    targets: unique,
-    primaryIndex: primaryIndex >= 0 ? primaryIndex : Math.max(0, unique.length - 1),
+    selectedPointers,
+    selectionRanges,
+    primaryIndex: nextPrimary,
+    anchor: primary.anchor,
+    focus: primary.focus,
   };
 }
 
