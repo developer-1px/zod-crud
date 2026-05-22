@@ -29,16 +29,21 @@ interface LocalPatchOptions {
 
 interface ExtendedDef {
   type?: string;
+  coerce?: boolean;
   checks?: unknown[];
   innerType?: z.ZodType;
   catchall?: z.ZodType;
   keyType?: z.ZodType;
   valueType?: z.ZodType;
+  values?: unknown[];
+  entries?: Record<string, unknown>;
 }
 
 interface LocalSchemaCache {
   pointerSchemas: Map<string, z.ZodType | null>;
 }
+
+type KnownJsonValueValidator = (value: unknown, seen: WeakSet<object>) => boolean;
 
 interface ArrayFieldPath {
   arraySegments: string[];
@@ -49,6 +54,7 @@ interface ArrayFieldPath {
 const objectHasOwn = Object.prototype.hasOwnProperty;
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
+const knownJsonValueValidatorCache = new WeakMap<object, KnownJsonValueValidator | null>();
 
 export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
@@ -93,6 +99,7 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (op.op !== "replace") return null;
     const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
     if (!valueSchema) return null;
+    if (acceptsKnownJsonValue(valueSchema, op.value)) continue;
     const parsed = valueSchema.safeParse(op.value);
     if (!parsed.success) {
       return schemaViolation(state, op.path, parsed.error.issues);
@@ -182,12 +189,15 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     const row = next[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
     if (!objectHasOwn.call(row, location.key)) return null;
-    if (!valuesTrusted) {
+    const valueAccepted = acceptsKnownJsonValue(valueSchema, op.value);
+    if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
     }
-    const result = valueSchema.safeParse(op.value);
-    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    if (!valueAccepted) {
+      const result = valueSchema.safeParse(op.value);
+      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    }
 
     const sourceRow = row as Record<string, unknown>;
     const replaced = { ...sourceRow };
@@ -259,17 +269,19 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     else if (seenKeys.has(key)) return null;
     seenKeys.add(key);
 
-    if (!valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
-    }
-
     const valueSchema = shape
       ? (objectHasOwn.call(shape, key) ? (shape[key] ?? null) : null)
       : recordValueSchema;
     if (!valueSchema) return null;
-    const result = valueSchema.safeParse(op.value);
-    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    const valueAccepted = acceptsKnownJsonValue(valueSchema, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const result = valueSchema.safeParse(op.value);
+      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    }
 
     if (next === null) next = { ...(state as Record<string, unknown>) };
     if (key === "__proto__") {
@@ -407,12 +419,15 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   for (const op of parsedOps) {
     if (op.op !== "add") continue;
-    if (!valuesTrusted) {
+    const valueAccepted = acceptsKnownJsonValue(elementSchema, op.value);
+    if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
     }
-    const parsed = elementSchema.safeParse(op.value);
-    if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    if (!valueAccepted) {
+      const parsed = elementSchema.safeParse(op.value);
+      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    }
   }
 
   const applied = applyTrustedPatch(state, ops, { valuesTrusted: true });
@@ -648,6 +663,196 @@ function replaceValueAtSegments(
   );
   if (child === null) return null;
   return { ...(current as Record<string, unknown>), [segment]: child };
+}
+
+function acceptsKnownJsonValue(schema: z.ZodType, value: unknown): boolean {
+  const validator = knownJsonValueValidatorForSchema(schema);
+  return validator !== null && validator(value, new WeakSet<object>());
+}
+
+function knownJsonValueValidatorForSchema(schema: z.ZodType): KnownJsonValueValidator | null {
+  const cached = knownJsonValueValidatorCache.get(schema as object);
+  if (cached !== undefined) return cached;
+  const validator = buildKnownJsonValueValidator(schema, new WeakSet<object>());
+  knownJsonValueValidatorCache.set(schema as object, validator);
+  return validator;
+}
+
+function buildKnownJsonValueValidator(
+  schema: z.ZodType,
+  seenSchemas: WeakSet<object>,
+): KnownJsonValueValidator | null {
+  if (seenSchemas.has(schema as object)) return null;
+  seenSchemas.add(schema as object);
+
+  const def = getDef(schema) as ExtendedDef;
+  if (def.coerce || (Array.isArray(def.checks) && def.checks.length > 0)) return null;
+
+  switch (def.type) {
+    case "string":
+      return (value) => typeof value === "string";
+    case "number":
+      return (value) => typeof value === "number" && Number.isFinite(value);
+    case "boolean":
+      return (value) => typeof value === "boolean";
+    case "null":
+      return (value) => value === null;
+    case "literal":
+      return buildLiteralValueValidator(def);
+    case "enum":
+      return buildEnumValueValidator(def);
+    case "optional": {
+      const inner = def.innerType ? buildKnownJsonValueValidator(def.innerType, seenSchemas) : null;
+      return inner === null ? null : (value, seen) => value !== undefined && inner(value, seen);
+    }
+    case "nullable": {
+      const inner = def.innerType ? buildKnownJsonValueValidator(def.innerType, seenSchemas) : null;
+      return inner === null ? null : (value, seen) => value === null || inner(value, seen);
+    }
+    case "object":
+      return buildObjectValueValidator(schema, def, seenSchemas);
+    case "array":
+      return buildArrayValueValidator(schema, seenSchemas);
+    case "record":
+      return buildRecordValueValidator(def, seenSchemas);
+    default:
+      return null;
+  }
+}
+
+function buildObjectValueValidator(
+  schema: z.ZodType,
+  def: ExtendedDef,
+  seenSchemas: WeakSet<object>,
+): KnownJsonValueValidator | null {
+  if (def.catchall) return null;
+  const shape = getObjectShape(schema);
+  if (!shape) return null;
+
+  const fields: Array<{ key: string; optional: boolean; validate: KnownJsonValueValidator }> = [];
+  for (const key of Object.keys(shape)) {
+    const childSchema = shape[key];
+    if (!childSchema) return null;
+    const validate = buildKnownJsonValueValidator(childSchema, seenSchemas);
+    if (validate === null) return null;
+    fields.push({
+      key,
+      optional: isOptionalSchema(childSchema),
+      validate,
+    });
+  }
+
+  return (value, seen) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+    if (seen.has(value)) return false;
+    seen.add(value);
+
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) return false;
+    if (Object.getOwnPropertySymbols(value).length > 0) return false;
+
+    const names = Object.getOwnPropertyNames(value);
+    let present = 0;
+    for (const field of fields) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, field.key);
+      if (!descriptor) {
+        if (field.optional) continue;
+        return false;
+      }
+      if (!descriptor.enumerable || "get" in descriptor || "set" in descriptor) return false;
+      if (!field.validate(descriptor.value, seen)) return false;
+      present += 1;
+    }
+    return names.length === present;
+  };
+}
+
+function buildArrayValueValidator(
+  schema: z.ZodType,
+  seenSchemas: WeakSet<object>,
+): KnownJsonValueValidator | null {
+  const element = getArrayElement(schema);
+  if (!element) return null;
+  const validateElement = buildKnownJsonValueValidator(element, seenSchemas);
+  if (validateElement === null) return null;
+
+  return (value, seen) => {
+    if (!Array.isArray(value)) return false;
+    if (seen.has(value)) return false;
+    seen.add(value);
+    if (Object.getOwnPropertySymbols(value).length > 0) return false;
+    const names = Object.getOwnPropertyNames(value);
+    if (names.length !== value.length + 1 || names[names.length - 1] !== "length") return false;
+
+    for (let index = 0; index < value.length; index += 1) {
+      const key = names[index];
+      if (key !== String(index)) return false;
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor || !descriptor.enumerable || "get" in descriptor || "set" in descriptor) return false;
+      if (!validateElement(descriptor.value, seen)) return false;
+    }
+    return true;
+  };
+}
+
+function buildRecordValueValidator(
+  def: ExtendedDef,
+  seenSchemas: WeakSet<object>,
+): KnownJsonValueValidator | null {
+  if (def.keyType && !isPlainStringKeySchema(def.keyType)) return null;
+  if (!def.valueType) return null;
+  const validateValue = buildKnownJsonValueValidator(def.valueType, seenSchemas);
+  if (validateValue === null) return null;
+
+  return (value, seen) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+    if (seen.has(value)) return false;
+    seen.add(value);
+
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) return false;
+    if (Object.getOwnPropertySymbols(value).length > 0) return false;
+
+    for (const key of Object.getOwnPropertyNames(value)) {
+      const descriptor = Object.getOwnPropertyDescriptor(value, key);
+      if (!descriptor || !descriptor.enumerable || "get" in descriptor || "set" in descriptor) return false;
+      if (!validateValue(descriptor.value, seen)) return false;
+    }
+    return true;
+  };
+}
+
+function buildLiteralValueValidator(def: ExtendedDef): KnownJsonValueValidator | null {
+  if (!Array.isArray(def.values) || !def.values.every(isJsonPrimitive)) return null;
+  return (value) => def.values!.some((item) => Object.is(item, value));
+}
+
+function buildEnumValueValidator(def: ExtendedDef): KnownJsonValueValidator | null {
+  const values = Array.isArray(def.values)
+    ? def.values
+    : def.entries && typeof def.entries === "object"
+      ? Object.values(def.entries)
+      : null;
+  if (values === null || !values.every(isJsonPrimitive)) return null;
+  return (value) => values.some((item) => Object.is(item, value));
+}
+
+function isPlainStringKeySchema(schema: z.ZodType): boolean {
+  const def = getDef(schema) as ExtendedDef;
+  return def.type === "string"
+    && !def.coerce
+    && (!Array.isArray(def.checks) || def.checks.length === 0);
+}
+
+function isOptionalSchema(schema: z.ZodType): boolean {
+  return (getDef(schema) as ExtendedDef).type === "optional";
+}
+
+function isJsonPrimitive(value: unknown): boolean {
+  return value === null
+    || typeof value === "string"
+    || typeof value === "boolean"
+    || (typeof value === "number" && Number.isFinite(value));
 }
 
 function okLocalPatch<S extends z.ZodType>(

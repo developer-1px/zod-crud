@@ -558,6 +558,12 @@ describe("doc.history performance contract", () => {
       rootParses += 1;
       return originalSafeParse(value);
     }) as typeof Schema.safeParse;
+    const originalValueSafeParse = Value.safeParse.bind(Value);
+    let valueParses = 0;
+    Value.safeParse = ((value: unknown) => {
+      valueParses += 1;
+      return originalValueSafeParse(value);
+    }) as typeof Value.safeParse;
 
     expect(doc.patch([
       { op: "replace", path: "/a", value: { id: "a2", done: true } },
@@ -569,6 +575,7 @@ describe("doc.history performance contract", () => {
       c: { id: "c", done: false },
     });
     expect(rootParses).toBe(0);
+    expect(valueParses).toBe(0);
 
     const before = doc.value;
     const rejected = doc.patch([
@@ -578,6 +585,21 @@ describe("doc.history performance contract", () => {
     expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
     expect(doc.value).toBe(before);
     expect(rootParses).toBe(0);
+    expect(valueParses).toBe(1);
+
+    const accessorValue: Record<string, unknown> = { done: true };
+    Object.defineProperty(accessorValue, "id", {
+      enumerable: true,
+      get: () => "b3",
+    });
+    const nonSerializable = doc.patch([
+      { op: "replace", path: "/a", value: { id: "a4", done: false } },
+      { op: "replace", path: "/b", value: accessorValue },
+    ]);
+    expect(nonSerializable).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.value).toBe(before);
+    expect(rootParses).toBe(0);
+    expect(valueParses).toBe(1);
   });
 
   test("plain structural same-array field replace batches reuse local field validation", () => {
