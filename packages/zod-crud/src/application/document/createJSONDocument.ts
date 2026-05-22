@@ -237,7 +237,10 @@ export function createJSONDocument<S extends z.ZodType>(
   ): JSONDocumentDuplicateResult<z.output<S>> => {
     const before = rawOps.state;
     const selectionBefore = snapSelection();
-    const planned = duplicateVerb(schema, before, source, duplicateOptions, { previewPatch: rawOps.previewPatch });
+    const planned = duplicateVerb(schema, before, source, duplicateOptions, {
+      previewPatch: rawOps.previewPatch,
+      trustedPayload: rawOps.stateJsonTrusted,
+    });
     if (!planned.ok) return planned;
     const changeMetadata = buildChangeMetadata(activeHistoryMetadata, undefined, selectionBefore);
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);

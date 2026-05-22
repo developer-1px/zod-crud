@@ -107,6 +107,12 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canDuplicate middle + rekey", rounds, () =>
+      doc.canDuplicate(`/items/${middle}`, { rekey: { fields: ["id"], strategy: "suffix" } }));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.duplicate middle", rounds, () =>
       doc.duplicate(`/items/${middle}`));
   }

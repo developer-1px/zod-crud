@@ -1,4 +1,4 @@
-import { cloneJson } from "../../foundation/json.js";
+import { cloneJson, cloneTrustedJson } from "../../foundation/json.js";
 
 export type RekeyStrategy = "suffix" | "uuid" | ((value: unknown, ctx: RekeyContext) => string);
 
@@ -16,19 +16,40 @@ export interface RekeyOptions {
 export type RekeyErrorCode = "not_serializable" | "rekey_failed";
 export type RekeyResult = { ok: true; payload: unknown } | { ok: false; code: RekeyErrorCode; message: string };
 
-export function rekeyPayload(payload: unknown, state: unknown, options?: RekeyOptions): unknown {
+export interface RekeyExecutionOptions {
+  trustedPayload?: boolean | undefined;
+}
+
+interface RekeyField {
+  field: string;
+  existing: Set<string>;
+}
+
+export function rekeyPayload(
+  payload: unknown,
+  state: unknown,
+  options?: RekeyOptions,
+  executionOptions: RekeyExecutionOptions = {},
+): unknown {
   if (!options || options.fields.length === 0) return payload;
 
-  const fieldSet = new Set(options.fields);
-  const existing = collectExistingValues(state, fieldSet);
-  const next = cloneJson(payload);
-  rekeyValue(next, fieldSet, existing, options.strategy);
+  const fields = uniqueFields(options.fields);
+  if (fields.length === 0) return payload;
+
+  const existing = collectExistingValues(state, fields);
+  const next = executionOptions.trustedPayload ? cloneTrustedJson(payload) : cloneJson(payload);
+  rekeyValue(next, existing, options.strategy);
   return next;
 }
 
-export function tryRekeyPayload(payload: unknown, state: unknown, options?: RekeyOptions): RekeyResult {
+export function tryRekeyPayload(
+  payload: unknown,
+  state: unknown,
+  options?: RekeyOptions,
+  executionOptions?: RekeyExecutionOptions,
+): RekeyResult {
   try {
-    return { ok: true, payload: rekeyPayload(payload, state, options) };
+    return { ok: true, payload: rekeyPayload(payload, state, options, executionOptions) };
   } catch (error) {
     return rekeyError(error);
   }
@@ -43,15 +64,28 @@ function rekeyError(error: unknown): RekeyResult {
   };
 }
 
-function collectExistingValues(value: unknown, fields: ReadonlySet<string>): Map<string, Set<string>> {
-  const existing = new Map<string, Set<string>>();
-  for (const field of fields) existing.set(field, new Set());
+function uniqueFields(fields: ReadonlyArray<string>): string[] {
+  return [...new Set(fields)];
+}
+
+function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): RekeyField[] {
+  if (fields.length === 1) {
+    const field = fields[0]!;
+    const existing = new Set<string>();
+    walk(value, (entry) => {
+      const current = entry[field];
+      if (isScalar(current)) existing.add(String(current));
+    });
+    return [{ field, existing }];
+  }
+
+  const existing = fields.map((field): RekeyField => ({ field, existing: new Set() }));
 
   walk(value, (entry) => {
-    if (!isRecord(entry)) return;
-    for (const field of fields) {
+    for (let index = 0; index < existing.length; index += 1) {
+      const { field, existing: values } = existing[index]!;
       const value = entry[field];
-      if (isScalar(value)) existing.get(field)?.add(String(value));
+      if (isScalar(value)) values.add(String(value));
     }
   });
 
@@ -60,27 +94,43 @@ function collectExistingValues(value: unknown, fields: ReadonlySet<string>): Map
 
 function rekeyValue(
   value: unknown,
-  fields: ReadonlySet<string>,
-  existing: Map<string, Set<string>>,
+  fields: ReadonlyArray<RekeyField>,
   strategy: RekeyStrategy,
 ): void {
+  if (fields.length === 1) {
+    const { field, existing } = fields[0]!;
+    walk(value, (entry) => {
+      const current = entry[field];
+      if (!isScalar(current)) return;
+
+      const currentText = String(current);
+      if (!existing.has(currentText)) {
+        existing.add(currentText);
+        return;
+      }
+
+      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      entry[field] = next;
+      existing.add(next);
+    });
+    return;
+  }
+
   walk(value, (entry) => {
-    if (!isRecord(entry)) return;
-    for (const field of fields) {
+    for (let index = 0; index < fields.length; index += 1) {
+      const { field, existing } = fields[index]!;
       const current = entry[field];
       if (!isScalar(current)) continue;
 
-      const seen = existing.get(field);
-      if (!seen) continue;
       const currentText = String(current);
-      if (!seen.has(currentText)) {
-        seen.add(currentText);
+      if (!existing.has(currentText)) {
+        existing.add(currentText);
         continue;
       }
 
-      const next = mintValue(current, { field, existing: seen, attempt: 1 }, strategy);
+      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
       entry[field] = next;
-      seen.add(next);
+      existing.add(next);
     }
   });
 }
@@ -115,7 +165,7 @@ function randomId(): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-function walk(value: unknown, visit: (value: unknown) => void): void {
+function walk(value: unknown, visit: (value: Record<string, unknown>) => void): void {
   if (Array.isArray(value)) {
     for (let index = 0; index < value.length; index += 1) {
       const item = value[index];

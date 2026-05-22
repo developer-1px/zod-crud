@@ -226,11 +226,11 @@ export function createClipboard<S extends z.ZodType>(
 
     paste(target, options) {
       if (!buffer) return EMPTY_CLIPBOARD;
-      return runPaste(buffer.payload, target, options, (buffer.sources?.length ?? 0) > 1);
+      return runPaste(buffer.payload, target, options, (buffer.sources?.length ?? 0) > 1, true);
     },
 
     pastePayload(target, payload, options) {
-      return runPaste(payload, target, options, false);
+      return runPaste(payload, target, options, false, false);
     },
   };
 
@@ -239,6 +239,7 @@ export function createClipboard<S extends z.ZodType>(
     targetOrSelectionTarget: PasteTarget | undefined,
     options: PasteOptions | undefined,
     spreadByDefault: boolean,
+    trustedPayload: boolean,
   ): ClipboardPasteResult<z.output<S>> {
     const args = resolvePasteArgs(targetOrSelectionTarget, options);
     const target = targetOrSelection(args.target);
@@ -254,6 +255,7 @@ export function createClipboard<S extends z.ZodType>(
       ...args.options,
       spread,
       previewPatch,
+      trustedPayload,
     });
     if (!result.ok) return result;
     const patchResult = ops.patch(result.patch);

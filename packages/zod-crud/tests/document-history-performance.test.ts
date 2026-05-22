@@ -226,6 +226,23 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toEqual({ items: [bad] });
   });
 
+  test("document pastePayload rekey keeps the JSON guard for external payloads", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const badPayload = { id: "a", run: () => "bad" };
+    const doc = createJSONDocument(Schema, { items: [] }, { strict: false });
+    const rekey = { fields: ["id"], strategy: "suffix" as const };
+
+    expect(doc.canPastePayload("/items/-", badPayload, { rekey })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+    expect(doc.clipboard.pastePayload("/items/-", badPayload, { rekey })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+    expect(doc.value).toEqual({ items: [] });
+  });
+
   test("document duplicate, move, and JSONPath replace checks use trusted preview on plain structural schemas", () => {
     const Schema = z.object({
       items: z.array(z.object({ id: z.string() })),

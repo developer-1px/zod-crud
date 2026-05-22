@@ -161,7 +161,10 @@ export function buildCheck<S extends z.ZodType>(
       const source = primarySourceOrSelection(args.source);
       return source === null
         ? emptySelection("duplicate source selection is empty")
-        : toCheckResult(duplicate(schema, ops.state, source, args.opts, { previewPatch }));
+        : toCheckResult(duplicate(schema, ops.state, source, args.opts, {
+            previewPatch,
+            trustedPayload: trustedState(),
+          }));
     },
     remove(source) {
       const resolved = sourceOrSelection(source);

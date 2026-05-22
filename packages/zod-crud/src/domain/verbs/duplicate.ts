@@ -47,6 +47,7 @@ interface ResolvedDuplicateArgs {
 
 interface DuplicateExecutionOptions {
   previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
+  trustedPayload?: boolean;
 }
 
 export function resolveDuplicateArgs(
@@ -115,7 +116,9 @@ export function duplicate<S extends z.ZodType>(
     return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
   }
 
-  const rekeyed = tryRekeyPayload(sourceRead.value, state, opts.rekey);
+  const rekeyed = tryRekeyPayload(sourceRead.value, state, opts.rekey, {
+    trustedPayload: options.trustedPayload,
+  });
   if (!rekeyed.ok) return rekeyed;
   const payload = rekeyed.payload;
   const op: JSONPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };

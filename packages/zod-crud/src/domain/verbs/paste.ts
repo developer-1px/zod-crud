@@ -46,6 +46,7 @@ export interface PasteOptions extends PastePayloadOptions {}
 
 interface PasteExecutionOptions extends PastePayloadOptions {
   previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
+  trustedPayload?: boolean;
 }
 
 interface ResolvedPasteArgs {
@@ -79,7 +80,9 @@ export function paste<S extends z.ZodType>(
   mode: PasteMode = "into",
   options: PasteExecutionOptions = {},
 ): PasteOk<z.output<S>> | PasteError | PasteDuMismatch {
-  const rekeyed = tryRekeyPayload(payload, state, options.rekey);
+  const rekeyed = tryRekeyPayload(payload, state, options.rekey, {
+    trustedPayload: options.trustedPayload,
+  });
   if (!rekeyed.ok) return rekeyed;
   const nextPayload = rekeyed.payload;
   const spread = shouldSpread(nextPayload, state, target, mode, options);
