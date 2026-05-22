@@ -50,6 +50,8 @@ export function computeInverses(
   if (appendOnly) return appendOnly;
   const arrayFieldReplace = computeSameArrayFieldReplaceInverses(state, ops);
   if (arrayFieldReplace) return arrayFieldReplace;
+  const arrayElementReplace = computeSameArrayElementReplaceInverses(state, ops);
+  if (arrayElementReplace) return arrayElementReplace;
   const rootObjectReplace = computeRootObjectReplaceInverses(state, ops);
   if (rootObjectReplace) return rootObjectReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
@@ -196,6 +198,69 @@ function computeSameArrayFieldReplaceInverses(
     if (inverse !== undefined) compacted.push(inverse);
   }
   return { ok: true, inverses: compacted };
+}
+
+function computeSameArrayElementReplaceInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let parent: string | null = null;
+  let arrayValue: unknown[] | null = null;
+  let seenIndexes: Set<number> | null = null;
+  let previousIndex: number | null = null;
+  let monotonicDirection: -1 | 0 | 1 = 0;
+  const appliedIndexes: number[] = [];
+  const inverses = new Array<JSONPatchOperation>(ops.length);
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (op.op !== "replace" || typeof op.path !== "string" || op.path === "") return null;
+    const location = parseSimpleArrayElementPath(op.path);
+    if (location === null) return null;
+
+    if (parent === null) {
+      parent = location.parent;
+      const array = readValueAtPointer(state, parent);
+      if (!array.ok || !Array.isArray(array.value)) return null;
+      arrayValue = array.value;
+    } else if (parent !== location.parent) {
+      return null;
+    }
+
+    if (seenIndexes === null) {
+      const direction = previousIndex === null
+        ? 0
+        : indexDirection(previousIndex, location.index);
+      if (direction === 0 && previousIndex !== null) {
+        seenIndexes = new Set(appliedIndexes);
+        if (seenIndexes.has(location.index)) return null;
+        seenIndexes.add(location.index);
+      } else if (monotonicDirection === 0) {
+        monotonicDirection = direction;
+      } else if (direction !== monotonicDirection) {
+        seenIndexes = new Set(appliedIndexes);
+        if (seenIndexes.has(location.index)) return null;
+        seenIndexes.add(location.index);
+      }
+      previousIndex = location.index;
+    } else {
+      if (seenIndexes.has(location.index)) return null;
+      seenIndexes.add(location.index);
+    }
+
+    if (arrayValue === null || location.index < 0 || location.index >= arrayValue.length) return null;
+    inverses[ops.length - opIndex - 1] = {
+      op: "replace",
+      path: op.path,
+      value: arrayValue[location.index],
+    };
+    appliedIndexes.push(location.index);
+  }
+
+  return parent === null || arrayValue === null ? null : { ok: true, inverses };
 }
 
 type SameArrayStructuralOp =
@@ -441,6 +506,17 @@ function arrayLocation(path: string): { parent: string; index: number | "-" } | 
   if (segment === undefined) return null;
   const index = segment === "-" ? "-" : numericSegment(segment);
   return index === null ? null : { parent, index };
+}
+
+function parseSimpleArrayElementPath(path: string): { parent: string; index: number } | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const indexSlash = path.lastIndexOf("/");
+  if (indexSlash < 0) return null;
+
+  const index = numericSegment(path.slice(indexSlash + 1));
+  return index === null
+    ? null
+    : { parent: path.slice(0, indexSlash), index };
 }
 
 function numericSegment(segment: string): number | null {
