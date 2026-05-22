@@ -128,4 +128,55 @@ describe("doc.history performance contract", () => {
     expect(result).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.value).toEqual({ items: [bad] });
   });
+
+  test("plain structural leaf replace validates locally without rerunning root schema parse", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ done: z.boolean() })),
+      settings: z.object({ active: z.string() }),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [{ done: false }],
+      settings: { active: "main" },
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch({ op: "replace", path: "/items/0/done", value: true })).toEqual({ ok: true });
+    expect(doc.value.items[0]?.done).toBe(true);
+    expect(rootParses).toBe(0);
+
+    const rejected = doc.patch({ op: "replace", path: "/items/0/done", value: "bad" });
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value.items[0]?.done).toBe(true);
+    expect(rootParses).toBe(0);
+  });
+
+  test("schema checks fall back to full validation for local-looking patches", () => {
+    let validations = 0;
+    const Schema = z.object({
+      min: z.number(),
+      max: z.number(),
+    }).superRefine((value, context) => {
+      validations += 1;
+      if (value.min > value.max) {
+        context.addIssue({
+          code: "custom",
+          path: ["min"],
+          message: "min must be <= max",
+        });
+      }
+    });
+    const doc = createJSONDocument(Schema, { min: 1, max: 5 }, { strict: false });
+    const validationsAfterCreate = validations;
+
+    const rejected = doc.patch({ op: "replace", path: "/min", value: 10 });
+
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toEqual({ min: 1, max: 5 });
+    expect(validations).toBe(validationsAfterCreate + 1);
+  });
 });

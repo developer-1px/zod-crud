@@ -14,6 +14,7 @@ import {
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { jsonSerializableError } from "../../foundation/json.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
+import { applyPatchWithLocalSchemaValidation } from "../../domain/schema/localPatch.js";
 import type {
   JSONChangeMetadata,
   JSONOps,
@@ -111,9 +112,11 @@ export function createJSON<S extends z.ZodType>(
   const previewPatchFrom = (
     from: z.output<S>,
     operations: ReadonlyArray<JSONPatchOperation>,
-  ): ApplyResult<S> => stateJsonTrusted
-    ? applyPatchToTrustedState(schema, from, operations)
-    : applyPatch(schema, from, operations);
+  ): ApplyResult<S> => {
+    if (!stateJsonTrusted) return applyPatch(schema, from, operations);
+    return applyPatchWithLocalSchemaValidation(schema, from, operations)
+      ?? applyPatchToTrustedState(schema, from, operations);
+  };
 
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
 
