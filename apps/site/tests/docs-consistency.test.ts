@@ -18,6 +18,7 @@ const docs = {
   ].join("\n\n"),
   llms: read("llms.txt"),
 };
+const releaseNotes = read("docs/release-notes.md");
 
 const publicExportNames = [
   "JSONCrudError",
@@ -108,6 +109,18 @@ describe("public docs consistency", () => {
   test("document release verification gates docs evaluation", () => {
     for (const [name, source] of Object.entries(docs)) {
       expect(source, `${name} missing docs:evaluate`).toContain("docs:evaluate");
+    }
+    expect(releaseNotes).toContain("docs:evaluate");
+  });
+
+  test("keeps the source layout SSOT aligned", () => {
+    for (const [name, source] of Object.entries({ ...docs, releaseNotes })) {
+      expect(source, `${name} missing root index entrypoint`).toContain("src/index.ts");
+      expect(source, `${name} missing root react entrypoint`).toContain("src/react.ts");
+      expect(source, `${name} missing application layer`).toContain("application");
+      expect(source, `${name} missing domain layer`).toContain("domain");
+      expect(source, `${name} missing foundation layer`).toContain("foundation");
+      expect(source, `${name} still mentions stale api layer`).not.toMatch(/src\/api|application\/react|dist\/api/);
     }
   });
 

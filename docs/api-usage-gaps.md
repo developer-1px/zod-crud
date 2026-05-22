@@ -16,7 +16,7 @@ The package root currently exports:
 
 The root does not export `JSONOps`, `Check`, or command/can builder namespaces, and `JSONDocument<T>` does not expose `doc.ops`, `doc.commands`, or `doc.can`.
 
-Important boundary: `packages/zod-crud/src/jsonOps.ts` defines a low-level ops facade internally, but it is not public package surface.
+Important boundary: `packages/zod-crud/src/application/document/ops.ts` defines a low-level ops facade internally, but it is not public package surface.
 
 Public contract is intentionally locked today:
 
@@ -57,7 +57,7 @@ Evidence:
 
 Current state:
 
-- `JSONOps<T>` exists in `packages/zod-crud/src/jsonOps.ts`.
+- `JSONOps<T>` exists in `packages/zod-crud/src/application/document/ops.ts`.
 - It is not exported from `packages/zod-crud/src/index.ts`.
 - `createJSONDocument` builds an internal `ops` object but does not attach it to `JSONDocument<T>`.
 

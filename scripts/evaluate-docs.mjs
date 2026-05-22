@@ -39,6 +39,7 @@ const surfaces = {
   ].join("\n\n"),
   llms: read("llms.txt"),
 };
+const releaseNotes = read("docs/release-notes.md");
 const smoke = read("packages/zod-crud/test/package-smoke.mjs");
 const markdownViewer = read("apps/site/src/components/MarkdownViewer.tsx");
 const workbenchPlayground = read("apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx");
@@ -152,6 +153,20 @@ for (const exportName of publicExports) {
 
 for (const [name, source] of Object.entries(surfaces)) {
   if (!source.includes("docs:evaluate")) fail(`${name}: missing docs:evaluate release gate.`);
+}
+
+const sourceLayoutSurfaces = { ...surfaces, releaseNotes };
+for (const [name, source] of Object.entries(sourceLayoutSurfaces)) {
+  for (const token of ["src/index.ts", "src/react.ts", "application", "domain", "foundation"]) {
+    if (!source.includes(token)) fail(`${name}: missing source layout token ${token}.`);
+  }
+  if (/src\/api|application\/react|dist\/api/.test(source)) {
+    fail(`${name}: stale source layout path found.`);
+  }
+}
+
+if (!/0\.12\.0 final source layout/.test(releaseNotes) || !/No package import path changed/.test(releaseNotes) || !/docs:evaluate/.test(releaseNotes)) {
+  fail("release notes: missing final source-layout release contract.");
 }
 
 for (const [name, source] of Object.entries({ readme: surfaces.readme, llms: surfaces.llms })) {

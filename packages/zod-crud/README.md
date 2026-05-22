@@ -33,6 +33,26 @@ npm install zod-crud zod
 `zod` is a peer dependency. `react >=18` is optional and only needed for
 `zod-crud/react`.
 
+## Source Layout
+
+Public entrypoints are intentionally at the package source root:
+
+```txt
+src/
+├─ index.ts      zod-crud
+├─ react.ts      zod-crud/react
+├─ application/  document facade assembly
+├─ domain/       editing, selection, schema, tracking rules
+└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+```
+
+In source references, write these entrypoints as `src/index.ts` and
+`src/react.ts`.
+
+Only `zod-crud` and `zod-crud/react` are package API. Do not import
+`zod-crud/src/*`, `zod-crud/dist/*`, `application/*`, `domain/*`, or
+`foundation/*` subpaths.
+
 ## Task Entrypoints
 
 | Task | API |
@@ -444,7 +464,7 @@ fetch("/api/save", {
 
 Before release, run the root gate. It includes package checks and
 `docs:evaluate`, which guards this README, the site API doc, SPEC, `llms.txt`,
-and the 100-loop ledger.
+release notes, the source-layout SSOT, and the 100-loop ledger.
 
 ```sh
 npm run verify

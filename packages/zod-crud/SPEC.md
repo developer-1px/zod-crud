@@ -93,6 +93,23 @@ import { useJSONDocument } from "zod-crud/react";
 
 `createJSONDocument` and `useJSONDocument` expose the same `JSONDocument<T>` surface.
 
+### 2.1 Source Layout
+
+Public source entrypoints are root files:
+
+```txt
+src/
+├─ index.ts      zod-crud
+├─ react.ts      zod-crud/react
+├─ application/  document facade assembly
+├─ domain/       editing, selection, schema, tracking rules
+└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+```
+
+`application`, `domain`, and `foundation` are implementation structure, not
+package subpath exports. Package consumers must import only `zod-crud` and
+`zod-crud/react`.
+
 ## 3. JSONDocument Surface
 
 ```ts
@@ -274,6 +291,10 @@ doc.schema.accepts("/items/-", candidate, "insert");
 ## 10. Testing Contract
 
 Public behavior tests must enter through root exports and the `JSONDocument` surface. Tests should not assert private source structure. Internal modules may exist for implementation cohesion, but they are not the external contract.
+
+The source-layout SSOT is: `src/index.ts` for root exports, `src/react.ts` for
+the React hook, then `application`, `domain`, and `foundation` for internal
+implementation. Release notes must not introduce a second structure map.
 
 Required verification before release:
 

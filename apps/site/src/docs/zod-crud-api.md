@@ -25,6 +25,20 @@ document
 - History는 patch 기록입니다. undo/redo는 `doc.history`에 둡니다.
 - `can*`는 boolean이 아니라 이유가 있는 결과입니다.
 
+Source layout SSOT:
+
+```txt
+src/
+├─ index.ts      zod-crud
+├─ react.ts      zod-crud/react
+├─ application/  document facade assembly
+├─ domain/       editing, selection, schema, tracking rules
+└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+```
+
+`application`, `domain`, `foundation`은 package subpath가 아닙니다.
+공개 진입점 소스 경로는 `src/index.ts`, `src/react.ts`입니다.
+
 ## 작업별 진입점
 
 | 작업 | 진입점 |
@@ -447,7 +461,7 @@ doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
 
 ## verification
 
-배포 전에는 root gate를 기준으로 봅니다. `npm run verify`는 package 검증 뒤 `docs:evaluate`를 실행해서 README, SPEC, 이 문서, `llms.txt`, 100-loop ledger drift를 같이 막습니다.
+배포 전에는 root gate를 기준으로 봅니다. `npm run verify`는 package 검증 뒤 `docs:evaluate`를 실행해서 README, SPEC, 이 문서, `llms.txt`, release notes, source-layout SSOT, 100-loop ledger drift를 같이 막습니다.
 
 ```sh
 npm run verify

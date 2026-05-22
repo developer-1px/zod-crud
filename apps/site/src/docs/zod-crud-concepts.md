@@ -47,6 +47,23 @@ zod-crud는 UI component가 아닙니다. JSON 편집의 공통 규칙을 headle
 상태: selection / clipboard / history -> JSON-safe snapshot
 ```
 
+## 소스 구조
+
+공개 진입점은 루트에 둡니다.
+
+```txt
+src/
+├─ index.ts      zod-crud
+├─ react.ts      zod-crud/react
+├─ application/  document facade 조립
+├─ domain/       editing, selection, schema, tracking 규칙
+└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+```
+
+앱은 `zod-crud`와 `zod-crud/react`만 import합니다. `application`,
+`domain`, `foundation`은 내부 구조입니다.
+소스 경로를 말할 때는 공개 진입점을 `src/index.ts`, `src/react.ts`로 씁니다.
+
 ## 이걸로 할 수 있는 것들
 
 - CMS block editor: block 추가, 이동, 복제, schema-safe paste.

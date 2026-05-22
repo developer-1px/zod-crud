@@ -23,7 +23,7 @@ Each loop scores only the axis it tries to improve.
 
 ## Progress
 
-25 / 100 loops complete.
+26 / 100 loops complete.
 
 | Loop | Evaluate | Execute | Score |
 | --- | --- | --- | --- |
@@ -52,11 +52,12 @@ Each loop scores only the axis it tries to improve.
 | 023 | The workbench test clicked representative actions, but did not assert that each public facade group kept all expected controls visible. A future demo edit could silently drop a method from the interface map. | Added a control-discoverability test that checks the expected button list for `doc.patch`, document actions, selection, clipboard, history, query, `can*`, schema, and pure exports. | Runtime health: 5 -> 5 for demo interface coverage. Task discoverability evidence: stronger. Evidence: `apps/site/tests/interface-workbench.test.tsx`; `npm test -w @zod-crud/site` passed. |
 | 024 | Markdown table rendering was guarded by the component test, but the release docs evaluator did not know that table rendering is part of the API docs demo contract. | Added `docs:evaluate` checks for workbench table block support, `<table>` rendering, and the table role assertion in the workbench test. | Runtime health: 5 -> 5 for docs demo release gating. Evidence: `scripts/evaluate-docs.mjs`; `npm run docs:evaluate` passed. |
 | 025 | `JSONDocument<T>` exposes `canFind(jsonpath)`, but README, site docs, `llms.txt`, and the demo `can*` controls omitted it. That made the can* family non-MECE and hid query validation. | Added `canFind` to README, site docs, `llms.txt`, the workbench `doc.can*` group, component tests, docs consistency tests, and `docs:evaluate`. | API correctness: 5 -> 5 with a real public-interface omission fixed. Task discoverability evidence: stronger. Evidence: `packages/zod-crud/README.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx`; `apps/site/tests/docs-consistency.test.ts`; `apps/site/tests/interface-workbench.test.tsx`; `scripts/evaluate-docs.mjs`; `npm run typecheck -w @zod-crud/site`, `npm test -w @zod-crud/site`, and `npm run docs:evaluate` passed. |
+| 026 | The final source layout changed the mental model, but release-facing docs did not yet share one SSOT for root entrypoints, internal concept layers, and the removed extra public layer plus React indirection. | Added final release notes, documented the source-layout SSOT across README, SPEC, site docs, `llms.txt`, and the API usage gap ledger, then made docs consistency and `docs:evaluate` reject stale source-layout paths. | API correctness evidence: stronger for import boundaries. Runtime health: 5 -> 5 for source-layout drift. Evidence: `docs/release-notes.md`; `packages/zod-crud/README.md`; `packages/zod-crud/SPEC.md`; `apps/site/src/docs/zod-crud-concepts.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `docs/api-usage-gaps.md`; `apps/site/tests/docs-consistency.test.ts`; `scripts/evaluate-docs.mjs`; `npm test -w @zod-crud/site`, `npm run docs:evaluate`, and `npm run verify` passed. |
 
 ## Next Candidates
 
 | Loop | Candidate |
 | --- | --- |
-| 026 | Add README smoke coverage for the new selection and history snippets without making docs too heavy. |
-| 027 | Re-run a blind API usage task against only site docs and record pass/fail patterns. |
-| 028 | Generate a compact public API checklist from source types and compare it to docs/demo coverage. |
+| 027 | Add README smoke coverage for the new selection and history snippets without making docs too heavy. |
+| 028 | Re-run a blind API usage task against only site docs and record pass/fail patterns. |
+| 029 | Generate a compact public API checklist from source types and compare it to docs/demo coverage. |

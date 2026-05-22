@@ -88,6 +88,11 @@ For behavior rules, read `packages/zod-crud/SPEC.md`.
 - Keep public API changes in `packages/zod-crud/src/index.ts` and
   `packages/zod-crud/src/react.ts`.
 - Keep root `zod-crud` importable without React.
+- Keep the source layout SSOT stable:
+  `src/index.ts`, `src/react.ts`, `src/application`, `src/domain`,
+  `src/foundation`.
+- Do not create a second public `api/` source layer. Public entrypoints live at
+  the source root.
 - Keep UI, transport, DOM clipboard calls, app keymaps, and visual policy
   outside the package core.
 - Prefer document facade commands over app-local reimplementations of
@@ -101,6 +106,7 @@ For behavior rules, read `packages/zod-crud/SPEC.md`.
 - RFC conflicts override current code and docs.
 - `packages/zod-crud/SPEC.md` records current behavior.
 - `packages/zod-crud/README.md` records published package usage.
+- `docs/release-notes.md` records final release-facing source-layout changes.
 - Root `llms.txt` is emitted to the site build as `/llms.txt`.
 
 ## Verification
@@ -113,5 +119,5 @@ npm run playground:build
 ```
 
 Package publish is guarded by `npm run verify` through `prepublishOnly`.
-The root `verify` script also runs `docs:evaluate` so docs drift and the
-100-loop ledger are release-gated.
+The root `verify` script also runs `docs:evaluate` so docs drift, release
+notes, source-layout SSOT, and the 100-loop ledger are release-gated.
