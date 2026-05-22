@@ -1,6 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig, type Plugin } from "vite";
-import { copyFileSync, readFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -28,20 +28,29 @@ function rootLlmsTxt(): Plugin {
 
 function productionSiteAssets(): Plugin {
   const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
-  const sitemapRoutes = [
-    "/",
-    "/docs",
-    "/playground",
-    "/playground/outliner",
-    "/playground/mobile-cms",
-    "/playground/api-collection",
+  const routePages = [
+    { path: "/", title: "zod-crud - Headless JSON editing" },
+    { path: "/docs", title: "zod-crud API - zod-crud" },
+    { path: "/playground", title: "Workbench - zod-crud" },
+    { path: "/playground/outliner", title: "Outliner demo - zod-crud" },
+    { path: "/playground/mobile-cms", title: "Mobile CMS demo - zod-crud" },
+    { path: "/playground/api-collection", title: "API collection demo - zod-crud" },
   ];
 
   return {
     name: "production-site-assets",
     writeBundle(options) {
       if (options.dir) {
-        copyFileSync(join(options.dir, "index.html"), join(options.dir, "404.html"));
+        const indexPath = join(options.dir, "index.html");
+        const indexHtml = readFileSync(indexPath, "utf8");
+        copyFileSync(indexPath, join(options.dir, "404.html"));
+
+        for (const route of routePages) {
+          if (route.path === "/") continue;
+          const routeDir = join(options.dir, route.path.slice(1));
+          mkdirSync(routeDir, { recursive: true });
+          writeFileSync(join(routeDir, "index.html"), routeHtml(indexHtml, route));
+        }
       }
     },
     generateBundle(_options, bundle) {
@@ -72,8 +81,8 @@ function productionSiteAssets(): Plugin {
         source: [
           '<?xml version="1.0" encoding="UTF-8"?>',
           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-          ...sitemapRoutes.map((route) => {
-            const loc = route === "/" ? `${siteUrl}/` : `${siteUrl}${route}`;
+          ...routePages.map((route) => {
+            const loc = route.path === "/" ? `${siteUrl}/` : `${siteUrl}${route.path}`;
             return `  <url><loc>${loc}</loc></url>`;
           }),
           "</urlset>",
@@ -82,6 +91,15 @@ function productionSiteAssets(): Plugin {
       });
     },
   };
+
+  function routeHtml(indexHtml: string, route: { path: string; title: string }): string {
+    const url = `${siteUrl}${route.path}`;
+    return indexHtml
+      .replace(/<title>.*?<\/title>/, `<title>${route.title}</title>`)
+      .replace(/(<meta property="og:title" content=")[^"]*(" \/>)/, `$1${route.title}$2`)
+      .replace(/(<meta property="og:url" content=")[^"]*(" \/>)/, `$1${url}$2`)
+      .replace(/(<link rel="canonical" href=")[^"]*(" \/>)/, `$1${url}$2`);
+  }
 }
 
 export default defineConfig({

@@ -34,8 +34,8 @@ async function checkOnce() {
   }
 
   const docs = await fetchText("/docs", [200, 404]);
-  if (!/<title>zod-crud - Headless JSON editing<\/title>/.test(docs)) {
-    fail("live /docs fallback shell is missing the production title.");
+  if (!/<title>zod-crud API - zod-crud<\/title>/.test(docs)) {
+    fail("live /docs shell is missing the route title.");
   }
 
   const llms = await fetchText("/llms.txt");

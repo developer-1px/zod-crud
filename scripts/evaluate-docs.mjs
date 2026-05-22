@@ -162,7 +162,14 @@ if (!/<svg/.test(siteFavicon) || !/zod-crud/.test(siteManifest)) {
   fail("site public assets: missing favicon or web manifest.");
 }
 
-for (const pattern of [/fileName: "404\.html"/, /fileName: "robots\.txt"/, /fileName: "sitemap\.xml"/]) {
+for (const pattern of [
+  /fileName: "404\.html"/,
+  /fileName: "robots\.txt"/,
+  /fileName: "sitemap\.xml"/,
+  /routeHtml/,
+  /playground\/api-collection/,
+  /og:url/,
+]) {
   if (!pattern.test(siteViteConfig)) fail(`site vite config: missing ${pattern}.`);
 }
 
@@ -182,7 +189,23 @@ if (!/npm run verify/.test(pagesWorkflow) || !/npm run site:evaluate/.test(pages
   fail("pages workflow: missing production site verification or deployment base.");
 }
 
-for (const pattern of [/404\.html/, /robots\.txt/, /sitemap\.xml/, /site\.webmanifest/, /site evaluation ok/, /localAssetPaths/, /references missing asset/]) {
+for (const pattern of [
+  /404\.html/,
+  /docs\/index\.html/,
+  /playground\/index\.html/,
+  /playground\/outliner\/index\.html/,
+  /playground\/mobile-cms\/index\.html/,
+  /playground\/api-collection\/index\.html/,
+  /route title/,
+  /route canonical/,
+  /route og:url/,
+  /robots\.txt/,
+  /sitemap\.xml/,
+  /site\.webmanifest/,
+  /site evaluation ok/,
+  /localAssetPaths/,
+  /references missing asset/,
+]) {
   if (!pattern.test(siteEvaluator)) fail(`site evaluator: missing ${pattern}.`);
 }
 
@@ -190,7 +213,7 @@ if (!/SITE_BASE/.test(siteEvaluator) || !/unexpanded Vite base placeholder/.test
   fail("site evaluator: missing production base path checks.");
 }
 
-for (const pattern of [/site:evaluate:live/, /live site evaluation ok/, /SITE_LIVE_ATTEMPTS/, /live_check/, /fetchText\("\/docs", \[200, 404\]\)/]) {
+for (const pattern of [/site:evaluate:live/, /live site evaluation ok/, /SITE_LIVE_ATTEMPTS/, /live_check/, /zod-crud API - zod-crud/, /fetchText\("\/docs", \[200, 404\]\)/]) {
   const source = pattern.source.includes("site:evaluate:live") ? rootPackageJson : liveSiteEvaluator;
   if (!pattern.test(source)) fail(`live site evaluator: missing ${pattern}.`);
 }

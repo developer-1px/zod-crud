@@ -22,6 +22,11 @@ function normalizeBase(value) {
 for (const file of [
   "index.html",
   "404.html",
+  "docs/index.html",
+  "playground/index.html",
+  "playground/outliner/index.html",
+  "playground/mobile-cms/index.html",
+  "playground/api-collection/index.html",
   "robots.txt",
   "sitemap.xml",
   "llms.txt",
@@ -53,6 +58,20 @@ for (const pattern of [
 if (/%BASE_URL%/.test(index)) fail("site dist index contains an unexpanded Vite base placeholder.");
 
 if (fallback !== index) fail("site dist 404.html must match index.html for SPA deep links.");
+for (const route of [
+  { file: "docs/index.html", title: "zod-crud API - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/docs" },
+  { file: "playground/index.html", title: "Workbench - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground" },
+  { file: "playground/outliner/index.html", title: "Outliner demo - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground/outliner" },
+  { file: "playground/mobile-cms/index.html", title: "Mobile CMS demo - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground/mobile-cms" },
+  { file: "playground/api-collection/index.html", title: "API collection demo - zod-crud", canonical: "https://developer-1px.github.io/zod-crud/playground/api-collection" },
+]) {
+  const routeHtml = read(route.file);
+  if (!routeHtml.includes(`<title>${route.title}</title>`)) fail(`site dist ${route.file} missing route title.`);
+  if (!routeHtml.includes(`rel="canonical" href="${route.canonical}"`)) fail(`site dist ${route.file} missing route canonical.`);
+  if (!routeHtml.includes(`property="og:url" content="${route.canonical}"`)) fail(`site dist ${route.file} missing route og:url.`);
+  verifyLocalAssets(routeHtml, route.file);
+}
+
 if (!/Sitemap: https:\/\/developer-1px\.github\.io\/zod-crud\/sitemap\.xml/.test(robots)) {
   fail("site dist robots.txt missing production sitemap URL.");
 }
@@ -89,7 +108,7 @@ if (expectedBase !== "/") {
 }
 
 for (const publicPath of localAssetPaths(index)) {
-  const relativePath = relativeDistPath(publicPath);
+  const relativePath = relativeDistPath(publicPath, "index.html");
   if (relativePath === null) continue;
   if (!existsSync(join(dist, relativePath))) {
     fail(`site dist index references missing asset ${publicPath}.`);
@@ -100,6 +119,16 @@ if (process.exitCode === undefined) {
   console.log("site evaluation ok");
 }
 
+function verifyLocalAssets(source, label) {
+  for (const publicPath of localAssetPaths(source)) {
+    const relativePath = relativeDistPath(publicPath, label);
+    if (relativePath === null) continue;
+    if (!existsSync(join(dist, relativePath))) {
+      fail(`site dist ${label} references missing asset ${publicPath}.`);
+    }
+  }
+}
+
 function localAssetPaths(source) {
   return Array.from(
     source.matchAll(/\b(?:src|href)="([^"]+)"/g),
@@ -107,13 +136,13 @@ function localAssetPaths(source) {
   ).filter((path) => path && !/^(?:https?:|mailto:|#)/.test(path));
 }
 
-function relativeDistPath(publicPath) {
+function relativeDistPath(publicPath, label) {
   if (expectedBase === "/") {
     return publicPath.startsWith("/") ? publicPath.slice(1) : publicPath;
   }
 
   if (!publicPath.startsWith(expectedBase)) {
-    fail(`site dist index local asset does not use expected base ${expectedBase}: ${publicPath}.`);
+    fail(`site dist ${label} local asset does not use expected base ${expectedBase}: ${publicPath}.`);
     return null;
   }
 
