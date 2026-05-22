@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { applyPatch } from "../src/index.js";
+import { applyPatch, applyPatchToTrustedState } from "../src/index.js";
 
 const Doc = z.object({
   blocks: z.array(z.discriminatedUnion("kind", [
@@ -10,3 +10,4 @@ const Doc = z.object({
 
 declare const state: z.output<typeof Doc>;
 applyPatch(Doc, state, []);
+applyPatchToTrustedState(Doc, state, []);

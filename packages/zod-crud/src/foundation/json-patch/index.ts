@@ -103,7 +103,7 @@ export function applyPatch<S extends z.ZodTypeAny>(
   return applyPatchToTrustedState(schema, state, ops);
 }
 
-// Internal document path for callers that already verified `state` is JSON.
+// Trusted-state path for callers that already verified `state` is JSON.
 // Op values and schema validity are still checked for every patch.
 export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   schema: S,

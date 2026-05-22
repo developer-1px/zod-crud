@@ -129,6 +129,7 @@ const publicExports = [
   "createJSONDocument",
   "applyOperation",
   "applyPatch",
+  "applyPatchToTrustedState",
   "parsePointer",
   "tryParsePointer",
   "buildPointer",

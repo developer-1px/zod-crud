@@ -6,6 +6,7 @@ import * as z from "zod";
 import {
   applyOperation,
   applyPatch,
+  applyPatchToTrustedState,
   buildPointer,
   parsePointer,
   type JSONPatchOperation,
@@ -187,6 +188,24 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
       expect(r.result.code).toBe("not_serializable");
       expect(r.result.reason).toBe("/a: function is not JSON");
     }
+    expect(r.state).toBe(initial);
+  });
+
+  it("trusted-state patch skips the input state JSON boundary only by explicit opt-in", () => {
+    const initial = { a: () => "trusted by caller", b: 1 };
+    const r = applyPatchToTrustedState(Any, initial, [{ op: "replace", path: "/b", value: 2 }]);
+
+    expect(r.result.ok).toBe(true);
+    expect((r.state as typeof initial).a).toBe(initial.a);
+    expect((r.state as typeof initial).b).toBe(2);
+  });
+
+  it("trusted-state patch still rejects non-serializable operation values", () => {
+    const initial = { a: 1 };
+    const r = applyPatchToTrustedState(Any, initial, [{ op: "replace", path: "/a", value: () => "bad" }]);
+
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
     expect(r.state).toBe(initial);
   });
 

@@ -50,6 +50,7 @@ import {
   createJSONDocument,
   applyOperation,
   applyPatch,
+  applyPatchToTrustedState,
   parsePointer,
   tryParsePointer,
   buildPointer,
@@ -284,7 +285,7 @@ state, but repeated `doc.patch(...)` calls still validate repeatedly.
 
 ## 9. Performance
 
-Large-document hot paths should use the document facade: `doc.patch`, `doc.commit`, and `doc.canPatch`. Public `applyPatch` is an external JSON boundary and checks the whole input state for JSON safety.
+Large-document hot paths should use the document facade: `doc.patch`, `doc.commit`, and `doc.canPatch`. Public `applyPatch` is an external JSON boundary and checks the whole input state for JSON safety. `applyPatchToTrustedState` is the pure core opt-in when the caller already owns that state JSON boundary; operation values and schema validation still run.
 
 Fast document paths apply only for trusted document state plus a plain structural Zod schema: objects, arrays, records, and scalar validators without refinements, transforms, or checks. Covered edits are independent non-root `replace`, array `add`/`remove`/`copy`/`move`, and same-array `add`/`remove` batches. Schemas with `refine`, `superRefine`, transforms, or other checks intentionally use full root schema validation.
 

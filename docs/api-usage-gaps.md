@@ -9,7 +9,7 @@ Scope: sibling packages under `../` that import `zod-crud`, `zod-crud/react`, or
 The package root currently exports:
 
 - document facade: `createJSONDocument`, `JSONDocument`, `JSONDocumentHistory`, `JSONDocument*` option/result types
-- pure RFC helpers: `applyPatch`, `applyOperation`, `JSONPatchOperation`, `JSONResult`
+- pure RFC helpers: `applyPatch`, `applyPatchToTrustedState`, `applyOperation`, `JSONPatchOperation`, `JSONResult`
 - JSON Pointer helpers: `parsePointer`, `buildPointer`, `appendSegment`, `parentPointer`, `lastSegment`, etc.
 - selection types: `JSONPoint`, `SelectionRange`, `SelectionSource`, `SelectionSnap`, `SelectionState`
 - React entrypoint: `zod-crud/react` exports `useJSONDocument`

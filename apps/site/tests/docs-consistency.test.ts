@@ -25,6 +25,7 @@ const publicExportNames = [
   "createJSONDocument",
   "applyOperation",
   "applyPatch",
+  "applyPatchToTrustedState",
   "parsePointer",
   "tryParsePointer",
   "buildPointer",

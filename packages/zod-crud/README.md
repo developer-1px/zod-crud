@@ -392,7 +392,8 @@ document state. It groups history entries, but it does not turn repeated
 
 For large documents, keep hot UI paths on the document facade: `doc.patch`,
 `doc.commit`, and `doc.canPatch`. Public `applyPatch` is an external JSON
-boundary and checks the whole input state for JSON safety.
+boundary and checks the whole input state for JSON safety. If the state already
+crossed that boundary, `applyPatchToTrustedState` skips only the state scan.
 
 Fast document paths apply when the current state is trusted document state and
 the schema is a plain structural Zod schema: objects, arrays, records, and
@@ -456,6 +457,8 @@ if (r.result.ok) {
 ```
 
 Both `applyOperation` and `applyPatch` are pure. Same input, same output.
+Use `applyPatchToTrustedState` only when the caller already owns the JSON
+boundary for the input state; operation values and schema are still checked.
 
 ## Serialization
 
@@ -504,6 +507,7 @@ import {
   createJSONDocument,
   applyOperation,
   applyPatch,
+  applyPatchToTrustedState,
   parsePointer,
   tryParsePointer,
   buildPointer,

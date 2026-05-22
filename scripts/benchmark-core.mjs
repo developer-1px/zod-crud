@@ -10,7 +10,7 @@ if (!existsSync(distEntry) || !existsSync(distPatchEntry)) {
   process.exit(1);
 }
 
-const { applyPatch, createJSONDocument } = await import(distEntry.href);
+const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 
 const Item = z.object({
@@ -81,6 +81,12 @@ for (const size of sizes) {
   console.log(`\nitems=${size}`);
   bench("applyPatch single leaf replace", rounds, (index) =>
     applyPatch(Schema, state, [{
+      op: "replace",
+      path: `/items/${middle}/done`,
+      value: index % 2 === 0,
+    }]).result);
+  bench("applyPatchToTrustedState single leaf replace", rounds, (index) =>
+    applyPatchToTrustedState(Schema, state, [{
       op: "replace",
       path: `/items/${middle}/done`,
       value: index % 2 === 0,
