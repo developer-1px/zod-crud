@@ -809,7 +809,8 @@ export function applySelectionAutoRules(
   }
   const targets = pickAutoTargets(applied, after);
   if (targets.length > 0) {
-    return withPreviousContext(prev, snapFromRanges(targets.map(collapsedRange), Math.max(0, targets.length - 1), mode, after));
+    const compact = compactPointerTargets(targets);
+    return withPreviousContext(prev, snapFromRanges(compact.targets.map(collapsedRange), compact.primaryIndex, mode, after));
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
@@ -837,6 +838,32 @@ export function applySelectionAutoRules(
     : next;
   const withContext = withPreviousContext(prev, normalized);
   return sameSelectionSnap(prev, withContext) ? prev : withContext;
+}
+
+function compactPointerTargets(targets: ReadonlyArray<Pointer>): { targets: Pointer[]; primaryIndex: number } {
+  const primaryTargetIndex = targets.length - 1;
+  const unique: Pointer[] = [];
+  const indexes = new Map<Pointer, number>();
+  let primaryIndex = -1;
+
+  for (let index = 0; index < targets.length; index += 1) {
+    const target = targets[index]!;
+    const existing = indexes.get(target);
+    if (existing !== undefined) {
+      if (index === primaryTargetIndex) primaryIndex = existing;
+      continue;
+    }
+
+    const nextIndex = unique.length;
+    indexes.set(target, nextIndex);
+    unique.push(target);
+    if (index === primaryTargetIndex) primaryIndex = nextIndex;
+  }
+
+  return {
+    targets: unique,
+    primaryIndex: primaryIndex >= 0 ? primaryIndex : Math.max(0, unique.length - 1),
+  };
 }
 
 function pushUniqueRange(ranges: SelectionRange[], range: SelectionRange): void {
