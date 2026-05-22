@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { createJSONDocument } from "../src/index.js";
+import { expandRange } from "../src/domain/selection/range.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -16,6 +17,17 @@ const initial: z.output<typeof Schema> = {
 };
 
 describe("JSONDocument selection interface", () => {
+  test("collapsed range expansion does not walk document state", () => {
+    const state = {
+      keep: "value",
+      get expensive() {
+        throw new Error("collapsed range should not inspect siblings");
+      },
+    };
+
+    expect(expandRange("/keep", "/keep", state)).toEqual(["/keep"]);
+  });
+
   test("supports multiple explicit ranges without standalone selection factories", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

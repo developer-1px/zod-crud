@@ -37,6 +37,7 @@ interface HeadlessJSONState<T> extends JSONState<T> {
 
 interface TrustedJSONOps<T> extends JSONOps<T> {
   trustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
+  trustedApply(state: T, applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 }
 
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
@@ -89,6 +90,16 @@ export function createJSON<S extends z.ZodType>(
     notify(applied.applied, metadata);
     return applied.result;
   };
+  const applyTrustedState = (
+    next: z.output<S>,
+    applied: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ): JSONResult => {
+    if (next === state) return { ok: true };
+    state = next;
+    notify(applied, metadata);
+    return { ok: true };
+  };
 
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
 
@@ -132,6 +143,9 @@ export function createJSON<S extends z.ZodType>(
     },
     trustedPatch(operations, metadata) {
       return dispatchTrusted(operations, metadata);
+    },
+    trustedApply(next, applied, metadata) {
+      return applyTrustedState(next, applied, metadata);
     },
     load(value) {
       return replaceRoot("load", value);

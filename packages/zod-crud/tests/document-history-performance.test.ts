@@ -66,4 +66,34 @@ describe("doc.history performance contract", () => {
       ],
     });
   });
+
+  test("commit with explicit selection validates once and replays the accepted patch", () => {
+    let validations = 0;
+    const Schema = z.object({
+      title: z.string(),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const doc = createJSONDocument(Schema, { title: "draft" }, {
+      history: 10,
+      selection: {
+        mode: "extended",
+        initial: [{
+          anchor: { path: "/title", offset: 0 },
+          focus: { path: "/title", offset: 0 },
+        }],
+      },
+    });
+    const validationsAfterCreate = validations;
+
+    const planned = doc.selection?.textPatch("A");
+    expect(planned).toMatchObject({ ok: true });
+    if (!planned?.ok) return;
+
+    expect(doc.commit(planned.patch, { selection: planned.selection })).toEqual({ ok: true });
+    expect(doc.value.title).toBe("Adraft");
+    expect(validations).toBe(validationsAfterCreate + 1);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value.title).toBe("draft");
+  });
 });

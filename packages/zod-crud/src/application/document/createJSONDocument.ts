@@ -221,7 +221,7 @@ export function createJSONDocument<S extends z.ZodType>(
       },
       selectionBefore,
     );
-    const r = rawOps.patch(operations, changeMetadata);
+    const r = rawOps.trustedApply(predicted.state, predicted.applied, changeMetadata);
     if (!r.ok) return r;
 
     if (operations.length === 0) lastPatch = [];

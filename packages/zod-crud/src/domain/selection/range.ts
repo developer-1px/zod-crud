@@ -35,6 +35,7 @@ function* walkSameKind(state: unknown, refKind: ValueKind, base: Pointer = ""): 
 // state 가 주어지면 anchor 와 같은 kind 의 좌표를 DFS 순서로 펼침. 없거나 endpoint 가
 // kind 집합 밖이면 [anchor, focus] (uniq) 로 fallback — 호출자가 별도 처리할 필요 없음.
 export function expandRange(anchor: Pointer, focus: Pointer, state?: unknown): Pointer[] {
+  if (anchor === focus) return [anchor];
   if (state !== undefined) {
     const segments = tryParsePointer(anchor);
     const a: ReturnType<typeof readAt> = segments === null ? { ok: false } : readAt(state, segments);

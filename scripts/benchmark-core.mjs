@@ -65,6 +65,20 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, {
+      history: 100,
+      selection: { mode: "single", initial: [`/items/${middle}/done`] },
+    });
+    const selection = doc.selection?.snapshot();
+    bench("doc.commit single leaf + selection", rounds, (index) =>
+      doc.commit([{
+        op: "replace",
+        path: `/items/${middle}/done`,
+        value: index % 2 === 0,
+      }], selection ? { selection } : undefined));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench(`doc.patch batch ${batchOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
