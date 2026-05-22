@@ -8,6 +8,7 @@ import {
 } from "../../foundation/json-patch/index.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
 import {
+  appendSegment,
   buildPointer,
   parentPointer,
   parsePointer,
@@ -72,6 +73,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (isIndependentReplacePatch(ops)) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   }
+  const appendOnlyAdd = applyAppendOnlyAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+  if (appendOnlyAdd) return appendOnlyAdd;
   const arrayBatch = applySameArrayPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (arrayBatch) return arrayBatch;
   return applySequentialPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
@@ -441,6 +444,84 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
     state: cur as z.output<S>,
     result: { ok: true },
     applied: appliedOps,
+  };
+}
+
+function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): LocalPatchResult<S> {
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  let parent: Pointer | null = null;
+  const values = new Array<unknown>(ops.length);
+  const applied = new Array<JSONPatchOperation>(ops.length);
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || !op.path.endsWith("/-")
+    ) {
+      return null;
+    }
+
+    const nextParent = op.path.slice(0, -2);
+    if (parent === null) parent = nextParent;
+    else if (parent !== nextParent) return null;
+    values[index] = op.value;
+  }
+
+  if (parent === null) return null;
+  let parentSegments: string[];
+  try {
+    parentSegments = parsePointer(parent);
+  } catch {
+    return null;
+  }
+
+  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
+  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  if (!elementSchema) return null;
+
+  const current = readAt(state, parentSegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+  const initialLength = current.value.length;
+
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    const valueAccepted = acceptsKnownJsonValue(elementSchema, value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const parsed = elementSchema.safeParse(value);
+      if (!parsed.success) return schemaViolation(state, appendSegment(parent, initialLength + index), parsed.error.issues);
+    }
+    applied[index] = {
+      op: "add",
+      path: appendSegment(parent, initialLength + index),
+      value,
+    };
+  }
+
+  const nextState = replaceValueAtSegments(
+    state,
+    parentSegments,
+    0,
+    current.value.concat(values),
+  );
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
   };
 }
 
