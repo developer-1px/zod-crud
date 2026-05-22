@@ -4,9 +4,9 @@
 
 import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
-import { readAt, type Pointer } from "../json-pointer/index.js";
+import type { Pointer } from "../json-pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
-import { normalizeOp, parseSafe } from "./internal.js";
+import { getValueAt, normalizeOp, parseSafe } from "./internal.js";
 
 export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }
@@ -67,8 +67,6 @@ export function applyOperation<S extends z.ZodTypeAny>(
   const r = applyOpRaw(state, normalized);
   if ("error" in r) return { state, result: fail(r.error, r.reason, r.pointer), applied: [] };
   if (normalized.op === "test") return { state, result: ok, applied: [normalized] };
-  const jsonErr = jsonSerializableError(r.state);
-  if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
   const parsed = schema.safeParse(r.state);
   if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 r.state 반환.
@@ -89,8 +87,6 @@ export function applyPatch<S extends z.ZodTypeAny>(
   }
   const fast = applyIndependentReplacePatch(state, ops);
   if (fast.handled) {
-    const jsonErr = jsonSerializableError(fast.state);
-    if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
     const parsed = schema.safeParse(fast.state);
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: fast.state as z.output<S>, result: ok, applied: fast.applied };
@@ -122,8 +118,6 @@ export function applyPatch<S extends z.ZodTypeAny>(
     }
     cur = r.state;
   }
-  const jsonErr = jsonSerializableError(cur);
-  if (jsonErr) return { state, result: fail("not_serializable", jsonErr), applied: [] };
   const parsed = schema.safeParse(cur);
   if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 cur 반환.
@@ -190,7 +184,8 @@ function applyIndependentReplacePatch(
     if (normalized.op !== "replace") return { handled: false };
     const parsed = parseSafe(normalized.path);
     if (!("ok" in parsed)) return { handled: false };
-    if (!readAt(state, parsed.segs).ok) return { handled: false };
+    if (!getValueAt(state, parsed.segs).ok) return { handled: false };
+    if (jsonSerializableError(normalized.value) !== null) return { handled: false };
     items.push({ op: normalized, path: normalized.path, segments: parsed.segs, value: normalized.value });
   }
 

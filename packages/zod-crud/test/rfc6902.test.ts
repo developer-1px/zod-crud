@@ -246,6 +246,18 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     if (!r.result.ok) expect(r.result.code).toBe("not_serializable");
     expect(r.state).toBe(initial);
   });
+
+  it("keeps array index validation identical on independent replace batches", () => {
+    const initial = { items: [{ name: "a" }, { name: "b" }] };
+    const r = applyPatch(Any, initial, [
+      { op: "replace", path: "/items/0/name", value: "A" },
+      { op: "replace", path: "/items/01/name", value: "B" },
+    ]);
+
+    expect(r.result.ok).toBe(false);
+    if (!r.result.ok) expect(r.result.code).toBe("path_not_found");
+    expect(r.state).toBe(initial);
+  });
 });
 
 describe("Schema validation (G3)", () => {

@@ -99,6 +99,21 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    const elapsed = time(() => {
+      for (let index = 0; index < Math.min(individualCount, size); index++) {
+        const result = doc.patch({
+          op: "replace",
+          path: `/items/${index}/done`,
+          value: true,
+        });
+        if (!result.ok) throw new Error(`individual patch failed: ${JSON.stringify(result)}`);
+      }
+    });
+    console.log(`doc.patch individual ${Math.min(individualCount, size)} history=0: ${elapsed.toFixed(2)}ms`);
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: individualCount });
     const elapsed = time(() => {
       for (let index = 0; index < Math.min(individualCount, size); index++) {
@@ -110,7 +125,7 @@ for (const size of sizes) {
         if (!result.ok) throw new Error(`individual patch failed: ${JSON.stringify(result)}`);
       }
     });
-    console.log(`doc.patch individual ${Math.min(individualCount, size)}: ${elapsed.toFixed(2)}ms`);
+    console.log(`doc.patch individual ${Math.min(individualCount, size)} history=${individualCount}: ${elapsed.toFixed(2)}ms`);
   }
 }
 

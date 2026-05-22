@@ -3,7 +3,7 @@
 import { parsePointer, readAt } from "../json-pointer/index.js";
 import type { JSONPatchOperation } from "./index.js";
 import { applyOpRaw } from "./apply.js";
-import { resolveAppendPath } from "./internal.js";
+import { getValueAt, resolveAppendPath } from "./internal.js";
 
 function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation | null {
   switch (op.op) {
@@ -68,7 +68,7 @@ function computeIndependentReplaceInverses(
   const out: JSONPatchOperation[] = [];
   for (let index = parsed.length - 1; index >= 0; index--) {
     const item = parsed[index]!;
-    const prev = readAt(state, item.segments);
+    const prev = getValueAt(state, item.segments);
     if (!prev.ok) return null;
     out.push({ op: "replace", path: item.path, value: prev.value });
   }
