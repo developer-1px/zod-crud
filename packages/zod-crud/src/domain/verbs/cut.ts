@@ -16,6 +16,7 @@ interface CutOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];
+  applied: ReadonlyArray<JSONPatchOperation>;
   payload: unknown;
   /** Primary source. Multi-source cut keeps the first selected source here for single-source compatibility. */
   source: Pointer;
@@ -64,7 +65,15 @@ export function cut<S extends z.ZodType>(
   }
 
   // 3) atomic — payload + next + patch 동시 산출
-  return { ok: true, next: r.draft as z.output<S>, patch, payload, source: removePlan.source, sources: removePlan.sources };
+  return {
+    ok: true,
+    next: r.draft as z.output<S>,
+    patch,
+    applied: r.applied,
+    payload,
+    source: removePlan.source,
+    sources: removePlan.sources,
+  };
 }
 
 function readPayload(

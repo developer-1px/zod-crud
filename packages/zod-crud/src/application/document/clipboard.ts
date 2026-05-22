@@ -79,6 +79,11 @@ interface CreateClipboardOptions<S extends z.ZodType> {
   getState(): z.output<S>;
   ops: JSONOps<z.output<S>>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  applyPreviewedPatch?: (
+    next: z.output<S>,
+    operations: ReadonlyArray<JSONPatchOperation>,
+    applied: ReadonlyArray<JSONPatchOperation>,
+  ) => JSONResult;
   getSelectionSource?: () => SelectionSource | null;
   getSelectionTarget?: () => Pointer | null;
   getAppliedPatch?: () => ReadonlyArray<JSONPatchOperation>;
@@ -100,6 +105,7 @@ export function createClipboard<S extends z.ZodType>(
     getState,
     ops,
     previewPatch,
+    applyPreviewedPatch,
     getSelectionSource,
     getSelectionTarget,
     getAppliedPatch,
@@ -200,7 +206,9 @@ export function createClipboard<S extends z.ZodType>(
         previewPatch,
       });
       if (!result.ok) return result;
-      const patchResult = ops.patch(result.patch);
+      const patchResult = applyPreviewedPatch
+        ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
+        : ops.patch(result.patch);
       if (!patchResult.ok) {
         return {
           ok: false,
@@ -258,7 +266,9 @@ export function createClipboard<S extends z.ZodType>(
       trustedPayload,
     });
     if (!result.ok) return result;
-    const patchResult = ops.patch(result.patch);
+    const patchResult = applyPreviewedPatch
+      ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
+      : ops.patch(result.patch);
     return patchResult.ok
       ? {
           ok: true,

@@ -15,6 +15,7 @@ import { buildPointer } from "../../foundation/json-pointer/index.js";
 export interface PreFlightOk<T> {
   ok: true;
   draft: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
 }
 
 export type PreFlightErrorCode = ErrorCode | "preFlight_failed";
@@ -44,7 +45,7 @@ export function preFlightFromApplyResult<S extends z.ZodType>(
   r: ApplyResult<S>,
 ): PreFlightResult<z.output<S>> {
   if (r.result.ok) {
-    return { ok: true, draft: r.state };
+    return { ok: true, draft: r.state, applied: r.applied };
   }
   // schema_violation 또는 다른 RFC 6902 op 실패. preFlight 가 거부 — 호출자가 처리.
   // schema_violation 의 경우 result.reason 에 zod issues JSON 이 들어있다 (foundation/json-patch §applyPatch).

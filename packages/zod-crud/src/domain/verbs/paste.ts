@@ -19,6 +19,7 @@ interface PasteOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];
+  applied: ReadonlyArray<JSONPatchOperation>;
 }
 
 export interface PasteError {
@@ -98,7 +99,7 @@ export function paste<S extends z.ZodType>(
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
-  return { ok: true, next: r.draft as z.output<S>, patch };
+  return { ok: true, next: r.draft as z.output<S>, patch, applied: r.applied };
 }
 
 function findDuMismatch<S extends z.ZodType>(

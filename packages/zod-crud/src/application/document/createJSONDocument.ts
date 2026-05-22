@@ -199,6 +199,23 @@ export function createJSONDocument<S extends z.ZodType>(
     }
     return r;
   };
+  const applyPreviewedDocumentPatch = (
+    next: z.output<S>,
+    operations: ReadonlyArray<JSONPatchOperation>,
+    applied: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ): JSONResult => {
+    const before = rawOps.state;
+    const selectionBefore = snapSelection();
+    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
+    const r = rawOps.trustedApply(next, applied, changeMetadata);
+    const selectionAfter = snapSelection();
+    if (r.ok && applied.length === 0) lastPatch = [];
+    if (r.ok && historyLimit > 0 && !isRestoring && operations.length > 0) {
+      recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
+    }
+    return r;
+  };
   const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult =>
     applyDocumentPatch(normalizePatchInput(operations), metadata);
 
@@ -386,6 +403,7 @@ export function createJSONDocument<S extends z.ZodType>(
     getState: () => rawOps.state,
     ops,
     previewPatch: rawOps.previewPatch,
+    applyPreviewedPatch: applyPreviewedDocumentPatch,
     getSelectionSource: () => selectionState?.selectedSource ?? null,
     getSelectionTarget: () => selectionState?.primaryPointer ?? null,
     getAppliedPatch: () => lastPatch,
