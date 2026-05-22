@@ -469,6 +469,31 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("single same-array history restores without schema validation", () => {
+    let validations = 0;
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = { items: [{ id: "a" }, { id: "b" }] };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch({ op: "add", path: "/items/-", value: { id: "c" } })).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterAdd = validations;
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(validations).toBe(validationsAfterAdd);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+    expect(validations).toBe(validationsAfterAdd);
+  });
+
   test("same-array copy/move batch history restores without schema validation", () => {
     let validations = 0;
     const Schema = z.object({

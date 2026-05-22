@@ -127,7 +127,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length < 2) return null;
+  if (!Array.isArray(ops) || ops.length < 1) return null;
 
   let parent: Pointer | null = null;
   let elementSchema: z.ZodType | null = null;

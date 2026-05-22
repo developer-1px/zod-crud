@@ -58,7 +58,7 @@ function computeSameArrayStructuralInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): { ok: true; inverses: JSONPatchOperation[] } | null {
-  if (ops.length < 2) return null;
+  if (ops.length < 1) return null;
 
   let parent: string | null = null;
   const parsed: Array<

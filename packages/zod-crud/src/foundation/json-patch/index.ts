@@ -217,7 +217,7 @@ function applySameArrayStructuralPatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): FastPatchResult {
-  if (ops.length < 2) return { handled: false };
+  if (ops.length < 1) return { handled: false };
 
   let parent: Pointer | null = null;
   const items: Array<
