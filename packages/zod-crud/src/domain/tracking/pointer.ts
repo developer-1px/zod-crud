@@ -5,6 +5,8 @@
 import { tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "../../foundation/json-pointer/index.js";
 import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 
+const MOVE_BUCKET_TARGET_THRESHOLD = 1024;
+
 export function exists(state: unknown, pointer: Pointer): boolean {
   const segments = tryParsePointer(pointer);
   return segments !== null && readAt(state, segments).ok;
@@ -38,6 +40,7 @@ function pickSameArrayAutoTargets(
   let increasingInsertTargets: number[] | null = [];
   let previousInsertTarget = -1;
   const targets: number[] = [];
+  let targetBuckets: Map<number, number[]> | null = null;
 
   for (let index = 0; index < applied.length; index += 1) {
     const op = applied[index]!;
@@ -60,6 +63,7 @@ function pickSameArrayAutoTargets(
         }
       }
       shiftTargetsForInsert(targets, location.index);
+      targetBuckets = null;
       targets.push(location.index);
     } else if (op.op === "remove") {
       if (increasingInsertTargets !== null) {
@@ -67,6 +71,7 @@ function pickSameArrayAutoTargets(
       }
       increasingInsertTargets = null;
       removeTargetIndex(targets, location.index);
+      targetBuckets = null;
     } else {
       if (increasingInsertTargets !== null) {
         targets.push(...increasingInsertTargets);
@@ -74,7 +79,13 @@ function pickSameArrayAutoTargets(
       increasingInsertTargets = null;
       const from = arrayElementLocation(op.from);
       if (from === null || from.parent !== parent) return null;
-      shiftTargetsForMove(targets, from.index, location.index);
+      if (targetBuckets !== null || shouldUseMoveBuckets(targets, from.index, location.index)) {
+        targetBuckets ??= buildTargetBuckets(targets);
+        shiftTargetsForMove(targets, from.index, location.index, targetBuckets);
+        appendTargetBucket(targetBuckets, location.index, targets.length);
+      } else {
+        shiftTargetsForMoveLinear(targets, from.index, location.index);
+      }
       targets.push(location.index);
     }
   }
@@ -101,7 +112,8 @@ function removeTargetIndex(targets: number[], index: number): void {
   targets.length = write;
 }
 
-function shiftTargetsForMove(targets: number[], from: number, to: number): void {
+function shiftTargetsForMoveLinear(targets: number[], from: number, to: number): void {
+  if (from === to) return;
   for (let target = 0; target < targets.length; target += 1) {
     let index = targets[target]!;
     if (index === from) {
@@ -112,6 +124,81 @@ function shiftTargetsForMove(targets: number[], from: number, to: number): void 
     if (index >= to) index += 1;
     targets[target] = index;
   }
+}
+
+function shouldUseMoveBuckets(targets: ReadonlyArray<number>, from: number, to: number): boolean {
+  return targets.length >= MOVE_BUCKET_TARGET_THRESHOLD
+    && Math.abs(from - to) + 1 <= targets.length;
+}
+
+function shiftTargetsForMove(
+  targets: number[],
+  from: number,
+  to: number,
+  buckets: Map<number, number[]>,
+): void {
+  if (from === to) return;
+  const start = Math.min(from, to);
+  const end = Math.max(from, to);
+  if (end - start + 1 > targets.length) {
+    shiftTargetsForMoveLinear(targets, from, to);
+    rebuildTargetBuckets(buckets, targets);
+    return;
+  }
+  const affected: Array<{ index: number; nextIndex: number; positions: number[] }> = [];
+
+  for (let index = start; index <= end; index += 1) {
+    const positions = buckets.get(index);
+    if (positions === undefined) continue;
+    affected.push({
+      index,
+      nextIndex: nextMoveIndex(index, from, to),
+      positions,
+    });
+  }
+
+  for (const item of affected) {
+    buckets.delete(item.index);
+  }
+  for (const item of affected) {
+    for (const position of item.positions) {
+      targets[position] = item.nextIndex;
+    }
+    buckets.set(item.nextIndex, item.positions);
+  }
+}
+
+function nextMoveIndex(index: number, from: number, to: number): number {
+  if (index === from) return to;
+  return from < to ? index - 1 : index + 1;
+}
+
+function buildTargetBuckets(targets: ReadonlyArray<number>): Map<number, number[]> {
+  const buckets = new Map<number, number[]>();
+  for (let position = 0; position < targets.length; position += 1) {
+    appendTargetBucket(buckets, targets[position]!, position);
+  }
+  return buckets;
+}
+
+function rebuildTargetBuckets(
+  buckets: Map<number, number[]>,
+  targets: ReadonlyArray<number>,
+): void {
+  buckets.clear();
+  for (let position = 0; position < targets.length; position += 1) {
+    appendTargetBucket(buckets, targets[position]!, position);
+  }
+}
+
+function appendTargetBucket(
+  buckets: Map<number, number[]>,
+  index: number,
+  position: number,
+): void {
+  const positions = buckets.get(index);
+  if (positions === undefined) buckets.set(index, [position]);
+  else positions.push(position);
 }
 
 export function pickPrimaryAutoTarget(
