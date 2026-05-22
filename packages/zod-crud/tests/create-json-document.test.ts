@@ -110,6 +110,32 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("rekeys spread paste payloads against multiple suffix bases", () => {
+    const doc = createJSONDocument(Schema, {
+      ...initial,
+      items: [
+        { id: "a", name: "A" },
+        { id: "a-copy", name: "AC" },
+        { id: "b", name: "B" },
+        { id: "b-copy", name: "BC" },
+      ],
+    });
+
+    expect(doc.clipboard.pastePayload("/items/-", [
+      { id: "a", name: "A2" },
+      { id: "b", name: "B2" },
+    ], {
+      spread: true,
+      rekey: { fields: ["id"], strategy: "suffix" },
+    })).toMatchObject({
+      ok: true,
+      applied: [
+        { op: "add", path: "/items/4", value: { id: "a-copy-2", name: "A2" } },
+        { op: "add", path: "/items/5", value: { id: "b-copy-2", name: "B2" } },
+      ],
+    });
+  });
+
   test("keeps reads and query separate from pointer-based patching", () => {
     const doc = createJSONDocument(Schema, initial);
 

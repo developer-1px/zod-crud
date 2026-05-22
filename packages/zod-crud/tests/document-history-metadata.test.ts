@@ -14,6 +14,25 @@ const initial: z.output<typeof Schema> = {
 };
 
 describe("doc.history metadata", () => {
+  test("selection metadata flows to subscribers without history", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 0,
+      selection: { mode: "single", initial: ["/title"] },
+    });
+    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.subscribe>[0]>[1]>> = [];
+    doc.subscribe((_, changeMetadata) => {
+      if (changeMetadata) metadata.push(changeMetadata);
+    });
+
+    doc.patch({ op: "replace", path: "/title", value: "final" });
+
+    expect(metadata).toHaveLength(1);
+    expect(metadata[0]).toMatchObject({
+      selectionBefore: { selectedPointers: ["/title"] },
+      selectionAfter: { selectedPointers: ["/title"] },
+    });
+  });
+
   test("transaction metadata flows through subscribe as serializable JSON", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,

@@ -1,6 +1,8 @@
 import { cloneJson, cloneTrustedJson } from "../../foundation/json.js";
 
 const hasOwn = Object.prototype.hasOwnProperty;
+const COPY_SUFFIX = "-copy";
+const COPY_NESTED_SUFFIX = "-copy-";
 
 export type RekeyStrategy = "suffix" | "uuid" | ((value: unknown, ctx: RekeyContext) => string);
 
@@ -29,7 +31,6 @@ interface RekeyField {
 
 interface SuffixRekeyField extends RekeyField {
   bases: Set<string>;
-  prefixes: Array<{ exact: string; nested: string }>;
 }
 
 export function rekeyPayload(
@@ -131,7 +132,6 @@ function collectSuffixExistingValues(
     field,
     existing: new Set(),
     bases: new Set(),
-    prefixes: [],
   }));
 
   walk(payload, (entry) => {
@@ -146,10 +146,6 @@ function collectSuffixExistingValues(
   for (const field of suffixFields) {
     if (field.bases.size === 0) continue;
     hasBases = true;
-    field.prefixes = Array.from(field.bases, (base) => {
-      const exact = `${base}-copy`;
-      return { exact, nested: `${exact}-` };
-    });
   }
   if (!hasBases) return suffixFields;
 
@@ -221,9 +217,18 @@ function scanSingleSuffixField(
 
 function matchesSuffixCandidate(value: string, field: SuffixRekeyField): boolean {
   if (field.bases.has(value)) return true;
-  for (let index = 0; index < field.prefixes.length; index += 1) {
-    const prefix = field.prefixes[index]!;
-    if (value === prefix.exact || value.startsWith(prefix.nested)) return true;
+
+  if (
+    value.endsWith(COPY_SUFFIX)
+    && field.bases.has(value.slice(0, -COPY_SUFFIX.length))
+  ) {
+    return true;
+  }
+
+  let marker = value.indexOf(COPY_NESTED_SUFFIX);
+  while (marker !== -1) {
+    if (field.bases.has(value.slice(0, marker))) return true;
+    marker = value.indexOf(COPY_NESTED_SUFFIX, marker + 1);
   }
   return false;
 }
