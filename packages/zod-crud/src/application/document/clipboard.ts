@@ -1,6 +1,6 @@
 import type * as z from "zod";
 
-import { cloneJsonSerializable, cloneTrustedJson } from "../../foundation/json.js";
+import { cloneJsonSerializable, cloneTrustedPlainJson } from "../../foundation/json.js";
 import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { normalizePointerSources } from "../../foundation/json-pointer/sourceSet.js";
@@ -173,7 +173,7 @@ export function createClipboard<S extends z.ZodType>(
       if (!buffer) return EMPTY_CLIPBOARD;
       return {
         ok: true,
-        payload: cloneTrustedJson(buffer.payload),
+        payload: cloneTrustedPlainJson(buffer.payload),
         source: buffer.source,
         sources: buffer.sources ? [...buffer.sources] : null,
       };

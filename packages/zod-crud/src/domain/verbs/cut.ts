@@ -3,7 +3,7 @@
 // payload + remove 가 atomic. preFlight 거부 시 둘 다 안 일어남 — history 오염 0.
 
 import type * as z from "zod";
-import { cloneTrustedJson, jsonSerializableError } from "../../foundation/json.js";
+import { cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
@@ -95,7 +95,7 @@ function readPayload(
       return { ok: false, code: "not_serializable", message: jsonErr };
     }
   }
-  const payload = options.clonePayload === false ? v.value : cloneTrustedJson(v.value);
+  const payload = options.clonePayload === false ? v.value : cloneTrustedPlainJson(v.value);
   return { ok: true, payload };
 }
 

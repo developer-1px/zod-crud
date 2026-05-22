@@ -195,7 +195,7 @@ export function cloneJsonSerializable<T>(value: T): CloneJsonResult<T> {
   if (Array.isArray(value) && value.length >= LARGE_ARRAY_CLONE_THRESHOLD) {
     const reason = jsonSerializableErrorFast(value);
     return reason === null
-      ? { ok: true, value: cloneTrustedJson(value) as T }
+      ? { ok: true, value: cloneTrustedPlainJson(value) as T }
       : cloneJsonSerializableDetailed(value);
   }
   const fast = cloneJsonSerializableFast(value);
@@ -404,6 +404,47 @@ export function cloneTrustedJson<T>(value: T): T {
     if (!objectHasOwn.call(value, key)) continue;
     const child = (value as Record<string, unknown>)[key];
     const cloned = child === null || typeof child !== "object" ? child : cloneTrustedJson(child);
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: cloned,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = cloned;
+    }
+  }
+  return next as T;
+}
+
+// Fast clone for values that already passed this module's JSON boundary.
+// If Object.prototype was polluted with enumerable keys, keep the defensive path.
+export function cloneTrustedPlainJson<T>(value: T): T {
+  return Object.keys(Object.prototype).length === 0
+    ? cloneTrustedPlainJsonFast(value)
+    : cloneTrustedJson(value);
+}
+
+function cloneTrustedPlainJsonFast<T>(value: T): T {
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    const next = new Array(value.length);
+    for (let index = 0; index < value.length; index += 1) {
+      const child = value[index];
+      next[index] = child === null || typeof child !== "object"
+        ? child
+        : cloneTrustedPlainJsonFast(child);
+    }
+    return next as T;
+  }
+
+  const next: Record<string, unknown> = {};
+  for (const key in value as Record<string, unknown>) {
+    const child = (value as Record<string, unknown>)[key];
+    const cloned = child === null || typeof child !== "object"
+      ? child
+      : cloneTrustedPlainJsonFast(child);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: cloned,

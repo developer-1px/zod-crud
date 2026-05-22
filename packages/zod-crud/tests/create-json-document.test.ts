@@ -238,6 +238,43 @@ describe("createJSONDocument public interface", () => {
     ]);
   });
 
+  test("clipboard clones ignore enumerable Object.prototype keys", () => {
+    const key = "__zodCrudInherited";
+    Object.defineProperty(Object.prototype, key, {
+      value: "inherited",
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    try {
+      const doc = createJSONDocument(Schema, initial, { history: 10 });
+      const copied = doc.clipboard.copy("/items");
+      expect(copied).toMatchObject({ ok: true });
+      if (!copied.ok) throw new Error("clipboard copy failed");
+      expect(
+        Object.prototype.hasOwnProperty.call((copied.payload as typeof initial.items)[0], key),
+      ).toBe(false);
+
+      const payload = Array.from({ length: 1024 }, (_, index) => ({
+        id: `id-${index}`,
+        nested: { value: index },
+      }));
+      expect(doc.clipboard.write(payload)).toEqual({ ok: true });
+      const read = doc.clipboard.read();
+      expect(read).toMatchObject({ ok: true });
+      if (!read.ok) throw new Error("clipboard read failed");
+      expect(
+        Object.prototype.hasOwnProperty.call((read.payload as typeof payload)[0], key),
+      ).toBe(false);
+      expect(
+        Object.prototype.hasOwnProperty.call((read.payload as typeof payload)[0]!.nested, key),
+      ).toBe(false);
+    } finally {
+      delete (Object.prototype as Record<string, unknown>)[key];
+    }
+  });
+
   test("clipboard write rejects non-JSON payload shapes", () => {
     const accessor: Record<string, unknown> = { ok: true };
     Object.defineProperty(accessor, "computed", {
