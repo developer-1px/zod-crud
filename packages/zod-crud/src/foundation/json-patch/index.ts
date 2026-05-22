@@ -473,7 +473,9 @@ function applyTailRemovePatch(
   if (ops.length < 2) return { handled: false };
 
   let parent: Pointer | null = null;
-  const indexes: number[] = [];
+  let parentSegments: string[] | null = null;
+  let currentArray: unknown[] | null = null;
+  let initialLength = 0;
   const applied: JSONPatchOperation[] = [];
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -490,30 +492,32 @@ function applyTailRemovePatch(
 
     const location = arrayRemoveLocation(op.path);
     if (location === null) return { handled: false };
-    if (parent === null) parent = location.parent;
-    else if (parent !== location.parent) return { handled: false };
-    indexes.push(location.index);
+
+    if (parent === null) {
+      parent = location.parent;
+      const parsedParent = parseSafe(parent);
+      if (!("ok" in parsedParent)) return { handled: false };
+      const current = getValueAt(state, parsedParent.segs);
+      if (!current.ok || !Array.isArray(current.value) || ops.length > current.value.length) {
+        return { handled: false };
+      }
+      parentSegments = parsedParent.segs;
+      currentArray = current.value;
+      initialLength = current.value.length;
+    } else if (parent !== location.parent) {
+      return { handled: false };
+    }
+
+    if (location.index !== initialLength - index - 1) return { handled: false };
     applied.push({ op: "remove", path: op.path });
   }
 
-  if (parent === null) return { handled: false };
-  const parsedParent = parseSafe(parent);
-  if (!("ok" in parsedParent)) return { handled: false };
-  const current = getValueAt(state, parsedParent.segs);
-  if (!current.ok || !Array.isArray(current.value) || indexes.length > current.value.length) {
-    return { handled: false };
-  }
-
-  const initialLength = current.value.length;
-  for (let index = 0; index < indexes.length; index += 1) {
-    if (indexes[index] !== initialLength - index - 1) return { handled: false };
-  }
-
+  if (parentSegments === null || currentArray === null) return { handled: false };
   const stateWithArray = replaceValueAtSegments(
     state,
-    parsedParent.segs,
+    parentSegments,
     0,
-    current.value.slice(0, initialLength - indexes.length),
+    currentArray.slice(0, initialLength - ops.length),
   );
   return stateWithArray === null
     ? { handled: false }
