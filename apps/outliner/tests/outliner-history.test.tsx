@@ -3,8 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
 
-const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
-const secondItem = "Tab — demote (move into prev sibling)";
+const firstItem = "Enter edit; Shift/Cmd+Enter insert";
+const secondItem = "Tab demote";
 const editedFirstItem = "Edited first item";
 
 afterEach(() => {

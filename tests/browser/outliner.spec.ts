@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
+const firstItem = "Enter edit; Shift/Cmd+Enter insert";
 const editedFirstItem = "Edited first item";
 
 test("outliner supports keyboard editing and undo in a real browser", async ({ page }) => {

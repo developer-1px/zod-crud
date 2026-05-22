@@ -8,11 +8,11 @@ import { Outliner } from "../src/index.js";
 
 afterEach(cleanup);
 
-const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
-const secondItem = "Tab — demote (move into prev sibling)";
+const firstItem = "Enter edit; Shift/Cmd+Enter insert";
+const secondItem = "Tab demote";
 const lastTopItem = "History";
 const sectionTitle = "Selection";
-const firstSelectionChild = "Click — focus single";
+const firstSelectionChild = "Click focus";
 
 function renderOutliner() {
   render(<Outliner />);
@@ -71,7 +71,7 @@ describe("outliner coverage — keyboard & mouse only", () => {
     expect(statusText()).toMatch(/focus =\s*\/children\/1/);
 
     await user.keyboard("{End}");
-    // 마지막 visible = History 의 마지막 자식 ("Cmd+Shift+Z — redo") = /children/6/children/1
+    // 마지막 visible = History 의 마지막 자식 ("Cmd+Shift+Z redo") = /children/6/children/1
     expect(statusText()).toMatch(/focus =\s*\/children\/6\/children\/1/);
 
     await user.keyboard("{Home}");
@@ -81,11 +81,11 @@ describe("outliner coverage — keyboard & mouse only", () => {
 
   test("ArrowDown from last child crosses parent boundary (DFS pre-order)", async () => {
     renderOutliner();
-    const user = await clickRow("Cmd/Ctrl+Click — toggle"); // Selection 의 셋째 자식
+    const user = await clickRow("Cmd/Ctrl+Click toggle"); // Selection 의 셋째 자식
     expect(statusText()).toMatch(/focus =\s*\/children\/4\/children\/2/);
 
     await user.keyboard("{ArrowDown}");
-    // 같은 부모의 다음 형제 → "Cmd+A — select all"
+    // 같은 부모의 다음 형제 → "Cmd+A select all"
     expect(statusText()).toMatch(/focus =\s*\/children\/4\/children\/3/);
 
     await user.keyboard("{ArrowDown}");

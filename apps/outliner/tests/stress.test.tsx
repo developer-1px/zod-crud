@@ -17,7 +17,7 @@ import { useJSONDocument } from "zod-crud/react";
 
 afterEach(cleanup);
 
-const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
+const firstItem = "Enter edit; Shift/Cmd+Enter insert";
 
 function tree() {
   return screen.getByRole("tree");
@@ -229,9 +229,9 @@ describe("stress — G1 JSON round-trip", () => {
 describe("stress — outliner UI keyboard rapid sequences", () => {
   test("Tab 5 회 + Shift+Tab 5 회 후 원래 위계로 복귀", async () => {
     render(<Outliner />);
-    const user = await clickRow("Cmd+Shift+Z — redo"); // History 의 둘째 자식 (level 2)
+    const user = await clickRow("Cmd+Shift+Z redo"); // History 의 둘째 자식 (level 2)
     const startLevel = "2";
-    const findRow = () => screen.getByDisplayValue("Cmd+Shift+Z — redo").closest("[role='treeitem']") as HTMLElement;
+    const findRow = () => screen.getByDisplayValue("Cmd+Shift+Z redo").closest("[role='treeitem']") as HTMLElement;
     expect(findRow().getAttribute("aria-level")).toBe(startLevel);
 
     // 한 단계씩 demote 5 번 (이미 깊이 2, 더 깊게 들어갈 수 있는 한)

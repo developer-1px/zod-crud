@@ -4,11 +4,11 @@ import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
 import { findCommand } from "../src/keymap.js";
 
-const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
-const secondItem = "Tab — demote (move into prev sibling)";
-const thirdItem = "Shift+Tab — promote (move out to parent's sibling)";
+const firstItem = "Enter edit; Shift/Cmd+Enter insert";
+const secondItem = "Tab demote";
+const thirdItem = "Shift+Tab promote";
 const selectionItem = "Selection";
-const firstSelectionChild = "Click — focus single";
+const firstSelectionChild = "Click focus";
 const editedFirstItem = "Edited first item";
 
 afterEach(() => {

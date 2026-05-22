@@ -12,33 +12,33 @@ export const OutlineSchema: z.ZodType<OutlineNode> = z.object({
 export const SAMPLE: OutlineNode = {
   text: "zod-crud outliner",
   children: [
-    { text: "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling", children: [] },
-    { text: "Tab — demote (move into prev sibling)", children: [] },
-    { text: "Shift+Tab — promote (move out to parent's sibling)", children: [] },
-    { text: "Backspace on empty — remove", children: [] },
+    { text: "Enter edit; Shift/Cmd+Enter insert", children: [] },
+    { text: "Tab demote", children: [] },
+    { text: "Shift+Tab promote", children: [] },
+    { text: "Backspace empty remove", children: [] },
     {
       text: "Selection",
       children: [
-        { text: "Click — focus single", children: [] },
-        { text: "Shift+Click — range select", children: [] },
-        { text: "Cmd/Ctrl+Click — toggle", children: [] },
-        { text: "Cmd+A — select all", children: [] },
+        { text: "Click focus", children: [] },
+        { text: "Shift+Click range", children: [] },
+        { text: "Cmd/Ctrl+Click toggle", children: [] },
+        { text: "Cmd+A select all", children: [] },
       ],
     },
     {
       text: "Clipboard",
       children: [
-        { text: "Cmd+C — copy selection", children: [] },
-        { text: "Cmd+X — cut selection", children: [] },
-        { text: "Cmd+V — paste as sibling", children: [] },
-        { text: "Cmd+Shift+V — paste as child", children: [] },
+        { text: "Cmd+C copy", children: [] },
+        { text: "Cmd+X cut", children: [] },
+        { text: "Cmd+V paste sibling", children: [] },
+        { text: "Cmd+Shift+V paste child", children: [] },
       ],
     },
     {
       text: "History",
       children: [
-        { text: "Cmd+Z — undo", children: [] },
-        { text: "Cmd+Shift+Z — redo", children: [] },
+        { text: "Cmd+Z undo", children: [] },
+        { text: "Cmd+Shift+Z redo", children: [] },
       ],
     },
   ],

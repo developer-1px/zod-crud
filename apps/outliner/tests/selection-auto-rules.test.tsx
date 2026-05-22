@@ -13,9 +13,9 @@ import { Outliner } from "../src/index.js";
 
 afterEach(cleanup);
 
-const firstItem = "Enter — edit; Shift+Enter / Cmd+Enter — insert sibling";
-const secondItem = "Tab — demote (move into prev sibling)";
-const thirdItem = "Shift+Tab — promote (move out to parent's sibling)";
+const firstItem = "Enter edit; Shift/Cmd+Enter insert";
+const secondItem = "Tab demote";
+const thirdItem = "Shift+Tab promote";
 
 function renderOutliner() {
   render(<Outliner />);
