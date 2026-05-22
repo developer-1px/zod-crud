@@ -148,6 +148,22 @@ describe("createJSONDocument public interface", () => {
     expect(doc.history.undoDepth).toBe(2);
   });
 
+  test("clipboard read returns a cloned payload", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.clipboard.copy("/items/0")).toMatchObject({ ok: true });
+    const first = doc.clipboard.read();
+    if (!first.ok) throw new Error("clipboard read failed");
+    (first.payload as { name: string }).name = "mutated";
+
+    expect(doc.clipboard.read()).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+  });
+
   test("commits selection-aware text patches with serializable history metadata", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,

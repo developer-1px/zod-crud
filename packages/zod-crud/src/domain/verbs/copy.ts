@@ -3,7 +3,7 @@
 // system clipboard write 는 hooks 또는 사용자 코드에서 수행 (boundary: ADR-0002 §0.4).
 
 import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { cloneJson, jsonSerializableError } from "../../foundation/json.js";
+import { cloneTrustedJson, jsonSerializableError } from "../../foundation/json.js";
 import { readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
 import { normalizePointerSources, type PointerSource, type PointerSourceError } from "../../foundation/json-pointer/sourceSet.js";
 
@@ -61,7 +61,7 @@ function copyOne(state: unknown, source: Pointer, sources: ReadonlyArray<Pointer
     return { ok: false, code: "not_serializable", message: jsonErr };
   }
   // deep clone via JSON round-trip — payload 가 외부 round-trip 후에도 정합한지 보장.
-  return { ok: true, payload: cloneJson(r.value), source, sources };
+  return { ok: true, payload: cloneTrustedJson(r.value), source, sources };
 }
 
 function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer[] } | CopyError {

@@ -100,6 +100,26 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.copy /items", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.copy("/items"));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.write items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.write(state.items));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    const written = doc.clipboard.write(state.items);
+    if (!written.ok) throw new Error(`clipboard write setup failed: ${JSON.stringify(written)}`);
+    bench("doc.clipboard.read items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.read());
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, {
       history: 100,
       selection: { mode: "single", initial: [`/items/${middle}/done`] },
