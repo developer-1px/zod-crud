@@ -930,6 +930,9 @@ function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "
 function arrayElementReplaceLocation(
   path: Pointer,
 ): { parent: Pointer; parentSegments: string[]; index: number } | null {
+  const simple = parseSimpleArrayElementReplacePath(path);
+  if (simple !== null) return simple;
+
   const parent = parentPointer(path);
   if (parent === null) return null;
   let segments: string[];
@@ -943,6 +946,24 @@ function arrayElementReplaceLocation(
   const index = numericSegment(segment);
   if (index === null) return null;
   return { parent, parentSegments: segments.slice(0, -1), index };
+}
+
+function parseSimpleArrayElementReplacePath(
+  path: Pointer,
+): { parent: Pointer; parentSegments: string[]; index: number } | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const indexSlash = path.lastIndexOf("/");
+  if (indexSlash < 0) return null;
+
+  const index = numericSegment(path.slice(indexSlash + 1));
+  if (index === null) return null;
+
+  const parent = path.slice(0, indexSlash);
+  return {
+    parent,
+    parentSegments: parent === "" ? [] : parent.slice(1).split("/"),
+    index,
+  };
 }
 
 function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {

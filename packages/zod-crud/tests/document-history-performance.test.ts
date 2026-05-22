@@ -908,6 +908,46 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("same-array element replace batch handles escaped array parents", () => {
+    const Schema = z.object({
+      "a/b": z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      "a/b": [
+        { id: "a", done: false },
+        { id: "b", done: false },
+      ],
+    }, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/a~1b/0", value: { id: "a2", done: true } },
+      { op: "replace", path: "/a~1b/1", value: { id: "b2", done: true } },
+    ])).toEqual({ ok: true });
+    expect(doc.value["a/b"]).toEqual([
+      { id: "a2", done: true },
+      { id: "b2", done: true },
+    ]);
+    expect(rootParses).toBe(0);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value["a/b"]).toEqual([
+      { id: "a", done: false },
+      { id: "b", done: false },
+    ]);
+    expect(rootParses).toBe(0);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value["a/b"]).toEqual([
+      { id: "a2", done: true },
+      { id: "b2", done: true },
+    ]);
+    expect(rootParses).toBe(0);
+  });
+
   test("plain structural repeated same-array element replace batches stay on local validation", () => {
     const Item = z.object({ id: z.string(), done: z.boolean() });
     const Schema = z.object({

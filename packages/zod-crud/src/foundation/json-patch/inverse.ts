@@ -135,6 +135,7 @@ function computeSameArrayFieldReplaceInverses(
   let field: string | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
+  let previousEmittedIndex: number | null = null;
   const inverses: JSONPatchOperation[] = [];
 
   for (let opIndex = ops.length - 1; opIndex >= 0; opIndex -= 1) {
@@ -160,9 +161,15 @@ function computeSameArrayFieldReplaceInverses(
     const row = arrayValue[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
     if (!objectHasOwn.call(row, location.key)) return null;
-    if (seenIndexes === null) seenIndexes = new Set();
-    else if (seenIndexes.has(location.index)) continue;
-    seenIndexes.add(location.index);
+    if (seenIndexes !== null) {
+      if (seenIndexes.has(location.index)) continue;
+      seenIndexes.add(location.index);
+    } else if (previousEmittedIndex !== null && location.index >= previousEmittedIndex) {
+      seenIndexes = seedArrayFieldReplaceIndexes(inverses);
+      if (seenIndexes.has(location.index)) continue;
+      seenIndexes.add(location.index);
+    }
+    previousEmittedIndex = location.index;
     inverses.push({
       op: "replace",
       path: op.path,
@@ -183,6 +190,7 @@ function computeSameArrayElementReplaceInverses(
   let parent: string | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
+  let previousEmittedIndex: number | null = null;
   const inverses: JSONPatchOperation[] = [];
 
   for (let opIndex = ops.length - 1; opIndex >= 0; opIndex -= 1) {
@@ -202,9 +210,15 @@ function computeSameArrayElementReplaceInverses(
     }
 
     if (arrayValue === null || location.index < 0 || location.index >= arrayValue.length) return null;
-    if (seenIndexes === null) seenIndexes = new Set();
-    else if (seenIndexes.has(location.index)) continue;
-    seenIndexes.add(location.index);
+    if (seenIndexes !== null) {
+      if (seenIndexes.has(location.index)) continue;
+      seenIndexes.add(location.index);
+    } else if (previousEmittedIndex !== null && location.index >= previousEmittedIndex) {
+      seenIndexes = seedArrayElementReplaceIndexes(inverses);
+      if (seenIndexes.has(location.index)) continue;
+      seenIndexes.add(location.index);
+    }
+    previousEmittedIndex = location.index;
     inverses.push({
       op: "replace",
       path: op.path,
@@ -213,6 +227,24 @@ function computeSameArrayElementReplaceInverses(
   }
 
   return parent === null || arrayValue === null ? null : { ok: true, inverses };
+}
+
+function seedArrayFieldReplaceIndexes(inverses: ReadonlyArray<JSONPatchOperation>): Set<number> {
+  const seen = new Set<number>();
+  for (const inverse of inverses) {
+    const location = parseArrayFieldPath(inverse.path);
+    if (location !== null) seen.add(location.index);
+  }
+  return seen;
+}
+
+function seedArrayElementReplaceIndexes(inverses: ReadonlyArray<JSONPatchOperation>): Set<number> {
+  const seen = new Set<number>();
+  for (const inverse of inverses) {
+    const location = parseSimpleArrayElementPath(inverse.path);
+    if (location !== null) seen.add(location.index);
+  }
+  return seen;
 }
 
 type SameArrayStructuralOp =
