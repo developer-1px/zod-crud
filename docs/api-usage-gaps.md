@@ -14,9 +14,9 @@ The package root currently exports:
 - selection types: `JSONPoint`, `SelectionRange`, `SelectionSource`, `SelectionSnap`, `SelectionState`
 - React entrypoint: `zod-crud/react` exports `useJSONDocument`
 
-The root does not export `JSONOps`, `Commands`, `Can`, `Check`, or `buildCommands`, and `JSONDocument<T>` does not expose `doc.ops`, `doc.commands`, or `doc.can`.
+The root does not export `JSONOps`, `Check`, or command/can builder namespaces, and `JSONDocument<T>` does not expose `doc.ops`, `doc.commands`, or `doc.can`.
 
-Important mismatch: `packages/zod-crud/src/jsonOps.ts` and `packages/zod-crud/src/commands/buildCommands.ts` already define a low-level ops facade and command namespace internally, but they are not public package surface.
+Important boundary: `packages/zod-crud/src/jsonOps.ts` defines a low-level ops facade internally, but it is not public package surface.
 
 Public contract is intentionally locked today:
 
@@ -76,11 +76,11 @@ Evidence:
 - `../zod-admin-ui` rebuilds `commands.move/duplicate/remove/replace/cut/copy/paste/undo/redo`.
 - `../editable/apps/composer-demo` expects `jd.commands.undo/redo`.
 - `../aria-kernel-apps/legacy/packages/editable-tree` expects `doc.commands.replace/paste/move/undo/redo`.
-- Current source already has `packages/zod-crud/src/commands/buildCommands.ts` with a richer `Commands<T>` interface.
+- The old source-level `commands/buildCommands` builder was removed; command vocabulary now lives in the public facade groups instead of a hidden namespace.
 
 Current state:
 
-- `buildCommands` and `Commands<T>` are internal and not exported.
+- There is no internal `buildCommands` namespace in the current package source.
 - `JSONDocument<T>` exposes many command-like methods directly or by subgroup: `duplicate`, `clipboard.copy/cut/paste`, `history.undo/redo`, `selection.*`, `can*`.
 
 Decision needed:

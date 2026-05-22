@@ -1,8 +1,7 @@
-// jsonOps — boundary type. Internal state/document producers and command
-// builders consumers 사이의 contract. neutral 위치 (특정 layer 에 속하지 않는 boundary type).
+// jsonOps — internal boundary type. Low-level state producers and document
+// feature modules share this contract without exposing it as public API.
 //
 // JSONOps<T>: low-level JSON operation 표면. RFC 6902 6 op + lifecycle + pub/sub.
-// commands/buildCommands 가 이 type 을 받아 verbs/* 합성을 wiring.
 
 import type { JSONPatchOperation, JSONResult } from "./core/patch/index.js";
 import type { SelectionSnap } from "./core/selection/index.js";
