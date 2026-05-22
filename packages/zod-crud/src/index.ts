@@ -27,7 +27,8 @@ export type {
 export type { SelectionState } from "./application/document/selection.js";
 
 // === RFC 6902 — JSON Patch ===
-export { applyOperation, applyPatch, applyPatchToTrustedState } from "./foundation/json-patch/index.js";
+export { applyOperation, applyPatch } from "./foundation/json-patch/index.js";
+export { applyPatchToTrustedState } from "./application/trustedPatch.js";
 export type {
   JSONPatchOperation,
   JSONResult,

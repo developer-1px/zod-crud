@@ -69,7 +69,8 @@ For large documents, prefer the document facade (`doc.patch`, `doc.commit`,
 `doc.canPatch`) on hot UI paths. Public `applyPatch` is an external JSON
 boundary and checks the whole input state for JSON safety. Use
 `applyPatchToTrustedState` only when the caller already owns that state JSON
-boundary.
+boundary; it can use the same trusted plain-schema fast paths as the document
+facade.
 
 Fast document paths apply only for trusted document state plus a plain
 structural Zod schema: objects, arrays, records, and scalar validators without
