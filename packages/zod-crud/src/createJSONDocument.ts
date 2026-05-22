@@ -94,7 +94,7 @@ export interface JSONDocumentMutationOk<T> {
   value: T;
   applied: ReadonlyArray<JSONPatchOperation>;
 }
-export interface JSONDocumentDuplicateOk<T> extends JSONDocumentMutationOk<T> {
+interface JSONDocumentDuplicateOk<T> extends JSONDocumentMutationOk<T> {
   duplicatedTo: Pointer;
 }
 export type JSONDocumentDuplicateResult<T> =

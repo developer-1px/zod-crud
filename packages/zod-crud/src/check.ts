@@ -33,7 +33,7 @@ import {
   type SelectionSnap,
 } from "./core/selection/index.js";
 
-export type CheckErrorCode =
+type CheckErrorCode =
   | ErrorCode
   | PreFlightErrorCode
   | SelectionTextEditErrorCode
@@ -50,7 +50,7 @@ export type CheckErrorCode =
   | "apply_failed"
   | "empty_clipboard";
 
-export interface CheckViolation {
+interface CheckViolation {
   path: string;
   message: string;
 }
@@ -65,7 +65,7 @@ export type CheckResult =
       violations?: ReadonlyArray<CheckViolation>;
     };
 
-export interface Check<T> {
+interface Check {
   selectScope(options?: SelectionScopeOptions): CheckResult;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
@@ -94,7 +94,7 @@ interface CheckHistoryControls {
   canRedo(): boolean;
 }
 
-export interface BuildCheckArgs<S extends z.ZodType> {
+interface BuildCheckArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONOps<z.output<S>>;
   history: CheckHistoryControls;
@@ -116,7 +116,7 @@ const OK: CheckResult = { ok: true };
 
 export function buildCheck<S extends z.ZodType>(
   args: BuildCheckArgs<S>,
-): Check<z.output<S>> {
+): Check {
   const { schema, ops, history, selectionRef } = args;
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? (selectionRef ? selectedSource(selectionRef.current) : null);

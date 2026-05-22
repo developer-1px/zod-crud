@@ -8,16 +8,14 @@ import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js"
 import { getDiscriminatedUnionInfo, getObjectLiteralValues, schemaAtPointer } from "../core/schema/introspection.js";
 import { tryRekeyPayload, type RekeyOptions } from "../core/schema/rekey.js";
 
-export type { RekeyContext, RekeyOptions, RekeyResult, RekeyStrategy } from "../core/schema/rekey.js";
-
-export type PasteMode = "before" | "after" | "into" | "replace";
+type PasteMode = "before" | "after" | "into" | "replace";
 export type PasteTarget =
   | Pointer
   | { before: Pointer }
   | { after: Pointer }
   | { replace: Pointer };
 
-export interface PasteOk<T> {
+interface PasteOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];
@@ -38,7 +36,7 @@ export interface PasteDuMismatch {
   expected: { discriminator: string; allowed: unknown[] };
 }
 
-export interface PastePayloadOptions {
+interface PastePayloadOptions {
   rekey?: RekeyOptions;
   /** Array payload 를 array target 에 여러 add op 로 펼친다. Multi-source clipboard paste 에 사용. */
   spread?: boolean;
@@ -46,7 +44,7 @@ export interface PastePayloadOptions {
 
 export interface PasteOptions extends PastePayloadOptions {}
 
-export interface ResolvedPasteArgs {
+interface ResolvedPasteArgs {
   target?: Pointer;
   mode: PasteMode;
   options: PastePayloadOptions;

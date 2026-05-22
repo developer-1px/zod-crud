@@ -12,7 +12,7 @@ import type { PointerSourceError } from "../core/pointer/sourceSet.js";
 import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js";
 import type { ClipboardSource } from "./copy.js";
 
-export interface CutOk<T> {
+interface CutOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];

@@ -15,7 +15,7 @@
 import { parse } from "./parser.js";
 import { evaluate, matchPointers } from "./evaluate.js";
 import type { Pointer } from "../pointer/index.js";
-import type { Match, Query } from "./types.js";
+import type { Match } from "./types.js";
 
 export { parse, evaluate, matchPointers };
 export { JSONPathSyntaxError } from "./tokenizer.js";
@@ -32,6 +32,3 @@ export function queryMatches(jsonpath: string, root: unknown): Match[] {
   const ast = parse(jsonpath);
   return evaluate(ast, root);
 }
-
-// Type-only re-export to satisfy parser.ts module resolution.
-export type { Query as JSONPathQuery };

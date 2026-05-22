@@ -2,7 +2,7 @@
 
 import { buildPointer } from "./pointer/index.js";
 
-export type JSONPrimitive = string | number | boolean | null;
+type JSONPrimitive = string | number | boolean | null;
 export type JSONValue =
   | JSONPrimitive
   | { readonly [key: string]: JSONValue }
@@ -83,7 +83,7 @@ function arrayPropertyPathSegment(key: string): string | number {
   return isArrayIndexKey(key) ? Number(key) : key;
 }
 
-export function assertJsonSerializable(value: unknown): void {
+function assertJsonSerializable(value: unknown): void {
   const reason = jsonSerializableError(value);
   if (reason !== null) throw new TypeError(`Value is not JSON-serializable: ${reason}`);
 }

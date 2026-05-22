@@ -291,10 +291,6 @@ export function selectionType(s: SelectionSnap): SelectionType {
   return isCollapsed(s) ? "Caret" : "Range";
 }
 
-export function pointPointer(point: JSONPoint): Pointer {
-  return pointPath(point);
-}
-
 export function primaryRange(s: SelectionSnap): SelectionRange | null {
   const range = s.selectionRanges[s.primaryIndex];
   return range === undefined ? null : cloneRange(range);

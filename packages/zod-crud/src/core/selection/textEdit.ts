@@ -11,7 +11,6 @@ import {
   type JSONPointObject,
   type SelectionAffinity,
   type SelectionOrderErrorCode,
-  type SelectionOrderOptions,
   type SelectionPointerSpan,
   type SelectionRange,
   type SelectionSnap,

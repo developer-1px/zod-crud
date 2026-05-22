@@ -90,15 +90,6 @@ function shiftArraySibling(at: string[], target: string[], delta: 1 | -1): strin
   return next;
 }
 
-function sameArrayParent(a: string[], b: string[]): boolean {
-  if (a.length === 0 || b.length === 0) return false;
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length - 1; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return isArrayIndex(a[a.length - 1]!) && isArrayIndex(b[b.length - 1]!);
-}
-
 // 한 op 가 한 pointer 에 어떤 영향을 주는가.
 // null = pointer 자체가 cascading drop 됨.
 function trackOne(pointer: Pointer, op: JSONPatchOperation): Pointer | null {

@@ -6,22 +6,22 @@ import { preFlight, type PreFlightErrorCode } from "../core/schema/preFlight.js"
 import type { Pointer } from "../core/pointer/index.js";
 import type * as z from "zod";
 
-export interface MoveOk<T> {
+interface MoveOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];
 }
 
-export interface MoveError {
+interface MoveError {
   ok: false;
   code: "empty_selection" | PreFlightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
-export type MoveResult<T> = MoveOk<T> | MoveError;
+type MoveResult<T> = MoveOk<T> | MoveError;
 
-export interface ResolvedMoveArgs {
+interface ResolvedMoveArgs {
   from?: Pointer;
   to: Pointer;
 }

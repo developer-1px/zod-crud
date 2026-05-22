@@ -17,7 +17,7 @@ export interface DuplicateOpts {
   rekey?: RekeyOptions;
 }
 
-export interface DuplicateOk<T> {
+interface DuplicateOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];
@@ -40,7 +40,7 @@ export interface DuplicateError {
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
-export interface ResolvedDuplicateArgs {
+interface ResolvedDuplicateArgs {
   source?: Pointer;
   opts: DuplicateOpts;
 }

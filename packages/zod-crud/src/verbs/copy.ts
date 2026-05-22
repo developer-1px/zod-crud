@@ -23,7 +23,7 @@ export interface CopyError {
   message: string;
 }
 
-export type CopyResult = CopyOk | CopyError;
+type CopyResult = CopyOk | CopyError;
 export type ClipboardSource = PointerSource;
 
 /**

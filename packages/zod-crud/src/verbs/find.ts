@@ -5,13 +5,13 @@ import type { Pointer } from "../core/pointer/index.js";
 import { queryMatches as jsonpathQueryMatches, JSONPathSyntaxError } from "../core/jsonpath/index.js";
 import type { Match } from "../core/jsonpath/index.js";
 
-export interface FindOk {
+interface FindOk {
   ok: true;
   pointers: Pointer[];
   matches: Match[];
 }
 
-export interface FindError {
+interface FindError {
   ok: false;
   code: "syntax_error";
   message: string;
