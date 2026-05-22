@@ -519,6 +519,45 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("plain structural root object replace batches validate locally", () => {
+    const Value = z.object({
+      id: z.string(),
+      done: z.boolean(),
+    });
+    const Schema = z.record(z.string(), Value);
+    const doc = createJSONDocument(Schema, {
+      a: { id: "a", done: false },
+      b: { id: "b", done: false },
+      c: { id: "c", done: false },
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/a", value: { id: "a2", done: true } },
+      { op: "replace", path: "/b", value: { id: "b2", done: true } },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toEqual({
+      a: { id: "a2", done: true },
+      b: { id: "b2", done: true },
+      c: { id: "c", done: false },
+    });
+    expect(rootParses).toBe(0);
+
+    const before = doc.value;
+    const rejected = doc.patch([
+      { op: "replace", path: "/a", value: { id: "a3", done: false } },
+      { op: "replace", path: "/b", value: { id: 1, done: true } },
+    ]);
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toBe(before);
+    expect(rootParses).toBe(0);
+  });
+
   test("plain structural same-array field replace batches reuse local field validation", () => {
     const Schema = z.object({
       items: z.array(z.object({ done: z.boolean(), title: z.string() })),

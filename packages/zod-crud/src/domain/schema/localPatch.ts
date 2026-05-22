@@ -60,6 +60,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const valuesTrusted = options.valuesTrusted === true;
   const sameArrayFieldReplace = applySameArrayFieldReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
+  const rootObjectReplace = applyRootObjectReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+  if (rootObjectReplace) return rootObjectReplace;
   if (isIndependentReplacePatch(ops)) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   }
@@ -212,6 +214,84 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     result: { ok: true },
     applied,
   };
+}
+
+function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): LocalPatchResult<S> {
+  if (
+    !Array.isArray(ops)
+    || ops.length < 2
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+  ) {
+    return null;
+  }
+
+  let next: Record<string, unknown> | null = null;
+  let seenKeys: Set<string> | null = null;
+  const applied: JSONPatchOperation[] = [];
+  const shape = getObjectShape(schema);
+  const rootDef = shape === null ? getDef(schema) as ExtendedDef : null;
+  const recordValueSchema = rootDef?.type === "record" ? (rootDef.valueType ?? null) : null;
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return null;
+    }
+
+    const key = op.path.slice(1);
+    if (key === "" || !objectHasOwn.call(state, key)) return null;
+    if (seenKeys === null) seenKeys = new Set();
+    else if (seenKeys.has(key)) return null;
+    seenKeys.add(key);
+
+    if (!valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+
+    const valueSchema = shape
+      ? (objectHasOwn.call(shape, key) ? (shape[key] ?? null) : null)
+      : recordValueSchema;
+    if (!valueSchema) return null;
+    const result = valueSchema.safeParse(op.value);
+    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+
+    if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: op.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = op.value;
+    }
+    applied.push(op);
+  }
+
+  return next === null
+    ? null
+    : {
+        state: next as z.output<S>,
+        result: { ok: true },
+        applied,
+      };
 }
 
 function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(

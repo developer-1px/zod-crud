@@ -435,6 +435,15 @@ for (const size of sizes) {
 
 {
   const rootReplaceCount = envNumber("PERF_ROOT_KEYS", batchSize);
+  const RootValue = z.object({
+    id: z.string(),
+    done: z.boolean(),
+    meta: z.object({
+      rank: z.number(),
+      tag: z.string(),
+    }),
+  });
+  const RootRecord = z.record(z.string(), RootValue);
   const rootState = makeRootObjectState(rootReplaceCount);
   const rootReplaceOps = Array.from({ length: rootReplaceCount }, (_, index) => ({
     op: "replace",
@@ -442,6 +451,16 @@ for (const size of sizes) {
     value: makeRootObjectValue(rootReplaceCount + index),
   }));
   console.log(`\nroot keys=${rootReplaceCount}`);
+  {
+    const doc = createJSONDocument(RootRecord, rootState, { history: 0 });
+    bench(`doc.patch root object replace batch ${rootReplaceCount} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(rootReplaceOps));
+  }
+  {
+    const doc = createJSONDocument(RootRecord, rootState, { history: 100 });
+    bench(`doc.patch root object replace batch ${rootReplaceCount} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(rootReplaceOps));
+  }
   bench(`accepted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
     applyAcceptedPatch(rootState, rootReplaceOps));
   bench(`trusted root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
