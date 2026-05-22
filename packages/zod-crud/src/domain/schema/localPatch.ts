@@ -5,7 +5,12 @@ import {
   type ApplyResult,
   type JSONPatchOperation,
 } from "../../foundation/json-patch/index.js";
-import { parsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import {
+  parentPointer,
+  parsePointer,
+  readAt,
+  type Pointer,
+} from "../../foundation/json-pointer/index.js";
 import {
   getArrayElement,
   getDef,
@@ -30,8 +35,20 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
   if (!isPlainStructuralSchema(schema)) return null;
-  if (!isIndependentReplacePatch(ops)) return null;
+  if (isIndependentReplacePatch(ops)) {
+    return applyReplacePatchWithLocalSchemaValidation(schema, state, ops);
+  }
+  if (ops.length === 1 && 0 in ops) {
+    return applySingleArrayPatchWithLocalSchemaValidation(schema, state, ops[0]!);
+  }
+  return null;
+}
 
+function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): LocalPatchResult<S> {
   const applied = applyTrustedPatch(state, ops);
   if (!applied.result.ok) {
     return {
@@ -47,15 +64,7 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (!valueSchema) return null;
     const parsed = valueSchema.safeParse(op.value);
     if (!parsed.success) {
-      return {
-        state,
-        result: {
-          ok: false,
-          code: "schema_violation",
-          reason: JSON.stringify(prefixIssues(op.path, parsed.error.issues)),
-        },
-        applied: [],
-      };
+      return schemaViolation(state, op.path, parsed.error.issues);
     }
   }
 
@@ -64,6 +73,60 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+function applySingleArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  op: JSONPatchOperation,
+): LocalPatchResult<S> {
+  if (!op || typeof op !== "object") return null;
+
+  const sourceValue = sourceValueForValidation(state, op);
+  const applied = applyTrustedPatch(state, [op]);
+  if (!applied.result.ok) {
+    return {
+      state,
+      result: applied.result,
+      applied: [],
+    };
+  }
+
+  const appliedOp = applied.applied[0];
+  if (!appliedOp) return null;
+
+  switch (appliedOp.op) {
+    case "add": {
+      const element = arrayElementSchemaAtPath(schema, appliedOp.path);
+      if (!element) return null;
+      const parsed = element.safeParse(appliedOp.value);
+      return parsed.success
+        ? acceptedLocalPatch(applied)
+        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+    }
+    case "remove":
+      return arrayElementSchemaAtPath(schema, appliedOp.path)
+        ? acceptedLocalPatch(applied)
+        : null;
+    case "copy": {
+      const element = arrayElementSchemaAtPath(schema, appliedOp.path);
+      if (!element || !sourceValue.ok) return null;
+      const parsed = element.safeParse(sourceValue.value);
+      return parsed.success
+        ? acceptedLocalPatch(applied)
+        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+    }
+    case "move": {
+      const element = arrayElementSchemaAtPath(schema, appliedOp.path);
+      if (!element || !sourceValue.ok || !arrayElementSchemaAtPath(schema, appliedOp.from)) return null;
+      const parsed = element.safeParse(sourceValue.value);
+      return parsed.success
+        ? acceptedLocalPatch(applied)
+        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+    }
+    default:
+      return null;
+  }
 }
 
 function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {
@@ -91,6 +154,54 @@ function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): bool
     if (current === previous || current.startsWith(`${previous}/`)) return false;
   }
   return true;
+}
+
+function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
+  const parent = parentPointer(path);
+  if (parent === null) return null;
+  const parentSchema = schemaAtPointer(schema, parent, "value");
+  return parentSchema ? getArrayElement(parentSchema) : null;
+}
+
+function sourceValueForValidation(
+  state: unknown,
+  op: JSONPatchOperation,
+): { ok: true; value: unknown } | { ok: false } {
+  if (op.op !== "copy" && op.op !== "move") return { ok: false };
+  try {
+    return readAt(state, parsePointer(op.from));
+  } catch {
+    return { ok: false };
+  }
+}
+
+function acceptedLocalPatch<S extends z.ZodType>(
+  applied: {
+    state: unknown;
+    applied: ReadonlyArray<JSONPatchOperation>;
+  },
+): ApplyResult<S> {
+  return {
+    state: applied.state as z.output<S>,
+    result: { ok: true },
+    applied: applied.applied,
+  };
+}
+
+function schemaViolation<S extends z.ZodType>(
+  state: z.output<S>,
+  path: Pointer,
+  issues: z.ZodError["issues"],
+): ApplyResult<S> {
+  return {
+    state,
+    result: {
+      ok: false,
+      code: "schema_violation",
+      reason: JSON.stringify(prefixIssues(path, issues)),
+    },
+    applied: [],
+  };
 }
 
 function isPlainStructuralSchema(schema: z.ZodType, seen = new WeakSet<object>()): boolean {

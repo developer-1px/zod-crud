@@ -45,6 +45,7 @@ for (const size of sizes) {
     path: `/items/${index}/done`,
     value: true,
   }));
+  const insertedItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => makeItem(size + index));
 
   console.log(`\nitems=${size}`);
   bench("applyPatch single leaf replace", rounds, (index) =>
@@ -151,23 +152,56 @@ for (const size of sizes) {
     });
     console.log(`doc.patch individual ${Math.min(individualCount, size)} history=${individualCount}: ${elapsed.toFixed(2)}ms`);
   }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    const elapsed = time(() => {
+      for (let index = 0; index < insertedItems.length; index++) {
+        const result = doc.patch({
+          op: "add",
+          path: "/items/-",
+          value: insertedItems[index],
+        });
+        if (!result.ok) throw new Error(`individual add failed: ${JSON.stringify(result)}`);
+      }
+    });
+    console.log(`doc.patch individual add ${insertedItems.length} history=0: ${elapsed.toFixed(2)}ms`);
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    const elapsed = time(() => {
+      for (let index = 0; index < Math.min(individualCount, size); index++) {
+        const result = doc.patch({
+          op: "remove",
+          path: `/items/${size - index - 1}`,
+        });
+        if (!result.ok) throw new Error(`individual remove failed: ${JSON.stringify(result)}`);
+      }
+    });
+    console.log(`doc.patch individual remove ${Math.min(individualCount, size)} history=0: ${elapsed.toFixed(2)}ms`);
+  }
 }
 
 function makeState(size) {
   return {
-    items: Array.from({ length: size }, (_, index) => ({
-      id: `id-${index}`,
-      title: `item ${index}`,
-      done: false,
-      value: index,
-      meta: {
-        tag: `tag-${index % 10}`,
-        rank: index % 100,
-      },
-    })),
+    items: Array.from({ length: size }, (_, index) => makeItem(index)),
     settings: {
       active: "main",
       count: size,
+    },
+  };
+}
+
+function makeItem(index) {
+  return {
+    id: `id-${index}`,
+    title: `item ${index}`,
+    done: false,
+    value: index,
+    meta: {
+      tag: `tag-${index % 10}`,
+      rank: index % 100,
     },
   };
 }

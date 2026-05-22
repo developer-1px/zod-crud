@@ -155,6 +155,53 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("plain structural array mutations validate locally without rerunning root schema parse", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { id: "a", done: false },
+        { id: "b", done: true },
+      ],
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch({ op: "add", path: "/items/-", value: { id: "c", done: false } })).toEqual({ ok: true });
+    expect(doc.patch({ op: "copy", from: "/items/0", path: "/items/-" })).toEqual({ ok: true });
+    expect(doc.patch({ op: "move", from: "/items/3", path: "/items/1" })).toEqual({ ok: true });
+    expect(doc.patch({ op: "remove", path: "/items/0" })).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+    expect(rootParses).toBe(0);
+
+    const rejected = doc.patch({ op: "add", path: "/items/-", value: { id: 1, done: false } });
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+    expect(rootParses).toBe(0);
+  });
+
+  test("object key removals fall back to full validation", () => {
+    const Schema = z.object({ title: z.string() });
+    const doc = createJSONDocument(Schema, { title: "draft" }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    const rejected = doc.patch({ op: "remove", path: "/title" });
+
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toEqual({ title: "draft" });
+    expect(rootParses).toBe(1);
+  });
+
   test("schema checks fall back to full validation for local-looking patches", () => {
     let validations = 0;
     const Schema = z.object({
