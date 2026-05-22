@@ -344,6 +344,28 @@ describe("Object safety", () => {
     expect(Object.prototype).not.toHaveProperty("polluted");
     expect(r.state).toEqual({ constructor: { prototype: { polluted: true } } });
   });
+
+  it("keeps __proto__ as data in same-array copy batches", () => {
+    const item: Record<string, unknown> = { id: "a" };
+    Object.defineProperty(item, "__proto__", {
+      value: { polluted: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    const state = { items: [item, { id: "b" }] };
+
+    const r = applyPatch(Any, state, [
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "remove", path: "/items/1" },
+    ]);
+
+    expect(r.result.ok).toBe(true);
+    expect(Object.prototype).not.toHaveProperty("polluted");
+    expect(Object.prototype.hasOwnProperty.call(r.state.items[1], "__proto__")).toBe(true);
+    expect((r.state.items[1] as Record<string, unknown>).__proto__).toEqual({ polluted: true });
+    expect(r.state.items[1]).not.toBe(item);
+  });
 });
 
 describe("Serializability (G1)", () => {

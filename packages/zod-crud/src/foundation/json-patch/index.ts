@@ -303,6 +303,7 @@ function applySameArrayStructuralPatch(
       continue;
     }
 
+    if (index < 0 || index >= next.length) return { handled: false };
     if (item.fromIndex === index) {
       applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
       continue;

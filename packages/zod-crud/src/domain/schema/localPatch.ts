@@ -31,6 +31,13 @@ interface ExtendedDef {
   valueType?: z.ZodType;
 }
 
+interface LocalSchemaCache {
+  pointerSchemas: Map<string, z.ZodType | null>;
+}
+
+const plainStructuralSchemaCache = new WeakMap<object, boolean>();
+const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
+
 export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
@@ -61,7 +68,7 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   for (const op of applied.applied) {
     if (op.op !== "replace") return null;
-    const valueSchema = schemaAtPointer(schema, op.path, "value");
+    const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
     if (!valueSchema) return null;
     const parsed = valueSchema.safeParse(op.value);
     if (!parsed.success) {
@@ -213,7 +220,7 @@ function validateAppliedLocalOp<S extends z.ZodType>(
   switch (appliedOp.op) {
     case "replace": {
       if (appliedOp.path === "") return null;
-      const valueSchema = schemaAtPointer(schema, appliedOp.path, "value");
+      const valueSchema = cachedSchemaAtPointer(schema, appliedOp.path, "value");
       if (!valueSchema) return null;
       const parsed = valueSchema.safeParse(appliedOp.value);
       return parsed.success
@@ -283,7 +290,7 @@ function arrayLocation(
   if (segment === undefined) return null;
   const index = segment === "-" ? "-" : numericSegment(segment);
   if (index === null) return null;
-  const parentSchema = schemaAtPointer(schema, parent, "value");
+  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   const element = parentSchema ? getArrayElement(parentSchema) : null;
   return element ? { parent, element, index } : null;
 }
@@ -323,7 +330,7 @@ function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): bool
 function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
   const parent = parentPointer(path);
   if (parent === null) return null;
-  const parentSchema = schemaAtPointer(schema, parent, "value");
+  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   return parentSchema ? getArrayElement(parentSchema) : null;
 }
 
@@ -378,31 +385,58 @@ function operationFailure<S extends z.ZodType>(
   };
 }
 
+function cachedSchemaAtPointer(
+  schema: z.ZodType,
+  pointer: Pointer,
+  mode: "value" | "insert" = "value",
+): z.ZodType | null {
+  let cache = localSchemaCaches.get(schema as object);
+  if (!cache) {
+    cache = { pointerSchemas: new Map() };
+    localSchemaCaches.set(schema as object, cache);
+  }
+  const key = `${mode}\0${pointer}`;
+  if (cache.pointerSchemas.has(key)) return cache.pointerSchemas.get(key) ?? null;
+  const result = schemaAtPointer(schema, pointer, mode);
+  cache.pointerSchemas.set(key, result);
+  return result;
+}
+
 function isPlainStructuralSchema(schema: z.ZodType, seen = new WeakSet<object>()): boolean {
+  const cached = plainStructuralSchemaCache.get(schema as object);
+  if (cached !== undefined) return cached;
   if (seen.has(schema as object)) return true;
   seen.add(schema as object);
 
   const def = getDef(schema) as ExtendedDef;
-  if (Array.isArray(def.checks) && def.checks.length > 0) return false;
+  if (Array.isArray(def.checks) && def.checks.length > 0) return cachePlainStructuralSchema(schema, false);
 
   switch (def.type) {
     case "object": {
       const shape = getObjectShape(schema);
-      if (!shape) return false;
-      if (!Object.values(shape).every((child) => isPlainStructuralSchema(child, seen))) return false;
-      return def.catchall ? isPlainStructuralSchema(def.catchall, seen) : true;
+      if (!shape) return cachePlainStructuralSchema(schema, false);
+      if (!Object.values(shape).every((child) => isPlainStructuralSchema(child, seen))) {
+        return cachePlainStructuralSchema(schema, false);
+      }
+      return cachePlainStructuralSchema(
+        schema,
+        def.catchall ? isPlainStructuralSchema(def.catchall, seen) : true,
+      );
     }
     case "array": {
       const element = getArrayElement(schema);
-      return element ? isPlainStructuralSchema(element, seen) : false;
+      return cachePlainStructuralSchema(schema, element ? isPlainStructuralSchema(element, seen) : false);
     }
     case "record":
-      return (!def.keyType || isPlainStructuralSchema(def.keyType, seen))
-        && !!def.valueType
-        && isPlainStructuralSchema(def.valueType, seen);
+      return cachePlainStructuralSchema(
+        schema,
+        (!def.keyType || isPlainStructuralSchema(def.keyType, seen))
+          && !!def.valueType
+          && isPlainStructuralSchema(def.valueType, seen),
+      );
     case "optional":
     case "nullable":
-      return !!def.innerType && isPlainStructuralSchema(def.innerType, seen);
+      return cachePlainStructuralSchema(schema, !!def.innerType && isPlainStructuralSchema(def.innerType, seen));
     case "string":
     case "number":
     case "boolean":
@@ -412,10 +446,15 @@ function isPlainStructuralSchema(schema: z.ZodType, seen = new WeakSet<object>()
     case "unknown":
     case "any":
     case "never":
-      return true;
+      return cachePlainStructuralSchema(schema, true);
     default:
-      return false;
+      return cachePlainStructuralSchema(schema, false);
   }
+}
+
+function cachePlainStructuralSchema(schema: z.ZodType, value: boolean): boolean {
+  plainStructuralSchemaCache.set(schema as object, value);
+  return value;
 }
 
 function prefixIssues(

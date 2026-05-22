@@ -128,6 +128,7 @@ function computeSameArrayStructuralInverses(
       continue;
     }
 
+    if (index < 0 || index >= cur.length) return null;
     inverses.unshift({ op: "move", from: concretePath, path: op.from });
     if (op.fromIndex === index) continue;
     const [value] = cur.splice(op.fromIndex, 1);
