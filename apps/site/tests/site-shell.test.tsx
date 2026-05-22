@@ -47,23 +47,23 @@ describe("official site shell", () => {
     expect(document.head.querySelector('meta[name="twitter:title"]')?.getAttribute("content")).toBe("zod-crud API - zod-crud");
     expect(document.head.querySelector('meta[name="twitter:description"]')?.getAttribute("content")).toBe("Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.");
     expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute("content")).toBe("https://developer-1px.github.io/zod-crud/docs");
-    expect(screen.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
     const mobileSections = within(screen.getByRole("navigation", { name: "Documentation sections" }));
     expect(mobileSections.getByRole("link", { name: "작업별 진입점" }).getAttribute("href")).toBe("#작업별-진입점");
 
     await user.click(nav.getByRole("link", { name: "Workbench" }));
-    expect(screen.getByText("Interface bench")).toBeTruthy();
+    expect(await screen.findByText("Interface bench")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "zod-crud API" })).toBeTruthy();
   });
 
-  test("supports direct route entry for static-hosting fallbacks", () => {
+  test("supports direct route entry for static-hosting fallbacks", async () => {
     window.history.pushState(null, "", "/docs/");
     render(<App />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "API reference" }).getAttribute("aria-current")).toBe("page");
-    expect(document.getElementById("작업별-진입점")).toBeTruthy();
+    await waitFor(() => expect(document.getElementById("작업별-진입점")).toBeTruthy());
   });
 });

@@ -60,6 +60,9 @@ for (const pattern of [
 }
 
 if (/%BASE_URL%/.test(index)) fail("site dist index contains an unexpanded Vite base placeholder.");
+if (/rel="modulepreload"[^>]+\/assets\/(?:playground-|zod-crud-)/.test(index)) {
+  fail("site dist index must not preload playground or engine chunks before a demo route is opened.");
+}
 
 if (fallback !== index) fail("site dist 404.html must match index.html for SPA deep links.");
 for (const route of routes) {

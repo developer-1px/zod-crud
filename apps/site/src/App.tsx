@@ -1,10 +1,5 @@
-import { type ComponentType, type MouseEvent, useEffect, useSyncExternalStore } from "react";
-import { ApiCollection } from "@zod-crud/api-collection";
-import { App as MobileCms } from "@zod-crud/mobile-cms";
-import { Outliner } from "@zod-crud/outliner";
-import { Docs } from "./routes/Docs";
+import { lazy, Suspense, type ComponentType, type MouseEvent, useEffect, useSyncExternalStore } from "react";
 import { Home } from "./routes/Home";
-import { Playground } from "./routes/Playground";
 import siteRoutes from "./site-routes.json";
 
 type SiteRoute = {
@@ -18,6 +13,11 @@ type Route = SiteRoute & { Component: ComponentType };
 
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+const Docs = lazy(() => import("./routes/Docs").then((module) => ({ default: module.Docs })));
+const Playground = lazy(() => import("./routes/Playground").then((module) => ({ default: module.Playground })));
+const Outliner = lazy(() => import("@zod-crud/outliner").then((module) => ({ default: module.Outliner })));
+const MobileCms = lazy(() => import("@zod-crud/mobile-cms").then((module) => ({ default: module.App })));
+const ApiCollection = lazy(() => import("@zod-crud/api-collection").then((module) => ({ default: module.ApiCollection })));
 const routeComponents: Record<string, ComponentType> = {
   "/": Home,
   "/docs": Docs,
@@ -184,7 +184,9 @@ export function App() {
         </div>
       </nav>
       <div id="main-content" className="flex-1 md:overflow-auto">
-        <Page />
+        <Suspense fallback={<div className="p-4 text-sm text-stone-500">Loading</div>}>
+          <Page />
+        </Suspense>
       </div>
     </div>
   );

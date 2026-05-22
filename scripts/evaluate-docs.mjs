@@ -225,6 +225,20 @@ if (!/site-routes\.json/.test(siteApp) || !/setRouteMetadata/.test(siteApp) || !
   fail("site app: missing client-side route metadata updates.");
 }
 
+if (
+  !/lazy\(\(\) => import\("\.\/routes\/Docs"\)/.test(siteApp)
+  || !/lazy\(\(\) => import\("\.\/routes\/Playground"\)/.test(siteApp)
+  || !/lazy\(\(\) => import\("@zod-crud\/outliner"\)/.test(siteApp)
+  || !/lazy\(\(\) => import\("@zod-crud\/mobile-cms"\)/.test(siteApp)
+  || !/lazy\(\(\) => import\("@zod-crud\/api-collection"\)/.test(siteApp)
+) {
+  fail("site app: route docs and demos must be lazy-loaded from the overview page.");
+}
+
+if (/import\s+\{[^}]*ApiCollection|import\s+\{[^}]*Outliner|from "@zod-crud\/mobile-cms"/.test(siteApp)) {
+  fail("site app: demo packages must not be statically imported into the overview bundle.");
+}
+
 if (!/document\.title/.test(siteShellTest) || !/name="description"/.test(siteShellTest) || !/og:description/.test(siteShellTest) || !/og:url/.test(siteShellTest) || !/twitter:description/.test(siteShellTest) || !/canonical/.test(siteShellTest)) {
   fail("site shell test: missing client-side route metadata coverage.");
 }
@@ -281,6 +295,7 @@ for (const pattern of [
   /site evaluation ok/,
   /localAssetPaths/,
   /references missing asset/,
+  /must not preload playground or engine chunks/,
 ]) {
   if (!pattern.test(siteEvaluator)) fail(`site evaluator: missing ${pattern}.`);
 }
