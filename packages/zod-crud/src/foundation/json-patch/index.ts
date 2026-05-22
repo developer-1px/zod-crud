@@ -61,6 +61,12 @@ interface ArrayFieldPath {
   key: string;
 }
 
+type SameArrayStructuralItem =
+  | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
+  | { op: "remove"; path: Pointer; index: number }
+  | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
+  | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" };
+
 const ok: JSONResult = { ok: true };
 const objectHasOwn = Object.prototype.hasOwnProperty;
 const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult => {
@@ -776,12 +782,7 @@ function applySameArrayStructuralPatch(
   if (ops.length < 1) return { handled: false };
 
   let parent: Pointer | null = null;
-  const items: Array<
-    | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
-    | { op: "remove"; path: Pointer; index: number }
-    | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
-    | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
-  > = [];
+  const items: SameArrayStructuralItem[] = [];
 
   for (let index = 0; index < ops.length; index++) {
     if (!(index in ops)) return { handled: false };
@@ -831,6 +832,15 @@ function applySameArrayStructuralPatch(
   if (!("ok" in parsedParent)) return { handled: false };
   const current = getValueAt(state, parsedParent.segs);
   if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+
+  const increasingAddFast = applyIncreasingArrayAddPatch(
+    state,
+    parent,
+    parsedParent.segs,
+    current.value,
+    items,
+  );
+  if (increasingAddFast !== null) return increasingAddFast;
 
   if (items.length === 1) {
     const item = items[0]!;
@@ -927,6 +937,45 @@ function applySameArrayStructuralPatch(
   }
 
   const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, next);
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
+}
+
+function applyIncreasingArrayAddPatch(
+  state: unknown,
+  parent: Pointer,
+  parentSegments: ReadonlyArray<string>,
+  current: ReadonlyArray<unknown>,
+  items: ReadonlyArray<SameArrayStructuralItem>,
+): FastPatchResult | null {
+  if (items.length < 1) return null;
+
+  let start = -1;
+  const values = new Array<unknown>(items.length);
+  const applied = new Array<JSONPatchOperation>(items.length);
+
+  for (let index = 0; index < items.length; index += 1) {
+    const item = items[index]!;
+    if (item.op !== "add" || item.index === "-") return null;
+    if (index === 0) {
+      start = item.index;
+      if (start < 0 || start > current.length) return { handled: false };
+    } else if (item.index !== start + index) {
+      return null;
+    }
+    values[index] = item.value;
+    applied[index] = {
+      op: "add",
+      path: appendSegment(parent, start + index),
+      value: item.value,
+    };
+  }
+
+  const next = start === current.length
+    ? current.concat(values)
+    : current.slice(0, start).concat(values, current.slice(start));
+  const stateWithArray = replaceValueAtSegments(state, parentSegments, 0, next);
   return stateWithArray === null
     ? { handled: false }
     : { handled: true, state: stateWithArray, applied };
