@@ -86,6 +86,11 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
+  const acceptedValues = valuesTrusted
+    ? null
+    : applyKnownJsonReplacePatchWithLocalSchemaValidation(schema, state, ops);
+  if (acceptedValues) return acceptedValues;
+
   const applied = valuesTrusted ? applyAcceptedPatch(state, ops) : applyTrustedPatch(state, ops);
   if (!applied.result.ok) {
     return {
@@ -106,6 +111,40 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     }
   }
 
+  return {
+    state: applied.state as z.output<S>,
+    result: { ok: true },
+    applied: applied.applied,
+  };
+}
+
+function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): LocalPatchResult<S> {
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+
+  for (const op of ops) {
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+    ) {
+      return null;
+    }
+    const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
+    if (!valueSchema || !acceptsKnownJsonValue(valueSchema, op.value)) return null;
+  }
+
+  const applied = applyAcceptedPatch(state, ops);
+  if (!applied.result.ok) {
+    return {
+      state,
+      result: applied.result,
+      applied: [],
+    };
+  }
   return {
     state: applied.state as z.output<S>,
     result: { ok: true },

@@ -706,6 +706,42 @@ describe("doc.history performance contract", () => {
     expect(itemParses).toBe(1);
   });
 
+  test("plain structural independent replace batches preaccept known JSON values", () => {
+    const Item = z.object({ id: z.string(), done: z.boolean() });
+    const Schema = z.object({ items: z.array(Item) });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { id: "a", done: false },
+        { id: "b", done: false },
+      ],
+    }, { strict: false });
+    const originalItemSafeParse = Item.safeParse.bind(Item);
+    let itemParses = 0;
+    Item.safeParse = ((value: unknown) => {
+      itemParses += 1;
+      return originalItemSafeParse(value);
+    }) as typeof Item.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0", value: { id: "a2", done: true } },
+      { op: "replace", path: "/items/1", value: { id: "b2", done: true } },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items).toEqual([
+      { id: "a2", done: true },
+      { id: "b2", done: true },
+    ]);
+    expect(itemParses).toBe(0);
+
+    const before = doc.value;
+    const rejected = doc.patch([
+      { op: "replace", path: "/items/0", value: { id: "a3", done: false } },
+      { op: "replace", path: "/items/1", value: { id: 1, done: false } },
+    ]);
+    expect(rejected).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(doc.value).toBe(before);
+    expect(itemParses).toBe(1);
+  });
+
   test("object key removals fall back to full validation", () => {
     const Schema = z.object({ title: z.string() });
     const doc = createJSONDocument(Schema, { title: "draft" }, { strict: false });

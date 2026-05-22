@@ -52,6 +52,11 @@ for (const size of sizes) {
     path: "/items/-",
     value: makeItem(size + index),
   }));
+  const itemReplaceBatchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "replace",
+    path: `/items/${index}`,
+    value: makeItem(size + index),
+  }));
   const insertedItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => makeItem(size + index));
   const mixedArrayOps = [
     ...insertedItems.slice(0, Math.floor(insertedItems.length / 2)).map((item) => ({
@@ -230,6 +235,18 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch batch ${batchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench(`doc.patch item replace batch ${itemReplaceBatchOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(itemReplaceBatchOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench(`doc.patch item replace batch ${itemReplaceBatchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(itemReplaceBatchOps));
   }
 
   {
