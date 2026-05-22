@@ -137,11 +137,23 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: rootObjectAddFast.state as z.output<S>, result: ok, applied: rootObjectAddFast.applied };
   }
+  const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops);
+  if (rootObjectReplaceFast.handled) {
+    const parsed = schema.safeParse(rootObjectReplaceFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: rootObjectReplaceFast.state as z.output<S>, result: ok, applied: rootObjectReplaceFast.applied };
+  }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops);
   if (arrayReplaceFast.handled) {
     const parsed = schema.safeParse(arrayReplaceFast.state);
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: arrayReplaceFast.state as z.output<S>, result: ok, applied: arrayReplaceFast.applied };
+  }
+  const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops);
+  if (arrayElementReplaceFast.handled) {
+    const parsed = schema.safeParse(arrayElementReplaceFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: arrayElementReplaceFast.state as z.output<S>, result: ok, applied: arrayElementReplaceFast.applied };
   }
   const fast = applyIndependentReplacePatch(state, ops);
   if (fast.handled) {
@@ -260,7 +272,7 @@ export function applyTrustedPatch<T>(
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
   if (valuesTrusted) {
-    const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops);
+    const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops, true);
     if (rootObjectReplaceFast.handled) {
       return { state: rootObjectReplaceFast.state as T, result: ok, applied: rootObjectReplaceFast.applied };
     }
@@ -639,6 +651,7 @@ function applyRootObjectAddPatch(
 function applyRootObjectReplacePatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
 ): FastPatchResult {
   if (ops.length < 2 || state === null || typeof state !== "object" || Array.isArray(state)) {
     return { handled: false };
@@ -659,6 +672,7 @@ function applyRootObjectReplacePatch(
     ) {
       return { handled: false };
     }
+    if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
 
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };

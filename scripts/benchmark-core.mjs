@@ -107,6 +107,8 @@ for (const size of sizes) {
       path: `/items/${middle}/done`,
       value: index % 2 === 0,
     }]).result);
+  bench(`applyPatch repeated item replace batch ${repeatedItemReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyPatch(Schema, state, repeatedItemReplaceOps).result);
   bench("applyPatchToTrustedState single leaf replace", rounds, (index) =>
     applyPatchToTrustedState(Schema, state, [{
       op: "replace",
@@ -562,6 +564,8 @@ for (const size of sizes) {
     path: `/k${index}`,
   }));
   console.log(`\nroot keys=${rootReplaceCount}`);
+  bench(`applyPatch root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyPatch(RootRecord, rootState, rootReplaceOps).result);
   {
     const doc = createJSONDocument(RootRecord, rootState, { history: 0 });
     bench(`doc.patch root object replace batch ${rootReplaceCount} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
