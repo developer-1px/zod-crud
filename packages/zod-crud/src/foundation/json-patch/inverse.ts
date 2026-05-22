@@ -1,6 +1,6 @@
 // computeInverses — undo 용 RFC 6902 inverse op 계산.
 
-import { parsePointer, readAt } from "../json-pointer/index.js";
+import { appendSegment, parentPointer, parsePointer, readAt } from "../json-pointer/index.js";
 import type { JSONPatchOperation } from "./index.js";
 import { applyOpRaw } from "./apply.js";
 import { getValueAt, resolveAppendPath } from "./internal.js";
@@ -39,6 +39,8 @@ export function computeInverses(
 ): { ok: true; inverses: JSONPatchOperation[] } | { ok: false } {
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
+  const arrayOnly = computeSameArrayAddRemoveInverses(state, ops);
+  if (arrayOnly) return arrayOnly;
 
   const out: JSONPatchOperation[] = [];
   let cur: unknown = state;
@@ -50,6 +52,59 @@ export function computeInverses(
     cur = r.state;
   }
   return { ok: true, inverses: out };
+}
+
+function computeSameArrayAddRemoveInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let parent: string | null = null;
+  const parsed: Array<
+    | { op: "add"; path: string; index: number | "-"; value: unknown }
+    | { op: "remove"; path: string; index: number }
+  > = [];
+
+  for (const op of ops) {
+    if (op.op !== "add" && op.op !== "remove") return null;
+    const location = arrayLocation(op.path);
+    if (!location) return null;
+    if (parent === null) {
+      parent = location.parent;
+    } else if (location.parent !== parent) {
+      return null;
+    }
+    if (op.op === "add") {
+      parsed.push({ op: "add", path: op.path, index: location.index, value: op.value });
+    } else {
+      if (location.index === "-") return null;
+      parsed.push({ op: "remove", path: op.path, index: location.index });
+    }
+  }
+
+  if (parent === null) return null;
+  const array = readAt(state, parsePointer(parent));
+  if (!array.ok || !Array.isArray(array.value)) return null;
+
+  const cur = array.value.slice();
+  const inverses: JSONPatchOperation[] = [];
+  for (const op of parsed) {
+    if (op.op === "add") {
+      const index = op.index === "-" ? cur.length : op.index;
+      if (index < 0 || index > cur.length) return null;
+      cur.splice(index, 0, op.value);
+      inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
+      continue;
+    }
+
+    if (op.index < 0 || op.index >= cur.length) return null;
+    const value = cur[op.index];
+    cur.splice(op.index, 1);
+    inverses.unshift({ op: "add", path: op.path, value });
+  }
+
+  return { ok: true, inverses };
 }
 
 function computeIndependentReplaceInverses(
@@ -85,4 +140,24 @@ function hasIndependentPaths(paths: ReadonlyArray<{ path: string; segments: stri
     }
   }
   return true;
+}
+
+function arrayLocation(path: string): { parent: string; index: number | "-" } | null {
+  const parent = parentPointer(path);
+  if (parent === null) return null;
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  const segment = segments[segments.length - 1];
+  if (segment === undefined) return null;
+  const index = segment === "-" ? "-" : numericSegment(segment);
+  return index === null ? null : { parent, index };
+}
+
+function numericSegment(segment: string): number | null {
+  if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
+  return Number(segment);
 }

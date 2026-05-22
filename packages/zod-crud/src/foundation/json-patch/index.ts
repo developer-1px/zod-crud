@@ -4,7 +4,7 @@
 
 import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
-import type { Pointer } from "../json-pointer/index.js";
+import { appendSegment, parentPointer, type Pointer } from "../json-pointer/index.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { getValueAt, normalizeOp, parseSafe } from "./internal.js";
 
@@ -101,6 +101,12 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: fast.state as z.output<S>, result: ok, applied: fast.applied };
   }
+  const arrayFast = applySameArrayAddRemovePatch(state, ops);
+  if (arrayFast.handled) {
+    const parsed = schema.safeParse(arrayFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: arrayFast.state as z.output<S>, result: ok, applied: arrayFast.applied };
+  }
 
   let cur: unknown = state;
   const normalized: JSONPatchOperation[] = [];
@@ -146,6 +152,10 @@ export function applyTrustedPatch<T>(
   const fast = applyIndependentReplacePatch(state, ops);
   if (fast.handled) {
     return { state: fast.state as T, result: ok, applied: fast.applied };
+  }
+  const arrayFast = applySameArrayAddRemovePatch(state, ops);
+  if (arrayFast.handled) {
+    return { state: arrayFast.state as T, result: ok, applied: arrayFast.applied };
   }
 
   let cur: unknown = state;
@@ -203,6 +213,68 @@ function applyIndependentReplacePatch(
   return { handled: true, state: applyReplaceTree(state, buildReplaceTree(items)), applied: items.map((item) => item.op) };
 }
 
+function applySameArrayAddRemovePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): FastPatchResult {
+  if (ops.length < 2) return { handled: false };
+
+  let parent: Pointer | null = null;
+  const items: Array<
+    | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
+    | { op: "remove"; path: Pointer; index: number }
+  > = [];
+
+  for (let index = 0; index < ops.length; index++) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (validateOperationShape(op) !== null || (op.op !== "add" && op.op !== "remove") || op.path === "") {
+      return { handled: false };
+    }
+    const location = arrayLocation(op.path);
+    if (!location) return { handled: false };
+    if (parent === null) {
+      parent = location.parent;
+    } else if (location.parent !== parent) {
+      return { handled: false };
+    }
+    if (op.op === "add") {
+      if (jsonSerializableError(op.value) !== null) return { handled: false };
+      items.push({ op: "add", path: op.path, index: location.index, value: op.value });
+    } else {
+      if (location.index === "-") return { handled: false };
+      items.push({ op: "remove", path: op.path, index: location.index });
+    }
+  }
+
+  if (parent === null) return { handled: false };
+  const parsedParent = parseSafe(parent);
+  if (!("ok" in parsedParent)) return { handled: false };
+  const current = getValueAt(state, parsedParent.segs);
+  if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+
+  const next = current.value.slice();
+  const applied: JSONPatchOperation[] = [];
+  for (const item of items) {
+    if (item.op === "add") {
+      const index = item.index === "-" ? next.length : item.index;
+      if (index < 0 || index > next.length) return { handled: false };
+      next.splice(index, 0, item.value);
+      applied.push({ op: "add", path: appendSegment(parent, index), value: item.value });
+      continue;
+    }
+
+    if (item.index < 0 || item.index >= next.length) return { handled: false };
+    next.splice(item.index, 1);
+    applied.push({ op: "remove", path: item.path });
+  }
+
+  const stateWithArray = replaceValueAtSegments(state, parsedParent.segs, 0, next);
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
+}
+
 interface ReplaceTree {
   value?: unknown;
   children: Map<string, ReplaceTree>;
@@ -249,4 +321,54 @@ function hasIndependentPaths(paths: ReadonlyArray<{ path: string }>): boolean {
     if (current === previous || current.startsWith(`${previous}/`)) return false;
   }
   return true;
+}
+
+function arrayLocation(path: Pointer): { parent: Pointer; index: number | "-" } | null {
+  const parent = parentPointer(path);
+  if (parent === null) return null;
+  const parsed = parseSafe(path);
+  if (!("ok" in parsed)) return null;
+  const segment = parsed.segs[parsed.segs.length - 1];
+  if (segment === undefined) return null;
+  const index = segment === "-" ? "-" : numericSegment(segment);
+  return index === null ? null : { parent, index };
+}
+
+function numericSegment(segment: string): number | null {
+  if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
+  return Number(segment);
+}
+
+function replaceValueAtSegments(
+  current: unknown,
+  segments: ReadonlyArray<string>,
+  index: number,
+  value: unknown,
+): unknown | null {
+  if (index === segments.length) return value;
+  if (current === null || typeof current !== "object") return null;
+
+  const segment = segments[index]!;
+  if (Array.isArray(current)) {
+    const childIndex = numericSegment(segment);
+    if (childIndex === null || childIndex >= current.length) return null;
+    const child = replaceValueAtSegments(current[childIndex], segments, index + 1, value);
+    if (child === null) return null;
+    const next = current.slice();
+    next[childIndex] = child;
+    return next;
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(current, segment)) return null;
+  const child = replaceValueAtSegments(
+    (current as Record<string, unknown>)[segment],
+    segments,
+    index + 1,
+    value,
+  );
+  if (child === null) return null;
+  return {
+    ...(current as Record<string, unknown>),
+    [segment]: child,
+  };
 }

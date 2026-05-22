@@ -198,6 +198,34 @@ for (const size of sizes) {
     bench(`doc.patch mixed array batch ${mixedArrayOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(mixedArrayOps));
   }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench(`doc.patch mixed array batch ${mixedArrayOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(mixedArrayOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    const result = doc.patch(mixedArrayOps);
+    if (!result.ok) throw new Error(`setup mixed batch failed: ${JSON.stringify(result)}`);
+    benchWithSetup(`history undo mixed array batch ${mixedArrayOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canUndo) {
+        const redone = doc.history.redo();
+        if (!redone) throw new Error("mixed redo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo mixed array batch ${mixedArrayOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canRedo) {
+        const undone = doc.history.undo();
+        if (!undone) throw new Error("mixed undo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
+  }
 }
 
 function makeState(size) {
