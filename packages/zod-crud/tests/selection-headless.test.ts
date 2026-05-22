@@ -93,6 +93,26 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/0");
   });
 
+  test("single selection batch auto-selects only the final surviving target", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single" },
+    });
+
+    expect(doc.patch([
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "move", from: "/items/3", path: "/items/1" },
+      { op: "add", path: "/items/-", value: { id: "d", name: "D" } },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/4"]);
+
+    expect(doc.patch([
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "add", path: "/items/-", value: { id: "e", name: "E" } },
+      { op: "remove", path: "/items/6" },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/5"]);
+  });
+
   test("builds text patches from selected string ranges", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,

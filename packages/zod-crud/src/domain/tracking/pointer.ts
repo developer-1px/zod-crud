@@ -22,10 +22,23 @@ export function pickAutoTargets(
     const op = applied[i]!;
     if (op.op !== "add" && op.op !== "copy" && op.op !== "move") continue;
     if (op.path === "") continue;
-    const tracked = trackPointer(op.path, applied.slice(i + 1));
+    const tracked = trackPointerFrom(op.path, applied, i + 1);
     if (tracked !== null) out.push(tracked);
   }
   return out;
+}
+
+export function pickPrimaryAutoTarget(
+  applied: ReadonlyArray<JSONPatchOperation>,
+  _after: unknown,
+): Pointer | null {
+  for (let i = applied.length - 1; i >= 0; i -= 1) {
+    const op = applied[i]!;
+    if (op.op !== "add" && op.op !== "copy" && op.op !== "move") continue;
+    if (op.path === "") continue;
+    return trackPointerFrom(op.path, applied, i + 1);
+  }
+  return null;
 }
 
 // SPEC §5.7 rule 2 / §5.8 rule 2 — lost pointer 복구: nextSibling → prevSibling → 가장 가까운 존재 ancestor.
@@ -155,9 +168,18 @@ export function trackPointer(
   pointer: Pointer,
   applied: ReadonlyArray<JSONPatchOperation>,
 ): Pointer | null {
+  return trackPointerFrom(pointer, applied, 0);
+}
+
+function trackPointerFrom(
+  pointer: Pointer,
+  applied: ReadonlyArray<JSONPatchOperation>,
+  startIndex: number,
+): Pointer | null {
   let cur: Pointer | null = pointer;
-  for (const op of applied) {
+  for (let index = startIndex; index < applied.length; index += 1) {
     if (cur === null) return null;
+    const op = applied[index]!;
     cur = trackOne(cur, op);
     // 방어: `/-` 가 결과 pointer 에 누출되면 broken — null 반환.
     // applyPatch 의 applied 는 normalizeOp 으로 이미 concrete index. 이 가드는 hand-built ops 보호용.

@@ -8,7 +8,7 @@
 //   ③ Index shift tracking  — 살아남은 형제 인덱스 자동 보정
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
-import { trackPointer, pickAutoTargets, recoverLostPointer, exists } from "../tracking/pointer.js";
+import { trackPointer, pickAutoTargets, pickPrimaryAutoTarget, recoverLostPointer, exists } from "../tracking/pointer.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { cloneJson, jsonEqual, type JSONValue } from "../../foundation/json.js";
@@ -801,6 +801,12 @@ export function applySelectionAutoRules(
   mode: SelectionMode,
 ): SelectionSnap {
   // 패치 안의 모든 add/copy/move destination = 새 selection (rule ①).
+  if (mode === "single") {
+    const target = pickPrimaryAutoTarget(applied, after);
+    if (target !== null) {
+      return withPreviousContext(prev, snapFromRanges([collapsedRange(target)], 0, mode, after));
+    }
+  }
   const targets = pickAutoTargets(applied, after);
   if (targets.length > 0) {
     return withPreviousContext(prev, snapFromRanges(targets.map(collapsedRange), Math.max(0, targets.length - 1), mode, after));
