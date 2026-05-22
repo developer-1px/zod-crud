@@ -506,6 +506,20 @@ describe("Serializability (G1)", () => {
     }
   });
 
+  it("rejects symbol-keyed state properties", () => {
+    const symbolKey = Symbol("secret");
+    const objectState = { ok: true, [symbolKey]: true };
+    const objectResult = applyPatch(Any, objectState, [{ op: "replace", path: "/ok", value: false }]);
+    expect(objectResult.result.ok).toBe(false);
+    if (!objectResult.result.ok) expect(objectResult.result.code).toBe("not_serializable");
+
+    const arrayState = [1] as number[] & { [symbolKey]?: boolean };
+    arrayState[symbolKey] = true;
+    const arrayResult = applyPatch(Any, { items: arrayState }, [{ op: "replace", path: "/items/0", value: 9 }]);
+    expect(arrayResult.result.ok).toBe(false);
+    if (!arrayResult.result.ok) expect(arrayResult.result.code).toBe("not_serializable");
+  });
+
   it("rejects sparse, non-enumerable, accessor, and extra-property arrays", () => {
     const sparse = [1, 2, 3];
     delete sparse[1];

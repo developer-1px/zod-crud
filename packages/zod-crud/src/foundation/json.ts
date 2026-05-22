@@ -14,14 +14,19 @@ export function jsonSerializableError(value: unknown): string | null {
 
 function jsonSerializableErrorFast(value: unknown): string | null {
   const seen = new WeakSet<object>();
+  const stack: unknown[] = [value];
 
-  const visit = (v: unknown): string | null => {
-    if (v === null) return null;
+  while (stack.length > 0) {
+    const v = stack.pop();
+    if (v === null) continue;
     const t = typeof v;
-    if (t === "string" || t === "boolean") return null;
-    if (t === "number") return Number.isFinite(v) ? null : "non-finite number";
+    if (t === "string" || t === "boolean") continue;
+    if (t === "number") {
+      if (!Number.isFinite(v)) return "non-finite number";
+      continue;
+    }
     if (t === "undefined" || t === "function" || t === "symbol" || t === "bigint") return `${t} is not JSON`;
-    if (t !== "object") return null;
+    if (t !== "object") continue;
 
     const obj = v as object;
     if (seen.has(obj)) return "circular reference";
@@ -34,12 +39,10 @@ function jsonSerializableErrorFast(value: unknown): string | null {
         if (!descriptor) return "sparse array hole";
         if (!descriptor.enumerable) return "non-enumerable property is not JSON";
         if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
-        const err = visit(descriptor.value);
-        if (err) return err;
+        stack.push(descriptor.value);
       }
-      return Object.getOwnPropertyNames(v).length === v.length + 1
-        ? null
-        : "non-index array property is not JSON";
+      if (Object.getOwnPropertyNames(v).length !== v.length + 1) return "non-index array property is not JSON";
+      continue;
     }
 
     const proto = Object.getPrototypeOf(v);
@@ -52,13 +55,11 @@ function jsonSerializableErrorFast(value: unknown): string | null {
       if (!descriptor) continue;
       if (!descriptor.enumerable) return "non-enumerable property is not JSON";
       if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
-      const err = visit(descriptor.value);
-      if (err) return err;
+      stack.push(descriptor.value);
     }
-    return null;
-  };
+  }
 
-  return visit(value);
+  return null;
 }
 
 function jsonSerializableErrorDetailed(value: unknown): string | null {
@@ -197,11 +198,14 @@ function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
     seen.add(obj);
 
     if (Array.isArray(v)) {
-      if (Object.getOwnPropertySymbols(v).length > 0) return fail("symbol keys are not JSON");
-
+      const names = Object.getOwnPropertyNames(v);
+      if (names.length !== v.length + 1) return fail("non-index array property is not JSON");
       const next = new Array(v.length);
       for (let index = 0; index < v.length; index += 1) {
-        const descriptor = Object.getOwnPropertyDescriptor(v, String(index));
+        const key = names[index];
+        if (key === undefined) return fail("sparse array hole");
+        if (key !== String(index)) return fail("sparse array hole");
+        const descriptor = Object.getOwnPropertyDescriptor(v, key);
         if (!descriptor) return fail("sparse array hole");
         if (!descriptor.enumerable) return fail("non-enumerable property is not JSON");
         if ("get" in descriptor || "set" in descriptor) return fail("accessor property is not JSON");
@@ -210,15 +214,12 @@ function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
         next[index] = cloned;
       }
 
-      return Object.getOwnPropertyNames(v).length === v.length + 1
-        ? next
-        : fail("non-index array property is not JSON");
+      if (names[names.length - 1] !== "length") return fail("non-index array property is not JSON");
+      return Object.getOwnPropertySymbols(v).length === 0 ? next : fail("symbol keys are not JSON");
     }
 
     const proto = Object.getPrototypeOf(v);
     if (proto !== Object.prototype && proto !== null) return fail("non-plain object");
-
-    if (Object.getOwnPropertySymbols(v).length > 0) return fail("symbol keys are not JSON");
 
     const next: Record<string, unknown> = {};
     for (const key of Object.getOwnPropertyNames(v)) {
@@ -239,7 +240,7 @@ function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
         next[key] = cloned;
       }
     }
-    return next;
+    return Object.getOwnPropertySymbols(v).length === 0 ? next : fail("symbol keys are not JSON");
   };
 
   const cloned = visit(value);
