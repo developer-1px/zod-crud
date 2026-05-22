@@ -125,6 +125,18 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: tailRemoveFast.state as z.output<S>, result: ok, applied: tailRemoveFast.applied };
   }
+  const rootObjectRemoveFast = applyRootObjectRemovePatch(state, ops);
+  if (rootObjectRemoveFast.handled) {
+    const parsed = schema.safeParse(rootObjectRemoveFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: rootObjectRemoveFast.state as z.output<S>, result: ok, applied: rootObjectRemoveFast.applied };
+  }
+  const rootObjectAddFast = applyRootObjectAddPatch(state, ops);
+  if (rootObjectAddFast.handled) {
+    const parsed = schema.safeParse(rootObjectAddFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: rootObjectAddFast.state as z.output<S>, result: ok, applied: rootObjectAddFast.applied };
+  }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops);
   if (arrayReplaceFast.handled) {
     const parsed = schema.safeParse(arrayReplaceFast.state);
@@ -235,6 +247,14 @@ export function applyTrustedPatch<T>(
   if (tailRemoveFast.handled) {
     return { state: tailRemoveFast.state as T, result: ok, applied: tailRemoveFast.applied };
   }
+  const rootObjectRemoveFast = applyRootObjectRemovePatch(state, ops);
+  if (rootObjectRemoveFast.handled) {
+    return { state: rootObjectRemoveFast.state as T, result: ok, applied: rootObjectRemoveFast.applied };
+  }
+  const rootObjectAddFast = applyRootObjectAddPatch(state, ops, valuesTrusted);
+  if (rootObjectAddFast.handled) {
+    return { state: rootObjectAddFast.state as T, result: ok, applied: rootObjectAddFast.applied };
+  }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, valuesTrusted);
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
@@ -331,6 +351,16 @@ export function applyAcceptedPatch<T>(
   const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops, true);
   if (arrayElementReplaceFast.handled) {
     return { state: arrayElementReplaceFast.state as T, result: ok, applied: arrayElementReplaceFast.applied };
+  }
+
+  const rootObjectRemoveFast = applyRootObjectRemovePatch(state, ops);
+  if (rootObjectRemoveFast.handled) {
+    return { state: rootObjectRemoveFast.state as T, result: ok, applied: rootObjectRemoveFast.applied };
+  }
+
+  const rootObjectAddFast = applyRootObjectAddPatch(state, ops, true);
+  if (rootObjectAddFast.handled) {
+    return { state: rootObjectAddFast.state as T, result: ok, applied: rootObjectAddFast.applied };
   }
 
   return applyTrustedPatch(state, ops, { valuesTrusted: true });
@@ -540,6 +570,95 @@ function applyTailRemovePatch(
   return stateWithArray === null
     ? { handled: false }
     : { handled: true, state: stateWithArray, applied };
+}
+
+function applyRootObjectRemovePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): FastPatchResult {
+  if (ops.length < 2 || state === null || typeof state !== "object" || Array.isArray(state)) {
+    return { handled: false };
+  }
+
+  let next: Record<string, unknown> | null = null;
+  let seenKeys: Set<string> | null = null;
+  const applied = new Array<JSONPatchOperation>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "remove"
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return { handled: false };
+    }
+
+    const key = op.path.slice(1);
+    if (!objectHasOwn.call(state, key)) return { handled: false };
+    if (seenKeys === null) seenKeys = new Set();
+    else if (seenKeys.has(key)) return { handled: false };
+    seenKeys.add(key);
+
+    if (next === null) next = { ...(state as Record<string, unknown>) };
+    delete next[key];
+    applied[index] = op;
+  }
+
+  return next === null
+    ? { handled: false }
+    : { handled: true, state: next, applied };
+}
+
+function applyRootObjectAddPatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
+): FastPatchResult {
+  if (ops.length < 2 || state === null || typeof state !== "object" || Array.isArray(state)) {
+    return { handled: false };
+  }
+
+  let next: Record<string, unknown> | null = null;
+  const applied = new Array<JSONPatchOperation>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return { handled: false };
+    }
+    if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
+
+    const key = op.path.slice(1);
+    if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: op.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = op.value;
+    }
+    applied[index] = op;
+  }
+
+  return next === null
+    ? { handled: false }
+    : { handled: true, state: next, applied };
 }
 
 function applyRootObjectReplacePatch(

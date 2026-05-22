@@ -69,6 +69,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
   const rootObjectReplace = applyRootObjectReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (rootObjectReplace) return rootObjectReplace;
+  const rootRecordRemove = applyRootRecordRemovePatchWithLocalSchemaValidation(schema, state, ops);
+  if (rootRecordRemove) return rootRecordRemove;
   if (isIndependentReplacePatch(ops)) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   }
@@ -394,6 +396,65 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     } else {
       next[key] = op.value;
     }
+    applied[index] = op;
+  }
+
+  return next === null
+    ? null
+    : {
+        state: next as z.output<S>,
+        result: { ok: true },
+        applied,
+      };
+}
+
+function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): LocalPatchResult<S> {
+  if (
+    !Array.isArray(ops)
+    || ops.length === 0
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+  ) {
+    return null;
+  }
+
+  const rootDef = getDef(schema) as ExtendedDef;
+  if (rootDef.type !== "record" || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))) {
+    return null;
+  }
+
+  let next: Record<string, unknown> | null = null;
+  let seenKeys: Set<string> | null = null;
+  const applied = new Array<JSONPatchOperation>(ops.length);
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "remove"
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return null;
+    }
+
+    const key = op.path.slice(1);
+    if (!objectHasOwn.call(state, key)) return null;
+    if (seenKeys === null) seenKeys = new Set();
+    else if (seenKeys.has(key)) return null;
+    seenKeys.add(key);
+
+    if (next === null) next = { ...(state as Record<string, unknown>) };
+    delete next[key];
     applied[index] = op;
   }
 
