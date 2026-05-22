@@ -45,9 +45,14 @@ export function rekeyPayload(
   if (fields.length === 0) return payload;
 
   const next = executionOptions.trustedPayload ? cloneTrustedJson(payload) : cloneJson(payload);
-  const existing = options.strategy === "suffix"
-    ? collectSuffixExistingValues(state, next, fields)
-    : collectExistingValues(state, fields);
+  if (options.strategy === "suffix") {
+    const payloadEntries: Array<Record<string, unknown>> = [];
+    const existing = collectSuffixExistingValues(state, next, fields, payloadEntries);
+    rekeyEntries(payloadEntries, existing, options.strategy);
+    return next;
+  }
+
+  const existing = collectExistingValues(state, fields);
   rekeyValue(next, existing, options.strategy);
   return next;
 }
@@ -127,6 +132,7 @@ function collectSuffixExistingValues(
   state: unknown,
   payload: unknown,
   fields: ReadonlyArray<string>,
+  payloadEntries: Array<Record<string, unknown>>,
 ): RekeyField[] {
   const suffixFields = fields.map((field): SuffixRekeyField => ({
     field,
@@ -135,6 +141,7 @@ function collectSuffixExistingValues(
   }));
 
   walk(payload, (entry) => {
+    payloadEntries.push(entry);
     for (let index = 0; index < suffixFields.length; index += 1) {
       const { field, bases } = suffixFields[index]!;
       const current = scalarText(entry[field]);
@@ -274,6 +281,49 @@ function rekeyValue(
       existing.add(next);
     }
   });
+}
+
+function rekeyEntries(
+  entries: ReadonlyArray<Record<string, unknown>>,
+  fields: ReadonlyArray<RekeyField>,
+  strategy: RekeyStrategy,
+): void {
+  if (fields.length === 1) {
+    const { field, existing } = fields[0]!;
+    for (const entry of entries) {
+      const current = entry[field];
+      const currentText = scalarText(current);
+      if (currentText === null) continue;
+
+      if (!existing.has(currentText)) {
+        existing.add(currentText);
+        continue;
+      }
+
+      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      entry[field] = next;
+      existing.add(next);
+    }
+    return;
+  }
+
+  for (const entry of entries) {
+    for (let index = 0; index < fields.length; index += 1) {
+      const { field, existing } = fields[index]!;
+      const current = entry[field];
+      const currentText = scalarText(current);
+      if (currentText === null) continue;
+
+      if (!existing.has(currentText)) {
+        existing.add(currentText);
+        continue;
+      }
+
+      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      entry[field] = next;
+      existing.add(next);
+    }
+  }
 }
 
 function mintValue(value: unknown, ctx: RekeyContext, strategy: RekeyStrategy): string {

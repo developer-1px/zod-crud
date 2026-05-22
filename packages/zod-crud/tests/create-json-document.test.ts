@@ -136,6 +136,31 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("rekeys nested suffix fields while reusing payload traversal", () => {
+    const NestedItem = z.object({
+      id: z.string(),
+      child: z.object({ id: z.string() }),
+    });
+    const NestedSchema = z.object({ items: z.array(NestedItem) });
+    const doc = createJSONDocument(NestedSchema, {
+      items: [
+        { id: "a", child: { id: "c" } },
+        { id: "a-copy", child: { id: "c-copy" } },
+      ],
+    });
+
+    expect(doc.duplicate("/items/0", {
+      rekey: { fields: ["id"], strategy: "suffix" },
+    })).toMatchObject({
+      ok: true,
+      applied: [{
+        op: "add",
+        path: "/items/1",
+        value: { id: "a-copy-2", child: { id: "c-copy-2" } },
+      }],
+    });
+  });
+
   test("keeps reads and query separate from pointer-based patching", () => {
     const doc = createJSONDocument(Schema, initial);
 

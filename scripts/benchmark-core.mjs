@@ -212,6 +212,17 @@ for (const size of sizes) {
   }
 
   {
+    let doc;
+    benchWithSetup(`doc.clipboard.pastePayload spread ${insertedItems.length} + rekey`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () =>
+      doc.clipboard.pastePayload("/items/-", insertedItems, {
+        spread: true,
+        rekey: { fields: ["id"], strategy: "suffix" },
+      }));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench(`doc.clipboard.pastePayload spread ${insertedItems.length} before middle`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.pastePayload(`/items/${middle}`, insertedItems, { spread: true }));
