@@ -1,6 +1,7 @@
 import type * as z from "zod";
 
 import {
+  applyAcceptedPatch,
   applyTrustedPatch,
   type ApplyResult,
   type JSONPatchOperation,
@@ -21,6 +22,10 @@ import {
 } from "./introspection.js";
 
 type LocalPatchResult<S extends z.ZodType> = ApplyResult<S> | null;
+
+interface LocalPatchOptions {
+  valuesTrusted?: boolean;
+}
 
 interface ExtendedDef {
   type?: string;
@@ -49,24 +54,31 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
+  options: LocalPatchOptions = {},
 ): LocalPatchResult<S> {
   if (!isPlainStructuralSchema(schema)) return null;
-  const sameArrayFieldReplace = applySameArrayFieldReplacePatchWithLocalSchemaValidation(schema, state, ops);
+  const valuesTrusted = options.valuesTrusted === true;
+  const sameArrayFieldReplace = applySameArrayFieldReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
   if (isIndependentReplacePatch(ops)) {
-    return applyReplacePatchWithLocalSchemaValidation(schema, state, ops);
+    return applyReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   }
-  const arrayBatch = applySameArrayPatchWithLocalSchemaValidation(schema, state, ops);
+  const arrayBatch = applySameArrayPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (arrayBatch) return arrayBatch;
-  return applySequentialPatchWithLocalSchemaValidation(schema, state, ops);
+  return applySequentialPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+}
+
+export function isPlainStructuralSchemaForLocalValidation(schema: z.ZodType): boolean {
+  return isPlainStructuralSchema(schema);
 }
 
 function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  const applied = applyTrustedPatch(state, ops);
+  const applied = valuesTrusted ? applyAcceptedPatch(state, ops) : applyTrustedPatch(state, ops);
   if (!applied.result.ok) {
     return {
       state,
@@ -96,6 +108,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
 ): LocalPatchResult<S> {
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
@@ -158,8 +171,10 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     const row = next[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
     if (!objectHasOwn.call(row, location.key)) return null;
-    const jsonError = jsonSerializableError(op.value);
-    if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    if (!valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
     const result = valueSchema.safeParse(op.value);
     if (!result.success) return schemaViolation(state, op.path, result.error.issues);
 
@@ -194,6 +209,7 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
 ): LocalPatchResult<S> {
   if (!Array.isArray(ops) || ops.length === 0) return null;
 
@@ -205,7 +221,7 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (!isSupportedLocalOpCandidate(op)) return null;
 
     const sourceValue = sourceValueForValidation(cur, op);
-    const applied = applyTrustedPatch(cur, [op]);
+    const applied = valuesTrusted ? applyAcceptedPatch(cur, [op]) : applyTrustedPatch(cur, [op]);
     if (!applied.result.ok) {
       return {
         state,
@@ -233,6 +249,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
 ): LocalPatchResult<S> {
   if (!Array.isArray(ops) || ops.length < 1) return null;
 
@@ -301,8 +318,10 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   for (const op of parsedOps) {
     if (op.op !== "add") continue;
-    const jsonError = jsonSerializableError(op.value);
-    if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    if (!valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
     const parsed = elementSchema.safeParse(op.value);
     if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
   }

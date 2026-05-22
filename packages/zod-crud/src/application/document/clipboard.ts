@@ -29,6 +29,10 @@ interface ClipboardReadOk {
   sources: ReadonlyArray<Pointer> | null;
 }
 
+interface ClipboardPeekOk extends ClipboardReadOk {
+  schemaTrusted: boolean;
+}
+
 interface ClipboardEmpty {
   ok: false;
   code: "empty_clipboard";
@@ -36,6 +40,7 @@ interface ClipboardEmpty {
 }
 
 type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
+export type ClipboardPeekResult = ClipboardPeekOk | ClipboardEmpty;
 
 interface ClipboardMutationOk<T> {
   ok: true;
@@ -67,13 +72,14 @@ export interface ClipboardState<T> {
 }
 
 interface InternalClipboardState<T> extends ClipboardState<T> {
-  [INTERNAL_CLIPBOARD_PEEK](): ClipboardReadResult;
+  [INTERNAL_CLIPBOARD_PEEK](): ClipboardPeekResult;
 }
 
 interface ClipboardBuffer {
   payload: unknown;
   source: Pointer | null;
   sources: ReadonlyArray<Pointer> | null;
+  schemaTrusted: boolean;
 }
 
 type ClipboardWriteSourcesResult =
@@ -180,6 +186,7 @@ export function createClipboard<S extends z.ZodType>(
         payload: buffer.payload,
         source: buffer.source,
         sources: buffer.sources ? [...buffer.sources] : null,
+        schemaTrusted: buffer.schemaTrusted,
       };
     },
 
@@ -194,6 +201,7 @@ export function createClipboard<S extends z.ZodType>(
         payload: cloned.value,
         source,
         sources,
+        schemaTrusted: false,
       });
       return { ok: true };
     },
@@ -211,6 +219,7 @@ export function createClipboard<S extends z.ZodType>(
           payload: result.payload,
           source: result.source,
           sources: [...result.sources],
+          schemaTrusted: true,
         });
       }
       return result;
@@ -239,6 +248,7 @@ export function createClipboard<S extends z.ZodType>(
         payload: result.payload,
         source: result.source,
         sources: [...result.sources],
+        schemaTrusted: true,
       });
       return {
         ok: true,

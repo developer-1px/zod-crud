@@ -126,8 +126,8 @@ export function createJSON<S extends z.ZodType>(
     operations: ReadonlyArray<JSONPatchOperation>,
   ): ApplyResult<S> => {
     if (!stateJsonTrusted) return applyPatch(schema, from, operations);
-    return applySingleTrustedValuePatchToTrustedState(schema, from, operations)
-      ?? applyPatchWithLocalSchemaValidation(schema, from, operations)
+    return applyPatchWithLocalSchemaValidation(schema, from, operations, { valuesTrusted: true })
+      ?? applySingleTrustedValuePatchToTrustedState(schema, from, operations)
       ?? applyPatchToTrustedState(schema, from, operations);
   };
 

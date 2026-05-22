@@ -383,6 +383,20 @@ describe("doc.history performance contract", () => {
     });
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
     expect(rootParses).toBe(0);
+
+    expect(doc.clipboard.copy("/items")).toMatchObject({ ok: true });
+    expect(doc.canPaste({ replace: "/items" })).toEqual({ ok: true });
+    expect(doc.clipboard.paste({ replace: "/items" })).toMatchObject({
+      ok: true,
+      applied: [{ op: "replace", path: "/items", value: doc.value.items }],
+    });
+    expect(rootParses).toBe(0);
+
+    expect(doc.clipboard.write([{ id: 1 }], { source: "/items" })).toEqual({ ok: true });
+    expect(doc.canPaste({ replace: "/items" })).toMatchObject({
+      ok: false,
+      code: "schema_violation",
+    });
   });
 
   test("document paste checks keep the JSON guard for untrusted schema output", () => {

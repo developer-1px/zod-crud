@@ -9,7 +9,7 @@ import type {
   JSONResult,
 } from "../../foundation/json-patch/index.js";
 import { computeInverses } from "../../foundation/json-patch/inverse.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import {
   EMPTY_SELECTION,
   reduceSelection,
@@ -33,11 +33,12 @@ import {
   redoDepth,
   type MutableHistoryStack,
 } from "../../foundation/history.js";
-import { INTERNAL_CLIPBOARD_PEEK, createClipboard, type ClipboardState } from "./clipboard.js";
+import { INTERNAL_CLIPBOARD_PEEK, createClipboard, type ClipboardPeekResult, type ClipboardState } from "./clipboard.js";
 import { createJSON } from "./createJSON.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
+import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/localPatch.js";
 import {
   duplicate as duplicateVerb,
   type DuplicateError,
@@ -452,6 +453,9 @@ export function createJSONDocument<S extends z.ZodType>(
           reason: "clipboard is empty",
         };
       }
+      if (canTrustSameSourceReplaceCanPaste(schema, rawOps.state, read, target, canPasteOptions)) {
+        return { ok: true };
+      }
       const spread = canPasteOptions?.spread ?? ((read.sources?.length ?? 0) > 1);
       return check.paste(
         read.payload,
@@ -464,6 +468,30 @@ export function createJSONDocument<S extends z.ZodType>(
     canUndo: () => check.undo,
     canRedo: () => check.redo,
   };
+}
+
+function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  read: Extract<ClipboardPeekResult, { ok: true }>,
+  target: JSONDocumentPasteTarget,
+  options?: JSONDocumentPasteOptions,
+): boolean {
+  if (!read.schemaTrusted || read.source === null) return false;
+  if ((read.sources?.length ?? 1) !== 1) return false;
+  if (options?.rekey !== undefined || options?.spread === true) return false;
+  if (!isPlainStructuralSchemaForLocalValidation(schema)) return false;
+
+  const replaceTarget = replacePointerTarget(target);
+  if (replaceTarget === null || replaceTarget !== read.source) return false;
+  const segments = tryParsePointer(replaceTarget);
+  return segments !== null && readAt(state, segments).ok;
+}
+
+function replacePointerTarget(target: JSONDocumentPasteTarget): Pointer | null {
+  return typeof target === "object" && target !== null && "replace" in target
+    ? target.replace
+    : null;
 }
 
 function normalizePatchInput(operations: JSONPatchInput): ReadonlyArray<JSONPatchOperation> {
