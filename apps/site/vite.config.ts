@@ -128,7 +128,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (id.includes("node_modules/react") || id.includes("node_modules/react-dom")) return "react";
+          if (id.includes("/node_modules/react/") || id.includes("/node_modules/react-dom/")) return "react";
           if (id.includes("/packages/zod-crud/src/")) return "zod-crud";
           if (id.includes("/apps/outliner/src/")) return "playground-outliner";
           if (id.includes("/apps/mobile-cms/src/")) return "playground-mobile-cms";

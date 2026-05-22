@@ -31,8 +31,8 @@ test("official docs routes render with route metadata in a real browser", async 
 
 test("official site uses window scroll with sticky desktop navigation", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
-  await page.goto("/docs");
-  await expect(page.getByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeVisible();
+  await page.goto("/docs/api");
+  await expect(page.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, 1200));
 
@@ -63,7 +63,7 @@ async function scrollSnapshot(page: Page) {
   return page.evaluate(() => {
     const main = document.querySelector("#main-content");
     const siteNav = document.querySelector('nav[aria-label="Site navigation"]');
-    const docsNav = document.querySelector('nav[aria-label="On this page"]');
+    const docsNav = document.querySelector('nav[aria-label="Documentation pages"]');
 
     return {
       windowScrollY: Math.round(window.scrollY),

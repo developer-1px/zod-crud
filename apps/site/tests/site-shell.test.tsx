@@ -46,7 +46,7 @@ describe("official site shell", () => {
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs");
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "배경" })).toBeTruthy();
-    expect(screen.getByRole("navigation", { name: "Documentation pages" })).toBeTruthy();
+    expect(screen.getAllByRole("navigation", { name: "Documentation pages" }).length).toBeGreaterThan(0);
 
     await user.click(nav.getByRole("link", { name: "API reference" }));
     await waitFor(() => expect(document.title).toBe("zod-crud API - zod-crud"));
@@ -70,6 +70,7 @@ describe("official site shell", () => {
   test("supports direct route entry for static-hosting fallbacks", async () => {
     window.history.pushState(null, "", "/docs/");
     render(<App />);
+    const nav = within(screen.getByRole("navigation", { name: "Site navigation" }));
 
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Docs" }).getAttribute("aria-current")).toBe("page");
@@ -78,7 +79,7 @@ describe("official site shell", () => {
     window.history.pushState(null, "", "/docs/api/");
     window.dispatchEvent(new Event("popstate"));
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "API reference" }).getAttribute("aria-current")).toBe("page");
+    expect(nav.getByRole("link", { name: "API reference" }).getAttribute("aria-current")).toBe("page");
     await waitFor(() => expect(document.getElementById("작업별-진입점")).toBeTruthy());
   });
 });
