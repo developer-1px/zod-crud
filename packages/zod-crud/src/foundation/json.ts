@@ -113,11 +113,34 @@ function assertJsonSerializable(value: unknown): void {
 
 export function cloneJson<T>(value: T): T {
   assertJsonSerializable(value);
-  return JSON.parse(JSON.stringify(value)) as T;
+  return cloneTrustedJson(value);
 }
 
 export function cloneTrustedJson<T>(value: T): T {
-  return JSON.parse(JSON.stringify(value)) as T;
+  if (value === null || typeof value !== "object") return value;
+  if (Array.isArray(value)) {
+    const next = new Array(value.length);
+    for (let index = 0; index < value.length; index += 1) {
+      next[index] = cloneTrustedJson(value[index]);
+    }
+    return next as T;
+  }
+
+  const next: Record<string, unknown> = {};
+  for (const key of Object.keys(value as Record<string, unknown>)) {
+    const cloned = cloneTrustedJson((value as Record<string, unknown>)[key]);
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: cloned,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = cloned;
+    }
+  }
+  return next as T;
 }
 
 export function jsonEqual(left: JSONValue | undefined, right: JSONValue | undefined): boolean {
