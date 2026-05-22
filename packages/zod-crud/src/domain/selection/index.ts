@@ -8,7 +8,7 @@
 //   ③ Index shift tracking  — 살아남은 형제 인덱스 자동 보정
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
-import { trackPointer, pickAutoTargets, pickPrimaryAutoTarget, recoverLostPointer, exists } from "../tracking/pointer.js";
+import { trackPointer, pickAutoTargetsInfo, pickPrimaryAutoTarget, recoverLostPointer, exists } from "../tracking/pointer.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { cloneJson, jsonEqual, type JSONValue } from "../../foundation/json.js";
@@ -807,9 +807,9 @@ export function applySelectionAutoRules(
       return withPreviousContext(prev, snapFromRanges([collapsedRange(target)], 0, mode, after));
     }
   }
-  const targets = pickAutoTargets(applied, after);
-  if (targets.length > 0) {
-    return withPreviousContext(prev, snapFromPointerTargets(targets, mode));
+  const autoTargets = pickAutoTargetsInfo(applied);
+  if (autoTargets.targets.length > 0) {
+    return withPreviousContext(prev, snapFromPointerTargets(autoTargets.targets, mode, autoTargets.unique));
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
@@ -839,7 +839,11 @@ export function applySelectionAutoRules(
   return sameSelectionSnap(prev, withContext) ? prev : withContext;
 }
 
-function snapFromPointerTargets(targets: ReadonlyArray<Pointer>, mode: SelectionMode): SelectionSnap {
+function snapFromPointerTargets(
+  targets: ReadonlyArray<Pointer>,
+  mode: SelectionMode,
+  unique = false,
+): SelectionSnap {
   if (targets.length === 0) return EMPTY_SELECTION;
   if (mode === "single") {
     const target = targets[targets.length - 1]!;
@@ -849,6 +853,23 @@ function snapFromPointerTargets(targets: ReadonlyArray<Pointer>, mode: Selection
       primaryIndex: 0,
       anchor: target,
       focus: target,
+    };
+  }
+
+  if (unique) {
+    const selectedPointers = [...targets];
+    const selectionRanges = new Array<SelectionRange>(targets.length);
+    for (let index = 0; index < targets.length; index += 1) {
+      const target = targets[index]!;
+      selectionRanges[index] = { anchor: target, focus: target };
+    }
+    const primary = targets[targets.length - 1]!;
+    return {
+      selectedPointers,
+      selectionRanges,
+      primaryIndex: selectionRanges.length - 1,
+      anchor: primary,
+      focus: primary,
     };
   }
 

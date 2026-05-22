@@ -140,6 +140,28 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/5");
   });
 
+  test("selection subscribers receive previous snapshots", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple", initial: ["/items/0"] },
+    });
+    const changes: unknown[] = [];
+    const unsubscribe = doc.selection?.subscribe((snapshot, previous) => {
+      changes.push({ snapshot, previous });
+    });
+
+    doc.selection?.addRange("/items/1");
+    unsubscribe?.();
+
+    expect(changes).toEqual([{
+      previous: expect.objectContaining({
+        selectedPointers: ["/items/0"],
+      }),
+      snapshot: expect.objectContaining({
+        selectedPointers: ["/items/0", "/items/1"],
+      }),
+    }]);
+  });
+
   test("multiple selection repeated move batch deduplicates targets and keeps current target primary", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },

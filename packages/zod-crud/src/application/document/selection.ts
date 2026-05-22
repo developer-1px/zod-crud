@@ -151,7 +151,13 @@ export function createSelection<T>(
       listener(selectionSnapshot(snap), selectionSnapshot(previous));
     }
   };
+  const hasObservers = (): boolean => options.onChange !== undefined || listeners.size > 0;
   const setSnap = (next: SelectionSnap): void => {
+    if (!hasObservers()) {
+      if (sameSelectionSnapshot(snap, next)) return;
+      snap = next;
+      return;
+    }
     const previous = selectionSnapshot(snap);
     if (sameSelectionSnapshot(previous, next)) return;
     snap = next;

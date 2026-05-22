@@ -7,6 +7,11 @@ import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 
 const MOVE_BUCKET_TARGET_THRESHOLD = 1024;
 
+export interface AutoTargetResult {
+  targets: Pointer[];
+  unique: boolean;
+}
+
 export function exists(state: unknown, pointer: Pointer): boolean {
   const segments = tryParsePointer(pointer);
   return segments !== null && readAt(state, segments).ok;
@@ -17,8 +22,14 @@ export function exists(state: unknown, pointer: Pointer): boolean {
 // 모든 op.path 는 적용 시점의 실제 위치. 이후 ops 의 index shift 는 trackPointer 가 처리.
 export function pickAutoTargets(
   applied: ReadonlyArray<JSONPatchOperation>,
-  _after: unknown,
+  _after?: unknown,
 ): Pointer[] {
+  return pickAutoTargetsInfo(applied).targets;
+}
+
+export function pickAutoTargetsInfo(
+  applied: ReadonlyArray<JSONPatchOperation>,
+): AutoTargetResult {
   const sameArray = pickSameArrayAutoTargets(applied);
   if (sameArray !== null) return sameArray;
 
@@ -30,12 +41,12 @@ export function pickAutoTargets(
     const tracked = trackPointerFrom(op.path, applied, i + 1);
     if (tracked !== null) out.push(tracked);
   }
-  return out;
+  return { targets: out, unique: false };
 }
 
 function pickSameArrayAutoTargets(
   applied: ReadonlyArray<JSONPatchOperation>,
-): Pointer[] | null {
+): AutoTargetResult | null {
   let parent: Pointer | null = null;
   let increasingInsertTargets: number[] | null = [];
   let previousInsertTarget = -1;
@@ -90,9 +101,12 @@ function pickSameArrayAutoTargets(
     }
   }
 
-  if (parent === null) return [];
+  if (parent === null) return { targets: [], unique: true };
   const indexes = increasingInsertTargets ?? targets;
-  return indexes.map((index) => appendArrayIndex(parent, index));
+  return {
+    targets: indexes.map((index) => appendArrayIndex(parent, index)),
+    unique: indexes === increasingInsertTargets,
+  };
 }
 
 function shiftTargetsForInsert(targets: number[], index: number): void {
