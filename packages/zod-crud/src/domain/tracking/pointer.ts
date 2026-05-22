@@ -35,6 +35,8 @@ function pickSameArrayAutoTargets(
   applied: ReadonlyArray<JSONPatchOperation>,
 ): Pointer[] | null {
   let parent: Pointer | null = null;
+  let increasingInsertTargets: number[] | null = [];
+  let previousInsertTarget = -1;
   const targets: number[] = [];
 
   for (let index = 0; index < applied.length; index += 1) {
@@ -47,11 +49,29 @@ function pickSameArrayAutoTargets(
     else if (location.parent !== parent) return null;
 
     if (op.op === "add" || op.op === "copy") {
+      if (increasingInsertTargets !== null) {
+        if (location.index > previousInsertTarget) {
+          increasingInsertTargets.push(location.index);
+          previousInsertTarget = location.index;
+          continue;
+        } else {
+          targets.push(...increasingInsertTargets);
+          increasingInsertTargets = null;
+        }
+      }
       shiftTargetsForInsert(targets, location.index);
       targets.push(location.index);
     } else if (op.op === "remove") {
+      if (increasingInsertTargets !== null) {
+        targets.push(...increasingInsertTargets);
+      }
+      increasingInsertTargets = null;
       removeTargetIndex(targets, location.index);
     } else {
+      if (increasingInsertTargets !== null) {
+        targets.push(...increasingInsertTargets);
+      }
+      increasingInsertTargets = null;
       const from = arrayElementLocation(op.from);
       if (from === null || from.parent !== parent) return null;
       shiftTargetsForMove(targets, from.index, location.index);
@@ -59,7 +79,9 @@ function pickSameArrayAutoTargets(
     }
   }
 
-  return parent === null ? [] : targets.map((index) => appendArrayIndex(parent, index));
+  if (parent === null) return [];
+  const indexes = increasingInsertTargets ?? targets;
+  return indexes.map((index) => appendArrayIndex(parent, index));
 }
 
 function shiftTargetsForInsert(targets: number[], index: number): void {

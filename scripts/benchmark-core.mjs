@@ -530,6 +530,12 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0, selection: { mode: "multiple" } });
+    bench(`doc.patch add batch ${addBatchOps.length} selection=multiple`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(addBatchOps));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch copy/move array batch ${copyMoveOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(copyMoveOps));

@@ -126,6 +126,20 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.selectedPointers).toEqual(["/items/1", "/items/4"]);
   });
 
+  test("multiple selection append batch auto-selects increasing targets", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+
+    expect(doc.patch([
+      { op: "add", path: "/items/-", value: { id: "d", name: "D" } },
+      { op: "copy", from: "/items/0", path: "/items/-" },
+      { op: "add", path: "/items/-", value: { id: "e", name: "E" } },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/3", "/items/4", "/items/5"]);
+    expect(doc.selection?.primaryPointer).toBe("/items/5");
+  });
+
   test("builds text patches from selected string ranges", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,
