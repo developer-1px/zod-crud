@@ -48,10 +48,10 @@ export function computeInverses(
     const inv = inverseOp(op, cur);
     const r = applyOpRaw(cur, op);
     if ("error" in r) return { ok: false };
-    if (inv) out.unshift(inv);
+    if (inv) out.push(inv);
     cur = r.state;
   }
-  return { ok: true, inverses: out };
+  return { ok: true, inverses: out.reverse() };
 }
 
 type SameArrayStructuralOp =
@@ -114,7 +114,7 @@ function computeSameArrayStructuralInverses(
       if (index < 0 || index > cur.length) return null;
       if (index === cur.length) cur.push(op.value);
       else cur.splice(index, 0, op.value);
-      inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
+      inverses.push({ op: "remove", path: appendSegment(parent, index) });
       continue;
     }
 
@@ -123,7 +123,7 @@ function computeSameArrayStructuralInverses(
       const value = cur[op.index];
       if (op.index === cur.length - 1) cur.pop();
       else cur.splice(op.index, 1);
-      inverses.unshift({ op: "add", path: op.path, value });
+      inverses.push({ op: "add", path: op.path, value });
       continue;
     }
 
@@ -135,12 +135,12 @@ function computeSameArrayStructuralInverses(
       const value = deepCloneTrusted(cur[op.fromIndex]);
       if (index === cur.length) cur.push(value);
       else cur.splice(index, 0, value);
-      inverses.unshift({ op: "remove", path: concretePath });
+      inverses.push({ op: "remove", path: concretePath });
       continue;
     }
 
     if (index < 0 || index >= cur.length) return null;
-    inverses.unshift({ op: "move", from: concretePath, path: op.from });
+    inverses.push({ op: "move", from: concretePath, path: op.from });
     if (op.fromIndex === index) continue;
     if (Math.abs(op.fromIndex - index) === 1) {
       const value = cur[op.fromIndex];
@@ -153,7 +153,7 @@ function computeSameArrayStructuralInverses(
     }
   }
 
-  return { ok: true, inverses };
+  return { ok: true, inverses: inverses.reverse() };
 }
 
 function computeSameArrayStructuralInversesWithoutRemovedValues(
@@ -169,7 +169,7 @@ function computeSameArrayStructuralInversesWithoutRemovedValues(
     if (op.op === "add") {
       const index = op.index === "-" ? length : op.index;
       if (index < 0 || index > length) return null;
-      inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
+      inverses.push({ op: "remove", path: appendSegment(parent, index) });
       length += 1;
       continue;
     }
@@ -177,7 +177,7 @@ function computeSameArrayStructuralInversesWithoutRemovedValues(
       if (op.fromIndex < 0 || op.fromIndex >= length) return null;
       const index = op.index === "-" ? length : op.index;
       if (index < 0 || index > length) return null;
-      inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
+      inverses.push({ op: "remove", path: appendSegment(parent, index) });
       length += 1;
       continue;
     }
@@ -185,10 +185,10 @@ function computeSameArrayStructuralInversesWithoutRemovedValues(
     if (op.fromIndex < 0 || op.fromIndex >= length) return null;
     const index = op.index === "-" ? length : op.index;
     if (index < 0 || index >= length) return null;
-    inverses.unshift({ op: "move", from: appendSegment(parent, index), path: op.from });
+    inverses.push({ op: "move", from: appendSegment(parent, index), path: op.from });
   }
 
-  return { ok: true, inverses };
+  return { ok: true, inverses: inverses.reverse() };
 }
 
 function computeIndependentReplaceInverses(
