@@ -253,6 +253,28 @@ describe("createJSONDocument public interface", () => {
     ]);
   });
 
+  test("clipboard write clones trusted nested document source payloads", () => {
+    const NestedSchema = z.object({
+      wrapper: z.object({
+        items: z.array(z.object({ id: z.string(), name: z.string() })),
+      }),
+    });
+    const doc = createJSONDocument(NestedSchema, {
+      wrapper: { items: initial.items },
+    }, { history: 10 });
+
+    expect(doc.clipboard.write(doc.value.wrapper.items, { source: "/wrapper/items" })).toEqual({ ok: true });
+    expect(doc.patch({ op: "replace", path: "/wrapper/items/0/name", value: "changed" })).toEqual({ ok: true });
+
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(read.payload).toEqual([
+      { id: "a", name: "A" },
+      { id: "b", name: "B" },
+    ]);
+  });
+
   test("clipboard clones ignore enumerable Object.prototype keys", () => {
     const key = "__zodCrudInherited";
     Object.defineProperty(Object.prototype, key, {

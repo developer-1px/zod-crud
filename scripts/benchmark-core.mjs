@@ -39,6 +39,11 @@ const Schema = z.object({
     count: z.number(),
   }),
 });
+const NestedSchema = z.object({
+  wrapper: z.object({
+    items: z.array(Item),
+  }),
+});
 
 const sizes = envList("PERF_ITEMS", [10000, 50000]);
 const batchSize = envNumber("PERF_BATCH", 1000);
@@ -50,6 +55,7 @@ console.log(`items=${sizes.join(",")} batch=${batchSize} individual=${individual
 
 for (const size of sizes) {
   const state = Schema.parse(makeState(size));
+  const nestedState = NestedSchema.parse({ wrapper: { items: state.items } });
   const middle = Math.floor(size / 2);
   const batchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "replace",
@@ -221,6 +227,12 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.write document items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.write(doc.value.items));
+  }
+
+  {
+    const doc = createJSONDocument(NestedSchema, nestedState, { history: 0 });
+    bench("doc.clipboard.write nested source items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.write(doc.value.wrapper.items, { source: "/wrapper/items" }));
   }
 
   {

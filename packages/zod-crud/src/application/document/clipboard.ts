@@ -2,7 +2,7 @@ import type * as z from "zod";
 
 import { cloneJsonSerializable, cloneTrustedPlainJson } from "../../foundation/json.js";
 import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import { normalizePointerSources } from "../../foundation/json-pointer/sourceSet.js";
 import type { JSONOps } from "./ops.js";
 import type { SelectionSource } from "../../domain/selection/index.js";
@@ -163,15 +163,27 @@ export function createClipboard<S extends z.ZodType>(
       },
     };
   };
-  const isTrustedWritePayload = (payload: unknown): boolean => {
+  const isTrustedWritePayload = (payload: unknown, options: ClipboardWriteOptions): boolean => {
     if (getStateJsonTrusted?.() !== true) return false;
     const state = getState();
     if (payload === state) return true;
-    if (state === null || typeof state !== "object" || Array.isArray(state)) return false;
-    for (const key in state as Record<string, unknown>) {
-      if (Object.prototype.hasOwnProperty.call(state, key)
-        && (state as Record<string, unknown>)[key] === payload) {
-        return true;
+    const isSourcePayload = (source: Pointer | null | undefined): boolean => {
+      if (source === undefined || source === null) return false;
+      const segments = tryParsePointer(source);
+      if (segments === null) return false;
+      const value = readAt(state, segments);
+      return value.ok && value.value === payload;
+    };
+    if (isSourcePayload(options.source)) return true;
+    for (const source of options.sources ?? []) {
+      if (isSourcePayload(source)) return true;
+    }
+    if (state !== null && typeof state === "object" && !Array.isArray(state)) {
+      for (const key in state as Record<string, unknown>) {
+        if (Object.prototype.hasOwnProperty.call(state, key)
+          && (state as Record<string, unknown>)[key] === payload) {
+          return true;
+        }
       }
     }
     return false;
@@ -204,7 +216,7 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     write(payload, options = {}) {
-      const cloned = isTrustedWritePayload(payload)
+      const cloned = isTrustedWritePayload(payload, options)
         ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
         : cloneJsonSerializable(payload);
       if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
