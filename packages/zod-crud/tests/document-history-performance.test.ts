@@ -33,4 +33,37 @@ describe("doc.history performance contract", () => {
     expect(doc.value.items[50]?.done).toBe(true);
     expect(validations).toBe(validationsAfterPatch);
   });
+
+  test("batch replace undo preserves repeated and nested path semantics", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ title: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { title: "a", done: false },
+        { title: "b", done: false },
+      ],
+    }, { history: 10 });
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/title", value: "a1" },
+      { op: "replace", path: "/items/0/title", value: "a2" },
+      { op: "replace", path: "/items/1", value: { title: "b1", done: true } },
+      { op: "replace", path: "/items/1/done", value: false },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toEqual({
+      items: [
+        { title: "a2", done: false },
+        { title: "b1", done: false },
+      ],
+    });
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual({
+      items: [
+        { title: "a", done: false },
+        { title: "b", done: false },
+      ],
+    });
+  });
 });

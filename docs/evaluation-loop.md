@@ -24,7 +24,7 @@ Each loop scores only the axis it tries to improve.
 
 ## Progress
 
-27 / 100 loops complete.
+28 / 100 loops complete.
 
 | Loop | Evaluate | Execute | Score |
 | --- | --- | --- | --- |
@@ -55,11 +55,12 @@ Each loop scores only the axis it tries to improve.
 | 025 | `JSONDocument<T>` exposes `canFind(jsonpath)`, but README, site docs, `llms.txt`, and the demo `can*` controls omitted it. That made the can* family non-MECE and hid query validation. | Added `canFind` to README, site docs, `llms.txt`, the workbench `doc.can*` group, component tests, docs consistency tests, and `docs:evaluate`. | API correctness: 5 -> 5 with a real public-interface omission fixed. Task discoverability evidence: stronger. Evidence: `packages/zod-crud/README.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx`; `apps/site/tests/docs-consistency.test.ts`; `apps/site/tests/interface-workbench.test.tsx`; `scripts/evaluate-docs.mjs`; `npm run typecheck -w @zod-crud/site`, `npm test -w @zod-crud/site`, and `npm run docs:evaluate` passed. |
 | 026 | The final source layout changed the mental model, but release-facing docs did not yet share one SSOT for root entrypoints, internal concept layers, and the removed extra public layer plus React indirection. | Added final release notes, documented the source-layout SSOT across README, SPEC, site docs, `llms.txt`, and the API usage gap ledger, then made docs consistency and `docs:evaluate` reject stale source-layout paths. | API correctness evidence: stronger for import boundaries. Runtime health: 5 -> 5 for source-layout drift. Evidence: `docs/release-notes.md`; `packages/zod-crud/README.md`; `packages/zod-crud/SPEC.md`; `apps/site/src/docs/zod-crud-concepts.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `docs/api-usage-gaps.md`; `apps/site/tests/docs-consistency.test.ts`; `scripts/evaluate-docs.mjs`; `npm test -w @zod-crud/site`, `npm run docs:evaluate`, and `npm run verify` passed. |
 | 027 | Large core editing workloads had no repeatable local measurement, and history undo/redo revalidated the whole Zod schema even though entries were generated from already accepted patches. That made large batch replay slower than necessary and left future performance work without a baseline. | Added `scripts/benchmark-core.mjs` plus `npm run perf:core`; added an internal trusted history replay path that keeps patch atomicity but skips schema revalidation for undo/redo; added a regression test proving undo/redo does not re-run whole-schema validation. | Performance regression: 0 -> 2. Runtime health evidence: stronger for history replay. Evidence: `scripts/benchmark-core.mjs`; `packages/zod-crud/src/foundation/json-patch/index.ts`; `packages/zod-crud/src/application/document/createJSON.ts`; `packages/zod-crud/src/application/document/createJSONDocument.ts`; `packages/zod-crud/tests/document-history-performance.test.ts`; `npm run typecheck -w zod-crud`, targeted history tests, and `npm run perf:core` passed. Current benchmark snapshot: 10k item undo/redo batch 1000 around 3ms; 50k item undo/redo batch 1000 around 75-80ms; individual 100 patches on 50k items around 11s. |
+| 028 | Batch history recording still recomputed inverses by replaying every operation through the raw patch mutator. For common burst edits made of independent `replace` operations, that duplicated structural-copy work even though each inverse only needs the pre-edit value at the same pointer. | Added a fast inverse path for independent non-root `replace` batches, using sorted JSON Pointer strings to reject duplicate or parent/child overlap in `O(n log n)` before reading previous values. Expanded the core benchmark to report `history=0` and `history=100` batch timings separately, and added a regression test for repeated and nested paths so unsafe batches still use the general path. | Performance regression: 2 -> 3 for batch history recording. Evidence: `packages/zod-crud/src/foundation/json-patch/inverse.ts`; `packages/zod-crud/tests/document-history-performance.test.ts`; `scripts/benchmark-core.mjs`; `npm run typecheck -w zod-crud`, `npm test -w zod-crud -- document-history-performance`, and `npm run perf:core` passed. |
 
 ## Next Candidates
 
 | Loop | Candidate |
 | --- | --- |
-| 028 | Add README smoke coverage for the new selection and history snippets without making docs too heavy. |
-| 029 | Re-run a blind API usage task against only site docs and record pass/fail patterns. |
-| 030 | Measure and reduce the remaining large-doc cost of repeated individual `doc.patch` calls. |
+| 029 | Add README smoke coverage for the new selection and history snippets without making docs too heavy. |
+| 030 | Re-run a blind API usage task against only site docs and record pass/fail patterns. |
+| 031 | Measure and reduce the remaining large-doc cost of repeated individual `doc.patch` calls. |

@@ -65,8 +65,14 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench(`doc.patch batch ${batchOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(batchOps));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 100 });
-    bench(`doc.patch batch ${batchOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    bench(`doc.patch batch ${batchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
   }
 
