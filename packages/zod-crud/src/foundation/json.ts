@@ -41,7 +41,16 @@ function jsonSerializableErrorFast(value: unknown): string | null {
         if (!descriptor) return "sparse array hole";
         if (!descriptor.enumerable) return "non-enumerable property is not JSON";
         if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
-        stack.push(descriptor.value);
+        const child = descriptor.value;
+        if (child !== null) {
+          const childType = typeof child;
+          if (childType === "object") stack.push(child);
+          else if (childType === "number") {
+            if (!Number.isFinite(child)) return "non-finite number";
+          } else if (childType !== "string" && childType !== "boolean") {
+            return `${childType} is not JSON`;
+          }
+        }
       }
       if (Object.getOwnPropertyNames(v).length !== v.length + 1) return "non-index array property is not JSON";
       continue;
@@ -57,7 +66,16 @@ function jsonSerializableErrorFast(value: unknown): string | null {
       if (!descriptor) continue;
       if (!descriptor.enumerable) return "non-enumerable property is not JSON";
       if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
-      stack.push(descriptor.value);
+      const child = descriptor.value;
+      if (child !== null) {
+        const childType = typeof child;
+        if (childType === "object") stack.push(child);
+        else if (childType === "number") {
+          if (!Number.isFinite(child)) return "non-finite number";
+        } else if (childType !== "string" && childType !== "boolean") {
+          return `${childType} is not JSON`;
+        }
+      }
     }
   }
 
