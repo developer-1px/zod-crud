@@ -930,18 +930,29 @@ function normalizeRanges(
 
   const originalPrimary = clampPrimaryIndex(primaryIndex, input.length);
   const ranges: SelectionRange[] = [];
+  const stringRangeIndexes = new Map<string, number>();
   let nextPrimary = -1;
   for (let i = 0; i < input.length; i += 1) {
     const range = input[i]!;
-    const existing = ranges.findIndex((candidate) => sameRange(candidate, range));
+    const key = stringRangeKey(range);
+    const existing = key === null
+      ? ranges.findIndex((candidate) => sameRange(candidate, range))
+      : stringRangeIndexes.get(key) ?? -1;
     if (existing >= 0) {
       if (i === originalPrimary) nextPrimary = existing;
       continue;
     }
     if (i === originalPrimary) nextPrimary = ranges.length;
+    if (key !== null) stringRangeIndexes.set(key, ranges.length);
     ranges.push(range);
   }
   return { ranges, primaryIndex: nextPrimary >= 0 ? nextPrimary : clampPrimaryIndex(originalPrimary, ranges.length) };
+}
+
+function stringRangeKey(range: SelectionRange): string | null {
+  return typeof range.anchor === "string" && typeof range.focus === "string"
+    ? `${range.anchor.length}:${range.anchor}${range.focus.length}:${range.focus}`
+    : null;
 }
 
 function collapsedRange(point: JSONPoint): SelectionRange {
@@ -1118,9 +1129,12 @@ function cursorPointIndex(points: ReadonlyArray<JSONPoint>, current: JSONPoint):
 
 function collectSelectedPointers(ranges: ReadonlyArray<SelectionRange>, state?: unknown): Pointer[] {
   const out: Pointer[] = [];
+  const seen = new Set<Pointer>();
   for (const range of ranges) {
     for (const pointer of expandRange(pointPath(range.anchor), pointPath(range.focus), state)) {
-      if (!out.includes(pointer)) out.push(pointer);
+      if (seen.has(pointer)) continue;
+      seen.add(pointer);
+      out.push(pointer);
     }
   }
   return out;
