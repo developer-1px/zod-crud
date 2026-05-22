@@ -71,6 +71,8 @@ export interface MutableHistoryStack<E> {
   undoStart: number;
 }
 
+const UNDO_PREFIX_COMPACT_THRESHOLD = 8192;
+
 export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
   return { undo: [], redo: [], undoStart: 0 };
 }
@@ -78,12 +80,12 @@ export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
 export function commitMutable<E>(stack: MutableHistoryStack<E>, entry: E, limit: number): void {
   if (limit <= 0) return;
   stack.undo.push(entry);
-  const depth = historyDepth(stack);
+  const depth = stack.undo.length - stack.undoStart;
   if (depth > limit) {
     stack.undoStart += depth - limit;
     compactUndoPrefix(stack);
   }
-  stack.redo.length = 0;
+  if (stack.redo.length !== 0) stack.redo.length = 0;
 }
 
 export function backEntry<E>(stack: MutableHistoryStack<E>): E | null {
@@ -139,7 +141,12 @@ export function canRedoMutable<E>(stack: MutableHistoryStack<E>): boolean {
 
 function compactUndoPrefix<E>(stack: MutableHistoryStack<E>): void {
   if (stack.undoStart === 0) return;
-  if (stack.undoStart < 1024 && stack.undoStart * 2 < stack.undo.length) return;
+  if (
+    stack.undoStart < UNDO_PREFIX_COMPACT_THRESHOLD
+    && stack.undoStart * 2 < stack.undo.length
+  ) {
+    return;
+  }
   stack.undo.splice(0, stack.undoStart);
   stack.undoStart = 0;
 }

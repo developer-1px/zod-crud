@@ -4,14 +4,21 @@ import * as z from "zod";
 
 const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
 const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/index.js", import.meta.url);
+const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.js", import.meta.url);
 
-if (!existsSync(distEntry) || !existsSync(distPatchEntry)) {
+if (!existsSync(distEntry) || !existsSync(distPatchEntry) || !existsSync(distHistoryEntry)) {
   console.error("Missing package dist. Run `npm run build -w zod-crud` first.");
   process.exit(1);
 }
 
 const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
+const {
+  commitMutable,
+  emptyMutableHistory,
+  moveBack,
+  moveForward,
+} = await import(distHistoryEntry.href);
 
 const Item = z.object({
   id: z.string(),
@@ -572,6 +579,26 @@ for (const size of sizes) {
     }
   });
   console.log(`history limit ${historyDepth} overflow ${historyEdits} commits: ${overflowElapsed.toFixed(2)}ms`);
+
+  const reducerStack = emptyMutableHistory();
+  const reducerCommitElapsed = time(() => {
+    for (let index = 1; index <= historyEdits; index += 1) {
+      commitMutable(reducerStack, { index }, historyDepth);
+    }
+  });
+  const reducerUndoElapsed = time(() => {
+    for (let index = 0; index < historyDepth; index += 1) {
+      moveBack(reducerStack);
+    }
+  });
+  const reducerRedoElapsed = time(() => {
+    for (let index = 0; index < historyDepth; index += 1) {
+      moveForward(reducerStack);
+    }
+  });
+  console.log(`history reducer limit ${historyDepth} overflow ${historyEdits} commits: ${reducerCommitElapsed.toFixed(2)}ms`);
+  console.log(`history reducer depth ${historyDepth} undo all: ${reducerUndoElapsed.toFixed(2)}ms`);
+  console.log(`history reducer depth ${historyDepth} redo all: ${reducerRedoElapsed.toFixed(2)}ms`);
 }
 
 function makeState(size) {
