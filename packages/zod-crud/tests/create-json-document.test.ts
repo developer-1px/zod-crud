@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../src/api/index.js";
+import { createJSONDocument } from "../src/index.js";
 
 const Item = z.object({ id: z.string(), name: z.string().min(1) });
 const Schema = z.object({

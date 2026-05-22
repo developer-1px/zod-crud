@@ -7,7 +7,7 @@ import {
   createJSONDocument,
   type JSONDocument,
   type UseJSONDocumentOptions,
-} from "../document/createJSONDocument.js";
+} from "./application/document/createJSONDocument.js";
 
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,

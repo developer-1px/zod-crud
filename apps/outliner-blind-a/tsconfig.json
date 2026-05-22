@@ -14,8 +14,8 @@
     "resolveJsonModule": true,
     "useDefineForClassFields": true,
     "paths": {
-      "zod-crud/react": ["../../packages/zod-crud/src/api/react.ts"],
-      "zod-crud": ["../../packages/zod-crud/src/api/index.ts"]
+      "zod-crud/react": ["../../packages/zod-crud/src/react.ts"],
+      "zod-crud": ["../../packages/zod-crud/src/index.ts"]
     }
   },
   "include": ["src", "tests"]

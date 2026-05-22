@@ -713,12 +713,12 @@ try {
   );
   await assertInstalledTextFiles(installedPackageRoot);
   assertDeclarationExports(
-    await readFile(join(installedPackageRoot, "dist", "api", "index.d.ts"), "utf8"),
+    await readFile(join(installedPackageRoot, "dist", "index.d.ts"), "utf8"),
     rootPublicExports,
     "root",
   );
   assertDeclarationExports(
-    await readFile(join(installedPackageRoot, "dist", "api", "react.d.ts"), "utf8"),
+    await readFile(join(installedPackageRoot, "dist", "react.d.ts"), "utf8"),
     reactPublicExports,
     "react",
   );
@@ -734,11 +734,11 @@ try {
 
   const privateSubpaths = [
     "package.json",
-    "dist/api/index.js",
-    "dist/api/react.js",
-    "src/api/index.ts",
+    "dist/index.js",
+    "dist/react.js",
+    "src/index.ts",
+    "src/react.ts",
     "src/application/document/createJSONDocument.js",
-    "src/application/react/useJSONDocument.js",
     "src/domain/verbs",
     "src/domain/verbs/duplicate.js",
     "src/domain/verbs/move.js",

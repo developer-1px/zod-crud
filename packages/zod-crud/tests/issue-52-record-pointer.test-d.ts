@@ -3,7 +3,7 @@
 // `/${string}` 패턴이 자연스럽게 union 에 포함된다. `as never` 캐스팅 불필요.
 
 import * as z from "zod";
-import type { JSONDocument } from "../src/api/index.js";
+import type { JSONDocument } from "../src/index.js";
 
 const Schema = z.object({ cells: z.record(z.string(), z.string()) });
 type T = z.output<typeof Schema>;

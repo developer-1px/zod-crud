@@ -9,7 +9,7 @@ import {
   buildPointer,
   parsePointer,
   type JSONPatchOperation,
-} from "../src/api/index.js";
+} from "../src/index.js";
 
 const Any = z.any();
 

@@ -5,8 +5,8 @@
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
-  "main": "./dist/api/index.js",
-  "types": "./dist/api/index.d.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "homepage": "https://developer-1px.github.io/zod-crud/",
   "repository": {
     "type": "git",
@@ -40,12 +40,12 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/api/index.d.ts",
-      "import": "./dist/api/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     },
     "./react": {
-      "types": "./dist/api/react.d.ts",
-      "import": "./dist/api/react.js"
+      "types": "./dist/react.d.ts",
+      "import": "./dist/react.js"
     }
   },
   "scripts": {

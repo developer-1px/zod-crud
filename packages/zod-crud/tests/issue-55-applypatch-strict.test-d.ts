@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { applyPatch } from "../src/api/index.js";
+import { applyPatch } from "../src/index.js";
 
 const Doc = z.object({
   blocks: z.array(z.discriminatedUnion("kind", [

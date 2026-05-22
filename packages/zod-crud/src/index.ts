@@ -5,14 +5,14 @@
 // React peer is not required for pure JSON Patch / Pointer consumers.
 
 // === Boundary error + document metadata ===
-export { JSONCrudError } from "../foundation/errors.js";
+export { JSONCrudError } from "./foundation/errors.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "../application/document/ops.js";
+} from "./application/document/ops.js";
 
 // === Headless document facade ===
-export { createJSONDocument } from "../application/document/createJSONDocument.js";
+export { createJSONDocument } from "./application/document/createJSONDocument.js";
 export type {
   JSONCapabilityResult,
   JSONDocumentCommitOptions,
@@ -23,15 +23,15 @@ export type {
   JSONDocumentPasteTarget,
   JSONDocument,
   JSONPatchInput,
-} from "../application/document/createJSONDocument.js";
-export type { SelectionState } from "../application/document/selection.js";
+} from "./application/document/createJSONDocument.js";
+export type { SelectionState } from "./application/document/selection.js";
 
 // === RFC 6902 — JSON Patch ===
-export { applyOperation, applyPatch } from "../foundation/json-patch/index.js";
+export { applyOperation, applyPatch } from "./foundation/json-patch/index.js";
 export type {
   JSONPatchOperation,
   JSONResult,
-} from "../foundation/json-patch/index.js";
+} from "./foundation/json-patch/index.js";
 
 // === RFC 6901 — JSON Pointer ===
 export {
@@ -46,8 +46,8 @@ export {
   lastSegmentIndex,
   appendSegment,
   withLastSegment,
-} from "../foundation/json-pointer/index.js";
-export type { Pointer } from "../foundation/json-pointer/index.js";
+} from "./foundation/json-pointer/index.js";
+export type { Pointer } from "./foundation/json-pointer/index.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
@@ -56,5 +56,5 @@ export type {
   SelectionRange,
   SelectionSource,
   SelectionSnap,
-} from "../domain/selection/index.js";
-export { trackPointer } from "../domain/tracking/pointer.js";
+} from "./domain/selection/index.js";
+export { trackPointer } from "./domain/tracking/pointer.js";

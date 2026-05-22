@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument, JSONCrudError } from "../src/api/index.js";
+import { createJSONDocument, JSONCrudError } from "../src/index.js";
 
 describe("JSONCrudError", () => {
   test("exposes op, result, name, and operation-specific message", () => {
