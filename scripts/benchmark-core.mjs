@@ -251,6 +251,28 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 100 });
+    const result = doc.patch(itemReplaceBatchOps);
+    if (!result.ok) throw new Error(`setup item replace batch failed: ${JSON.stringify(result)}`);
+    benchWithSetup(`history undo item replace batch ${itemReplaceBatchOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canUndo) {
+        const redone = doc.history.redo();
+        if (!redone) throw new Error("item replace redo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo item replace batch ${itemReplaceBatchOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canRedo) {
+        const undone = doc.history.undo();
+        if (!undone) throw new Error("item replace undo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
     const result = doc.patch(batchOps);
     if (!result.ok) throw new Error(`setup batch failed: ${JSON.stringify(result)}`);
     benchWithSetup(`history undo batch ${batchOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {

@@ -742,6 +742,42 @@ describe("doc.history performance contract", () => {
     expect(itemParses).toBe(1);
   });
 
+  test("same-array element replace batch history restores without schema validation", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { id: "a", done: false },
+        { id: "b", done: false },
+      ],
+    }, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0", value: { id: "a2", done: true } },
+      { op: "replace", path: "/items/1", value: { id: "b2", done: true } },
+    ])).toEqual({ ok: true });
+    expect(rootParses).toBe(0);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value.items).toEqual([
+      { id: "a", done: false },
+      { id: "b", done: false },
+    ]);
+    expect(rootParses).toBe(0);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items).toEqual([
+      { id: "a2", done: true },
+      { id: "b2", done: true },
+    ]);
+    expect(rootParses).toBe(0);
+  });
+
   test("object key removals fall back to full validation", () => {
     const Schema = z.object({ title: z.string() });
     const doc = createJSONDocument(Schema, { title: "draft" }, { strict: false });

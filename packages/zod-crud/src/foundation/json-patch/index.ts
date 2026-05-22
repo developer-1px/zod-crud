@@ -245,6 +245,10 @@ export function applyTrustedPatch<T>(
       return { state: rootObjectReplaceFast.state as T, result: ok, applied: rootObjectReplaceFast.applied };
     }
   }
+  const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops, valuesTrusted);
+  if (arrayElementReplaceFast.handled) {
+    return { state: arrayElementReplaceFast.state as T, result: ok, applied: arrayElementReplaceFast.applied };
+  }
   const fast = applyIndependentReplacePatch(state, ops, valuesTrusted);
   if (fast.handled) {
     return { state: fast.state as T, result: ok, applied: fast.applied };
@@ -322,6 +326,11 @@ export function applyAcceptedPatch<T>(
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, true);
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
+  }
+
+  const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops, true);
+  if (arrayElementReplaceFast.handled) {
+    return { state: arrayElementReplaceFast.state as T, result: ok, applied: arrayElementReplaceFast.applied };
   }
 
   return applyTrustedPatch(state, ops, { valuesTrusted: true });
@@ -605,6 +614,51 @@ function applyIndependentReplacePatch(
 
   if (!hasIndependentPaths(items)) return { handled: false };
   return { handled: true, state: applyReplaceTree(state, buildReplaceTree(items)), applied: items.map((item) => item.op) };
+}
+
+function applySameArrayElementReplacePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
+): FastPatchResult {
+  if (ops.length < 2) return { handled: false };
+
+  let parent: Pointer | null = null;
+  let parentSegments: string[] | null = null;
+  let next: unknown[] | null = null;
+  const applied: JSONPatchOperation[] = [];
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (validateOperationShape(op) !== null || op.op !== "replace" || op.path === "") {
+      return { handled: false };
+    }
+    const location = arrayRemoveLocation(op.path);
+    if (location === null) return { handled: false };
+    if (parent === null) {
+      parent = location.parent;
+      const parsedParent = parseSafe(parent);
+      if (!("ok" in parsedParent)) return { handled: false };
+      parentSegments = parsedParent.segs;
+      const current = getValueAt(state, parentSegments);
+      if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+      next = current.value.slice();
+    } else if (parent !== location.parent) {
+      return { handled: false };
+    }
+
+    if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
+    if (next === null || location.index < 0 || location.index >= next.length) return { handled: false };
+    next[location.index] = op.value;
+    applied.push(op);
+  }
+
+  if (parentSegments === null || next === null) return { handled: false };
+  const stateWithArray = replaceValueAtSegments(state, parentSegments, 0, next);
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
 }
 
 function applySameArrayStructuralPatch(
