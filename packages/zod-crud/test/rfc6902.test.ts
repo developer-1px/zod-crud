@@ -427,6 +427,32 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state.settings).toBe(settings);
   });
 
+  it("applies tail remove batches with sharing", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const third = { id: "c" };
+    const fourth = { id: "d" };
+    const settings = { owner: "core" };
+    const initial = { items: [first, second, third, fourth], settings };
+
+    const r = applyPatch(Any, initial, [
+      { op: "remove", path: "/items/3" },
+      { op: "remove", path: "/items/2" },
+    ]);
+
+    expect(r.result.ok).toBe(true);
+    expect(r.applied).toEqual([
+      { op: "remove", path: "/items/3" },
+      { op: "remove", path: "/items/2" },
+    ]);
+    expect(r.state.items).toEqual([first, second]);
+    expect(r.state.items).not.toBe(initial.items);
+    expect(r.state.items[0]).toBe(first);
+    expect(r.state.items[1]).toBe(second);
+    expect(r.state.settings).toBe(settings);
+    expect(initial.items).toEqual([first, second, third, fourth]);
+  });
+
   it("applies adjacent same-array moves with remove then add semantics", () => {
     const first = { id: "a" };
     const second = { id: "b" };

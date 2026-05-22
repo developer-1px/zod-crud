@@ -119,6 +119,12 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: appendFast.state as z.output<S>, result: ok, applied: appendFast.applied };
   }
+  const tailRemoveFast = applyTailRemovePatch(state, ops);
+  if (tailRemoveFast.handled) {
+    const parsed = schema.safeParse(tailRemoveFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: tailRemoveFast.state as z.output<S>, result: ok, applied: tailRemoveFast.applied };
+  }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops);
   if (arrayReplaceFast.handled) {
     const parsed = schema.safeParse(arrayReplaceFast.state);
@@ -224,6 +230,10 @@ export function applyTrustedPatch<T>(
   const appendFast = applyAppendOnlyAddPatch(state, ops, valuesTrusted);
   if (appendFast.handled) {
     return { state: appendFast.state as T, result: ok, applied: appendFast.applied };
+  }
+  const tailRemoveFast = applyTailRemovePatch(state, ops);
+  if (tailRemoveFast.handled) {
+    return { state: tailRemoveFast.state as T, result: ok, applied: tailRemoveFast.applied };
   }
   const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, valuesTrusted);
   if (arrayReplaceFast.handled) {
@@ -445,6 +455,60 @@ function applyAppendOnlyAddPatch(
       value,
     })),
   };
+}
+
+function applyTailRemovePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): FastPatchResult {
+  if (ops.length < 2) return { handled: false };
+
+  let parent: Pointer | null = null;
+  const indexes: number[] = [];
+  const applied: JSONPatchOperation[] = [];
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return { handled: false };
+    const op = ops[index]!;
+    if (
+      op === null
+      || typeof op !== "object"
+      || op.op !== "remove"
+      || typeof op.path !== "string"
+      || op.path === ""
+    ) {
+      return { handled: false };
+    }
+
+    const location = arrayRemoveLocation(op.path);
+    if (location === null) return { handled: false };
+    if (parent === null) parent = location.parent;
+    else if (parent !== location.parent) return { handled: false };
+    indexes.push(location.index);
+    applied.push({ op: "remove", path: op.path });
+  }
+
+  if (parent === null) return { handled: false };
+  const parsedParent = parseSafe(parent);
+  if (!("ok" in parsedParent)) return { handled: false };
+  const current = getValueAt(state, parsedParent.segs);
+  if (!current.ok || !Array.isArray(current.value) || indexes.length > current.value.length) {
+    return { handled: false };
+  }
+
+  const initialLength = current.value.length;
+  for (let index = 0; index < indexes.length; index += 1) {
+    if (indexes[index] !== initialLength - index - 1) return { handled: false };
+  }
+
+  const stateWithArray = replaceValueAtSegments(
+    state,
+    parsedParent.segs,
+    0,
+    current.value.slice(0, initialLength - indexes.length),
+  );
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
 }
 
 function applyIndependentReplacePatch(
@@ -700,6 +764,16 @@ function arrayLocation(path: Pointer): { parent: Pointer; index: number | "-" } 
   return index === null ? null : { parent, index };
 }
 
+function arrayRemoveLocation(path: Pointer): { parent: Pointer; index: number } | null {
+  const simple = parseSimpleArrayElementPath(path);
+  if (simple !== null) return simple;
+
+  const location = arrayLocation(path);
+  return location === null || location.index === "-"
+    ? null
+    : { parent: location.parent, index: location.index };
+}
+
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
@@ -731,6 +805,17 @@ function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   const arrayPath = path.slice(0, indexSlash);
   const arraySegments = arrayPath === "" ? [] : arrayPath.slice(1).split("/");
   return { arraySegments, index, key: path.slice(keySlash + 1) };
+}
+
+function parseSimpleArrayElementPath(path: Pointer): { parent: Pointer; index: number } | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const indexSlash = path.lastIndexOf("/");
+  if (indexSlash < 0) return null;
+
+  const index = numericSegment(path.slice(indexSlash + 1));
+  return index === null
+    ? null
+    : { parent: path.slice(0, indexSlash), index };
 }
 
 function applyTrustedValueMutation(
