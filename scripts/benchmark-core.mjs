@@ -3,15 +3,17 @@ import { performance } from "node:perf_hooks";
 import * as z from "zod";
 
 const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
+const distJsonEntry = new URL("../packages/zod-crud/dist/foundation/json.js", import.meta.url);
 const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/index.js", import.meta.url);
 const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.js", import.meta.url);
 
-if (!existsSync(distEntry) || !existsSync(distPatchEntry) || !existsSync(distHistoryEntry)) {
+if (!existsSync(distEntry) || !existsSync(distJsonEntry) || !existsSync(distPatchEntry) || !existsSync(distHistoryEntry)) {
   console.error("Missing package dist. Run `npm run build -w zod-crud` first.");
   process.exit(1);
 }
 
 const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
+const { jsonSerializableError } = await import(distJsonEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 const {
   commitMutable,
@@ -101,6 +103,7 @@ for (const size of sizes) {
   ];
 
   console.log(`\nitems=${size}`);
+  bench("jsonSerializableError state", rounds, () => ({ ok: jsonSerializableError(state) === null }));
   bench("applyPatch single leaf replace", rounds, (index) =>
     applyPatch(Schema, state, [{
       op: "replace",
