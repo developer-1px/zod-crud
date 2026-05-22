@@ -188,19 +188,30 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionBefore,
       selectionAfter,
     };
-    if (metadata) entry.metadata = { ...metadata };
+    const historyMetadata = compactHistoryMetadata(metadata);
+    if (historyMetadata) entry.metadata = historyMetadata;
     commitHistory(stack, entry, historyLimit);
   };
 
   const applyDocumentPatch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
-    const before = rawOps.state;
-    const selectionBefore = snapSelection();
-    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
+    const shouldRecordHistory = historyLimit > 0 && !isRestoring && operations.length > 0;
+    const shouldBuildMetadata = selectionEnabled || activeHistoryMetadata !== undefined || metadata !== undefined;
+    if (!shouldRecordHistory && !shouldBuildMetadata) {
+      const r = rawOps.patch(operations);
+      if (r.ok && operations.length === 0) lastPatch = [];
+      return r;
+    }
+
+    const before = shouldRecordHistory ? rawOps.state : undefined;
+    const selectionBefore = shouldBuildMetadata ? snapSelection() : EMPTY_SELECTION;
+    const changeMetadata = shouldBuildMetadata
+      ? buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled)
+      : undefined;
     const r = rawOps.patch(operations, changeMetadata);
-    const selectionAfter = snapSelection();
+    const selectionAfter = shouldBuildMetadata ? snapSelection() : EMPTY_SELECTION;
     if (r.ok && operations.length === 0) lastPatch = [];
-    if (r.ok && historyLimit > 0 && !isRestoring && operations.length > 0) {
-      recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
+    if (r.ok && shouldRecordHistory) {
+      recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
   };
@@ -210,14 +221,24 @@ export function createJSONDocument<S extends z.ZodType>(
     applied: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
   ): JSONResult => {
-    const before = rawOps.state;
-    const selectionBefore = snapSelection();
-    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore);
+    const shouldRecordHistory = historyLimit > 0 && !isRestoring && operations.length > 0;
+    const shouldBuildMetadata = selectionEnabled || activeHistoryMetadata !== undefined || metadata !== undefined;
+    if (!shouldRecordHistory && !shouldBuildMetadata) {
+      const r = rawOps.trustedApply(next, applied);
+      if (r.ok && applied.length === 0) lastPatch = [];
+      return r;
+    }
+
+    const before = shouldRecordHistory ? rawOps.state : undefined;
+    const selectionBefore = shouldBuildMetadata ? snapSelection() : EMPTY_SELECTION;
+    const changeMetadata = shouldBuildMetadata
+      ? buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled)
+      : undefined;
     const r = rawOps.trustedApply(next, applied, changeMetadata);
-    const selectionAfter = snapSelection();
+    const selectionAfter = shouldBuildMetadata ? snapSelection() : EMPTY_SELECTION;
     if (r.ok && applied.length === 0) lastPatch = [];
-    if (r.ok && historyLimit > 0 && !isRestoring && operations.length > 0) {
-      recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
+    if (r.ok && shouldRecordHistory) {
+      recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
   };
@@ -229,7 +250,7 @@ export function createJSONDocument<S extends z.ZodType>(
     commitOptions: JSONDocumentCommitOptions = {},
   ): JSONResult => {
     const { selection, ...metadataOptions } = commitOptions;
-    if (selection === undefined) return applyDocumentPatch(operations, metadataOptions);
+    if (selection === undefined) return applyDocumentPatch(operations, compactHistoryMetadata(metadataOptions));
 
     const before = rawOps.state;
     const selectionBefore = snapSelection();
@@ -244,6 +265,7 @@ export function createJSONDocument<S extends z.ZodType>(
         selectionAfter,
       },
       selectionBefore,
+      selectionEnabled,
     );
     const r = rawOps.trustedApply(predicted.state, predicted.applied, changeMetadata);
     if (!r.ok) return r;
@@ -267,7 +289,7 @@ export function createJSONDocument<S extends z.ZodType>(
       trustedPayload: rawOps.stateJsonTrusted,
     });
     if (!planned.ok) return planned;
-    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, undefined, selectionBefore);
+    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, undefined, selectionBefore, selectionEnabled);
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);
     const selectionAfter = snapSelection();
     if (r.ok && historyLimit > 0 && !isRestoring && planned.patch.length > 0) {
@@ -525,12 +547,34 @@ function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,
   direct: JSONChangeMetadata | undefined,
   selectionBefore: SelectionSnap,
-): JSONChangeMetadata {
+  includeSelectionBefore: boolean,
+): JSONChangeMetadata | undefined {
+  const metadata = mergeChangeMetadata(active, direct);
+  if (!includeSelectionBefore && metadata === undefined) return undefined;
   return {
-    ...active,
-    ...direct,
+    ...metadata,
     selectionBefore,
   };
+}
+
+function mergeChangeMetadata(
+  active: HistoryTransactionOptions | undefined,
+  direct: JSONChangeMetadata | undefined,
+): JSONChangeMetadata | undefined {
+  if (active === undefined) return direct;
+  if (direct === undefined) return active;
+  return { ...active, ...direct };
+}
+
+function compactHistoryMetadata(
+  metadata: HistoryTransactionOptions | undefined,
+): HistoryTransactionOptions | undefined {
+  if (metadata === undefined) return undefined;
+  const compact: HistoryTransactionOptions = {};
+  if (metadata.label !== undefined) compact.label = metadata.label;
+  if (metadata.origin !== undefined) compact.origin = metadata.origin;
+  if (metadata.mergeKey !== undefined) compact.mergeKey = metadata.mergeKey;
+  return Object.keys(compact).length > 0 ? compact : undefined;
 }
 
 function mergeEntryMetadata(
