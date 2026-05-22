@@ -948,6 +948,37 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("increasing add batch handles escaped array parents", () => {
+    const Schema = z.object({
+      "a/b": z.array(z.object({ id: z.string(), done: z.boolean() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      "a/b": [
+        { id: "a", done: false },
+        { id: "b", done: false },
+      ],
+    }, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "add", path: "/a~1b/1", value: { id: "x", done: true } },
+      { op: "add", path: "/a~1b/2", value: { id: "y", done: true } },
+    ])).toEqual({ ok: true });
+    expect(doc.value["a/b"].map((item) => item.id)).toEqual(["a", "x", "y", "b"]);
+    expect(rootParses).toBe(0);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value["a/b"].map((item) => item.id)).toEqual(["a", "b"]);
+    expect(rootParses).toBe(0);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value["a/b"].map((item) => item.id)).toEqual(["a", "x", "y", "b"]);
+    expect(rootParses).toBe(0);
+  });
+
   test("plain structural repeated same-array element replace batches stay on local validation", () => {
     const Item = z.object({ id: z.string(), done: z.boolean() });
     const Schema = z.object({

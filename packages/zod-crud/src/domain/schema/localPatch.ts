@@ -896,6 +896,13 @@ function arrayLocation(
   schema: z.ZodType,
   path: Pointer,
 ): { parent: Pointer; element: z.ZodType; index: number | "-" } | null {
+  const simple = parseSimpleArrayIndexPath(path);
+  if (simple !== null) {
+    const parentSchema = cachedSchemaAtPointer(schema, simple.parent, "value");
+    const element = parentSchema ? getArrayElement(parentSchema) : null;
+    return element ? { parent: simple.parent, element, index: simple.index } : null;
+  }
+
   const parent = parentPointer(path);
   if (parent === null) return null;
   let segments: string[];
@@ -914,6 +921,11 @@ function arrayLocation(
 }
 
 function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "-" } | null {
+  const simple = parseSimpleArrayIndexPath(path);
+  if (simple !== null) {
+    return simple.parent === parent ? { index: simple.index } : null;
+  }
+
   if (parentPointer(path) !== parent) return null;
   let segments: string[];
   try {
@@ -925,6 +937,18 @@ function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "
   if (segment === undefined) return null;
   const index = segment === "-" ? "-" : numericSegment(segment);
   return index === null ? null : { index };
+}
+
+function parseSimpleArrayIndexPath(path: Pointer): { parent: Pointer; index: number | "-" } | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const indexSlash = path.lastIndexOf("/");
+  if (indexSlash < 0) return null;
+
+  const segment = path.slice(indexSlash + 1);
+  const index = segment === "-" ? "-" : numericSegment(segment);
+  return index === null
+    ? null
+    : { parent: path.slice(0, indexSlash), index };
 }
 
 function arrayElementReplaceLocation(
