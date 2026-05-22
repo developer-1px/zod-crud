@@ -665,6 +665,25 @@ function applySingleSegmentTrustedValueMutation(
   op: Extract<JSONPatchOperation, { op: "add" | "replace" }>,
 ): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } | null {
   if (op.path[0] !== "/" || op.path.includes("~") || op.path.indexOf("/", 1) !== -1) return null;
+  if (state !== null && typeof state === "object" && !Array.isArray(state)) {
+    const key = op.path.slice(1);
+    if (op.op === "replace" && !objectHasOwn.call(state, key)) {
+      return { error: "path_not_found", reason: `object key: ${key}`, pointer: op.path };
+    }
+    const next = { ...(state as Record<string, unknown>) };
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: op.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = op.value;
+    }
+    return { state: next };
+  }
+
   const verb = op.op === "add" ? "set" : "replace";
   const result = mutateContainer(state, op.path.slice(1), verb, op.value);
   return "error" in result ? { ...result, pointer: op.path } : { state: result.value };
