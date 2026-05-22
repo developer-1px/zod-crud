@@ -48,6 +48,7 @@ const siteRoutesJson = read("apps/site/src/site-routes.json");
 const siteShellTest = read("apps/site/tests/site-shell.test.tsx");
 const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const siteEvaluator = read("scripts/evaluate-site.mjs");
+const siteHttpEvaluator = read("scripts/evaluate-site-http.mjs");
 const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
 const rootPackageJson = read("package.json");
 const pagesWorkflow = read(".github/workflows/pages.yml");
@@ -210,19 +211,24 @@ if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/
   fail("site docs: missing table-of-contents navigation coverage.");
 }
 
-if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson) || !/site:verify:pages/.test(rootPackageJson)) {
+if (!/playground:typecheck/.test(rootPackageJson) || !/playground:test/.test(rootPackageJson) || !/playground:build/.test(rootPackageJson) || !/site:evaluate/.test(rootPackageJson) || !/site:verify:pages/.test(rootPackageJson) || !/site:smoke:pages/.test(rootPackageJson)) {
   fail("root verify: missing playground production site gates.");
 }
 
 for (const pattern of [
   /site:build:pages/,
   /site:evaluate:pages/,
+  /site:smoke:pages/,
   /site:verify:pages/,
   /SITE_BASE=\/zod-crud\//,
   /SITE_URL=https:\/\/developer-1px\.github\.io\/zod-crud/,
   /VITE_SITE_URL=https:\/\/developer-1px\.github\.io\/zod-crud/,
 ]) {
   if (!pattern.test(rootPackageJson)) fail(`root package: missing ${pattern}.`);
+}
+
+if (!/"site:verify:pages": "npm run site:build:pages && npm run site:evaluate:pages && npm run site:smoke:pages"/.test(rootPackageJson)) {
+  fail("root package: Pages verification must build, evaluate files, then smoke test HTTP serving.");
 }
 
 if (!/npm run verify/.test(pagesWorkflow) || !/site:evaluate:live/.test(rootPackageJson) || !/actions\/checkout@v4/.test(pagesWorkflow) || !/actions\/setup-node@v4/.test(pagesWorkflow) || !/upload-pages-artifact@v3/.test(pagesWorkflow)) {
@@ -250,6 +256,19 @@ for (const pattern of [
   /references missing asset/,
 ]) {
   if (!pattern.test(siteEvaluator)) fail(`site evaluator: missing ${pattern}.`);
+}
+
+for (const pattern of [
+  /createServer/,
+  /site-routes\.json/,
+  /SITE_BASE/,
+  /fetchRequiredText/,
+  /localAssetPaths/,
+  /route canonical/,
+  /route og:url/,
+  /site HTTP evaluation ok/,
+]) {
+  if (!pattern.test(siteHttpEvaluator)) fail(`site HTTP evaluator: missing ${pattern}.`);
 }
 
 if (!/SITE_BASE/.test(siteEvaluator) || !/unexpanded Vite base placeholder/.test(siteEvaluator)) {

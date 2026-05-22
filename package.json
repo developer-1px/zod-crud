@@ -22,7 +22,8 @@
     "site:evaluate": "node scripts/evaluate-site.mjs",
     "site:build:pages": "SITE_BASE=/zod-crud/ SITE_URL=https://developer-1px.github.io/zod-crud VITE_SITE_URL=https://developer-1px.github.io/zod-crud npm run build -w @zod-crud/site",
     "site:evaluate:pages": "SITE_BASE=/zod-crud/ SITE_URL=https://developer-1px.github.io/zod-crud npm run site:evaluate",
-    "site:verify:pages": "npm run site:build:pages && npm run site:evaluate:pages",
+    "site:smoke:pages": "SITE_BASE=/zod-crud/ SITE_URL=https://developer-1px.github.io/zod-crud node scripts/evaluate-site-http.mjs",
+    "site:verify:pages": "npm run site:build:pages && npm run site:evaluate:pages && npm run site:smoke:pages",
     "site:evaluate:live": "node scripts/evaluate-live-site.mjs"
   }
 }
