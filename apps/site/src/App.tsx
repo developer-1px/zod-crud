@@ -14,6 +14,8 @@ type Route = SiteRoute & { Component: ComponentType };
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
 const Docs = lazy(() => import("./routes/Docs").then((module) => ({ default: module.Docs })));
+const DocsTutorial = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsTutorial })));
+const DocsApiReference = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsApiReference })));
 const Playground = lazy(() => import("./routes/Playground").then((module) => ({ default: module.Playground })));
 const Outliner = lazy(() => import("@zod-crud/outliner").then((module) => ({ default: module.Outliner })));
 const MobileCms = lazy(() => import("@zod-crud/mobile-cms").then((module) => ({ default: module.App })));
@@ -21,6 +23,8 @@ const ApiCollection = lazy(() => import("@zod-crud/api-collection").then((module
 const routeComponents: Record<string, ComponentType> = {
   "/": Home,
   "/docs": Docs,
+  "/docs/tutorial": DocsTutorial,
+  "/docs/api": DocsApiReference,
   "/playground": Playground,
   "/playground/outliner": Outliner,
   "/playground/mobile-cms": MobileCms,

@@ -8,6 +8,20 @@
   },
   {
     "path": "/docs",
+    "label": "Docs",
+    "title": "zod-crud Docs - zod-crud",
+    "description": "Conceptual guide to zod-crud's why, core editing model, tutorial path, and document API boundaries.",
+    "group": "Start"
+  },
+  {
+    "path": "/docs/tutorial",
+    "label": "Tutorial",
+    "title": "Tutorial - zod-crud",
+    "description": "Step-by-step zod-crud tutorial for building a small card editor with schema checks, selection, clipboard, and history.",
+    "group": "Start"
+  },
+  {
+    "path": "/docs/api",
     "label": "API reference",
     "title": "zod-crud API - zod-crud",
     "description": "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.",

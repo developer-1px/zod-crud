@@ -30,6 +30,9 @@ export function Home() {
             </p>
             <div className="mt-6 flex flex-wrap gap-2">
               <a className="rounded bg-stone-950 px-3 py-2 text-sm font-medium text-white no-underline hover:bg-stone-800" href={sitePath("/docs")}>
+                Docs
+              </a>
+              <a className="rounded border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 no-underline hover:bg-stone-100" href={sitePath("/docs/api")}>
                 API reference
               </a>
               <a className="rounded border border-stone-300 bg-white px-3 py-2 text-sm font-medium text-stone-800 no-underline hover:bg-stone-100" href={sitePath("/playground")}>

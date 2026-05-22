@@ -11,7 +11,11 @@ function read(path: string): string {
 const docs = {
   readme: read("packages/zod-crud/README.md"),
   spec: read("packages/zod-crud/SPEC.md"),
-  site: read("apps/site/src/docs/zod-crud-api.md"),
+  site: [
+    read("apps/site/src/docs/zod-crud-concepts.md"),
+    read("apps/site/src/docs/zod-crud-tutorial.md"),
+    read("apps/site/src/docs/zod-crud-api.md"),
+  ].join("\n\n"),
   llms: read("llms.txt"),
 };
 

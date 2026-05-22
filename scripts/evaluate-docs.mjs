@@ -32,7 +32,11 @@ if (/pending verification/i.test(ledger)) {
 const surfaces = {
   readme: read("packages/zod-crud/README.md"),
   spec: read("packages/zod-crud/SPEC.md"),
-  site: read("apps/site/src/docs/zod-crud-api.md"),
+  site: [
+    read("apps/site/src/docs/zod-crud-concepts.md"),
+    read("apps/site/src/docs/zod-crud-tutorial.md"),
+    read("apps/site/src/docs/zod-crud-api.md"),
+  ].join("\n\n"),
   llms: read("llms.txt"),
 };
 const smoke = read("packages/zod-crud/test/package-smoke.mjs");
@@ -177,7 +181,7 @@ if (!/public interface clipboard paste failed/.test(smoke) || !/public interface
   fail("package smoke: missing installed-package public interface scenario.");
 }
 
-if (!/\{ type: "table"; header: string\[\]; rows: string\[\]\[\] \}/.test(markdownViewer) || !/<table/.test(markdownViewer)) {
+if (!/react-markdown/.test(markdownViewer) || !/remarkGfm/.test(markdownViewer) || !/rehypeSlug/.test(markdownViewer) || !/<table/.test(markdownViewer)) {
   fail("MarkdownViewer: table rendering support missing.");
 }
 
@@ -211,7 +215,9 @@ if (!/<svg/.test(siteFavicon) || !/zod-crud/.test(siteManifest)) {
 
 for (const route of [
   ["/", "zod-crud - Headless JSON editing", "zod-crud is a Zod-guarded headless JSON editing engine for JSON Patch, JSON Pointer, JSONPath, selection, clipboard, and history."],
-  ["/docs", "zod-crud API - zod-crud", "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath."],
+  ["/docs", "zod-crud Docs - zod-crud", "Conceptual guide to zod-crud's why, core editing model, tutorial path, and document API boundaries."],
+  ["/docs/tutorial", "Tutorial - zod-crud", "Step-by-step zod-crud tutorial for building a small card editor with schema checks, selection, clipboard, and history."],
+  ["/docs/api", "zod-crud API - zod-crud", "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath."],
   ["/playground", "Workbench - zod-crud", "Interactive zod-crud workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search."],
   ["/playground/outliner", "Outliner demo - zod-crud", "Keyboard-first outliner demo showing zod-crud selection, clipboard, history, structure edits, and JSON document movement."],
   ["/playground/mobile-cms", "Mobile CMS demo - zod-crud", "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history."],
@@ -274,7 +280,7 @@ if (!/document\.title/.test(siteShellTest) || !/name="description"/.test(siteShe
   fail("site shell test: missing client-side route metadata coverage.");
 }
 
-if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/Documentation sections/.test(docsRoute) || !/작업별-진입점/.test(siteShellTest)) {
+if (!/markdownHeadings/.test(docsRoute) || !/On this page/.test(docsRoute) || !/Documentation pages/.test(docsRoute) || !/Documentation sections/.test(docsRoute) || !/작업별-진입점/.test(siteShellTest)) {
   fail("site docs: missing table-of-contents navigation coverage.");
 }
 
@@ -297,6 +303,7 @@ if (!/video:\s*"off"/.test(playwrightConfig)) {
 if (
   !/defers demo and engine code/.test(browserSiteTest)
   || !/InterfaceWorkbench\.playground/.test(browserSiteTest)
+  || !/toHaveTitle\("zod-crud Docs - zod-crud"\)/.test(browserSiteTest)
   || !/toHaveTitle\("zod-crud API - zod-crud"\)/.test(browserSiteTest)
   || !/sticky desktop navigation/.test(browserSiteTest)
   || !/mainOverflowY/.test(browserSiteTest)

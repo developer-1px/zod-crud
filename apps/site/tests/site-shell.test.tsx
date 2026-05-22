@@ -35,19 +35,27 @@ describe("official site shell", () => {
     expect(screen.queryByText("Interface bench")).toBeNull();
   });
 
-  test("navigates from the official site to docs and demos", async () => {
+  test("navigates from the official site to docs, API reference, and demos", async () => {
     render(<App />);
     const user = userEvent.setup();
     const nav = within(screen.getByRole("navigation", { name: "Site navigation" }));
+
+    await user.click(nav.getByRole("link", { name: "Docs" }));
+    await waitFor(() => expect(document.title).toBe("zod-crud Docs - zod-crud"));
+    expect(document.head.querySelector('meta[name="description"]')?.getAttribute("content")).toBe("Conceptual guide to zod-crud's why, core editing model, tutorial path, and document API boundaries.");
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs");
+    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "배경" })).toBeTruthy();
+    expect(screen.getByRole("navigation", { name: "Documentation pages" })).toBeTruthy();
 
     await user.click(nav.getByRole("link", { name: "API reference" }));
     await waitFor(() => expect(document.title).toBe("zod-crud API - zod-crud"));
     expect(document.head.querySelector('meta[name="description"]')?.getAttribute("content")).toBe("Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.");
     expect(document.head.querySelector('meta[property="og:description"]')?.getAttribute("content")).toBe("Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.");
-    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs");
+    expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs/api");
     expect(document.head.querySelector('meta[name="twitter:title"]')?.getAttribute("content")).toBe("zod-crud API - zod-crud");
     expect(document.head.querySelector('meta[name="twitter:description"]')?.getAttribute("content")).toBe("Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.");
-    expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute("content")).toBe("https://developer-1px.github.io/zod-crud/docs");
+    expect(document.head.querySelector('meta[property="og:url"]')?.getAttribute("content")).toBe("https://developer-1px.github.io/zod-crud/docs/api");
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
@@ -63,6 +71,12 @@ describe("official site shell", () => {
     window.history.pushState(null, "", "/docs/");
     render(<App />);
 
+    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Docs" }).getAttribute("aria-current")).toBe("page");
+    await waitFor(() => expect(document.getElementById("배경")).toBeTruthy());
+
+    window.history.pushState(null, "", "/docs/api/");
+    window.dispatchEvent(new Event("popstate"));
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "API reference" }).getAttribute("aria-current")).toBe("page");
     await waitFor(() => expect(document.getElementById("작업별-진입점")).toBeTruthy());

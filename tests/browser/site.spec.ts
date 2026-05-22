@@ -14,9 +14,16 @@ test("official overview defers demo and engine code until a demo route opens", a
   expect(requests.some((url) => url.includes("InterfaceWorkbench.playground"))).toBe(true);
 });
 
-test("official docs route renders with route metadata in a real browser", async ({ page }) => {
+test("official docs routes render with route metadata in a real browser", async ({ page }) => {
   await page.goto("/docs");
 
+  await expect(page).toHaveTitle("zod-crud Docs - zod-crud");
+  await expect(page.getByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "배경" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Documentation pages" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "On this page" })).toBeVisible();
+
+  await page.getByRole("link", { name: "API reference" }).first().click();
   await expect(page).toHaveTitle("zod-crud API - zod-crud");
   await expect(page.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "On this page" })).toBeVisible();
@@ -25,7 +32,7 @@ test("official docs route renders with route metadata in a real browser", async 
 test("official site uses window scroll with sticky desktop navigation", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/docs");
-  await expect(page.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, 1200));
 
