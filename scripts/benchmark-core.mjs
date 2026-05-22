@@ -814,9 +814,9 @@ function bench(label, sampleCount, fn) {
     last = fn(index);
     samples.push(performance.now() - started);
   }
-  const { avg, min, p50, max } = sampleStats(samples);
+  const { avg, min, p50, p90, max } = sampleStats(samples);
   const ok = resultOk(last);
-  console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
+  console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms p90=${p90.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
 }
 
 function benchWithSetup(label, sampleCount, setup, fn) {
@@ -828,9 +828,9 @@ function benchWithSetup(label, sampleCount, setup, fn) {
     last = fn(index);
     samples.push(performance.now() - started);
   }
-  const { avg, min, p50, max } = sampleStats(samples);
+  const { avg, min, p50, p90, max } = sampleStats(samples);
   const ok = resultOk(last);
-  console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
+  console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms p90=${p90.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
 }
 
 function resultOk(value) {
@@ -853,6 +853,7 @@ function sampleStats(samples) {
     avg: samples.reduce((total, sample) => total + sample, 0) / samples.length,
     min: sorted[0],
     p50: sorted[Math.floor(sorted.length / 2)],
+    p90: sorted[Math.floor(sorted.length * 0.9)],
     max: sorted[sorted.length - 1],
   };
 }
