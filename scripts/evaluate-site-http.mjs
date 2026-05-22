@@ -102,8 +102,11 @@ try {
     const html = await fetchRequiredText(origin, publicUrl(route.path), "text/html");
     const canonical = routeUrl(route.path);
     if (!html.includes(`<title>${route.title}</title>`)) fail(`HTTP ${route.path} missing route title.`);
+    if (!hasMetaContent(html, "name", "description", route.description)) fail(`HTTP ${route.path} missing route description.`);
     if (!html.includes(`rel="canonical" href="${canonical}"`)) fail(`HTTP ${route.path} missing route canonical.`);
+    if (!hasMetaContent(html, "property", "og:description", route.description)) fail(`HTTP ${route.path} missing route og:description.`);
     if (!html.includes(`property="og:url" content="${canonical}"`)) fail(`HTTP ${route.path} missing route og:url.`);
+    if (!hasMetaContent(html, "name", "twitter:description", route.description)) fail(`HTTP ${route.path} missing route twitter:description.`);
     if (/%BASE_URL%/.test(html)) fail(`HTTP ${route.path} contains an unexpanded Vite base placeholder.`);
 
     for (const asset of localAssetPaths(html)) seenAssets.add(asset);
@@ -139,4 +142,12 @@ function localAssetPaths(source) {
     source.matchAll(/\b(?:src|href)="([^"]+)"/g),
     (match) => match[1],
   ).filter((path) => path && !/^(?:https?:|mailto:|#)/.test(path));
+}
+
+function hasMetaContent(source, attribute, key, content) {
+  return new RegExp(`<meta\\s+${attribute}="${escapeRegExp(key)}"\\s+content="${escapeRegExp(content)}"`).test(source);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

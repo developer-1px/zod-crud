@@ -160,6 +160,8 @@ for (const pattern of [
   /property="og:title"/,
   /property="og:description"/,
   /name="twitter:card"/,
+  /name="twitter:title"/,
+  /name="twitter:description"/,
   /rel="canonical"/,
   /rel="icon"/,
   /rel="manifest"/,
@@ -173,15 +175,15 @@ if (!/<svg/.test(siteFavicon) || !/zod-crud/.test(siteManifest)) {
 }
 
 for (const route of [
-  ["/", "zod-crud - Headless JSON editing"],
-  ["/docs", "zod-crud API - zod-crud"],
-  ["/playground", "Workbench - zod-crud"],
-  ["/playground/outliner", "Outliner demo - zod-crud"],
-  ["/playground/mobile-cms", "Mobile CMS demo - zod-crud"],
-  ["/playground/api-collection", "API collection demo - zod-crud"],
+  ["/", "zod-crud - Headless JSON editing", "zod-crud is a Zod-guarded headless JSON editing engine for JSON Patch, JSON Pointer, JSONPath, selection, clipboard, and history."],
+  ["/docs", "zod-crud API - zod-crud", "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath."],
+  ["/playground", "Workbench - zod-crud", "Interactive zod-crud workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search."],
+  ["/playground/outliner", "Outliner demo - zod-crud", "Keyboard-first outliner demo showing zod-crud selection, clipboard, history, structure edits, and JSON document movement."],
+  ["/playground/mobile-cms", "Mobile CMS demo - zod-crud", "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history."],
+  ["/playground/api-collection", "API collection demo - zod-crud", "API collection demo showing request and response JSON editing, search, duplication, selection, and clipboard flows with zod-crud."],
 ]) {
-  if (!siteRoutes.some((item) => item.path === route[0] && item.title === route[1])) {
-    fail(`site routes: missing ${route[0]} ${route[1]}.`);
+  if (!siteRoutes.some((item) => item.path === route[0] && item.title === route[1] && item.description === route[2])) {
+    fail(`site routes: missing ${route[0]} ${route[1]} metadata.`);
   }
 }
 
@@ -191,7 +193,10 @@ for (const pattern of [
   /fileName: "sitemap\.xml"/,
   /site-routes\.json/,
   /routeHtml/,
+  /name="description"/,
+  /og:description/,
   /og:url/,
+  /twitter:description/,
 ]) {
   if (!pattern.test(siteViteConfig)) fail(`site vite config: missing ${pattern}.`);
 }
@@ -200,11 +205,11 @@ if (!/direct route entry/.test(siteShellTest) || !/Skip to content/.test(siteShe
   fail("site shell test: missing production navigation/accessibility coverage.");
 }
 
-if (!/site-routes\.json/.test(siteApp) || !/setRouteMetadata/.test(siteApp) || !/document\.title/.test(siteApp) || !/og:url/.test(siteApp) || !/canonicalUrl/.test(siteApp) || !/VITE_SITE_URL/.test(siteApp)) {
+if (!/site-routes\.json/.test(siteApp) || !/setRouteMetadata/.test(siteApp) || !/document\.title/.test(siteApp) || !/description/.test(siteApp) || !/og:description/.test(siteApp) || !/og:url/.test(siteApp) || !/twitter:description/.test(siteApp) || !/canonicalUrl/.test(siteApp) || !/VITE_SITE_URL/.test(siteApp)) {
   fail("site app: missing client-side route metadata updates.");
 }
 
-if (!/document\.title/.test(siteShellTest) || !/og:url/.test(siteShellTest) || !/canonical/.test(siteShellTest)) {
+if (!/document\.title/.test(siteShellTest) || !/name="description"/.test(siteShellTest) || !/og:description/.test(siteShellTest) || !/og:url/.test(siteShellTest) || !/twitter:description/.test(siteShellTest) || !/canonical/.test(siteShellTest)) {
   fail("site shell test: missing client-side route metadata coverage.");
 }
 
@@ -246,8 +251,12 @@ for (const pattern of [
   /validateSiteRoutes/,
   /routeFile/,
   /route title/,
+  /route description/,
   /route canonical/,
+  /route og:description/,
   /route og:url/,
+  /route twitter:description/,
+  /hasMetaContent/,
   /expectedSiteUrl/,
   /routeUrl/,
   /robots\.txt/,
@@ -267,8 +276,12 @@ for (const pattern of [
   /SITE_BASE/,
   /fetchRequiredText/,
   /localAssetPaths/,
+  /route description/,
   /route canonical/,
+  /route og:description/,
   /route og:url/,
+  /route twitter:description/,
+  /hasMetaContent/,
   /site HTTP evaluation ok/,
 ]) {
   if (!pattern.test(siteHttpEvaluator)) fail(`site HTTP evaluator: missing ${pattern}.`);
@@ -286,8 +299,12 @@ for (const pattern of [
   /readFileSync/,
   /site-routes\.json/,
   /validateSiteRoutes/,
+  /route description/,
   /route canonical/,
+  /route og:description/,
   /route og:url/,
+  /route twitter:description/,
+  /hasMetaContent/,
   /routeUrl/,
   /fetchText\(route\.path\)/,
 ]) {
@@ -303,6 +320,8 @@ for (const pattern of [
   /validateSiteRoutes/,
   /duplicate path/,
   /duplicate output file/,
+  /missing a description/,
+  /duplicate description/,
   /invalid group/,
   /overview route/,
   /routeFile/,

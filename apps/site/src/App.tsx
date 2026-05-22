@@ -11,6 +11,7 @@ type SiteRoute = {
   path: string;
   label: string;
   title: string;
+  description: string;
   group: "Start" | "Demos";
 };
 type Route = SiteRoute & { Component: ComponentType };
@@ -78,8 +79,12 @@ function setMetaContent(selector: string, attribute: "name" | "property", key: s
 function setRouteMetadata(route: Route): void {
   const url = canonicalUrl(route.path);
   document.title = route.title;
+  setMetaContent('meta[name="description"]', "name", "description", route.description);
   setMetaContent('meta[property="og:title"]', "property", "og:title", route.title);
+  setMetaContent('meta[property="og:description"]', "property", "og:description", route.description);
   setMetaContent('meta[property="og:url"]', "property", "og:url", url);
+  setMetaContent('meta[name="twitter:title"]', "name", "twitter:title", route.title);
+  setMetaContent('meta[name="twitter:description"]', "name", "twitter:description", route.description);
 
   let canonical = document.head.querySelector<HTMLLinkElement>('link[rel="canonical"]');
   if (!canonical) {

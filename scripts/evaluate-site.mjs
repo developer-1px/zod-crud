@@ -66,8 +66,11 @@ for (const route of routes) {
   const routeHtml = read(route.file);
   const canonical = routeUrl(route.path);
   if (!routeHtml.includes(`<title>${route.title}</title>`)) fail(`site dist ${route.file} missing route title.`);
+  if (!hasMetaContent(routeHtml, "name", "description", route.description)) fail(`site dist ${route.file} missing route description.`);
   if (!routeHtml.includes(`rel="canonical" href="${canonical}"`)) fail(`site dist ${route.file} missing route canonical.`);
+  if (!hasMetaContent(routeHtml, "property", "og:description", route.description)) fail(`site dist ${route.file} missing route og:description.`);
   if (!routeHtml.includes(`property="og:url" content="${canonical}"`)) fail(`site dist ${route.file} missing route og:url.`);
+  if (!hasMetaContent(routeHtml, "name", "twitter:description", route.description)) fail(`site dist ${route.file} missing route twitter:description.`);
   verifyLocalAssets(routeHtml, route.file);
 }
 
@@ -127,6 +130,14 @@ function localAssetPaths(source) {
     source.matchAll(/\b(?:src|href)="([^"]+)"/g),
     (match) => match[1],
   ).filter((path) => path && !/^(?:https?:|mailto:|#)/.test(path));
+}
+
+function hasMetaContent(source, attribute, key, content) {
+  return new RegExp(`<meta\\s+${attribute}="${escapeRegExp(key)}"\\s+content="${escapeRegExp(content)}"`).test(source);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function relativeDistPath(publicPath, label) {

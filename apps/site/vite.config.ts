@@ -86,12 +86,16 @@ function productionSiteAssets(): Plugin {
     },
   };
 
-  function routeHtml(indexHtml: string, route: { path: string; title: string }): string {
+  function routeHtml(indexHtml: string, route: { path: string; title: string; description: string }): string {
     const url = `${siteUrl}${route.path}`;
     return indexHtml
       .replace(/<title>.*?<\/title>/, `<title>${route.title}</title>`)
+      .replace(/(<meta\s+name="description"\s+content=")[^"]*(")/, `$1${route.description}$2`)
       .replace(/(<meta property="og:title" content=")[^"]*(" \/>)/, `$1${route.title}$2`)
+      .replace(/(<meta\s+property="og:description"\s+content=")[^"]*(")/, `$1${route.description}$2`)
       .replace(/(<meta property="og:url" content=")[^"]*(" \/>)/, `$1${url}$2`)
+      .replace(/(<meta name="twitter:title" content=")[^"]*(" \/>)/, `$1${route.title}$2`)
+      .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*(")/, `$1${route.description}$2`)
       .replace(/(<link rel="canonical" href=")[^"]*(" \/>)/, `$1${url}$2`);
   }
 }

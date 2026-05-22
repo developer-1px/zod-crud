@@ -3,36 +3,42 @@
     "path": "/",
     "label": "Overview",
     "title": "zod-crud - Headless JSON editing",
+    "description": "zod-crud is a Zod-guarded headless JSON editing engine for JSON Patch, JSON Pointer, JSONPath, selection, clipboard, and history.",
     "group": "Start"
   },
   {
     "path": "/docs",
     "label": "API reference",
     "title": "zod-crud API - zod-crud",
+    "description": "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.",
     "group": "Start"
   },
   {
     "path": "/playground",
     "label": "Workbench",
     "title": "Workbench - zod-crud",
+    "description": "Interactive zod-crud workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search.",
     "group": "Demos"
   },
   {
     "path": "/playground/outliner",
     "label": "Outliner",
     "title": "Outliner demo - zod-crud",
+    "description": "Keyboard-first outliner demo showing zod-crud selection, clipboard, history, structure edits, and JSON document movement.",
     "group": "Demos"
   },
   {
     "path": "/playground/mobile-cms",
     "label": "Mobile CMS",
     "title": "Mobile CMS demo - zod-crud",
+    "description": "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history.",
     "group": "Demos"
   },
   {
     "path": "/playground/api-collection",
     "label": "API collection",
     "title": "API collection demo - zod-crud",
+    "description": "API collection demo showing request and response JSON editing, search, duplication, selection, and clipboard flows with zod-crud.",
     "group": "Demos"
   }
 ]

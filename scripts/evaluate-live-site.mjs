@@ -44,11 +44,20 @@ async function checkOnce() {
     if (!routeHtml.includes(`<title>${route.title}</title>`)) {
       fail(`live ${route.path} shell is missing the route title.`);
     }
+    if (!hasMetaContent(routeHtml, "name", "description", route.description)) {
+      fail(`live ${route.path} shell is missing the route description.`);
+    }
     if (!routeHtml.includes(`rel="canonical" href="${canonical}"`)) {
       fail(`live ${route.path} shell is missing the route canonical.`);
     }
+    if (!hasMetaContent(routeHtml, "property", "og:description", route.description)) {
+      fail(`live ${route.path} shell is missing the route og:description.`);
+    }
     if (!routeHtml.includes(`property="og:url" content="${canonical}"`)) {
       fail(`live ${route.path} shell is missing the route og:url.`);
+    }
+    if (!hasMetaContent(routeHtml, "name", "twitter:description", route.description)) {
+      fail(`live ${route.path} shell is missing the route twitter:description.`);
     }
   }
 
@@ -68,6 +77,14 @@ async function checkOnce() {
 
 function routeUrl(path) {
   return path === "/" ? `${siteUrl}/` : `${siteUrl}${path}`;
+}
+
+function hasMetaContent(source, attribute, key, content) {
+  return new RegExp(`<meta\\s+${attribute}="${escapeRegExp(key)}"\\s+content="${escapeRegExp(content)}"`).test(source);
+}
+
+function escapeRegExp(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 let lastError = null;

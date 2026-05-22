@@ -11,6 +11,7 @@ export function validateSiteRoutes(routes, fail) {
   const files = new Set();
   const labels = new Set();
   const titles = new Set();
+  const descriptions = new Set();
 
   routes.forEach((route, index) => {
     if (!route || typeof route !== "object") {
@@ -30,6 +31,9 @@ export function validateSiteRoutes(routes, fail) {
     if (typeof route.title !== "string" || route.title.trim() === "") {
       fail(`site route ${route.path} is missing a title.`);
     }
+    if (typeof route.description !== "string" || route.description.trim() === "") {
+      fail(`site route ${route.path} is missing a description.`);
+    }
     if (!validGroups.has(route.group)) {
       fail(`site route ${route.path} has an invalid group.`);
     }
@@ -48,6 +52,9 @@ export function validateSiteRoutes(routes, fail) {
 
     if (titles.has(route.title)) fail(`site routes contain duplicate title ${route.title}.`);
     titles.add(route.title);
+
+    if (descriptions.has(route.description)) fail(`site routes contain duplicate description for ${route.path}.`);
+    descriptions.add(route.description);
   });
 
   if (routes[0]?.path !== "/") {
