@@ -364,6 +364,18 @@ doc.history.mergeLast({ mergeKey: "title" });
 
 selection 이동만으로는 history entry를 만들지 않습니다. document 변경 entry 안에 selection before/after가 같이 저장됩니다.
 
+## performance
+
+큰 문서의 hot path는 document facade인 `doc.patch`, `doc.commit`, `doc.canPatch`를 기준으로 둡니다. Public `applyPatch`는 외부 JSON boundary라서 입력 state 전체의 JSON 안전성을 확인합니다.
+
+빠른 document path는 현재 state가 trusted document state이고 schema가 plain structural Zod schema일 때만 탑니다. 대상은 refinement, transform, check가 없는 object, array, record, scalar schema입니다. 지원 edit는 independent non-root `replace`, array `add`/`remove`/`copy`/`move`, same-array `add`/`remove` batch입니다.
+
+`refine`, `superRefine`, transform, check가 있으면 의도적으로 full root schema validation으로 돌아갑니다.
+
+```sh
+npm run perf:core
+```
+
 ## can*
 
 `can*`는 boolean이 아닙니다. 실행 가능 여부와 실패 이유를 같은 모양으로 돌려줍니다.

@@ -140,6 +140,17 @@ describe("public docs consistency", () => {
     }
   });
 
+  test("document performance fast-path boundaries", () => {
+    for (const [name, source] of Object.entries(docs)) {
+      expect(source, `${name} missing public applyPatch boundary`).toMatch(/applyPatch[\s\S]*external JSON\s+boundary|applyPatch[\s\S]*외부 JSON boundary/);
+      expect(source, `${name} missing trusted document state`).toContain("trusted document state");
+      expect(source, `${name} missing plain structural schema`).toMatch(/plain\s+structural Zod schema/);
+      expect(source, `${name} missing fast path operations`).toMatch(/independent non-root[\s\S]*`replace`[\s\S]*same-array `add`\/`remove`/);
+      expect(source, `${name} missing full root validation fallback`).toContain("full root schema validation");
+      expect(source, `${name} missing perf benchmark command`).toContain("npm run perf:core");
+    }
+  });
+
   test("documents blind outliner implementation gotchas", () => {
     expect(docs.readme).toMatch(/ReadResult/);
     expect(docs.site).toMatch(/결과 객체/);

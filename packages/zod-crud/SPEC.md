@@ -282,7 +282,15 @@ state, but repeated `doc.patch(...)` calls still validate repeatedly.
 
 `history.canUndo` and `history.canRedo` are booleans for UI disabled states. `canUndo()` and `canRedo()` return reasoned capability results.
 
-## 9. Schema
+## 9. Performance
+
+Large-document hot paths should use the document facade: `doc.patch`, `doc.commit`, and `doc.canPatch`. Public `applyPatch` is an external JSON boundary and checks the whole input state for JSON safety.
+
+Fast document paths apply only for trusted document state plus a plain structural Zod schema: objects, arrays, records, and scalar validators without refinements, transforms, or checks. Covered edits are independent non-root `replace`, array `add`/`remove`/`copy`/`move`, and same-array `add`/`remove` batches. Schemas with `refine`, `superRefine`, transforms, or other checks intentionally use full root schema validation.
+
+Use `npm run perf:core` to measure core edit, capability-check, batch, undo, and redo workloads.
+
+## 10. Schema
 
 Every mutation is validated against the provided Zod schema. Failed mutations are atomic: state, selection, clipboard, and history are not partially updated.
 
@@ -292,7 +300,7 @@ doc.schema.describe("/items/-", "insert");
 doc.schema.accepts("/items/-", candidate, "insert");
 ```
 
-## 10. Testing Contract
+## 11. Testing Contract
 
 Public behavior tests must enter through root exports and the `JSONDocument` surface. Tests should not assert private source structure. Internal modules may exist for implementation cohesion, but they are not the external contract.
 

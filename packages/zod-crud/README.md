@@ -388,6 +388,25 @@ Use `history.transaction` only when each step must observe the intermediate
 document state. It groups history entries, but it does not turn repeated
 `doc.patch(...)` calls into one schema validation pass.
 
+## Performance
+
+For large documents, keep hot UI paths on the document facade: `doc.patch`,
+`doc.commit`, and `doc.canPatch`. Public `applyPatch` is an external JSON
+boundary and checks the whole input state for JSON safety.
+
+Fast document paths apply when the current state is trusted document state and
+the schema is a plain structural Zod schema: objects, arrays, records, and
+scalar validators without refinements, transforms, or checks. Covered edits are
+independent non-root `replace`, array `add`/`remove`/`copy`/`move`, and
+same-array `add`/`remove` batches. Schemas with `refine`, `superRefine`,
+transforms, or other checks intentionally use full root schema validation.
+
+Measure core workloads locally with:
+
+```sh
+npm run perf:core
+```
+
 ## Capability Checks
 
 `can*` methods return a result object so UI and tests can inspect the reason.
