@@ -67,6 +67,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const valuesTrusted = options.valuesTrusted === true;
   const sameArrayFieldReplace = applySameArrayFieldReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
+  const sameArrayElementReplace = applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation(schema, state, ops);
+  if (sameArrayElementReplace) return sameArrayElementReplace;
   const rootObjectReplace = applyRootObjectReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (rootObjectReplace) return rootObjectReplace;
   const rootRecordAdd = applyRootRecordAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);

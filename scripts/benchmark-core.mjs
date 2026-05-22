@@ -69,6 +69,11 @@ for (const size of sizes) {
     path: `/items/${index}`,
     value: makeItem(size + index),
   }));
+  const repeatedItemReplaceOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "replace",
+    path: "/items/0",
+    value: makeItem(size + index),
+  }));
   const insertedItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => makeItem(size + index));
   const mixedArrayOps = [
     ...insertedItems.slice(0, Math.floor(insertedItems.length / 2)).map((item) => ({
@@ -271,6 +276,34 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch item replace batch ${itemReplaceBatchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(itemReplaceBatchOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench(`doc.patch repeated item replace batch ${repeatedItemReplaceOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(repeatedItemReplaceOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    const result = doc.patch(repeatedItemReplaceOps);
+    if (!result.ok) throw new Error(`setup repeated item replace batch failed: ${JSON.stringify(result)}`);
+    benchWithSetup(`history undo repeated item replace batch ${repeatedItemReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canUndo) {
+        const redone = doc.history.redo();
+        if (!redone) throw new Error("repeated item replace redo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo repeated item replace batch ${repeatedItemReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canRedo) {
+        const undone = doc.history.undo();
+        if (!undone) throw new Error("repeated item replace undo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
   }
 
   {

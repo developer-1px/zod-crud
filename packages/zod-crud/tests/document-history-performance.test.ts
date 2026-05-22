@@ -908,9 +908,10 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
-  test("repeated same-array element replace history restores intermediate values", () => {
+  test("plain structural repeated same-array element replace batches stay on local validation", () => {
+    const Item = z.object({ id: z.string(), done: z.boolean() });
     const Schema = z.object({
-      items: z.array(z.object({ id: z.string(), done: z.boolean() })),
+      items: z.array(Item),
     });
     const doc = createJSONDocument(Schema, {
       items: [
@@ -918,19 +919,47 @@ describe("doc.history performance contract", () => {
         { id: "b", done: false },
       ],
     }, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+    const originalItemSafeParse = Item.safeParse.bind(Item);
+    let itemParses = 0;
+    Item.safeParse = ((value: unknown) => {
+      itemParses += 1;
+      return originalItemSafeParse(value);
+    }) as typeof Item.safeParse;
 
     expect(doc.patch([
-      { op: "replace", path: "/items/0", value: { id: "a2", done: true } },
-      { op: "replace", path: "/items/0", value: { id: "a3", done: false } },
+      { op: "replace", path: "/items/0", value: { id: "a1", done: true } },
+      { op: "replace", path: "/items/0", value: { id: "a2", done: false } },
+      { op: "replace", path: "/items/0", value: { id: "a3", done: true } },
+      { op: "replace", path: "/items/1", value: { id: "b1", done: true } },
     ])).toEqual({ ok: true });
-    expect(doc.value.items[0]).toEqual({ id: "a3", done: false });
+    expect(doc.value.items).toEqual([
+      { id: "a3", done: true },
+      { id: "b1", done: true },
+    ]);
+    expect(rootParses).toBe(0);
+    expect(itemParses).toBe(0);
+
     expect(doc.history.undo()).toBe(true);
     expect(doc.value.items).toEqual([
       { id: "a", done: false },
       { id: "b", done: false },
     ]);
+    expect(rootParses).toBe(0);
+    expect(itemParses).toBe(0);
+
     expect(doc.history.redo()).toBe(true);
-    expect(doc.value.items[0]).toEqual({ id: "a3", done: false });
+    expect(doc.value.items).toEqual([
+      { id: "a3", done: true },
+      { id: "b1", done: true },
+    ]);
+    expect(rootParses).toBe(0);
+    expect(itemParses).toBe(0);
   });
 
   test("object key removals fall back to full validation", () => {

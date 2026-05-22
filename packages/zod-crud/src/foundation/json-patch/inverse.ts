@@ -183,12 +183,9 @@ function computeSameArrayElementReplaceInverses(
   let parent: string | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
-  let previousIndex: number | null = null;
-  let monotonicDirection: -1 | 0 | 1 = 0;
-  const appliedIndexes: number[] = [];
-  const inverses = new Array<JSONPatchOperation>(ops.length);
+  const inverses: JSONPatchOperation[] = [];
 
-  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+  for (let opIndex = ops.length - 1; opIndex >= 0; opIndex -= 1) {
     if (!(opIndex in ops)) return null;
     const op = ops[opIndex]!;
     if (op.op !== "replace" || typeof op.path !== "string" || op.path === "") return null;
@@ -204,34 +201,15 @@ function computeSameArrayElementReplaceInverses(
       return null;
     }
 
-    if (seenIndexes === null) {
-      const direction = previousIndex === null
-        ? 0
-        : indexDirection(previousIndex, location.index);
-      if (direction === 0 && previousIndex !== null) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return null;
-        seenIndexes.add(location.index);
-      } else if (monotonicDirection === 0) {
-        monotonicDirection = direction;
-      } else if (direction !== monotonicDirection) {
-        seenIndexes = new Set(appliedIndexes);
-        if (seenIndexes.has(location.index)) return null;
-        seenIndexes.add(location.index);
-      }
-      previousIndex = location.index;
-    } else {
-      if (seenIndexes.has(location.index)) return null;
-      seenIndexes.add(location.index);
-    }
-
     if (arrayValue === null || location.index < 0 || location.index >= arrayValue.length) return null;
-    inverses[ops.length - opIndex - 1] = {
+    if (seenIndexes === null) seenIndexes = new Set();
+    else if (seenIndexes.has(location.index)) continue;
+    seenIndexes.add(location.index);
+    inverses.push({
       op: "replace",
       path: op.path,
       value: arrayValue[location.index],
-    };
-    appliedIndexes.push(location.index);
+    });
   }
 
   return parent === null || arrayValue === null ? null : { ok: true, inverses };
@@ -584,10 +562,6 @@ function parseSimpleArrayElementPath(path: string): { parent: string; index: num
 function numericSegment(segment: string): number | null {
   if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
   return Number(segment);
-}
-
-function indexDirection(previous: number, current: number): -1 | 0 | 1 {
-  return current > previous ? 1 : current < previous ? -1 : 0;
 }
 
 function readValueAtPointer(
