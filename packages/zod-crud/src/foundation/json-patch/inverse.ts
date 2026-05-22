@@ -54,6 +54,12 @@ export function computeInverses(
   return { ok: true, inverses: out };
 }
 
+type SameArrayStructuralOp =
+  | { op: "add"; path: string; index: number | "-"; value: unknown }
+  | { op: "remove"; path: string; index: number }
+  | { op: "copy"; from: string; path: string; fromIndex: number; index: number | "-" }
+  | { op: "move"; from: string; path: string; fromIndex: number; index: number | "-" };
+
 function computeSameArrayStructuralInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
@@ -61,12 +67,8 @@ function computeSameArrayStructuralInverses(
   if (ops.length < 1) return null;
 
   let parent: string | null = null;
-  const parsed: Array<
-    | { op: "add"; path: string; index: number | "-"; value: unknown }
-    | { op: "remove"; path: string; index: number }
-    | { op: "copy"; from: string; path: string; fromIndex: number; index: number | "-" }
-    | { op: "move"; from: string; path: string; fromIndex: number; index: number | "-" }
-  > = [];
+  let hasRemove = false;
+  const parsed: SameArrayStructuralOp[] = [];
 
   for (const op of ops) {
     if (op.op !== "add" && op.op !== "remove" && op.op !== "copy" && op.op !== "move") return null;
@@ -81,6 +83,7 @@ function computeSameArrayStructuralInverses(
       parsed.push({ op: "add", path: op.path, index: location.index, value: op.value });
     } else if (op.op === "remove") {
       if (location.index === "-") return null;
+      hasRemove = true;
       parsed.push({ op: "remove", path: op.path, index: location.index });
     } else {
       const fromLocation = arrayLocation(op.from);
@@ -98,6 +101,10 @@ function computeSameArrayStructuralInverses(
   if (parent === null) return null;
   const array = readAt(state, parsePointer(parent));
   if (!array.ok || !Array.isArray(array.value)) return null;
+
+  if (!hasRemove) {
+    return computeSameArrayStructuralInversesWithoutRemovedValues(parent, array.value.length, parsed);
+  }
 
   const cur = array.value.slice();
   const inverses: JSONPatchOperation[] = [];
@@ -144,6 +151,41 @@ function computeSameArrayStructuralInverses(
       if (index < 0 || index > cur.length) return null;
       cur.splice(index, 0, value);
     }
+  }
+
+  return { ok: true, inverses };
+}
+
+function computeSameArrayStructuralInversesWithoutRemovedValues(
+  parent: string,
+  initialLength: number,
+  ops: ReadonlyArray<SameArrayStructuralOp>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  let length = initialLength;
+  const inverses: JSONPatchOperation[] = [];
+
+  for (const op of ops) {
+    if (op.op === "remove") return null;
+    if (op.op === "add") {
+      const index = op.index === "-" ? length : op.index;
+      if (index < 0 || index > length) return null;
+      inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
+      length += 1;
+      continue;
+    }
+    if (op.op === "copy") {
+      if (op.fromIndex < 0 || op.fromIndex >= length) return null;
+      const index = op.index === "-" ? length : op.index;
+      if (index < 0 || index > length) return null;
+      inverses.unshift({ op: "remove", path: appendSegment(parent, index) });
+      length += 1;
+      continue;
+    }
+
+    if (op.fromIndex < 0 || op.fromIndex >= length) return null;
+    const index = op.index === "-" ? length : op.index;
+    if (index < 0 || index >= length) return null;
+    inverses.unshift({ op: "move", from: appendSegment(parent, index), path: op.from });
   }
 
   return { ok: true, inverses };
