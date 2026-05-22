@@ -1,5 +1,7 @@
 import { cloneJson, cloneTrustedJson } from "../../foundation/json.js";
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
 export type RekeyStrategy = "suffix" | "uuid" | ((value: unknown, ctx: RekeyContext) => string);
 
 export interface RekeyContext {
@@ -80,8 +82,8 @@ function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): R
     const field = fields[0]!;
     const existing = new Set<string>();
     walk(value, (entry) => {
-      const current = entry[field];
-      if (isScalar(current)) existing.add(String(current));
+      const current = scalarText(entry[field]);
+      if (current !== null) existing.add(current);
     });
     return [{ field, existing }];
   }
@@ -91,8 +93,8 @@ function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): R
   walk(value, (entry) => {
     for (let index = 0; index < existing.length; index += 1) {
       const { field, existing: values } = existing[index]!;
-      const value = entry[field];
-      if (isScalar(value)) values.add(String(value));
+      const value = scalarText(entry[field]);
+      if (value !== null) values.add(value);
     }
   });
 
@@ -114,8 +116,8 @@ function collectSuffixExistingValues(
   walk(payload, (entry) => {
     for (let index = 0; index < suffixFields.length; index += 1) {
       const { field, bases } = suffixFields[index]!;
-      const current = entry[field];
-      if (isScalar(current)) bases.add(String(current));
+      const current = scalarText(entry[field]);
+      if (current !== null) bases.add(current);
     }
   });
 
@@ -132,10 +134,13 @@ function collectSuffixExistingValues(
 
   if (suffixFields.length === 1) {
     const suffixField = suffixFields[0]!;
+    if (suffixField.bases.size === 1) {
+      collectSingleSuffixField(state, suffixField);
+      return suffixFields;
+    }
     walk(state, (entry) => {
-      const current = entry[suffixField.field];
-      if (!isScalar(current)) return;
-      const text = String(current);
+      const text = scalarText(entry[suffixField.field]);
+      if (text === null) return;
       if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
     });
     return suffixFields;
@@ -144,14 +149,27 @@ function collectSuffixExistingValues(
   walk(state, (entry) => {
     for (let index = 0; index < suffixFields.length; index += 1) {
       const suffixField = suffixFields[index]!;
-      const current = entry[suffixField.field];
-      if (!isScalar(current)) continue;
-      const text = String(current);
+      const text = scalarText(entry[suffixField.field]);
+      if (text === null) continue;
       if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
     }
   });
 
   return suffixFields;
+}
+
+function collectSingleSuffixField(state: unknown, suffixField: SuffixRekeyField): void {
+  const base = suffixField.bases.values().next().value as string;
+  const exact = `${base}-copy`;
+  const nested = `${exact}-`;
+  const field = suffixField.field;
+  const existing = suffixField.existing;
+  walk(state, (entry) => {
+    const value = scalarText(entry[field]);
+    if (value !== null && (value === base || value === exact || value.startsWith(nested))) {
+      existing.add(value);
+    }
+  });
 }
 
 function matchesSuffixCandidate(value: string, field: SuffixRekeyField): boolean {
@@ -172,9 +190,9 @@ function rekeyValue(
     const { field, existing } = fields[0]!;
     walk(value, (entry) => {
       const current = entry[field];
-      if (!isScalar(current)) return;
+      const currentText = scalarText(current);
+      if (currentText === null) return;
 
-      const currentText = String(current);
       if (!existing.has(currentText)) {
         existing.add(currentText);
         return;
@@ -191,9 +209,9 @@ function rekeyValue(
     for (let index = 0; index < fields.length; index += 1) {
       const { field, existing } = fields[index]!;
       const current = entry[field];
-      if (!isScalar(current)) continue;
+      const currentText = scalarText(current);
+      if (currentText === null) continue;
 
-      const currentText = String(current);
       if (!existing.has(currentText)) {
         existing.add(currentText);
         continue;
@@ -247,7 +265,7 @@ function walk(value: unknown, visit: (value: Record<string, unknown>) => void): 
   if (isRecord(value)) {
     visit(value);
     for (const key in value) {
-      if (Object.prototype.hasOwnProperty.call(value, key)) {
+      if (hasOwn.call(value, key)) {
         const item = value[key];
         if (item !== null && typeof item === "object") walk(item, visit);
       }
@@ -259,6 +277,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function isScalar(value: unknown): value is string | number | boolean {
-  return typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+function scalarText(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return null;
 }
