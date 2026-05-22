@@ -219,6 +219,25 @@ describe("createJSONDocument public interface", () => {
     expect((read.payload as Record<string, unknown>).__proto__).toEqual({ safe: true });
   });
 
+  test("clipboard write clones large external array payloads", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const payload = Array.from({ length: 1024 }, (_, index) => ({
+      id: `id-${index}`,
+      nested: { value: index },
+    }));
+
+    expect(doc.clipboard.write(payload)).toEqual({ ok: true });
+    payload[0]!.nested.value = -1;
+
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect((read.payload as typeof payload).slice(0, 2)).toEqual([
+      { id: "id-0", nested: { value: 0 } },
+      { id: "id-1", nested: { value: 1 } },
+    ]);
+  });
+
   test("clipboard write rejects non-JSON payload shapes", () => {
     const accessor: Record<string, unknown> = { ok: true };
     Object.defineProperty(accessor, "computed", {

@@ -8,6 +8,8 @@ export type JSONValue =
   | { readonly [key: string]: JSONValue }
   | ReadonlyArray<JSONValue>;
 
+const LARGE_ARRAY_CLONE_THRESHOLD = 1024;
+
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);
 }
@@ -171,6 +173,12 @@ export function cloneJson<T>(value: T): T {
 }
 
 export function cloneJsonSerializable<T>(value: T): CloneJsonResult<T> {
+  if (Array.isArray(value) && value.length >= LARGE_ARRAY_CLONE_THRESHOLD) {
+    const reason = jsonSerializableErrorFast(value);
+    return reason === null
+      ? { ok: true, value: cloneTrustedJson(value) as T }
+      : cloneJsonSerializableDetailed(value);
+  }
   const fast = cloneJsonSerializableFast(value);
   return fast.ok ? fast : cloneJsonSerializableDetailed(value);
 }
