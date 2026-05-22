@@ -287,12 +287,18 @@ export function applyAcceptedPatch<T>(
     }
   }
 
+  const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, true);
+  if (arrayReplaceFast.handled) {
+    return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
+  }
+
   return applyTrustedPatch(state, ops);
 }
 
 function applySameArrayFieldReplacePatch(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
 ): FastPatchResult {
   if (ops.length < 2) return { handled: false };
 
@@ -319,7 +325,7 @@ function applySameArrayFieldReplacePatch(
     else if (!sameSegments(arraySegments, nextArraySegments)) return { handled: false };
 
     if (seenIndexes.has(location.index)) return { handled: false };
-    if (jsonSerializableError(normalized.value) !== null) return { handled: false };
+    if (!valuesTrusted && jsonSerializableError(normalized.value) !== null) return { handled: false };
     seenIndexes.add(location.index);
     items.push({ op: normalized, index: location.index, key: location.key, value: normalized.value });
   }
