@@ -81,6 +81,35 @@ describe("createJSONDocument public interface", () => {
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
   });
 
+  test("rekeys suffix duplicates against actual suffix candidates", () => {
+    const rekey = { fields: ["id"], strategy: "suffix" as const };
+    const unrelatedSuffix = createJSONDocument(Schema, {
+      ...initial,
+      items: [
+        { id: "a", name: "A" },
+        { id: "a-copy-x", name: "AX" },
+        { id: "b", name: "B" },
+      ],
+    });
+    const realSuffix = createJSONDocument(Schema, {
+      ...initial,
+      items: [
+        { id: "a", name: "A" },
+        { id: "a-copy", name: "AC" },
+        { id: "b", name: "B" },
+      ],
+    });
+
+    expect(unrelatedSuffix.duplicate("/items/0", { rekey })).toMatchObject({
+      ok: true,
+      applied: [{ op: "add", path: "/items/1", value: { id: "a-copy", name: "A" } }],
+    });
+    expect(realSuffix.duplicate("/items/0", { rekey })).toMatchObject({
+      ok: true,
+      applied: [{ op: "add", path: "/items/1", value: { id: "a-copy-2", name: "A" } }],
+    });
+  });
+
   test("keeps reads and query separate from pointer-based patching", () => {
     const doc = createJSONDocument(Schema, initial);
 

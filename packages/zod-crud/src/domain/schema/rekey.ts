@@ -25,6 +25,11 @@ interface RekeyField {
   existing: Set<string>;
 }
 
+interface SuffixRekeyField extends RekeyField {
+  bases: Set<string>;
+  prefixes: Array<{ exact: string; nested: string }>;
+}
+
 export function rekeyPayload(
   payload: unknown,
   state: unknown,
@@ -36,8 +41,10 @@ export function rekeyPayload(
   const fields = uniqueFields(options.fields);
   if (fields.length === 0) return payload;
 
-  const existing = collectExistingValues(state, fields);
   const next = executionOptions.trustedPayload ? cloneTrustedJson(payload) : cloneJson(payload);
+  const existing = options.strategy === "suffix"
+    ? collectSuffixExistingValues(state, next, fields)
+    : collectExistingValues(state, fields);
   rekeyValue(next, existing, options.strategy);
   return next;
 }
@@ -90,6 +97,70 @@ function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): R
   });
 
   return existing;
+}
+
+function collectSuffixExistingValues(
+  state: unknown,
+  payload: unknown,
+  fields: ReadonlyArray<string>,
+): RekeyField[] {
+  const suffixFields = fields.map((field): SuffixRekeyField => ({
+    field,
+    existing: new Set(),
+    bases: new Set(),
+    prefixes: [],
+  }));
+
+  walk(payload, (entry) => {
+    for (let index = 0; index < suffixFields.length; index += 1) {
+      const { field, bases } = suffixFields[index]!;
+      const current = entry[field];
+      if (isScalar(current)) bases.add(String(current));
+    }
+  });
+
+  let hasBases = false;
+  for (const field of suffixFields) {
+    if (field.bases.size === 0) continue;
+    hasBases = true;
+    field.prefixes = Array.from(field.bases, (base) => {
+      const exact = `${base}-copy`;
+      return { exact, nested: `${exact}-` };
+    });
+  }
+  if (!hasBases) return suffixFields;
+
+  if (suffixFields.length === 1) {
+    const suffixField = suffixFields[0]!;
+    walk(state, (entry) => {
+      const current = entry[suffixField.field];
+      if (!isScalar(current)) return;
+      const text = String(current);
+      if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
+    });
+    return suffixFields;
+  }
+
+  walk(state, (entry) => {
+    for (let index = 0; index < suffixFields.length; index += 1) {
+      const suffixField = suffixFields[index]!;
+      const current = entry[suffixField.field];
+      if (!isScalar(current)) continue;
+      const text = String(current);
+      if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
+    }
+  });
+
+  return suffixFields;
+}
+
+function matchesSuffixCandidate(value: string, field: SuffixRekeyField): boolean {
+  if (field.bases.has(value)) return true;
+  for (let index = 0; index < field.prefixes.length; index += 1) {
+    const prefix = field.prefixes[index]!;
+    if (value === prefix.exact || value.startsWith(prefix.nested)) return true;
+  }
+  return false;
 }
 
 function rekeyValue(
