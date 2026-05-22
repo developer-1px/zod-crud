@@ -34,6 +34,12 @@ export interface ApplyResult<S extends z.ZodTypeAny> {
   applied: ReadonlyArray<JSONPatchOperation>;
 }
 
+interface TrustedApplyResult<T> {
+  state: T;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 const ok: JSONResult = { ok: true };
 const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult => {
   const r: { ok: false; code: ErrorCode; reason?: string; pointer?: Pointer } = { ok: false, code };
@@ -109,4 +115,42 @@ export function applyPatch<S extends z.ZodTypeAny>(
   if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   // #57 structural sharing: withMutated 이미 touched path 만 spread. parsed.data 대신 cur 반환.
   return { state: cur as z.output<S>, result: ok, applied: normalized };
+}
+
+// Internal replay path for history entries that were already accepted by
+// applyPatch. It keeps RFC 6902 atomicity but skips schema revalidation.
+export function applyTrustedPatch<T>(
+  state: T,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): TrustedApplyResult<T> {
+  if (!Array.isArray(ops)) {
+    return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
+  }
+  let cur: unknown = state;
+  const normalized: JSONPatchOperation[] = [];
+  for (let i = 0; i < ops.length; i++) {
+    if (!(i in ops)) {
+      return { state, result: fail("invalid_pointer", `op[${i}]: op must be object`), applied: [] };
+    }
+    const shape = validateOperationShape(ops[i]!);
+    if (shape) {
+      return {
+        state,
+        result: fail(shape.error, `op[${i}]: ${shape.reason}`),
+        applied: [],
+      };
+    }
+    const n = normalizeOp(ops[i]!, cur);
+    normalized.push(n);
+    const r = applyOpRaw(cur, n);
+    if ("error" in r) {
+      return {
+        state,
+        result: fail(r.error, r.reason ? `op[${i}]: ${r.reason}` : `op[${i}]`, r.pointer),
+        applied: [],
+      };
+    }
+    cur = r.state;
+  }
+  return { state: cur as T, result: ok, applied: normalized };
 }

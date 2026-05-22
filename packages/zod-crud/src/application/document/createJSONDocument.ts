@@ -160,7 +160,7 @@ export function createJSONDocument<S extends z.ZodType>(
   if (selectionEnabled && options.onChange !== undefined) {
     createSelectionOptions.onChange = options.onChange;
   }
-  const selectionState = createSelection(rawOps, createSelectionOptions);
+  const selectionState = createSelection<z.output<S>>(rawOps, createSelectionOptions);
   rawOps.subscribe((applied) => {
     lastPatch = [...applied];
   });
@@ -256,7 +256,7 @@ export function createJSONDocument<S extends z.ZodType>(
     if (direction === "undo") entry.selectionAfter = snapSelection();
     isRestoring = true;
     try {
-      const r = rawOps.patch(direction === "undo" ? entry.inverse : entry.forward);
+      const r = rawOps.trustedPatch(direction === "undo" ? entry.inverse : entry.forward);
       if (!r.ok) return false;
     } catch {
       return false;

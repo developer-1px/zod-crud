@@ -20,10 +20,11 @@ Each loop scores only the axis it tries to improve.
 | State observability | Selection, clipboard, result, state, and patch effects are inspectable after each action. |
 | LLM copyability | An LLM can copy an example without adding commit-after-mutation or `{ at }` mistakes. |
 | Runtime health | Typecheck, tests, build, or browser checks cover the changed surface. |
+| Performance regression | Core editing workloads have repeatable local measurements and targeted tests for optimized paths. |
 
 ## Progress
 
-26 / 100 loops complete.
+27 / 100 loops complete.
 
 | Loop | Evaluate | Execute | Score |
 | --- | --- | --- | --- |
@@ -53,11 +54,12 @@ Each loop scores only the axis it tries to improve.
 | 024 | Markdown table rendering was guarded by the component test, but the release docs evaluator did not know that table rendering is part of the API docs demo contract. | Added `docs:evaluate` checks for workbench table block support, `<table>` rendering, and the table role assertion in the workbench test. | Runtime health: 5 -> 5 for docs demo release gating. Evidence: `scripts/evaluate-docs.mjs`; `npm run docs:evaluate` passed. |
 | 025 | `JSONDocument<T>` exposes `canFind(jsonpath)`, but README, site docs, `llms.txt`, and the demo `can*` controls omitted it. That made the can* family non-MECE and hid query validation. | Added `canFind` to README, site docs, `llms.txt`, the workbench `doc.can*` group, component tests, docs consistency tests, and `docs:evaluate`. | API correctness: 5 -> 5 with a real public-interface omission fixed. Task discoverability evidence: stronger. Evidence: `packages/zod-crud/README.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx`; `apps/site/tests/docs-consistency.test.ts`; `apps/site/tests/interface-workbench.test.tsx`; `scripts/evaluate-docs.mjs`; `npm run typecheck -w @zod-crud/site`, `npm test -w @zod-crud/site`, and `npm run docs:evaluate` passed. |
 | 026 | The final source layout changed the mental model, but release-facing docs did not yet share one SSOT for root entrypoints, internal concept layers, and the removed extra public layer plus React indirection. | Added final release notes, documented the source-layout SSOT across README, SPEC, site docs, `llms.txt`, and the API usage gap ledger, then made docs consistency and `docs:evaluate` reject stale source-layout paths. | API correctness evidence: stronger for import boundaries. Runtime health: 5 -> 5 for source-layout drift. Evidence: `docs/release-notes.md`; `packages/zod-crud/README.md`; `packages/zod-crud/SPEC.md`; `apps/site/src/docs/zod-crud-concepts.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `docs/api-usage-gaps.md`; `apps/site/tests/docs-consistency.test.ts`; `scripts/evaluate-docs.mjs`; `npm test -w @zod-crud/site`, `npm run docs:evaluate`, and `npm run verify` passed. |
+| 027 | Large core editing workloads had no repeatable local measurement, and history undo/redo revalidated the whole Zod schema even though entries were generated from already accepted patches. That made large batch replay slower than necessary and left future performance work without a baseline. | Added `scripts/benchmark-core.mjs` plus `npm run perf:core`; added an internal trusted history replay path that keeps patch atomicity but skips schema revalidation for undo/redo; added a regression test proving undo/redo does not re-run whole-schema validation. | Performance regression: 0 -> 2. Runtime health evidence: stronger for history replay. Evidence: `scripts/benchmark-core.mjs`; `packages/zod-crud/src/foundation/json-patch/index.ts`; `packages/zod-crud/src/application/document/createJSON.ts`; `packages/zod-crud/src/application/document/createJSONDocument.ts`; `packages/zod-crud/tests/document-history-performance.test.ts`; `npm run typecheck -w zod-crud`, targeted history tests, and `npm run perf:core` passed. Current benchmark snapshot: 10k item undo/redo batch 1000 around 3ms; 50k item undo/redo batch 1000 around 75-80ms; individual 100 patches on 50k items around 11s. |
 
 ## Next Candidates
 
 | Loop | Candidate |
 | --- | --- |
-| 027 | Add README smoke coverage for the new selection and history snippets without making docs too heavy. |
-| 028 | Re-run a blind API usage task against only site docs and record pass/fail patterns. |
-| 029 | Generate a compact public API checklist from source types and compare it to docs/demo coverage. |
+| 028 | Add README smoke coverage for the new selection and history snippets without making docs too heavy. |
+| 029 | Re-run a blind API usage task against only site docs and record pass/fail patterns. |
+| 030 | Measure and reduce the remaining large-doc cost of repeated individual `doc.patch` calls. |

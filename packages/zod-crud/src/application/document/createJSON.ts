@@ -5,6 +5,7 @@ import type * as z from "zod";
 import {
   applyOperation,
   applyPatch,
+  applyTrustedPatch,
   type JSONPatchOperation,
   type JSONResult,
 } from "../../foundation/json-patch/index.js";
@@ -26,12 +27,16 @@ interface CreateJSONOptions extends ErrorPolicy {
 
 interface JSONState<T> {
   readonly value: T;
-  readonly ops: JSONOps<T>;
+  readonly ops: TrustedJSONOps<T>;
   subscribe(listener: JSONChangeListener): () => void;
 }
 
 interface HeadlessJSONState<T> extends JSONState<T> {
   dispose(): void;
+}
+
+interface TrustedJSONOps<T> extends JSONOps<T> {
+  trustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 }
 
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
@@ -72,6 +77,18 @@ export function createJSON<S extends z.ZodType>(
     notify(applied.applied, metadata);
     return applied.result;
   };
+  const dispatchTrusted = (
+    operations: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ): JSONResult => {
+    const before = state;
+    const applied = applyTrustedPatch(before, operations);
+    if (!applied.result.ok) return handleResult(policy, "patch", applied.result);
+    if (applied.state === before) return applied.result;
+    state = applied.state;
+    notify(applied.applied, metadata);
+    return applied.result;
+  };
 
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
 
@@ -89,7 +106,7 @@ export function createJSON<S extends z.ZodType>(
     return { ok: true };
   };
 
-  const ops: JSONOps<z.output<S>> = {
+  const ops: TrustedJSONOps<z.output<S>> = {
     add(path, value) {
       return single({ op: "add", path: path as Pointer, value });
     },
@@ -112,6 +129,9 @@ export function createJSON<S extends z.ZodType>(
     },
     patch(operations, metadata) {
       return dispatch("patch", operations, metadata);
+    },
+    trustedPatch(operations, metadata) {
+      return dispatchTrusted(operations, metadata);
     },
     load(value) {
       return replaceRoot("load", value);
