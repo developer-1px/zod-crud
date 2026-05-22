@@ -361,6 +361,7 @@ export function createJSONDocument<S extends z.ZodType>(
     schema,
     ops,
     previewPatch: rawOps.previewPatch,
+    getStateJsonTrusted: () => rawOps.stateJsonTrusted,
     history: historyControls,
     selectionRef,
   });
@@ -368,6 +369,7 @@ export function createJSONDocument<S extends z.ZodType>(
     schema,
     getState: () => rawOps.state,
     ops,
+    previewPatch: rawOps.previewPatch,
     getSelectionSource: () => selectionState.selectedSource,
     getSelectionTarget: () => selectionState.primaryPointer,
     getAppliedPatch: () => lastPatch,

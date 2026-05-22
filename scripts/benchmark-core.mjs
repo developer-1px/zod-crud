@@ -101,6 +101,18 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canCopy /items", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.canCopy("/items"));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canCut last item", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.canCut(`/items/${size - 1}`));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.copy /items", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.copy("/items"));
   }

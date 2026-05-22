@@ -4,12 +4,12 @@
 
 import type * as z from "zod";
 import { cloneTrustedJson, jsonSerializableError } from "../../foundation/json.js";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
 import type { PointerSourceError } from "../../foundation/json-pointer/sourceSet.js";
-import { preFlight, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
 import type { ClipboardSource } from "./copy.js";
 
 interface CutOk<T> {
@@ -32,6 +32,8 @@ export interface CutError {
 
 interface CutOptions {
   trusted?: boolean;
+  clonePayload?: boolean;
+  previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
 }
 
 export function cut<S extends z.ZodType>(
@@ -54,13 +56,15 @@ export function cut<S extends z.ZodType>(
   // 2) RFC 6902 remove patch 를 preFlight gate 통과시킨다.
   // 같은 array parent 의 index shift 를 피하려고 patch 적용 순서만 뒤에서 앞으로 정렬한다.
   const patch: JSONPatchOperation[] = removePlan.patch;
-  const r = preFlight(schema, state, patch);
+  const r = options.previewPatch
+    ? preFlightFromApplyResult(options.previewPatch(patch))
+    : preFlight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
 
   // 3) atomic — payload + next + patch 동시 산출
-  return { ok: true, next: r.draft, patch, payload, source: removePlan.source, sources: removePlan.sources };
+  return { ok: true, next: r.draft as z.output<S>, patch, payload, source: removePlan.source, sources: removePlan.sources };
 }
 
 function readPayload(
@@ -82,7 +86,7 @@ function readPayload(
       return { ok: false, code: "not_serializable", message: jsonErr };
     }
   }
-  const payload = cloneTrustedJson(v.value);
+  const payload = options.clonePayload === false ? v.value : cloneTrustedJson(v.value);
   return { ok: true, payload };
 }
 

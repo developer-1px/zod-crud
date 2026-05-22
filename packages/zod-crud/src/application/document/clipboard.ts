@@ -1,7 +1,7 @@
 import type * as z from "zod";
 
 import { cloneTrustedJson, jsonSerializableError } from "../../foundation/json.js";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { normalizePointerSources } from "../../foundation/json-pointer/sourceSet.js";
 import type { JSONOps } from "./ops.js";
@@ -78,6 +78,7 @@ interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
   ops: JSONOps<z.output<S>>;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   getSelectionSource?: () => SelectionSource | null;
   getSelectionTarget?: () => Pointer | null;
   getAppliedPatch?: () => ReadonlyArray<JSONPatchOperation>;
@@ -98,6 +99,7 @@ export function createClipboard<S extends z.ZodType>(
     schema,
     getState,
     ops,
+    previewPatch,
     getSelectionSource,
     getSelectionTarget,
     getAppliedPatch,
@@ -193,7 +195,10 @@ export function createClipboard<S extends z.ZodType>(
     cut(source) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCutSource();
-      const result = cut(schema, getState(), resolved, { trusted: getStateJsonTrusted?.() === true });
+      const result = cut(schema, getState(), resolved, {
+        trusted: getStateJsonTrusted?.() === true,
+        previewPatch,
+      });
       if (!result.ok) return result;
       const patchResult = ops.patch(result.patch);
       if (!patchResult.ok) {

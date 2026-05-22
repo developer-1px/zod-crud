@@ -102,6 +102,7 @@ interface BuildCheckArgs<S extends z.ZodType> {
   schema: S;
   ops: JSONOps<z.output<S>>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  getStateJsonTrusted?: () => boolean;
   history: CheckHistoryControls;
   selectionRef?: { current: SelectionSnap };
 }
@@ -122,10 +123,11 @@ const OK: CheckResult = { ok: true };
 export function buildCheck<S extends z.ZodType>(
   args: BuildCheckArgs<S>,
 ): Check {
-  const { schema, ops, previewPatch, history, selectionRef } = args;
+  const { schema, ops, previewPatch, getStateJsonTrusted, history, selectionRef } = args;
   const checkPatch = (patch: ReadonlyArray<JSONPatchOperation>) => previewPatch
     ? preFlightFromApplyResult(previewPatch(patch))
     : preFlight(schema, ops.state, patch);
+  const trustedState = (): boolean => getStateJsonTrusted?.() === true;
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
   const targetOrSelection = (target?: Pointer): Pointer | null =>
@@ -193,11 +195,22 @@ export function buildCheck<S extends z.ZodType>(
     },
     cut(source) {
       const resolved = sourceOrSelection(source);
-      return resolved === null ? emptySelection("cut source selection is empty") : toCheckResult(cut(schema, ops.state, resolved));
+      return resolved === null
+        ? emptySelection("cut source selection is empty")
+        : toCheckResult(cut(schema, ops.state, resolved, {
+            trusted: trustedState(),
+            clonePayload: false,
+            previewPatch,
+          }));
     },
     copy(source) {
       const resolved = sourceOrSelection(source);
-      return resolved === null ? emptySelection("copy source selection is empty") : toCheckResult(copy(ops.state, resolved));
+      return resolved === null
+        ? emptySelection("copy source selection is empty")
+        : toCheckResult(copy(ops.state, resolved, {
+            trusted: trustedState(),
+            clonePayload: false,
+          }));
     },
     paste(payload, target, options) {
       const args = resolvePasteArgs(target, options);

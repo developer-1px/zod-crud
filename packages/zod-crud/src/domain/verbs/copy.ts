@@ -28,6 +28,7 @@ export type ClipboardSource = PointerSource;
 
 interface CopyOptions {
   trusted?: boolean;
+  clonePayload?: boolean;
 }
 
 /**
@@ -71,7 +72,8 @@ function copyOne(
       return { ok: false, code: "not_serializable", message: jsonErr };
     }
   }
-  return { ok: true, payload: cloneTrustedJson(r.value), source, sources };
+  const payload = options.clonePayload === false ? r.value : cloneTrustedJson(r.value);
+  return { ok: true, payload, source, sources };
 }
 
 function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer[] } | CopyError {
