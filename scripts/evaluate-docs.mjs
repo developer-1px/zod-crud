@@ -345,7 +345,7 @@ if (!/"site:verify:pages": "npm run site:build:pages && npm run site:evaluate:pa
   fail("root package: Pages verification must build, evaluate files, then smoke test HTTP serving.");
 }
 
-if (!/npm run verify/.test(pagesWorkflow) || !/site:evaluate:live/.test(rootPackageJson) || !/actions\/checkout@v4/.test(pagesWorkflow) || !/actions\/setup-node@v4/.test(pagesWorkflow) || !/upload-pages-artifact@v3/.test(pagesWorkflow)) {
+if (!/npm run verify/.test(pagesWorkflow) || !/site:evaluate:live/.test(rootPackageJson) || !/actions\/checkout@v6/.test(pagesWorkflow) || !/actions\/setup-node@v6/.test(pagesWorkflow) || !/upload-pages-artifact@v5/.test(pagesWorkflow)) {
   fail("pages workflow: missing production site verification, artifact upload, or live evaluation support.");
 }
 
