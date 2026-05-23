@@ -633,7 +633,7 @@ function applyRootObjectRemovePatch(
   }
 
   const sourceKeys = Object.keys(source);
-  if (ops.length * 2 <= sourceKeys.length) {
+  if (ops.length * 2 < sourceKeys.length) {
     const next = copyRootObjectKeys(source, sourceKeys);
     for (let index = 0; index < ops.length; index += 1) {
       delete next[ops[index]!.path.slice(1)];
