@@ -408,7 +408,8 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     return null;
   }
 
-  let next: Record<string, unknown> | null = null;
+  const source = state as Record<string, unknown>;
+  const removedKeys = Object.create(null) as Record<string, true>;
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let index = 0; index < ops.length; index += 1) {
@@ -427,19 +428,31 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     }
 
     const key = op.path.slice(1);
-    if (next === null) next = { ...(state as Record<string, unknown>) };
-    if (!objectHasOwn.call(next, key)) return null;
-    delete next[key];
+    if (!objectHasOwn.call(source, key) || objectHasOwn.call(removedKeys, key)) return null;
+    removedKeys[key] = true;
     applied[index] = op;
   }
 
-  return next === null
-    ? null
-    : {
-        state: next as z.output<S>,
-        result: { ok: true },
-        applied,
-      };
+  const next: Record<string, unknown> = {};
+  for (const key of Object.keys(source)) {
+    if (objectHasOwn.call(removedKeys, key)) continue;
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: source[key],
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = source[key];
+    }
+  }
+
+  return {
+    state: next as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
 }
 
 function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -459,14 +472,16 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   }
 
   const rootDef = getDef(schema) as ExtendedDef;
+  const valueSchema = rootDef.valueType;
   if (
     rootDef.type !== "record"
     || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))
-    || !rootDef.valueType
+    || !valueSchema
   ) {
     return null;
   }
 
+  const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
   let next: Record<string, unknown> | null = null;
   const applied = new Array<JSONPatchOperation>(ops.length);
 
@@ -485,13 +500,13 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
       return null;
     }
 
-    const valueAccepted = acceptsKnownJsonValue(rootDef.valueType, op.value);
+    const valueAccepted = valueValidator !== null && valueValidator(op.value, new WeakSet<object>());
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
     }
     if (!valueAccepted) {
-      const result = rootDef.valueType.safeParse(op.value);
+      const result = valueSchema.safeParse(op.value);
       if (!result.success) return schemaViolation(state, op.path, result.error.issues);
     }
 

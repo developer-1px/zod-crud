@@ -573,7 +573,8 @@ function applyRootObjectRemovePatch(
     return { handled: false };
   }
 
-  let next: Record<string, unknown> | null = null;
+  const source = state as Record<string, unknown>;
+  const removedKeys = Object.create(null) as Record<string, true>;
   const applied = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -591,15 +592,29 @@ function applyRootObjectRemovePatch(
     }
 
     const key = op.path.slice(1);
-    if (next === null) next = { ...(state as Record<string, unknown>) };
-    if (!objectHasOwn.call(next, key)) return { handled: false };
-    delete next[key];
+    if (!objectHasOwn.call(source, key) || objectHasOwn.call(removedKeys, key)) {
+      return { handled: false };
+    }
+    removedKeys[key] = true;
     applied[index] = op;
   }
 
-  return next === null
-    ? { handled: false }
-    : { handled: true, state: next, applied };
+  const next: Record<string, unknown> = {};
+  for (const key of Object.keys(source)) {
+    if (objectHasOwn.call(removedKeys, key)) continue;
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: source[key],
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = source[key];
+    }
+  }
+
+  return { handled: true, state: next, applied };
 }
 
 function applyRootObjectAddPatch(

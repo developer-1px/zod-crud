@@ -147,6 +147,37 @@ describe("doc.history performance contract", () => {
     expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: false });
   });
 
+  test("root object remove history keeps __proto__ as data", () => {
+    const initial: Record<string, unknown> = { a: 1, b: 2, c: 3 };
+    Object.defineProperty(initial, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    const doc = createJSONDocument(z.any(), initial, { history: 10 });
+
+    expect(doc.patch([
+      { op: "remove", path: "/a" },
+      { op: "remove", path: "/b" },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toMatchObject({ c: 3 });
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: true });
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toMatchObject({ a: 1, b: 2, c: 3 });
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: true });
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value).toMatchObject({ c: 3 });
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: true });
+  });
+
   test("root object replace history preserves repeated key semantics", () => {
     const Schema = z.object({
       a: z.number(),
