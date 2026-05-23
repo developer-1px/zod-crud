@@ -188,11 +188,12 @@ export function createJSONDocument<S extends z.ZodType>(
     selectionBefore: SelectionSnap,
     selectionAfter: SelectionSnap,
     metadata?: HistoryTransactionOptions,
+    operationsOwned = false,
   ): void => {
     const inverse = computeInverses(before, operations);
     if (!inverse.ok) return;
     const entry: HistoryEntry = {
-      forward: [...operations],
+      forward: operationsOwned ? operations as JSONPatchOperation[] : [...operations],
       inverse: inverse.inverses,
       selectionBefore,
       selectionAfter,
@@ -202,7 +203,11 @@ export function createJSONDocument<S extends z.ZodType>(
     commitHistory(stack, entry, historyLimit);
   };
 
-  const applyDocumentPatch: JSONOps<z.output<S>>["patch"] = (operations, metadata) => {
+  const applyDocumentPatch = (
+    operations: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+    operationsOwned = false,
+  ): JSONResult => {
     const shouldRecordHistory = historyLimit > 0 && !isRestoring && operations.length > 0;
     const shouldCaptureMetadata = shouldCaptureSelectionMetadata(shouldRecordHistory, metadata);
     if (!shouldCaptureMetadata) {
@@ -218,7 +223,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const selectionAfter = snapSelection();
     if (r.ok && operations.length === 0) lastPatch = [];
     if (r.ok && shouldRecordHistory) {
-      recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata);
+      recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
     }
     return r;
   };
@@ -248,7 +253,9 @@ export function createJSONDocument<S extends z.ZodType>(
     return r;
   };
   const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult =>
-    applyDocumentPatch(normalizePatchInput(operations), metadata);
+    isPatchArray(operations)
+      ? applyDocumentPatch(operations, metadata)
+      : applyDocumentPatch([operations], metadata, true);
 
   const commit = (
     operations: ReadonlyArray<JSONPatchOperation>,
@@ -334,11 +341,11 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const ops: JSONOps<z.output<S>> = {
-    add: (path, value) => patch([{ op: "add", path: path as Pointer, value }]),
-    remove: (path) => patch([{ op: "remove", path: path as Pointer }]),
-    replace: (path, value) => patch([{ op: "replace", path: path as Pointer, value }]),
-    move: (from, path) => patch([{ op: "move", from: from as Pointer, path: path as Pointer }]),
-    copy: (from, path) => patch([{ op: "copy", from: from as Pointer, path: path as Pointer }]),
+    add: (path, value) => applyDocumentPatch([{ op: "add", path: path as Pointer, value }], undefined, true),
+    remove: (path) => applyDocumentPatch([{ op: "remove", path: path as Pointer }], undefined, true),
+    replace: (path, value) => applyDocumentPatch([{ op: "replace", path: path as Pointer, value }], undefined, true),
+    move: (from, path) => applyDocumentPatch([{ op: "move", from: from as Pointer, path: path as Pointer }], undefined, true),
+    copy: (from, path) => applyDocumentPatch([{ op: "copy", from: from as Pointer, path: path as Pointer }], undefined, true),
     test: rawOps.test,
     patch: applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {
