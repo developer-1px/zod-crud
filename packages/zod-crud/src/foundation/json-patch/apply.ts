@@ -15,20 +15,31 @@ import {
 
 export type RawResult = { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer };
 
-const VALID_OPS = new Set(["add", "remove", "replace", "move", "copy", "test"]);
-
 export function validateOperationShape(op: JSONPatchOperation): { error: ErrorCode; reason: string } | null {
   if (!op || typeof op !== "object") return { error: "invalid_pointer", reason: "op must be object" };
   const opName = (op as { op: string }).op;
-  if (!VALID_OPS.has(opName)) return { error: "invalid_pointer", reason: `unrecognized op: ${opName}` };
-  if (typeof op.path !== "string") return { error: "invalid_pointer", reason: "missing 'path'" };
-  if ((opName === "add" || opName === "replace" || opName === "test") && !("value" in op)) {
-    return { error: "invalid_pointer", reason: `missing 'value' for op '${opName}'` };
+  switch (opName) {
+    case "add":
+    case "replace":
+    case "test":
+      if (typeof op.path !== "string") return { error: "invalid_pointer", reason: "missing 'path'" };
+      if (!("value" in op)) {
+        return { error: "invalid_pointer", reason: `missing 'value' for op '${opName}'` };
+      }
+      return null;
+    case "remove":
+      if (typeof op.path !== "string") return { error: "invalid_pointer", reason: "missing 'path'" };
+      return null;
+    case "move":
+    case "copy":
+      if (typeof op.path !== "string") return { error: "invalid_pointer", reason: "missing 'path'" };
+      if (typeof (op as { from?: unknown }).from !== "string") {
+        return { error: "invalid_pointer", reason: `missing 'from' for op '${opName}'` };
+      }
+      return null;
+    default:
+      return { error: "invalid_pointer", reason: `unrecognized op: ${opName}` };
   }
-  if ((opName === "move" || opName === "copy") && typeof (op as { from?: unknown }).from !== "string") {
-    return { error: "invalid_pointer", reason: `missing 'from' for op '${opName}'` };
-  }
-  return null;
 }
 
 function validateSerializableOpValue(op: JSONPatchOperation): { error: ErrorCode; reason: string } | null {
