@@ -329,6 +329,14 @@ export function applyTrustedPatch<T>(
     return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
   }
   const valuesTrusted = options.valuesTrusted === true;
+  const singleValueFast = applySingleTrustedValuePatch(state, ops, valuesTrusted);
+  if (singleValueFast !== null) {
+    return {
+      state: singleValueFast.state as T,
+      result: singleValueFast.result,
+      applied: singleValueFast.applied,
+    };
+  }
   const appendFast = applyAppendOnlyAddPatch(state, ops, valuesTrusted);
   if (appendFast.handled) {
     return { state: appendFast.state as T, result: ok, applied: appendFast.applied };
@@ -468,6 +476,51 @@ export function applyAcceptedPatch<T>(
   }
 
   return applyTrustedPatch(state, ops, { valuesTrusted: true });
+}
+
+function applySingleTrustedValuePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): TrustedApplyResult<unknown> | null {
+  if (ops.length !== 1 || !(0 in ops)) return null;
+
+  const op = ops[0]!;
+  if (
+    op === null
+    || typeof op !== "object"
+    || (op.op !== "add" && op.op !== "replace")
+    || typeof op.path !== "string"
+    || !("value" in op)
+  ) {
+    return null;
+  }
+
+  const shape = validateOperationShape(op);
+  if (shape) {
+    return {
+      state,
+      result: fail(shape.error, `op[0]: ${shape.reason}`),
+      applied: [],
+    };
+  }
+  if (!valuesTrusted && jsonSerializableError(op.value) !== null) return null;
+
+  const normalized = op.op === "add" && op.path.endsWith("/-")
+    ? normalizeOp(op, state)
+    : op;
+  if (normalized.op !== "add" && normalized.op !== "replace") return null;
+
+  const applied = applyTrustedValueMutation(state, normalized);
+  if ("error" in applied) {
+    return {
+      state,
+      result: fail(applied.error, applied.reason ? `op[0]: ${applied.reason}` : "op[0]", applied.pointer),
+      applied: [],
+    };
+  }
+
+  return { state: applied.state, result: ok, applied: [normalized] };
 }
 
 function applySameArrayFieldReplacePatch(
@@ -1826,6 +1879,9 @@ function applyTrustedValueMutation(
   const singleSegment = applySingleSegmentTrustedValueMutation(state, op);
   if (singleSegment !== null) return singleSegment;
 
+  const arrayElement = applyObjectArrayElementTrustedValueMutation(state, op);
+  if (arrayElement !== null) return arrayElement;
+
   const arrayField = applyObjectArrayFieldTrustedValueMutation(state, op);
   if (arrayField !== null) return arrayField;
 
@@ -1868,6 +1924,44 @@ function applySingleSegmentTrustedValueMutation(
   const verb = op.op === "add" ? "set" : "replace";
   const result = mutateContainer(state, op.path.slice(1), verb, op.value);
   return "error" in result ? { ...result, pointer: op.path } : { state: result.value };
+}
+
+function applyObjectArrayElementTrustedValueMutation(
+  state: unknown,
+  op: Extract<JSONPatchOperation, { op: "add" | "replace" }>,
+): { state: unknown } | { error: ErrorCode; reason?: string; pointer?: Pointer } | null {
+  const path = op.path;
+  if (path[0] !== "/" || path.includes("~")) return null;
+  const arrayKeySlash = path.indexOf("/", 1);
+  if (arrayKeySlash === -1 || path.indexOf("/", arrayKeySlash + 1) !== -1) return null;
+
+  const arrayKey = path.slice(1, arrayKeySlash);
+  const itemIndex = numericSegment(path.slice(arrayKeySlash + 1));
+  if (itemIndex === null) return null;
+
+  if (state === null || typeof state !== "object" || Array.isArray(state)) return null;
+  const root = state as Record<string, unknown>;
+  if (!objectHasOwn.call(root, arrayKey)) {
+    return { error: "path_not_found", reason: `object key: ${arrayKey}`, pointer: path };
+  }
+  const array = root[arrayKey];
+  if (!Array.isArray(array)) return null;
+
+  if (op.op === "add") {
+    if (itemIndex > array.length) {
+      return { error: "path_not_found", reason: `out of range: ${itemIndex}`, pointer: path };
+    }
+    const nextArray = itemIndex === array.length ? array.concat([op.value]) : array.slice();
+    if (itemIndex < array.length) nextArray.splice(itemIndex, 0, op.value);
+    return { state: { ...root, [arrayKey]: nextArray } };
+  }
+
+  if (itemIndex >= array.length) {
+    return { error: "path_not_found", reason: `array index: ${itemIndex}`, pointer: path };
+  }
+  const nextArray = array.slice();
+  nextArray[itemIndex] = op.value;
+  return { state: { ...root, [arrayKey]: nextArray } };
 }
 
 function applyObjectArrayFieldTrustedValueMutation(
