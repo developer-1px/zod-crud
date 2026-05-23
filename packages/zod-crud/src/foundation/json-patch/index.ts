@@ -446,7 +446,8 @@ function applySameArrayFieldReplacePatch(
   let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
   let field: string | null = null;
-  let next: unknown[] | null = null;
+  let arrayValue: unknown[] | null = null;
+  const updates = new Map<number, unknown>();
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
@@ -462,40 +463,46 @@ function applySameArrayFieldReplacePatch(
     if (field === null) field = location.key;
     else if (field !== location.key) return { handled: false };
 
-    if (next === null) {
+    if (arrayValue === null) {
       arrayPath = location.arrayPath;
       const parsedArray = parseSafe(arrayPath);
       if (!("ok" in parsedArray)) return { handled: false };
       arraySegments = parsedArray.segs;
       const current = getValueAt(state, arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return { handled: false };
-      next = current.value.slice();
+      arrayValue = current.value;
     } else if (arrayPath !== location.arrayPath) {
       return { handled: false };
     }
 
     if (!valuesTrusted && jsonSerializableError(normalized.value) !== null) return { handled: false };
 
-    if (location.index < 0 || location.index >= next.length) return { handled: false };
-    const row = next[location.index];
+    if (arrayValue === null || location.index < 0 || location.index >= arrayValue.length) return { handled: false };
+    const row = arrayValue[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return { handled: false };
     if (!objectHasOwn.call(row, location.key)) return { handled: false };
-    const replaced = { ...(row as Record<string, unknown>) };
-    if (location.key === "__proto__") {
-      Object.defineProperty(replaced, location.key, {
-        value: normalized.value,
+    updates.set(location.index, normalized.value);
+    applied[opIndex] = normalized;
+  }
+
+  if (arraySegments === null || field === null || arrayValue === null) return { handled: false };
+  const next = arrayValue.slice();
+  for (const [rowIndex, value] of updates) {
+    const row = arrayValue[rowIndex] as Record<string, unknown>;
+    const replaced = { ...row };
+    if (field === "__proto__") {
+      Object.defineProperty(replaced, field, {
+        value,
         enumerable: true,
         configurable: true,
         writable: true,
       });
     } else {
-      replaced[location.key] = normalized.value;
+      replaced[field] = value;
     }
-    next[location.index] = replaced;
-    applied[opIndex] = normalized;
+    next[rowIndex] = replaced;
   }
 
-  if (arraySegments === null || field === null || next === null) return { handled: false };
   const stateWithArray = replaceValueAtSegments(state, arraySegments, 0, next);
   return stateWithArray === null
     ? { handled: false }
