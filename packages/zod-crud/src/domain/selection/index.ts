@@ -801,15 +801,30 @@ export function applySelectionAutoRules(
   mode: SelectionMode,
 ): SelectionSnap {
   // 패치 안의 모든 add/copy/move destination = 새 selection (rule ①).
-  if (mode === "single") {
-    const target = pickPrimaryAutoTarget(applied, after);
-    if (target !== null) {
-      return withPreviousContext(prev, snapFromRanges([collapsedRange(target)], 0, mode, after));
+  let hasAutoTargetOpValue: boolean | undefined;
+  const hasAutoTargetOp = (): boolean => {
+    if (hasAutoTargetOpValue !== undefined) return hasAutoTargetOpValue;
+    for (let index = 0; index < applied.length; index += 1) {
+      const op = applied[index]!;
+      if ((op.op === "add" || op.op === "copy" || op.op === "move") && op.path !== "") {
+        hasAutoTargetOpValue = true;
+        return true;
+      }
     }
-  }
-  const autoTargets = pickAutoTargetsInfo(applied);
-  if (autoTargets.targets.length > 0) {
-    return withPreviousContext(prev, snapFromPointerTargets(autoTargets.targets, mode, autoTargets.unique));
+    hasAutoTargetOpValue = false;
+    return false;
+  };
+  if (hasAutoTargetOp()) {
+    if (mode === "single") {
+      const target = pickPrimaryAutoTarget(applied, after);
+      if (target !== null) {
+        return withPreviousContext(prev, snapFromRanges([collapsedRange(target)], 0, mode, after));
+      }
+    }
+    const autoTargets = pickAutoTargetsInfo(applied);
+    if (autoTargets.targets.length > 0) {
+      return withPreviousContext(prev, snapFromPointerTargets(autoTargets.targets, mode, autoTargets.unique));
+    }
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
