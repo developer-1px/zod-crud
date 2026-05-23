@@ -47,6 +47,9 @@ export function pickAutoTargetsInfo(
 function pickSameArrayAutoTargets(
   applied: ReadonlyArray<JSONPatchOperation>,
 ): AutoTargetResult | null {
+  const monotonicInsertTargets = pickMonotonicInsertAutoTargets(applied);
+  if (monotonicInsertTargets !== null) return monotonicInsertTargets;
+
   let parent: Pointer | null = null;
   let increasingInsertTargets: number[] | null = [];
   let previousInsertTarget = -1;
@@ -107,6 +110,45 @@ function pickSameArrayAutoTargets(
     targets: appendArrayIndexes(parent, indexes),
     unique: indexes === increasingInsertTargets,
   };
+}
+
+function pickMonotonicInsertAutoTargets(
+  applied: ReadonlyArray<JSONPatchOperation>,
+): AutoTargetResult | null {
+  let parent: Pointer | null = null;
+  let previousIndex = -1;
+  let increasing = true;
+  let nonIncreasing = true;
+  const indexes = new Array<number>(applied.length);
+
+  for (let opIndex = 0; opIndex < applied.length; opIndex += 1) {
+    const op = applied[opIndex]!;
+    if (op.op !== "add" && op.op !== "copy") return null;
+
+    const location = arrayElementLocation(op.path);
+    if (location === null) return null;
+    if (parent === null) parent = location.parent;
+    else if (location.parent !== parent) return null;
+
+    if (opIndex > 0) {
+      if (location.index <= previousIndex) increasing = false;
+      if (location.index > previousIndex) nonIncreasing = false;
+    }
+    indexes[opIndex] = location.index;
+    previousIndex = location.index;
+  }
+
+  if (parent === null) return { targets: [], unique: true };
+  if (increasing) {
+    return { targets: appendArrayIndexes(parent, indexes), unique: true };
+  }
+  if (!nonIncreasing) return null;
+
+  const finalIndexes = new Array<number>(indexes.length);
+  for (let index = 0; index < indexes.length; index += 1) {
+    finalIndexes[index] = indexes[index]! + indexes.length - index - 1;
+  }
+  return { targets: appendArrayIndexes(parent, finalIndexes), unique: true };
 }
 
 function shiftTargetsForInsert(targets: number[], index: number): void {

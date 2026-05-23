@@ -140,6 +140,21 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/5");
   });
 
+  test("multiple selection insert batch auto-selects descending targets", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+
+    expect(doc.patch([
+      { op: "add", path: "/items/2", value: { id: "x", name: "X" } },
+      { op: "copy", from: "/items/0", path: "/items/2" },
+      { op: "add", path: "/items/1", value: { id: "y", name: "Y" } },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "y", "b", "a", "x", "c"]);
+    expect(doc.selection?.selectedPointers).toEqual(["/items/4", "/items/3", "/items/1"]);
+    expect(doc.selection?.primaryPointer).toBe("/items/1");
+  });
+
   test("multiple selection append batch handles escaped array parents", () => {
     const EscapedSchema = z.object({
       "a/b": z.array(z.object({ id: z.string(), name: z.string() })),
