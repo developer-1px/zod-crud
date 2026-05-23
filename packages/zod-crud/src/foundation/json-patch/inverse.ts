@@ -13,6 +13,14 @@ interface ArrayFieldPath {
   key: string;
 }
 
+interface SimpleArrayNestedPath {
+  arraySegments: string[];
+  index: number;
+  prefixText: string;
+  suffixText: string;
+  suffixSegments: string[];
+}
+
 function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation | null {
   switch (op.op) {
     case "add":
@@ -62,6 +70,8 @@ export function computeInverses(
   if (arrayRemoveOnly) return arrayRemoveOnly;
   const appendThenRemove = computeAppendThenNonDecreasingRemoveInverses(state, ops);
   if (appendThenRemove) return appendThenRemove;
+  const arrayNestedReplace = computeSimpleSameArrayNestedReplaceInverses(state, ops);
+  if (arrayNestedReplace) return arrayNestedReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
   const arrayOnly = computeSameArrayStructuralInverses(state, ops);
@@ -527,6 +537,56 @@ function computeIndependentReplaceInverses(
   return { ok: true, inverses: out };
 }
 
+function computeSimpleSameArrayNestedReplaceInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let location: SimpleArrayNestedPath | null = null;
+  let arrayValue: unknown[] | null = null;
+  let seenIndexes: Set<number> | null = null;
+  let previousEmittedIndex: number | null = null;
+  const inverses: JSONPatchOperation[] = [];
+
+  for (let opIndex = ops.length - 1; opIndex >= 0; opIndex -= 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (op.op === "test") continue;
+    if (op.op !== "replace" || typeof op.path !== "string" || op.path === "") return null;
+
+    let index: number | null;
+    if (location === null) {
+      location = parseFirstSimpleArrayNestedPath(state, op.path);
+      if (location === null) return null;
+      index = location.index;
+      const array = getValueAt(state, location.arraySegments);
+      if (!array.ok || !Array.isArray(array.value)) return null;
+      arrayValue = array.value;
+    } else {
+      index = parseKnownSimpleArrayNestedIndex(op.path, location);
+      if (index === null) return null;
+    }
+
+    if (arrayValue === null || index < 0 || index >= arrayValue.length) return null;
+    if (seenIndexes !== null) {
+      if (seenIndexes.has(index)) continue;
+      seenIndexes.add(index);
+    } else if (previousEmittedIndex !== null && index >= previousEmittedIndex) {
+      seenIndexes = seedSimpleArrayNestedReplaceIndexes(inverses, location);
+      if (seenIndexes.has(index)) continue;
+      seenIndexes.add(index);
+    }
+
+    const previous = getValueAt(arrayValue[index], location.suffixSegments);
+    if (!previous.ok) return null;
+    previousEmittedIndex = index;
+    inverses.push({ op: "replace", path: op.path, value: previous.value });
+  }
+
+  return location === null || arrayValue === null ? null : { ok: true, inverses };
+}
+
 function computeRootObjectReplaceInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
@@ -709,6 +769,59 @@ function parseSimpleArrayElementPath(path: string): { parent: string; index: num
   return index === null
     ? null
     : { parent: path.slice(0, indexSlash), index };
+}
+
+function parseFirstSimpleArrayNestedPath(state: unknown, path: string): SimpleArrayNestedPath | null {
+  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
+  const segments = path.slice(1).split("/");
+  if (segments.length < 3) return null;
+
+  for (let segmentIndex = 0; segmentIndex < segments.length - 1; segmentIndex += 1) {
+    const index = numericSegment(segments[segmentIndex]!);
+    if (index === null) continue;
+
+    const arraySegments = segments.slice(0, segmentIndex);
+    const array = getValueAt(state, arraySegments);
+    if (!array.ok || !Array.isArray(array.value)) continue;
+
+    const arrayPath = arraySegments.length === 0 ? "" : `/${arraySegments.join("/")}`;
+    const suffixSegments = segments.slice(segmentIndex + 1);
+    return {
+      arraySegments,
+      index,
+      prefixText: arrayPath === "" ? "/" : `${arrayPath}/`,
+      suffixText: `/${suffixSegments.join("/")}`,
+      suffixSegments,
+    };
+  }
+
+  return null;
+}
+
+function parseKnownSimpleArrayNestedIndex(path: string, location: SimpleArrayNestedPath): number | null {
+  if (
+    path.includes("~")
+    || !path.startsWith(location.prefixText)
+    || !path.endsWith(location.suffixText)
+  ) {
+    return null;
+  }
+
+  const indexEnd = path.length - location.suffixText.length;
+  const indexText = path.slice(location.prefixText.length, indexEnd);
+  return indexText.includes("/") ? null : numericSegment(indexText);
+}
+
+function seedSimpleArrayNestedReplaceIndexes(
+  inverses: ReadonlyArray<JSONPatchOperation>,
+  location: SimpleArrayNestedPath,
+): Set<number> {
+  const seen = new Set<number>();
+  for (const inverse of inverses) {
+    const index = parseKnownSimpleArrayNestedIndex(inverse.path, location);
+    if (index !== null) seen.add(index);
+  }
+  return seen;
 }
 
 function numericSegment(segment: string): number | null {
