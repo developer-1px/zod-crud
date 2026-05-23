@@ -84,6 +84,8 @@ function rekeyError(error: unknown): RekeyResult {
 }
 
 function uniqueFields(fields: ReadonlyArray<string>): string[] {
+  if (fields.length === 0) return [];
+  if (fields.length === 1) return [fields[0]!];
   return [...new Set(fields)];
 }
 
