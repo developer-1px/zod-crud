@@ -55,6 +55,36 @@ describe("createJSONDocument public interface", () => {
     expect(doc.value.meta).toEqual({ editor: "core" });
   });
 
+  test("trustedInitial skips initial schema parsing for already-validated output", () => {
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    try {
+      const doc = createJSONDocument(Schema, initial, {
+        history: 10,
+        trustedInitial: true,
+      });
+
+      expect(rootParses).toBe(0);
+      expect(doc.patch({ op: "replace", path: "/title", value: "trusted" })).toEqual({ ok: true });
+      expect(doc.value.title).toBe("trusted");
+    } finally {
+      Schema.safeParse = originalSafeParse as typeof Schema.safeParse;
+    }
+  });
+
+  test("trustedInitial accepts transform output as the initial value", () => {
+    const TransformSchema = z.string().transform((value) => value.length);
+
+    const doc = createJSONDocument(TransformSchema, 5, { trustedInitial: true });
+
+    expect(doc.value).toBe(5);
+  });
+
   test("duplicates a sibling through the public document facade", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

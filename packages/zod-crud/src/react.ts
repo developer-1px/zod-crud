@@ -9,9 +9,22 @@ import {
   type UseJSONDocumentOptions,
 } from "./application/document/createJSONDocument.js";
 
+type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
+type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };
+
+export function useJSONDocument<S extends z.ZodType>(
+  schema: S,
+  initial: z.output<S>,
+  options: TrustedInitialDocumentOptions,
+): JSONDocument<z.output<S>>;
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S>,
+  options?: UntrustedInitialDocumentOptions,
+): JSONDocument<z.output<S>>;
+export function useJSONDocument<S extends z.ZodType>(
+  schema: S,
+  initial: z.input<S> | z.output<S>,
   options: UseJSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
   const [, force] = useReducer((version: number) => version + 1, 0);
@@ -20,14 +33,20 @@ export function useJSONDocument<S extends z.ZodType>(
 
   return useMemo(
     () => {
-      const documentOptions: UseJSONDocumentOptions = {
+      const documentOptions: UntrustedInitialDocumentOptions = {
         get strict() { return optionsRef.current.strict; },
         onError(error) { optionsRef.current.onError?.(error); },
         onChange: force,
       };
       if (options.history !== undefined) documentOptions.history = options.history;
       if (options.selection !== undefined) documentOptions.selection = options.selection;
-      return createJSONDocument(schema, initial, documentOptions);
+      if (options.trustedInitial === true) {
+        return createJSONDocument(schema, initial as z.output<S>, {
+          ...documentOptions,
+          trustedInitial: true,
+        });
+      }
+      return createJSONDocument(schema, initial as z.input<S>, documentOptions);
     },
     [schema],
   );

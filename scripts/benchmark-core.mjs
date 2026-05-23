@@ -137,6 +137,10 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     return { ok: doc.value.items.length === size };
   });
+  bench("createJSONDocument init trustedInitial history=0", Math.max(3, Math.ceil(rounds / 2)), () => {
+    const doc = createJSONDocument(Schema, state, { history: 0, trustedInitial: true });
+    return { ok: doc.value.items.length === size };
+  });
   bench("createJSONDocument init history=100", Math.max(3, Math.ceil(rounds / 2)), () => {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     return { ok: doc.value.items.length === size };

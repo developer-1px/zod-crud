@@ -29,6 +29,7 @@ type JSONChangeListener = (
 
 interface CreateJSONOptions extends ErrorPolicy {
   onChange?: () => void;
+  trustedInitial?: boolean | undefined;
 }
 
 interface JSONState<T> {
@@ -54,14 +55,18 @@ const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", p
 
 export function createJSON<S extends z.ZodType>(
   schema: S,
-  initial: z.input<S>,
+  initial: z.input<S> | z.output<S>,
   options: CreateJSONOptions = {},
 ): HeadlessJSONState<z.output<S>> {
-  const parsed = schema.safeParse(initial);
-  if (!parsed.success) throw parsed.error;
-
-  let state = parsed.data as z.output<S>;
   const schemaOutputJsonTrusted = schemaOutputIsKnownJson(schema);
+  let state: z.output<S>;
+  if (options.trustedInitial === true) {
+    state = initial as z.output<S>;
+  } else {
+    const parsed = schema.safeParse(initial);
+    if (!parsed.success) throw parsed.error;
+    state = parsed.data as z.output<S>;
+  }
   let stateJsonTrusted = schemaOutputJsonTrusted || jsonSerializableError(state) === null;
   const initialState = state;
   const policy: ErrorPolicy = options;

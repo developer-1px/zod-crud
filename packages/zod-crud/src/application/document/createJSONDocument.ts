@@ -54,10 +54,18 @@ import type {
 export interface UseJSONDocumentOptions {
   strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
+  /**
+   * Treat `initial` as already-validated `z.output<S>`.
+   * This skips the initial schema parse; use only when the caller owns that boundary.
+   */
+  trustedInitial?: boolean | undefined;
   history?: number;
   selection?: boolean | UseSelectionOptions;
   onChange?: () => void;
 }
+
+type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
+type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };
 
 export interface JSONDocumentHistory {
   readonly canUndo: boolean;
@@ -138,7 +146,17 @@ interface HistoryEntry {
 
 export function createJSONDocument<S extends z.ZodType>(
   schema: S,
+  initial: z.output<S>,
+  options: TrustedInitialDocumentOptions,
+): JSONDocument<z.output<S>>;
+export function createJSONDocument<S extends z.ZodType>(
+  schema: S,
   initial: z.input<S>,
+  options?: UntrustedInitialDocumentOptions,
+): JSONDocument<z.output<S>>;
+export function createJSONDocument<S extends z.ZodType>(
+  schema: S,
+  initial: z.input<S> | z.output<S>,
   options: UseJSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
   const json = createJSON(schema, initial, options);
