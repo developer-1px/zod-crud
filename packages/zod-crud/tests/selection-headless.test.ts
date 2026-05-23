@@ -155,6 +155,19 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.selectedPointers).toEqual([]);
   });
 
+  test("multiple selection tracks stable replace batches with escaped pointer text", () => {
+    const doc = createJSONDocument(EscapedSchema, escapedInitial, {
+      selection: { mode: "multiple" },
+    });
+    doc.selection?.selectRanges(["/a~1b/0/n~0ame", "/a~1b/1/n~0ame"]);
+
+    expect(doc.patch([
+      { op: "replace", path: "/a~1b/0/n~0ame", value: "A1" },
+      { op: "replace", path: "/a~1b/1", value: { "n~ame": "B1" } },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/a~1b/0/n~0ame"]);
+  });
+
   test("single selection batch auto-selects only the final surviving target", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single" },

@@ -956,6 +956,9 @@ function canKeepSelectionForStableReplacePatch(
   const quick = canKeepSmallStringSelectionForStableReplacePatch(selection, applied);
   if (quick !== null) return quick;
 
+  const stringSelection = canKeepStringSelectionForStableReplacePatch(selection, applied);
+  if (stringSelection !== null) return stringSelection;
+
   const replacements = stableReplacementPointerSet(applied);
   if (replacements === null) return false;
   if (replacements.size === 0) return true;
@@ -1014,6 +1017,54 @@ function smallStringSelectionTargets(selection: SelectionSnap): Pointer[] | null
     if (!add(range.anchor) || !add(range.focus)) return null;
   }
   return add(selection.anchor) && add(selection.focus) ? targets : null;
+}
+
+function canKeepStringSelectionForStableReplacePatch(
+  selection: SelectionSnap,
+  applied: ReadonlyArray<JSONPatchOperation>,
+): boolean | null {
+  const ancestors = stringSelectionAncestorSet(selection, 4096);
+  if (ancestors === null) return null;
+
+  let sawReplacement = false;
+  for (let index = 0; index < applied.length; index += 1) {
+    const op = applied[index]!;
+    if (op.op === "test") continue;
+    if (op.op !== "replace" || typeof op.path !== "string") return false;
+    const replacement = op.path[0] === "#" ? null : op.path;
+    if (replacement === null || !isFastPointerText(replacement)) return null;
+    sawReplacement = true;
+    if (ancestors.has(replacement)) return false;
+  }
+  return sawReplacement || applied.length === 0;
+}
+
+function stringSelectionAncestorSet(selection: SelectionSnap, maxAncestors: number): Set<Pointer> | null {
+  const ancestors = new Set<Pointer>();
+  const add = (point: JSONPoint | null): boolean => {
+    if (point === null) return true;
+    if (typeof point !== "string" || !isFastPointerText(point)) return false;
+    addStrictPointerAncestors(point, ancestors);
+    return ancestors.size <= maxAncestors;
+  };
+
+  for (const pointer of selection.selectedPointers) {
+    if (!add(pointer)) return null;
+  }
+  for (const range of selection.selectionRanges) {
+    if (!add(range.anchor) || !add(range.focus)) return null;
+  }
+  return add(selection.anchor) && add(selection.focus) ? ancestors : null;
+}
+
+function addStrictPointerAncestors(pointer: Pointer, ancestors: Set<Pointer>): void {
+  if (pointer === "") return;
+  ancestors.add("");
+  let slash = pointer.indexOf("/", 1);
+  while (slash !== -1) {
+    ancestors.add(pointer.slice(0, slash));
+    slash = pointer.indexOf("/", slash + 1);
+  }
 }
 
 function isFastPointerText(pointer: Pointer): boolean {
