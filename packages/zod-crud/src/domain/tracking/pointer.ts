@@ -119,7 +119,7 @@ function pickMonotonicInsertAutoTargets(
   let previousIndex = -1;
   let increasing = true;
   let nonIncreasing = true;
-  const indexes = new Array<number>(applied.length);
+  let indexes: number[] | null = null;
   const paths = new Array<Pointer>(applied.length);
 
   for (let opIndex = 0; opIndex < applied.length; opIndex += 1) {
@@ -132,10 +132,13 @@ function pickMonotonicInsertAutoTargets(
     else if (location.parent !== parent) return null;
 
     if (opIndex > 0) {
-      if (location.index <= previousIndex) increasing = false;
+      if (location.index <= previousIndex) {
+        increasing = false;
+        indexes ??= backfillAutoTargetIndexes(paths, opIndex);
+      }
       if (location.index > previousIndex) nonIncreasing = false;
     }
-    indexes[opIndex] = location.index;
+    if (indexes !== null) indexes[opIndex] = location.index;
     paths[opIndex] = op.path;
     previousIndex = location.index;
   }
@@ -144,13 +147,22 @@ function pickMonotonicInsertAutoTargets(
   if (increasing) {
     return { targets: paths, unique: true };
   }
-  if (!nonIncreasing) return null;
+  if (!nonIncreasing || indexes === null) return null;
 
   const finalIndexes = new Array<number>(indexes.length);
   for (let index = 0; index < indexes.length; index += 1) {
     finalIndexes[index] = indexes[index]! + indexes.length - index - 1;
   }
   return { targets: appendArrayIndexes(parent, finalIndexes), unique: true };
+}
+
+function backfillAutoTargetIndexes(paths: ReadonlyArray<Pointer>, end: number): number[] {
+  const indexes = new Array<number>(paths.length);
+  for (let index = 0; index < end; index += 1) {
+    const location = arrayElementLocation(paths[index]!);
+    indexes[index] = location?.index ?? -1;
+  }
+  return indexes;
 }
 
 function shiftTargetsForInsert(targets: number[], index: number): void {
