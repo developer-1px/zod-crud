@@ -219,7 +219,9 @@ export function createClipboard<S extends z.ZodType>(
       const writtenSources = writeSources(options);
       if (!writtenSources.ok) return writtenSources.result;
       const sources = writtenSources.sources;
-      const schemaTrustedPayload = isTrustedWritePayload(payload, sources);
+      const schemaTrustedPayload = options.trustedPayload === true && sources === null
+        ? false
+        : isTrustedWritePayload(payload, sources);
       const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
       const cloned = trustedPayload
         ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
