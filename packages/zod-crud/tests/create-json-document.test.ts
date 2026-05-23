@@ -538,6 +538,44 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("record and catchall unknown schema outputs keep the document JSON guard", () => {
+    const RecordSchema = z.record(z.string(), z.unknown());
+    const recordDoc = createJSONDocument(RecordSchema, { item: () => "bad" });
+
+    expect(recordDoc.canPatch({ op: "replace", path: "/item", value: "next" })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+
+    const CatchallSchema = z.object({}).catchall(z.unknown());
+    const catchallDoc = createJSONDocument(CatchallSchema, { item: () => "bad" });
+
+    expect(catchallDoc.canPatch({ op: "replace", path: "/item", value: "next" })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
+  test("known-JSON record and catchall schema outputs drop prototype keys before trust", () => {
+    const input = Object.defineProperty({ item: "ok" }, "__proto__", {
+      value: "bad",
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const RecordSchema = z.record(z.string(), z.string());
+    const recordDoc = createJSONDocument(RecordSchema, input);
+    expect(Object.prototype).not.toHaveProperty("bad");
+    expect(Object.prototype.hasOwnProperty.call(recordDoc.value, "__proto__")).toBe(false);
+    expect(recordDoc.patch({ op: "replace", path: "/item", value: "next" })).toEqual({ ok: true });
+
+    const CatchallSchema = z.object({}).catchall(z.string());
+    const catchallDoc = createJSONDocument(CatchallSchema, input);
+    expect(Object.prototype.hasOwnProperty.call(catchallDoc.value, "__proto__")).toBe(false);
+    expect(catchallDoc.patch({ op: "replace", path: "/item", value: "next" })).toEqual({ ok: true });
+  });
+
   test("clipboard write rejects invalid sources before payload cloning", () => {
     const payload: Record<string, unknown> = { ok: true };
     Object.defineProperty(payload, "computed", {

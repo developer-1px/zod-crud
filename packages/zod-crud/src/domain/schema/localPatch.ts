@@ -1824,13 +1824,16 @@ function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<objec
   switch (def.type) {
     case "object": {
       const shape = getObjectShape(schema);
-      if (!shape || def.catchall) return cacheKnownJsonOutputSchema(schema, false);
+      if (!shape) return cacheKnownJsonOutputSchema(schema, false);
       for (const key of Object.keys(shape)) {
         if (key === "__proto__") return cacheKnownJsonOutputSchema(schema, false);
         const child = shape[key];
         if (!child || !schemaOutputIsKnownJsonInternal(child, activeSeen)) {
           return cacheKnownJsonOutputSchema(schema, false);
         }
+      }
+      if (def.catchall && !schemaOutputIsKnownJsonInternal(def.catchall, activeSeen)) {
+        return cacheKnownJsonOutputSchema(schema, false);
       }
       return cacheKnownJsonOutputSchema(schema, true);
     }
@@ -1864,6 +1867,13 @@ function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<objec
           : null;
       return cacheKnownJsonOutputSchema(schema, values !== null && values.every(isJsonPrimitive));
     }
+    case "record":
+      return cacheKnownJsonOutputSchema(
+        schema,
+        (!def.keyType || isPlainStringKeySchema(def.keyType))
+          && !!def.valueType
+          && schemaOutputIsKnownJsonInternal(def.valueType, activeSeen),
+      );
     default:
       return cacheKnownJsonOutputSchema(schema, false);
   }

@@ -718,6 +718,10 @@ for (const size of sizes) {
     path: `/k${index}`,
   }));
   console.log(`\nroot keys=${rootReplaceCount}`);
+  bench(`createJSONDocument root record init history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+    const doc = createJSONDocument(RootRecord, rootState, { history: 0 });
+    return { ok: Object.keys(doc.value).length === rootReplaceCount };
+  });
   bench(`applyPatch root object replace batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
     applyPatch(RootRecord, rootState, rootReplaceOps).result);
   {
