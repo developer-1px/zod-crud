@@ -178,6 +178,34 @@ describe("doc.history performance contract", () => {
     expect((doc.value as Record<string, unknown>).__proto__).toEqual({ safe: true });
   });
 
+  test("root record add history keeps __proto__ as data", () => {
+    const Schema = z.record(z.string(), z.number());
+    const doc = createJSONDocument(Schema, { a: 1 }, { history: 10, strict: false });
+
+    expect(doc.patch([
+      { op: "add", path: "/__proto__", value: 7 },
+    ])).toEqual({ ok: true });
+
+    expect(doc.patch([
+      { op: "add", path: "/b", value: 2 },
+      { op: "add", path: "/c", value: 3 },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toMatchObject({ a: 1, b: 2, c: 3 });
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toBe(7);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toMatchObject({ a: 1 });
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toBe(7);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value).toMatchObject({ a: 1, b: 2, c: 3 });
+    expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
+    expect((doc.value as Record<string, unknown>).__proto__).toBe(7);
+  });
+
   test("root object replace history preserves repeated key semantics", () => {
     const Schema = z.object({
       a: z.number(),

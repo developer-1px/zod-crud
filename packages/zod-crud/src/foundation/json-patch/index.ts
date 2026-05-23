@@ -77,6 +77,23 @@ const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult =
 };
 const zodIssuesReason = (error: z.ZodError): string => JSON.stringify(error.issues);
 
+function copyRootObject(source: Record<string, unknown>): Record<string, unknown> {
+  const next: Record<string, unknown> = {};
+  for (const key of Object.keys(source)) {
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: source[key],
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = source[key];
+    }
+  }
+  return next;
+}
+
 // 단일 op + schema 검증. applied 는 `/-` 가 적용 시점의 concrete index 로 정규화된 op.
 export function applyOperation<S extends z.ZodTypeAny>(
   schema: S,
@@ -645,7 +662,7 @@ function applyRootObjectAddPatch(
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
 
     const key = op.path.slice(1);
-    if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (next === null) next = copyRootObject(state as Record<string, unknown>);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: op.value,
@@ -693,7 +710,7 @@ function applyRootObjectReplacePatch(
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };
 
-    if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (next === null) next = copyRootObject(state as Record<string, unknown>);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: op.value,
