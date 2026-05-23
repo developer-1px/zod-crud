@@ -17,9 +17,10 @@ export function jsonSerializableError(value: unknown): string | null {
 function jsonSerializableErrorFast(value: unknown): string | null {
   const seen = new WeakSet<object>();
   const stack: unknown[] = [value];
+  let stackLength = 1;
 
-  while (stack.length > 0) {
-    const v = stack.pop();
+  while (stackLength > 0) {
+    const v = stack[--stackLength];
     if (v === null) continue;
     const t = typeof v;
     if (t === "string" || t === "boolean") continue;
@@ -49,8 +50,10 @@ function jsonSerializableErrorFast(value: unknown): string | null {
         const child = descriptor.value;
         if (child !== null) {
           const childType = typeof child;
-          if (childType === "object") stack.push(child);
-          else if (childType === "number") {
+          if (childType === "object") {
+            stack[stackLength] = child;
+            stackLength += 1;
+          } else if (childType === "number") {
             if (!Number.isFinite(child)) return "non-finite number";
           } else if (childType !== "string" && childType !== "boolean") {
             return `${childType} is not JSON`;
@@ -73,8 +76,10 @@ function jsonSerializableErrorFast(value: unknown): string | null {
       const child = descriptor.value;
       if (child !== null) {
         const childType = typeof child;
-        if (childType === "object") stack.push(child);
-        else if (childType === "number") {
+        if (childType === "object") {
+          stack[stackLength] = child;
+          stackLength += 1;
+        } else if (childType === "number") {
           if (!Number.isFinite(child)) return "non-finite number";
         } else if (childType !== "string" && childType !== "boolean") {
           return `${childType} is not JSON`;
