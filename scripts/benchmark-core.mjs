@@ -5,9 +5,16 @@ import * as z from "zod";
 const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
 const distJsonEntry = new URL("../packages/zod-crud/dist/foundation/json.js", import.meta.url);
 const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/index.js", import.meta.url);
+const distPatchInverseEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/inverse.js", import.meta.url);
 const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.js", import.meta.url);
 
-if (!existsSync(distEntry) || !existsSync(distJsonEntry) || !existsSync(distPatchEntry) || !existsSync(distHistoryEntry)) {
+if (
+  !existsSync(distEntry)
+  || !existsSync(distJsonEntry)
+  || !existsSync(distPatchEntry)
+  || !existsSync(distPatchInverseEntry)
+  || !existsSync(distHistoryEntry)
+) {
   console.error("Missing package dist. Run `npm run build -w zod-crud` first.");
   process.exit(1);
 }
@@ -15,6 +22,7 @@ if (!existsSync(distEntry) || !existsSync(distJsonEntry) || !existsSync(distPatc
 const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
 const { jsonSerializableError } = await import(distJsonEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
+const { computeInverses } = await import(distPatchInverseEntry.href);
 const {
   commitMutable,
   emptyMutableHistory,
@@ -66,6 +74,11 @@ for (const size of sizes) {
     op: "replace",
     path: "/items/0/done",
     value: index % 2 === 0,
+  }));
+  const nestedFieldReplaceOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "replace",
+    path: `/items/${index}/meta/rank`,
+    value: size + index,
   }));
   const addBatchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "add",
@@ -313,6 +326,47 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch repeated field replace batch ${repeatedFieldReplaceOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(repeatedFieldReplaceOps));
+  }
+
+  bench(`accepted nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyAcceptedPatch(state, nestedFieldReplaceOps));
+  bench(`trusted nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyTrustedPatch(state, nestedFieldReplaceOps, { valuesTrusted: true }));
+  bench(`computeInverses nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    computeInverses(state, nestedFieldReplaceOps));
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench(`doc.patch nested field replace batch ${nestedFieldReplaceOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(nestedFieldReplaceOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    bench(`doc.patch nested field replace batch ${nestedFieldReplaceOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(nestedFieldReplaceOps));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 100 });
+    const result = doc.patch(nestedFieldReplaceOps);
+    if (!result.ok) throw new Error(`setup nested field replace batch failed: ${JSON.stringify(result)}`);
+    benchWithSetup(`history undo nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canUndo) {
+        const redone = doc.history.redo();
+        if (!redone) throw new Error("nested field replace redo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.undo() };
+    });
+    benchWithSetup(`history redo nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      if (!doc.history.canRedo) {
+        const undone = doc.history.undo();
+        if (!undone) throw new Error("nested field replace undo setup failed");
+      }
+    }, () => {
+      return { ok: doc.history.redo() };
+    });
   }
 
   {
