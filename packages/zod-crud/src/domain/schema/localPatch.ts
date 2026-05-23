@@ -1702,7 +1702,8 @@ function cachedSchemaAtPointer(
     localSchemaCaches.set(schema as object, cache);
   }
   const key = `${mode}\0${pointer}`;
-  if (cache.pointerSchemas.has(key)) return cache.pointerSchemas.get(key) ?? null;
+  const cached = cache.pointerSchemas.get(key);
+  if (cached !== undefined) return cached;
   const result = schemaAtPointer(schema, pointer, mode);
   cache.pointerSchemas.set(key, result);
   return result;

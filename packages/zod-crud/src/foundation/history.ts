@@ -119,7 +119,9 @@ export function mergeLastMutable<E>(
   const top = stack.undo[stack.undo.length - 1]!;
   const prev = stack.undo[stack.undo.length - 2]!;
   const merged = merge(prev, top);
-  stack.undo.splice(stack.undo.length - 2, 2, merged);
+  const mergeIndex = stack.undo.length - 2;
+  stack.undo[mergeIndex] = merged;
+  stack.undo.pop();
   return true;
 }
 

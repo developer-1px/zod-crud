@@ -462,7 +462,8 @@ export function createJSONDocument<S extends z.ZodType>(
         selectionAfter: last.selectionAfter,
       };
       if (metadata !== undefined) merged.metadata = metadata;
-      stack.undo.splice(start, end - start, merged);
+      stack.undo[start] = merged;
+      stack.undo.length = start + 1;
       return;
     }
 
@@ -493,7 +494,8 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionAfter: last.selectionAfter,
     };
     if (metadata !== undefined) merged.metadata = metadata;
-    stack.undo.splice(start, end - start, merged);
+    stack.undo[start] = merged;
+    stack.undo.length = start + 1;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
