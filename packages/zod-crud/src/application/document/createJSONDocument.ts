@@ -423,6 +423,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const start = stack.undoStart + depthBefore;
     const end = stack.undo.length;
     if (start < stack.undoStart || end - start <= 1) return;
+    if (compactRepeatedReplaceTransaction(start, end)) return;
 
     const first = stack.undo[start]!;
     const last = stack.undo[end - 1]!;
@@ -504,6 +505,46 @@ export function createJSONDocument<S extends z.ZodType>(
     if (metadata !== undefined) merged.metadata = metadata;
     stack.undo[start] = merged;
     stack.undo.length = start + 1;
+  };
+
+  const compactRepeatedReplaceTransaction = (start: number, end: number): boolean => {
+    const first = stack.undo[start]!;
+    const firstForward = first.forward.length === 1 ? first.forward[0] : undefined;
+    const firstInverse = first.inverse.length === 1 ? first.inverse[0] : undefined;
+    if (
+      first.metadata !== undefined
+      || firstForward?.op !== "replace"
+      || firstInverse?.op !== "replace"
+      || firstForward.path !== firstInverse.path
+    ) {
+      return false;
+    }
+
+    const path = firstForward.path;
+    let repeatedForward = firstForward;
+    for (let index = start + 1; index < end; index += 1) {
+      const entry = stack.undo[index]!;
+      const forward = entry.forward.length === 1 ? entry.forward[0] : undefined;
+      const inverse = entry.inverse.length === 1 ? entry.inverse[0] : undefined;
+      if (
+        entry.metadata !== undefined
+        || forward?.op !== "replace"
+        || inverse?.op !== "replace"
+        || forward.path !== path
+        || inverse.path !== path
+      ) {
+        return false;
+      }
+      repeatedForward = forward;
+    }
+
+    const last = stack.undo[end - 1]!;
+    first.forward[0] = repeatedForward;
+    first.inverse[0] = firstInverse;
+    first.selectionAfter = last.selectionAfter;
+    delete first.metadata;
+    stack.undo.length = start + 1;
+    return true;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
