@@ -370,6 +370,9 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   const shape = getObjectShape(schema);
   const rootDef = shape === null ? getDef(schema) as ExtendedDef : null;
   const recordValueSchema = rootDef?.type === "record" ? (rootDef.valueType ?? null) : null;
+  const recordValueValidator = recordValueSchema
+    ? knownJsonValueValidatorForSchema(recordValueSchema)
+    : null;
 
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
@@ -392,7 +395,9 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
       ? (objectHasOwn.call(shape, key) ? (shape[key] ?? null) : null)
       : recordValueSchema;
     if (!valueSchema) return null;
-    const valueAccepted = acceptsKnownJsonValue(valueSchema, op.value);
+    const valueAccepted = shape
+      ? acceptsKnownJsonValue(valueSchema, op.value)
+      : acceptsKnownJsonValueWithValidator(recordValueValidator, op.value);
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
