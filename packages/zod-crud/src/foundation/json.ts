@@ -437,6 +437,16 @@ export function cloneTrustedPlainJson<T>(value: T): T {
 function cloneTrustedPlainJsonFast<T>(value: T): T {
   if (value === null || typeof value !== "object") return value;
   if (Array.isArray(value)) {
+    let hasObject = false;
+    for (let index = 0; index < value.length; index += 1) {
+      const child = value[index];
+      if (child !== null && typeof child === "object") {
+        hasObject = true;
+        break;
+      }
+    }
+    if (!hasObject) return value.slice() as T;
+
     const next = new Array(value.length);
     for (let index = 0; index < value.length; index += 1) {
       const child = value[index];
