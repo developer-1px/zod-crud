@@ -11,6 +11,7 @@ export type JSONValue =
 const LARGE_ARRAY_CLONE_THRESHOLD = 128;
 const LARGE_OBJECT_ARRAY_FIELD_WITH_OBJECT_HEAD_CLONE_THRESHOLD = 512;
 const LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD = 4096;
+const objectHasOwn = Object.prototype.hasOwnProperty;
 
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);
@@ -463,13 +464,23 @@ function cloneTrustedPlainJsonFast<T>(value: T): T {
     return next as T;
   }
 
-  const next = { ...(value as Record<string, unknown>) };
-  const keys = Object.keys(next);
-  for (let index = 0; index < keys.length; index += 1) {
-    const key = keys[index]!;
-    const child = next[key];
-    if (child !== null && typeof child === "object") {
-      next[key] = cloneTrustedPlainJsonFast(child);
+  const source = value as Record<string, unknown>;
+  const next: Record<string, unknown> = {};
+  for (const key in source) {
+    if (!objectHasOwn.call(source, key)) continue;
+    const child = source[key];
+    const cloned = child === null || typeof child !== "object"
+      ? child
+      : cloneTrustedPlainJsonFast(child);
+    if (key === "__proto__") {
+      Object.defineProperty(next, key, {
+        value: cloned,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      next[key] = cloned;
     }
   }
   return next as T;
@@ -488,6 +499,6 @@ export function jsonEqual(left: JSONValue | undefined, right: JSONValue | undefi
   const rightObject = right as Record<string, JSONValue>;
   const leftKeys = Object.keys(leftObject);
   if (leftKeys.length !== Object.keys(rightObject).length) return false;
-  return leftKeys.every((key) => Object.prototype.hasOwnProperty.call(rightObject, key)
+  return leftKeys.every((key) => objectHasOwn.call(rightObject, key)
     && jsonEqual(leftObject[key]!, rightObject[key]!));
 }
