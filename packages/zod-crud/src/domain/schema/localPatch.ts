@@ -225,6 +225,15 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (!result.success) return schemaViolation(state, op.path, result.error.issues);
   }
 
+  const singleRootReplace = applySingleRootObjectReplacePatchWithLocalSchemaValidation(state, op);
+  if (singleRootReplace) {
+    return {
+      state: singleRootReplace as z.output<S>,
+      result: { ok: true },
+      applied: [op],
+    };
+  }
+
   const applied = applyAcceptedPatch(state, ops);
   if (!applied.result.ok) {
     return {
@@ -238,6 +247,38 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+function applySingleRootObjectReplacePatchWithLocalSchemaValidation(
+  state: unknown,
+  op: Extract<JSONPatchOperation, { op: "replace" }>,
+): unknown | null {
+  if (
+    op.path[0] !== "/"
+    || op.path.includes("~")
+    || op.path.indexOf("/", 1) !== -1
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+  ) {
+    return null;
+  }
+
+  const key = op.path.slice(1);
+  if (!objectHasOwn.call(state, key)) return null;
+
+  const next = { ...(state as Record<string, unknown>) };
+  if (key === "__proto__") {
+    Object.defineProperty(next, key, {
+      value: op.value,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  } else {
+    next[key] = op.value;
+  }
+  return next;
 }
 
 function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
