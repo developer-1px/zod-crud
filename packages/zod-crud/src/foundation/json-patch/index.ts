@@ -570,10 +570,7 @@ function applySameArrayNestedReplacePatch(
     }
 
     if (location.index < 0 || location.index >= arrayValue.length) return { handled: false };
-    const row = arrayValue[location.index];
-    if (replaceValueAtSegments(row, location.suffixSegments, 0, op.value) === null) {
-      return { handled: false };
-    }
+    if (!getValueAt(arrayValue[location.index], location.suffixSegments).ok) return { handled: false };
     updates.set(location.index, op.value);
     applied[opIndex] = op;
   }

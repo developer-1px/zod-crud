@@ -483,9 +483,7 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       const parsed = valueSchema.safeParse(op.value);
       if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
     }
-    if (replaceValueAtSegments(arrayValue[location.index], location.suffixSegments, 0, op.value) === null) {
-      return null;
-    }
+    if (!readAt(arrayValue[location.index], location.suffixSegments).ok) return null;
     updates.set(location.index, op.value);
     applied[opIndex] = op;
   }
