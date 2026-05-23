@@ -98,6 +98,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
 ): LocalPatchResult<S> {
   if (!isPlainStructuralSchema(schema)) return null;
   const valuesTrusted = options.valuesTrusted === true;
+  const singleReplace = applySingleReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+  if (singleReplace) return singleReplace;
   const sameArrayFieldReplace = applySameArrayFieldReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
   const sameArrayElementReplace = applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation(schema, state, ops);
@@ -155,6 +157,51 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     }
   }
 
+  return {
+    state: applied.state as z.output<S>,
+    result: { ok: true },
+    applied: applied.applied,
+  };
+}
+
+function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): LocalPatchResult<S> {
+  if (!Array.isArray(ops) || ops.length !== 1 || !(0 in ops)) return null;
+  const op = ops[0]!;
+  if (
+    validateOperationShape(op) !== null
+    || op.op !== "replace"
+    || typeof op.path !== "string"
+    || op.path === ""
+  ) {
+    return null;
+  }
+
+  const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
+  if (!valueSchema) return null;
+
+  const valueAccepted = acceptsKnownJsonValue(valueSchema, op.value);
+  if (!valueAccepted && !valuesTrusted) {
+    const jsonError = jsonSerializableError(op.value);
+    if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+  }
+  if (!valueAccepted) {
+    const result = valueSchema.safeParse(op.value);
+    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+  }
+
+  const applied = applyAcceptedPatch(state, ops);
+  if (!applied.result.ok) {
+    return {
+      state,
+      result: applied.result,
+      applied: [],
+    };
+  }
   return {
     state: applied.state as z.output<S>,
     result: { ok: true },
