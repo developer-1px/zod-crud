@@ -136,6 +136,29 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("rekeys duplicate spread payloads against suffix candidates without exact base conflicts", () => {
+    const doc = createJSONDocument(Schema, {
+      ...initial,
+      items: [
+        { id: "a-copy", name: "AC" },
+      ],
+    });
+
+    expect(doc.clipboard.pastePayload("/items/-", [
+      { id: "a", name: "A1" },
+      { id: "a", name: "A2" },
+    ], {
+      spread: true,
+      rekey: { fields: ["id"], strategy: "suffix" },
+    })).toMatchObject({
+      ok: true,
+      applied: [
+        { op: "add", path: "/items/1", value: { id: "a", name: "A1" } },
+        { op: "add", path: "/items/2", value: { id: "a-copy-2", name: "A2" } },
+      ],
+    });
+  });
+
   test("rekeys nested suffix fields while reusing payload traversal", () => {
     const NestedItem = z.object({
       id: z.string(),

@@ -134,6 +134,10 @@ function collectSuffixExistingValues(
   fields: ReadonlyArray<string>,
   payloadEntries: Array<Record<string, unknown>>,
 ): RekeyField[] {
+  if (fields.length === 1) {
+    return collectSingleSuffixExistingValues(state, payload, fields[0]!, payloadEntries);
+  }
+
   const suffixFields = fields.map((field): SuffixRekeyField => ({
     field,
     existing: new Set(),
@@ -141,12 +145,15 @@ function collectSuffixExistingValues(
   }));
 
   walk(payload, (entry) => {
-    payloadEntries.push(entry);
+    let hasRekeyValue = false;
     for (let index = 0; index < suffixFields.length; index += 1) {
       const { field, bases } = suffixFields[index]!;
       const current = scalarText(entry[field]);
-      if (current !== null) bases.add(current);
+      if (current === null) continue;
+      bases.add(current);
+      hasRekeyValue = true;
     }
+    if (hasRekeyValue) payloadEntries.push(entry);
   });
 
   let hasBases = false;
@@ -180,6 +187,59 @@ function collectSuffixExistingValues(
   });
 
   return suffixFields;
+}
+
+function collectSingleSuffixExistingValues(
+  state: unknown,
+  payload: unknown,
+  field: string,
+  payloadEntries: Array<Record<string, unknown>>,
+): RekeyField[] {
+  const suffixField: SuffixRekeyField = {
+    field,
+    existing: new Set(),
+    bases: new Set(),
+  };
+  let hasDuplicateBase = false;
+
+  walk(payload, (entry) => {
+    const current = scalarText(entry[field]);
+    if (current === null) return;
+    payloadEntries.push(entry);
+    if (suffixField.bases.has(current)) {
+      hasDuplicateBase = true;
+      return;
+    }
+    suffixField.bases.add(current);
+  });
+
+  if (suffixField.bases.size === 0) return [suffixField];
+  if (suffixField.bases.size === 1) {
+    collectSingleSuffixField(state, suffixField);
+    return [suffixField];
+  }
+
+  if (!hasDuplicateBase && !collectExactSuffixFieldConflicts(state, suffixField)) {
+    return [suffixField];
+  }
+
+  walk(state, (entry) => {
+    const text = scalarText(entry[suffixField.field]);
+    if (text === null) return;
+    if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
+  });
+  return [suffixField];
+}
+
+function collectExactSuffixFieldConflicts(state: unknown, suffixField: SuffixRekeyField): boolean {
+  let hasConflict = false;
+  walk(state, (entry) => {
+    const text = scalarText(entry[suffixField.field]);
+    if (text === null || !suffixField.bases.has(text)) return;
+    suffixField.existing.add(text);
+    hasConflict = true;
+  });
+  return hasConflict;
 }
 
 function collectSingleSuffixField(state: unknown, suffixField: SuffixRekeyField): void {
