@@ -56,6 +56,7 @@ const objectHasOwn = Object.prototype.hasOwnProperty;
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
 const knownJsonValueValidatorCache = new WeakMap<object, KnownJsonValueValidator | null>();
+const primitiveJsonValueSeen = new WeakSet<object>();
 
 function copyRootRecord(source: Record<string, unknown>): Record<string, unknown> {
   return copyRootRecordKeys(source, Object.keys(source));
@@ -1234,7 +1235,10 @@ function acceptsKnownJsonValueWithValidator(
   validator: KnownJsonValueValidator | null,
   value: unknown,
 ): boolean {
-  return validator !== null && validator(value, new WeakSet<object>());
+  return validator !== null
+    && validator(value, value !== null && typeof value === "object"
+      ? new WeakSet<object>()
+      : primitiveJsonValueSeen);
 }
 
 function knownJsonValueValidatorForSchema(schema: z.ZodType): KnownJsonValueValidator | null {
@@ -1486,11 +1490,12 @@ function cachedSchemaAtPointer(
   return result;
 }
 
-function isPlainStructuralSchema(schema: z.ZodType, seen = new WeakSet<object>()): boolean {
+function isPlainStructuralSchema(schema: z.ZodType, seen?: WeakSet<object>): boolean {
   const cached = plainStructuralSchemaCache.get(schema as object);
   if (cached !== undefined) return cached;
-  if (seen.has(schema as object)) return true;
-  seen.add(schema as object);
+  const activeSeen = seen ?? new WeakSet<object>();
+  if (activeSeen.has(schema as object)) return true;
+  activeSeen.add(schema as object);
 
   const def = getDef(schema) as ExtendedDef;
   if (Array.isArray(def.checks) && def.checks.length > 0) return cachePlainStructuralSchema(schema, false);
@@ -1499,28 +1504,28 @@ function isPlainStructuralSchema(schema: z.ZodType, seen = new WeakSet<object>()
     case "object": {
       const shape = getObjectShape(schema);
       if (!shape) return cachePlainStructuralSchema(schema, false);
-      if (!Object.values(shape).every((child) => isPlainStructuralSchema(child, seen))) {
+      if (!Object.values(shape).every((child) => isPlainStructuralSchema(child, activeSeen))) {
         return cachePlainStructuralSchema(schema, false);
       }
       return cachePlainStructuralSchema(
         schema,
-        def.catchall ? isPlainStructuralSchema(def.catchall, seen) : true,
+        def.catchall ? isPlainStructuralSchema(def.catchall, activeSeen) : true,
       );
     }
     case "array": {
       const element = getArrayElement(schema);
-      return cachePlainStructuralSchema(schema, element ? isPlainStructuralSchema(element, seen) : false);
+      return cachePlainStructuralSchema(schema, element ? isPlainStructuralSchema(element, activeSeen) : false);
     }
     case "record":
       return cachePlainStructuralSchema(
         schema,
-        (!def.keyType || isPlainStructuralSchema(def.keyType, seen))
+        (!def.keyType || isPlainStructuralSchema(def.keyType, activeSeen))
           && !!def.valueType
-          && isPlainStructuralSchema(def.valueType, seen),
+          && isPlainStructuralSchema(def.valueType, activeSeen),
       );
     case "optional":
     case "nullable":
-      return cachePlainStructuralSchema(schema, !!def.innerType && isPlainStructuralSchema(def.innerType, seen));
+      return cachePlainStructuralSchema(schema, !!def.innerType && isPlainStructuralSchema(def.innerType, activeSeen));
     case "string":
     case "number":
     case "boolean":
