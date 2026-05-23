@@ -93,6 +93,21 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/0");
   });
 
+  test("multiple selection tracks replace-only batches without auto targets", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+    doc.selection?.selectRanges(["/items/0/name", "/items/1/name", "/items/2/name"]);
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/name", value: "A1" },
+      { op: "replace", path: "/items/1", value: { id: "b1", name: "B1" } },
+      { op: "replace", path: "/items/2/id", value: "c1" },
+    ])).toEqual({ ok: true });
+
+    expect(doc.selection?.selectedPointers).toEqual(["/items/0/name", "/items/2/name"]);
+  });
+
   test("single selection batch auto-selects only the final surviving target", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single" },

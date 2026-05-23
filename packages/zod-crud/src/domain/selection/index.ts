@@ -9,7 +9,7 @@
 //   ④ Anchor tracking       — anchor 도 동일 규칙
 
 import { trackPointer, pickAutoTargetsInfo, pickPrimaryAutoTarget, recoverLostPointer, exists } from "../tracking/pointer.js";
-import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { buildPointer, isPrefix, readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { cloneJson, jsonEqual, type JSONValue } from "../../foundation/json.js";
 import { expandRange } from "./range.js";
@@ -813,10 +813,73 @@ export function applySelectionAutoRules(
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
+  let stableReplacementPaths: ReadonlyArray<ReadonlyArray<string>> | null | false | undefined;
+  let stableReplacementPointers: ReadonlySet<Pointer> | null | false | undefined;
+  const getStableReplacementPaths = (): ReadonlyArray<ReadonlyArray<string>> | null | false => {
+    if (stableReplacementPaths !== undefined) return stableReplacementPaths;
+    const paths: string[][] = [];
+    for (let index = 0; index < applied.length; index += 1) {
+      const op = applied[index]!;
+      if (op.op === "test") continue;
+      if (op.op !== "replace") return stableReplacementPaths = false;
+      const replaced = tryParsePointer(op.path);
+      if (replaced === null) return stableReplacementPaths = null;
+      paths.push(replaced);
+    }
+    return stableReplacementPaths = paths;
+  };
+  const getStableReplacementPointers = (): ReadonlySet<Pointer> | null | false => {
+    if (stableReplacementPointers !== undefined) return stableReplacementPointers;
+    const paths = getStableReplacementPaths();
+    if (paths === false || paths === null) return stableReplacementPointers = paths;
+    const pointers = new Set<Pointer>();
+    for (let index = 0; index < paths.length; index += 1) {
+      pointers.add(buildPointer(paths[index]!));
+    }
+    return stableReplacementPointers = pointers;
+  };
+  const trackStableReplacementPathByScan = (
+    path: Pointer,
+    replacements: ReadonlyArray<ReadonlyArray<string>>,
+  ): Pointer | null => {
+    const target = tryParsePointer(path);
+    if (target === null) return null;
+    for (let index = 0; index < replacements.length; index += 1) {
+      const replaced = replacements[index]!;
+      if (isPrefix(replaced, target) && replaced.length < target.length) return null;
+    }
+    return path;
+  };
+  const trackStableReplacementPathBySet = (
+    path: Pointer,
+    replacements: ReadonlySet<Pointer>,
+  ): Pointer | null => {
+    const target = tryParsePointer(path);
+    if (target === null) return null;
+    for (let length = 0; length < target.length; length += 1) {
+      if (replacements.has(buildPointer(target.slice(0, length)))) return null;
+    }
+    return path;
+  };
   let trackedPathCache: Map<Pointer, Pointer | null> | null = null;
   const trackOrRecoverPath = (path: Pointer): Pointer | null => {
     if (trackedPathCache?.has(path)) return trackedPathCache.get(path) ?? null;
-    const tracked = trackPointer(path, applied);
+    let tracked: Pointer | null;
+    if (prev.selectedPointers.length > 1 || prev.selectionRanges.length > 1) {
+      const replacements = getStableReplacementPointers();
+      tracked = replacements === false
+        ? trackPointer(path, applied)
+        : replacements === null
+          ? null
+          : trackStableReplacementPathBySet(path, replacements);
+    } else {
+      const replacements = getStableReplacementPaths();
+      tracked = replacements === false
+        ? trackPointer(path, applied)
+        : replacements === null
+          ? null
+          : trackStableReplacementPathByScan(path, replacements);
+    }
     const next = tracked !== null && exists(after, tracked)
       ? tracked
       : recoverLostPointer(path, applied, after);

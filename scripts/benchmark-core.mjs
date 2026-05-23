@@ -328,6 +328,18 @@ for (const size of sizes) {
   }
 
   {
+    const selectedCount = Math.min(500, batchOps.length, size);
+    const selected = Array.from({ length: selectedCount }, (_, index) => `/items/${index}/done`);
+    const doc = createJSONDocument(Schema, state, {
+      history: 0,
+      selection: { mode: "multiple" },
+    });
+    doc.selection?.selectRanges(selected);
+    bench(`doc.patch batch ${batchOps.length} selection=multiple-${selectedCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(batchOps));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch batch ${batchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
