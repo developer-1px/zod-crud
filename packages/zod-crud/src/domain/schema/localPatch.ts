@@ -981,7 +981,6 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   }
 
   const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
-  let next: Record<string, unknown> | null = null;
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let index = 0; index < ops.length; index += 1) {
@@ -1008,29 +1007,21 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
       const result = valueSchema.safeParse(op.value);
       if (!result.success) return schemaViolation(state, op.path, result.error.issues);
     }
-
-    const key = op.path.slice(1);
-    if (next === null) next = copyRootRecord(state as Record<string, unknown>);
-    if (key === "__proto__") {
-      Object.defineProperty(next, key, {
-        value: op.value,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      next[key] = op.value;
-    }
     applied[index] = op;
   }
 
-  return next === null
-    ? null
-    : {
-        state: next as z.output<S>,
-        result: { ok: true },
-        applied,
-      };
+  const next = copyRootRecord(state as Record<string, unknown>);
+  for (let index = 0; index < ops.length; index += 1) {
+    const op = ops[index]!;
+    const key = op.path.slice(1);
+    writeRootRecordValue(next, key, op.value);
+  }
+
+  return {
+    state: next as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
 }
 
 function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
