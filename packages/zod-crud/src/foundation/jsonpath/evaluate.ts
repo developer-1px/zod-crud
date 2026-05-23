@@ -20,6 +20,9 @@ export function evaluate(query: Query, root: unknown): Match[] {
 }
 
 export function matchPointersForSimpleQuery(query: Query, root: unknown): string[] | null {
+  const arrayFieldPointers = matchArrayWildcardFieldPointers(query, root);
+  if (arrayFieldPointers !== null) return arrayFieldPointers;
+
   let values: unknown[] = [root];
   let pointers: string[] = [""];
 
@@ -42,6 +45,57 @@ export function matchPointersForSimpleQuery(query: Query, root: unknown): string
     pointers = nextPointers;
   }
 
+  return pointers;
+}
+
+function matchArrayWildcardFieldPointers(query: Query, root: unknown): string[] | null {
+  if (query.segments.length !== 3) return null;
+
+  const rootSegment = query.segments[0]!;
+  const wildcardSegment = query.segments[1]!;
+  const fieldSegment = query.segments[2]!;
+  if (
+    rootSegment.kind !== "child"
+    || wildcardSegment.kind !== "child"
+    || fieldSegment.kind !== "child"
+    || rootSegment.selectors.length !== 1
+    || wildcardSegment.selectors.length !== 1
+    || fieldSegment.selectors.length !== 1
+  ) {
+    return null;
+  }
+
+  const rootSelector = rootSegment.selectors[0]!;
+  const wildcardSelector = wildcardSegment.selectors[0]!;
+  const fieldSelector = fieldSegment.selectors[0]!;
+  if (
+    rootSelector.kind !== "name"
+    || wildcardSelector.kind !== "wildcard"
+    || fieldSelector.kind !== "name"
+  ) {
+    return null;
+  }
+
+  if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
+  const rootObject = root as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(rootObject, rootSelector.name)) return [];
+  const array = rootObject[rootSelector.name];
+  if (!Array.isArray(array)) return [];
+
+  const rootPointer = "/" + escapeSeg(rootSelector.name);
+  const fieldPointer = "/" + escapeSeg(fieldSelector.name);
+  const pointers: string[] = [];
+  for (let index = 0; index < array.length; index += 1) {
+    const item = array[index];
+    if (
+      item !== null
+      && typeof item === "object"
+      && !Array.isArray(item)
+      && Object.prototype.hasOwnProperty.call(item, fieldSelector.name)
+    ) {
+      pointers.push(rootPointer + "/" + index + fieldPointer);
+    }
+  }
   return pointers;
 }
 
