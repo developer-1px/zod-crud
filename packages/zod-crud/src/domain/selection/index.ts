@@ -829,27 +829,38 @@ export function applySelectionAutoRules(
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
   let stableReplacementPaths: ReadonlyArray<ReadonlyArray<string>> | null | false | undefined;
+  let stableReplacementPathPointers: ReadonlyArray<Pointer> | null | false | undefined;
   let stableReplacementPointers: ReadonlySet<Pointer> | null | false | undefined;
   const getStableReplacementPaths = (): ReadonlyArray<ReadonlyArray<string>> | null | false => {
     if (stableReplacementPaths !== undefined) return stableReplacementPaths;
     const paths: string[][] = [];
+    const pathPointers: Pointer[] = [];
     for (let index = 0; index < applied.length; index += 1) {
       const op = applied[index]!;
       if (op.op === "test") continue;
-      if (op.op !== "replace") return stableReplacementPaths = false;
+      if (op.op !== "replace") {
+        stableReplacementPathPointers = false;
+        return stableReplacementPaths = false;
+      }
       const replaced = tryParsePointer(op.path);
-      if (replaced === null) return stableReplacementPaths = null;
+      if (replaced === null) {
+        stableReplacementPathPointers = null;
+        return stableReplacementPaths = null;
+      }
       paths.push(replaced);
+      pathPointers.push(op.path[0] === "#" ? buildPointer(replaced) : op.path);
     }
+    stableReplacementPathPointers = pathPointers;
     return stableReplacementPaths = paths;
   };
   const getStableReplacementPointers = (): ReadonlySet<Pointer> | null | false => {
     if (stableReplacementPointers !== undefined) return stableReplacementPointers;
     const paths = getStableReplacementPaths();
     if (paths === false || paths === null) return stableReplacementPointers = paths;
+    const pathPointers = stableReplacementPathPointers as ReadonlyArray<Pointer>;
     const pointers = new Set<Pointer>();
-    for (let index = 0; index < paths.length; index += 1) {
-      pointers.add(buildPointer(paths[index]!));
+    for (let index = 0; index < pathPointers.length; index += 1) {
+      pointers.add(pathPointers[index]!);
     }
     return stableReplacementPointers = pointers;
   };
