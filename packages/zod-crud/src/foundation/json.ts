@@ -8,7 +8,7 @@ export type JSONValue =
   | { readonly [key: string]: JSONValue }
   | ReadonlyArray<JSONValue>;
 
-const LARGE_ARRAY_CLONE_THRESHOLD = 1024;
+const LARGE_ARRAY_CLONE_THRESHOLD = 128;
 
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);
