@@ -71,9 +71,14 @@ const batchSize = envNumber("PERF_BATCH", 1000);
 const individualCount = envNumber("PERF_INDIVIDUAL", 100);
 const jsonpathRepeats = envNumber("PERF_JSONPATH_REPEATS", 10000);
 const rounds = envNumber("PERF_ROUNDS", 5);
+const forceGc = process.env.PERF_GC === "1";
+const runtimeGc = typeof globalThis.gc === "function" ? globalThis.gc.bind(globalThis) : null;
 
 console.log("zod-crud core benchmark");
 console.log(`items=${sizes.join(",")} batch=${batchSize} individual=${individualCount} rounds=${rounds}`);
+if (forceGc) {
+  console.log(`gc=${runtimeGc ? "enabled" : "unavailable (run node with --expose-gc)"}`);
+}
 
 for (const size of sizes) {
   const state = Schema.parse(makeState(size));
@@ -1043,6 +1048,7 @@ function bench(label, sampleCount, fn) {
   const samples = [];
   let last;
   for (let index = 0; index < sampleCount; index++) {
+    maybeCollectGarbage();
     const started = performance.now();
     last = fn(index);
     samples.push(performance.now() - started);
@@ -1057,6 +1063,7 @@ function benchWithSetup(label, sampleCount, setup, fn) {
   let last;
   for (let index = 0; index < sampleCount; index++) {
     setup(index);
+    maybeCollectGarbage();
     const started = performance.now();
     last = fn(index);
     samples.push(performance.now() - started);
@@ -1092,9 +1099,14 @@ function sampleStats(samples) {
 }
 
 function time(fn) {
+  maybeCollectGarbage();
   const started = performance.now();
   fn();
   return performance.now() - started;
+}
+
+function maybeCollectGarbage() {
+  if (forceGc) runtimeGc?.();
 }
 
 function envList(name, fallback) {
