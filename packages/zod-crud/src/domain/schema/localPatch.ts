@@ -39,6 +39,7 @@ interface ExtendedDef {
   options?: z.ZodType[];
   items?: z.ZodType[];
   rest?: z.ZodType | null;
+  getter?: () => z.ZodType;
   values?: unknown[];
   entries?: Record<string, unknown>;
 }
@@ -1817,87 +1818,86 @@ function cachePlainStructuralSchema(schema: z.ZodType, value: boolean): boolean 
 function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<object>): boolean {
   const cached = knownJsonOutputSchemaCache.get(schema as object);
   if (cached !== undefined) return cached;
+  const shouldCache = seen === undefined;
+  const finish = (value: boolean): boolean => shouldCache
+    ? cacheKnownJsonOutputSchema(schema, value)
+    : value;
   const activeSeen = seen ?? new WeakSet<object>();
-  if (activeSeen.has(schema as object)) return cacheKnownJsonOutputSchema(schema, false);
+  if (activeSeen.has(schema as object)) return true;
   activeSeen.add(schema as object);
 
   const def = getDef(schema) as ExtendedDef;
-  if (def.coerce) return cacheKnownJsonOutputSchema(schema, false);
+  if (def.coerce) return finish(false);
 
   switch (def.type) {
     case "object": {
       const shape = getObjectShape(schema);
-      if (!shape) return cacheKnownJsonOutputSchema(schema, false);
+      if (!shape) return finish(false);
       for (const key of Object.keys(shape)) {
-        if (key === "__proto__") return cacheKnownJsonOutputSchema(schema, false);
+        if (key === "__proto__") return finish(false);
         const child = shape[key];
         if (!child || !schemaOutputIsKnownJsonInternal(child, activeSeen)) {
-          return cacheKnownJsonOutputSchema(schema, false);
+          return finish(false);
         }
       }
       if (def.catchall && !schemaOutputIsKnownJsonInternal(def.catchall, activeSeen)) {
-        return cacheKnownJsonOutputSchema(schema, false);
+        return finish(false);
       }
-      return cacheKnownJsonOutputSchema(schema, true);
+      return finish(true);
     }
     case "array": {
       const element = getArrayElement(schema);
-      return cacheKnownJsonOutputSchema(
-        schema,
-        element ? schemaOutputIsKnownJsonInternal(element, activeSeen) : false,
-      );
+      return finish(element ? schemaOutputIsKnownJsonInternal(element, activeSeen) : false);
     }
     case "nullable":
-      return cacheKnownJsonOutputSchema(
-        schema,
+      return finish(
         !!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen),
       );
     case "string":
     case "number":
     case "boolean":
     case "null":
-      return cacheKnownJsonOutputSchema(schema, true);
+      return finish(true);
     case "literal":
-      return cacheKnownJsonOutputSchema(
-        schema,
-        Array.isArray(def.values) && def.values.every(isJsonPrimitive),
-      );
+      return finish(Array.isArray(def.values) && def.values.every(isJsonPrimitive));
     case "enum": {
       const values = Array.isArray(def.values)
         ? def.values
         : def.entries && typeof def.entries === "object"
           ? Object.values(def.entries)
           : null;
-      return cacheKnownJsonOutputSchema(schema, values !== null && values.every(isJsonPrimitive));
+      return finish(values !== null && values.every(isJsonPrimitive));
     }
     case "record":
-      return cacheKnownJsonOutputSchema(
-        schema,
+      return finish(
         (!def.keyType || isPlainStringKeySchema(def.keyType))
           && !!def.valueType
           && schemaOutputIsKnownJsonInternal(def.valueType, activeSeen),
       );
     case "union":
-      return cacheKnownJsonOutputSchema(
-        schema,
+      return finish(
         Array.isArray(def.options)
           && def.options.length > 0
           && def.options.every((option) => schemaOutputIsKnownJsonInternal(option, activeSeen)),
       );
     case "tuple":
-      return cacheKnownJsonOutputSchema(
-        schema,
+      return finish(
         Array.isArray(def.items)
           && def.items.every((item) => schemaOutputIsKnownJsonInternal(item, activeSeen))
           && (!def.rest || schemaOutputIsKnownJsonInternal(def.rest, activeSeen)),
       );
     case "readonly":
-      return cacheKnownJsonOutputSchema(
-        schema,
-        !!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen),
-      );
+      return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
+    case "lazy": {
+      if (!def.getter) return finish(false);
+      try {
+        return finish(schemaOutputIsKnownJsonInternal(def.getter(), activeSeen));
+      } catch {
+        return finish(false);
+      }
+    }
     default:
-      return cacheKnownJsonOutputSchema(schema, false);
+      return finish(false);
   }
 }
 

@@ -616,6 +616,76 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("known-JSON lazy recursive schema outputs can be trusted", () => {
+    interface TreeNode {
+      id: string;
+      children: TreeNode[];
+    }
+    const Tree: z.ZodType<TreeNode> = z.lazy(() => z.object({
+      id: z.string(),
+      children: z.array(Tree),
+    }));
+    const doc = createJSONDocument(Tree, {
+      id: "root",
+      children: [{ id: "child", children: [] }],
+    });
+
+    expect(doc.patch({ op: "replace", path: "/children/0/id", value: "next" })).toEqual({ ok: true });
+  });
+
+  test("lazy recursive schema with unknown output keeps the document JSON guard", () => {
+    interface BadNode {
+      value: unknown;
+      children: BadNode[];
+    }
+    const BadTree: z.ZodType<BadNode> = z.lazy(() => z.object({
+      value: z.any(),
+      children: z.array(BadTree),
+    }));
+    const doc = createJSONDocument(BadTree, {
+      value: () => "bad",
+      children: [],
+    });
+
+    expect(doc.canPatch({ op: "replace", path: "/value", value: 1 })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
+  test("mutual lazy recursion does not cache an unsafe branch as JSON", () => {
+    interface ANode {
+      b: BNode;
+      bad: unknown;
+    }
+    interface BNode {
+      a: ANode | null;
+    }
+    const A: z.ZodType<ANode> = z.lazy(() => z.object({
+      b: B,
+      bad: z.any(),
+    }));
+    const B: z.ZodType<BNode> = z.lazy(() => z.object({
+      a: A.nullable(),
+    }));
+
+    createJSONDocument(A, {
+      b: { a: null },
+      bad: () => "bad",
+    });
+    const doc = createJSONDocument(B, {
+      a: {
+        b: { a: null },
+        bad: () => "bad",
+      },
+    });
+
+    expect(doc.canPatch({ op: "replace", path: "/a/b/a", value: null })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
   test("clipboard write rejects invalid sources before payload cloning", () => {
     const payload: Record<string, unknown> = { ok: true };
     Object.defineProperty(payload, "computed", {

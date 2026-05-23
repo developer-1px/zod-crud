@@ -52,6 +52,10 @@ const NestedSchema = z.object({
     items: z.array(Item),
   }),
 });
+const RecursiveNode = z.lazy(() => z.object({
+  id: z.string(),
+  children: z.array(RecursiveNode),
+}));
 
 const sizes = envList("PERF_ITEMS", [10000, 50000]);
 const batchSize = envNumber("PERF_BATCH", 1000);
@@ -64,6 +68,7 @@ console.log(`items=${sizes.join(",")} batch=${batchSize} individual=${individual
 for (const size of sizes) {
   const state = Schema.parse(makeState(size));
   const nestedState = NestedSchema.parse({ wrapper: { items: state.items } });
+  const recursiveState = RecursiveNode.parse(makeRecursiveState(size));
   const middle = Math.floor(size / 2);
   const batchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "replace",
@@ -135,6 +140,10 @@ for (const size of sizes) {
   bench("createJSONDocument init history=100", Math.max(3, Math.ceil(rounds / 2)), () => {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     return { ok: doc.value.items.length === size };
+  });
+  bench("createJSONDocument lazy tree init history=0", Math.max(3, Math.ceil(rounds / 2)), () => {
+    const doc = createJSONDocument(RecursiveNode, recursiveState, { history: 0 });
+    return { ok: doc.value.children.length === size };
   });
   bench("applyPatch single leaf replace", rounds, (index) =>
     applyPatch(Schema, state, [{
@@ -942,6 +951,16 @@ function makeItem(index) {
       tag: `tag-${index % 10}`,
       rank: index % 100,
     },
+  };
+}
+
+function makeRecursiveState(size) {
+  return {
+    id: "root",
+    children: Array.from({ length: size }, (_, index) => ({
+      id: `id-${index}`,
+      children: [],
+    })),
   };
 }
 
