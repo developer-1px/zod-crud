@@ -416,6 +416,23 @@ describe("createJSONDocument public interface", () => {
     ]);
   });
 
+  test("clipboard write can reuse caller-owned payload references", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const payload = [{ id: "owned", name: "Owned" }];
+
+    expect(doc.clipboard.write(payload, {
+      trustedPayload: true,
+      clonePayload: false,
+    })).toEqual({ ok: true });
+
+    payload[0]!.name = "Mutated";
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(read.payload).toEqual([{ id: "owned", name: "Mutated" }]);
+    expect(read.payload).not.toBe(payload);
+  });
+
   test("clipboard write clones large external object payloads with array fields", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
     const payload = {

@@ -272,6 +272,13 @@ revalidating the JSON boundary.
 doc.clipboard.write(cards, { trustedPayload: true });
 ```
 
+When the caller also owns the payload's immutability boundary, skip the
+clipboard buffer clone as well.
+
+```ts
+doc.clipboard.write(cards, { trustedPayload: true, clonePayload: false });
+```
+
 Use a pointer such as `/cards/-` when you already have an insertion position.
 Use `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }` when
 the target is an existing value.

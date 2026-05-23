@@ -359,6 +359,18 @@ for (const size of sizes) {
   }
 
   {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.write items payload trusted no clone", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.write(state.items, { trustedPayload: true, clonePayload: false }));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.write items payload validate no clone", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.write(state.items, { clonePayload: false }));
+  }
+
+  {
     const doc = createJSONDocument(UnknownItemsSchema, { items: [] }, { history: 0 });
     bench("doc.clipboard.pastePayload unknown replace /items", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.pastePayload({ replace: "/items" }, state.items));

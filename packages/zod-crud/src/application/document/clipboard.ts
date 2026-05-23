@@ -1,6 +1,6 @@
 import type * as z from "zod";
 
-import { cloneJsonSerializable, cloneTrustedPlainJson } from "../../foundation/json.js";
+import { cloneJsonSerializable, cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
 import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import { normalizePointerSources } from "../../foundation/json-pointer/sourceSet.js";
@@ -22,6 +22,8 @@ interface ClipboardWriteOptions {
   sources?: ReadonlyArray<Pointer> | null;
   /** Skip JSON-serializability validation when the caller already owns that boundary. */
   trustedPayload?: boolean;
+  /** Store the payload reference directly. Use only when the caller owns its immutability boundary. */
+  clonePayload?: boolean;
 }
 
 interface ClipboardReadOk {
@@ -88,6 +90,10 @@ type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
 
+type CloneWritePayloadResult =
+  | { ok: true; value: unknown }
+  | { ok: false; reason: string };
+
 interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
@@ -111,6 +117,24 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
   code: "empty_clipboard",
   message: "clipboard is empty",
 };
+
+function cloneWritePayload(
+  payload: unknown,
+  trustedPayload: boolean,
+  clonePayload: boolean,
+): CloneWritePayloadResult {
+  if (clonePayload) {
+    return trustedPayload
+      ? { ok: true, value: cloneTrustedPlainJson(payload) }
+      : cloneJsonSerializable(payload);
+  }
+  if (trustedPayload) return { ok: true, value: payload };
+
+  const reason = jsonSerializableError(payload);
+  return reason === null
+    ? { ok: true, value: payload }
+    : { ok: false, reason };
+}
 
 export function createClipboard<S extends z.ZodType>(
   args: CreateClipboardOptions<S>,
@@ -223,9 +247,7 @@ export function createClipboard<S extends z.ZodType>(
         ? false
         : isTrustedWritePayload(payload, sources);
       const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
-      const cloned = trustedPayload
-        ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
-        : cloneJsonSerializable(payload);
+      const cloned = cloneWritePayload(payload, trustedPayload, options.clonePayload !== false);
       if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
       const source = sources?.[0] ?? null;
       setBuffer({
