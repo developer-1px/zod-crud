@@ -674,38 +674,87 @@ for (const size of sizes) {
   }
 
   {
-    const doc = createJSONDocument(Schema, state, { history: 0 });
-    const elapsed = time(() => {
-      for (let index = 0; index < Math.min(individualCount, size); index++) {
-        const result = doc.patch({
-          op: "replace",
-          path: `/items/${index}/done`,
-          value: true,
-        });
-        if (!result.ok) throw new Error(`individual patch failed: ${JSON.stringify(result)}`);
-      }
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`doc.patch individual ${count} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () => {
+      patchDoneRange(doc, count, "individual patch");
+      return { ok: true };
     });
-    console.log(`doc.patch individual ${Math.min(individualCount, size)} history=0: ${elapsed.toFixed(2)}ms`);
   }
 
   {
-    const doc = createJSONDocument(Schema, state, { history: individualCount });
-    const elapsed = time(() => {
-      for (let index = 0; index < Math.min(individualCount, size); index++) {
-        const result = doc.patch({
-          op: "replace",
-          path: `/items/${index}/done`,
-          value: true,
-        });
-        if (!result.ok) throw new Error(`individual patch failed: ${JSON.stringify(result)}`);
-      }
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`doc.patch individual ${count} history=${individualCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: individualCount });
+    }, () => {
+      patchDoneRange(doc, count, "individual patch");
+      return { ok: true };
     });
-    console.log(`doc.patch individual ${Math.min(individualCount, size)} history=${individualCount}: ${elapsed.toFixed(2)}ms`);
   }
 
   {
-    const doc = createJSONDocument(Schema, state, { history: 0 });
-    const elapsed = time(() => {
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`doc.history.transaction individual ${count} history=${individualCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: individualCount });
+    }, () => {
+      patchDoneTransaction(doc, count, "transaction patch");
+      return { ok: doc.history.undoDepth === 1 };
+    });
+  }
+
+  {
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`history undo individual ${count} entries`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: count });
+      patchDoneRange(doc, count, "setup individual patch");
+    }, () => {
+      undoAll(doc, count, "individual undo");
+      return { ok: doc.history.undoDepth === 0 };
+    });
+  }
+
+  {
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`history redo individual ${count} entries`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: count });
+      patchDoneRange(doc, count, "setup individual patch");
+      undoAll(doc, count, "setup individual undo");
+    }, () => {
+      redoAll(doc, count, "individual redo");
+      return { ok: doc.history.redoDepth === 0 };
+    });
+  }
+
+  {
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`history undo transaction individual ${count}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: count });
+      patchDoneTransaction(doc, count, "setup transaction patch");
+    }, () => ({ ok: doc.history.undo() }));
+  }
+
+  {
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`history redo transaction individual ${count}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: count });
+      patchDoneTransaction(doc, count, "setup transaction patch");
+      if (!doc.history.undo()) throw new Error("setup transaction undo failed");
+    }, () => ({ ok: doc.history.redo() }));
+  }
+
+  {
+    let doc;
+    benchWithSetup(`doc.patch individual add ${insertedItems.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () => {
       for (let index = 0; index < insertedItems.length; index++) {
         const result = doc.patch({
           op: "add",
@@ -714,22 +763,25 @@ for (const size of sizes) {
         });
         if (!result.ok) throw new Error(`individual add failed: ${JSON.stringify(result)}`);
       }
+      return { ok: true };
     });
-    console.log(`doc.patch individual add ${insertedItems.length} history=0: ${elapsed.toFixed(2)}ms`);
   }
 
   {
-    const doc = createJSONDocument(Schema, state, { history: 0 });
-    const elapsed = time(() => {
-      for (let index = 0; index < Math.min(individualCount, size); index++) {
+    let doc;
+    const count = Math.min(individualCount, size);
+    benchWithSetup(`doc.patch individual remove ${count} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () => {
+      for (let index = 0; index < count; index++) {
         const result = doc.patch({
           op: "remove",
           path: `/items/${size - index - 1}`,
         });
         if (!result.ok) throw new Error(`individual remove failed: ${JSON.stringify(result)}`);
       }
+      return { ok: true };
     });
-    console.log(`doc.patch individual remove ${Math.min(individualCount, size)} history=0: ${elapsed.toFixed(2)}ms`);
   }
 
   {
@@ -767,14 +819,16 @@ for (const size of sizes) {
   }
 
   {
-    const doc = createJSONDocument(Schema, state, { history: 0 });
-    const elapsed = time(() => {
+    let doc;
+    benchWithSetup(`doc.patch individual copy/move ${copyMoveOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () => {
       for (const op of copyMoveOps) {
         const result = doc.patch(op);
         if (!result.ok) throw new Error(`individual copy/move failed: ${JSON.stringify(result)}`);
       }
+      return { ok: true };
     });
-    console.log(`doc.patch individual copy/move ${copyMoveOps.length} history=0: ${elapsed.toFixed(2)}ms`);
   }
 
   {
@@ -1109,6 +1163,35 @@ function makeRootObjectValue(index) {
       tag: `tag-${index % 10}`,
     },
   };
+}
+
+function patchDoneRange(doc, count, label) {
+  for (let index = 0; index < count; index++) {
+    const result = doc.patch({
+      op: "replace",
+      path: `/items/${index}/done`,
+      value: true,
+    });
+    if (!result.ok) throw new Error(`${label} failed: ${JSON.stringify(result)}`);
+  }
+}
+
+function patchDoneTransaction(doc, count, label) {
+  doc.history.transaction(() => {
+    patchDoneRange(doc, count, label);
+  });
+}
+
+function undoAll(doc, count, label) {
+  for (let index = 0; index < count; index++) {
+    if (!doc.history.undo()) throw new Error(`${label} failed at ${index}`);
+  }
+}
+
+function redoAll(doc, count, label) {
+  for (let index = 0; index < count; index++) {
+    if (!doc.history.redo()) throw new Error(`${label} failed at ${index}`);
+  }
 }
 
 function bench(label, sampleCount, fn) {
