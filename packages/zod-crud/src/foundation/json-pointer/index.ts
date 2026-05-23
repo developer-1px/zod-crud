@@ -4,10 +4,12 @@
 export type Pointer = string;
 
 export function escapeSegment(s: string): string {
+  if (!s.includes("~") && !s.includes("/")) return s;
   return s.replace(/~/g, "~0").replace(/\//g, "~1");
 }
 
 export function unescapeSegment(s: string): string {
+  if (!s.includes("~")) return s;
   return s.replace(/~1/g, "/").replace(/~0/g, "~");
 }
 
