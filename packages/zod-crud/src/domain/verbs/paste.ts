@@ -199,12 +199,7 @@ function buildPasteOp(payload: unknown, target: Pointer, mode: PasteMode): JSONP
       return { op: "add", path: target, value: payload };
     case "after": {
       // /items/3 → /items/4. array index 만 안전하게 처리. object 는 사용자가 명시 path 권장.
-      const m = target.match(/^(.*\/)([0-9]+)$/);
-      if (m) {
-        const next = String(Number(m[2]) + 1);
-        return { op: "add", path: m[1] + next, value: payload };
-      }
-      return { op: "add", path: target, value: payload };
+      return { op: "add", path: incrementTrailingDecimalPath(target) ?? target, value: payload };
     }
     case "into":
     default:
@@ -236,10 +231,10 @@ function buildSpreadPasteOps(payload: ReadonlyArray<unknown>, target: Pointer, m
     return ops;
   }
 
-  const numericTarget = path.match(/^(.*\/)([0-9]+)$/);
+  const numericTarget = trailingDecimalPath(path);
   if (numericTarget) {
-    const prefix = numericTarget[1]!;
-    const start = Number(numericTarget[2]);
+    const prefix = numericTarget.prefix;
+    const start = numericTarget.index;
     for (let index = 0; index < payload.length; index += 1) {
       ops[index] = { op: "add", path: prefix + String(start + index), value: payload[index] };
     }
@@ -254,8 +249,7 @@ function buildSpreadPasteOps(payload: ReadonlyArray<unknown>, target: Pointer, m
 
 function insertionTarget(target: Pointer, mode: PasteMode): Pointer {
   if (mode !== "after") return target;
-  const m = target.match(/^(.*\/)([0-9]+)$/);
-  return m ? m[1] + String(Number(m[2]) + 1) : target;
+  return incrementTrailingDecimalPath(target) ?? target;
 }
 
 function isArrayInsertionPath(state: unknown, path: Pointer): boolean {
@@ -263,8 +257,39 @@ function isArrayInsertionPath(state: unknown, path: Pointer): boolean {
   if (segments === null || segments.length === 0) return false;
 
   const segment = segments[segments.length - 1]!;
-  if (segment !== "-" && !/^(0|[1-9][0-9]*)$/.test(segment)) return false;
+  if (!isArrayInsertionSegment(segment)) return false;
 
   const parent = readAt(state, segments.slice(0, -1));
   return parent.ok && Array.isArray(parent.value);
+}
+
+function incrementTrailingDecimalPath(path: Pointer): Pointer | null {
+  const parsed = trailingDecimalPath(path);
+  return parsed === null ? null : parsed.prefix + String(parsed.index + 1);
+}
+
+function trailingDecimalPath(path: Pointer): { prefix: string; index: number } | null {
+  const slash = path.lastIndexOf("/");
+  if (slash < 0 || slash === path.length - 1) return null;
+  for (let index = slash + 1; index < path.length; index += 1) {
+    const code = path.charCodeAt(index);
+    if (code < 48 || code > 57) return null;
+  }
+  return {
+    prefix: path.slice(0, slash + 1),
+    index: Number(path.slice(slash + 1)),
+  };
+}
+
+function isArrayInsertionSegment(segment: string): boolean {
+  if (segment === "-") return true;
+  if (segment.length === 0) return false;
+  const first = segment.charCodeAt(0);
+  if (first === 48) return segment.length === 1;
+  if (first < 49 || first > 57) return false;
+  for (let index = 1; index < segment.length; index += 1) {
+    const code = segment.charCodeAt(index);
+    if (code < 48 || code > 57) return false;
+  }
+  return true;
 }
