@@ -36,6 +36,9 @@ interface ExtendedDef {
   catchall?: z.ZodType;
   keyType?: z.ZodType;
   valueType?: z.ZodType;
+  options?: z.ZodType[];
+  items?: z.ZodType[];
+  rest?: z.ZodType | null;
   values?: unknown[];
   entries?: Record<string, unknown>;
 }
@@ -1873,6 +1876,25 @@ function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<objec
         (!def.keyType || isPlainStringKeySchema(def.keyType))
           && !!def.valueType
           && schemaOutputIsKnownJsonInternal(def.valueType, activeSeen),
+      );
+    case "union":
+      return cacheKnownJsonOutputSchema(
+        schema,
+        Array.isArray(def.options)
+          && def.options.length > 0
+          && def.options.every((option) => schemaOutputIsKnownJsonInternal(option, activeSeen)),
+      );
+    case "tuple":
+      return cacheKnownJsonOutputSchema(
+        schema,
+        Array.isArray(def.items)
+          && def.items.every((item) => schemaOutputIsKnownJsonInternal(item, activeSeen))
+          && (!def.rest || schemaOutputIsKnownJsonInternal(def.rest, activeSeen)),
+      );
+    case "readonly":
+      return cacheKnownJsonOutputSchema(
+        schema,
+        !!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen),
       );
     default:
       return cacheKnownJsonOutputSchema(schema, false);

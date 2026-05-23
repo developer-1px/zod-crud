@@ -576,6 +576,46 @@ describe("createJSONDocument public interface", () => {
     expect(catchallDoc.patch({ op: "replace", path: "/item", value: "next" })).toEqual({ ok: true });
   });
 
+  test("known-JSON union, tuple, and readonly schema outputs can be trusted", () => {
+    const UnionSchema = z.object({
+      items: z.array(z.discriminatedUnion("kind", [
+        z.object({ kind: z.literal("text"), value: z.string() }),
+        z.object({ kind: z.literal("count"), value: z.number() }),
+      ])),
+    });
+    const unionDoc = createJSONDocument(UnionSchema, {
+      items: [
+        { kind: "text", value: "a" },
+        { kind: "count", value: 1 },
+      ],
+    });
+    expect(unionDoc.patch({ op: "replace", path: "/items/1/value", value: 2 })).toEqual({ ok: true });
+
+    const TupleSchema = z.object({
+      point: z.tuple([z.number(), z.number()]),
+    });
+    const tupleDoc = createJSONDocument(TupleSchema, { point: [1, 2] });
+    expect(tupleDoc.patch({ op: "replace", path: "/point/0", value: 3 })).toEqual({ ok: true });
+
+    const ReadonlySchema = z.object({
+      item: z.object({ id: z.string() }).readonly(),
+    });
+    const readonlyDoc = createJSONDocument(ReadonlySchema, { item: { id: "a" } });
+    expect(readonlyDoc.patch({ op: "replace", path: "/item/id", value: "b" })).toEqual({ ok: true });
+  });
+
+  test("default schema output keeps the document JSON guard", () => {
+    const DefaultSchema = z.object({
+      value: z.number().default(() => Number.NaN),
+    });
+    const doc = createJSONDocument(DefaultSchema, {});
+
+    expect(doc.canPatch({ op: "replace", path: "/value", value: 1 })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
   test("clipboard write rejects invalid sources before payload cloning", () => {
     const payload: Record<string, unknown> = { ok: true };
     Object.defineProperty(payload, "computed", {
