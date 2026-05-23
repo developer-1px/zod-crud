@@ -78,8 +78,15 @@ const fail = (code: ErrorCode, reason?: string, pointer?: Pointer): JSONResult =
 const zodIssuesReason = (error: z.ZodError): string => JSON.stringify(error.issues);
 
 function copyRootObject(source: Record<string, unknown>): Record<string, unknown> {
+  return copyRootObjectKeys(source, Object.keys(source));
+}
+
+function copyRootObjectKeys(
+  source: Record<string, unknown>,
+  keys: ReadonlyArray<string>,
+): Record<string, unknown> {
   const next: Record<string, unknown> = {};
-  for (const key of Object.keys(source)) {
+  for (const key of keys) {
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: source[key],
@@ -616,8 +623,17 @@ function applyRootObjectRemovePatch(
     applied[index] = op;
   }
 
+  const sourceKeys = Object.keys(source);
+  if (ops.length * 2 <= sourceKeys.length) {
+    const next = copyRootObjectKeys(source, sourceKeys);
+    for (let index = 0; index < ops.length; index += 1) {
+      delete next[ops[index]!.path.slice(1)];
+    }
+    return { handled: true, state: next, applied };
+  }
+
   const next: Record<string, unknown> = {};
-  for (const key of Object.keys(source)) {
+  for (const key of sourceKeys) {
     if (objectHasOwn.call(removedKeys, key)) continue;
     if (key === "__proto__") {
       Object.defineProperty(next, key, {

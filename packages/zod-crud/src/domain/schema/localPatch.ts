@@ -58,8 +58,15 @@ const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
 const knownJsonValueValidatorCache = new WeakMap<object, KnownJsonValueValidator | null>();
 
 function copyRootRecord(source: Record<string, unknown>): Record<string, unknown> {
+  return copyRootRecordKeys(source, Object.keys(source));
+}
+
+function copyRootRecordKeys(
+  source: Record<string, unknown>,
+  keys: ReadonlyArray<string>,
+): Record<string, unknown> {
   const next: Record<string, unknown> = {};
-  for (const key of Object.keys(source)) {
+  for (const key of keys) {
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: source[key],
@@ -454,8 +461,21 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     applied[index] = op;
   }
 
+  const sourceKeys = Object.keys(source);
+  if (ops.length * 2 <= sourceKeys.length) {
+    const next = copyRootRecordKeys(source, sourceKeys);
+    for (let index = 0; index < ops.length; index += 1) {
+      delete next[ops[index]!.path.slice(1)];
+    }
+    return {
+      state: next as z.output<S>,
+      result: { ok: true },
+      applied,
+    };
+  }
+
   const next: Record<string, unknown> = {};
-  for (const key of Object.keys(source)) {
+  for (const key of sourceKeys) {
     if (objectHasOwn.call(removedKeys, key)) continue;
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
