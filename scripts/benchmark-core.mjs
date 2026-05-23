@@ -4,6 +4,7 @@ import * as z from "zod";
 
 const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
 const distJsonEntry = new URL("../packages/zod-crud/dist/foundation/json.js", import.meta.url);
+const distJsonPathEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/index.js", import.meta.url);
 const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/index.js", import.meta.url);
 const distPatchInverseEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/inverse.js", import.meta.url);
 const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.js", import.meta.url);
@@ -11,6 +12,7 @@ const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.j
 if (
   !existsSync(distEntry)
   || !existsSync(distJsonEntry)
+  || !existsSync(distJsonPathEntry)
   || !existsSync(distPatchEntry)
   || !existsSync(distPatchInverseEntry)
   || !existsSync(distHistoryEntry)
@@ -21,6 +23,12 @@ if (
 
 const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
 const { cloneJsonSerializable, jsonSerializableError } = await import(distJsonEntry.href);
+const {
+  evaluate: evaluateJsonPath,
+  matchPointers: matchJsonPathPointers,
+  parse: parseJsonPath,
+  query: jsonpathQuery,
+} = await import(distJsonPathEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 const { computeInverses } = await import(distPatchInverseEntry.href);
 const {
@@ -60,6 +68,7 @@ const RecursiveNode = z.lazy(() => z.object({
 const sizes = envList("PERF_ITEMS", [10000, 50000]);
 const batchSize = envNumber("PERF_BATCH", 1000);
 const individualCount = envNumber("PERF_INDIVIDUAL", 100);
+const jsonpathRepeats = envNumber("PERF_JSONPATH_REPEATS", 10000);
 const rounds = envNumber("PERF_ROUNDS", 5);
 
 console.log("zod-crud core benchmark");
@@ -70,6 +79,7 @@ for (const size of sizes) {
   const nestedState = NestedSchema.parse({ wrapper: { items: state.items } });
   const recursiveState = RecursiveNode.parse(makeRecursiveState(size));
   const middle = Math.floor(size / 2);
+  const jsonpathOne = `$.items[${middle}].done`;
   const batchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "replace",
     path: `/items/${index}/done`,
@@ -219,6 +229,24 @@ for (const size of sizes) {
     bench("doc.canReplace jsonpath one", rounds, (index) =>
       doc.canReplace(`$.items[${middle}].done`, index % 2 === 0));
   }
+
+  bench(`jsonpath direct parse+evaluate ${jsonpathRepeats}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+    let ok = true;
+    for (let index = 0; index < jsonpathRepeats; index += 1) {
+      const pointers = matchJsonPathPointers(evaluateJsonPath(parseJsonPath(jsonpathOne), state));
+      ok = ok && pointers[0] === `/items/${middle}/done`;
+    }
+    return { ok };
+  });
+
+  bench(`jsonpath cached query ${jsonpathRepeats}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+    let ok = true;
+    for (let index = 0; index < jsonpathRepeats; index += 1) {
+      const pointers = jsonpathQuery(jsonpathOne, state);
+      ok = ok && pointers[0] === `/items/${middle}/done`;
+    }
+    return { ok };
+  });
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
