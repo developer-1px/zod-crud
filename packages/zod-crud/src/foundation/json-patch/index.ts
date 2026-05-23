@@ -804,6 +804,7 @@ function applyRootObjectRemovePatch(
 
   const source = state as Record<string, unknown>;
   const sourceKeys = Object.keys(source);
+  let matchesSourceKeyOrder = ops.length === sourceKeys.length;
   let removedKeys: Record<string, true> | null = null;
   let matchesReverseSuffix = ops.length <= sourceKeys.length;
   const applied = new Array<JSONPatchOperation>(ops.length);
@@ -823,6 +824,12 @@ function applyRootObjectRemovePatch(
     }
 
     const key = op.path.slice(1);
+    if (matchesSourceKeyOrder && key === sourceKeys[index]) {
+      matchesReverseSuffix = false;
+      applied[index] = op;
+      continue;
+    }
+    matchesSourceKeyOrder = false;
     if (matchesReverseSuffix && key === sourceKeys[sourceKeys.length - index - 1]) {
       applied[index] = op;
       continue;
@@ -955,10 +962,8 @@ function applyRootObjectReplacePatch(
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
 
     const key = op.path.slice(1);
-    if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };
-
     if (matchesSourceKeyOrder) {
-      if (key === sourceKeys[index]) {
+      if (key !== "" && key === sourceKeys[index]) {
         if (key === "__proto__") {
           Object.defineProperty(orderedNext, key, {
             value: op.value,
@@ -969,10 +974,14 @@ function applyRootObjectReplacePatch(
         } else {
           orderedNext![key] = op.value;
         }
+        applied[index] = op;
+        continue;
       } else {
         matchesSourceKeyOrder = false;
       }
     }
+
+    if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };
     applied[index] = op;
   }
 
