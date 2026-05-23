@@ -190,6 +190,15 @@ export function createJSONDocument<S extends z.ZodType>(
     metadata?: HistoryTransactionOptions,
     operationsOwned = false,
   ): void => {
+    const historyMetadata = compactHistoryMetadata(metadata);
+    if (
+      activeTransactionStartDepth !== undefined
+      && historyDepth(stack) > activeTransactionStartDepth
+      && compactRepeatedReplaceOperationIntoTransaction(operations, selectionAfter, historyMetadata)
+    ) {
+      return;
+    }
+
     const inverse = computeInverses(before, operations);
     if (!inverse.ok) return;
     const entry: HistoryEntry = {
@@ -198,10 +207,7 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionBefore,
       selectionAfter,
     };
-    if (metadata !== undefined) {
-      const historyMetadata = compactHistoryMetadata(metadata);
-      if (historyMetadata) entry.metadata = historyMetadata;
-    }
+    if (historyMetadata) entry.metadata = historyMetadata;
     if (activeTransactionStartDepth !== undefined && historyDepth(stack) > activeTransactionStartDepth) {
       const prev = stack.undo[stack.undo.length - 1]!;
       const compactMetadata = entry.metadata === undefined
@@ -210,6 +216,39 @@ export function createJSONDocument<S extends z.ZodType>(
       if (compactRepeatedReplaceHistory(prev, entry, compactMetadata) !== null) return;
     }
     commitHistory(stack, entry, historyLimit);
+  };
+  const compactRepeatedReplaceOperationIntoTransaction = (
+    operations: ReadonlyArray<JSONPatchOperation>,
+    selectionAfter: SelectionSnap,
+    metadata: HistoryTransactionOptions | undefined,
+  ): boolean => {
+    if (operations.length !== 1 || !(0 in operations)) return false;
+
+    const op = operations[0]!;
+    if (op.op !== "replace") return false;
+
+    const prev = stack.undo[stack.undo.length - 1]!;
+    if (prev.forward.length !== 1 || prev.inverse.length !== 1) return false;
+
+    const prevForward = prev.forward[0]!;
+    const prevInverse = prev.inverse[0]!;
+    if (
+      prevForward.op !== "replace"
+      || prevInverse.op !== "replace"
+      || prevForward.path !== prevInverse.path
+      || prevForward.path !== op.path
+    ) {
+      return false;
+    }
+
+    const compactMetadata = metadata === undefined
+      ? prev.metadata
+      : mergeRepeatedReplaceTransactionMetadata(prev.metadata, metadata);
+    prev.forward[0] = op;
+    prev.selectionAfter = selectionAfter;
+    if (compactMetadata !== undefined) prev.metadata = compactMetadata;
+    else delete prev.metadata;
+    return true;
   };
 
   const applyDocumentPatch = (
