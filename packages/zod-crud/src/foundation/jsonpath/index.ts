@@ -23,6 +23,8 @@ export type { Query, Match } from "./types.js";
 
 const QUERY_CACHE_LIMIT = 128;
 const queryCache = new Map<string, Query>();
+let lastQueryText: string | undefined;
+let lastQueryAst: Query | undefined;
 
 /** shorthand: query string + root → Pointer[]. */
 export function query(jsonpath: string, root: unknown): Pointer[] {
@@ -39,10 +41,14 @@ export function queryMatches(jsonpath: string, root: unknown): Match[] {
 }
 
 function cachedParse(jsonpath: string): Query {
+  if (jsonpath === lastQueryText && lastQueryAst !== undefined) return lastQueryAst;
+
   const cached = queryCache.get(jsonpath);
   if (cached !== undefined) {
     queryCache.delete(jsonpath);
     queryCache.set(jsonpath, cached);
+    lastQueryText = jsonpath;
+    lastQueryAst = cached;
     return cached;
   }
 
@@ -52,5 +58,7 @@ function cachedParse(jsonpath: string): Query {
     const oldest = queryCache.keys().next().value;
     if (oldest !== undefined) queryCache.delete(oldest);
   }
+  lastQueryText = jsonpath;
+  lastQueryAst = ast;
   return ast;
 }
