@@ -79,6 +79,13 @@ export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
 
 export function commitMutable<E>(stack: MutableHistoryStack<E>, entry: E, limit: number): void {
   if (limit <= 0) return;
+  if (limit === 1) {
+    stack.undo[0] = entry;
+    stack.undo.length = 1;
+    stack.undoStart = 0;
+    if (stack.redo.length !== 0) stack.redo.length = 0;
+    return;
+  }
   stack.undo.push(entry);
   const depth = stack.undo.length - stack.undoStart;
   if (depth > limit) {

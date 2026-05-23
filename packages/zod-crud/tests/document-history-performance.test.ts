@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { createJSONDocument, type JSONPatchOperation } from "../src/index.js";
+import { commitMutable, emptyMutableHistory } from "../src/foundation/history.js";
 
 describe("doc.history performance contract", () => {
   test("large history depth preserves undo and redo order", () => {
@@ -54,6 +55,17 @@ describe("doc.history performance contract", () => {
     for (let index = edits - limit + 1; index <= edits; index += 1) {
       expect(doc.history.redo()).toBe(true);
       expect(doc.value.value).toBe(index);
+    }
+  });
+
+  test("history limit one keeps only the latest backing entry", () => {
+    const stack = emptyMutableHistory<{ value: number }>();
+
+    for (let index = 1; index <= 128; index += 1) {
+      commitMutable(stack, { value: index }, 1);
+      expect(stack.undo).toHaveLength(1);
+      expect(stack.undoStart).toBe(0);
+      expect(stack.undo[0]).toEqual({ value: index });
     }
   });
 
