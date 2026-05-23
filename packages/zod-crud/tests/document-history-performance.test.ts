@@ -997,6 +997,33 @@ describe("doc.history performance contract", () => {
     expect(valueParses).toBe(1);
   });
 
+  test("source-order full root record replace batches restore history", () => {
+    const Schema = z.record(z.string(), z.object({ id: z.string() }));
+    const initial = {
+      a: { id: "a" },
+      b: { id: "b" },
+      c: { id: "c" },
+    };
+    const next = {
+      a: { id: "a2" },
+      b: { id: "b2" },
+      c: { id: "c2" },
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10, strict: false });
+
+    expect(doc.patch([
+      { op: "replace", path: "/a", value: next.a },
+      { op: "replace", path: "/b", value: next.b },
+      { op: "replace", path: "/c", value: next.c },
+    ])).toEqual({ ok: true });
+    expect(doc.value).toEqual(next);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value).toEqual(next);
+  });
+
   test("plain structural root record remove batches validate locally", () => {
     const Value = z.object({
       id: z.string(),

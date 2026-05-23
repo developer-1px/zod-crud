@@ -122,6 +122,19 @@ function copyRootRecordKeyPrefix(
   return next;
 }
 
+function writeRootRecordValue(target: Record<string, unknown>, key: string, value: unknown): void {
+  if (key === "__proto__") {
+    Object.defineProperty(target, key, {
+      value,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  } else {
+    target[key] = value;
+  }
+}
+
 function removedRootKeysMatchSuffix(
   keys: ReadonlyArray<string>,
   keepCount: number,
@@ -737,6 +750,10 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   const recordValueValidator = recordValueSchema
     ? knownJsonValueValidatorForSchema(recordValueSchema)
     : null;
+  const source = state as Record<string, unknown>;
+  const sourceKeys = Object.keys(source);
+  let matchesSourceKeyOrder = ops.length === sourceKeys.length;
+  const orderedNext: Record<string, unknown> | null = matchesSourceKeyOrder ? {} : null;
 
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
@@ -753,7 +770,21 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     }
 
     const key = op.path.slice(1);
-    if (key === "" || !objectHasOwn.call(state, key)) return null;
+    const matchesSourceKey = matchesSourceKeyOrder && key !== "" && key === sourceKeys[index];
+    if (!matchesSourceKey) {
+      if (matchesSourceKeyOrder) {
+        matchesSourceKeyOrder = false;
+        if (orderedNext !== null && next === null) {
+          next = copyRootRecordKeys(source, sourceKeys);
+          for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
+            const previous = ops[previousIndex]!;
+            if (previous.op !== "replace" || typeof previous.path !== "string") return null;
+            writeRootRecordValue(next, previous.path.slice(1), previous.value);
+          }
+        }
+      }
+      if (key === "" || !objectHasOwn.call(source, key)) return null;
+    }
 
     const valueSchema = shape
       ? (objectHasOwn.call(shape, key) ? (shape[key] ?? null) : null)
@@ -771,24 +802,22 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
       if (!result.success) return schemaViolation(state, op.path, result.error.issues);
     }
 
-    if (next === null) next = copyRootRecord(state as Record<string, unknown>);
-    if (key === "__proto__") {
-      Object.defineProperty(next, key, {
-        value: op.value,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      next[key] = op.value;
+    if (matchesSourceKey && orderedNext !== null) {
+      writeRootRecordValue(orderedNext, key, op.value);
+      applied[index] = op;
+      continue;
     }
+
+    if (next === null) next = copyRootRecordKeys(source, sourceKeys);
+    writeRootRecordValue(next, key, op.value);
     applied[index] = op;
   }
 
-  return next === null
+  const resultState = matchesSourceKeyOrder && orderedNext !== null ? orderedNext : next;
+  return resultState === null
     ? null
     : {
-        state: next as z.output<S>,
+        state: resultState as z.output<S>,
         result: { ok: true },
         applied,
       };
