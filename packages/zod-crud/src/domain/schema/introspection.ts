@@ -17,6 +17,12 @@ export interface DiscriminatedUnionInfo {
   allowed: unknown[];
 }
 
+interface SchemaPointerCache {
+  schemas: Map<string, z.ZodType | null>;
+}
+
+const schemaPointerCaches = new WeakMap<object, SchemaPointerCache>();
+
 export function getDef(schema: z.ZodType): ZodDef {
   return ((schema as { def?: ZodDef; _def?: ZodDef }).def ?? (schema as { _def?: ZodDef })._def ?? {}) as ZodDef;
 }
@@ -58,6 +64,20 @@ export function getObjectLiteralValues(schema: z.ZodType, key: string): unknown[
 }
 
 export function schemaAtPointer(schema: z.ZodType, pointer: Pointer, mode: "value" | "insert" = "value"): z.ZodType | null {
+  let cache = schemaPointerCaches.get(schema as object);
+  if (!cache) {
+    cache = { schemas: new Map() };
+    schemaPointerCaches.set(schema as object, cache);
+  }
+  const cacheKey = `${mode}\0${pointer}`;
+  if (cache.schemas.has(cacheKey)) return cache.schemas.get(cacheKey)!;
+
+  const result = schemaAtPointerUncached(schema, pointer, mode);
+  cache.schemas.set(cacheKey, result);
+  return result;
+}
+
+function schemaAtPointerUncached(schema: z.ZodType, pointer: Pointer, mode: "value" | "insert"): z.ZodType | null {
   let current: z.ZodType | null = schema;
   const segments = tryParsePointer(pointer);
   if (segments === null) return null;
