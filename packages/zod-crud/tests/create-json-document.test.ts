@@ -159,6 +159,33 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("rekeys repeated suffix payload values without restarting attempts", () => {
+    const doc = createJSONDocument(Schema, {
+      ...initial,
+      items: [
+        { id: "a", name: "A" },
+      ],
+    });
+
+    expect(doc.clipboard.pastePayload("/items/-", [
+      { id: "a", name: "A1" },
+      { id: "a", name: "A2" },
+      { id: "a", name: "A3" },
+      { id: "a", name: "A4" },
+    ], {
+      spread: true,
+      rekey: { fields: ["id"], strategy: "suffix" },
+    })).toMatchObject({
+      ok: true,
+      applied: [
+        { op: "add", path: "/items/1", value: { id: "a-copy", name: "A1" } },
+        { op: "add", path: "/items/2", value: { id: "a-copy-2", name: "A2" } },
+        { op: "add", path: "/items/3", value: { id: "a-copy-3", name: "A3" } },
+        { op: "add", path: "/items/4", value: { id: "a-copy-4", name: "A4" } },
+      ],
+    });
+  });
+
   test("rekeys nested suffix fields while reusing payload traversal", () => {
     const NestedItem = z.object({
       id: z.string(),

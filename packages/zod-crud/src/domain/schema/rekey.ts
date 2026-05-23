@@ -33,6 +33,10 @@ interface SuffixRekeyField extends RekeyField {
   bases: Set<string>;
 }
 
+interface SuffixAttemptField extends RekeyField {
+  nextAttempts: Map<string, number>;
+}
+
 export function rekeyPayload(
   payload: unknown,
   state: unknown,
@@ -307,6 +311,7 @@ function rekeyValue(
 ): void {
   if (fields.length === 1) {
     const { field, existing } = fields[0]!;
+    const suffixAttempts = strategy === "suffix" ? new Map<string, number>() : null;
     walk(value, (entry) => {
       const current = entry[field];
       const currentText = scalarText(current);
@@ -317,13 +322,16 @@ function rekeyValue(
         return;
       }
 
-      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      const next = suffixAttempts === null
+        ? mintValue(current, { field, existing, attempt: 1 }, strategy)
+        : mintSuffixValueWithCache(currentText, existing, field, suffixAttempts);
       entry[field] = next;
       existing.add(next);
     });
     return;
   }
 
+  const suffixFields = strategy === "suffix" ? createSuffixAttemptFields(fields) : null;
   walk(value, (entry) => {
     for (let index = 0; index < fields.length; index += 1) {
       const { field, existing } = fields[index]!;
@@ -336,7 +344,9 @@ function rekeyValue(
         continue;
       }
 
-      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      const next = suffixFields === null
+        ? mintValue(current, { field, existing, attempt: 1 }, strategy)
+        : mintSuffixValueWithCache(currentText, existing, field, suffixFields[index]!.nextAttempts);
       entry[field] = next;
       existing.add(next);
     }
@@ -350,6 +360,7 @@ function rekeyEntries(
 ): void {
   if (fields.length === 1) {
     const { field, existing } = fields[0]!;
+    const suffixAttempts = strategy === "suffix" ? new Map<string, number>() : null;
     for (const entry of entries) {
       const current = entry[field];
       const currentText = scalarText(current);
@@ -360,13 +371,16 @@ function rekeyEntries(
         continue;
       }
 
-      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      const next = suffixAttempts === null
+        ? mintValue(current, { field, existing, attempt: 1 }, strategy)
+        : mintSuffixValueWithCache(currentText, existing, field, suffixAttempts);
       entry[field] = next;
       existing.add(next);
     }
     return;
   }
 
+  const suffixFields = strategy === "suffix" ? createSuffixAttemptFields(fields) : null;
   for (const entry of entries) {
     for (let index = 0; index < fields.length; index += 1) {
       const { field, existing } = fields[index]!;
@@ -379,11 +393,21 @@ function rekeyEntries(
         continue;
       }
 
-      const next = mintValue(current, { field, existing, attempt: 1 }, strategy);
+      const next = suffixFields === null
+        ? mintValue(current, { field, existing, attempt: 1 }, strategy)
+        : mintSuffixValueWithCache(currentText, existing, field, suffixFields[index]!.nextAttempts);
       entry[field] = next;
       existing.add(next);
     }
   }
+}
+
+function createSuffixAttemptFields(fields: ReadonlyArray<RekeyField>): SuffixAttemptField[] {
+  return fields.map((field) => ({
+    field: field.field,
+    existing: field.existing,
+    nextAttempts: new Map(),
+  }));
 }
 
 function mintValue(value: unknown, ctx: RekeyContext, strategy: RekeyStrategy): string {
@@ -404,6 +428,22 @@ function mintSuffixValue(value: string, existing: ReadonlySet<string>, field: st
   for (let attempt = 1; attempt < 10_000; attempt += 1) {
     const next = suffixValue(value, attempt);
     if (!existing.has(next)) return next;
+  }
+  throw new Error(`could not mint unique value for ${field}`);
+}
+
+function mintSuffixValueWithCache(
+  value: string,
+  existing: ReadonlySet<string>,
+  field: string,
+  nextAttempts: Map<string, number>,
+): string {
+  for (let attempt = nextAttempts.get(value) ?? 1; attempt < 10_000; attempt += 1) {
+    const next = suffixValue(value, attempt);
+    if (!existing.has(next)) {
+      nextAttempts.set(value, attempt + 1);
+      return next;
+    }
   }
   throw new Error(`could not mint unique value for ${field}`);
 }
