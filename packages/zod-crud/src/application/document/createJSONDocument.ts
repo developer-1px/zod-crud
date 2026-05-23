@@ -432,6 +432,7 @@ export function createJSONDocument<S extends z.ZodType>(
         ? rawOps.trustedPatch(patch)
         : rawOps.trustedApply(snapshotState as z.output<S>, patch);
       if (!r.ok) return false;
+      if (direction === "redo" && restoreSnapshot !== undefined) delete restoreSnapshot.after;
       syncLastPatch();
     } catch {
       return false;

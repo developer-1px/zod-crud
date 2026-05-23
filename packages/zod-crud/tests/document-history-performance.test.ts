@@ -330,6 +330,15 @@ describe("doc.history performance contract", () => {
     expect(Object.keys(doc.value)).toHaveLength(count * 2);
     expect(doc.lastPatch).toEqual(added);
     expect(observed.at(-1)).toEqual(added);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(doc.lastPatch).toHaveLength(count);
+    expect(doc.lastPatch.every((op) => op.op === "remove")).toBe(true);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(Object.keys(doc.value)).toHaveLength(count * 2);
+    expect(doc.lastPatch).toEqual(added);
   });
 
   test("root object replace history preserves repeated key semantics", () => {
