@@ -49,11 +49,17 @@ export function parsePointer(pointer: Pointer): string[] {
 }
 
 export function tryParsePointer(pointer: Pointer): string[] | null {
-  try {
-    return parsePointer(pointer);
-  } catch {
-    return null;
+  if (pointer === "" || pointer === "#") return [];
+  if (pointer[0] === "#") {
+    if (pointer[1] !== "/") return null;
+    try {
+      return decodeURIComponent(pointer.slice(2)).split("/").map(unescapeSegment);
+    } catch {
+      return null;
+    }
   }
+  if (pointer[0] !== "/") return null;
+  return pointer.slice(1).split("/").map(unescapeSegment);
 }
 
 // RFC 3986 + 6901 §6: fragment 안에서 안전하지 않은 문자 percent-encode.
