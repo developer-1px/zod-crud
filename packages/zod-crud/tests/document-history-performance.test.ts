@@ -1341,6 +1341,64 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("descending add batch history restores in order without schema validation", () => {
+    let validations = 0;
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = { items: [{ id: "a" }, { id: "b" }, { id: "c" }] };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch([
+      { op: "add", path: "/items/2", value: { id: "x" } },
+      { op: "add", path: "/items/2", value: { id: "y" } },
+      { op: "add", path: "/items/1", value: { id: "z" } },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "z", "b", "y", "x", "c"]);
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterPatch = validations;
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(validations).toBe(validationsAfterPatch);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "z", "b", "y", "x", "c"]);
+    expect(validations).toBe(validationsAfterPatch);
+  });
+
+  test("descending copy batch history restores in order without schema validation", () => {
+    let validations = 0;
+    const Schema = z.object({
+      items: z.array(z.object({ id: z.string() })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = { items: [{ id: "a" }, { id: "b" }, { id: "c" }, { id: "d" }] };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch([
+      { op: "copy", from: "/items/0", path: "/items/4" },
+      { op: "copy", from: "/items/1", path: "/items/3" },
+      { op: "copy", from: "/items/0", path: "/items/3" },
+    ])).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c", "a", "b", "d", "a"]);
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterPatch = validations;
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(validations).toBe(validationsAfterPatch);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c", "a", "b", "d", "a"]);
+    expect(validations).toBe(validationsAfterPatch);
+  });
+
   test("single same-array history restores without schema validation", () => {
     let validations = 0;
     const Schema = z.object({
