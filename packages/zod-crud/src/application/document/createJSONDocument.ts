@@ -169,9 +169,9 @@ export function createJSONDocument<S extends z.ZodType>(
   const selectionState = selectionEnabled
     ? createSelection<z.output<S>>(rawOps, createSelectionOptions)
     : undefined;
-  rawOps.subscribe((applied) => {
-    lastPatch = applied;
-  });
+  const syncLastPatch = (): void => {
+    lastPatch = rawOps.lastApplied;
+  };
   const snapSelection = (): SelectionSnap => selectionState?.snapshot() ?? EMPTY_SELECTION;
   const shouldCaptureSelectionMetadata = (
     shouldRecordHistory: boolean,
@@ -212,7 +212,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const shouldCaptureMetadata = shouldCaptureSelectionMetadata(shouldRecordHistory, metadata);
     if (!shouldCaptureMetadata) {
       const r = rawOps.patch(operations);
-      if (r.ok && operations.length === 0) lastPatch = [];
+      if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
       return r;
     }
 
@@ -221,7 +221,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled);
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok && operations.length === 0) lastPatch = [];
+    if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
     if (r.ok && shouldRecordHistory) {
       recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
     }
@@ -237,7 +237,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const shouldCaptureMetadata = shouldCaptureSelectionMetadata(shouldRecordHistory, metadata);
     if (!shouldCaptureMetadata) {
       const r = rawOps.trustedApply(next, applied);
-      if (r.ok && applied.length === 0) lastPatch = [];
+      if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
       return r;
     }
 
@@ -246,7 +246,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled);
     const r = rawOps.trustedApply(next, applied, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok && applied.length === 0) lastPatch = [];
+    if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
     if (r.ok && shouldRecordHistory) {
       recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata);
     }
@@ -282,7 +282,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const r = rawOps.trustedApply(predicted.state, predicted.applied, changeMetadata);
     if (!r.ok) return r;
 
-    if (operations.length === 0) lastPatch = [];
+    lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
     selectionState?.restore(selectionAfter);
     if (historyLimit > 0 && !isRestoring && operations.length > 0) {
       recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
@@ -308,6 +308,7 @@ export function createJSONDocument<S extends z.ZodType>(
       : undefined;
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);
     const selectionAfter = shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
+    if (r.ok) lastPatch = planned.patch.length === 0 ? [] : rawOps.lastApplied;
     if (r.ok && shouldRecordHistory) {
       recordHistory(before, planned.patch, selectionBefore, selectionAfter, changeMetadata);
     }
@@ -329,6 +330,7 @@ export function createJSONDocument<S extends z.ZodType>(
     try {
       const r = rawOps.trustedPatch(direction === "undo" ? entry.inverse : entry.forward);
       if (!r.ok) return false;
+      syncLastPatch();
     } catch {
       return false;
     } finally {
@@ -350,17 +352,20 @@ export function createJSONDocument<S extends z.ZodType>(
     patch: applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {
       const r = rawOps.load(value);
+      if (r.ok) syncLastPatch();
       if (r.ok && !loadOptions?.preserveHistory) stack = emptyMutableHistory<HistoryEntry>();
       return r;
     },
     reset(value) {
       const r = rawOps.reset(value);
+      if (r.ok) syncLastPatch();
       if (r.ok) stack = emptyMutableHistory<HistoryEntry>();
       return r;
     },
     subscribe(listener) {
       documentSubscriberCount += 1;
       const unsubscribe = rawOps.subscribe((applied, metadata) => {
+        lastPatch = applied;
         listener(applied, {
           ...metadata,
           selectionAfter: metadata?.selectionAfter ?? snapSelection(),

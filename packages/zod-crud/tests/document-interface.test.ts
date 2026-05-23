@@ -93,6 +93,29 @@ describe("JSONDocument interface", () => {
     expect(doc.history.undoDepth).toBe(1);
   });
 
+  test("tracks lastPatch through history replay without subscribers", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.patch({ op: "replace", path: "/items/1/name", value: "B1" })).toEqual({ ok: true });
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.lastPatch).toEqual([{ op: "replace", path: "/items/1/name", value: "B" }]);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.lastPatch).toEqual([{ op: "replace", path: "/items/1/name", value: "B1" }]);
+  });
+
+  test("updates lastPatch before subscriber callbacks", () => {
+    const doc = createJSONDocument(Schema, initial);
+    let observed: ReadonlyArray<JSONPatchOperation> = [];
+
+    doc.subscribe(() => {
+      observed = doc.lastPatch;
+    });
+    expect(doc.patch({ op: "replace", path: "/items/0/name", value: "A1" })).toEqual({ ok: true });
+
+    expect(observed).toEqual([{ op: "replace", path: "/items/0/name", value: "A1" }]);
+  });
+
   test("returns lastPatch as a defensive array", () => {
     const doc = createJSONDocument(Schema, initial);
 

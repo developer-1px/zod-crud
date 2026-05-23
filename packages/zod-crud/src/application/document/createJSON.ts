@@ -42,6 +42,7 @@ interface HeadlessJSONState<T> extends JSONState<T> {
 }
 
 interface TrustedJSONOps<T> extends JSONOps<T> {
+  readonly lastApplied: ReadonlyArray<JSONPatchOperation>;
   readonly stateJsonTrusted: boolean;
   previewPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
   previewTrustedValuesPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
@@ -64,6 +65,7 @@ export function createJSON<S extends z.ZodType>(
   const initialState = state;
   const policy: ErrorPolicy = options;
   const listeners = new Set<JSONChangeListener>();
+  let lastApplied: ReadonlyArray<JSONPatchOperation> = [];
   let disposed = false;
 
   const notify = (
@@ -71,6 +73,7 @@ export function createJSON<S extends z.ZodType>(
     metadata?: JSONChangeMetadata,
   ): void => {
     if (applied.length === 0 || disposed) return;
+    lastApplied = applied;
     options.onChange?.();
     for (const listener of listeners) listener(applied, metadata);
   };
@@ -196,6 +199,7 @@ export function createJSON<S extends z.ZodType>(
       return () => { listeners.delete(listener); };
     },
     get state() { return state; },
+    get lastApplied() { return lastApplied; },
     get stateJsonTrusted() { return stateJsonTrusted; },
   };
 
