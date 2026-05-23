@@ -953,6 +953,9 @@ function canKeepSelectionForStableReplacePatch(
   selection: SelectionSnap,
   applied: ReadonlyArray<JSONPatchOperation>,
 ): boolean {
+  const quick = canKeepSmallStringSelectionForStableReplacePatch(selection, applied);
+  if (quick !== null) return quick;
+
   const replacements = stableReplacementPointerSet(applied);
   if (replacements === null) return false;
   if (replacements.size === 0) return true;
@@ -970,6 +973,58 @@ function canKeepSelectionForStableReplacePatch(
   }
   return !pointHasStrictReplacementAncestor(selection.anchor, replacements)
     && !pointHasStrictReplacementAncestor(selection.focus, replacements);
+}
+
+function canKeepSmallStringSelectionForStableReplacePatch(
+  selection: SelectionSnap,
+  applied: ReadonlyArray<JSONPatchOperation>,
+): boolean | null {
+  const targets = smallStringSelectionTargets(selection);
+  if (targets === null) return null;
+
+  let sawReplacement = false;
+  for (let index = 0; index < applied.length; index += 1) {
+    const op = applied[index]!;
+    if (op.op === "test") continue;
+    if (op.op !== "replace" || typeof op.path !== "string") return false;
+    const replacement = op.path[0] === "#" || op.path.includes("~") ? null : op.path;
+    if (replacement === null || !isPointerLike(replacement)) return null;
+    sawReplacement = true;
+    for (const target of targets) {
+      if (isStrictPointerPrefix(replacement, target)) return false;
+    }
+  }
+  return sawReplacement || applied.length === 0;
+}
+
+function smallStringSelectionTargets(selection: SelectionSnap): Pointer[] | null {
+  const targets: Pointer[] = [];
+  const add = (point: JSONPoint | null): boolean => {
+    if (point === null) return true;
+    if (typeof point !== "string") return false;
+    if (!targets.includes(point)) targets.push(point);
+    return targets.length <= 8;
+  };
+
+  for (const pointer of selection.selectedPointers) {
+    if (!add(pointer)) return null;
+  }
+  for (const range of selection.selectionRanges) {
+    if (!add(range.anchor) || !add(range.focus)) return null;
+  }
+  return add(selection.anchor) && add(selection.focus) ? targets : null;
+}
+
+function isPointerLike(pointer: Pointer): boolean {
+  return pointer === "" || pointer[0] === "/";
+}
+
+function isStrictPointerPrefix(prefix: Pointer, pointer: Pointer): boolean {
+  return prefix === ""
+    ? pointer !== ""
+    : pointer.length > prefix.length
+      && pointer.startsWith(prefix)
+      && pointer[prefix.length] === "/";
 }
 
 function stableReplacementPointerSet(

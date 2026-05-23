@@ -108,6 +108,25 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.selectedPointers).toEqual(["/items/0/name", "/items/2/name"]);
   });
 
+  test("single selection keeps stable leaf replace batches but drops replaced ancestors", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "single", initial: ["/items/1/name"] },
+    });
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/name", value: "A1" },
+      { op: "replace", path: "/items/1/name", value: "B1" },
+      { op: "replace", path: "/items/2/name", value: "C1" },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/items/1/name"]);
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/1", value: { id: "b2", name: "B2" } },
+      { op: "replace", path: "/items/2/name", value: "C2" },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual([]);
+  });
+
   test("single selection batch auto-selects only the final surviving target", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "single" },
