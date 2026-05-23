@@ -190,7 +190,7 @@ export function createJSONDocument<S extends z.ZodType>(
     metadata?: HistoryTransactionOptions,
     operationsOwned = false,
   ): void => {
-    const historyMetadata = compactHistoryMetadata(metadata);
+    const historyMetadata = metadata === undefined ? undefined : compactHistoryMetadata(metadata);
     if (
       activeTransactionStartDepth !== undefined
       && historyDepth(stack) > activeTransactionStartDepth
