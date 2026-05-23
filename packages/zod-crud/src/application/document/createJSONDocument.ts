@@ -402,13 +402,7 @@ export function createJSONDocument<S extends z.ZodType>(
     if (isRestoring) return false;
     return mergeLastMutable(stack, (prev, top) => {
       const metadata = mergeEntryMetadata(prev, top, mergeOptions);
-      return {
-        forward: [...prev.forward, ...top.forward],
-        inverse: [...top.inverse, ...prev.inverse],
-        selectionBefore: prev.selectionBefore,
-        selectionAfter: top.selectionAfter,
-        ...(metadata ? { metadata } : {}),
-      };
+      return mergeHistoryEntries(prev, top, metadata);
     });
   };
 
@@ -713,4 +707,59 @@ function mergeEntryMetadata(
 ): HistoryTransactionOptions | undefined {
   const merged = { ...prev.metadata, ...top.metadata, ...options };
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function mergeHistoryEntries(
+  prev: HistoryEntry,
+  top: HistoryEntry,
+  metadata?: HistoryTransactionOptions,
+): HistoryEntry {
+  const compact = compactRepeatedReplaceHistory(prev, top, metadata);
+  if (compact !== null) return compact;
+  return {
+    forward: [...prev.forward, ...top.forward],
+    inverse: [...top.inverse, ...prev.inverse],
+    selectionBefore: prev.selectionBefore,
+    selectionAfter: top.selectionAfter,
+    ...(metadata ? { metadata } : {}),
+  };
+}
+
+function compactRepeatedReplaceHistory(
+  prev: HistoryEntry,
+  top: HistoryEntry,
+  metadata?: HistoryTransactionOptions,
+): HistoryEntry | null {
+  if (
+    prev.forward.length !== 1
+    || prev.inverse.length !== 1
+    || top.forward.length !== 1
+    || top.inverse.length !== 1
+  ) {
+    return null;
+  }
+
+  const prevForward = prev.forward[0]!;
+  const prevInverse = prev.inverse[0]!;
+  const topForward = top.forward[0]!;
+  const topInverse = top.inverse[0]!;
+  if (
+    prevForward.op !== "replace"
+    || prevInverse.op !== "replace"
+    || topForward.op !== "replace"
+    || topInverse.op !== "replace"
+    || prevForward.path !== prevInverse.path
+    || topForward.path !== topInverse.path
+    || prevForward.path !== topForward.path
+  ) {
+    return null;
+  }
+
+  return {
+    forward: [topForward],
+    inverse: [prevInverse],
+    selectionBefore: prev.selectionBefore,
+    selectionAfter: top.selectionAfter,
+    ...(metadata ? { metadata } : {}),
+  };
 }

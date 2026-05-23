@@ -78,6 +78,26 @@ describe("doc.history performance contract", () => {
     expect(doc.value.value).toBe(edits);
   });
 
+  test("mergeLast keeps repeated replace history as one undoable edit", () => {
+    const Schema = z.object({
+      value: z.number(),
+    });
+    const edits = 5000;
+    const doc = createJSONDocument(Schema, { value: 0 }, { history: edits + 1 });
+
+    for (let index = 1; index <= edits; index += 1) {
+      expect(doc.patch({ op: "replace", path: "/value", value: index })).toEqual({ ok: true });
+      if (index > 1) expect(doc.history.mergeLast()).toBe(true);
+    }
+
+    expect(doc.history.undoDepth).toBe(1);
+    expect(doc.value.value).toBe(edits);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value.value).toBe(0);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.value).toBe(edits);
+  });
+
   test("undo and redo replay trusted history without revalidating the whole schema", () => {
     let validations = 0;
     const Schema = z.object({

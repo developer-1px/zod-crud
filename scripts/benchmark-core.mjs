@@ -783,6 +783,19 @@ for (const size of sizes) {
   console.log(`history transaction ${transactionEdits} undo: ${transactionUndoElapsed.toFixed(2)}ms`);
   console.log(`history transaction ${transactionEdits} redo: ${transactionRedoElapsed.toFixed(2)}ms`);
 
+  const mergeLastDoc = createJSONDocument(TinySchema, { value: 0 }, { history: transactionEdits + 1 });
+  const mergeLastElapsed = time(() => {
+    for (let index = 1; index <= transactionEdits; index += 1) {
+      const result = mergeLastDoc.patch({ op: "replace", path: "/value", value: index });
+      if (!result.ok) throw new Error(`mergeLast patch failed: ${JSON.stringify(result)}`);
+      if (index > 1 && !mergeLastDoc.history.mergeLast()) throw new Error("mergeLast failed");
+    }
+  });
+  if (mergeLastDoc.history.undoDepth !== 1) {
+    throw new Error(`mergeLast history merge failed: ${mergeLastDoc.history.undoDepth}`);
+  }
+  console.log(`history mergeLast repeated replace ${transactionEdits} commits: ${mergeLastElapsed.toFixed(2)}ms`);
+
   const reducerStack = emptyMutableHistory();
   const reducerCommitElapsed = time(() => {
     for (let index = 1; index <= historyEdits; index += 1) {
