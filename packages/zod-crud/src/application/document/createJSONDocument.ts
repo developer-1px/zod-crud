@@ -402,6 +402,13 @@ export function createJSONDocument<S extends z.ZodType>(
     if (historyDepth(stack) < 2) return false;
     const top = stack.undo[stack.undo.length - 1]!;
     const prev = stack.undo[stack.undo.length - 2]!;
+    if (mergeOptions === undefined && prev.metadata === undefined && top.metadata === undefined) {
+      const compact = compactRepeatedReplaceHistory(prev, top);
+      if (compact !== null) {
+        stack.undo.pop();
+        return true;
+      }
+    }
     const metadata = mergeEntryMetadata(prev, top, mergeOptions);
     const merged = mergeHistoryEntries(prev, top, metadata);
     const mergeIndex = stack.undo.length - 2;
