@@ -906,6 +906,11 @@ for (const size of sizes) {
     path: `/n${index}`,
     value: makeRootObjectValue(rootReplaceCount + index),
   }));
+  const rootSmallAddOp = {
+    op: "add",
+    path: "/small",
+    value: makeRootObjectValue(rootReplaceCount * 3),
+  };
   const rootRemoveOps = Array.from({ length: rootReplaceCount }, (_, index) => ({
     op: "remove",
     path: `/k${index}`,
@@ -981,6 +986,17 @@ for (const size of sizes) {
       if (!undone) throw new Error("root add undo setup failed");
     }, () => {
       return { ok: doc.history.redo() };
+    });
+    benchHeapRetained(`history root object add redo then small patch retained heap ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      const subject = createJSONDocument(RootRecord, rootState, { history: 100 });
+      const patched = subject.patch(rootAddOps);
+      if (!patched.ok) throw new Error(`setup root add batch failed: ${JSON.stringify(patched)}`);
+      const undone = subject.history.undo();
+      if (!undone) throw new Error("root add undo setup failed");
+      const redone = subject.history.redo();
+      if (!redone) throw new Error("root add redo setup failed");
+      const result = subject.patch(rootSmallAddOp);
+      return { subject, result };
     });
   }
   bench(`accepted root object add batch ${rootReplaceCount}`, Math.max(3, Math.ceil(rounds / 2)), () =>
@@ -1223,6 +1239,31 @@ function benchWithSetup(label, sampleCount, setup, fn) {
   console.log(`${label}: avg=${avg.toFixed(2)}ms min=${min.toFixed(2)}ms p50=${p50.toFixed(2)}ms p90=${p90.toFixed(2)}ms max=${max.toFixed(2)}ms ok=${ok}`);
 }
 
+function benchHeapRetained(label, sampleCount, fn) {
+  const samples = [];
+  const subjects = [];
+  const cleanups = [];
+  let last;
+  maybeCollectGarbage();
+  const baseline = process.memoryUsage().heapUsed;
+  for (let index = 0; index < sampleCount; index++) {
+    const retained = fn(index);
+    last = retained.result;
+    subjects.push(retained.subject);
+    cleanups.push(retained.cleanup);
+    maybeCollectGarbage();
+    samples.push((process.memoryUsage().heapUsed - baseline) / subjects.length);
+  }
+  for (let index = 0; index < subjects.length; index += 1) {
+    const cleanup = cleanups[index];
+    if (typeof cleanup === "function") cleanup(subjects[index]);
+  }
+  subjects.length = 0;
+  const { avg, min, p50, p90, max } = sampleStats(samples);
+  const ok = resultOk(last);
+  console.log(`${label}: avg=${formatBytes(avg)} min=${formatBytes(min)} p50=${formatBytes(p50)} p90=${formatBytes(p90)} max=${formatBytes(max)} ok=${ok}`);
+}
+
 function resultOk(value) {
   if (typeof value !== "object" || value === null) return "n/a";
   if ("ok" in value) return value.ok;
@@ -1235,6 +1276,10 @@ function resultOk(value) {
     return value.result.ok;
   }
   return "n/a";
+}
+
+function formatBytes(value) {
+  return `${(value / 1024 / 1024).toFixed(2)}MB`;
 }
 
 function sampleStats(samples) {
