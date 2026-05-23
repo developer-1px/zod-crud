@@ -120,6 +120,7 @@ function pickMonotonicInsertAutoTargets(
   let increasing = true;
   let nonIncreasing = true;
   const indexes = new Array<number>(applied.length);
+  const paths = new Array<Pointer>(applied.length);
 
   for (let opIndex = 0; opIndex < applied.length; opIndex += 1) {
     const op = applied[opIndex]!;
@@ -135,12 +136,13 @@ function pickMonotonicInsertAutoTargets(
       if (location.index > previousIndex) nonIncreasing = false;
     }
     indexes[opIndex] = location.index;
+    paths[opIndex] = op.path;
     previousIndex = location.index;
   }
 
   if (parent === null) return { targets: [], unique: true };
   if (increasing) {
-    return { targets: appendArrayIndexes(parent, indexes), unique: true };
+    return { targets: paths, unique: true };
   }
   if (!nonIncreasing) return null;
 
