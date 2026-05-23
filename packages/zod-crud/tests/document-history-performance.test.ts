@@ -340,6 +340,39 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("same-array nested field replace batch handles escaped paths", () => {
+    let validations = 0;
+    const Schema = z.object({
+      "list/items": z.array(z.object({
+        "nested/value": z.object({ "count~x": z.number() }),
+      })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = {
+      "list/items": [
+        { "nested/value": { "count~x": 1 } },
+        { "nested/value": { "count~x": 2 } },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch([
+      { op: "replace", path: "/list~1items/0/nested~1value/count~0x", value: 10 },
+      { op: "replace", path: "/list~1items/1/nested~1value/count~0x", value: 20 },
+    ])).toEqual({ ok: true });
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterPatch = validations;
+
+    expect(doc.value["list/items"].map((item) => item["nested/value"]["count~x"])).toEqual([10, 20]);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value["list/items"].map((item) => item["nested/value"]["count~x"])).toEqual([10, 20]);
+    expect(validations).toBe(validationsAfterPatch);
+  });
+
   test("same-array field replace history handles unordered indexes", () => {
     const Schema = z.object({
       items: z.array(z.object({ title: z.string(), done: z.boolean() })),

@@ -65,6 +65,8 @@ interface ArrayNestedPath {
   arrayPath: Pointer;
   arraySegments: string[];
   index: number;
+  simplePrefixText: string | null;
+  simpleSuffixText: string | null;
   suffixSegments: string[];
 }
 
@@ -540,6 +542,8 @@ function applySameArrayNestedReplacePatch(
 
   let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
+  let simplePrefixText: string | null = null;
+  let simpleSuffixText: string | null = null;
   let suffixSegments: string[] | null = null;
   let arrayValue: unknown[] | null = null;
   const updates = new Map<number, unknown>();
@@ -556,13 +560,16 @@ function applySameArrayNestedReplacePatch(
     const location: ArrayNestedPath | null = arrayPath === null
       ? parseFirstArrayNestedPath(state, op.path)
       : suffixSegments === null
+        || arraySegments === null
         ? null
-        : parseKnownArrayNestedPath(op.path, arrayPath, suffixSegments);
+        : parseKnownArrayNestedPath(op.path, arrayPath, arraySegments, suffixSegments, simplePrefixText, simpleSuffixText);
     if (location === null) return { handled: false };
 
     if (arrayValue === null) {
       arrayPath = location.arrayPath;
       arraySegments = location.arraySegments;
+      simplePrefixText = location.simplePrefixText;
+      simpleSuffixText = location.simpleSuffixText;
       suffixSegments = location.suffixSegments;
       const current = getValueAt(state, location.arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return { handled: false };
@@ -1617,11 +1624,15 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
     const current = getValueAt(state, arraySegments);
     if (!current.ok || !Array.isArray(current.value)) continue;
 
+    const hasEscapedSegment = path.includes("~");
+    const suffixSegments = parsed.segs.slice(index + 1);
     return {
       arrayPath: buildPointer(arraySegments),
       arraySegments,
       index: rowIndex,
-      suffixSegments: parsed.segs.slice(index + 1),
+      simplePrefixText: hasEscapedSegment ? null : simpleArrayNestedPrefixText(arraySegments),
+      simpleSuffixText: hasEscapedSegment ? null : `/${suffixSegments.join("/")}`,
+      suffixSegments,
     };
   }
 
@@ -1631,8 +1642,25 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
 function parseKnownArrayNestedPath(
   path: Pointer,
   arrayPath: Pointer,
-  suffixSegments: ReadonlyArray<string>,
+  knownArraySegments: string[],
+  suffixSegments: string[],
+  simplePrefixText: string | null,
+  simpleSuffixText: string | null,
 ): ArrayNestedPath | null {
+  if (simplePrefixText !== null && simpleSuffixText !== null) {
+    const index = parseKnownSimpleArrayNestedIndex(path, simplePrefixText, simpleSuffixText);
+    if (index !== null) {
+      return {
+        arrayPath,
+        arraySegments: knownArraySegments,
+        index,
+        simplePrefixText,
+        simpleSuffixText,
+        suffixSegments,
+      };
+    }
+  }
+
   const parsed = parseSafe(path);
   if (!("ok" in parsed) || parsed.segs.length < suffixSegments.length + 2) return null;
 
@@ -1651,8 +1679,25 @@ function parseKnownArrayNestedPath(
         arrayPath,
         arraySegments,
         index: rowIndex,
+        simplePrefixText: null,
+        simpleSuffixText: null,
         suffixSegments: parsed.segs.slice(arraySegmentsLength + 1),
       };
+}
+
+function simpleArrayNestedPrefixText(arraySegments: ReadonlyArray<string>): string {
+  return arraySegments.length === 0 ? "/" : `/${arraySegments.join("/")}/`;
+}
+
+function parseKnownSimpleArrayNestedIndex(
+  path: Pointer,
+  prefixText: string,
+  suffixText: string,
+): number | null {
+  if (path.includes("~") || !path.startsWith(prefixText) || !path.endsWith(suffixText)) return null;
+  const indexEnd = path.length - suffixText.length;
+  const indexText = path.slice(prefixText.length, indexEnd);
+  return indexText.includes("/") ? null : numericSegment(indexText);
 }
 
 function parseSimpleArrayElementPath(path: Pointer): { parent: Pointer; index: number } | null {

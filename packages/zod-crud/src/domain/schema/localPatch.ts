@@ -56,6 +56,8 @@ interface ArrayNestedPath {
   arrayPath: Pointer;
   arraySegments: string[];
   index: number;
+  simplePrefixText: string | null;
+  simpleSuffixText: string | null;
   suffixSegments: string[];
 }
 
@@ -435,6 +437,8 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
 
   let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
+  let simplePrefixText: string | null = null;
+  let simpleSuffixText: string | null = null;
   let suffixSegments: string[] | null = null;
   let valueSchema: z.ZodType | null = null;
   let valueValidator: KnownJsonValueValidator | null = null;
@@ -457,13 +461,16 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
     const location: ArrayNestedPath | null = arrayPath === null
       ? parseFirstArrayNestedPath(state, op.path)
       : suffixSegments === null
+        || arraySegments === null
         ? null
-        : parseKnownArrayNestedPath(op.path, arrayPath, suffixSegments);
+        : parseKnownArrayNestedPath(op.path, arrayPath, arraySegments, suffixSegments, simplePrefixText, simpleSuffixText);
     if (location === null) return null;
 
     if (arrayValue === null) {
       arrayPath = location.arrayPath;
       arraySegments = location.arraySegments;
+      simplePrefixText = location.simplePrefixText;
+      simpleSuffixText = location.simpleSuffixText;
       suffixSegments = location.suffixSegments;
       valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
       if (!valueSchema) return null;
@@ -1316,11 +1323,15 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
     const current = readAt(state, arraySegments);
     if (!current.ok || !Array.isArray(current.value)) continue;
 
+    const hasEscapedSegment = path.includes("~");
+    const suffixSegments = segments.slice(index + 1);
     return {
       arrayPath: buildPointer(arraySegments),
       arraySegments,
       index: rowIndex,
-      suffixSegments: segments.slice(index + 1),
+      simplePrefixText: hasEscapedSegment ? null : simpleArrayNestedPrefixText(arraySegments),
+      simpleSuffixText: hasEscapedSegment ? null : `/${suffixSegments.join("/")}`,
+      suffixSegments,
     };
   }
 
@@ -1330,8 +1341,25 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
 function parseKnownArrayNestedPath(
   path: Pointer,
   arrayPath: Pointer,
-  suffixSegments: ReadonlyArray<string>,
+  knownArraySegments: string[],
+  suffixSegments: string[],
+  simplePrefixText: string | null,
+  simpleSuffixText: string | null,
 ): ArrayNestedPath | null {
+  if (simplePrefixText !== null && simpleSuffixText !== null) {
+    const index = parseKnownSimpleArrayNestedIndex(path, simplePrefixText, simpleSuffixText);
+    if (index !== null) {
+      return {
+        arrayPath,
+        arraySegments: knownArraySegments,
+        index,
+        simplePrefixText,
+        simpleSuffixText,
+        suffixSegments,
+      };
+    }
+  }
+
   let segments: string[];
   try {
     segments = parsePointer(path);
@@ -1355,8 +1383,25 @@ function parseKnownArrayNestedPath(
         arrayPath,
         arraySegments,
         index: rowIndex,
+        simplePrefixText: null,
+        simpleSuffixText: null,
         suffixSegments: segments.slice(arraySegmentsLength + 1),
       };
+}
+
+function simpleArrayNestedPrefixText(arraySegments: ReadonlyArray<string>): string {
+  return arraySegments.length === 0 ? "/" : `/${arraySegments.join("/")}/`;
+}
+
+function parseKnownSimpleArrayNestedIndex(
+  path: Pointer,
+  prefixText: string,
+  suffixText: string,
+): number | null {
+  if (path.includes("~") || !path.startsWith(prefixText) || !path.endsWith(suffixText)) return null;
+  const indexEnd = path.length - suffixText.length;
+  const indexText = path.slice(prefixText.length, indexEnd);
+  return indexText.includes("/") ? null : numericSegment(indexText);
 }
 
 function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
