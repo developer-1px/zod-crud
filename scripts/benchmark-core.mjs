@@ -83,6 +83,10 @@ for (const size of sizes) {
     value: makeItem(size + index),
   }));
   const insertedItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => makeItem(size + index));
+  const repeatedRekeyItems = Array.from({ length: Math.min(individualCount, size) }, (_, index) => ({
+    ...makeItem(index),
+    id: "id-0",
+  }));
   const mixedArrayOps = [
     ...insertedItems.slice(0, Math.floor(insertedItems.length / 2)).map((item) => ({
       op: "add",
@@ -217,6 +221,17 @@ for (const size of sizes) {
       doc = createJSONDocument(Schema, state, { history: 0 });
     }, () =>
       doc.clipboard.pastePayload("/items/-", insertedItems, {
+        spread: true,
+        rekey: { fields: ["id"], strategy: "suffix" },
+      }));
+  }
+
+  {
+    let doc;
+    benchWithSetup(`doc.clipboard.pastePayload spread repeated rekey ${repeatedRekeyItems.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(Schema, state, { history: 0 });
+    }, () =>
+      doc.clipboard.pastePayload("/items/-", repeatedRekeyItems, {
         spread: true,
         rekey: { fields: ["id"], strategy: "suffix" },
       }));
