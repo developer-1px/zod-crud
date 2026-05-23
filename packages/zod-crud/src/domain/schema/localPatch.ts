@@ -278,6 +278,9 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   const location = parseArrayFieldPath(op.path);
   if (location === null) return null;
 
+  const rootArrayReplace = applySingleRootArrayFieldReplace(state, location, op.value);
+  if (rootArrayReplace !== null) return rootArrayReplace;
+
   let arraySegments: string[];
   try {
     arraySegments = parsePointer(location.arrayPath);
@@ -308,6 +311,70 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   const next = current.value.slice();
   next[location.index] = replaced;
   return replaceValueAtSegments(state, arraySegments, 0, next);
+}
+
+function applySingleRootArrayFieldReplace(
+  state: unknown,
+  location: ArrayFieldPath,
+  value: unknown,
+): unknown | null {
+  if (location.arrayPath === "") {
+    if (!Array.isArray(state)) return null;
+    return replaceArrayField(state, location.index, location.key, value);
+  }
+
+  if (
+    location.arrayPath[0] !== "/"
+    || location.arrayPath.includes("~")
+    || location.arrayPath.indexOf("/", 1) !== -1
+  ) {
+    return null;
+  }
+
+  const arrayKey = location.arrayPath.slice(1);
+  if (
+    arrayKey === "__proto__"
+    || state === null
+    || typeof state !== "object"
+    || Array.isArray(state)
+    || !objectHasOwn.call(state, arrayKey)
+  ) {
+    return null;
+  }
+
+  const current = (state as Record<string, unknown>)[arrayKey];
+  if (!Array.isArray(current)) return null;
+  const nextArray = replaceArrayField(current, location.index, location.key, value);
+  if (nextArray === null) return null;
+  return { ...(state as Record<string, unknown>), [arrayKey]: nextArray };
+}
+
+function replaceArrayField(
+  array: ReadonlyArray<unknown>,
+  index: number,
+  key: string,
+  value: unknown,
+): unknown[] | null {
+  if (index < 0 || index >= array.length) return null;
+  const row = array[index];
+  if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
+  if (!objectHasOwn.call(row, key)) return null;
+
+  const replaced = { ...(row as Record<string, unknown>) };
+  if (key === "__proto__") {
+    Object.defineProperty(replaced, key, {
+      value,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  } else {
+    replaced[key] = value;
+  }
+
+  const next = array.slice();
+  next[index] = replaced;
+  return next;
 }
 
 function applySingleRootObjectReplacePatchWithLocalSchemaValidation(
