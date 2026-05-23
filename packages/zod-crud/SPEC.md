@@ -252,10 +252,13 @@ doc.clipboard.cut(["/items/0", "/items/1"]);
 doc.clipboard.paste("/items/-");
 doc.clipboard.paste({ after: "/items/0" });
 doc.clipboard.pastePayload("/items/-", { id: "new", name: "New" });
+doc.clipboard.write(payload, { trustedPayload: true });
 doc.clipboard.clear();
 ```
 
 `copy` and `cut` may omit `source`; then the current selection source is used. `paste` may omit `target`; then the current primary selection pointer is used. Direct payload paste uses `pastePayload` and does not require writing to the buffer first.
+
+`write(..., { trustedPayload: true })` skips JSON-serializability validation for callers that already own that boundary. It still clones the payload before storing it.
 
 `cut`, `paste`, and `pastePayload` mutate immediately. On success, `value` is the current document value and `applied` is the patch record already applied by the document.
 

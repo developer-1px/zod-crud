@@ -271,6 +271,12 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.write items payload trusted", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.write(state.items, { trustedPayload: true }));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.write document items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.write(doc.value.items));
   }

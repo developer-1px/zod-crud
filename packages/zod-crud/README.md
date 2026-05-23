@@ -265,6 +265,13 @@ doc.clipboard.pastePayload("/lists/0/cards/-", { id: "new", title: "New card" })
 doc.clipboard.paste({ after: "/lists/0/cards/0" });
 ```
 
+For large payloads that are already JSON-compatible, buffer them without
+revalidating the JSON boundary.
+
+```ts
+doc.clipboard.write(cards, { trustedPayload: true });
+```
+
 Use a pointer such as `/cards/-` when you already have an insertion position.
 Use `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }` when
 the target is an existing value.

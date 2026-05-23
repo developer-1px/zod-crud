@@ -20,6 +20,8 @@ export const INTERNAL_CLIPBOARD_PEEK: unique symbol = Symbol("zod-crud.internal.
 interface ClipboardWriteOptions {
   source?: Pointer | null;
   sources?: ReadonlyArray<Pointer> | null;
+  /** Skip JSON-serializability validation when the caller already owns that boundary. */
+  trustedPayload?: boolean;
 }
 
 interface ClipboardReadOk {
@@ -217,7 +219,8 @@ export function createClipboard<S extends z.ZodType>(
       const writtenSources = writeSources(options);
       if (!writtenSources.ok) return writtenSources.result;
       const sources = writtenSources.sources;
-      const trustedPayload = isTrustedWritePayload(payload, sources);
+      const schemaTrustedPayload = isTrustedWritePayload(payload, sources);
+      const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
       const cloned = trustedPayload
         ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
         : cloneJsonSerializable(payload);
@@ -227,7 +230,7 @@ export function createClipboard<S extends z.ZodType>(
         payload: cloned.value,
         source,
         sources,
-        schemaTrusted: trustedPayload,
+        schemaTrusted: schemaTrustedPayload,
       });
       return { ok: true };
     },
