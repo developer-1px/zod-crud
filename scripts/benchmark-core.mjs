@@ -28,6 +28,7 @@ const {
   matchPointers: matchJsonPathPointers,
   parse: parseJsonPath,
   query: jsonpathQuery,
+  queryMatches: jsonpathQueryMatches,
 } = await import(distJsonPathEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 const { computeInverses } = await import(distPatchInverseEntry.href);
@@ -81,6 +82,7 @@ for (const size of sizes) {
   const primitiveArrayState = Array.from({ length: size }, (_, index) => index);
   const middle = Math.floor(size / 2);
   const jsonpathOne = `$.items[${middle}].done`;
+  const jsonpathRegexFilter = '$.items[?search(@.title, "999")]';
   const batchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "replace",
     path: `/items/${index}/done`,
@@ -250,6 +252,9 @@ for (const size of sizes) {
     }
     return { ok };
   });
+  bench("jsonpath regex filter search", Math.max(3, Math.ceil(rounds / 2)), () => ({
+    ok: jsonpathQueryMatches(jsonpathRegexFilter, state).length > 0,
+  }));
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });

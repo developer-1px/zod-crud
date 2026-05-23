@@ -3,6 +3,9 @@
 
 import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./types.js";
 
+const REGEX_CACHE_LIMIT = 128;
+const regexCache = new Map<string, RegExp | null>();
+
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
   let cur: Match[] = [{ pointer: "", value: root }];
@@ -218,13 +221,28 @@ function jsonLength(value: unknown): number | undefined {
 }
 
 function regexTest(input: string, pattern: string, full: boolean): boolean {
+  const re = compiledRegex(pattern, full);
+  return re !== null && re.test(input);
+}
+
+function compiledRegex(pattern: string, full: boolean): RegExp | null {
+  const key = `${full ? "match" : "search"}\0${pattern}`;
+  if (regexCache.has(key)) return regexCache.get(key)!;
+
+  let compiled: RegExp | null;
   try {
     const translated = translateRegexpDot(pattern);
-    const re = new RegExp(full ? `^(?:${translated})$` : translated, "u");
-    return re.test(input);
+    compiled = new RegExp(full ? `^(?:${translated})$` : translated, "u");
   } catch {
-    return false;
+    compiled = null;
   }
+
+  if (regexCache.size >= REGEX_CACHE_LIMIT) {
+    const oldest = regexCache.keys().next().value;
+    if (oldest !== undefined) regexCache.delete(oldest);
+  }
+  regexCache.set(key, compiled);
+  return compiled;
 }
 
 function translateRegexpDot(pattern: string): string {
