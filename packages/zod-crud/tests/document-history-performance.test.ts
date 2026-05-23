@@ -543,6 +543,40 @@ describe("doc.history performance contract", () => {
     expect(doc.value.items.map((item) => item["d/one"])).toEqual([true, true]);
   });
 
+  test("same-array field replace batch handles escaped parents and fields without root validation", () => {
+    const Schema = z.object({
+      "a/b": z.array(z.object({ "d~one": z.boolean() })),
+    });
+    const initial = {
+      "a/b": [
+        { "d~one": false },
+        { "d~one": false },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/a~1b/0/d~0one", value: true },
+      { op: "replace", path: "/a~1b/1/d~0one", value: true },
+    ])).toEqual({ ok: true });
+    expect(doc.value["a/b"].map((item) => item["d~one"])).toEqual([true, true]);
+    expect(rootParses).toBe(0);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(rootParses).toBe(0);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value["a/b"].map((item) => item["d~one"])).toEqual([true, true]);
+    expect(rootParses).toBe(0);
+  });
+
   test("commit with explicit selection validates once and replays the accepted patch", () => {
     let validations = 0;
     const Schema = z.object({

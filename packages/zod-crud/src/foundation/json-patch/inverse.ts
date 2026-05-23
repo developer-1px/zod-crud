@@ -21,6 +21,11 @@ interface SimpleArrayNestedPath {
   suffixSegments: string[];
 }
 
+interface ArrayFieldText {
+  prefixText: string;
+  suffixText: string;
+}
+
 function inverseOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation | null {
   switch (op.op) {
     case "add":
@@ -151,6 +156,7 @@ function computeSameArrayFieldReplaceInverses(
 
   let arrayPath: string | null = null;
   let field: string | null = null;
+  let fieldText: ArrayFieldText | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
   let previousEmittedIndex: number | null = null;
@@ -161,10 +167,19 @@ function computeSameArrayFieldReplaceInverses(
     const op = ops[opIndex]!;
     if (op.op === "test") continue;
     if (op.op !== "replace" || op.path === "") return null;
-    const location = parseArrayFieldPath(op.path);
+    const knownIndex = fieldText === null ? null : parseKnownArrayFieldIndex(op.path, fieldText);
+    let location: ArrayFieldPath | null;
+    if (knownIndex === null) {
+      location = parseArrayFieldPath(op.path);
+    } else {
+      if (arrayPath === null || field === null) return null;
+      location = { arrayPath, index: knownIndex, key: field };
+    }
     if (location === null) return null;
-    if (field === null) field = location.key;
-    else if (field !== location.key) return null;
+    if (field === null) {
+      field = location.key;
+      fieldText = arrayFieldText(op.path);
+    } else if (field !== location.key) return null;
 
     if (arrayPath === null) {
       arrayPath = location.arrayPath;
@@ -892,6 +907,25 @@ function parseArrayFieldPath(path: string): ArrayFieldPath | null {
     ? ""
     : `/${segments.slice(0, -2).map(escapePointerSegment).join("/")}`;
   return { arrayPath, index, key: segments[segments.length - 1]! };
+}
+
+function arrayFieldText(path: string): ArrayFieldText | null {
+  const keySlash = path.lastIndexOf("/");
+  if (keySlash <= 0) return null;
+  const indexSlash = path.lastIndexOf("/", keySlash - 1);
+  return indexSlash < 0
+    ? null
+    : {
+        prefixText: path.slice(0, indexSlash + 1),
+        suffixText: path.slice(keySlash),
+      };
+}
+
+function parseKnownArrayFieldIndex(path: string, text: ArrayFieldText): number | null {
+  if (!path.startsWith(text.prefixText) || !path.endsWith(text.suffixText)) return null;
+  const indexEnd = path.length - text.suffixText.length;
+  const indexText = path.slice(text.prefixText.length, indexEnd);
+  return indexText.includes("/") ? null : numericSegment(indexText);
 }
 
 function parseSimpleArrayFieldPath(path: string): ArrayFieldPath | null {
