@@ -458,15 +458,11 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       return null;
     }
 
-    const location: ArrayNestedPath | null = arrayPath === null
-      ? parseFirstArrayNestedPath(state, op.path)
-      : suffixSegments === null
-        || arraySegments === null
-        ? null
-        : parseKnownArrayNestedPath(op.path, arrayPath, arraySegments, suffixSegments, simplePrefixText, simpleSuffixText);
-    if (location === null) return null;
-
-    if (arrayValue === null) {
+    let rowIndex: number;
+    let rowSuffixSegments: string[];
+    if (arrayPath === null) {
+      const location = parseFirstArrayNestedPath(state, op.path);
+      if (location === null) return null;
       arrayPath = location.arrayPath;
       arraySegments = location.arraySegments;
       simplePrefixText = location.simplePrefixText;
@@ -478,9 +474,23 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       const current = readAt(state, location.arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return null;
       arrayValue = current.value;
+      rowIndex = location.index;
+      rowSuffixSegments = location.suffixSegments;
+    } else {
+      if (suffixSegments === null) return null;
+      const parsedIndex = parseKnownArrayNestedIndex(
+        op.path,
+        arrayPath,
+        suffixSegments,
+        simplePrefixText,
+        simpleSuffixText,
+      );
+      if (parsedIndex === null) return null;
+      rowIndex = parsedIndex;
+      rowSuffixSegments = suffixSegments;
     }
 
-    if (arrayValue === null || valueSchema === null || location.index < 0 || location.index >= arrayValue.length) return null;
+    if (arrayValue === null || valueSchema === null || rowIndex < 0 || rowIndex >= arrayValue.length) return null;
     const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
@@ -490,8 +500,8 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       const parsed = valueSchema.safeParse(op.value);
       if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
     }
-    if (!readAt(arrayValue[location.index], location.suffixSegments).ok) return null;
-    updates.set(location.index, op.value);
+    if (!readAt(arrayValue[rowIndex], rowSuffixSegments).ok) return null;
+    updates.set(rowIndex, op.value);
     applied[opIndex] = op;
   }
 
@@ -1338,26 +1348,16 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
   return null;
 }
 
-function parseKnownArrayNestedPath(
+function parseKnownArrayNestedIndex(
   path: Pointer,
   arrayPath: Pointer,
-  knownArraySegments: string[],
   suffixSegments: string[],
   simplePrefixText: string | null,
   simpleSuffixText: string | null,
-): ArrayNestedPath | null {
+): number | null {
   if (simplePrefixText !== null && simpleSuffixText !== null) {
     const index = parseKnownSimpleArrayNestedIndex(path, simplePrefixText, simpleSuffixText);
-    if (index !== null) {
-      return {
-        arrayPath,
-        arraySegments: knownArraySegments,
-        index,
-        simplePrefixText,
-        simpleSuffixText,
-        suffixSegments,
-      };
-    }
+    if (index !== null) return index;
   }
 
   let segments: string[];
@@ -1376,17 +1376,7 @@ function parseKnownArrayNestedPath(
   const arraySegments = segments.slice(0, arraySegmentsLength);
   if (buildPointer(arraySegments) !== arrayPath) return null;
 
-  const rowIndex = numericSegment(segments[arraySegmentsLength]!);
-  return rowIndex === null
-    ? null
-    : {
-        arrayPath,
-        arraySegments,
-        index: rowIndex,
-        simplePrefixText: null,
-        simpleSuffixText: null,
-        suffixSegments: segments.slice(arraySegmentsLength + 1),
-      };
+  return numericSegment(segments[arraySegmentsLength]!);
 }
 
 function simpleArrayNestedPrefixText(arraySegments: ReadonlyArray<string>): string {

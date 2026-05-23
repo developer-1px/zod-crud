@@ -557,15 +557,11 @@ function applySameArrayNestedReplacePatch(
     }
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
 
-    const location: ArrayNestedPath | null = arrayPath === null
-      ? parseFirstArrayNestedPath(state, op.path)
-      : suffixSegments === null
-        || arraySegments === null
-        ? null
-        : parseKnownArrayNestedPath(op.path, arrayPath, arraySegments, suffixSegments, simplePrefixText, simpleSuffixText);
-    if (location === null) return { handled: false };
-
-    if (arrayValue === null) {
+    let rowIndex: number;
+    let rowSuffixSegments: string[];
+    if (arrayPath === null) {
+      const location = parseFirstArrayNestedPath(state, op.path);
+      if (location === null) return { handled: false };
       arrayPath = location.arrayPath;
       arraySegments = location.arraySegments;
       simplePrefixText = location.simplePrefixText;
@@ -574,11 +570,25 @@ function applySameArrayNestedReplacePatch(
       const current = getValueAt(state, location.arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return { handled: false };
       arrayValue = current.value;
+      rowIndex = location.index;
+      rowSuffixSegments = location.suffixSegments;
+    } else {
+      if (suffixSegments === null) return { handled: false };
+      const parsedIndex = parseKnownArrayNestedIndex(
+        op.path,
+        arrayPath,
+        suffixSegments,
+        simplePrefixText,
+        simpleSuffixText,
+      );
+      if (parsedIndex === null) return { handled: false };
+      rowIndex = parsedIndex;
+      rowSuffixSegments = suffixSegments;
     }
 
-    if (location.index < 0 || location.index >= arrayValue.length) return { handled: false };
-    if (!getValueAt(arrayValue[location.index], location.suffixSegments).ok) return { handled: false };
-    updates.set(location.index, op.value);
+    if (arrayValue === null || rowIndex < 0 || rowIndex >= arrayValue.length) return { handled: false };
+    if (!getValueAt(arrayValue[rowIndex], rowSuffixSegments).ok) return { handled: false };
+    updates.set(rowIndex, op.value);
     applied[opIndex] = op;
   }
 
@@ -1639,26 +1649,16 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
   return null;
 }
 
-function parseKnownArrayNestedPath(
+function parseKnownArrayNestedIndex(
   path: Pointer,
   arrayPath: Pointer,
-  knownArraySegments: string[],
   suffixSegments: string[],
   simplePrefixText: string | null,
   simpleSuffixText: string | null,
-): ArrayNestedPath | null {
+): number | null {
   if (simplePrefixText !== null && simpleSuffixText !== null) {
     const index = parseKnownSimpleArrayNestedIndex(path, simplePrefixText, simpleSuffixText);
-    if (index !== null) {
-      return {
-        arrayPath,
-        arraySegments: knownArraySegments,
-        index,
-        simplePrefixText,
-        simpleSuffixText,
-        suffixSegments,
-      };
-    }
+    if (index !== null) return index;
   }
 
   const parsed = parseSafe(path);
@@ -1672,17 +1672,7 @@ function parseKnownArrayNestedPath(
   const arraySegments = parsed.segs.slice(0, arraySegmentsLength);
   if (buildPointer(arraySegments) !== arrayPath) return null;
 
-  const rowIndex = numericSegment(parsed.segs[arraySegmentsLength]!);
-  return rowIndex === null
-    ? null
-    : {
-        arrayPath,
-        arraySegments,
-        index: rowIndex,
-        simplePrefixText: null,
-        simpleSuffixText: null,
-        suffixSegments: parsed.segs.slice(arraySegmentsLength + 1),
-      };
+  return numericSegment(parsed.segs[arraySegmentsLength]!);
 }
 
 function simpleArrayNestedPrefixText(arraySegments: ReadonlyArray<string>): string {
