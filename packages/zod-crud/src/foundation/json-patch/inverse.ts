@@ -596,7 +596,14 @@ function parseSimpleArrayElementPath(path: string): { parent: string; index: num
 }
 
 function numericSegment(segment: string): number | null {
-  if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
+  if (segment.length === 0) return null;
+  const first = segment.charCodeAt(0);
+  if (first === 48) return segment.length === 1 ? 0 : null;
+  if (first < 49 || first > 57) return null;
+  for (let index = 1; index < segment.length; index += 1) {
+    const code = segment.charCodeAt(index);
+    if (code < 48 || code > 57) return null;
+  }
   return Number(segment);
 }
 

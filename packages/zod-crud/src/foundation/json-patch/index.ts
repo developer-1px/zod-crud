@@ -559,7 +559,7 @@ function applyTailRemovePatch(
   let parentSegments: string[] | null = null;
   let currentArray: unknown[] | null = null;
   let initialLength = 0;
-  const applied: JSONPatchOperation[] = [];
+  const applied = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
     const op = ops[index]!;
@@ -592,7 +592,7 @@ function applyTailRemovePatch(
     }
 
     if (location.index !== initialLength - index - 1) return { handled: false };
-    applied.push({ op: "remove", path: op.path });
+    applied[index] = { op: "remove", path: op.path };
   }
 
   if (parentSegments === null || currentArray === null) return { handled: false };
@@ -800,7 +800,7 @@ function applySameArrayElementReplacePatch(
   let parent: Pointer | null = null;
   let parentSegments: string[] | null = null;
   let next: unknown[] | null = null;
-  const applied: JSONPatchOperation[] = [];
+  const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -825,7 +825,7 @@ function applySameArrayElementReplacePatch(
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
     if (next === null || location.index < 0 || location.index >= next.length) return { handled: false };
     next[location.index] = op.value;
-    applied.push(op);
+    applied[index] = op;
   }
 
   if (parentSegments === null || next === null) return { handled: false };
@@ -1179,7 +1179,14 @@ function arrayRemoveLocation(path: Pointer): { parent: Pointer; index: number } 
 }
 
 function numericSegment(segment: string): number | null {
-  if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
+  if (segment.length === 0) return null;
+  const first = segment.charCodeAt(0);
+  if (first === 48) return segment.length === 1 ? 0 : null;
+  if (first < 49 || first > 57) return null;
+  for (let index = 1; index < segment.length; index += 1) {
+    const code = segment.charCodeAt(index);
+    if (code < 48 || code > 57) return null;
+  }
   return Number(segment);
 }
 
