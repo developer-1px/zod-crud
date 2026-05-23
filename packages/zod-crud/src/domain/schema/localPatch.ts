@@ -40,6 +40,8 @@ interface ExtendedDef {
   items?: z.ZodType[];
   rest?: z.ZodType | null;
   getter?: () => z.ZodType;
+  in?: z.ZodType;
+  out?: z.ZodType;
   values?: unknown[];
   entries?: Record<string, unknown>;
 }
@@ -1853,6 +1855,16 @@ function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<objec
       return finish(
         !!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen),
       );
+    case "nonoptional": {
+      if (!def.innerType) return finish(false);
+      const innerDef = getDef(def.innerType) as ExtendedDef;
+      const outputSchema = innerDef.type === "optional" ? innerDef.innerType : def.innerType;
+      return finish(!!outputSchema && schemaOutputIsKnownJsonInternal(outputSchema, activeSeen));
+    }
+    case "prefault":
+      return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
+    case "pipe":
+      return finish(!!def.out && schemaOutputIsKnownJsonInternal(def.out, activeSeen));
     case "string":
     case "number":
     case "boolean":

@@ -686,6 +686,47 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("known-JSON nonoptional, prefault, and pipe schema outputs can be trusted", () => {
+    const NonoptionalSchema = z.object({
+      value: z.string().optional().nonoptional(),
+    });
+    const nonoptionalDoc = createJSONDocument(NonoptionalSchema, { value: "a" });
+    expect(nonoptionalDoc.patch({ op: "replace", path: "/value", value: "b" })).toEqual({ ok: true });
+
+    const PrefaultSchema = z.object({
+      value: z.string().prefault("a"),
+    });
+    const prefaultDoc = createJSONDocument(PrefaultSchema, {});
+    expect(prefaultDoc.value).toEqual({ value: "a" });
+    expect(prefaultDoc.patch({ op: "replace", path: "/value", value: "b" })).toEqual({ ok: true });
+
+    const PipeSchema = z.object({
+      value: z.string().pipe(z.string()),
+    });
+    const pipeDoc = createJSONDocument(PipeSchema, { value: "a" });
+    expect(pipeDoc.patch({ op: "replace", path: "/value", value: "b" })).toEqual({ ok: true });
+  });
+
+  test("catch and transform outputs keep the document JSON guard", () => {
+    const CatchSchema = z.object({
+      value: z.number().catch(() => Number.NaN),
+    });
+    const catchDoc = createJSONDocument(CatchSchema, { value: "bad" } as never);
+    expect(catchDoc.canPatch({ op: "replace", path: "/value", value: 1 })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+
+    const TransformSchema = z.object({
+      value: z.string().transform(() => () => "bad"),
+    });
+    const transformDoc = createJSONDocument(TransformSchema, { value: "bad" });
+    expect(transformDoc.canPatch({ op: "replace", path: "/value", value: 1 })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
   test("clipboard write rejects invalid sources before payload cloning", () => {
     const payload: Record<string, unknown> = { ok: true };
     Object.defineProperty(payload, "computed", {
