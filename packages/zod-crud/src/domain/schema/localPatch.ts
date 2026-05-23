@@ -66,17 +66,26 @@ function copyRootRecordKeys(
   keys: ReadonlyArray<string>,
 ): Record<string, unknown> {
   const next: Record<string, unknown> = {};
-  for (const key of keys) {
-    if (key === "__proto__") {
-      Object.defineProperty(next, key, {
-        value: source[key],
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
+  if (!objectHasOwn.call(source, "__proto__")) {
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index]!;
       next[key] = source[key];
     }
+    return next;
+  }
+
+  for (let index = 0; index < keys.length; index += 1) {
+    const key = keys[index]!;
+    if (key !== "__proto__") {
+      next[key] = source[key];
+      continue;
+    }
+    Object.defineProperty(next, key, {
+      value: source[key],
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
   }
   return next;
 }
