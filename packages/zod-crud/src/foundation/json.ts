@@ -36,12 +36,8 @@ function jsonSerializableErrorFast(value: unknown): string | null {
 
     if (Array.isArray(v)) {
       if (Object.getOwnPropertySymbols(v).length > 0) return "symbol keys are not JSON";
-      const names = Object.getOwnPropertyNames(v);
-      if (names.length !== v.length + 1) return "non-index array property is not JSON";
       for (let index = 0; index < v.length; index += 1) {
-        const key = names[index];
-        if (key !== String(index)) return "sparse array hole";
-        const descriptor = Object.getOwnPropertyDescriptor(v, key);
+        const descriptor = Object.getOwnPropertyDescriptor(v, String(index));
         if (!descriptor) return "sparse array hole";
         if (!descriptor.enumerable) return "non-enumerable property is not JSON";
         if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
@@ -56,6 +52,8 @@ function jsonSerializableErrorFast(value: unknown): string | null {
           }
         }
       }
+      const names = Object.getOwnPropertyNames(v);
+      if (names.length !== v.length + 1) return "non-index array property is not JSON";
       if (names[names.length - 1] !== "length") return "non-index array property is not JSON";
       continue;
     }
