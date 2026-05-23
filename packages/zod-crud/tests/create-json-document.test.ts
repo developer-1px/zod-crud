@@ -433,6 +433,21 @@ describe("createJSONDocument public interface", () => {
     expect(read.payload).not.toBe(payload);
   });
 
+  test("clipboard read can return the buffered payload reference", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const payload = [{ id: "owned", name: "Owned" }];
+
+    expect(doc.clipboard.write(payload, {
+      trustedPayload: true,
+      clonePayload: false,
+    })).toEqual({ ok: true });
+
+    const read = doc.clipboard.read({ clonePayload: false });
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(read.payload).toBe(payload);
+  });
+
   test("clipboard write clones large external object payloads with array fields", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
     const payload = {

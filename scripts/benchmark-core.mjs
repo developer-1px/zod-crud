@@ -404,6 +404,14 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    const written = doc.clipboard.write(state.items, { trustedPayload: true, clonePayload: false });
+    if (!written.ok) throw new Error(`clipboard write setup failed: ${JSON.stringify(written)}`);
+    bench("doc.clipboard.read items payload no clone", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.read({ clonePayload: false }));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     const copied = doc.clipboard.copy("/items");
     if (!copied.ok) throw new Error(`clipboard copy setup failed: ${JSON.stringify(copied)}`);
     bench("doc.canPaste clipboard replace /items", Math.max(3, Math.ceil(rounds / 2)), () =>

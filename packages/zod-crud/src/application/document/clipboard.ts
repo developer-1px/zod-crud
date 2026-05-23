@@ -26,6 +26,11 @@ interface ClipboardWriteOptions {
   clonePayload?: boolean;
 }
 
+interface ClipboardReadOptions {
+  /** Return the buffered payload reference directly. Use only when the caller owns its mutation boundary. */
+  clonePayload?: boolean;
+}
+
 interface ClipboardReadOk {
   ok: true;
   payload: unknown;
@@ -65,7 +70,7 @@ export interface ClipboardState<T> {
   readonly hasData: boolean;
   readonly source: Pointer | null;
   readonly sources: ReadonlyArray<Pointer> | null;
-  read(): ClipboardReadResult;
+  read(options?: ClipboardReadOptions): ClipboardReadResult;
   write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
   clear(): void;
 
@@ -218,11 +223,13 @@ export function createClipboard<S extends z.ZodType>(
     get source() { return buffer?.source ?? null; },
     get sources() { return buffer?.sources ? [...buffer.sources] : null; },
 
-    read() {
+    read(options = {}) {
       if (!buffer) return EMPTY_CLIPBOARD;
       return {
         ok: true,
-        payload: cloneTrustedPlainJson(buffer.payload),
+        payload: options.clonePayload === false
+          ? buffer.payload
+          : cloneTrustedPlainJson(buffer.payload),
         source: buffer.source,
         sources: buffer.sources ? [...buffer.sources] : null,
       };
