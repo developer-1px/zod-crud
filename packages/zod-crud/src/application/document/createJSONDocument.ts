@@ -608,11 +608,14 @@ function compactHistoryMetadata(
   metadata: HistoryTransactionOptions | undefined,
 ): HistoryTransactionOptions | undefined {
   if (metadata === undefined) return undefined;
+  const { label, origin, mergeKey } = metadata;
+  if (label === undefined && origin === undefined && mergeKey === undefined) return undefined;
+
   const compact: HistoryTransactionOptions = {};
-  if (metadata.label !== undefined) compact.label = metadata.label;
-  if (metadata.origin !== undefined) compact.origin = metadata.origin;
-  if (metadata.mergeKey !== undefined) compact.mergeKey = metadata.mergeKey;
-  return Object.keys(compact).length > 0 ? compact : undefined;
+  if (label !== undefined) compact.label = label;
+  if (origin !== undefined) compact.origin = origin;
+  if (mergeKey !== undefined) compact.mergeKey = mergeKey;
+  return compact;
 }
 
 function mergeEntryMetadata(
