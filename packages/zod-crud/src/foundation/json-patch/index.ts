@@ -909,7 +909,10 @@ function applyRootObjectReplacePatch(
     return { handled: false };
   }
 
-  let next: Record<string, unknown> | null = null;
+  const source = state as Record<string, unknown>;
+  const sourceKeys = Object.keys(source);
+  let matchesSourceKeyOrder = ops.length === sourceKeys.length;
+  const orderedNext: Record<string, unknown> | null = matchesSourceKeyOrder ? {} : null;
   const applied = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -929,7 +932,34 @@ function applyRootObjectReplacePatch(
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(state, key)) return { handled: false };
 
-    if (next === null) next = copyRootObject(state as Record<string, unknown>);
+    if (matchesSourceKeyOrder) {
+      if (key === sourceKeys[index]) {
+        if (key === "__proto__") {
+          Object.defineProperty(orderedNext, key, {
+            value: op.value,
+            enumerable: true,
+            configurable: true,
+            writable: true,
+          });
+        } else {
+          orderedNext![key] = op.value;
+        }
+      } else {
+        matchesSourceKeyOrder = false;
+      }
+    }
+    applied[index] = op;
+  }
+
+  if (matchesSourceKeyOrder && orderedNext !== null) {
+    return { handled: true, state: orderedNext, applied };
+  }
+
+  const next = copyRootObjectKeys(source, sourceKeys);
+  const replaceOps = ops as ReadonlyArray<Extract<JSONPatchOperation, { op: "replace" }>>;
+  for (let index = 0; index < replaceOps.length; index += 1) {
+    const op = replaceOps[index]!;
+    const key = op.path.slice(1);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: op.value,
@@ -940,12 +970,8 @@ function applyRootObjectReplacePatch(
     } else {
       next[key] = op.value;
     }
-    applied[index] = op;
   }
-
-  return next === null
-    ? { handled: false }
-    : { handled: true, state: next, applied };
+  return { handled: true, state: next, applied };
 }
 
 function applyIndependentReplacePatch(

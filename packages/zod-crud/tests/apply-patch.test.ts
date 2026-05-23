@@ -97,4 +97,26 @@ describe("applyPatch public contract", () => {
     expect(result.result).toMatchObject({ ok: false, code: "not_serializable" });
     expect(result.state).toBe(state);
   });
+
+  test("ordered full root object replace keeps __proto__ as data", () => {
+    const state: Record<string, unknown> = { a: 1 };
+    Object.defineProperty(state, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const result = applyPatchToTrustedState(z.any(), state, [
+      { op: "replace", path: "/a", value: 2 },
+      { op: "replace", path: "/__proto__", value: { safe: false } },
+    ]);
+
+    expect(result.result).toEqual({ ok: true });
+    expect(Object.keys(result.state as Record<string, unknown>)).toEqual(["a", "__proto__"]);
+    expect((result.state as Record<string, unknown>).a).toBe(2);
+    expect(Object.prototype).not.toHaveProperty("safe");
+    expect(Object.prototype.hasOwnProperty.call(result.state as object, "__proto__")).toBe(true);
+    expect((result.state as Record<string, unknown>).__proto__).toEqual({ safe: false });
+  });
 });
