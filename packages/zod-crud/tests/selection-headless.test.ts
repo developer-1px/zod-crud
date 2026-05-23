@@ -140,6 +140,21 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/5");
   });
 
+  test("multiple auto-selection exposes defensive selected pointer arrays", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      selection: { mode: "multiple" },
+    });
+
+    expect(doc.patch([
+      { op: "add", path: "/items/-", value: { id: "d", name: "D" } },
+      { op: "add", path: "/items/-", value: { id: "e", name: "E" } },
+    ])).toEqual({ ok: true });
+    const selected = doc.selection?.selectedPointers as string[];
+    selected.length = 0;
+
+    expect(doc.selection?.selectedPointers).toEqual(["/items/3", "/items/4"]);
+  });
+
   test("selection subscribers receive previous snapshots", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple", initial: ["/items/0"] },

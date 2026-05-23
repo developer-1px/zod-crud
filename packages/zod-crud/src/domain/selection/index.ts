@@ -857,7 +857,6 @@ function snapFromPointerTargets(
   }
 
   if (unique) {
-    const selectedPointers = [...targets];
     const selectionRanges = new Array<SelectionRange>(targets.length);
     for (let index = 0; index < targets.length; index += 1) {
       const target = targets[index]!;
@@ -865,7 +864,7 @@ function snapFromPointerTargets(
     }
     const primary = targets[targets.length - 1]!;
     return {
-      selectedPointers,
+      selectedPointers: targets,
       selectionRanges,
       primaryIndex: selectionRanges.length - 1,
       anchor: primary,
