@@ -13,11 +13,11 @@
 // SPEC §0.3 (2) 표준 Path: RFC 6901 + RFC 9535. JSONPath query → Pointer[] 환원.
 
 import { parse as parseJsonPath } from "./parser.js";
-import { evaluate, matchPointers } from "./evaluate.js";
+import { evaluate, matchPointers, matchPointersForSimpleQuery } from "./evaluate.js";
 import type { Pointer } from "../json-pointer/index.js";
 import type { Match, Query } from "./types.js";
 
-export { parseJsonPath as parse, evaluate, matchPointers };
+export { parseJsonPath as parse, evaluate, matchPointers, matchPointersForSimpleQuery };
 export { JSONPathSyntaxError } from "./tokenizer.js";
 export type { Query, Match } from "./types.js";
 
@@ -27,6 +27,8 @@ const queryCache = new Map<string, Query>();
 /** shorthand: query string + root → Pointer[]. */
 export function query(jsonpath: string, root: unknown): Pointer[] {
   const ast = cachedParse(jsonpath);
+  const simplePointers = matchPointersForSimpleQuery(ast, root);
+  if (simplePointers !== null) return simplePointers;
   return matchPointers(evaluate(ast, root));
 }
 
