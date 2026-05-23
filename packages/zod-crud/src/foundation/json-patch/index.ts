@@ -955,6 +955,15 @@ function applySameArrayStructuralPatch(
   );
   if (parsedIncreasingAddFast !== null) return parsedIncreasingAddFast;
 
+  const nonDecreasingRemoveFast = applyNonDecreasingArrayRemovePatch(
+    state,
+    parent,
+    parsedParent.segs,
+    current.value,
+    items,
+  );
+  if (nonDecreasingRemoveFast !== null) return nonDecreasingRemoveFast;
+
   const nonIncreasingAddFast = applyNonIncreasingArrayAddPatch(
     state,
     parent,
@@ -1170,6 +1179,49 @@ function applyIncreasingArrayAddPatch(
   const next = start === current.length
     ? current.concat(values)
     : current.slice(0, start).concat(values, current.slice(start));
+  const stateWithArray = replaceValueAtSegments(state, parentSegments, 0, next);
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
+}
+
+function applyNonDecreasingArrayRemovePatch(
+  state: unknown,
+  parent: Pointer,
+  parentSegments: ReadonlyArray<string>,
+  current: ReadonlyArray<unknown>,
+  items: ReadonlyArray<SameArrayStructuralItem>,
+): FastPatchResult | null {
+  if (items.length < 2) return null;
+
+  let previousIndex = -1;
+  const removedIndexes = new Array<number>(items.length);
+  const applied = new Array<JSONPatchOperation>(items.length);
+
+  for (let itemIndex = 0; itemIndex < items.length; itemIndex += 1) {
+    const item = items[itemIndex]!;
+    if (item.op !== "remove") return null;
+    if (item.index < previousIndex) return null;
+
+    const sourceIndex = item.index + itemIndex;
+    if (item.index < 0 || sourceIndex >= current.length) return { handled: false };
+    removedIndexes[itemIndex] = sourceIndex;
+    applied[itemIndex] = { op: "remove", path: item.path };
+    previousIndex = item.index;
+  }
+
+  const next = new Array<unknown>(current.length - items.length);
+  let removeIndex = 0;
+  let write = 0;
+  for (let index = 0; index < current.length; index += 1) {
+    if (removeIndex < removedIndexes.length && index === removedIndexes[removeIndex]) {
+      removeIndex += 1;
+      continue;
+    }
+    next[write] = current[index];
+    write += 1;
+  }
+
   const stateWithArray = replaceValueAtSegments(state, parentSegments, 0, next);
   return stateWithArray === null
     ? { handled: false }

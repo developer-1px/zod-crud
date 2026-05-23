@@ -58,6 +58,8 @@ export function computeInverses(
   if (rootObjectRemove) return rootObjectRemove;
   const rootObjectAdd = computeRootObjectAddInverses(state, ops);
   if (rootObjectAdd) return rootObjectAdd;
+  const arrayRemoveOnly = computeNonDecreasingArrayRemoveInverses(state, ops);
+  if (arrayRemoveOnly) return arrayRemoveOnly;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
   const arrayOnly = computeSameArrayStructuralInverses(state, ops);
@@ -386,6 +388,50 @@ function computeSameArrayStructuralInversesWithoutRemovedValues(
   }
 
   return { ok: true, inverses: inverses.reverse() };
+}
+
+function computeNonDecreasingArrayRemoveInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let parent: string | null = null;
+  let previousIndex = -1;
+  const parsed = new Array<{ path: string; index: number }>(ops.length);
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (op.op !== "remove") return null;
+
+    const location = arrayLocation(op.path);
+    if (location === null || location.index === "-") return null;
+    if (location.index < previousIndex) return null;
+    if (parent === null) parent = location.parent;
+    else if (location.parent !== parent) return null;
+
+    parsed[opIndex] = { path: op.path, index: location.index };
+    previousIndex = location.index;
+  }
+
+  if (parent === null) return null;
+  const array = readAt(state, parsePointer(parent));
+  if (!array.ok || !Array.isArray(array.value)) return null;
+
+  const inverses = new Array<JSONPatchOperation>(ops.length);
+  for (let opIndex = 0; opIndex < parsed.length; opIndex += 1) {
+    const item = parsed[opIndex]!;
+    const sourceIndex = item.index + opIndex;
+    if (sourceIndex < 0 || sourceIndex >= array.value.length) return null;
+    inverses[ops.length - opIndex - 1] = {
+      op: "add",
+      path: item.path,
+      value: array.value[sourceIndex],
+    };
+  }
+
+  return { ok: true, inverses };
 }
 
 function computeIndependentReplaceInverses(
