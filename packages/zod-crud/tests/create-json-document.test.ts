@@ -727,6 +727,35 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("known-JSON intersection schema outputs can be trusted", () => {
+    const IntersectionSchema = z.intersection(
+      z.object({ id: z.string() }),
+      z.object({ value: z.number() }),
+    );
+    const doc = createJSONDocument(IntersectionSchema, {
+      id: "a",
+      value: 1,
+    });
+
+    expect(doc.patch({ op: "replace", path: "/value", value: 2 })).toEqual({ ok: true });
+  });
+
+  test("intersection schema with unknown output keeps the document JSON guard", () => {
+    const IntersectionSchema = z.intersection(
+      z.object({ id: z.string() }),
+      z.object({ value: z.any() }),
+    );
+    const doc = createJSONDocument(IntersectionSchema, {
+      id: "a",
+      value: () => "bad",
+    });
+
+    expect(doc.canPatch({ op: "replace", path: "/id", value: "b" })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
   test("clipboard write rejects invalid sources before payload cloning", () => {
     const payload: Record<string, unknown> = { ok: true };
     Object.defineProperty(payload, "computed", {

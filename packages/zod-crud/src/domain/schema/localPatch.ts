@@ -42,6 +42,8 @@ interface ExtendedDef {
   getter?: () => z.ZodType;
   in?: z.ZodType;
   out?: z.ZodType;
+  left?: z.ZodType;
+  right?: z.ZodType;
   values?: unknown[];
   entries?: Record<string, unknown>;
 }
@@ -1865,6 +1867,13 @@ function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<objec
       return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
     case "pipe":
       return finish(!!def.out && schemaOutputIsKnownJsonInternal(def.out, activeSeen));
+    case "intersection":
+      return finish(
+        !!def.left
+          && !!def.right
+          && schemaOutputIsKnownJsonInternal(def.left, activeSeen)
+          && schemaOutputIsKnownJsonInternal(def.right, activeSeen),
+      );
     case "string":
     case "number":
     case "boolean":
