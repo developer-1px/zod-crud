@@ -524,6 +524,13 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   }
 
   const sourceKeys = Object.keys(source);
+  if (ops.length === sourceKeys.length) {
+    return {
+      state: {} as z.output<S>,
+      result: { ok: true },
+      applied,
+    };
+  }
   if (ops.length * 2 < sourceKeys.length) {
     const next = copyRootRecordKeys(source, sourceKeys);
     for (let index = 0; index < ops.length; index += 1) {
