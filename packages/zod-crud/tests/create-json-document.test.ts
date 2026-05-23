@@ -522,6 +522,22 @@ describe("createJSONDocument public interface", () => {
     expect(doc.clipboard.hasData).toBe(false);
   });
 
+  test("optional undefined schema output keeps the document JSON guard", () => {
+    const OptionalSchema = z.object({
+      item: z.object({
+        maybe: z.string().optional(),
+      }),
+    });
+    const doc = createJSONDocument(OptionalSchema, {
+      item: { maybe: undefined },
+    });
+
+    expect(doc.canPatch({ op: "replace", path: "/item/maybe", value: "next" })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+  });
+
   test("clipboard write rejects invalid sources before payload cloning", () => {
     const payload: Record<string, unknown> = { ok: true };
     Object.defineProperty(payload, "computed", {

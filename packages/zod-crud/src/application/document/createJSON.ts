@@ -16,7 +16,7 @@ import {
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { jsonSerializableError } from "../../foundation/json.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
-import { applyPatchWithLocalSchemaValidation } from "../../domain/schema/localPatch.js";
+import { applyPatchWithLocalSchemaValidation, schemaOutputIsKnownJson } from "../../domain/schema/localPatch.js";
 import type {
   JSONChangeMetadata,
   JSONOps,
@@ -61,7 +61,8 @@ export function createJSON<S extends z.ZodType>(
   if (!parsed.success) throw parsed.error;
 
   let state = parsed.data as z.output<S>;
-  let stateJsonTrusted = jsonSerializableError(state) === null;
+  const schemaOutputJsonTrusted = schemaOutputIsKnownJson(schema);
+  let stateJsonTrusted = schemaOutputJsonTrusted || jsonSerializableError(state) === null;
   const initialState = state;
   const policy: ErrorPolicy = options;
   const listeners = new Set<JSONChangeListener>();
@@ -101,7 +102,7 @@ export function createJSON<S extends z.ZodType>(
     if (!applied.result.ok) return handleResult(policy, "patch", applied.result);
     if (applied.state === before) return applied.result;
     state = applied.state;
-    if (!stateJsonTrusted) stateJsonTrusted = jsonSerializableError(state) === null;
+    if (!stateJsonTrusted) stateJsonTrusted = schemaOutputJsonTrusted || jsonSerializableError(state) === null;
     notify(applied.applied, metadata);
     return applied.result;
   };
@@ -146,7 +147,7 @@ export function createJSON<S extends z.ZodType>(
       });
     }
     state = next.data as z.output<S>;
-    stateJsonTrusted = jsonSerializableError(state) === null;
+    stateJsonTrusted = schemaOutputJsonTrusted || jsonSerializableError(state) === null;
     notify([ROOT_REPLACE(state)]);
     return { ok: true };
   };

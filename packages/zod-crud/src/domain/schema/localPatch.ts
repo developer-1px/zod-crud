@@ -63,6 +63,7 @@ interface ArrayNestedPath {
 
 const objectHasOwn = Object.prototype.hasOwnProperty;
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
+const knownJsonOutputSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
 const knownJsonValueValidatorCache = new WeakMap<object, KnownJsonValueValidator | null>();
 const primitiveJsonValueSeen = new WeakSet<object>();
@@ -155,6 +156,10 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
 
 export function isPlainStructuralSchemaForLocalValidation(schema: z.ZodType): boolean {
   return isPlainStructuralSchema(schema);
+}
+
+export function schemaOutputIsKnownJson(schema: z.ZodType): boolean {
+  return schemaOutputIsKnownJsonInternal(schema);
 }
 
 function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -1803,6 +1808,69 @@ function isPlainStructuralSchema(schema: z.ZodType, seen?: WeakSet<object>): boo
 
 function cachePlainStructuralSchema(schema: z.ZodType, value: boolean): boolean {
   plainStructuralSchemaCache.set(schema as object, value);
+  return value;
+}
+
+function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<object>): boolean {
+  const cached = knownJsonOutputSchemaCache.get(schema as object);
+  if (cached !== undefined) return cached;
+  const activeSeen = seen ?? new WeakSet<object>();
+  if (activeSeen.has(schema as object)) return cacheKnownJsonOutputSchema(schema, false);
+  activeSeen.add(schema as object);
+
+  const def = getDef(schema) as ExtendedDef;
+  if (def.coerce) return cacheKnownJsonOutputSchema(schema, false);
+
+  switch (def.type) {
+    case "object": {
+      const shape = getObjectShape(schema);
+      if (!shape || def.catchall) return cacheKnownJsonOutputSchema(schema, false);
+      for (const key of Object.keys(shape)) {
+        if (key === "__proto__") return cacheKnownJsonOutputSchema(schema, false);
+        const child = shape[key];
+        if (!child || !schemaOutputIsKnownJsonInternal(child, activeSeen)) {
+          return cacheKnownJsonOutputSchema(schema, false);
+        }
+      }
+      return cacheKnownJsonOutputSchema(schema, true);
+    }
+    case "array": {
+      const element = getArrayElement(schema);
+      return cacheKnownJsonOutputSchema(
+        schema,
+        element ? schemaOutputIsKnownJsonInternal(element, activeSeen) : false,
+      );
+    }
+    case "nullable":
+      return cacheKnownJsonOutputSchema(
+        schema,
+        !!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen),
+      );
+    case "string":
+    case "number":
+    case "boolean":
+    case "null":
+      return cacheKnownJsonOutputSchema(schema, true);
+    case "literal":
+      return cacheKnownJsonOutputSchema(
+        schema,
+        Array.isArray(def.values) && def.values.every(isJsonPrimitive),
+      );
+    case "enum": {
+      const values = Array.isArray(def.values)
+        ? def.values
+        : def.entries && typeof def.entries === "object"
+          ? Object.values(def.entries)
+          : null;
+      return cacheKnownJsonOutputSchema(schema, values !== null && values.every(isJsonPrimitive));
+    }
+    default:
+      return cacheKnownJsonOutputSchema(schema, false);
+  }
+}
+
+function cacheKnownJsonOutputSchema(schema: z.ZodType, value: boolean): boolean {
+  knownJsonOutputSchemaCache.set(schema as object, value);
   return value;
 }
 
