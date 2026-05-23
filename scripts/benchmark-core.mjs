@@ -20,7 +20,7 @@ if (
 }
 
 const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
-const { jsonSerializableError } = await import(distJsonEntry.href);
+const { cloneJsonSerializable, jsonSerializableError } = await import(distJsonEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 const { computeInverses } = await import(distPatchInverseEntry.href);
 const {
@@ -127,6 +127,7 @@ for (const size of sizes) {
 
   console.log(`\nitems=${size}`);
   bench("jsonSerializableError state", rounds, () => ({ ok: jsonSerializableError(state) === null }));
+  bench("cloneJsonSerializable state", Math.max(3, Math.ceil(rounds / 2)), () => cloneJsonSerializable(state));
   bench("applyPatch single leaf replace", rounds, (index) =>
     applyPatch(Schema, state, [{
       op: "replace",

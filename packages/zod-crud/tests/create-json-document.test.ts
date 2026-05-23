@@ -386,6 +386,30 @@ describe("createJSONDocument public interface", () => {
     ]);
   });
 
+  test("clipboard write clones large external object payloads with array fields", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const payload = {
+      items: Array.from({ length: 4096 }, (_, index) => ({
+        id: `id-${index}`,
+        nested: { value: index },
+      })),
+      meta: { count: 4096 },
+    };
+
+    expect(doc.clipboard.write(payload)).toEqual({ ok: true });
+    payload.items[0]!.nested.value = -1;
+    payload.meta.count = 0;
+
+    const read = doc.clipboard.read();
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect((read.payload as typeof payload).items[0]).toEqual({
+      id: "id-0",
+      nested: { value: 0 },
+    });
+    expect((read.payload as typeof payload).meta).toEqual({ count: 4096 });
+  });
+
   test("clipboard write clones trusted document field payloads", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

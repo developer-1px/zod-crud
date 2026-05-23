@@ -9,6 +9,7 @@ export type JSONValue =
   | ReadonlyArray<JSONValue>;
 
 const LARGE_ARRAY_CLONE_THRESHOLD = 128;
+const LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD = 4096;
 
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);
@@ -202,7 +203,7 @@ export function cloneJson<T>(value: T): T {
 }
 
 export function cloneJsonSerializable<T>(value: T): CloneJsonResult<T> {
-  if (Array.isArray(value) && value.length >= LARGE_ARRAY_CLONE_THRESHOLD) {
+  if (shouldValidateThenTrustedClone(value)) {
     const reason = jsonSerializableErrorFast(value);
     return reason === null
       ? { ok: true, value: cloneTrustedPlainJson(value) as T }
@@ -210,6 +211,30 @@ export function cloneJsonSerializable<T>(value: T): CloneJsonResult<T> {
   }
   const fast = cloneJsonSerializableFast(value);
   return fast.ok ? fast : cloneJsonSerializableDetailed(value);
+}
+
+function shouldValidateThenTrustedClone(value: unknown): boolean {
+  if (Array.isArray(value)) return value.length >= LARGE_ARRAY_CLONE_THRESHOLD;
+  if (value === null || typeof value !== "object") return false;
+
+  const proto = Object.getPrototypeOf(value);
+  if (proto !== Object.prototype && proto !== null) return false;
+
+  const names = Object.getOwnPropertyNames(value);
+  for (let index = 0; index < names.length; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, names[index]!);
+    if (!descriptor || !descriptor.enumerable || "get" in descriptor || "set" in descriptor) {
+      return false;
+    }
+    const child = descriptor.value;
+    if (
+      Array.isArray(child)
+      && child.length >= LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD
+    ) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
