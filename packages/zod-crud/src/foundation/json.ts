@@ -73,12 +73,12 @@ function jsonSerializableErrorFast(value: unknown): string | null {
 
     if (Object.getOwnPropertySymbols(objectValue).length > 0) return "symbol keys are not JSON";
 
-    const keys = Object.keys(objectValue);
-    if (keys.length !== Object.getOwnPropertyNames(objectValue).length) return "non-enumerable property is not JSON";
+    const keys = Object.getOwnPropertyNames(objectValue);
     for (let index = 0; index < keys.length; index += 1) {
       const key = keys[index]!;
       const descriptor = Object.getOwnPropertyDescriptor(objectValue, key);
       if (!descriptor) return "non-enumerable property is not JSON";
+      if (!descriptor.enumerable) return "non-enumerable property is not JSON";
       if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
       const child = descriptor.value;
       if (child !== null) {
@@ -306,14 +306,12 @@ function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
     if (proto !== Object.prototype && proto !== null) return fail("non-plain object");
 
     const next: Record<string, unknown> = {};
-    const keys = Object.keys(objectValue);
-    if (keys.length !== Object.getOwnPropertyNames(objectValue).length) {
-      return fail("non-enumerable property is not JSON");
-    }
+    const keys = Object.getOwnPropertyNames(objectValue);
     for (let index = 0; index < keys.length; index += 1) {
       const key = keys[index]!;
       const descriptor = Object.getOwnPropertyDescriptor(objectValue, key);
       if (!descriptor) return fail("non-enumerable property is not JSON");
+      if (!descriptor.enumerable) return fail("non-enumerable property is not JSON");
       if ("get" in descriptor || "set" in descriptor) return fail("accessor property is not JSON");
       const cloned = visit(descriptor.value);
       if (error) return undefined;
