@@ -452,6 +452,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
   let parent: Pointer | null = null;
+  let parentIndexPrefix: string | null = null;
   let parentSegments: string[] | null = null;
   let elementSchema: z.ZodType | null = null;
   let elementValidator: KnownJsonValueValidator | null = null;
@@ -469,10 +470,12 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
       return null;
     }
 
-    const location = arrayElementReplaceLocation(op.path);
-    if (location === null) return null;
+    let index: number;
     if (parent === null) {
+      const location = arrayElementReplaceLocation(op.path);
+      if (location === null) return null;
       parent = location.parent;
+      parentIndexPrefix = arrayElementIndexPrefix(parent);
       parentSegments = location.parentSegments;
       const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
       elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
@@ -482,13 +485,17 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
       const current = readAt(state, parentSegments);
       if (!current.ok || !Array.isArray(current.value)) return null;
       next = current.value.slice();
-    } else if (parent !== location.parent) {
-      return null;
+      index = location.index;
+    } else {
+      if (parentIndexPrefix === null) return null;
+      const parsedIndex = parseKnownArrayElementReplaceIndex(op.path, parentIndexPrefix);
+      if (parsedIndex === null) return null;
+      index = parsedIndex;
     }
 
     if (!elementSchema || !acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
-    if (next === null || location.index < 0 || location.index >= next.length) return null;
-    next[location.index] = op.value;
+    if (next === null || index < 0 || index >= next.length) return null;
+    next[index] = op.value;
     applied[opIndex] = op;
   }
 
@@ -1399,6 +1406,16 @@ function arrayElementReplaceLocation(
   const index = numericSegment(segment);
   if (index === null) return null;
   return { parent, parentSegments: segments.slice(0, -1), index };
+}
+
+function arrayElementIndexPrefix(parent: Pointer): string {
+  return parent === "" ? "/" : `${parent}/`;
+}
+
+function parseKnownArrayElementReplaceIndex(path: Pointer, prefix: string): number | null {
+  if (!path.startsWith(prefix)) return null;
+  const indexText = path.slice(prefix.length);
+  return indexText.includes("/") ? null : numericSegment(indexText);
 }
 
 function parseSimpleArrayElementReplacePath(
