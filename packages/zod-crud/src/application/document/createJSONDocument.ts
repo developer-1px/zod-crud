@@ -459,14 +459,11 @@ export function createJSONDocument<S extends z.ZodType>(
       && repeatedReplaceForward !== undefined
       && repeatedReplaceInverse !== undefined
     ) {
-      const merged: HistoryEntry = {
-        forward: [repeatedReplaceForward],
-        inverse: [repeatedReplaceInverse],
-        selectionBefore: first.selectionBefore,
-        selectionAfter: last.selectionAfter,
-      };
-      if (metadata !== undefined) merged.metadata = metadata;
-      stack.undo[start] = merged;
+      first.forward[0] = repeatedReplaceForward;
+      first.inverse[0] = repeatedReplaceInverse;
+      first.selectionAfter = last.selectionAfter;
+      if (metadata !== undefined) first.metadata = metadata;
+      else delete first.metadata;
       stack.undo.length = start + 1;
       return;
     }
