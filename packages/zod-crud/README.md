@@ -415,10 +415,11 @@ use the same trusted plain-schema fast paths as the document facade.
 
 Fast document paths apply when the current state is trusted document state and
 the schema is a plain structural Zod schema: objects, arrays, records, and
-scalar validators without refinements, transforms, or checks. Covered edits are
-independent non-root `replace`, array `add`/`remove`/`copy`/`move`, and
-same-array `add`/`remove` batches. Schemas with `refine`, `superRefine`,
-transforms, or other checks intentionally use full root schema validation.
+scalar validators without refinements, transforms, or checks. Covered edits
+include independent non-root `replace`, root object edits, same-array field,
+nested-field, and element `replace` batches, and array
+`add`/`remove`/`copy`/`move`. Schemas with `refine`, `superRefine`, transforms,
+or other checks intentionally use full root schema validation.
 
 Measure core workloads locally with:
 

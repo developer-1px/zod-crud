@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { applyPatch } from "../src/index.js";
+import { applyPatch, applyPatchToTrustedState } from "../src/index.js";
 
 describe("applyPatch public contract", () => {
   test("validates the whole resulting state", () => {
@@ -52,6 +52,34 @@ describe("applyPatch public contract", () => {
     expect(result.state).not.toBe(state);
     expect(result.state.items).not.toBe(state.items);
     expect(rootParses).toBe(1);
+  });
+
+  test("trusted-state repeated same-array element replace batches use local validation", () => {
+    const Item = z.object({ id: z.string(), done: z.boolean() });
+    const Schema = z.object({ items: z.array(Item), title: z.string() });
+    const state = Schema.parse({
+      items: [
+        { id: "a", done: false },
+        { id: "b", done: false },
+      ],
+      title: "draft",
+    });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    const result = applyPatchToTrustedState(Schema, state, [
+      { op: "replace", path: "/items/0", value: { id: "a1", done: true } },
+      { op: "replace", path: "/items/0", value: { id: "a2", done: false } },
+      { op: "replace", path: "/items/1", value: { id: "b1", done: true } },
+    ]);
+
+    expect(result.result).toEqual({ ok: true });
+    expect(result.state.items.map((item) => item.id)).toEqual(["a2", "b1"]);
+    expect(rootParses).toBe(0);
   });
 
   test("root object replace batches reject non JSON values", () => {

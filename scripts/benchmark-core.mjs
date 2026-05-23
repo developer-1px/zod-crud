@@ -194,6 +194,10 @@ for (const size of sizes) {
       path: `/items/${middle}/done`,
       value: index % 2 === 0,
     }]).result);
+  bench(`applyPatchToTrustedState repeated item replace batch ${repeatedItemReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyPatchToTrustedState(Schema, state, repeatedItemReplaceOps).result);
+  bench(`applyPatchToTrustedState nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyPatchToTrustedState(Schema, state, nestedFieldReplaceOps).result);
 
   {
     const doc = createJSONDocument(Schema, state, { history: 100 });
