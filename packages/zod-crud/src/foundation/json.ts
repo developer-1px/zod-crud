@@ -460,12 +460,18 @@ export function cloneTrustedPlainJson<T>(value: T): T {
 
 function cloneTrustedPlainJsonFast<T>(value: T): T {
   if (value === null || typeof value !== "object") return value;
+  const checkOwnProperties = objectPrototypeHasEnumerableKeys();
   return (Array.isArray(value)
-    ? cloneTrustedPlainArray(value)
-    : cloneTrustedPlainObject(value as Record<string, unknown>)) as T;
+    ? cloneTrustedPlainArray(value, checkOwnProperties)
+    : cloneTrustedPlainObject(value as Record<string, unknown>, checkOwnProperties)) as T;
 }
 
-function cloneTrustedPlainArray(value: unknown[]): unknown[] {
+function objectPrototypeHasEnumerableKeys(): boolean {
+  for (const _key in Object.prototype) return true;
+  return false;
+}
+
+function cloneTrustedPlainArray(value: unknown[], checkOwnProperties: boolean): unknown[] {
   if (value.length === 0) return [];
 
   const first = value[0];
@@ -487,22 +493,25 @@ function cloneTrustedPlainArray(value: unknown[]): unknown[] {
     next[index] = child === null || typeof child !== "object"
       ? child
       : Array.isArray(child)
-        ? cloneTrustedPlainArray(child)
-        : cloneTrustedPlainObject(child as Record<string, unknown>);
+        ? cloneTrustedPlainArray(child, checkOwnProperties)
+        : cloneTrustedPlainObject(child as Record<string, unknown>, checkOwnProperties);
   }
   return next;
 }
 
-function cloneTrustedPlainObject(source: Record<string, unknown>): Record<string, unknown> {
+function cloneTrustedPlainObject(
+  source: Record<string, unknown>,
+  checkOwnProperties: boolean,
+): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   for (const key in source) {
-    if (!objectHasOwn.call(source, key)) continue;
+    if (checkOwnProperties && !objectHasOwn.call(source, key)) continue;
     const child = source[key];
     const cloned = child === null || typeof child !== "object"
       ? child
       : Array.isArray(child)
-        ? cloneTrustedPlainArray(child)
-        : cloneTrustedPlainObject(child as Record<string, unknown>);
+        ? cloneTrustedPlainArray(child, checkOwnProperties)
+        : cloneTrustedPlainObject(child as Record<string, unknown>, checkOwnProperties);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: cloned,
