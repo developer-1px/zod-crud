@@ -9,6 +9,7 @@ export type JSONValue =
   | ReadonlyArray<JSONValue>;
 
 const LARGE_ARRAY_CLONE_THRESHOLD = 128;
+const LARGE_OBJECT_ARRAY_FIELD_WITH_OBJECT_HEAD_CLONE_THRESHOLD = 512;
 const LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD = 4096;
 
 export function jsonSerializableError(value: unknown): string | null {
@@ -227,12 +228,14 @@ function shouldValidateThenTrustedClone(value: unknown): boolean {
       return false;
     }
     const child = descriptor.value;
-    if (
-      Array.isArray(child)
-      && child.length >= LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD
-    ) {
+    if (!Array.isArray(child)) continue;
+    if (child.length >= LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD) {
       return true;
     }
+    if (child.length < LARGE_OBJECT_ARRAY_FIELD_WITH_OBJECT_HEAD_CLONE_THRESHOLD) continue;
+
+    const head = child[0];
+    if (head !== null && typeof head === "object") return true;
   }
   return false;
 }
