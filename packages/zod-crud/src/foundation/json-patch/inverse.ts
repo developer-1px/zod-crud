@@ -7,6 +7,8 @@ import { deepCloneTrusted, getValueAt, resolveAppendPath } from "./internal.js";
 
 const objectHasOwn = Object.prototype.hasOwnProperty;
 
+type SeenRootKeys = Record<string, true>;
+
 interface ArrayFieldPath {
   arrayPath: string;
   index: number;
@@ -615,7 +617,7 @@ function computeRootObjectReplaceInverses(
     return null;
   }
 
-  let seenKeys: Set<string> | null = null;
+  const seenKeys = createSeenRootKeys();
   let inverseCount = 0;
   const inverses = new Array<JSONPatchOperation | undefined>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
@@ -634,9 +636,8 @@ function computeRootObjectReplaceInverses(
 
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(state, key)) return null;
-    if (seenKeys === null) seenKeys = new Set();
-    else if (seenKeys.has(key)) return null;
-    seenKeys.add(key);
+    if (seenKeys[key] === true) return null;
+    seenKeys[key] = true;
 
     inverses[ops.length - index - 1] = {
       op: "replace",
@@ -669,7 +670,7 @@ function computeRootObjectRemoveInverses(
     return null;
   }
 
-  let seenKeys: Set<string> | null = null;
+  const seenKeys = createSeenRootKeys();
   const inverses = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
@@ -687,9 +688,8 @@ function computeRootObjectRemoveInverses(
 
     const key = op.path.slice(1);
     if (!objectHasOwn.call(state, key)) return null;
-    if (seenKeys === null) seenKeys = new Set();
-    else if (seenKeys.has(key)) return null;
-    seenKeys.add(key);
+    if (seenKeys[key] === true) return null;
+    seenKeys[key] = true;
 
     inverses[ops.length - index - 1] = {
       op: "add",
@@ -742,6 +742,10 @@ function computeRootObjectAddInverses(
   }
 
   return { ok: true, inverses };
+}
+
+function createSeenRootKeys(): SeenRootKeys {
+  return Object.create(null) as SeenRootKeys;
 }
 
 function hasIndependentPaths(paths: ReadonlyArray<{ path: string; segments: string[] }>): boolean {
