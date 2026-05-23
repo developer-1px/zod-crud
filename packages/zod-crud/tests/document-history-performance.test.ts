@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../src/index.js";
+import { createJSONDocument, type JSONPatchOperation } from "../src/index.js";
 
 describe("doc.history performance contract", () => {
   test("large history depth preserves undo and redo order", () => {
@@ -299,6 +299,37 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toMatchObject({ a: 1, b: 2, c: 3 });
     expect(Object.prototype.hasOwnProperty.call(doc.value as object, "__proto__")).toBe(true);
     expect((doc.value as Record<string, unknown>).__proto__).toBe(7);
+  });
+
+  test("large root record history restores snapshots while preserving patch notifications", () => {
+    const Schema = z.record(z.string(), z.number());
+    const count = 600;
+    const initial = Object.fromEntries(
+      Array.from({ length: count }, (_, index) => [`k${index}`, index]),
+    );
+    const added = Array.from({ length: count }, (_, index) => ({
+      op: "add" as const,
+      path: `/n${index}`,
+      value: count + index,
+    }));
+    const observed: ReadonlyArray<JSONPatchOperation>[] = [];
+    const doc = createJSONDocument(Schema, initial, { history: 10, strict: false });
+    doc.subscribe((applied) => observed.push(applied));
+
+    expect(doc.patch(added)).toEqual({ ok: true });
+    expect(Object.keys(doc.value)).toHaveLength(count * 2);
+    expect(observed.at(-1)).toHaveLength(count);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(doc.lastPatch).toHaveLength(count);
+    expect(doc.lastPatch.every((op) => op.op === "remove")).toBe(true);
+    expect(observed.at(-1)).toHaveLength(count);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(Object.keys(doc.value)).toHaveLength(count * 2);
+    expect(doc.lastPatch).toEqual(added);
+    expect(observed.at(-1)).toEqual(added);
   });
 
   test("root object replace history preserves repeated key semantics", () => {

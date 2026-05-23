@@ -142,7 +142,13 @@ interface HistoryEntry {
   selectionBefore: SelectionSnap;
   selectionAfter: SelectionSnap;
   metadata?: HistoryTransactionOptions;
+  snapshot?: {
+    before: unknown;
+    after?: unknown;
+  };
 }
+
+const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
 
 export function createJSONDocument<S extends z.ZodType>(
   schema: S,
@@ -202,6 +208,7 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const recordHistory = (
     before: z.output<S>,
+    after: z.output<S>,
     operations: ReadonlyArray<JSONPatchOperation>,
     selectionBefore: SelectionSnap,
     selectionAfter: SelectionSnap,
@@ -235,6 +242,8 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionBefore,
       selectionAfter,
     };
+    const snapshot = rootBulkHistorySnapshot(before, after, forward);
+    if (snapshot !== null) entry.snapshot = snapshot;
     if (historyMetadata) entry.metadata = historyMetadata;
     if (activeTransactionStartDepth !== undefined && historyDepth(stack) > activeTransactionStartDepth) {
       const prev = stack.undo[stack.undo.length - 1]!;
@@ -301,7 +310,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const selectionAfter = snapSelection();
     if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
     if (r.ok && shouldRecordHistory) {
-      recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
+      recordHistory(before!, rawOps.state, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
     }
     return r;
   };
@@ -328,7 +337,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const selectionAfter = snapSelection();
     if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
     if (r.ok && shouldRecordHistory) {
-      recordHistory(before!, operations, selectionBefore, selectionAfter, changeMetadata);
+      recordHistory(before!, next, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
   };
@@ -368,7 +377,7 @@ export function createJSONDocument<S extends z.ZodType>(
     lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
     selectionState?.restore(selectionAfter);
     if (historyLimit > 0 && !isRestoring && operations.length > 0) {
-      recordHistory(before, operations, selectionBefore, selectionAfter, changeMetadata);
+      recordHistory(before, predicted.state, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
   };
@@ -393,7 +402,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const selectionAfter = shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
     if (r.ok) lastPatch = planned.patch.length === 0 ? [] : rawOps.lastApplied;
     if (r.ok && shouldRecordHistory) {
-      recordHistory(before, planned.patch, selectionBefore, selectionAfter, changeMetadata);
+      recordHistory(before, planned.next, planned.patch, selectionBefore, selectionAfter, changeMetadata);
     }
     return r.ok
       ? {
@@ -411,7 +420,17 @@ export function createJSONDocument<S extends z.ZodType>(
     if (direction === "undo") entry.selectionAfter = snapSelection();
     isRestoring = true;
     try {
-      const r = rawOps.trustedPatch(direction === "undo" ? entry.inverse : entry.forward);
+      const restoreSnapshot = entry.snapshot;
+      const patch = direction === "undo" ? entry.inverse : entry.forward;
+      if (direction === "undo" && restoreSnapshot !== undefined) restoreSnapshot.after = rawOps.state;
+      const snapshotState = restoreSnapshot === undefined
+        ? undefined
+        : direction === "undo"
+          ? restoreSnapshot.before
+          : restoreSnapshot.after;
+      const r = snapshotState === undefined
+        ? rawOps.trustedPatch(patch)
+        : rawOps.trustedApply(snapshotState as z.output<S>, patch);
       if (!r.ok) return false;
       syncLastPatch();
     } catch {
@@ -826,6 +845,44 @@ function compactRepeatedReplaceBatchForHistory(
     forward: [last],
     inverse: [{ op: "replace", path, value: previous.value }],
   };
+}
+
+function rootBulkHistorySnapshot(
+  before: unknown,
+  after: unknown,
+  forward: ReadonlyArray<JSONPatchOperation>,
+): { before: unknown; after?: unknown } | null {
+  if (
+    forward.length < ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD
+    || before === null
+    || typeof before !== "object"
+    || Array.isArray(before)
+    || after === null
+    || typeof after !== "object"
+    || Array.isArray(after)
+  ) {
+    return null;
+  }
+  return isRootObjectMutationBatch(forward) ? { before } : null;
+}
+
+function isRootObjectMutationBatch(operations: ReadonlyArray<JSONPatchOperation>): boolean {
+  if (operations.length < ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD) return false;
+  for (let index = 0; index < operations.length; index += 1) {
+    if (!(index in operations)) return false;
+    const op = operations[index]!;
+    if (
+      (op.op !== "add" && op.op !== "remove" && op.op !== "replace")
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+    ) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function buildChangeMetadata(
