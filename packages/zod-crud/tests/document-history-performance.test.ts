@@ -161,6 +161,33 @@ describe("doc.history performance contract", () => {
     });
   });
 
+  test("same-path replace batch compacts history redo to the final replace", () => {
+    const Schema = z.object({
+      value: z.number(),
+    });
+    const doc = createJSONDocument(Schema, { value: 0 }, { history: 10 });
+    const observed: Array<ReadonlyArray<{ op: string; path: string; value?: unknown }>> = [];
+    doc.subscribe((applied) => {
+      observed.push(applied);
+    });
+
+    expect(doc.patch([
+      { op: "replace", path: "/value", value: 1 },
+      { op: "replace", path: "/value", value: 2 },
+      { op: "replace", path: "/value", value: 3 },
+    ])).toEqual({ ok: true });
+    expect(doc.value.value).toBe(3);
+    expect(observed.at(-1)).toHaveLength(3);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value.value).toBe(0);
+    expect(observed.at(-1)).toEqual([{ op: "replace", path: "/value", value: 0 }]);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.value).toBe(3);
+    expect(observed.at(-1)).toEqual([{ op: "replace", path: "/value", value: 3 }]);
+  });
+
   test("root object replace history keeps __proto__ as data", () => {
     const initial: Record<string, unknown> = { a: 1, b: 2 };
     Object.defineProperty(initial, "__proto__", {

@@ -217,11 +217,21 @@ export function createJSONDocument<S extends z.ZodType>(
       return;
     }
 
-    const inverse = computeInverses(before, operations);
-    if (!inverse.ok) return;
+    const repeatedReplace = compactRepeatedReplaceBatchForHistory(before, operations);
+    let forward: JSONPatchOperation[];
+    let inverseOps: JSONPatchOperation[];
+    if (repeatedReplace !== null) {
+      forward = repeatedReplace.forward;
+      inverseOps = repeatedReplace.inverse;
+    } else {
+      const inverse = computeInverses(before, operations);
+      if (!inverse.ok) return;
+      forward = operationsOwned ? operations as JSONPatchOperation[] : [...operations];
+      inverseOps = inverse.inverses;
+    }
     const entry: HistoryEntry = {
-      forward: operationsOwned ? operations as JSONPatchOperation[] : [...operations],
-      inverse: inverse.inverses,
+      forward,
+      inverse: inverseOps,
       selectionBefore,
       selectionAfter,
     };
@@ -788,6 +798,34 @@ function isSelectionSnap(selection: SelectionAction | SelectionSnap): selection 
     && "selectionRanges" in selection
     && "selectedPointers" in selection
     && "primaryIndex" in selection;
+}
+
+function compactRepeatedReplaceBatchForHistory(
+  before: unknown,
+  operations: ReadonlyArray<JSONPatchOperation>,
+): { forward: JSONPatchOperation[]; inverse: JSONPatchOperation[] } | null {
+  if (!Array.isArray(operations) || operations.length < 2 || !(0 in operations)) return null;
+
+  const first = operations[0]!;
+  if (first.op !== "replace" || typeof first.path !== "string") return null;
+  const path = first.path;
+  let last = first;
+  for (let index = 1; index < operations.length; index += 1) {
+    if (!(index in operations)) return null;
+    const op = operations[index]!;
+    if (op.op !== "replace" || op.path !== path) return null;
+    last = op;
+  }
+
+  const segments = tryParsePointer(path);
+  if (segments === null) return null;
+  const previous = readAt(before, segments);
+  if (!previous.ok) return null;
+
+  return {
+    forward: [last],
+    inverse: [{ op: "replace", path, value: previous.value }],
+  };
 }
 
 function buildChangeMetadata(
