@@ -275,7 +275,10 @@ function scanSingleSuffixField(
   if (!isRecord(value)) return;
 
   const text = scalarText(value[field]);
-  if (text !== null && (text === base || text === exact || text.startsWith(nested))) {
+  if (
+    text !== null
+    && (text === base || text === exact || (text.length >= nested.length && text.startsWith(nested)))
+  ) {
     existing.add(text);
   }
 
