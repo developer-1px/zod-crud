@@ -54,7 +54,17 @@ function sameParent(left: ReadonlyArray<string>, right: ReadonlyArray<string>): 
 
 function arrayIndex(segment: string | undefined): number | null {
   if (segment === undefined) return null;
-  if (!/^(0|[1-9][0-9]*)$/.test(segment)) return null;
+  if (segment.length === 0) return null;
+  const first = segment.charCodeAt(0);
+  if (first === 48) {
+    if (segment.length !== 1) return null;
+  } else {
+    if (first < 49 || first > 57) return null;
+    for (let index = 1; index < segment.length; index += 1) {
+      const code = segment.charCodeAt(index);
+      if (code < 48 || code > 57) return null;
+    }
+  }
   const n = Number(segment);
   return Number.isSafeInteger(n) ? n : null;
 }

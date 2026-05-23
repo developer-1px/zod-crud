@@ -59,7 +59,14 @@ export function deepCloneTrusted<T>(v: T): T {
 
 function parseArrayIndex(seg: string): number | null {
   if (seg === "-") return -1; // RFC 6901 §4 append marker
-  if (!/^(0|[1-9][0-9]*)$/.test(seg)) return null;
+  if (seg.length === 0) return null;
+  const first = seg.charCodeAt(0);
+  if (first === 48) return seg.length === 1 ? 0 : null;
+  if (first < 49 || first > 57) return null;
+  for (let index = 1; index < seg.length; index += 1) {
+    const code = seg.charCodeAt(index);
+    if (code < 48 || code > 57) return null;
+  }
   return Number(seg);
 }
 
