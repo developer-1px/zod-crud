@@ -703,6 +703,24 @@ describe("doc.history performance contract", () => {
     expect(doc.value).toEqual({ items: [] });
   });
 
+  test("document pastePayload trustedPayload delegates the JSON boundary to the caller", () => {
+    const Schema = z.object({ items: z.array(z.unknown()) });
+    const payload = { id: "trusted", run: () => "trusted" };
+    const doc = createJSONDocument(Schema, { items: [] }, { strict: false });
+
+    expect(doc.canPastePayload("/items/-", payload)).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+    expect(doc.canPastePayload("/items/-", payload, { trustedPayload: true })).toEqual({ ok: true });
+
+    expect(doc.clipboard.pastePayload("/items/-", payload, { trustedPayload: true })).toMatchObject({
+      ok: true,
+      applied: [{ op: "add", path: "/items/0", value: payload }],
+    });
+    expect(doc.value.items[0]).toBe(payload);
+  });
+
   test("document duplicate, move, and JSONPath replace checks use trusted preview on plain structural schemas", () => {
     const Schema = z.object({
       items: z.array(z.object({ id: z.string() })),

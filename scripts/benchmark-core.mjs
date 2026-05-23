@@ -56,6 +56,9 @@ const Schema = z.object({
     count: z.number(),
   }),
 });
+const UnknownItemsSchema = z.object({
+  items: z.array(z.unknown()),
+});
 const NestedSchema = z.object({
   wrapper: z.object({
     items: z.array(Item),
@@ -353,6 +356,18 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.write items payload trusted", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.write(state.items, { trustedPayload: true }));
+  }
+
+  {
+    const doc = createJSONDocument(UnknownItemsSchema, { items: [] }, { history: 0 });
+    bench("doc.clipboard.pastePayload unknown replace /items", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.pastePayload({ replace: "/items" }, state.items));
+  }
+
+  {
+    const doc = createJSONDocument(UnknownItemsSchema, { items: [] }, { history: 0 });
+    bench("doc.clipboard.pastePayload unknown replace /items trusted", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.pastePayload({ replace: "/items" }, state.items, { trustedPayload: true }));
   }
 
   {

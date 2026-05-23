@@ -232,7 +232,9 @@ export function buildCheck<S extends z.ZodType>(
     paste(payload, target, options, executionOptions) {
       const args = resolvePasteArgs(target, options);
       const resolvedTarget = targetOrSelection(args.target);
-      const patchValuesTrusted = executionOptions?.trustedPayload === true
+      const inputTrustedPayload = executionOptions?.trustedPayload === true
+        || args.options.trustedPayload === true;
+      const patchValuesTrusted = inputTrustedPayload
         || rekeyProducesTrustedPayload(args.options);
       const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
         ? previewTrustedValuesPatch
@@ -242,7 +244,7 @@ export function buildCheck<S extends z.ZodType>(
         : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, {
             ...args.options,
             previewPatch: pastePreview,
-            ...(executionOptions?.trustedPayload ? { trustedPayload: true } : {}),
+            trustedPayload: inputTrustedPayload,
           }));
     },
     patch(operations) {

@@ -318,7 +318,8 @@ export function createClipboard<S extends z.ZodType>(
       };
     }
     const spread = args.options.spread ?? spreadByDefault;
-    const patchValuesTrusted = trustedPayload || rekeyProducesTrustedPayload(args.options);
+    const inputTrustedPayload = trustedPayload || args.options.trustedPayload === true;
+    const patchValuesTrusted = inputTrustedPayload || rekeyProducesTrustedPayload(args.options);
     const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
       ? previewTrustedValuesPatch
       : previewPatch;
@@ -326,7 +327,7 @@ export function createClipboard<S extends z.ZodType>(
       ...args.options,
       spread,
       previewPatch: pastePreview,
-      trustedPayload,
+      trustedPayload: inputTrustedPayload,
     });
     if (!result.ok) return result;
     const patchResult = applyPreviewedPatch

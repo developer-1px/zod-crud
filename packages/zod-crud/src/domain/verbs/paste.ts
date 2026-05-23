@@ -41,6 +41,8 @@ interface PastePayloadOptions {
   rekey?: RekeyOptions;
   /** Array payload 를 array target 에 여러 add op 로 펼친다. Multi-source clipboard paste 에 사용. */
   spread?: boolean;
+  /** Skip JSON-serializability validation when the caller already owns that boundary. */
+  trustedPayload?: boolean;
 }
 
 export interface PasteOptions extends PastePayloadOptions {}
@@ -51,7 +53,6 @@ export function rekeyProducesTrustedPayload(options: PasteOptions): boolean {
 
 interface PasteExecutionOptions extends PastePayloadOptions {
   previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
-  trustedPayload?: boolean;
 }
 
 interface ResolvedPasteArgs {
