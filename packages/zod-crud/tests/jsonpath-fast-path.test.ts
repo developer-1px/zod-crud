@@ -48,4 +48,22 @@ describe("JSONPath fast paths", () => {
       { pointer: "/items/1/done", value: true },
     ]);
   });
+
+  test("literal regex filters preserve search and match behavior", () => {
+    const state = {
+      items: [
+        { title: "Item 99" },
+        { title: "Item 999" },
+        { title: "plain" },
+      ],
+    };
+
+    expect(queryMatches('$.items[?search(@.title, "999")]', state)).toEqual([
+      { pointer: "/items/1", value: { title: "Item 999" } },
+    ]);
+    expect(queryMatches('$.items[?match(@.title, "Item 999")]', state)).toEqual([
+      { pointer: "/items/1", value: { title: "Item 999" } },
+    ]);
+    expect(queryMatches('$.items[?search(@.title, ".")]', state)).toHaveLength(3);
+  });
 });

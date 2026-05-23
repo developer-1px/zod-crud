@@ -153,8 +153,9 @@ function evaluateArrayRegexFilter(query: Query, root: unknown): Match[] | null {
   const array = rootObject[arraySelector.name];
   if (!Array.isArray(array)) return [];
 
-  const regex = compiledRegex(filter.pattern, filter.full);
-  if (regex === null) return [];
+  const literal = plainRegexLiteral(filter.pattern);
+  const regex = literal === null ? compiledRegex(filter.pattern, filter.full) : null;
+  if (literal === null && regex === null) return [];
 
   const arrayPointer = "/" + escapeSeg(arraySelector.name);
   const matches = new Array<Match>(array.length);
@@ -165,7 +166,12 @@ function evaluateArrayRegexFilter(query: Query, root: unknown): Match[] | null {
     const object = item as Record<string, unknown>;
     if (!objectHasOwn.call(object, filter.field)) continue;
     const value = object[filter.field];
-    if (typeof value !== "string" || !regex.test(value)) continue;
+    if (typeof value !== "string") continue;
+    if (literal === null) {
+      if (!regex!.test(value)) continue;
+    } else if (filter.full ? value !== literal : !value.includes(literal)) {
+      continue;
+    }
     matches[matchCount] = { pointer: arrayPointer + "/" + index, value: item };
     matchCount += 1;
   }
@@ -614,6 +620,29 @@ function jsonLength(value: unknown): number | undefined {
 function regexTest(input: string, pattern: string, full: boolean): boolean {
   const re = compiledRegex(pattern, full);
   return re !== null && re.test(input);
+}
+
+function plainRegexLiteral(pattern: string): string | null {
+  for (let index = 0; index < pattern.length; index += 1) {
+    switch (pattern[index]) {
+      case "^":
+      case "$":
+      case "\\":
+      case ".":
+      case "*":
+      case "+":
+      case "?":
+      case "(":
+      case ")":
+      case "[":
+      case "]":
+      case "{":
+      case "}":
+      case "|":
+        return null;
+    }
+  }
+  return pattern;
 }
 
 function compiledRegex(pattern: string, full: boolean): RegExp | null {
