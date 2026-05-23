@@ -13,7 +13,7 @@ import {
   type CopyOk,
 } from "../../domain/verbs/copy.js";
 import { cut, type CutError } from "../../domain/verbs/cut.js";
-import { paste, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOptions, type PasteTarget } from "../../domain/verbs/paste.js";
+import { paste, rekeyProducesTrustedPayload, resolvePasteArgs, type PasteDuMismatch, type PasteError, type PasteOptions, type PasteTarget } from "../../domain/verbs/paste.js";
 
 export const INTERNAL_CLIPBOARD_PEEK: unique symbol = Symbol("zod-crud.internal.clipboard.peek");
 
@@ -318,7 +318,8 @@ export function createClipboard<S extends z.ZodType>(
       };
     }
     const spread = args.options.spread ?? spreadByDefault;
-    const pastePreview = trustedPayload && previewTrustedValuesPatch
+    const patchValuesTrusted = trustedPayload || rekeyProducesTrustedPayload(args.options);
+    const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
       ? previewTrustedValuesPatch
       : previewPatch;
     const result = paste(schema, getState(), payload, target, args.mode, {

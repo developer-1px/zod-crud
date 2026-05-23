@@ -45,6 +45,10 @@ interface PastePayloadOptions {
 
 export interface PasteOptions extends PastePayloadOptions {}
 
+export function rekeyProducesTrustedPayload(options: PasteOptions): boolean {
+  return options.rekey !== undefined && options.rekey.fields.length > 0;
+}
+
 interface PasteExecutionOptions extends PastePayloadOptions {
   previewPatch?: ((operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<z.ZodTypeAny>) | undefined;
   trustedPayload?: boolean;

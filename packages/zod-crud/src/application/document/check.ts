@@ -14,7 +14,7 @@ import { copy, type ClipboardSource } from "../../domain/verbs/copy.js";
 import { cut } from "../../domain/verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "../../domain/verbs/duplicate.js";
 import { move as moveVerb, resolveMoveArgs } from "../../domain/verbs/move.js";
-import { paste, resolvePasteArgs, type PasteOptions, type PasteTarget } from "../../domain/verbs/paste.js";
+import { paste, rekeyProducesTrustedPayload, resolvePasteArgs, type PasteOptions, type PasteTarget } from "../../domain/verbs/paste.js";
 import { replace as replaceVerb } from "../../domain/verbs/replace.js";
 import {
   deleteSelectionText,
@@ -232,7 +232,9 @@ export function buildCheck<S extends z.ZodType>(
     paste(payload, target, options, executionOptions) {
       const args = resolvePasteArgs(target, options);
       const resolvedTarget = targetOrSelection(args.target);
-      const pastePreview = executionOptions?.trustedPayload && previewTrustedValuesPatch
+      const patchValuesTrusted = executionOptions?.trustedPayload === true
+        || rekeyProducesTrustedPayload(args.options);
+      const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
         ? previewTrustedValuesPatch
         : previewPatch;
       return resolvedTarget === null
