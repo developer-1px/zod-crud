@@ -409,7 +409,6 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   }
 
   let next: Record<string, unknown> | null = null;
-  let seenKeys: Set<string> | null = null;
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let index = 0; index < ops.length; index += 1) {
@@ -428,12 +427,8 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     }
 
     const key = op.path.slice(1);
-    if (!objectHasOwn.call(state, key)) return null;
-    if (seenKeys === null) seenKeys = new Set();
-    else if (seenKeys.has(key)) return null;
-    seenKeys.add(key);
-
     if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (!objectHasOwn.call(next, key)) return null;
     delete next[key];
     applied[index] = op;
   }

@@ -642,6 +642,25 @@ describe("doc.history performance contract", () => {
     expect(rootParses).toBe(0);
   });
 
+  test("duplicate root record removes stay atomic", () => {
+    const Schema = z.record(z.string(), z.object({ id: z.string() }));
+    const doc = createJSONDocument(Schema, {
+      a: { id: "a" },
+      b: { id: "b" },
+    }, { strict: false });
+
+    const result = doc.patch([
+      { op: "remove", path: "/a" },
+      { op: "remove", path: "/a" },
+    ]);
+
+    expect(result).toMatchObject({ ok: false, code: "path_not_found" });
+    expect(doc.value).toEqual({
+      a: { id: "a" },
+      b: { id: "b" },
+    });
+  });
+
   test("plain structural root record add batches validate locally", () => {
     const Value = z.object({
       id: z.string(),

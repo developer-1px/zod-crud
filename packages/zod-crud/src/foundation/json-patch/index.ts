@@ -574,7 +574,6 @@ function applyRootObjectRemovePatch(
   }
 
   let next: Record<string, unknown> | null = null;
-  let seenKeys: Set<string> | null = null;
   const applied = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -592,12 +591,8 @@ function applyRootObjectRemovePatch(
     }
 
     const key = op.path.slice(1);
-    if (!objectHasOwn.call(state, key)) return { handled: false };
-    if (seenKeys === null) seenKeys = new Set();
-    else if (seenKeys.has(key)) return { handled: false };
-    seenKeys.add(key);
-
     if (next === null) next = { ...(state as Record<string, unknown>) };
+    if (!objectHasOwn.call(next, key)) return { handled: false };
     delete next[key];
     applied[index] = op;
   }
