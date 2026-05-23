@@ -854,9 +854,21 @@ export function applySelectionAutoRules(
     path: Pointer,
     replacements: ReadonlySet<Pointer>,
   ): Pointer | null => {
+    if (path === "") return path;
+    if (path[0] === "/") {
+      if (replacements.has("")) return null;
+      let slash = path.indexOf("/", 1);
+      while (slash !== -1) {
+        if (replacements.has(path.slice(0, slash))) return null;
+        slash = path.indexOf("/", slash + 1);
+      }
+      return path;
+    }
+
     const target = tryParsePointer(path);
     if (target === null) return null;
-    for (let length = 0; length < target.length; length += 1) {
+    if (replacements.has("")) return null;
+    for (let length = 1; length < target.length; length += 1) {
       if (replacements.has(buildPointer(target.slice(0, length)))) return null;
     }
     return path;
