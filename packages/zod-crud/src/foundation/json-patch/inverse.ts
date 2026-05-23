@@ -60,6 +60,8 @@ export function computeInverses(
   if (rootObjectAdd) return rootObjectAdd;
   const arrayRemoveOnly = computeNonDecreasingArrayRemoveInverses(state, ops);
   if (arrayRemoveOnly) return arrayRemoveOnly;
+  const appendThenRemove = computeAppendThenNonDecreasingRemoveInverses(state, ops);
+  if (appendThenRemove) return appendThenRemove;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
   const arrayOnly = computeSameArrayStructuralInverses(state, ops);
@@ -432,6 +434,74 @@ function computeNonDecreasingArrayRemoveInverses(
   }
 
   return { ok: true, inverses };
+}
+
+function computeAppendThenNonDecreasingRemoveInverses(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): { ok: true; inverses: JSONPatchOperation[] } | null {
+  if (ops.length < 2) return null;
+
+  let parent: string | null = null;
+  let adding = true;
+  let addCount = 0;
+  let previousRemoveIndex = -1;
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (op.op === "add") {
+      if (!adding) return null;
+      const location = arrayLocation(op.path);
+      if (location === null) return null;
+      if (parent === null) parent = location.parent;
+      else if (location.parent !== parent) return null;
+      addCount += 1;
+      continue;
+    }
+
+    if (op.op !== "remove") return null;
+    adding = false;
+    const location = arrayLocation(op.path);
+    if (location === null || location.index === "-") return null;
+    if (location.index < previousRemoveIndex) return null;
+    if (parent === null) parent = location.parent;
+    else if (location.parent !== parent) return null;
+    previousRemoveIndex = location.index;
+  }
+
+  if (parent === null || addCount === 0 || addCount === ops.length) return null;
+  const array = readAt(state, parsePointer(parent));
+  if (!array.ok || !Array.isArray(array.value)) return null;
+
+  const inverses: JSONPatchOperation[] = [];
+  for (let opIndex = 0; opIndex < addCount; opIndex += 1) {
+    const op = ops[opIndex]!;
+    if (op.op !== "add") return null;
+    const location = arrayLocation(op.path);
+    if (location === null) return null;
+    const expectedAppendIndex = array.value.length + opIndex;
+    if (location.index !== "-" && location.index !== expectedAppendIndex) return null;
+    inverses.push({ op: "remove", path: appendSegment(parent, expectedAppendIndex) });
+  }
+
+  let removeCount = 0;
+  for (let opIndex = addCount; opIndex < ops.length; opIndex += 1) {
+    const op = ops[opIndex]!;
+    if (op.op !== "remove") return null;
+    const location = arrayLocation(op.path);
+    if (location === null || location.index === "-") return null;
+    const sourceIndex = location.index + removeCount;
+    if (sourceIndex < 0 || sourceIndex >= array.value.length) return null;
+    inverses.push({
+      op: "add",
+      path: op.path,
+      value: array.value[sourceIndex],
+    });
+    removeCount += 1;
+  }
+
+  return { ok: true, inverses: inverses.reverse() };
 }
 
 function computeIndependentReplaceInverses(
