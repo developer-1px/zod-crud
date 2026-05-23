@@ -371,6 +371,21 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("clipboard copy can reuse caller-owned document references", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const original = doc.value.items;
+
+    const copied = doc.clipboard.copy("/items", { clonePayload: false });
+    expect(copied).toMatchObject({ ok: true });
+    if (!copied.ok) throw new Error("clipboard copy failed");
+    expect(copied.payload).toBe(original);
+
+    const read = doc.clipboard.read({ clonePayload: false });
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(read.payload).toBe(original);
+  });
+
   test("clipboard write validates and clones external payloads", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
     const payload: Record<string, unknown> = {

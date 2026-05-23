@@ -31,6 +31,11 @@ interface ClipboardReadOptions {
   clonePayload?: boolean;
 }
 
+interface ClipboardCopyOptions {
+  /** Store and return the copied source reference directly. Use only when the caller owns its mutation boundary. */
+  clonePayload?: boolean;
+}
+
 interface ClipboardReadOk {
   ok: true;
   payload: unknown;
@@ -74,7 +79,7 @@ export interface ClipboardState<T> {
   write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
   clear(): void;
 
-  copy(source?: ClipboardSource): CopyOk | CopyError;
+  copy(source?: ClipboardSource, options?: ClipboardCopyOptions): CopyOk | CopyError;
   cut(source?: ClipboardSource): ClipboardCutResult<T>;
   paste(target?: PasteTarget, options?: PasteOptions): ClipboardPasteResult<T>;
   pastePayload(target: PasteTarget, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
@@ -270,10 +275,14 @@ export function createClipboard<S extends z.ZodType>(
       setBuffer(null);
     },
 
-    copy(source) {
+    copy(source, options = {}) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCopySource();
-      const result = copy(getState(), resolved, { trusted: getStateJsonTrusted?.() === true });
+      const copyOptions: { trusted: boolean; clonePayload?: boolean } = {
+        trusted: getStateJsonTrusted?.() === true,
+      };
+      if (options.clonePayload !== undefined) copyOptions.clonePayload = options.clonePayload;
+      const result = copy(getState(), resolved, copyOptions);
       if (result.ok) {
         setBuffer({
           payload: result.payload,

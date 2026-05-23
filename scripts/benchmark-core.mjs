@@ -348,6 +348,12 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.clipboard.copy /items no clone", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.copy("/items", { clonePayload: false }));
+  }
+
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.clipboard.write items payload", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.clipboard.write(state.items));
   }
