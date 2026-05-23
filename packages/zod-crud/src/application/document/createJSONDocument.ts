@@ -705,6 +705,9 @@ function mergeEntryMetadata(
   top: HistoryEntry,
   options?: { mergeKey?: string },
 ): HistoryTransactionOptions | undefined {
+  if (prev.metadata === undefined && top.metadata === undefined && options === undefined) {
+    return undefined;
+  }
   const merged = { ...prev.metadata, ...top.metadata, ...options };
   return Object.keys(merged).length > 0 ? merged : undefined;
 }
