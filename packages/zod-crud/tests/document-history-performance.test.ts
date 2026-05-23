@@ -467,6 +467,42 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("same-array nested field replace batch handles escaped paths without root validation", () => {
+    const Schema = z.object({
+      "a/b": z.array(z.object({
+        "m~eta": z.object({ "ra/nk": z.number() }),
+      })),
+    });
+    const initial = {
+      "a/b": [
+        { "m~eta": { "ra/nk": 1 } },
+        { "m~eta": { "ra/nk": 2 } },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10, strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+
+    expect(doc.patch([
+      { op: "replace", path: "/a~1b/0/m~0eta/ra~1nk", value: 10 },
+      { op: "replace", path: "/a~1b/1/m~0eta/ra~1nk", value: 20 },
+    ])).toEqual({ ok: true });
+    expect(doc.value["a/b"].map((item) => item["m~eta"]["ra/nk"])).toEqual([10, 20]);
+    expect(rootParses).toBe(0);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(rootParses).toBe(0);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value["a/b"].map((item) => item["m~eta"]["ra/nk"])).toEqual([10, 20]);
+    expect(rootParses).toBe(0);
+  });
+
   test("same-array field replace history handles unordered indexes", () => {
     const Schema = z.object({
       items: z.array(z.object({ title: z.string(), done: z.boolean() })),

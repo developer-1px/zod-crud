@@ -76,6 +76,13 @@ const EscapedSelectionSchema = z.object({
     "done~flag": z.boolean(),
   })),
 });
+const EscapedNestedSchema = z.object({
+  "a/b": z.array(z.object({
+    "m~eta": z.object({
+      "ra/nk": z.number(),
+    }),
+  })),
+});
 const RecursiveNode = z.lazy(() => z.object({
   id: z.string(),
   children: z.array(RecursiveNode),
@@ -102,6 +109,9 @@ for (const size of sizes) {
   const escapedSelectionState = EscapedSelectionSchema.parse({
     "a/b": Array.from({ length: size }, () => ({ "done~flag": false })),
   });
+  const escapedNestedState = EscapedNestedSchema.parse({
+    "a/b": Array.from({ length: size }, (_, index) => ({ "m~eta": { "ra/nk": index } })),
+  });
   const recursiveState = RecursiveNode.parse(makeRecursiveState(size));
   const primitiveArrayState = Array.from({ length: size }, (_, index) => index);
   const middle = Math.floor(size / 2);
@@ -125,6 +135,11 @@ for (const size of sizes) {
   const nestedFieldReplaceOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "replace",
     path: `/items/${index}/meta/rank`,
+    value: size + index,
+  }));
+  const escapedNestedFieldReplaceOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "replace",
+    path: `/a~1b/${index}/m~0eta/ra~1nk`,
     value: size + index,
   }));
   const addBatchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
@@ -533,11 +548,22 @@ for (const size of sizes) {
     applyTrustedPatch(state, nestedFieldReplaceOps, { valuesTrusted: true }));
   bench(`computeInverses nested field replace batch ${nestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
     computeInverses(state, nestedFieldReplaceOps));
+  bench(`accepted escaped nested field replace batch ${escapedNestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyAcceptedPatch(escapedNestedState, escapedNestedFieldReplaceOps));
+  bench(`trusted escaped nested field replace batch ${escapedNestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    applyTrustedPatch(escapedNestedState, escapedNestedFieldReplaceOps, { valuesTrusted: true }));
+  bench(`computeInverses escaped nested field replace batch ${escapedNestedFieldReplaceOps.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+    computeInverses(escapedNestedState, escapedNestedFieldReplaceOps));
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench(`doc.patch nested field replace batch ${nestedFieldReplaceOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(nestedFieldReplaceOps));
+  }
+  {
+    const doc = createJSONDocument(EscapedNestedSchema, escapedNestedState, { history: 0 });
+    bench(`doc.patch escaped nested field replace batch ${escapedNestedFieldReplaceOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(escapedNestedFieldReplaceOps));
   }
 
   {
@@ -554,6 +580,11 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch nested field replace batch ${nestedFieldReplaceOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(nestedFieldReplaceOps));
+  }
+  {
+    const doc = createJSONDocument(EscapedNestedSchema, escapedNestedState, { history: 100 });
+    bench(`doc.patch escaped nested field replace batch ${escapedNestedFieldReplaceOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(escapedNestedFieldReplaceOps));
   }
 
   {

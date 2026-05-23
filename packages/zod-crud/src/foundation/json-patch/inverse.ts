@@ -1,6 +1,6 @@
 // computeInverses — undo 용 RFC 6902 inverse op 계산.
 
-import { appendSegment, parentPointer, parsePointer, readAt } from "../json-pointer/index.js";
+import { appendSegment, buildPointer, parentPointer, parsePointer, readAt } from "../json-pointer/index.js";
 import type { JSONPatchOperation } from "./index.js";
 import { applyOpRaw } from "./apply.js";
 import { deepCloneTrusted, getValueAt, resolveAppendPath } from "./internal.js";
@@ -13,7 +13,7 @@ interface ArrayFieldPath {
   key: string;
 }
 
-interface SimpleArrayNestedPath {
+interface ArrayNestedPath {
   arraySegments: string[];
   index: number;
   prefixText: string;
@@ -75,7 +75,7 @@ export function computeInverses(
   if (arrayRemoveOnly) return arrayRemoveOnly;
   const appendThenRemove = computeAppendThenNonDecreasingRemoveInverses(state, ops);
   if (appendThenRemove) return appendThenRemove;
-  const arrayNestedReplace = computeSimpleSameArrayNestedReplaceInverses(state, ops);
+  const arrayNestedReplace = computeSameArrayNestedReplaceInverses(state, ops);
   if (arrayNestedReplace) return arrayNestedReplace;
   const replaceOnly = computeIndependentReplaceInverses(state, ops);
   if (replaceOnly) return replaceOnly;
@@ -552,13 +552,13 @@ function computeIndependentReplaceInverses(
   return { ok: true, inverses: out };
 }
 
-function computeSimpleSameArrayNestedReplaceInverses(
+function computeSameArrayNestedReplaceInverses(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): { ok: true; inverses: JSONPatchOperation[] } | null {
   if (ops.length < 2) return null;
 
-  let location: SimpleArrayNestedPath | null = null;
+  let location: ArrayNestedPath | null = null;
   let arrayValue: unknown[] | null = null;
   let seenIndexes: Set<number> | null = null;
   let previousEmittedIndex: number | null = null;
@@ -572,14 +572,14 @@ function computeSimpleSameArrayNestedReplaceInverses(
 
     let index: number | null;
     if (location === null) {
-      location = parseFirstSimpleArrayNestedPath(state, op.path);
+      location = parseFirstArrayNestedPath(state, op.path);
       if (location === null) return null;
       index = location.index;
       const array = getValueAt(state, location.arraySegments);
       if (!array.ok || !Array.isArray(array.value)) return null;
       arrayValue = array.value;
     } else {
-      index = parseKnownSimpleArrayNestedIndex(op.path, location);
+      index = parseKnownArrayNestedIndex(op.path, location);
       if (index === null) return null;
     }
 
@@ -786,9 +786,13 @@ function parseSimpleArrayElementPath(path: string): { parent: string; index: num
     : { parent: path.slice(0, indexSlash), index };
 }
 
-function parseFirstSimpleArrayNestedPath(state: unknown, path: string): SimpleArrayNestedPath | null {
-  if (path === "" || path[0] !== "/" || path.includes("~")) return null;
-  const segments = path.slice(1).split("/");
+function parseFirstArrayNestedPath(state: unknown, path: string): ArrayNestedPath | null {
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
   if (segments.length < 3) return null;
 
   for (let segmentIndex = 0; segmentIndex < segments.length - 1; segmentIndex += 1) {
@@ -799,13 +803,13 @@ function parseFirstSimpleArrayNestedPath(state: unknown, path: string): SimpleAr
     const array = getValueAt(state, arraySegments);
     if (!array.ok || !Array.isArray(array.value)) continue;
 
-    const arrayPath = arraySegments.length === 0 ? "" : `/${arraySegments.join("/")}`;
+    const arrayPath = buildPointer(arraySegments);
     const suffixSegments = segments.slice(segmentIndex + 1);
     return {
       arraySegments,
       index,
       prefixText: arrayPath === "" ? "/" : `${arrayPath}/`,
-      suffixText: `/${suffixSegments.join("/")}`,
+      suffixText: buildPointer(suffixSegments),
       suffixSegments,
     };
   }
@@ -813,10 +817,9 @@ function parseFirstSimpleArrayNestedPath(state: unknown, path: string): SimpleAr
   return null;
 }
 
-function parseKnownSimpleArrayNestedIndex(path: string, location: SimpleArrayNestedPath): number | null {
+function parseKnownArrayNestedIndex(path: string, location: ArrayNestedPath): number | null {
   if (
-    path.includes("~")
-    || !path.startsWith(location.prefixText)
+    !path.startsWith(location.prefixText)
     || !path.endsWith(location.suffixText)
   ) {
     return null;
@@ -829,11 +832,11 @@ function parseKnownSimpleArrayNestedIndex(path: string, location: SimpleArrayNes
 
 function seedSimpleArrayNestedReplaceIndexes(
   inverses: ReadonlyArray<JSONPatchOperation>,
-  location: SimpleArrayNestedPath,
+  location: ArrayNestedPath,
 ): Set<number> {
   const seen = new Set<number>();
   for (const inverse of inverses) {
-    const index = parseKnownSimpleArrayNestedIndex(inverse.path, location);
+    const index = parseKnownArrayNestedIndex(inverse.path, location);
     if (index !== null) seen.add(index);
   }
   return seen;

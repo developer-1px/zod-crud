@@ -65,8 +65,8 @@ interface ArrayNestedPath {
   arrayPath: Pointer;
   arraySegments: string[];
   index: number;
-  simplePrefixText: string | null;
-  simpleSuffixText: string | null;
+  prefixText: string;
+  suffixText: string;
   suffixSegments: string[];
 }
 
@@ -606,8 +606,8 @@ function applySameArrayNestedReplacePatch(
 
   let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
-  let simplePrefixText: string | null = null;
-  let simpleSuffixText: string | null = null;
+  let prefixText: string | null = null;
+  let suffixText: string | null = null;
   let suffixSegments: string[] | null = null;
   let arrayValue: unknown[] | null = null;
   const updateIndexes = new Array<number>(ops.length);
@@ -628,21 +628,21 @@ function applySameArrayNestedReplacePatch(
       if (location === null) return { handled: false };
       arrayPath = location.arrayPath;
       arraySegments = location.arraySegments;
-      simplePrefixText = location.simplePrefixText;
-      simpleSuffixText = location.simpleSuffixText;
+      prefixText = location.prefixText;
+      suffixText = location.suffixText;
       suffixSegments = location.suffixSegments;
       const current = getValueAt(state, location.arraySegments);
       if (!current.ok || !Array.isArray(current.value)) return { handled: false };
       arrayValue = current.value;
       rowIndex = location.index;
     } else {
-      if (suffixSegments === null) return { handled: false };
+      if (suffixSegments === null || prefixText === null || suffixText === null) return { handled: false };
       const parsedIndex = parseKnownArrayNestedIndex(
         op.path,
         arrayPath,
         suffixSegments,
-        simplePrefixText,
-        simpleSuffixText,
+        prefixText,
+        suffixText,
       );
       if (parsedIndex === null) return { handled: false };
       rowIndex = parsedIndex;
@@ -1743,14 +1743,14 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
     const current = getValueAt(state, arraySegments);
     if (!current.ok || !Array.isArray(current.value)) continue;
 
-    const hasEscapedSegment = path.includes("~");
+    const arrayPath = buildPointer(arraySegments);
     const suffixSegments = parsed.segs.slice(index + 1);
     return {
-      arrayPath: buildPointer(arraySegments),
+      arrayPath,
       arraySegments,
       index: rowIndex,
-      simplePrefixText: hasEscapedSegment ? null : simpleArrayNestedPrefixText(arraySegments),
-      simpleSuffixText: hasEscapedSegment ? null : `/${suffixSegments.join("/")}`,
+      prefixText: arrayNestedPrefixText(arrayPath),
+      suffixText: buildPointer(suffixSegments),
       suffixSegments,
     };
   }
@@ -1762,13 +1762,11 @@ function parseKnownArrayNestedIndex(
   path: Pointer,
   arrayPath: Pointer,
   suffixSegments: string[],
-  simplePrefixText: string | null,
-  simpleSuffixText: string | null,
+  prefixText: string,
+  suffixText: string,
 ): number | null {
-  if (simplePrefixText !== null && simpleSuffixText !== null) {
-    const index = parseKnownSimpleArrayNestedIndex(path, simplePrefixText, simpleSuffixText);
-    if (index !== null) return index;
-  }
+  const knownIndex = parseKnownArrayNestedIndexText(path, prefixText, suffixText);
+  if (knownIndex !== null) return knownIndex;
 
   const parsed = parseSafe(path);
   if (!("ok" in parsed) || parsed.segs.length < suffixSegments.length + 2) return null;
@@ -1784,16 +1782,16 @@ function parseKnownArrayNestedIndex(
   return numericSegment(parsed.segs[arraySegmentsLength]!);
 }
 
-function simpleArrayNestedPrefixText(arraySegments: ReadonlyArray<string>): string {
-  return arraySegments.length === 0 ? "/" : `/${arraySegments.join("/")}/`;
+function arrayNestedPrefixText(arrayPath: Pointer): string {
+  return arrayPath === "" ? "/" : `${arrayPath}/`;
 }
 
-function parseKnownSimpleArrayNestedIndex(
+function parseKnownArrayNestedIndexText(
   path: Pointer,
   prefixText: string,
   suffixText: string,
 ): number | null {
-  if (path.includes("~") || !path.startsWith(prefixText) || !path.endsWith(suffixText)) return null;
+  if (!path.startsWith(prefixText) || !path.endsWith(suffixText)) return null;
   const indexEnd = path.length - suffixText.length;
   const indexText = path.slice(prefixText.length, indexEnd);
   return indexText.includes("/") ? null : numericSegment(indexText);
