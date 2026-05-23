@@ -5,6 +5,7 @@ import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, Fun
 
 const REGEX_CACHE_LIMIT = 128;
 const regexCache = new Map<string, RegExp | null>();
+const objectHasOwn = Object.prototype.hasOwnProperty;
 
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
@@ -36,27 +37,30 @@ function evaluateArrayWildcardField(query: Query, root: unknown): Match[] | null
 
   if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
   const rootObject = root as Record<string, unknown>;
-  if (!Object.prototype.hasOwnProperty.call(rootObject, simple.arrayName)) return [];
+  if (!objectHasOwn.call(rootObject, simple.arrayName)) return [];
   const array = rootObject[simple.arrayName];
   if (!Array.isArray(array)) return [];
 
   const rootPointer = "/" + escapeSeg(simple.arrayName);
   const fieldPointer = "/" + escapeSeg(simple.fieldName);
-  const matches: Match[] = [];
+  const matches = new Array<Match>(array.length);
+  let matchCount = 0;
   for (let index = 0; index < array.length; index += 1) {
     const item = array[index];
     if (
       item !== null
       && typeof item === "object"
       && !Array.isArray(item)
-      && Object.prototype.hasOwnProperty.call(item, simple.fieldName)
+      && objectHasOwn.call(item, simple.fieldName)
     ) {
-      matches.push({
+      matches[matchCount] = {
         pointer: rootPointer + "/" + index + fieldPointer,
         value: (item as Record<string, unknown>)[simple.fieldName],
-      });
+      };
+      matchCount += 1;
     }
   }
+  matches.length = matchCount;
   return matches;
 }
 
@@ -83,7 +87,7 @@ function evaluateArrayRegexFilter(query: Query, root: unknown): Match[] | null {
 
   if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
   const rootObject = root as Record<string, unknown>;
-  if (!Object.prototype.hasOwnProperty.call(rootObject, arraySelector.name)) return [];
+  if (!objectHasOwn.call(rootObject, arraySelector.name)) return [];
   const array = rootObject[arraySelector.name];
   if (!Array.isArray(array)) return [];
 
@@ -91,16 +95,19 @@ function evaluateArrayRegexFilter(query: Query, root: unknown): Match[] | null {
   if (regex === null) return [];
 
   const arrayPointer = "/" + escapeSeg(arraySelector.name);
-  const matches: Match[] = [];
+  const matches = new Array<Match>(array.length);
+  let matchCount = 0;
   for (let index = 0; index < array.length; index += 1) {
     const item = array[index];
     if (item === null || typeof item !== "object" || Array.isArray(item)) continue;
     const object = item as Record<string, unknown>;
-    if (!Object.prototype.hasOwnProperty.call(object, filter.field)) continue;
+    if (!objectHasOwn.call(object, filter.field)) continue;
     const value = object[filter.field];
     if (typeof value !== "string" || !regex.test(value)) continue;
-    matches.push({ pointer: arrayPointer + "/" + index, value: item });
+    matches[matchCount] = { pointer: arrayPointer + "/" + index, value: item };
+    matchCount += 1;
   }
+  matches.length = matchCount;
   return matches;
 }
 
@@ -159,24 +166,27 @@ function matchArrayWildcardFieldPointers(query: Query, root: unknown): string[] 
 
   if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
   const rootObject = root as Record<string, unknown>;
-  if (!Object.prototype.hasOwnProperty.call(rootObject, simple.arrayName)) return [];
+  if (!objectHasOwn.call(rootObject, simple.arrayName)) return [];
   const array = rootObject[simple.arrayName];
   if (!Array.isArray(array)) return [];
 
   const rootPointer = "/" + escapeSeg(simple.arrayName);
   const fieldPointer = "/" + escapeSeg(simple.fieldName);
-  const pointers: string[] = [];
+  const pointers = new Array<string>(array.length);
+  let pointerCount = 0;
   for (let index = 0; index < array.length; index += 1) {
     const item = array[index];
     if (
       item !== null
       && typeof item === "object"
       && !Array.isArray(item)
-      && Object.prototype.hasOwnProperty.call(item, simple.fieldName)
+      && objectHasOwn.call(item, simple.fieldName)
     ) {
-      pointers.push(rootPointer + "/" + index + fieldPointer);
+      pointers[pointerCount] = rootPointer + "/" + index + fieldPointer;
+      pointerCount += 1;
     }
   }
+  pointers.length = pointerCount;
   return pointers;
 }
 
@@ -218,7 +228,7 @@ function applySimpleSelector(
     case "name": {
       if (value === null || typeof value !== "object" || Array.isArray(value)) return true;
       const object = value as Record<string, unknown>;
-      if (!Object.prototype.hasOwnProperty.call(object, selector.name)) return true;
+      if (!objectHasOwn.call(object, selector.name)) return true;
       nextValues?.push(object[selector.name]);
       nextPointers.push(pointer + "/" + escapeSeg(selector.name));
       return true;
@@ -309,7 +319,7 @@ function applySelector(sel: Selector, m: Match, root: unknown): Match[] {
   if (sel.kind === "name") {
     if (m.value === null || typeof m.value !== "object" || Array.isArray(m.value)) return [];
     const obj = m.value as Record<string, unknown>;
-    if (!Object.prototype.hasOwnProperty.call(obj, sel.name)) return [];
+    if (!objectHasOwn.call(obj, sel.name)) return [];
     return [{ pointer: m.pointer + "/" + escapeSeg(sel.name), value: obj[sel.name] }];
   }
   if (sel.kind === "index") {
@@ -557,7 +567,7 @@ function jsonEqual(left: unknown, right: unknown): boolean {
     const leftKeys = Object.keys(left);
     const rightKeys = Object.keys(right);
     return leftKeys.length === rightKeys.length
-      && leftKeys.every((key) => Object.prototype.hasOwnProperty.call(right, key) && jsonEqual(left[key], right[key]));
+      && leftKeys.every((key) => objectHasOwn.call(right, key) && jsonEqual(left[key], right[key]));
   }
   return false;
 }
