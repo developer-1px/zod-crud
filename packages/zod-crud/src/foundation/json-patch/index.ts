@@ -491,7 +491,7 @@ function applyAppendOnlyAddPatch(
   if (ops.length < 2) return { handled: false };
 
   let parent: Pointer | null = null;
-  const values: unknown[] = [];
+  const values = new Array<unknown>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
     const op = ops[index]!;
@@ -511,7 +511,7 @@ function applyAppendOnlyAddPatch(
     else if (parent !== nextParent) return { handled: false };
 
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
-    values.push(op.value);
+    values[index] = op.value;
   }
 
   if (parent === null) return { handled: false };
