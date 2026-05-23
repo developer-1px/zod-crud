@@ -500,6 +500,10 @@ describe("doc.history performance contract", () => {
     });
     expect(rootParses).toBe(0);
 
+    expect(doc.clipboard.write(doc.value.items, { source: "/items" })).toEqual({ ok: true });
+    expect(doc.canPaste({ replace: "/items" })).toEqual({ ok: true });
+    expect(rootParses).toBe(0);
+
     expect(doc.clipboard.write([{ id: 1 }], { source: "/items" })).toEqual({ ok: true });
     expect(doc.canPaste({ replace: "/items" })).toMatchObject({
       ok: false,

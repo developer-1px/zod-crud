@@ -217,7 +217,8 @@ export function createClipboard<S extends z.ZodType>(
       const writtenSources = writeSources(options);
       if (!writtenSources.ok) return writtenSources.result;
       const sources = writtenSources.sources;
-      const cloned = isTrustedWritePayload(payload, sources)
+      const trustedPayload = isTrustedWritePayload(payload, sources);
+      const cloned = trustedPayload
         ? { ok: true as const, value: cloneTrustedPlainJson(payload) }
         : cloneJsonSerializable(payload);
       if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
@@ -226,7 +227,7 @@ export function createClipboard<S extends z.ZodType>(
         payload: cloned.value,
         source,
         sources,
-        schemaTrusted: false,
+        schemaTrusted: trustedPayload,
       });
       return { ok: true };
     },
