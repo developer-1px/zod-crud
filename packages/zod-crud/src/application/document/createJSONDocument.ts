@@ -424,6 +424,9 @@ export function createJSONDocument<S extends z.ZodType>(
     let forwardLength = 0;
     let inverseLength = 0;
     let metadata: HistoryTransactionOptions | undefined;
+    let repeatedReplacePath: Pointer | false | null = null;
+    let repeatedReplaceForward: JSONPatchOperation | undefined;
+    let repeatedReplaceInverse: JSONPatchOperation | undefined;
 
     for (let index = start; index < end; index += 1) {
       const entry = stack.undo[index]!;
@@ -434,6 +437,39 @@ export function createJSONDocument<S extends z.ZodType>(
           ? entry.metadata
           : { ...metadata, ...entry.metadata };
       }
+
+      if (repeatedReplacePath !== false) {
+        const forward = entry.forward.length === 1 ? entry.forward[0] : undefined;
+        const inverse = entry.inverse.length === 1 ? entry.inverse[0] : undefined;
+        if (
+          forward?.op === "replace"
+          && inverse?.op === "replace"
+          && forward.path === inverse.path
+          && (repeatedReplacePath === null || repeatedReplacePath === forward.path)
+        ) {
+          repeatedReplacePath = forward.path;
+          repeatedReplaceForward = forward;
+          repeatedReplaceInverse ??= inverse;
+        } else {
+          repeatedReplacePath = false;
+        }
+      }
+    }
+
+    if (
+      repeatedReplacePath !== false
+      && repeatedReplaceForward !== undefined
+      && repeatedReplaceInverse !== undefined
+    ) {
+      const merged: HistoryEntry = {
+        forward: [repeatedReplaceForward],
+        inverse: [repeatedReplaceInverse],
+        selectionBefore: first.selectionBefore,
+        selectionAfter: last.selectionAfter,
+      };
+      if (metadata !== undefined) merged.metadata = metadata;
+      stack.undo.splice(start, end - start, merged);
+      return;
     }
 
     const forward = new Array<JSONPatchOperation>(forwardLength);

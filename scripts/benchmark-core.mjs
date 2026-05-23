@@ -773,7 +773,15 @@ for (const size of sizes) {
   if (transactionDoc.history.undoDepth !== 1) {
     throw new Error(`transaction history merge failed: ${transactionDoc.history.undoDepth}`);
   }
+  const transactionUndoElapsed = time(() => {
+    if (!transactionDoc.history.undo()) throw new Error("transaction undo failed");
+  });
+  const transactionRedoElapsed = time(() => {
+    if (!transactionDoc.history.redo()) throw new Error("transaction redo failed");
+  });
   console.log(`history transaction ${transactionEdits} commits: ${transactionElapsed.toFixed(2)}ms`);
+  console.log(`history transaction ${transactionEdits} undo: ${transactionUndoElapsed.toFixed(2)}ms`);
+  console.log(`history transaction ${transactionEdits} redo: ${transactionRedoElapsed.toFixed(2)}ms`);
 
   const reducerStack = emptyMutableHistory();
   const reducerCommitElapsed = time(() => {
