@@ -529,14 +529,19 @@ function applyAppendOnlyAddPatch(
   );
   if (stateWithArray === null) return { handled: false };
 
+  const applied = new Array<JSONPatchOperation>(values.length);
+  for (let index = 0; index < values.length; index += 1) {
+    applied[index] = {
+      op: "add",
+      path: appendArrayIndexPath(parent, initialLength + index),
+      value: values[index],
+    };
+  }
+
   return {
     handled: true,
     state: stateWithArray,
-    applied: values.map((value, index): JSONPatchOperation => ({
-      op: "add",
-      path: appendArrayIndexPath(parent, initialLength + index),
-      value,
-    })),
+    applied,
   };
 }
 
