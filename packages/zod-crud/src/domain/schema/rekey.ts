@@ -327,17 +327,25 @@ function rekeyEntries(
 }
 
 function mintValue(value: unknown, ctx: RekeyContext, strategy: RekeyStrategy): string {
+  if (strategy === "suffix") return mintSuffixValue(String(value), ctx.existing, ctx.field);
+
   for (let attempt = 1; attempt < 10_000; attempt += 1) {
     const attemptCtx = { ...ctx, attempt };
     const next =
       typeof strategy === "function"
         ? strategy(value, attemptCtx)
-        : strategy === "uuid"
-          ? randomId()
-          : suffixValue(String(value), attempt);
+        : randomId();
     if (!ctx.existing.has(next)) return next;
   }
   throw new Error(`could not mint unique value for ${ctx.field}`);
+}
+
+function mintSuffixValue(value: string, existing: ReadonlySet<string>, field: string): string {
+  for (let attempt = 1; attempt < 10_000; attempt += 1) {
+    const next = suffixValue(value, attempt);
+    if (!existing.has(next)) return next;
+  }
+  throw new Error(`could not mint unique value for ${field}`);
 }
 
 function suffixValue(value: string, attempt: number): string {

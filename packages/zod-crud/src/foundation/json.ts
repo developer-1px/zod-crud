@@ -9,7 +9,6 @@ export type JSONValue =
   | ReadonlyArray<JSONValue>;
 
 const LARGE_ARRAY_CLONE_THRESHOLD = 1024;
-const objectHasOwn = Object.prototype.hasOwnProperty;
 
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);
@@ -393,33 +392,7 @@ function cloneJsonSerializableDetailed<T>(value: T): CloneJsonResult<T> {
 }
 
 export function cloneTrustedJson<T>(value: T): T {
-  if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) {
-    const next = new Array(value.length);
-    for (let index = 0; index < value.length; index += 1) {
-      const child = value[index];
-      next[index] = child === null || typeof child !== "object" ? child : cloneTrustedJson(child);
-    }
-    return next as T;
-  }
-
-  const next: Record<string, unknown> = {};
-  for (const key in value as Record<string, unknown>) {
-    if (!objectHasOwn.call(value, key)) continue;
-    const child = (value as Record<string, unknown>)[key];
-    const cloned = child === null || typeof child !== "object" ? child : cloneTrustedJson(child);
-    if (key === "__proto__") {
-      Object.defineProperty(next, key, {
-        value: cloned,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      next[key] = cloned;
-    }
-  }
-  return next as T;
+  return cloneTrustedPlainJsonFast(value);
 }
 
 // Fast clone for values that already passed this module's JSON boundary.

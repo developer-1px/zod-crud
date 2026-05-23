@@ -161,6 +161,36 @@ describe("createJSONDocument public interface", () => {
     });
   });
 
+  test("custom rekey strategy receives attempts until it mints a unique value", () => {
+    const doc = createJSONDocument(Schema, {
+      ...initial,
+      items: [
+        { id: "a", name: "A" },
+        { id: "a-custom-1", name: "AC1" },
+        { id: "b", name: "B" },
+      ],
+    });
+    const attempts: number[] = [];
+
+    expect(doc.duplicate("/items/0", {
+      rekey: {
+        fields: ["id"],
+        strategy: (value, context) => {
+          attempts.push(context.attempt);
+          return `${String(value)}-custom-${context.attempt}`;
+        },
+      },
+    })).toMatchObject({
+      ok: true,
+      applied: [{
+        op: "add",
+        path: "/items/1",
+        value: { id: "a-custom-2", name: "A" },
+      }],
+    });
+    expect(attempts).toEqual([1, 2]);
+  });
+
   test("keeps reads and query separate from pointer-based patching", () => {
     const doc = createJSONDocument(Schema, initial);
 
