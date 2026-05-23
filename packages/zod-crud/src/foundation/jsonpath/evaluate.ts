@@ -314,5 +314,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 /** 외부 helper — Match[] → Pointer[] (domain/verbs/find 가 사용). */
 export function matchPointers(matches: Match[]): string[] {
-  return matches.map((m) => m.pointer);
+  const pointers = new Array<string>(matches.length);
+  for (let index = 0; index < matches.length; index += 1) {
+    pointers[index] = matches[index]!.pointer;
+  }
+  return pointers;
 }
