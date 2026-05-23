@@ -1,8 +1,25 @@
 import { describe, expect, test } from "vitest";
 
-import { queryMatches } from "../src/foundation/jsonpath/index.js";
+import { parse, queryMatches } from "../src/foundation/jsonpath/index.js";
 
 describe("JSONPath fast paths", () => {
+  test("simple ASCII paths parse to the normal query AST", () => {
+    expect(parse("$.items[1].done")).toEqual({
+      segments: [
+        { kind: "child", selectors: [{ kind: "name", name: "items" }] },
+        { kind: "child", selectors: [{ kind: "index", index: 1 }] },
+        { kind: "child", selectors: [{ kind: "name", name: "done" }] },
+      ],
+    });
+    expect(parse("$.items[*].id")).toEqual({
+      segments: [
+        { kind: "child", selectors: [{ kind: "name", name: "items" }] },
+        { kind: "child", selectors: [{ kind: "wildcard" }] },
+        { kind: "child", selectors: [{ kind: "name", name: "id" }] },
+      ],
+    });
+  });
+
   test("array wildcard field queryMatches returns field matches", () => {
     const state = {
       items: [
