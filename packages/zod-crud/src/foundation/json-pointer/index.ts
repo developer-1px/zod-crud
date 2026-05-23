@@ -23,8 +23,17 @@ export function buildPointer(
   options: BuildPointerOptions = {},
 ): Pointer {
   if (segments.length === 0) return options.uriFragment ? "#" : "";
-  const body = "/" + segments.map((s) => escapeSegment(String(s))).join("/");
+  let body = "";
+  for (let index = 0; index < segments.length; index += 1) {
+    body += "/" + escapeSegment(String(segments[index]));
+  }
   return options.uriFragment ? "#" + encodePointerForFragment(body) : body;
+}
+
+function parsePointerSegments(body: string): string[] {
+  return body.includes("~")
+    ? body.split("/").map(unescapeSegment)
+    : body.split("/");
 }
 
 export function parsePointer(pointer: Pointer): string[] {
@@ -35,7 +44,7 @@ export function parsePointer(pointer: Pointer): string[] {
       throw new PointerSyntaxError(`JSON Pointer URI fragment must be '#' or start with '#/': ${JSON.stringify(pointer)}`);
     }
     try {
-      return decodeURIComponent(pointer.slice(2)).split("/").map(unescapeSegment);
+      return parsePointerSegments(decodeURIComponent(pointer.slice(2)));
     } catch (error) {
       throw new PointerSyntaxError(
         error instanceof Error
@@ -47,7 +56,7 @@ export function parsePointer(pointer: Pointer): string[] {
   if (pointer[0] !== "/") {
     throw new PointerSyntaxError(`JSON Pointer must be empty or start with '/': ${JSON.stringify(pointer)}`);
   }
-  return pointer.slice(1).split("/").map(unescapeSegment);
+  return parsePointerSegments(pointer.slice(1));
 }
 
 export function tryParsePointer(pointer: Pointer): string[] | null {
@@ -55,13 +64,13 @@ export function tryParsePointer(pointer: Pointer): string[] | null {
   if (pointer[0] === "#") {
     if (pointer[1] !== "/") return null;
     try {
-      return decodeURIComponent(pointer.slice(2)).split("/").map(unescapeSegment);
+      return parsePointerSegments(decodeURIComponent(pointer.slice(2)));
     } catch {
       return null;
     }
   }
   if (pointer[0] !== "/") return null;
-  return pointer.slice(1).split("/").map(unescapeSegment);
+  return parsePointerSegments(pointer.slice(1));
 }
 
 // RFC 3986 + 6901 §6: fragment 안에서 안전하지 않은 문자 percent-encode.
