@@ -91,6 +91,7 @@ function computeAppendOnlyAddInverses(
   if (ops.length < 2) return null;
 
   let parent: string | undefined;
+  let appendPath: string | undefined;
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
     const op = ops[index]!;
@@ -103,9 +104,12 @@ function computeAppendOnlyAddInverses(
     ) {
       return null;
     }
-    const nextParent = op.path.slice(0, -2);
-    if (parent === undefined) parent = nextParent;
-    else if (parent !== nextParent) return null;
+    if (appendPath === undefined) {
+      appendPath = op.path;
+      parent = op.path.slice(0, -2);
+    } else if (op.path !== appendPath) {
+      return null;
+    }
   }
 
   if (parent === undefined) return null;

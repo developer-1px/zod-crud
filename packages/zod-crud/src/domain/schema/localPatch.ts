@@ -638,6 +638,7 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
   let parent: Pointer | null = null;
+  let appendPath: Pointer | null = null;
   const values = new Array<unknown>(ops.length);
   const applied = new Array<JSONPatchOperation>(ops.length);
 
@@ -653,9 +654,12 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
       return null;
     }
 
-    const nextParent = op.path.slice(0, -2);
-    if (parent === null) parent = nextParent;
-    else if (parent !== nextParent) return null;
+    if (appendPath === null) {
+      appendPath = op.path;
+      parent = op.path.slice(0, -2);
+    } else if (op.path !== appendPath) {
+      return null;
+    }
     values[index] = op.value;
   }
 

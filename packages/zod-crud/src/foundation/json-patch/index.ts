@@ -491,6 +491,7 @@ function applyAppendOnlyAddPatch(
   if (ops.length < 2) return { handled: false };
 
   let parent: Pointer | null = null;
+  let appendPath: Pointer | null = null;
   const values = new Array<unknown>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -506,9 +507,12 @@ function applyAppendOnlyAddPatch(
       return { handled: false };
     }
 
-    const nextParent = op.path.slice(0, -2);
-    if (parent === null) parent = nextParent;
-    else if (parent !== nextParent) return { handled: false };
+    if (appendPath === null) {
+      appendPath = op.path;
+      parent = op.path.slice(0, -2);
+    } else if (op.path !== appendPath) {
+      return { handled: false };
+    }
 
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
     values[index] = op.value;
