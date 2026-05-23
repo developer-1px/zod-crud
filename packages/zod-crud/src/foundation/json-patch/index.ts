@@ -432,21 +432,6 @@ export function applyAcceptedPatch<T>(
     }
   }
 
-  const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, true);
-  if (arrayReplaceFast.handled) {
-    return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
-  }
-
-  const arrayNestedReplaceFast = applySameArrayNestedReplacePatch(state, ops, true);
-  if (arrayNestedReplaceFast.handled) {
-    return { state: arrayNestedReplaceFast.state as T, result: ok, applied: arrayNestedReplaceFast.applied };
-  }
-
-  const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops, true);
-  if (arrayElementReplaceFast.handled) {
-    return { state: arrayElementReplaceFast.state as T, result: ok, applied: arrayElementReplaceFast.applied };
-  }
-
   const rootObjectRemoveFast = applyRootObjectRemovePatch(state, ops);
   if (rootObjectRemoveFast.handled) {
     return { state: rootObjectRemoveFast.state as T, result: ok, applied: rootObjectRemoveFast.applied };
@@ -460,6 +445,21 @@ export function applyAcceptedPatch<T>(
   const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops, true);
   if (rootObjectReplaceFast.handled) {
     return { state: rootObjectReplaceFast.state as T, result: ok, applied: rootObjectReplaceFast.applied };
+  }
+
+  const arrayReplaceFast = applySameArrayFieldReplacePatch(state, ops, true);
+  if (arrayReplaceFast.handled) {
+    return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
+  }
+
+  const arrayNestedReplaceFast = applySameArrayNestedReplacePatch(state, ops, true);
+  if (arrayNestedReplaceFast.handled) {
+    return { state: arrayNestedReplaceFast.state as T, result: ok, applied: arrayNestedReplaceFast.applied };
+  }
+
+  const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops, true);
+  if (arrayElementReplaceFast.handled) {
+    return { state: arrayElementReplaceFast.state as T, result: ok, applied: arrayElementReplaceFast.applied };
   }
 
   return applyTrustedPatch(state, ops, { valuesTrusted: true });
