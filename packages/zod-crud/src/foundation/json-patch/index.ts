@@ -471,7 +471,8 @@ function applySameArrayFieldReplacePatch(
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   let arrayValue: unknown[] | null = null;
-  const updates = new Map<number, unknown>();
+  const updateIndexes = new Array<number>(ops.length);
+  const updateValues = new Array<unknown>(ops.length);
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
@@ -505,13 +506,16 @@ function applySameArrayFieldReplacePatch(
     const row = arrayValue[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return { handled: false };
     if (!objectHasOwn.call(row, location.key)) return { handled: false };
-    updates.set(location.index, normalized.value);
+    updateIndexes[opIndex] = location.index;
+    updateValues[opIndex] = normalized.value;
     applied[opIndex] = normalized;
   }
 
   if (arraySegments === null || field === null || arrayValue === null) return { handled: false };
   const next = arrayValue.slice();
-  for (const [rowIndex, value] of updates) {
+  for (let index = 0; index < ops.length; index += 1) {
+    const rowIndex = updateIndexes[index]!;
+    const value = updateValues[index];
     const row = arrayValue[rowIndex] as Record<string, unknown>;
     const replaced = { ...row };
     if (field === "__proto__") {
@@ -546,7 +550,8 @@ function applySameArrayNestedReplacePatch(
   let simpleSuffixText: string | null = null;
   let suffixSegments: string[] | null = null;
   let arrayValue: unknown[] | null = null;
-  const updates = new Map<number, unknown>();
+  const updateIndexes = new Array<number>(ops.length);
+  const updateValues = new Array<unknown>(ops.length);
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
@@ -588,13 +593,16 @@ function applySameArrayNestedReplacePatch(
 
     if (arrayValue === null || rowIndex < 0 || rowIndex >= arrayValue.length) return { handled: false };
     if (!getValueAt(arrayValue[rowIndex], rowSuffixSegments).ok) return { handled: false };
-    updates.set(rowIndex, op.value);
+    updateIndexes[opIndex] = rowIndex;
+    updateValues[opIndex] = op.value;
     applied[opIndex] = op;
   }
 
   if (arraySegments === null || suffixSegments === null || arrayValue === null) return { handled: false };
   const next = arrayValue.slice();
-  for (const [rowIndex, value] of updates) {
+  for (let index = 0; index < ops.length; index += 1) {
+    const rowIndex = updateIndexes[index]!;
+    const value = updateValues[index];
     const replaced = replaceValueAtSegments(arrayValue[rowIndex], suffixSegments, 0, value);
     if (replaced === null) return { handled: false };
     next[rowIndex] = replaced;

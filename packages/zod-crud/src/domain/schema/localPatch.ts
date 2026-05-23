@@ -443,7 +443,8 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   let valueSchema: z.ZodType | null = null;
   let valueValidator: KnownJsonValueValidator | null = null;
   let arrayValue: unknown[] | null = null;
-  const updates = new Map<number, unknown>();
+  const updateIndexes = new Array<number>(ops.length);
+  const updateValues = new Array<unknown>(ops.length);
   const applied = new Array<JSONPatchOperation>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
@@ -501,13 +502,16 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
     }
     if (!readAt(arrayValue[rowIndex], rowSuffixSegments).ok) return null;
-    updates.set(rowIndex, op.value);
+    updateIndexes[opIndex] = rowIndex;
+    updateValues[opIndex] = op.value;
     applied[opIndex] = op;
   }
 
   if (arraySegments === null || suffixSegments === null || arrayValue === null) return null;
   const next = arrayValue.slice();
-  for (const [rowIndex, value] of updates) {
+  for (let index = 0; index < ops.length; index += 1) {
+    const rowIndex = updateIndexes[index]!;
+    const value = updateValues[index];
     const replaced = replaceValueAtSegments(arrayValue[rowIndex], suffixSegments, 0, value);
     if (replaced === null) return null;
     next[rowIndex] = replaced;
