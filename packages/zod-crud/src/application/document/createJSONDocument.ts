@@ -265,10 +265,13 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const commit = (
     operations: ReadonlyArray<JSONPatchOperation>,
-    commitOptions: JSONDocumentCommitOptions = {},
+    commitOptions?: JSONDocumentCommitOptions,
   ): JSONResult => {
-    const { selection, ...metadataOptions } = commitOptions;
-    if (selection === undefined) return applyDocumentPatch(operations, compactHistoryMetadata(metadataOptions));
+    if (commitOptions === undefined) return applyDocumentPatch(operations);
+
+    const { selection } = commitOptions;
+    const metadataOptions = compactHistoryMetadata(commitOptions);
+    if (selection === undefined) return applyDocumentPatch(operations, metadataOptions);
 
     const before = rawOps.state;
     const selectionBefore = snapSelection();
@@ -276,12 +279,12 @@ export function createJSONDocument<S extends z.ZodType>(
     if (!predicted.result.ok) return patch(operations, metadataOptions);
 
     const selectionAfter = resolveCommitSelection(selectionBefore, selection, predicted.state, selectionMode);
+    const directMetadata = metadataOptions === undefined
+      ? { selectionAfter }
+      : { ...metadataOptions, selectionAfter };
     const changeMetadata = buildChangeMetadata(
       activeHistoryMetadata,
-      {
-        ...metadataOptions,
-        selectionAfter,
-      },
+      directMetadata,
       selectionBefore,
       selectionEnabled,
     );
