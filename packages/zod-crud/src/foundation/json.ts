@@ -440,38 +440,49 @@ export function cloneTrustedPlainJson<T>(value: T): T {
 
 function cloneTrustedPlainJsonFast<T>(value: T): T {
   if (value === null || typeof value !== "object") return value;
-  if (Array.isArray(value)) {
-    const first = value[0];
-    if (first === null || typeof first !== "object") {
-      let hasObject = false;
-      for (let index = 1; index < value.length; index += 1) {
-        const child = value[index];
-        if (child !== null && typeof child === "object") {
-          hasObject = true;
-          break;
-        }
-      }
-      if (!hasObject) return value.slice() as T;
-    }
+  return (Array.isArray(value)
+    ? cloneTrustedPlainArray(value)
+    : cloneTrustedPlainObject(value as Record<string, unknown>)) as T;
+}
 
-    const next = new Array(value.length);
-    for (let index = 0; index < value.length; index += 1) {
+function cloneTrustedPlainArray(value: unknown[]): unknown[] {
+  if (value.length === 0) return [];
+
+  const first = value[0];
+  if (first === null || typeof first !== "object") {
+    let hasObject = false;
+    for (let index = 1; index < value.length; index += 1) {
       const child = value[index];
-      next[index] = child === null || typeof child !== "object"
-        ? child
-        : cloneTrustedPlainJsonFast(child);
+      if (child !== null && typeof child === "object") {
+        hasObject = true;
+        break;
+      }
     }
-    return next as T;
+    if (!hasObject) return value.slice();
   }
 
-  const source = value as Record<string, unknown>;
+  const next = new Array(value.length);
+  for (let index = 0; index < value.length; index += 1) {
+    const child = value[index];
+    next[index] = child === null || typeof child !== "object"
+      ? child
+      : Array.isArray(child)
+        ? cloneTrustedPlainArray(child)
+        : cloneTrustedPlainObject(child as Record<string, unknown>);
+  }
+  return next;
+}
+
+function cloneTrustedPlainObject(source: Record<string, unknown>): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   for (const key in source) {
     if (!objectHasOwn.call(source, key)) continue;
     const child = source[key];
     const cloned = child === null || typeof child !== "object"
       ? child
-      : cloneTrustedPlainJsonFast(child);
+      : Array.isArray(child)
+        ? cloneTrustedPlainArray(child)
+        : cloneTrustedPlainObject(child as Record<string, unknown>);
     if (key === "__proto__") {
       Object.defineProperty(next, key, {
         value: cloned,
@@ -483,7 +494,7 @@ function cloneTrustedPlainJsonFast<T>(value: T): T {
       next[key] = cloned;
     }
   }
-  return next as T;
+  return next;
 }
 
 export function jsonEqual(left: JSONValue | undefined, right: JSONValue | undefined): boolean {
