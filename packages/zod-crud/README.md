@@ -279,6 +279,7 @@ clipboard buffer clone as well.
 doc.clipboard.write(cards, { trustedPayload: true, clonePayload: false });
 const read = doc.clipboard.read({ clonePayload: false });
 doc.clipboard.copy("/cards", { clonePayload: false });
+doc.clipboard.cut("/cards", { clonePayload: false });
 ```
 
 Use a pointer such as `/cards/-` when you already have an insertion position.

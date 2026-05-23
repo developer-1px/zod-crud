@@ -36,6 +36,11 @@ interface ClipboardCopyOptions {
   clonePayload?: boolean;
 }
 
+interface ClipboardCutOptions {
+  /** Store and return the cut source reference directly. Use only when the caller owns its mutation boundary. */
+  clonePayload?: boolean;
+}
+
 interface ClipboardReadOk {
   ok: true;
   payload: unknown;
@@ -80,7 +85,7 @@ export interface ClipboardState<T> {
   clear(): void;
 
   copy(source?: ClipboardSource, options?: ClipboardCopyOptions): CopyOk | CopyError;
-  cut(source?: ClipboardSource): ClipboardCutResult<T>;
+  cut(source?: ClipboardSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
   paste(target?: PasteTarget, options?: PasteOptions): ClipboardPasteResult<T>;
   pastePayload(target: PasteTarget, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
 }
@@ -294,13 +299,19 @@ export function createClipboard<S extends z.ZodType>(
       return result;
     },
 
-    cut(source) {
+    cut(source, options = {}) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCutSource();
-      const result = cut(schema, getState(), resolved, {
+      const cutOptions: {
+        trusted: boolean;
+        clonePayload?: boolean;
+        previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+      } = {
         trusted: getStateJsonTrusted?.() === true,
-        previewPatch,
-      });
+      };
+      if (options.clonePayload !== undefined) cutOptions.clonePayload = options.clonePayload;
+      if (previewPatch !== undefined) cutOptions.previewPatch = previewPatch;
+      const result = cut(schema, getState(), resolved, cutOptions);
       if (!result.ok) return result;
       const patchResult = applyPreviewedPatch
         ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)

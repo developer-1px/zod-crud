@@ -386,6 +386,22 @@ describe("createJSONDocument public interface", () => {
     expect(read.payload).toBe(original);
   });
 
+  test("clipboard cut can reuse caller-owned document references", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const original = doc.value.items[0];
+
+    const cut = doc.clipboard.cut("/items/0", { clonePayload: false });
+    expect(cut).toMatchObject({ ok: true });
+    if (!cut.ok) throw new Error("clipboard cut failed");
+    expect(cut.payload).toBe(original);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b"]);
+
+    const read = doc.clipboard.read({ clonePayload: false });
+    expect(read).toMatchObject({ ok: true });
+    if (!read.ok) throw new Error("clipboard read failed");
+    expect(read.payload).toBe(original);
+  });
+
   test("clipboard write validates and clones external payloads", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
     const payload: Record<string, unknown> = {

@@ -56,6 +56,13 @@ const Schema = z.object({
     count: z.number(),
   }),
 });
+const OptionalItemsSchema = z.object({
+  items: z.array(Item).optional(),
+  settings: z.object({
+    active: z.string(),
+    count: z.number(),
+  }),
+});
 const UnknownItemsSchema = z.object({
   items: z.array(z.unknown()),
 });
@@ -85,6 +92,7 @@ if (forceGc) {
 
 for (const size of sizes) {
   const state = Schema.parse(makeState(size));
+  const optionalItemsState = OptionalItemsSchema.parse(state);
   const nestedState = NestedSchema.parse({ wrapper: { items: state.items } });
   const recursiveState = RecursiveNode.parse(makeRecursiveState(size));
   const primitiveArrayState = Array.from({ length: size }, (_, index) => index);
@@ -292,6 +300,20 @@ for (const size of sizes) {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench("doc.canCut last item", Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.canCut(`/items/${size - 1}`));
+  }
+
+  {
+    let doc;
+    benchWithSetup("doc.clipboard.cut /items", Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(OptionalItemsSchema, optionalItemsState, { history: 0 });
+    }, () => doc.clipboard.cut("/items"));
+  }
+
+  {
+    let doc;
+    benchWithSetup("doc.clipboard.cut /items no clone", Math.max(3, Math.ceil(rounds / 2)), () => {
+      doc = createJSONDocument(OptionalItemsSchema, optionalItemsState, { history: 0 });
+    }, () => doc.clipboard.cut("/items", { clonePayload: false }));
   }
 
   {
