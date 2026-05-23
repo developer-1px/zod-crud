@@ -147,6 +147,7 @@ export function createJSONDocument<S extends z.ZodType>(
   let stack: MutableHistoryStack<HistoryEntry> = emptyMutableHistory<HistoryEntry>();
   let isRestoring = false;
   let activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  let activeTransactionStartDepth: number | undefined;
   let lastPatch: ReadonlyArray<JSONPatchOperation> = [];
   let documentSubscriberCount = 0;
 
@@ -200,6 +201,13 @@ export function createJSONDocument<S extends z.ZodType>(
     if (metadata !== undefined) {
       const historyMetadata = compactHistoryMetadata(metadata);
       if (historyMetadata) entry.metadata = historyMetadata;
+    }
+    if (activeTransactionStartDepth !== undefined && historyDepth(stack) > activeTransactionStartDepth) {
+      const prev = stack.undo[stack.undo.length - 1]!;
+      const compactMetadata = entry.metadata === undefined
+        ? prev.metadata
+        : mergeRepeatedReplaceTransactionMetadata(prev.metadata, entry.metadata);
+      if (compactRepeatedReplaceHistory(prev, entry, compactMetadata) !== null) return;
     }
     commitHistory(stack, entry, historyLimit);
   };
@@ -569,7 +577,15 @@ export function createJSONDocument<S extends z.ZodType>(
     const fn = hasOptions ? maybeFn : optionsOrFn;
     if (!fn) return;
     const depthBefore = historyDepth(stack);
-    withHistoryMetadata(transactionOptions, fn);
+    const previousTransactionStartDepth = activeTransactionStartDepth;
+    if (previousTransactionStartDepth === undefined) {
+      activeTransactionStartDepth = depthBefore;
+    }
+    try {
+      withHistoryMetadata(transactionOptions, fn);
+    } finally {
+      activeTransactionStartDepth = previousTransactionStartDepth;
+    }
     mergeTransactionEntries(depthBefore);
   };
 
