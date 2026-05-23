@@ -191,6 +191,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   let parent: Pointer | null = null;
   let parentSegments: string[] | null = null;
   let elementSchema: z.ZodType | null = null;
+  let elementValidator: KnownJsonValueValidator | null = null;
   let next: unknown[] | null = null;
   const applied = new Array<JSONPatchOperation>(ops.length);
 
@@ -213,6 +214,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
       const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
       elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
       if (!elementSchema) return null;
+      elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
       const current = readAt(state, parentSegments);
       if (!current.ok || !Array.isArray(current.value)) return null;
@@ -221,7 +223,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
       return null;
     }
 
-    if (!elementSchema || !acceptsKnownJsonValue(elementSchema, op.value)) return null;
+    if (!elementSchema || !acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
     if (next === null || location.index < 0 || location.index >= next.length) return null;
     next[location.index] = op.value;
     applied[opIndex] = op;
@@ -249,6 +251,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   let valueSchema: z.ZodType | null = null;
+  let valueValidator: KnownJsonValueValidator | null = null;
   let next: unknown[] | null = null;
   const applied: JSONPatchOperation[] = [];
 
@@ -273,6 +276,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     if (valueSchema === null) {
       valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
       if (!valueSchema) return null;
+      valueValidator = knownJsonValueValidatorForSchema(valueSchema);
     }
 
     if (next === null) {
@@ -293,7 +297,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     const row = next[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
     if (!objectHasOwn.call(row, location.key)) return null;
-    const valueAccepted = acceptsKnownJsonValue(valueSchema, op.value);
+    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
@@ -632,6 +636,7 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
   if (!elementSchema) return null;
+  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
   const current = readAt(state, parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
@@ -639,7 +644,7 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
-    const valueAccepted = acceptsKnownJsonValue(elementSchema, value);
+    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, value);
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
@@ -693,6 +698,7 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
 
   const parent = firstLocation.parent;
   const elementSchema = firstLocation.element;
+  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
   const start = firstLocation.index;
   let parentSegments: string[];
   try {
@@ -724,7 +730,7 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
       : arrayIndexInParent(op.path, parent);
     if (location === null || location.index === "-" || location.index !== start + index) return null;
 
-    const valueAccepted = acceptsKnownJsonValue(elementSchema, op.value);
+    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, op.value);
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
@@ -827,10 +833,11 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
   }
 
   if (parent === null || elementSchema === null) return null;
+  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
   for (const op of parsedOps) {
     if (op.op !== "add") continue;
-    const valueAccepted = acceptsKnownJsonValue(elementSchema, op.value);
+    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, op.value);
     if (!valueAccepted && !valuesTrusted) {
       const jsonError = jsonSerializableError(op.value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
@@ -1135,6 +1142,13 @@ function replaceValueAtSegments(
 
 function acceptsKnownJsonValue(schema: z.ZodType, value: unknown): boolean {
   const validator = knownJsonValueValidatorForSchema(schema);
+  return acceptsKnownJsonValueWithValidator(validator, value);
+}
+
+function acceptsKnownJsonValueWithValidator(
+  validator: KnownJsonValueValidator | null,
+  value: unknown,
+): boolean {
   return validator !== null && validator(value, new WeakSet<object>());
 }
 
