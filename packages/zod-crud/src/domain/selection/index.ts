@@ -826,6 +826,7 @@ export function applySelectionAutoRules(
       return withPreviousContext(prev, snapFromPointerTargets(autoTargets.targets, mode, autoTargets.unique));
     }
   }
+  if (canKeepSelectionForStableReplacePatch(prev, applied)) return prev;
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
   let stableReplacementPaths: ReadonlyArray<ReadonlyArray<string>> | null | false | undefined;
@@ -946,6 +947,69 @@ export function applySelectionAutoRules(
     : next;
   const withContext = withPreviousContext(prev, normalized);
   return sameSelectionSnap(prev, withContext) ? prev : withContext;
+}
+
+function canKeepSelectionForStableReplacePatch(
+  selection: SelectionSnap,
+  applied: ReadonlyArray<JSONPatchOperation>,
+): boolean {
+  const replacements = stableReplacementPointerSet(applied);
+  if (replacements === null) return false;
+  if (replacements.size === 0) return true;
+
+  for (const pointer of selection.selectedPointers) {
+    if (hasStrictReplacementAncestor(pointer, replacements)) return false;
+  }
+  for (const range of selection.selectionRanges) {
+    if (
+      pointHasStrictReplacementAncestor(range.anchor, replacements)
+      || pointHasStrictReplacementAncestor(range.focus, replacements)
+    ) {
+      return false;
+    }
+  }
+  return !pointHasStrictReplacementAncestor(selection.anchor, replacements)
+    && !pointHasStrictReplacementAncestor(selection.focus, replacements);
+}
+
+function stableReplacementPointerSet(
+  applied: ReadonlyArray<JSONPatchOperation>,
+): Set<Pointer> | null {
+  const replacements = new Set<Pointer>();
+  for (let index = 0; index < applied.length; index += 1) {
+    const op = applied[index]!;
+    if (op.op === "test") continue;
+    if (op.op !== "replace") return null;
+    const segments = tryParsePointer(op.path);
+    if (segments === null) return null;
+    replacements.add(op.path[0] === "#" ? buildPointer(segments) : op.path);
+  }
+  return replacements;
+}
+
+function pointHasStrictReplacementAncestor(
+  point: JSONPoint | null,
+  replacements: ReadonlySet<Pointer>,
+): boolean {
+  if (point === null) return false;
+  if (typeof point !== "string") return true;
+  return hasStrictReplacementAncestor(point, replacements);
+}
+
+function hasStrictReplacementAncestor(
+  pointer: Pointer,
+  replacements: ReadonlySet<Pointer>,
+): boolean {
+  if (pointer === "") return false;
+  if (pointer[0] !== "/") return true;
+  if (replacements.has("")) return true;
+
+  let slash = pointer.indexOf("/", 1);
+  while (slash !== -1) {
+    if (replacements.has(pointer.slice(0, slash))) return true;
+    slash = pointer.indexOf("/", slash + 1);
+  }
+  return false;
 }
 
 function snapFromPointerTargets(
