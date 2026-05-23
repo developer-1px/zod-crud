@@ -412,6 +412,60 @@ export function createJSONDocument<S extends z.ZodType>(
     });
   };
 
+  const mergeTransactionEntries = (depthBefore: number): void => {
+    if (historyDepth(stack) <= depthBefore + 1) return;
+
+    const start = stack.undoStart + depthBefore;
+    const end = stack.undo.length;
+    if (start < stack.undoStart || end - start <= 1) return;
+
+    const first = stack.undo[start]!;
+    const last = stack.undo[end - 1]!;
+    let forwardLength = 0;
+    let inverseLength = 0;
+    let metadata: HistoryTransactionOptions | undefined;
+
+    for (let index = start; index < end; index += 1) {
+      const entry = stack.undo[index]!;
+      forwardLength += entry.forward.length;
+      inverseLength += entry.inverse.length;
+      if (entry.metadata !== undefined) {
+        metadata = metadata === undefined
+          ? entry.metadata
+          : { ...metadata, ...entry.metadata };
+      }
+    }
+
+    const forward = new Array<JSONPatchOperation>(forwardLength);
+    let forwardIndex = 0;
+    for (let entryIndex = start; entryIndex < end; entryIndex += 1) {
+      const entryForward = stack.undo[entryIndex]!.forward;
+      for (let index = 0; index < entryForward.length; index += 1) {
+        forward[forwardIndex] = entryForward[index]!;
+        forwardIndex += 1;
+      }
+    }
+
+    const inverse = new Array<JSONPatchOperation>(inverseLength);
+    let inverseIndex = 0;
+    for (let entryIndex = end - 1; entryIndex >= start; entryIndex -= 1) {
+      const entryInverse = stack.undo[entryIndex]!.inverse;
+      for (let index = 0; index < entryInverse.length; index += 1) {
+        inverse[inverseIndex] = entryInverse[index]!;
+        inverseIndex += 1;
+      }
+    }
+
+    const merged: HistoryEntry = {
+      forward,
+      inverse,
+      selectionBefore: first.selectionBefore,
+      selectionAfter: last.selectionAfter,
+    };
+    if (metadata !== undefined) merged.metadata = metadata;
+    stack.undo.splice(start, end - start, merged);
+  };
+
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
     const previous = activeHistoryMetadata;
     activeHistoryMetadata = metadata ? { ...previous, ...metadata } : previous;
@@ -432,9 +486,7 @@ export function createJSONDocument<S extends z.ZodType>(
     if (!fn) return;
     const depthBefore = historyDepth(stack);
     withHistoryMetadata(transactionOptions, fn);
-    while (historyDepth(stack) > depthBefore + 1) {
-      if (!mergeLast()) break;
-    }
+    mergeTransactionEntries(depthBefore);
   };
 
   const history: JSONDocumentHistory = {

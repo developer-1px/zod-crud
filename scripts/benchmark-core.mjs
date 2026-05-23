@@ -729,6 +729,7 @@ for (const size of sizes) {
 {
   const historyDepth = envNumber("PERF_HISTORY_DEPTH", 10000);
   const historyEdits = envNumber("PERF_HISTORY_EDITS", historyDepth * 5);
+  const transactionEdits = envNumber("PERF_TRANSACTION_EDITS", historyDepth * 2);
   const TinySchema = z.object({ value: z.number() });
   const doc = createJSONDocument(TinySchema, { value: 0 }, { history: historyDepth });
   const commitElapsed = time(() => {
@@ -759,6 +760,20 @@ for (const size of sizes) {
     }
   });
   console.log(`history limit ${historyDepth} overflow ${historyEdits} commits: ${overflowElapsed.toFixed(2)}ms`);
+
+  const transactionDoc = createJSONDocument(TinySchema, { value: 0 }, { history: transactionEdits + 1 });
+  const transactionElapsed = time(() => {
+    transactionDoc.history.transaction(() => {
+      for (let index = 1; index <= transactionEdits; index += 1) {
+        const result = transactionDoc.patch({ op: "replace", path: "/value", value: index });
+        if (!result.ok) throw new Error(`transaction patch failed: ${JSON.stringify(result)}`);
+      }
+    });
+  });
+  if (transactionDoc.history.undoDepth !== 1) {
+    throw new Error(`transaction history merge failed: ${transactionDoc.history.undoDepth}`);
+  }
+  console.log(`history transaction ${transactionEdits} commits: ${transactionElapsed.toFixed(2)}ms`);
 
   const reducerStack = emptyMutableHistory();
   const reducerCommitElapsed = time(() => {
