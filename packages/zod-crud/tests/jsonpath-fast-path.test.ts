@@ -18,4 +18,17 @@ describe("JSONPath fast paths", () => {
       { pointer: "/items/3/id", value: "d" },
     ]);
   });
+
+  test("indexed field queryMatches returns a single field match", () => {
+    const state = {
+      items: [
+        { done: false },
+        { done: true },
+      ],
+    };
+
+    expect(queryMatches("$.items[1].done", state)).toEqual([
+      { pointer: "/items/1/done", value: true },
+    ]);
+  });
 });
