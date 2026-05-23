@@ -238,6 +238,15 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (!result.success) return schemaViolation(state, op.path, result.error.issues);
   }
 
+  const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, op);
+  if (singleArrayFieldReplace) {
+    return {
+      state: singleArrayFieldReplace as z.output<S>,
+      result: { ok: true },
+      applied: [op],
+    };
+  }
+
   const singleRootReplace = applySingleRootObjectReplacePatchWithLocalSchemaValidation(state, op);
   if (singleRootReplace) {
     return {
@@ -260,6 +269,45 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
+  state: unknown,
+  op: Extract<JSONPatchOperation, { op: "replace" }>,
+): unknown | null {
+  const location = parseArrayFieldPath(op.path);
+  if (location === null) return null;
+
+  let arraySegments: string[];
+  try {
+    arraySegments = parsePointer(location.arrayPath);
+  } catch {
+    return null;
+  }
+
+  const current = readAt(state, arraySegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+  if (location.index < 0 || location.index >= current.value.length) return null;
+
+  const row = current.value[location.index];
+  if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
+  if (!objectHasOwn.call(row, location.key)) return null;
+
+  const replaced = { ...(row as Record<string, unknown>) };
+  if (location.key === "__proto__") {
+    Object.defineProperty(replaced, location.key, {
+      value: op.value,
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+  } else {
+    replaced[location.key] = op.value;
+  }
+
+  const next = current.value.slice();
+  next[location.index] = replaced;
+  return replaceValueAtSegments(state, arraySegments, 0, next);
 }
 
 function applySingleRootObjectReplacePatchWithLocalSchemaValidation(

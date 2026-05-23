@@ -991,6 +991,33 @@ describe("doc.history performance contract", () => {
     expect(valueParses).toBe(1);
   });
 
+  test("plain structural single same-array field replace stays on local validation", () => {
+    const Schema = z.object({
+      items: z.array(z.object({ done: z.boolean(), title: z.string() })),
+    });
+    const doc = createJSONDocument(Schema, {
+      items: [
+        { done: false, title: "a" },
+        { done: false, title: "b" },
+      ],
+    }, { strict: false });
+    const originalSafeParse = Schema.safeParse.bind(Schema);
+    let rootParses = 0;
+    Schema.safeParse = ((value: unknown) => {
+      rootParses += 1;
+      return originalSafeParse(value);
+    }) as typeof Schema.safeParse;
+    const firstRow = doc.value.items[0];
+    const secondRow = doc.value.items[1];
+
+    expect(doc.patch({ op: "replace", path: "/items/1/done", value: true })).toEqual({ ok: true });
+
+    expect(doc.value.items.map((item) => item.done)).toEqual([false, true]);
+    expect(doc.value.items[0]).toBe(firstRow);
+    expect(doc.value.items[1]).not.toBe(secondRow);
+    expect(rootParses).toBe(0);
+  });
+
   test("plain structural same-array field replace batches reuse local field validation", () => {
     const Schema = z.object({
       items: z.array(z.object({ done: z.boolean(), title: z.string() })),
