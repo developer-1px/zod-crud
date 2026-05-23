@@ -116,6 +116,7 @@ function pickMonotonicInsertAutoTargets(
   applied: ReadonlyArray<JSONPatchOperation>,
 ): AutoTargetResult | null {
   let parent: Pointer | null = null;
+  let prefixText: Pointer | null = null;
   let previousIndex = -1;
   let increasing = true;
   let nonIncreasing = true;
@@ -126,21 +127,29 @@ function pickMonotonicInsertAutoTargets(
     const op = applied[opIndex]!;
     if (op.op !== "add" && op.op !== "copy") return null;
 
-    const location = arrayElementLocation(op.path);
-    if (location === null) return null;
-    if (parent === null) parent = location.parent;
-    else if (location.parent !== parent) return null;
+    let targetIndex: number;
+    if (prefixText === null) {
+      const location = arrayElementLocation(op.path);
+      if (location === null) return null;
+      parent = location.parent;
+      prefixText = arrayElementPrefixText(parent);
+      targetIndex = location.index;
+    } else {
+      const knownIndex = parseKnownArrayElementIndex(op.path, prefixText);
+      if (knownIndex === null) return null;
+      targetIndex = knownIndex;
+    }
 
     if (opIndex > 0) {
-      if (location.index <= previousIndex) {
+      if (targetIndex <= previousIndex) {
         increasing = false;
         indexes ??= backfillAutoTargetIndexes(paths, opIndex);
       }
-      if (location.index > previousIndex) nonIncreasing = false;
+      if (targetIndex > previousIndex) nonIncreasing = false;
     }
-    if (indexes !== null) indexes[opIndex] = location.index;
+    if (indexes !== null) indexes[opIndex] = targetIndex;
     paths[opIndex] = op.path;
-    previousIndex = location.index;
+    previousIndex = targetIndex;
   }
 
   if (parent === null) return { targets: [], unique: true };
@@ -154,6 +163,16 @@ function pickMonotonicInsertAutoTargets(
     finalIndexes[index] = indexes[index]! + indexes.length - index - 1;
   }
   return { targets: appendArrayIndexes(parent, finalIndexes), unique: true };
+}
+
+function arrayElementPrefixText(parent: Pointer): Pointer {
+  return parent === "" ? "/" : `${parent}/`;
+}
+
+function parseKnownArrayElementIndex(path: Pointer, prefixText: Pointer): number | null {
+  if (!path.startsWith(prefixText)) return null;
+  const indexText = path.slice(prefixText.length);
+  return indexText.includes("/") ? null : arrayIndexValue(indexText);
 }
 
 function backfillAutoTargetIndexes(paths: ReadonlyArray<Pointer>, end: number): number[] {
