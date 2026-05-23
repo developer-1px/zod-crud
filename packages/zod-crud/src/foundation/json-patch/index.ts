@@ -479,8 +479,9 @@ function applySameArrayFieldReplacePatch(
   const updateIndexes = new Array<number>(ops.length);
   const updateValues = new Array<unknown>(ops.length);
   const applied = new Array<JSONPatchOperation>(ops.length);
-  let previousUpdateIndex = -1;
-  let hasRepeatedOrOutOfOrderIndex = false;
+  let previousUpdateIndex: number | null = null;
+  let monotonicDirection: -1 | 0 | 1 = 0;
+  let hasRepeatedOrNonMonotonicIndex = false;
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return { handled: false };
@@ -513,7 +514,16 @@ function applySameArrayFieldReplacePatch(
     const row = arrayValue[location.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return { handled: false };
     if (!objectHasOwn.call(row, location.key)) return { handled: false };
-    if (location.index <= previousUpdateIndex) hasRepeatedOrOutOfOrderIndex = true;
+    if (previousUpdateIndex !== null) {
+      const direction = indexDirection(previousUpdateIndex, location.index);
+      if (direction === 0) {
+        hasRepeatedOrNonMonotonicIndex = true;
+      } else if (monotonicDirection === 0) {
+        monotonicDirection = direction;
+      } else if (direction !== monotonicDirection) {
+        hasRepeatedOrNonMonotonicIndex = true;
+      }
+    }
     previousUpdateIndex = location.index;
     updateIndexes[opIndex] = location.index;
     updateValues[opIndex] = normalized.value;
@@ -522,7 +532,7 @@ function applySameArrayFieldReplacePatch(
 
   if (arraySegments === null || field === null || arrayValue === null) return { handled: false };
   const next = arrayValue.slice();
-  if (hasRepeatedOrOutOfOrderIndex) {
+  if (hasRepeatedOrNonMonotonicIndex) {
     const replacedRows = new Set<number>();
     for (let index = ops.length - 1; index >= 0; index -= 1) {
       const rowIndex = updateIndexes[index]!;
