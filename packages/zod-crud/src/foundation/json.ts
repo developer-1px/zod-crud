@@ -9,6 +9,7 @@ export type JSONValue =
   | ReadonlyArray<JSONValue>;
 
 const LARGE_ARRAY_CLONE_THRESHOLD = 128;
+const LARGE_ARRAY_OBJECT_HEAD_SCAN_LIMIT = 128;
 const LARGE_OBJECT_ARRAY_FIELD_WITH_OBJECT_HEAD_CLONE_THRESHOLD = 512;
 const LARGE_OBJECT_ARRAY_FIELD_CLONE_THRESHOLD = 4096;
 const objectHasOwn = Object.prototype.hasOwnProperty;
@@ -216,7 +217,9 @@ export function cloneJsonSerializable<T>(value: T): CloneJsonResult<T> {
 }
 
 function shouldValidateThenTrustedClone(value: unknown): boolean {
-  if (Array.isArray(value)) return value.length >= LARGE_ARRAY_CLONE_THRESHOLD;
+  if (Array.isArray(value)) {
+    return value.length >= LARGE_ARRAY_CLONE_THRESHOLD && largeArrayHasObjectHead(value);
+  }
   if (value === null || typeof value !== "object") return false;
 
   const proto = Object.getPrototypeOf(value);
@@ -237,6 +240,19 @@ function shouldValidateThenTrustedClone(value: unknown): boolean {
 
     const head = child[0];
     if (head !== null && typeof head === "object") return true;
+  }
+  return false;
+}
+
+function largeArrayHasObjectHead(value: unknown[]): boolean {
+  const end = Math.min(value.length, LARGE_ARRAY_OBJECT_HEAD_SCAN_LIMIT);
+  for (let index = 0; index < end; index += 1) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, String(index));
+    if (!descriptor || !descriptor.enumerable || "get" in descriptor || "set" in descriptor) {
+      return false;
+    }
+    const child = descriptor.value;
+    if (child !== null && typeof child === "object") return true;
   }
   return false;
 }

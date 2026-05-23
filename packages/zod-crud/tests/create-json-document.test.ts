@@ -542,12 +542,22 @@ describe("createJSONDocument public interface", () => {
     });
     const sparse = [1, 2, 3];
     delete sparse[1];
+    const largeAccessor = Array.from({ length: 256 }, (_, index) => index);
+    Object.defineProperty(largeAccessor, "128", {
+      get: () => 128,
+      enumerable: true,
+      configurable: true,
+    });
+    const largeSparse = Array.from({ length: 256 }, (_, index) => index);
+    delete largeSparse[200];
     const symbolPayload = { ok: true, [Symbol("secret")]: true };
 
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
     expect(doc.clipboard.write(accessor)).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.clipboard.write(sparse)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.write(largeAccessor)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.write(largeSparse)).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.clipboard.write(symbolPayload)).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.clipboard.hasData).toBe(false);
   });
