@@ -457,6 +457,11 @@ export function applyAcceptedPatch<T>(
     return { state: rootObjectAddFast.state as T, result: ok, applied: rootObjectAddFast.applied };
   }
 
+  const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops, true);
+  if (rootObjectReplaceFast.handled) {
+    return { state: rootObjectReplaceFast.state as T, result: ok, applied: rootObjectReplaceFast.applied };
+  }
+
   return applyTrustedPatch(state, ops, { valuesTrusted: true });
 }
 
