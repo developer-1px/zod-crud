@@ -8,6 +8,9 @@ const regexCache = new Map<string, RegExp | null>();
 
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
+  const regexFilterMatches = evaluateArrayRegexFilter(query, root);
+  if (regexFilterMatches !== null) return regexFilterMatches;
+
   let cur: Match[] = [{ pointer: "", value: root }];
   for (const seg of query.segments) {
     const next: Match[] = [];
@@ -17,6 +20,70 @@ export function evaluate(query: Query, root: unknown): Match[] {
     cur = next;
   }
   return cur;
+}
+
+function evaluateArrayRegexFilter(query: Query, root: unknown): Match[] | null {
+  if (query.segments.length !== 2) return null;
+
+  const arraySegment = query.segments[0]!;
+  const filterSegment = query.segments[1]!;
+  if (
+    arraySegment.kind !== "child"
+    || filterSegment.kind !== "child"
+    || arraySegment.selectors.length !== 1
+    || filterSegment.selectors.length !== 1
+  ) {
+    return null;
+  }
+
+  const arraySelector = arraySegment.selectors[0]!;
+  const filterSelector = filterSegment.selectors[0]!;
+  if (arraySelector.kind !== "name" || filterSelector.kind !== "filter") return null;
+
+  const filter = simpleRegexFilter(filterSelector.expr);
+  if (filter === null) return null;
+
+  if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
+  const rootObject = root as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(rootObject, arraySelector.name)) return [];
+  const array = rootObject[arraySelector.name];
+  if (!Array.isArray(array)) return [];
+
+  const regex = compiledRegex(filter.pattern, filter.full);
+  if (regex === null) return [];
+
+  const arrayPointer = "/" + escapeSeg(arraySelector.name);
+  const matches: Match[] = [];
+  for (let index = 0; index < array.length; index += 1) {
+    const item = array[index];
+    if (item === null || typeof item !== "object" || Array.isArray(item)) continue;
+    const object = item as Record<string, unknown>;
+    if (!Object.prototype.hasOwnProperty.call(object, filter.field)) continue;
+    const value = object[filter.field];
+    if (typeof value !== "string" || !regex.test(value)) continue;
+    matches.push({ pointer: arrayPointer + "/" + index, value: item });
+  }
+  return matches;
+}
+
+function simpleRegexFilter(expr: FilterExpr): { field: string; pattern: string; full: boolean } | null {
+  if (expr.kind !== "function") return null;
+
+  const { fn } = expr;
+  if ((fn.name !== "match" && fn.name !== "search") || fn.args.length !== 2) return null;
+
+  const input = fn.args[0]!;
+  const pattern = fn.args[1]!;
+  if (input.kind !== "path" || pattern.kind !== "literal" || typeof pattern.value !== "string") return null;
+  if (input.path.root !== "@" || input.path.segments.length !== 1) return null;
+
+  const segment = input.path.segments[0]!;
+  if (segment.kind !== "child" || segment.selectors.length !== 1) return null;
+
+  const selector = segment.selectors[0]!;
+  if (selector.kind !== "name") return null;
+
+  return { field: selector.name, pattern: pattern.value, full: fn.name === "match" };
 }
 
 export function matchPointersForSimpleQuery(query: Query, root: unknown): string[] | null {
