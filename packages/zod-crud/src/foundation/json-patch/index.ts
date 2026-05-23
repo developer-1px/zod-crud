@@ -61,6 +61,13 @@ interface ArrayFieldPath {
   key: string;
 }
 
+interface ArrayNestedPath {
+  arrayPath: Pointer;
+  arraySegments: string[];
+  index: number;
+  suffixSegments: string[];
+}
+
 type SameArrayStructuralItem =
   | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
   | { op: "remove"; path: Pointer; index: number }
@@ -207,6 +214,12 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
     return { state: arrayReplaceFast.state as z.output<S>, result: ok, applied: arrayReplaceFast.applied };
   }
+  const arrayNestedReplaceFast = applySameArrayNestedReplacePatch(state, ops);
+  if (arrayNestedReplaceFast.handled) {
+    const parsed = schema.safeParse(arrayNestedReplaceFast.state);
+    if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
+    return { state: arrayNestedReplaceFast.state as z.output<S>, result: ok, applied: arrayNestedReplaceFast.applied };
+  }
   const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops);
   if (arrayElementReplaceFast.handled) {
     const parsed = schema.safeParse(arrayElementReplaceFast.state);
@@ -329,6 +342,10 @@ export function applyTrustedPatch<T>(
   if (arrayReplaceFast.handled) {
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
+  const arrayNestedReplaceFast = applySameArrayNestedReplacePatch(state, ops, valuesTrusted);
+  if (arrayNestedReplaceFast.handled) {
+    return { state: arrayNestedReplaceFast.state as T, result: ok, applied: arrayNestedReplaceFast.applied };
+  }
   if (valuesTrusted) {
     const rootObjectReplaceFast = applyRootObjectReplacePatch(state, ops, true);
     if (rootObjectReplaceFast.handled) {
@@ -418,6 +435,11 @@ export function applyAcceptedPatch<T>(
     return { state: arrayReplaceFast.state as T, result: ok, applied: arrayReplaceFast.applied };
   }
 
+  const arrayNestedReplaceFast = applySameArrayNestedReplacePatch(state, ops, true);
+  if (arrayNestedReplaceFast.handled) {
+    return { state: arrayNestedReplaceFast.state as T, result: ok, applied: arrayNestedReplaceFast.applied };
+  }
+
   const arrayElementReplaceFast = applySameArrayElementReplacePatch(state, ops, true);
   if (arrayElementReplaceFast.handled) {
     return { state: arrayElementReplaceFast.state as T, result: ok, applied: arrayElementReplaceFast.applied };
@@ -500,6 +522,67 @@ function applySameArrayFieldReplacePatch(
     } else {
       replaced[field] = value;
     }
+    next[rowIndex] = replaced;
+  }
+
+  const stateWithArray = replaceValueAtSegments(state, arraySegments, 0, next);
+  return stateWithArray === null
+    ? { handled: false }
+    : { handled: true, state: stateWithArray, applied };
+}
+
+function applySameArrayNestedReplacePatch(
+  state: unknown,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted = false,
+): FastPatchResult {
+  if (ops.length < 2) return { handled: false };
+
+  let arrayPath: Pointer | null = null;
+  let arraySegments: string[] | null = null;
+  let suffixSegments: string[] | null = null;
+  let arrayValue: unknown[] | null = null;
+  const updates = new Map<number, unknown>();
+  const applied = new Array<JSONPatchOperation>(ops.length);
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return { handled: false };
+    const op = ops[opIndex]!;
+    if (validateOperationShape(op) !== null || op.op !== "replace" || op.path === "") {
+      return { handled: false };
+    }
+    if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
+
+    const location: ArrayNestedPath | null = arrayPath === null
+      ? parseFirstArrayNestedPath(state, op.path)
+      : suffixSegments === null
+        ? null
+        : parseKnownArrayNestedPath(op.path, arrayPath, suffixSegments);
+    if (location === null) return { handled: false };
+
+    if (arrayValue === null) {
+      arrayPath = location.arrayPath;
+      arraySegments = location.arraySegments;
+      suffixSegments = location.suffixSegments;
+      const current = getValueAt(state, location.arraySegments);
+      if (!current.ok || !Array.isArray(current.value)) return { handled: false };
+      arrayValue = current.value;
+    }
+
+    if (location.index < 0 || location.index >= arrayValue.length) return { handled: false };
+    const row = arrayValue[location.index];
+    if (replaceValueAtSegments(row, location.suffixSegments, 0, op.value) === null) {
+      return { handled: false };
+    }
+    updates.set(location.index, op.value);
+    applied[opIndex] = op;
+  }
+
+  if (arraySegments === null || suffixSegments === null || arrayValue === null) return { handled: false };
+  const next = arrayValue.slice();
+  for (const [rowIndex, value] of updates) {
+    const replaced = replaceValueAtSegments(arrayValue[rowIndex], suffixSegments, 0, value);
+    if (replaced === null) return { handled: false };
     next[rowIndex] = replaced;
   }
 
@@ -1523,6 +1606,56 @@ function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   if (index === null) return null;
 
   return { arrayPath: path.slice(0, indexSlash), index, key: path.slice(keySlash + 1) };
+}
+
+function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPath | null {
+  const parsed = parseSafe(path);
+  if (!("ok" in parsed) || parsed.segs.length < 3) return null;
+
+  for (let index = 0; index < parsed.segs.length - 1; index += 1) {
+    const rowIndex = numericSegment(parsed.segs[index]!);
+    if (rowIndex === null) continue;
+
+    const arraySegments = parsed.segs.slice(0, index);
+    const current = getValueAt(state, arraySegments);
+    if (!current.ok || !Array.isArray(current.value)) continue;
+
+    return {
+      arrayPath: buildPointer(arraySegments),
+      arraySegments,
+      index: rowIndex,
+      suffixSegments: parsed.segs.slice(index + 1),
+    };
+  }
+
+  return null;
+}
+
+function parseKnownArrayNestedPath(
+  path: Pointer,
+  arrayPath: Pointer,
+  suffixSegments: ReadonlyArray<string>,
+): ArrayNestedPath | null {
+  const parsed = parseSafe(path);
+  if (!("ok" in parsed) || parsed.segs.length < suffixSegments.length + 2) return null;
+
+  const arraySegmentsLength = parsed.segs.length - suffixSegments.length - 1;
+  for (let index = 0; index < suffixSegments.length; index += 1) {
+    if (parsed.segs[arraySegmentsLength + 1 + index] !== suffixSegments[index]) return null;
+  }
+
+  const arraySegments = parsed.segs.slice(0, arraySegmentsLength);
+  if (buildPointer(arraySegments) !== arrayPath) return null;
+
+  const rowIndex = numericSegment(parsed.segs[arraySegmentsLength]!);
+  return rowIndex === null
+    ? null
+    : {
+        arrayPath,
+        arraySegments,
+        index: rowIndex,
+        suffixSegments: parsed.segs.slice(arraySegmentsLength + 1),
+      };
 }
 
 function parseSimpleArrayElementPath(path: Pointer): { parent: Pointer; index: number } | null {

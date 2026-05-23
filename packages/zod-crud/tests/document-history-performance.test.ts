@@ -302,6 +302,44 @@ describe("doc.history performance contract", () => {
     expect(validations).toBe(validationsAfterPatch);
   });
 
+  test("same-array nested field replace batch history restores without schema validation", () => {
+    let validations = 0;
+    const Schema = z.object({
+      items: z.array(z.object({
+        title: z.string(),
+        nested: z.object({ value: z.number(), flag: z.boolean() }),
+      })),
+    }).superRefine(() => {
+      validations += 1;
+    });
+    const initial = {
+      items: [
+        { title: "a", nested: { value: 1, flag: false } },
+        { title: "b", nested: { value: 2, flag: false } },
+        { title: "c", nested: { value: 3, flag: false } },
+      ],
+    };
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const validationsAfterCreate = validations;
+
+    expect(doc.patch([
+      { op: "replace", path: "/items/0/nested/value", value: 10 },
+      { op: "replace", path: "/items/1/nested/value", value: 20 },
+      { op: "replace", path: "/items/0/nested/value", value: 30 },
+    ])).toEqual({ ok: true });
+    expect(validations).toBe(validationsAfterCreate + 1);
+    const validationsAfterPatch = validations;
+
+    expect(doc.value.items.map((item) => item.nested.value)).toEqual([30, 20, 3]);
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+    expect(validations).toBe(validationsAfterPatch);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.nested.value)).toEqual([30, 20, 3]);
+    expect(validations).toBe(validationsAfterPatch);
+  });
+
   test("same-array field replace history handles unordered indexes", () => {
     const Schema = z.object({
       items: z.array(z.object({ title: z.string(), done: z.boolean() })),

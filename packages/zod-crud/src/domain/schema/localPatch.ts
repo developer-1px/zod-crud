@@ -52,6 +52,13 @@ interface ArrayFieldPath {
   key: string;
 }
 
+interface ArrayNestedPath {
+  arrayPath: Pointer;
+  arraySegments: string[];
+  index: number;
+  suffixSegments: string[];
+}
+
 const objectHasOwn = Object.prototype.hasOwnProperty;
 const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
@@ -124,6 +131,8 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (sameArrayFieldReplace) return sameArrayFieldReplace;
   const sameArrayElementReplace = applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation(schema, state, ops);
   if (sameArrayElementReplace) return sameArrayElementReplace;
+  const sameArrayNestedReplace = applySameArrayNestedReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+  if (sameArrayNestedReplace) return sameArrayNestedReplace;
   const rootObjectReplace = applyRootObjectReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (rootObjectReplace) return rootObjectReplace;
   const rootRecordAdd = applyRootRecordAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
@@ -407,6 +416,88 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   }
 
   if (arraySegments === null || field === null || valueSchema === null || next === null) return null;
+  const nextState = replaceValueAtSegments(state, arraySegments, 0, next);
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+  valuesTrusted: boolean,
+): LocalPatchResult<S> {
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  let arrayPath: Pointer | null = null;
+  let arraySegments: string[] | null = null;
+  let suffixSegments: string[] | null = null;
+  let valueSchema: z.ZodType | null = null;
+  let valueValidator: KnownJsonValueValidator | null = null;
+  let arrayValue: unknown[] | null = null;
+  const updates = new Map<number, unknown>();
+  const applied = new Array<JSONPatchOperation>(ops.length);
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+      || op.path === ""
+    ) {
+      return null;
+    }
+
+    const location: ArrayNestedPath | null = arrayPath === null
+      ? parseFirstArrayNestedPath(state, op.path)
+      : suffixSegments === null
+        ? null
+        : parseKnownArrayNestedPath(op.path, arrayPath, suffixSegments);
+    if (location === null) return null;
+
+    if (arrayValue === null) {
+      arrayPath = location.arrayPath;
+      arraySegments = location.arraySegments;
+      suffixSegments = location.suffixSegments;
+      valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
+      if (!valueSchema) return null;
+      valueValidator = knownJsonValueValidatorForSchema(valueSchema);
+      const current = readAt(state, location.arraySegments);
+      if (!current.ok || !Array.isArray(current.value)) return null;
+      arrayValue = current.value;
+    }
+
+    if (arrayValue === null || valueSchema === null || location.index < 0 || location.index >= arrayValue.length) return null;
+    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const parsed = valueSchema.safeParse(op.value);
+      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    }
+    if (replaceValueAtSegments(arrayValue[location.index], location.suffixSegments, 0, op.value) === null) {
+      return null;
+    }
+    updates.set(location.index, op.value);
+    applied[opIndex] = op;
+  }
+
+  if (arraySegments === null || suffixSegments === null || arrayValue === null) return null;
+  const next = arrayValue.slice();
+  for (const [rowIndex, value] of updates) {
+    const replaced = replaceValueAtSegments(arrayValue[rowIndex], suffixSegments, 0, value);
+    if (replaced === null) return null;
+    next[rowIndex] = replaced;
+  }
+
   const nextState = replaceValueAtSegments(state, arraySegments, 0, next);
   if (nextState === null) return null;
   return {
@@ -1208,6 +1299,66 @@ function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   if (index === null) return null;
 
   return { arrayPath: path.slice(0, indexSlash), index, key: path.slice(keySlash + 1) };
+}
+
+function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPath | null {
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  if (segments.length < 3) return null;
+
+  for (let index = 0; index < segments.length - 1; index += 1) {
+    const rowIndex = numericSegment(segments[index]!);
+    if (rowIndex === null) continue;
+
+    const arraySegments = segments.slice(0, index);
+    const current = readAt(state, arraySegments);
+    if (!current.ok || !Array.isArray(current.value)) continue;
+
+    return {
+      arrayPath: buildPointer(arraySegments),
+      arraySegments,
+      index: rowIndex,
+      suffixSegments: segments.slice(index + 1),
+    };
+  }
+
+  return null;
+}
+
+function parseKnownArrayNestedPath(
+  path: Pointer,
+  arrayPath: Pointer,
+  suffixSegments: ReadonlyArray<string>,
+): ArrayNestedPath | null {
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  if (segments.length < suffixSegments.length + 2) return null;
+
+  const arraySegmentsLength = segments.length - suffixSegments.length - 1;
+  for (let index = 0; index < suffixSegments.length; index += 1) {
+    if (segments[arraySegmentsLength + 1 + index] !== suffixSegments[index]) return null;
+  }
+
+  const arraySegments = segments.slice(0, arraySegmentsLength);
+  if (buildPointer(arraySegments) !== arrayPath) return null;
+
+  const rowIndex = numericSegment(segments[arraySegmentsLength]!);
+  return rowIndex === null
+    ? null
+    : {
+        arrayPath,
+        arraySegments,
+        index: rowIndex,
+        suffixSegments: segments.slice(arraySegmentsLength + 1),
+      };
 }
 
 function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
