@@ -813,13 +813,21 @@ export function applySelectionAutoRules(
   }
 
   // rule ②③④ — 기존 좌표를 trackPointer 또는 lost-recovery 로 따라가기.
+  let trackedPathCache: Map<Pointer, Pointer | null> | null = null;
+  const trackOrRecoverPath = (path: Pointer): Pointer | null => {
+    if (trackedPathCache?.has(path)) return trackedPathCache.get(path) ?? null;
+    const tracked = trackPointer(path, applied);
+    const next = tracked !== null && exists(after, tracked)
+      ? tracked
+      : recoverLostPointer(path, applied, after);
+    (trackedPathCache ??= new Map()).set(path, next);
+    return next;
+  };
   const trackOrRecover = (p: JSONPoint | null): JSONPoint | null => {
     if (p === null) return null;
     const path = pointPath(p);
-    const t = trackPointer(path, applied);
-    if (t !== null && exists(after, t)) return withPointPath(p, t);
-    const recovered = recoverLostPointer(path, applied, after);
-    return recovered === null ? null : withPointPath(p, recovered);
+    const tracked = trackOrRecoverPath(path);
+    return tracked === null ? null : withPointPath(p, tracked);
   };
 
   const nextRanges: SelectionRange[] = [];

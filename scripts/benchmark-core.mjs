@@ -318,6 +318,16 @@ for (const size of sizes) {
   }
 
   {
+    const selectedIndex = Math.min(batchOps.length - 1, size - 1);
+    const doc = createJSONDocument(Schema, state, {
+      history: 0,
+      selection: { mode: "single", initial: [`/items/${selectedIndex}/done`] },
+    });
+    bench(`doc.patch batch ${batchOps.length} selection=single`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(batchOps));
+  }
+
+  {
     const doc = createJSONDocument(Schema, state, { history: 100 });
     bench(`doc.patch batch ${batchOps.length} history=100`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
@@ -339,6 +349,16 @@ for (const size of sizes) {
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
     bench(`doc.patch nested field replace batch ${nestedFieldReplaceOps.length} history=0`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(nestedFieldReplaceOps));
+  }
+
+  {
+    const selectedIndex = Math.min(nestedFieldReplaceOps.length - 1, size - 1);
+    const doc = createJSONDocument(Schema, state, {
+      history: 0,
+      selection: { mode: "single", initial: [`/items/${selectedIndex}/meta/rank`] },
+    });
+    bench(`doc.patch nested field replace batch ${nestedFieldReplaceOps.length} selection=single`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(nestedFieldReplaceOps));
   }
 
