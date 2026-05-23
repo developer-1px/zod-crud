@@ -27,7 +27,6 @@ import {
   emptyMutableHistory,
   forwardEntry,
   historyDepth,
-  mergeLastMutable,
   moveBack,
   moveForward,
   redoDepth,
@@ -400,10 +399,15 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const mergeLast = (mergeOptions?: { mergeKey?: string }): boolean => {
     if (isRestoring) return false;
-    return mergeLastMutable(stack, (prev, top) => {
-      const metadata = mergeEntryMetadata(prev, top, mergeOptions);
-      return mergeHistoryEntries(prev, top, metadata);
-    });
+    if (historyDepth(stack) < 2) return false;
+    const top = stack.undo[stack.undo.length - 1]!;
+    const prev = stack.undo[stack.undo.length - 2]!;
+    const metadata = mergeEntryMetadata(prev, top, mergeOptions);
+    const merged = mergeHistoryEntries(prev, top, metadata);
+    const mergeIndex = stack.undo.length - 2;
+    stack.undo[mergeIndex] = merged;
+    stack.undo.pop();
+    return true;
   };
 
   const mergeTransactionEntries = (depthBefore: number): void => {
