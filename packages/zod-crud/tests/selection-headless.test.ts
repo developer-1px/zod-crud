@@ -140,6 +140,24 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/5");
   });
 
+  test("multiple selection append batch handles escaped array parents", () => {
+    const EscapedSchema = z.object({
+      "a/b": z.array(z.object({ id: z.string(), name: z.string() })),
+    });
+    const doc = createJSONDocument(EscapedSchema, {
+      "a/b": initial.items,
+    }, {
+      selection: { mode: "multiple" },
+    });
+
+    expect(doc.patch([
+      { op: "add", path: "/a~1b/-", value: { id: "d", name: "D" } },
+      { op: "add", path: "/a~1b/-", value: { id: "e", name: "E" } },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/a~1b/3", "/a~1b/4"]);
+    expect(doc.selection?.primaryPointer).toBe("/a~1b/4");
+  });
+
   test("multiple auto-selection exposes defensive selected pointer arrays", () => {
     const doc = createJSONDocument(Schema, initial, {
       selection: { mode: "multiple" },
