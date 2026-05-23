@@ -198,8 +198,10 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionBefore,
       selectionAfter,
     };
-    const historyMetadata = compactHistoryMetadata(metadata);
-    if (historyMetadata) entry.metadata = historyMetadata;
+    if (metadata !== undefined) {
+      const historyMetadata = compactHistoryMetadata(metadata);
+      if (historyMetadata) entry.metadata = historyMetadata;
+    }
     commitHistory(stack, entry, historyLimit);
   };
 
@@ -218,7 +220,9 @@ export function createJSONDocument<S extends z.ZodType>(
 
     const before = shouldRecordHistory ? rawOps.state : undefined;
     const selectionBefore = snapSelection();
-    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled);
+    const changeMetadata = activeHistoryMetadata !== undefined || metadata !== undefined || selectionEnabled
+      ? buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled)
+      : undefined;
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = snapSelection();
     if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
@@ -243,7 +247,9 @@ export function createJSONDocument<S extends z.ZodType>(
 
     const before = shouldRecordHistory ? rawOps.state : undefined;
     const selectionBefore = snapSelection();
-    const changeMetadata = buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled);
+    const changeMetadata = activeHistoryMetadata !== undefined || metadata !== undefined || selectionEnabled
+      ? buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled)
+      : undefined;
     const r = rawOps.trustedApply(next, applied, changeMetadata);
     const selectionAfter = snapSelection();
     if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
