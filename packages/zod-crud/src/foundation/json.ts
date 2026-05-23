@@ -68,7 +68,9 @@ function jsonSerializableErrorFast(value: unknown): string | null {
 
     if (Object.getOwnPropertySymbols(v).length > 0) return "symbol keys are not JSON";
 
-    for (const key of Object.getOwnPropertyNames(v)) {
+    const names = Object.getOwnPropertyNames(v);
+    for (let index = 0; index < names.length; index += 1) {
+      const key = names[index]!;
       const descriptor = Object.getOwnPropertyDescriptor(v, key);
       if (!descriptor) continue;
       if (!descriptor.enumerable) return "non-enumerable property is not JSON";
@@ -257,7 +259,9 @@ function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
     if (proto !== Object.prototype && proto !== null) return fail("non-plain object");
 
     const next: Record<string, unknown> = {};
-    for (const key of Object.getOwnPropertyNames(v)) {
+    const names = Object.getOwnPropertyNames(v);
+    for (let index = 0; index < names.length; index += 1) {
+      const key = names[index]!;
       const descriptor = Object.getOwnPropertyDescriptor(v, key);
       if (!descriptor) continue;
       if (!descriptor.enumerable) return fail("non-enumerable property is not JSON");
