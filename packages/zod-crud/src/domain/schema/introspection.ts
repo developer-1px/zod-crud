@@ -66,7 +66,7 @@ export function schemaAtPointer(schema: z.ZodType, pointer: Pointer, mode: "valu
     const segment = segments[i];
     if (segment === undefined) return null;
     const arrayElement = getArrayElement(current);
-    if (arrayElement && (segment === "-" || /^[0-9]+$/.test(segment))) {
+    if (arrayElement && isArrayElementSegment(segment)) {
       current = arrayElement;
       continue;
     }
@@ -90,6 +90,16 @@ export function schemaAtPointer(schema: z.ZodType, pointer: Pointer, mode: "valu
     return current ? (getArrayElement(current) ?? current) : null;
   }
   return current;
+}
+
+function isArrayElementSegment(segment: string): boolean {
+  if (segment === "-") return true;
+  if (segment.length === 0) return false;
+  for (let index = 0; index < segment.length; index += 1) {
+    const code = segment.charCodeAt(index);
+    if (code < 48 || code > 57) return false;
+  }
+  return true;
 }
 
 function getDiscriminatorValues(schema: z.ZodType, discriminator: string): unknown[] {
