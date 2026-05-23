@@ -104,7 +104,7 @@ function pickSameArrayAutoTargets(
   if (parent === null) return { targets: [], unique: true };
   const indexes = increasingInsertTargets ?? targets;
   return {
-    targets: indexes.map((index) => appendArrayIndex(parent, index)),
+    targets: appendArrayIndexes(parent, indexes),
     unique: indexes === increasingInsertTargets,
   };
 }
@@ -298,6 +298,21 @@ function arrayElementLocation(path: Pointer): { parent: Pointer; index: number }
 
 function appendArrayIndex(parent: Pointer, index: number): Pointer {
   return parent === "" ? `/${index}` : `${parent}/${index}`;
+}
+
+function appendArrayIndexes(parent: Pointer, indexes: ReadonlyArray<number>): Pointer[] {
+  const targets = new Array<Pointer>(indexes.length);
+  if (parent === "") {
+    for (let index = 0; index < indexes.length; index += 1) {
+      targets[index] = `/${indexes[index]!}`;
+    }
+    return targets;
+  }
+
+  for (let index = 0; index < indexes.length; index += 1) {
+    targets[index] = `${parent}/${indexes[index]!}`;
+  }
+  return targets;
 }
 
 // at = parent + [pivotSeg]. target 이 같은 array 부모를 공유하고 그 위치의 인덱스가
