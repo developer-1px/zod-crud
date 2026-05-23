@@ -563,7 +563,6 @@ function applySameArrayNestedReplacePatch(
     if (!valuesTrusted && jsonSerializableError(op.value) !== null) return { handled: false };
 
     let rowIndex: number;
-    let rowSuffixSegments: string[];
     if (arrayPath === null) {
       const location = parseFirstArrayNestedPath(state, op.path);
       if (location === null) return { handled: false };
@@ -576,7 +575,6 @@ function applySameArrayNestedReplacePatch(
       if (!current.ok || !Array.isArray(current.value)) return { handled: false };
       arrayValue = current.value;
       rowIndex = location.index;
-      rowSuffixSegments = location.suffixSegments;
     } else {
       if (suffixSegments === null) return { handled: false };
       const parsedIndex = parseKnownArrayNestedIndex(
@@ -588,11 +586,9 @@ function applySameArrayNestedReplacePatch(
       );
       if (parsedIndex === null) return { handled: false };
       rowIndex = parsedIndex;
-      rowSuffixSegments = suffixSegments;
     }
 
     if (arrayValue === null || rowIndex < 0 || rowIndex >= arrayValue.length) return { handled: false };
-    if (!getValueAt(arrayValue[rowIndex], rowSuffixSegments).ok) return { handled: false };
     updateIndexes[opIndex] = rowIndex;
     updateValues[opIndex] = op.value;
     applied[opIndex] = op;
