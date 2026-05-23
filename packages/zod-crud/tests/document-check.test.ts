@@ -40,6 +40,22 @@ describe("JSONDocument can* interface", () => {
     expect(doc.canPastePayload("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
   });
 
+  test("canFind validates query syntax without traversing the document", () => {
+    const doc = createJSONDocument(z.any(), {
+      items: [
+        Object.defineProperty({ id: "a" }, "computed", {
+          get: () => {
+            throw new Error("canFind should not read values");
+          },
+          enumerable: true,
+          configurable: true,
+        }),
+      ],
+    });
+
+    expect(doc.canFind("$..computed")).toEqual({ ok: true });
+  });
+
   test("tracks history capabilities through flat can* methods", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

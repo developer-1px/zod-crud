@@ -235,6 +235,12 @@ for (const size of sizes) {
       doc.canReplace(`$.items[${middle}].done`, index % 2 === 0));
   }
 
+  {
+    const doc = createJSONDocument(Schema, state, { history: 0 });
+    bench("doc.canFind jsonpath wildcard", rounds, () =>
+      doc.canFind("$.items[*].id"));
+  }
+
   bench(`jsonpath direct parse+evaluate ${jsonpathRepeats}`, Math.max(3, Math.ceil(rounds / 2)), () => {
     let ok = true;
     for (let index = 0; index < jsonpathRepeats; index += 1) {

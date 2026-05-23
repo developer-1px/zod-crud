@@ -13,7 +13,6 @@ import type { HistoryTransactionOptions, JSONOps } from "./ops.js";
 import { copy, type ClipboardSource } from "../../domain/verbs/copy.js";
 import { cut } from "../../domain/verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "../../domain/verbs/duplicate.js";
-import { find } from "../../domain/verbs/find.js";
 import { move as moveVerb, resolveMoveArgs } from "../../domain/verbs/move.js";
 import { paste, resolvePasteArgs, type PasteOptions, type PasteTarget } from "../../domain/verbs/paste.js";
 import { replace as replaceVerb } from "../../domain/verbs/replace.js";
@@ -36,6 +35,7 @@ import {
   type SelectionSource,
   type SelectionSnap,
 } from "../../domain/selection/index.js";
+import { JSONPathSyntaxError, parse as parseJSONPath } from "../../foundation/jsonpath/index.js";
 
 type CheckErrorCode =
   | ErrorCode
@@ -153,7 +153,15 @@ export function buildCheck<S extends z.ZodType>(
       return toCheckResult(resolveSelectionCursor(selectionState(), direction, ops.state, options));
     },
     find(jsonpath) {
-      return toCheckResult(find(ops.state, jsonpath));
+      try {
+        parseJSONPath(jsonpath);
+        return OK;
+      } catch (error) {
+        if (error instanceof JSONPathSyntaxError) {
+          return { ok: false, code: "syntax_error", reason: error.message };
+        }
+        throw error;
+      }
     },
     move(fromOrTo, maybeTo) {
       const args = resolveMoveArgs(fromOrTo, maybeTo, arguments.length >= 2);
