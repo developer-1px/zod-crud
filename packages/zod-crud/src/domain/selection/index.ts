@@ -987,8 +987,8 @@ function canKeepSmallStringSelectionForStableReplacePatch(
     const op = applied[index]!;
     if (op.op === "test") continue;
     if (op.op !== "replace" || typeof op.path !== "string") return false;
-    const replacement = op.path[0] === "#" || op.path.includes("~") ? null : op.path;
-    if (replacement === null || !isPointerLike(replacement)) return null;
+    const replacement = op.path[0] === "#" ? null : op.path;
+    if (replacement === null || !isFastPointerText(replacement)) return null;
     sawReplacement = true;
     for (const target of targets) {
       if (isStrictPointerPrefix(replacement, target)) return false;
@@ -1002,6 +1002,7 @@ function smallStringSelectionTargets(selection: SelectionSnap): Pointer[] | null
   const add = (point: JSONPoint | null): boolean => {
     if (point === null) return true;
     if (typeof point !== "string") return false;
+    if (!isFastPointerText(point)) return false;
     if (!targets.includes(point)) targets.push(point);
     return targets.length <= 8;
   };
@@ -1015,8 +1016,14 @@ function smallStringSelectionTargets(selection: SelectionSnap): Pointer[] | null
   return add(selection.anchor) && add(selection.focus) ? targets : null;
 }
 
-function isPointerLike(pointer: Pointer): boolean {
-  return pointer === "" || pointer[0] === "/";
+function isFastPointerText(pointer: Pointer): boolean {
+  if (pointer === "") return true;
+  if (pointer[0] !== "/") return false;
+  for (let index = pointer.indexOf("~"); index !== -1; index = pointer.indexOf("~", index + 1)) {
+    const next = pointer[index + 1];
+    if (next !== "0" && next !== "1") return false;
+  }
+  return true;
 }
 
 function isStrictPointerPrefix(prefix: Pointer, pointer: Pointer): boolean {

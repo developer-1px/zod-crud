@@ -71,6 +71,11 @@ const NestedSchema = z.object({
     items: z.array(Item),
   }),
 });
+const EscapedSelectionSchema = z.object({
+  "a/b": z.array(z.object({
+    "done~flag": z.boolean(),
+  })),
+});
 const RecursiveNode = z.lazy(() => z.object({
   id: z.string(),
   children: z.array(RecursiveNode),
@@ -94,6 +99,9 @@ for (const size of sizes) {
   const state = Schema.parse(makeState(size));
   const optionalItemsState = OptionalItemsSchema.parse(state);
   const nestedState = NestedSchema.parse({ wrapper: { items: state.items } });
+  const escapedSelectionState = EscapedSelectionSchema.parse({
+    "a/b": Array.from({ length: size }, () => ({ "done~flag": false })),
+  });
   const recursiveState = RecursiveNode.parse(makeRecursiveState(size));
   const primitiveArrayState = Array.from({ length: size }, (_, index) => index);
   const middle = Math.floor(size / 2);
@@ -102,6 +110,11 @@ for (const size of sizes) {
   const batchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
     op: "replace",
     path: `/items/${index}/done`,
+    value: true,
+  }));
+  const escapedSelectionBatchOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
+    op: "replace",
+    path: `/a~1b/${index}/done~0flag`,
     value: true,
   }));
   const repeatedFieldReplaceOps = Array.from({ length: Math.min(batchSize, size) }, (_, index) => ({
@@ -478,6 +491,16 @@ for (const size of sizes) {
     });
     bench(`doc.patch batch ${batchOps.length} selection=single`, Math.max(3, Math.ceil(rounds / 2)), () =>
       doc.patch(batchOps));
+  }
+
+  {
+    const selectedIndex = Math.min(escapedSelectionBatchOps.length - 1, size - 1);
+    const doc = createJSONDocument(EscapedSelectionSchema, escapedSelectionState, {
+      history: 0,
+      selection: { mode: "single", initial: [`/a~1b/${selectedIndex}/done~0flag`] },
+    });
+    bench(`doc.patch escaped batch ${escapedSelectionBatchOps.length} selection=single`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.patch(escapedSelectionBatchOps));
   }
 
   {

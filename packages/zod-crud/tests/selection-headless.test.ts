@@ -16,6 +16,17 @@ const initial: z.output<typeof Schema> = {
   ],
 };
 
+const EscapedSchema = z.object({
+  "a/b": z.array(z.object({ "n~ame": z.string() })),
+});
+
+const escapedInitial: z.output<typeof EscapedSchema> = {
+  "a/b": [
+    { "n~ame": "A" },
+    { "n~ame": "B" },
+  ],
+};
+
 describe("JSONDocument selection interface", () => {
   test("collapsed range expansion does not walk document state", () => {
     const state = {
@@ -123,6 +134,23 @@ describe("JSONDocument selection interface", () => {
     expect(doc.patch([
       { op: "replace", path: "/items/1", value: { id: "b2", name: "B2" } },
       { op: "replace", path: "/items/2/name", value: "C2" },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual([]);
+  });
+
+  test("single selection tracks stable replace batches with escaped pointer text", () => {
+    const doc = createJSONDocument(EscapedSchema, escapedInitial, {
+      selection: { mode: "single", initial: ["/a~1b/1/n~0ame"] },
+    });
+
+    expect(doc.patch([
+      { op: "replace", path: "/a~1b/0/n~0ame", value: "A1" },
+      { op: "replace", path: "/a~1b/1/n~0ame", value: "B1" },
+    ])).toEqual({ ok: true });
+    expect(doc.selection?.selectedPointers).toEqual(["/a~1b/1/n~0ame"]);
+
+    expect(doc.patch([
+      { op: "replace", path: "/a~1b/1", value: { "n~ame": "B2" } },
     ])).toEqual({ ok: true });
     expect(doc.selection?.selectedPointers).toEqual([]);
   });
