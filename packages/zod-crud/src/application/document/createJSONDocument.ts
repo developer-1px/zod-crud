@@ -760,11 +760,9 @@ function compactRepeatedReplaceHistory(
     return null;
   }
 
-  return {
-    forward: [topForward],
-    inverse: [prevInverse],
-    selectionBefore: prev.selectionBefore,
-    selectionAfter: top.selectionAfter,
-    ...(metadata ? { metadata } : {}),
-  };
+  prev.forward[0] = topForward;
+  prev.selectionAfter = top.selectionAfter;
+  if (metadata !== undefined) prev.metadata = metadata;
+  else delete prev.metadata;
+  return prev;
 }
