@@ -815,6 +815,18 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   }
 
   const source = state as Record<string, unknown>;
+  const sourceKeys = Object.keys(source);
+  if (ops.length === sourceKeys.length) {
+    const applied = sourceOrderFullRootRecordRemoveOps(ops, sourceKeys);
+    if (applied !== null) {
+      return {
+        state: {} as z.output<S>,
+        result: { ok: true },
+        applied,
+      };
+    }
+  }
+
   const removedKeys = Object.create(null) as Record<string, true>;
   const applied = new Array<JSONPatchOperation>(ops.length);
 
@@ -839,7 +851,6 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     applied[index] = op;
   }
 
-  const sourceKeys = Object.keys(source);
   if (ops.length === sourceKeys.length) {
     return {
       state: {} as z.output<S>,
@@ -887,6 +898,31 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     result: { ok: true },
     applied,
   };
+}
+
+function sourceOrderFullRootRecordRemoveOps(
+  ops: ReadonlyArray<JSONPatchOperation>,
+  sourceKeys: ReadonlyArray<string>,
+): JSONPatchOperation[] | null {
+  const applied = new Array<JSONPatchOperation>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "remove"
+      || typeof op.path !== "string"
+      || op.path === ""
+      || op.path[0] !== "/"
+      || op.path.includes("~")
+      || op.path.indexOf("/", 1) !== -1
+      || op.path.slice(1) !== sourceKeys[index]
+    ) {
+      return null;
+    }
+    applied[index] = op;
+  }
+  return applied;
 }
 
 function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
