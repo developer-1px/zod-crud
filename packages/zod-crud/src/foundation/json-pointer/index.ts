@@ -108,8 +108,20 @@ export function lastSegment(pointer: Pointer): string | null {
 export function lastSegmentIndex(pointer: Pointer): number | null {
   const seg = lastSegment(pointer);
   if (seg === null) return null;
-  if (!/^(0|[1-9][0-9]*)$/.test(seg)) return null;
+  if (!isArrayIndexSegment(seg)) return null;
   return Number(seg);
+}
+
+function isArrayIndexSegment(segment: string): boolean {
+  if (segment === "") return false;
+  if (segment === "0") return true;
+  const first = segment.charCodeAt(0);
+  if (first < 49 || first > 57) return false;
+  for (let index = 1; index < segment.length; index += 1) {
+    const code = segment.charCodeAt(index);
+    if (code < 48 || code > 57) return false;
+  }
+  return true;
 }
 
 /** Pointer 끝에 segment 추가. `appendSegment("/a", 0)` → `"/a/0"`, escape 자동. */
