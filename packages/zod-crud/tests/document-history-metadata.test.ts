@@ -77,6 +77,25 @@ describe("doc.history metadata", () => {
     expect(doc.value).toEqual({ title: "final", count: 1 });
   });
 
+  test("transaction metadata keeps repeated replace compacted", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    doc.history.transaction({ label: "Rename title", origin: "keyboard", mergeKey: "typing:title" }, () => {
+      doc.patch({ op: "replace", path: "/title", value: "a" });
+      doc.patch({ op: "replace", path: "/title", value: "ab" });
+      doc.patch({ op: "replace", path: "/title", value: "abc" });
+    });
+
+    expect(doc.history.undoDepth).toBe(1);
+    expect(doc.value).toEqual({ title: "abc", count: 0 });
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual(initial);
+
+    expect(doc.history.redo()).toBe(true);
+    expect(doc.value).toEqual({ title: "abc", count: 0 });
+  });
+
   test("mergeLast accepts merge metadata without changing stack behavior", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 

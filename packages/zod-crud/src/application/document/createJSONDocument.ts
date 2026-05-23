@@ -512,8 +512,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const firstForward = first.forward.length === 1 ? first.forward[0] : undefined;
     const firstInverse = first.inverse.length === 1 ? first.inverse[0] : undefined;
     if (
-      first.metadata !== undefined
-      || firstForward?.op !== "replace"
+      firstForward?.op !== "replace"
       || firstInverse?.op !== "replace"
       || firstForward.path !== firstInverse.path
     ) {
@@ -521,19 +520,22 @@ export function createJSONDocument<S extends z.ZodType>(
     }
 
     const path = firstForward.path;
+    let metadata = first.metadata;
     let repeatedForward = firstForward;
     for (let index = start + 1; index < end; index += 1) {
       const entry = stack.undo[index]!;
       const forward = entry.forward.length === 1 ? entry.forward[0] : undefined;
       const inverse = entry.inverse.length === 1 ? entry.inverse[0] : undefined;
       if (
-        entry.metadata !== undefined
-        || forward?.op !== "replace"
+        forward?.op !== "replace"
         || inverse?.op !== "replace"
         || forward.path !== path
         || inverse.path !== path
       ) {
         return false;
+      }
+      if (entry.metadata !== undefined) {
+        metadata = mergeRepeatedReplaceTransactionMetadata(metadata, entry.metadata);
       }
       repeatedForward = forward;
     }
@@ -542,7 +544,8 @@ export function createJSONDocument<S extends z.ZodType>(
     first.forward[0] = repeatedForward;
     first.inverse[0] = firstInverse;
     first.selectionAfter = last.selectionAfter;
-    delete first.metadata;
+    if (metadata !== undefined) first.metadata = metadata;
+    else delete first.metadata;
     stack.undo.length = start + 1;
     return true;
   };
@@ -761,6 +764,23 @@ function mergeEntryMetadata(
   }
   const merged = { ...prev.metadata, ...top.metadata, ...options };
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function mergeRepeatedReplaceTransactionMetadata(
+  current: HistoryTransactionOptions | undefined,
+  next: HistoryTransactionOptions,
+): HistoryTransactionOptions {
+  if (current === undefined || sameHistoryMetadata(current, next)) return next;
+  return { ...current, ...next };
+}
+
+function sameHistoryMetadata(
+  left: HistoryTransactionOptions,
+  right: HistoryTransactionOptions,
+): boolean {
+  return left.label === right.label
+    && left.origin === right.origin
+    && left.mergeKey === right.mergeKey;
 }
 
 function mergeHistoryEntries(
