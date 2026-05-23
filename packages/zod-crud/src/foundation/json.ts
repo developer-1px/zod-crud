@@ -67,17 +67,18 @@ function jsonSerializableErrorFast(value: unknown): string | null {
       continue;
     }
 
-    const proto = Object.getPrototypeOf(v);
+    const objectValue = v as object;
+    const proto = Object.getPrototypeOf(objectValue);
     if (proto !== Object.prototype && proto !== null) return "non-plain object";
 
-    if (Object.getOwnPropertySymbols(v).length > 0) return "symbol keys are not JSON";
+    if (Object.getOwnPropertySymbols(objectValue).length > 0) return "symbol keys are not JSON";
 
-    const names = Object.getOwnPropertyNames(v);
-    for (let index = 0; index < names.length; index += 1) {
-      const key = names[index]!;
-      const descriptor = Object.getOwnPropertyDescriptor(v, key);
-      if (!descriptor) continue;
-      if (!descriptor.enumerable) return "non-enumerable property is not JSON";
+    const keys = Object.keys(objectValue);
+    if (keys.length !== Object.getOwnPropertyNames(objectValue).length) return "non-enumerable property is not JSON";
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index]!;
+      const descriptor = Object.getOwnPropertyDescriptor(objectValue, key);
+      if (!descriptor) return "non-enumerable property is not JSON";
       if ("get" in descriptor || "set" in descriptor) return "accessor property is not JSON";
       const child = descriptor.value;
       if (child !== null) {
@@ -300,16 +301,19 @@ function cloneJsonSerializableFast<T>(value: T): CloneJsonResult<T> {
       return Object.getOwnPropertySymbols(v).length === 0 ? next : fail("symbol keys are not JSON");
     }
 
-    const proto = Object.getPrototypeOf(v);
+    const objectValue = v as object;
+    const proto = Object.getPrototypeOf(objectValue);
     if (proto !== Object.prototype && proto !== null) return fail("non-plain object");
 
     const next: Record<string, unknown> = {};
-    const names = Object.getOwnPropertyNames(v);
-    for (let index = 0; index < names.length; index += 1) {
-      const key = names[index]!;
-      const descriptor = Object.getOwnPropertyDescriptor(v, key);
-      if (!descriptor) continue;
-      if (!descriptor.enumerable) return fail("non-enumerable property is not JSON");
+    const keys = Object.keys(objectValue);
+    if (keys.length !== Object.getOwnPropertyNames(objectValue).length) {
+      return fail("non-enumerable property is not JSON");
+    }
+    for (let index = 0; index < keys.length; index += 1) {
+      const key = keys[index]!;
+      const descriptor = Object.getOwnPropertyDescriptor(objectValue, key);
+      if (!descriptor) return fail("non-enumerable property is not JSON");
       if ("get" in descriptor || "set" in descriptor) return fail("accessor property is not JSON");
       const cloned = visit(descriptor.value);
       if (error) return undefined;

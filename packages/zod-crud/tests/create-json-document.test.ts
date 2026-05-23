@@ -540,6 +540,12 @@ describe("createJSONDocument public interface", () => {
       enumerable: true,
       configurable: true,
     });
+    const nonEnumerable: Record<string, unknown> = { ok: true };
+    Object.defineProperty(nonEnumerable, "hidden", {
+      value: true,
+      enumerable: false,
+      configurable: true,
+    });
     const sparse = [1, 2, 3];
     delete sparse[1];
     const largeAccessor = Array.from({ length: 256 }, (_, index) => index);
@@ -555,6 +561,7 @@ describe("createJSONDocument public interface", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
     expect(doc.clipboard.write(accessor)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.write(nonEnumerable)).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.clipboard.write(sparse)).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.clipboard.write(largeAccessor)).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.clipboard.write(largeSparse)).toMatchObject({ ok: false, code: "not_serializable" });
