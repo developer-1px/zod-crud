@@ -460,7 +460,6 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
     }
 
     let rowIndex: number;
-    let rowSuffixSegments: string[];
     if (arrayPath === null) {
       const location = parseFirstArrayNestedPath(state, op.path);
       if (location === null) return null;
@@ -476,7 +475,6 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       if (!current.ok || !Array.isArray(current.value)) return null;
       arrayValue = current.value;
       rowIndex = location.index;
-      rowSuffixSegments = location.suffixSegments;
     } else {
       if (suffixSegments === null) return null;
       const parsedIndex = parseKnownArrayNestedIndex(
@@ -488,7 +486,6 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       );
       if (parsedIndex === null) return null;
       rowIndex = parsedIndex;
-      rowSuffixSegments = suffixSegments;
     }
 
     if (arrayValue === null || valueSchema === null || rowIndex < 0 || rowIndex >= arrayValue.length) return null;
@@ -501,7 +498,6 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       const parsed = valueSchema.safeParse(op.value);
       if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
     }
-    if (!readAt(arrayValue[rowIndex], rowSuffixSegments).ok) return null;
     updateIndexes[opIndex] = rowIndex;
     updateValues[opIndex] = op.value;
     applied[opIndex] = op;
