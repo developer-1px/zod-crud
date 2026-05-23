@@ -8,6 +8,9 @@ const regexCache = new Map<string, RegExp | null>();
 
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
+  const arrayFieldMatches = evaluateArrayWildcardField(query, root);
+  if (arrayFieldMatches !== null) return arrayFieldMatches;
+
   const regexFilterMatches = evaluateArrayRegexFilter(query, root);
   if (regexFilterMatches !== null) return regexFilterMatches;
 
@@ -20,6 +23,41 @@ export function evaluate(query: Query, root: unknown): Match[] {
     cur = next;
   }
   return cur;
+}
+
+interface ArrayWildcardFieldQuery {
+  arrayName: string;
+  fieldName: string;
+}
+
+function evaluateArrayWildcardField(query: Query, root: unknown): Match[] | null {
+  const simple = arrayWildcardFieldQuery(query);
+  if (simple === null) return null;
+
+  if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
+  const rootObject = root as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(rootObject, simple.arrayName)) return [];
+  const array = rootObject[simple.arrayName];
+  if (!Array.isArray(array)) return [];
+
+  const rootPointer = "/" + escapeSeg(simple.arrayName);
+  const fieldPointer = "/" + escapeSeg(simple.fieldName);
+  const matches: Match[] = [];
+  for (let index = 0; index < array.length; index += 1) {
+    const item = array[index];
+    if (
+      item !== null
+      && typeof item === "object"
+      && !Array.isArray(item)
+      && Object.prototype.hasOwnProperty.call(item, simple.fieldName)
+    ) {
+      matches.push({
+        pointer: rootPointer + "/" + index + fieldPointer,
+        value: (item as Record<string, unknown>)[simple.fieldName],
+      });
+    }
+  }
+  return matches;
 }
 
 function evaluateArrayRegexFilter(query: Query, root: unknown): Match[] | null {
@@ -116,6 +154,33 @@ export function matchPointersForSimpleQuery(query: Query, root: unknown): string
 }
 
 function matchArrayWildcardFieldPointers(query: Query, root: unknown): string[] | null {
+  const simple = arrayWildcardFieldQuery(query);
+  if (simple === null) return null;
+
+  if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
+  const rootObject = root as Record<string, unknown>;
+  if (!Object.prototype.hasOwnProperty.call(rootObject, simple.arrayName)) return [];
+  const array = rootObject[simple.arrayName];
+  if (!Array.isArray(array)) return [];
+
+  const rootPointer = "/" + escapeSeg(simple.arrayName);
+  const fieldPointer = "/" + escapeSeg(simple.fieldName);
+  const pointers: string[] = [];
+  for (let index = 0; index < array.length; index += 1) {
+    const item = array[index];
+    if (
+      item !== null
+      && typeof item === "object"
+      && !Array.isArray(item)
+      && Object.prototype.hasOwnProperty.call(item, simple.fieldName)
+    ) {
+      pointers.push(rootPointer + "/" + index + fieldPointer);
+    }
+  }
+  return pointers;
+}
+
+function arrayWildcardFieldQuery(query: Query): ArrayWildcardFieldQuery | null {
   if (query.segments.length !== 3) return null;
 
   const rootSegment = query.segments[0]!;
@@ -135,35 +200,11 @@ function matchArrayWildcardFieldPointers(query: Query, root: unknown): string[] 
   const rootSelector = rootSegment.selectors[0]!;
   const wildcardSelector = wildcardSegment.selectors[0]!;
   const fieldSelector = fieldSegment.selectors[0]!;
-  if (
-    rootSelector.kind !== "name"
-    || wildcardSelector.kind !== "wildcard"
-    || fieldSelector.kind !== "name"
-  ) {
-    return null;
-  }
-
-  if (root === null || typeof root !== "object" || Array.isArray(root)) return [];
-  const rootObject = root as Record<string, unknown>;
-  if (!Object.prototype.hasOwnProperty.call(rootObject, rootSelector.name)) return [];
-  const array = rootObject[rootSelector.name];
-  if (!Array.isArray(array)) return [];
-
-  const rootPointer = "/" + escapeSeg(rootSelector.name);
-  const fieldPointer = "/" + escapeSeg(fieldSelector.name);
-  const pointers: string[] = [];
-  for (let index = 0; index < array.length; index += 1) {
-    const item = array[index];
-    if (
-      item !== null
-      && typeof item === "object"
-      && !Array.isArray(item)
-      && Object.prototype.hasOwnProperty.call(item, fieldSelector.name)
-    ) {
-      pointers.push(rootPointer + "/" + index + fieldPointer);
-    }
-  }
-  return pointers;
+  return rootSelector.kind === "name"
+    && wildcardSelector.kind === "wildcard"
+    && fieldSelector.kind === "name"
+    ? { arrayName: rootSelector.name, fieldName: fieldSelector.name }
+    : null;
 }
 
 function applySimpleSelector(

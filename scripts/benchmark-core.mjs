@@ -249,6 +249,10 @@ for (const size of sizes) {
     });
   }
 
+  bench("jsonpath queryMatches wildcard field", Math.max(3, Math.ceil(rounds / 2)), () => ({
+    ok: jsonpathQueryMatches("$.items[*].id", state).length === size,
+  }));
+
   bench(`jsonpath direct parse+evaluate ${jsonpathRepeats}`, Math.max(3, Math.ceil(rounds / 2)), () => {
     let ok = true;
     for (let index = 0; index < jsonpathRepeats; index += 1) {
