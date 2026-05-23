@@ -66,16 +66,24 @@ function copyRootRecordKeys(
   source: Record<string, unknown>,
   keys: ReadonlyArray<string>,
 ): Record<string, unknown> {
+  return copyRootRecordKeyPrefix(source, keys, keys.length);
+}
+
+function copyRootRecordKeyPrefix(
+  source: Record<string, unknown>,
+  keys: ReadonlyArray<string>,
+  end: number,
+): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   if (!objectHasOwn.call(source, "__proto__")) {
-    for (let index = 0; index < keys.length; index += 1) {
+    for (let index = 0; index < end; index += 1) {
       const key = keys[index]!;
       next[key] = source[key];
     }
     return next;
   }
 
-  for (let index = 0; index < keys.length; index += 1) {
+  for (let index = 0; index < end; index += 1) {
     const key = keys[index]!;
     if (key !== "__proto__") {
       next[key] = source[key];
@@ -89,6 +97,17 @@ function copyRootRecordKeys(
     });
   }
   return next;
+}
+
+function removedRootKeysMatchSuffix(
+  keys: ReadonlyArray<string>,
+  keepCount: number,
+  removedKeys: Record<string, true>,
+): boolean {
+  for (let index = keepCount; index < keys.length; index += 1) {
+    if (!objectHasOwn.call(removedKeys, keys[index]!)) return false;
+  }
+  return true;
 }
 
 export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -527,6 +546,14 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   if (ops.length === sourceKeys.length) {
     return {
       state: {} as z.output<S>,
+      result: { ok: true },
+      applied,
+    };
+  }
+  const keepCount = sourceKeys.length - ops.length;
+  if (removedRootKeysMatchSuffix(sourceKeys, keepCount, removedKeys)) {
+    return {
+      state: copyRootRecordKeyPrefix(source, sourceKeys, keepCount) as z.output<S>,
       result: { ok: true },
       applied,
     };

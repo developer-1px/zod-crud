@@ -85,16 +85,24 @@ function copyRootObjectKeys(
   source: Record<string, unknown>,
   keys: ReadonlyArray<string>,
 ): Record<string, unknown> {
+  return copyRootObjectKeyPrefix(source, keys, keys.length);
+}
+
+function copyRootObjectKeyPrefix(
+  source: Record<string, unknown>,
+  keys: ReadonlyArray<string>,
+  end: number,
+): Record<string, unknown> {
   const next: Record<string, unknown> = {};
   if (!objectHasOwn.call(source, "__proto__")) {
-    for (let index = 0; index < keys.length; index += 1) {
+    for (let index = 0; index < end; index += 1) {
       const key = keys[index]!;
       next[key] = source[key];
     }
     return next;
   }
 
-  for (let index = 0; index < keys.length; index += 1) {
+  for (let index = 0; index < end; index += 1) {
     const key = keys[index]!;
     if (key !== "__proto__") {
       next[key] = source[key];
@@ -108,6 +116,17 @@ function copyRootObjectKeys(
     });
   }
   return next;
+}
+
+function removedRootKeysMatchSuffix(
+  keys: ReadonlyArray<string>,
+  keepCount: number,
+  removedKeys: Record<string, true>,
+): boolean {
+  for (let index = keepCount; index < keys.length; index += 1) {
+    if (!objectHasOwn.call(removedKeys, keys[index]!)) return false;
+  }
+  return true;
 }
 
 // 단일 op + schema 검증. applied 는 `/-` 가 적용 시점의 concrete index 로 정규화된 op.
@@ -616,7 +635,9 @@ function applyRootObjectRemovePatch(
   }
 
   const source = state as Record<string, unknown>;
-  const removedKeys = Object.create(null) as Record<string, true>;
+  const sourceKeys = Object.keys(source);
+  let removedKeys: Record<string, true> | null = null;
+  let matchesReverseSuffix = ops.length <= sourceKeys.length;
   const applied = new Array<JSONPatchOperation>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return { handled: false };
@@ -634,6 +655,17 @@ function applyRootObjectRemovePatch(
     }
 
     const key = op.path.slice(1);
+    if (matchesReverseSuffix && key === sourceKeys[sourceKeys.length - index - 1]) {
+      applied[index] = op;
+      continue;
+    }
+    matchesReverseSuffix = false;
+    if (removedKeys === null) {
+      removedKeys = Object.create(null) as Record<string, true>;
+      for (let seenIndex = 0; seenIndex < index; seenIndex += 1) {
+        removedKeys[ops[seenIndex]!.path.slice(1)] = true;
+      }
+    }
     if (!objectHasOwn.call(source, key) || objectHasOwn.call(removedKeys, key)) {
       return { handled: false };
     }
@@ -641,9 +673,16 @@ function applyRootObjectRemovePatch(
     applied[index] = op;
   }
 
-  const sourceKeys = Object.keys(source);
   if (ops.length === sourceKeys.length) {
     return { handled: true, state: {}, applied };
+  }
+  const keepCount = sourceKeys.length - ops.length;
+  if (removedKeys === null || removedRootKeysMatchSuffix(sourceKeys, keepCount, removedKeys)) {
+    return {
+      handled: true,
+      state: copyRootObjectKeyPrefix(source, sourceKeys, keepCount),
+      applied,
+    };
   }
   if (ops.length * 2 < sourceKeys.length) {
     const next = copyRootObjectKeys(source, sourceKeys);
