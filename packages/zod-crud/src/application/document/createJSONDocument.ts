@@ -222,6 +222,13 @@ export interface PlanDocumentTransactionMergeInput {
   end: number;
 }
 
+export interface PlanDocumentTransactionAppendCompactInput {
+  previous: DocumentHistoryEntry;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionAfter: SelectionSnap;
+  metadata: HistoryTransactionOptions | undefined;
+}
+
 export interface PlanDocumentHistoryEntryInput {
   before: unknown;
   after: unknown;
@@ -311,9 +318,17 @@ export function createJSONDocument<S extends z.ZodType>(
     if (
       activeTransactionStartDepth !== undefined
       && historyDepth(stack) > activeTransactionStartDepth
-      && compactRepeatedReplaceOperationIntoTransaction(operations, selectionAfter, historyMetadata)
     ) {
-      return;
+      const compact = planDocumentTransactionAppendCompact({
+        previous: stack.undo[stack.undo.length - 1]!,
+        operations,
+        selectionAfter,
+        metadata: historyMetadata,
+      });
+      if (compact !== null) {
+        stack.undo[stack.undo.length - 1] = compact;
+        return;
+      }
     }
 
     const entry = planDocumentHistoryEntry({
@@ -338,39 +353,6 @@ export function createJSONDocument<S extends z.ZodType>(
       }
     }
     commitHistory(stack, entry, historyLimit);
-  };
-  const compactRepeatedReplaceOperationIntoTransaction = (
-    operations: ReadonlyArray<JSONPatchOperation>,
-    selectionAfter: SelectionSnap,
-    metadata: HistoryTransactionOptions | undefined,
-  ): boolean => {
-    if (operations.length !== 1 || !(0 in operations)) return false;
-
-    const op = operations[0]!;
-    if (op.op !== "replace") return false;
-
-    const prev = stack.undo[stack.undo.length - 1]!;
-    if (prev.forward.length !== 1 || prev.inverse.length !== 1) return false;
-
-    const prevForward = prev.forward[0]!;
-    const prevInverse = prev.inverse[0]!;
-    if (
-      prevForward.op !== "replace"
-      || prevInverse.op !== "replace"
-      || prevForward.path !== prevInverse.path
-      || prevForward.path !== op.path
-    ) {
-      return false;
-    }
-
-    const compactMetadata = metadata === undefined
-      ? prev.metadata
-      : mergeRepeatedReplaceTransactionMetadata(prev.metadata, metadata);
-    prev.forward[0] = op;
-    prev.selectionAfter = selectionAfter;
-    if (compactMetadata !== undefined) prev.metadata = compactMetadata;
-    else delete prev.metadata;
-    return true;
   };
 
   const applyDocumentPatch = (
@@ -969,6 +951,41 @@ export function planDocumentTransactionMerge(
   };
   if (metadata !== undefined) merged.metadata = metadata;
   return merged;
+}
+
+export function planDocumentTransactionAppendCompact(
+  input: PlanDocumentTransactionAppendCompactInput,
+): DocumentHistoryEntry | null {
+  const { previous, operations } = input;
+  if (operations.length !== 1 || !(0 in operations)) return null;
+
+  const op = operations[0]!;
+  if (op.op !== "replace") return null;
+  if (previous.forward.length !== 1 || previous.inverse.length !== 1) return null;
+
+  const prevForward = previous.forward[0]!;
+  const prevInverse = previous.inverse[0]!;
+  if (
+    prevForward.op !== "replace"
+    || prevInverse.op !== "replace"
+    || prevForward.path !== prevInverse.path
+    || prevForward.path !== op.path
+  ) {
+    return null;
+  }
+
+  const compact: DocumentHistoryEntry = {
+    forward: [op],
+    inverse: [prevInverse],
+    selectionBefore: previous.selectionBefore,
+    selectionAfter: input.selectionAfter,
+  };
+  if (previous.snapshot !== undefined) compact.snapshot = previous.snapshot;
+  const metadata = input.metadata === undefined
+    ? previous.metadata
+    : mergeRepeatedReplaceTransactionMetadata(previous.metadata, input.metadata);
+  if (metadata !== undefined) compact.metadata = metadata;
+  return compact;
 }
 
 export function planDocumentHistoryEntry(
