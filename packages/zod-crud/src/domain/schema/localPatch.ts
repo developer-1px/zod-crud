@@ -112,6 +112,12 @@ export interface PlanIncreasingArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanArrayAddAppliedOperationsInput {
+  parent: Pointer;
+  start: number;
+  values: ReadonlyArray<unknown>;
+}
+
 export interface IncreasingArrayAddPatchPlan {
   parent: Pointer;
   parentSegments: string[];
@@ -525,6 +531,41 @@ export function evaluateLocalPatchValueValidationPlan<S extends z.ZodType>(
   if (plan.kind === "parse") {
     const result = plan.schema.safeParse(plan.value);
     if (!result.success) return schemaViolation(state, plan.path, result.error.issues);
+  }
+  return null;
+}
+
+export function planArrayAddAppliedOperations(
+  input: PlanArrayAddAppliedOperationsInput,
+): Extract<JSONPatchOperation, { op: "add" }>[] {
+  const applied = new Array<Extract<JSONPatchOperation, { op: "add" }>>(input.values.length);
+  for (let index = 0; index < input.values.length; index += 1) {
+    applied[index] = {
+      op: "add",
+      path: appendArrayIndexPath(input.parent, input.start + index),
+      value: input.values[index],
+    };
+  }
+  return applied;
+}
+
+export function evaluateAppliedAddValueValidationPlan<S extends z.ZodType>(
+  state: z.output<S>,
+  operations: ReadonlyArray<Extract<JSONPatchOperation, { op: "add" }>>,
+  schema: z.ZodType,
+  knownJsonAccepted: (value: unknown) => boolean,
+  valuesTrusted: boolean,
+): ApplyResult<S> | null {
+  for (const op of operations) {
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema,
+      value: op.value,
+      knownJsonAccepted: knownJsonAccepted(op.value),
+      valuesTrusted,
+    });
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
   }
   return null;
 }
@@ -1376,7 +1417,6 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const plan = planAppendOnlyArrayAddPatch({ operations: ops });
   if (plan === null) return null;
   const { parent, parentSegments, values } = plan;
-  const applied = new Array<JSONPatchOperation>(values.length);
 
   const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
@@ -1387,24 +1427,15 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (!current.ok || !Array.isArray(current.value)) return null;
   const initialLength = current.value.length;
 
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index];
-    const path = appendArrayIndexPath(parent, initialLength + index);
-    const valueValidation = planLocalPatchValueValidation({
-      path,
-      schema: elementSchema,
-      value,
-      knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, value),
-      valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
-    applied[index] = {
-      op: "add",
-      path,
-      value,
-    };
-  }
+  const applied = planArrayAddAppliedOperations({ parent, start: initialLength, values });
+  const valueFailure = evaluateAppliedAddValueValidationPlan(
+    state,
+    applied,
+    elementSchema,
+    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    valuesTrusted,
+  );
+  if (valueFailure) return valueFailure;
 
   const nextState = replaceValueAtSegments(
     state,
@@ -1480,25 +1511,15 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   if (!current.ok || !Array.isArray(current.value)) return null;
   if (start < 0 || start > current.value.length) return null;
 
-  const applied = new Array<JSONPatchOperation>(values.length);
-  for (let index = 0; index < values.length; index += 1) {
-    const value = values[index];
-    const path = appendArrayIndexPath(parent, start + index);
-    const valueValidation = planLocalPatchValueValidation({
-      path,
-      schema: elementSchema,
-      value,
-      knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, value),
-      valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
-    applied[index] = {
-      op: "add",
-      path,
-      value,
-    };
-  }
+  const applied = planArrayAddAppliedOperations({ parent, start, values });
+  const valueFailure = evaluateAppliedAddValueValidationPlan(
+    state,
+    applied,
+    elementSchema,
+    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    valuesTrusted,
+  );
+  if (valueFailure) return valueFailure;
 
   const nextState = replaceValueAtSegments(
     state,

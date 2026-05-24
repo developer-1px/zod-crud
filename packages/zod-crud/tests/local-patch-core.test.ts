@@ -10,10 +10,12 @@ import {
   arrayIndexPathLocation,
   createDataKeySet,
   copyRootRecordKeyPrefix,
+  evaluateAppliedAddValueValidationPlan,
   evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   numericSegment,
   planAppliedLocalOpValidation,
+  planArrayAddAppliedOperations,
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
@@ -88,6 +90,55 @@ describe("local patch value validation planning", () => {
     });
 
     expect(result).toMatchObject({ kind: "parse", path: "/value", value });
+  });
+});
+
+describe("array add applied operation validation", () => {
+  test("plans applied add operations from a parent, start index, and values", () => {
+    expect(planArrayAddAppliedOperations({
+      parent: "/items",
+      start: 2,
+      values: ["A", "B"],
+    })).toEqual([
+      { op: "add", path: "/items/2", value: "A" },
+      { op: "add", path: "/items/3", value: "B" },
+    ]);
+
+    expect(planArrayAddAppliedOperations({
+      parent: "",
+      start: 0,
+      values: [1],
+    })).toEqual([{ op: "add", path: "/0", value: 1 }]);
+  });
+
+  test("accepts applied add values when known-json validation accepts them", () => {
+    const state = { items: [] as unknown[] };
+
+    expect(evaluateAppliedAddValueValidationPlan(
+      state,
+      [{ op: "add", path: "/items/0", value: "A" }],
+      z.never(),
+      () => true,
+      false,
+    )).toBeNull();
+  });
+
+  test("rejects untrusted non-serializable applied add values before schema parsing", () => {
+    const state = { items: [] as unknown[] };
+
+    const result = evaluateAppliedAddValueValidationPlan(
+      state,
+      [{ op: "add", path: "/items/0", value: () => "not json" }],
+      z.unknown(),
+      () => false,
+      false,
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
   });
 });
 
