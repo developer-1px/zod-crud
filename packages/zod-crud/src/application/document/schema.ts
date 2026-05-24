@@ -101,6 +101,12 @@ export interface PlanDocumentSchemaAcceptsResultInput {
   result: DocumentSchemaParseResult;
 }
 
+export interface PlanDocumentSchemaResolutionInput {
+  schema: z.ZodType;
+  path: Pointer;
+  mode: SchemaPathMode;
+}
+
 interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
@@ -109,12 +115,12 @@ export interface DocumentSchemaContext<S extends z.ZodType> {
   schema: S;
 }
 
-interface ResolveSchemaOk {
+export interface DocumentSchemaResolutionOk {
   ok: true;
   schema: z.ZodType;
 }
 
-type ResolveSchemaResult = ResolveSchemaOk | SchemaErrorResult;
+export type DocumentSchemaResolutionResult = DocumentSchemaResolutionOk | SchemaErrorResult;
 
 export function createSchemaState<S extends z.ZodType>(
   args: CreateSchemaOptions<S>,
@@ -144,7 +150,11 @@ export function queryDocumentSchema<S extends z.ZodType>(
   path: Pointer,
   mode: SchemaPathMode = "value",
 ): SchemaQueryResult {
-  const resolved = resolveSchema(context.schema, path, mode);
+  const resolved = planDocumentSchemaResolution({
+    schema: context.schema,
+    path,
+    mode,
+  });
   if (!resolved.ok) return resolved;
   const description = describeSchema(resolved.schema);
   return {
@@ -172,7 +182,11 @@ export function checkDocumentSchemaAccepts<S extends z.ZodType>(
   value: unknown,
   mode: SchemaPathMode = "value",
 ): CheckResult {
-  const resolved = resolveSchema(context.schema, path, mode);
+  const resolved = planDocumentSchemaResolution({
+    schema: context.schema,
+    path,
+    mode,
+  });
   if (!resolved.ok) {
     const error: Extract<CheckResult, { ok: false }> = {
       ok: false,
@@ -217,11 +231,10 @@ export function planDocumentSchemaAcceptsResult(
   };
 }
 
-function resolveSchema(
-  schema: z.ZodType,
-  path: Pointer,
-  mode: SchemaPathMode,
-): ResolveSchemaResult {
+export function planDocumentSchemaResolution(
+  input: PlanDocumentSchemaResolutionInput,
+): DocumentSchemaResolutionResult {
+  const { schema, path, mode } = input;
   const segments = tryParsePointer(path);
   if (segments === null) {
     return {

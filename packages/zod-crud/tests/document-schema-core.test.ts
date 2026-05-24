@@ -5,6 +5,7 @@ import {
   checkDocumentSchemaAccepts,
   describeDocumentSchema,
   planDocumentSchemaAcceptsResult,
+  planDocumentSchemaResolution,
   queryDocumentSchema,
   readDocumentSchemaKind,
   type DocumentSchemaContext,
@@ -105,6 +106,52 @@ describe("document schema core functions", () => {
       expect(failed.violations).toEqual([{ path: "/items/done", message: expect.any(String) }]);
       expect(failed.reason).toContain("\"done\"");
     }
+  });
+
+  test("plans schema path resolution before query and accepts mapping", () => {
+    const insertItem = planDocumentSchemaResolution({
+      schema: Schema,
+      path: "/items",
+      mode: "insert",
+    });
+    expect(insertItem).toMatchObject({ ok: true });
+    if (insertItem.ok) {
+      expect(insertItem.schema.safeParse({ id: "a", done: false }).success).toBe(true);
+      expect(insertItem.schema.safeParse([{ id: "a", done: false }]).success).toBe(false);
+    }
+
+    const recordValue = planDocumentSchemaResolution({
+      schema: Schema,
+      path: "/meta/secondary",
+      mode: "value",
+    });
+    expect(recordValue).toMatchObject({ ok: true });
+    if (recordValue.ok) {
+      expect(recordValue.schema.safeParse({ label: "Secondary" }).success).toBe(true);
+      expect(recordValue.schema.safeParse({ title: "Secondary" }).success).toBe(false);
+    }
+
+    expect(planDocumentSchemaResolution({
+      schema: Schema,
+      path: "title",
+      mode: "value",
+    })).toEqual({
+      ok: false,
+      code: "invalid_pointer",
+      reason: "invalid schema pointer: title",
+      pointer: "title",
+    });
+
+    expect(planDocumentSchemaResolution({
+      schema: Schema,
+      path: "/missing",
+      mode: "value",
+    })).toEqual({
+      ok: false,
+      code: "path_not_found",
+      reason: "schema path not found: /missing",
+      pointer: "/missing",
+    });
   });
 
   test("reports invalid and unknown schema paths", () => {
