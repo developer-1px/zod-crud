@@ -16,6 +16,7 @@ import {
   evaluateLocalPatchValueValidationPlan,
   failedLocalPatch,
   numericSegment,
+  okLocalPatch,
   planAppliedLocalOpValidation,
   planArrayAddAppliedOperations,
   planAppendOnlyArrayAddPatch,
@@ -220,6 +221,17 @@ describe("remove applied operation normalization", () => {
 });
 
 describe("local patch result helpers", () => {
+  test("wraps successful patch results with applied operations", () => {
+    const state = { title: "Final" };
+    const applied = [{ op: "replace" as const, path: "/title", value: "Final" }];
+
+    expect(okLocalPatch(state, applied)).toEqual({
+      state,
+      result: { ok: true },
+      applied,
+    });
+  });
+
   test("wraps failed patch results with no applied operations", () => {
     const state = { title: "Draft" };
 

@@ -461,11 +461,7 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (valueFailure) return valueFailure;
   }
 
-  return {
-    state: applied.state as z.output<S>,
-    result: { ok: true },
-    applied: applied.applied,
-  };
+  return okLocalPatch(applied.state as z.output<S>, applied.applied);
 }
 
 function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -493,31 +489,19 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, op);
   if (singleArrayFieldReplace) {
-    return {
-      state: singleArrayFieldReplace as z.output<S>,
-      result: { ok: true },
-      applied: [op],
-    };
+    return okLocalPatch(singleArrayFieldReplace as z.output<S>, [op]);
   }
 
   const singleRootReplace = applySingleRootObjectReplacePatchWithLocalSchemaValidation(state, op);
   if (singleRootReplace) {
-    return {
-      state: singleRootReplace as z.output<S>,
-      result: { ok: true },
-      applied: [op],
-    };
+    return okLocalPatch(singleRootReplace as z.output<S>, [op]);
   }
 
   const applied = applyAcceptedPatch(state, [op]);
   if (!applied.result.ok) {
     return failedLocalPatch(state, applied.result);
   }
-  return {
-    state: applied.state as z.output<S>,
-    result: { ok: true },
-    applied: applied.applied,
-  };
+  return okLocalPatch(applied.state as z.output<S>, applied.applied);
 }
 
 export function planLocalPatchValueValidation(
@@ -777,11 +761,7 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
   if (!applied.result.ok) {
     return failedLocalPatch(state, applied.result);
   }
-  return {
-    state: applied.state as z.output<S>,
-    result: { ok: true },
-    applied: applied.applied,
-  };
+  return okLocalPatch(applied.state as z.output<S>, applied.applied);
 }
 
 export function planKnownJsonReplacePatch(input: PlanKnownJsonReplacePatchInput): KnownJsonReplacePatchPlan | null {
@@ -831,11 +811,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
 
   const nextState = replaceValueAtSegments(state, plan.parentSegments, 0, next);
   if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied: toAppliedReplaceOperations(plan.operations),
-  };
+  return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planSameArrayElementReplacePatch(
@@ -920,11 +896,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
 
   const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
   if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied: toAppliedReplaceOperations(plan.operations),
-  };
+  return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planSameArrayFieldReplacePatch(
@@ -1031,11 +1003,7 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
 
   const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
   if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied: toAppliedReplaceOperations(plan.operations),
-  };
+  return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planSameArrayNestedReplacePatch(
@@ -1148,11 +1116,7 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     writeRootRecordValue(resultState, op.key, op.value);
   }
 
-  return {
-    state: resultState as z.output<S>,
-    result: { ok: true },
-    applied: toAppliedReplaceOperations(plan.operations),
-  };
+  return okLocalPatch(resultState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planRootObjectReplacePatch(
@@ -1219,29 +1183,20 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   const applied = toAppliedRemoveOperations(plan.operations);
 
   if (plan.strategy === "clear") {
-    return {
-      state: {} as z.output<S>,
-      result: { ok: true },
-      applied,
-    };
+    return okLocalPatch({} as z.output<S>, applied);
   }
   if (plan.strategy === "copyPrefix") {
-    return {
-      state: copyRootRecordKeyPrefix(source, sourceKeys, plan.keepCount) as z.output<S>,
-      result: { ok: true },
+    return okLocalPatch(
+      copyRootRecordKeyPrefix(source, sourceKeys, plan.keepCount) as z.output<S>,
       applied,
-    };
+    );
   }
   if (plan.strategy === "copyDelete") {
     const next = copyRootRecordKeys(source, sourceKeys);
     for (const op of plan.operations) {
       delete next[op.key];
     }
-    return {
-      state: next as z.output<S>,
-      result: { ok: true },
-      applied,
-    };
+    return okLocalPatch(next as z.output<S>, applied);
   }
 
   const removedKeys = rootRecordRemoveKeySet(plan.operations);
@@ -1251,11 +1206,7 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     writeRootRecordValue(next, key, source[key]);
   }
 
-  return {
-    state: next as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return okLocalPatch(next as z.output<S>, applied);
 }
 
 export function planRootRecordRemovePatch(
@@ -1351,11 +1302,7 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     writeRootRecordValue(next, op.key, op.value);
   }
 
-  return {
-    state: next as z.output<S>,
-    result: { ok: true },
-    applied: toAppliedAddOperations(plan.operations),
-  };
+  return okLocalPatch(next as z.output<S>, toAppliedAddOperations(plan.operations));
 }
 
 export function planRootRecordAddPatch(input: PlanRootRecordAddPatchInput): RootRecordAddPatchPlan | null {
@@ -1467,11 +1414,7 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     current.value.concat(values),
   );
   if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return okLocalPatch(nextState as z.output<S>, applied);
 }
 
 export function planAppendOnlyArrayAddPatch(
@@ -1553,11 +1496,7 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
       : current.value.slice(0, start).concat(values, current.value.slice(start)),
   );
   if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return okLocalPatch(nextState as z.output<S>, applied);
 }
 
 export function planIncreasingArrayAddPatch(
@@ -1635,11 +1574,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (!applied.result.ok) {
     return failedLocalPatch(state, applied.result);
   }
-  return {
-    state: applied.state as z.output<S>,
-    result: { ok: true },
-    applied: applied.applied,
-  };
+  return okLocalPatch(applied.state as z.output<S>, applied.applied);
 }
 
 export function planSameArrayPatch(input: PlanSameArrayPatchInput): SameArrayPatchPlan | null {
@@ -2305,7 +2240,7 @@ function isJsonPrimitive(value: unknown): boolean {
     || (typeof value === "number" && Number.isFinite(value));
 }
 
-function okLocalPatch<S extends z.ZodType>(
+export function okLocalPatch<S extends z.ZodType>(
   state: z.output<S>,
   applied: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S> {
