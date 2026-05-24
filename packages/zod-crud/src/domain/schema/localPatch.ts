@@ -72,6 +72,11 @@ export interface KnownJsonReplacePatchPlan {
   operations: Extract<JSONPatchOperation, { op: "replace" }>[];
 }
 
+export interface EvaluateKnownJsonReplaceValuesInput {
+  schema: z.ZodType;
+  operations: ReadonlyArray<Extract<JSONPatchOperation, { op: "replace" }>>;
+}
+
 export interface EvaluateAppliedReplaceOperationsInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -899,10 +904,7 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
   const sameArrayElementReplace = applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation(schema, state, ops);
   if (sameArrayElementReplace) return sameArrayElementReplace;
 
-  for (const op of plan.operations) {
-    const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
-    if (!valueSchema || !acceptsKnownJsonValue(valueSchema, op.value)) return null;
-  }
+  if (!evaluateKnownJsonReplaceValues({ schema, operations: plan.operations })) return null;
 
   const applied = applyAcceptedPatch(state, plan.operations);
   if (!applied.result.ok) {
@@ -930,6 +932,15 @@ export function planKnownJsonReplacePatch(input: PlanKnownJsonReplacePatchInput)
   }
 
   return { operations };
+}
+
+export function evaluateKnownJsonReplaceValues(input: EvaluateKnownJsonReplaceValuesInput): boolean {
+  const { schema, operations } = input;
+  for (const op of operations) {
+    const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
+    if (!valueSchema || !acceptsKnownJsonValue(valueSchema, op.value)) return false;
+  }
+  return true;
 }
 
 function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(

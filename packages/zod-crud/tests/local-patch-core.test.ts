@@ -25,6 +25,7 @@ import {
   evaluateAppliedReplaceOperations,
   evaluateAppliedReplaceValueValidationPlan,
   evaluateArrayAddElementValues,
+  evaluateKnownJsonReplaceValues,
   evaluateLocalPatchValueValidationPlan,
   evaluateRootRecordAddValues,
   evaluateRootObjectReplaceValues,
@@ -995,6 +996,31 @@ describe("known-json replace patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
     expect(planKnownJsonReplacePatch({ operations: sparse })).toBeNull();
+  });
+
+  test("evaluates known-json replace values through local schemas", () => {
+    const schema = z.object({
+      title: z.string(),
+      meta: z.object({ owner: z.string() }),
+    });
+
+    expect(evaluateKnownJsonReplaceValues({
+      schema,
+      operations: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "/meta/owner", value: "core" },
+      ],
+    })).toBe(true);
+
+    expect(evaluateKnownJsonReplaceValues({
+      schema,
+      operations: [{ op: "replace", path: "/missing", value: "Final" }],
+    })).toBe(false);
+
+    expect(evaluateKnownJsonReplaceValues({
+      schema,
+      operations: [{ op: "replace", path: "/title", value: 1 }],
+    })).toBe(false);
   });
 });
 
