@@ -396,6 +396,19 @@ export interface ApplyValidatedArrayNestedReplacementsInput<
   suffixSegments: ReadonlyArray<string>;
 }
 
+export interface ApplyValidatedArrayNestedValueReplacementsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  state: z.output<S>;
+  arraySegments: ReadonlyArray<string>;
+  array: ReadonlyArray<unknown>;
+  suffixSegments: ReadonlyArray<string>;
+  operations: ReadonlyArray<Operation>;
+  valueSchema: z.ZodType;
+  valuesTrusted: boolean;
+}
+
 export interface BuildKnownJsonArrayIndexReplacementsInput<
   Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
 > {
@@ -1447,7 +1460,7 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
 
   const current = readArrayAtSegments({ state, segments: plan.arraySegments });
   if (!current.ok) return null;
-  return applyValidatedArrayNestedReplacements({
+  return applyValidatedArrayNestedValueReplacements({
     state,
     arraySegments: plan.arraySegments,
     array: current.array,
@@ -1455,7 +1468,6 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
     operations: plan.operations,
     valueSchema,
     valuesTrusted,
-    replacementValue: (op) => ({ ok: true, value: op.value }),
   });
 }
 
@@ -2223,6 +2235,24 @@ export function applyValidatedArrayNestedReplacements<
   return nextState === null
     ? null
     : okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(input.operations));
+}
+
+export function applyValidatedArrayNestedValueReplacements<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyValidatedArrayNestedValueReplacementsInput<S, Operation>,
+): ApplyResult<S> | null {
+  return applyValidatedArrayNestedReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: input.array,
+    suffixSegments: input.suffixSegments,
+    operations: input.operations,
+    valueSchema: input.valueSchema,
+    valuesTrusted: input.valuesTrusted,
+    replacementValue: (op) => ({ ok: true, value: op.value }),
+  });
 }
 
 export function buildKnownJsonArrayIndexReplacements<
