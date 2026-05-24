@@ -12,6 +12,7 @@ import {
   copyRootRecordKeyPrefix,
   evaluateAppliedAddValueValidationPlan,
   evaluateAppliedLocalOpValidationPlan,
+  evaluateAppliedReplaceValueValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   numericSegment,
   planAppliedLocalOpValidation,
@@ -36,6 +37,7 @@ import {
   replaceObjectDataValue,
   replaceValueAtSegments,
   toAppliedAddOperations,
+  toAppliedReplaceOperations,
   writeObjectDataValue,
   writeRootRecordValue,
 } from "../src/domain/schema/localPatch.js";
@@ -143,6 +145,51 @@ describe("array add applied operation validation", () => {
     const result = evaluateAppliedAddValueValidationPlan(
       state,
       [{ op: "add", path: "/items/0", value: () => "not json" }],
+      z.unknown(),
+      () => false,
+      false,
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
+});
+
+describe("replace applied operation validation", () => {
+  test("accepts replace values when known-json validation accepts them", () => {
+    const state = { items: [{ name: "old" }] };
+    const operations = [{ op: "replace" as const, path: "/items/0/name", value: "A", index: 0 }];
+
+    expect(evaluateAppliedReplaceValueValidationPlan(
+      state,
+      operations,
+      z.never(),
+      () => true,
+      false,
+    )).toBeNull();
+  });
+
+  test("strips planner-only metadata from applied replace operations", () => {
+    const operations = [
+      { op: "replace" as const, path: "/items/0/name", value: "A", index: 0 },
+      { op: "replace" as const, path: "/items/1/name", value: "B", field: "name" },
+    ];
+
+    expect(toAppliedReplaceOperations(operations)).toEqual([
+      { op: "replace", path: "/items/0/name", value: "A" },
+      { op: "replace", path: "/items/1/name", value: "B" },
+    ]);
+  });
+
+  test("rejects untrusted non-serializable replace values before schema parsing", () => {
+    const state = { items: [{ name: "old" }] };
+
+    const result = evaluateAppliedReplaceValueValidationPlan(
+      state,
+      [{ op: "replace", path: "/items/0/name", value: () => "not json" }],
       z.unknown(),
       () => false,
       false,

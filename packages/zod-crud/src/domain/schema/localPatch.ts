@@ -124,6 +124,12 @@ export interface AppliedAddValueValidationOperation {
   value: unknown;
 }
 
+export interface AppliedReplaceValueValidationOperation {
+  op: "replace";
+  path: Pointer;
+  value: unknown;
+}
+
 export interface IncreasingArrayAddPatchPlan {
   parent: Pointer;
   parentSegments: string[];
@@ -561,9 +567,36 @@ export function toAppliedAddOperations(
   return operations.map((op) => ({ op: "add", path: op.path, value: op.value }));
 }
 
+export function toAppliedReplaceOperations(
+  operations: ReadonlyArray<AppliedReplaceValueValidationOperation>,
+): Extract<JSONPatchOperation, { op: "replace" }>[] {
+  return operations.map((op) => ({ op: "replace", path: op.path, value: op.value }));
+}
+
 export function evaluateAppliedAddValueValidationPlan<S extends z.ZodType>(
   state: z.output<S>,
   operations: ReadonlyArray<AppliedAddValueValidationOperation>,
+  schema: z.ZodType,
+  knownJsonAccepted: (value: unknown) => boolean,
+  valuesTrusted: boolean,
+): ApplyResult<S> | null {
+  for (const op of operations) {
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema,
+      value: op.value,
+      knownJsonAccepted: knownJsonAccepted(op.value),
+      valuesTrusted,
+    });
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
+  }
+  return null;
+}
+
+export function evaluateAppliedReplaceValueValidationPlan<S extends z.ZodType>(
+  state: z.output<S>,
+  operations: ReadonlyArray<AppliedReplaceValueValidationOperation>,
   schema: z.ZodType,
   knownJsonAccepted: (value: unknown) => boolean,
   valuesTrusted: boolean,
@@ -869,25 +902,22 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   const current = readAt(state, plan.arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
   const next = current.value.slice();
-  const applied = new Array<JSONPatchOperation>(plan.operations.length);
 
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex++) {
     const op = plan.operations[opIndex]!;
     if (op.index < 0 || op.index >= next.length) return null;
     const replaced = replaceObjectDataValue(next[op.index], plan.field, op.value);
     if (replaced === null) return null;
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: valueSchema,
-      value: op.value,
-      knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, op.value),
+    const valueFailure = evaluateAppliedReplaceValueValidationPlan(
+      state,
+      [op],
+      valueSchema,
+      (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
       valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    );
     if (valueFailure) return valueFailure;
 
     next[op.index] = replaced;
-    applied[opIndex] = { op: "replace", path: op.path, value: op.value };
   }
 
   const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
@@ -895,7 +925,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   return {
     state: nextState as z.output<S>,
     result: { ok: true },
-    applied,
+    applied: toAppliedReplaceOperations(plan.operations),
   };
 }
 
@@ -977,22 +1007,19 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   if (!current.ok || !Array.isArray(current.value)) return null;
   const arrayValue = current.value;
   const updateValues = new Array<unknown>(plan.operations.length);
-  const applied = new Array<JSONPatchOperation>(plan.operations.length);
 
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
     const op = plan.operations[opIndex]!;
     if (op.index < 0 || op.index >= arrayValue.length) return null;
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: valueSchema,
-      value: op.value,
-      knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, op.value),
+    const valueFailure = evaluateAppliedReplaceValueValidationPlan(
+      state,
+      [op],
+      valueSchema,
+      (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
       valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    );
     if (valueFailure) return valueFailure;
     updateValues[opIndex] = op.value;
-    applied[opIndex] = { op: "replace", path: op.path, value: op.value };
   }
 
   const next = arrayValue.slice();
@@ -1009,7 +1036,7 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   return {
     state: nextState as z.output<S>,
     result: { ok: true },
-    applied,
+    applied: toAppliedReplaceOperations(plan.operations),
   };
 }
 
