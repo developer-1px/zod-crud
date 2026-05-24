@@ -20,6 +20,17 @@ export interface ReadEntry {
   value: unknown;
 }
 
+export interface PlanDocumentEntriesInput {
+  schema: z.ZodType;
+  path: Pointer;
+  value: unknown;
+}
+
+export interface DocumentEntriesPlan {
+  kind: EntryKind;
+  entries: ReadonlyArray<ReadEntry>;
+}
+
 export type EntriesResult =
   | {
       ok: true;
@@ -115,11 +126,25 @@ export function readDocumentEntries<S extends z.ZodType>(
   const result = readDocumentPointer(context.state, path);
   if (!result.ok) return result;
 
+  const plan = planDocumentEntries({
+    schema: context.schema,
+    path,
+    value: result.value,
+  });
   return {
     ok: true,
     path,
-    kind: entryKind(context.schema, path, result.value),
-    entries: readEntries(path, result.value),
+    kind: plan.kind,
+    entries: plan.entries,
+  };
+}
+
+export function planDocumentEntries(
+  input: PlanDocumentEntriesInput,
+): DocumentEntriesPlan {
+  return {
+    kind: entryKind(input.schema, input.path, input.value),
+    entries: readEntries(input.path, input.value),
   };
 }
 

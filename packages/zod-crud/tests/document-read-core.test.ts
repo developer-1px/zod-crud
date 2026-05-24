@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
+  planDocumentEntries,
   queryDocumentPointers,
   readDocumentEntries,
   readDocumentPointer,
@@ -107,6 +108,52 @@ describe("document read core functions", () => {
     expect(readDocumentEntries(context, "/title")).toEqual({
       ok: true,
       path: "/title",
+      kind: "primitive",
+      entries: [],
+    });
+  });
+
+  test("plans entry kind and child entries without reading from document state", () => {
+    expect(planDocumentEntries({
+      schema: Schema,
+      path: "",
+      value: initial,
+    })).toMatchObject({
+      kind: "root",
+      entries: [
+        { key: "title", path: "/title" },
+        { key: "tasks", path: "/tasks" },
+        { key: "meta", path: "/meta" },
+        { key: "nested", path: "/nested" },
+      ],
+    });
+
+    expect(planDocumentEntries({
+      schema: Schema,
+      path: "/meta",
+      value: initial.meta,
+    })).toMatchObject({
+      kind: "record",
+      entries: [
+        { key: "primary", path: "/meta/primary", value: { label: "Primary" } },
+        { key: "secondary", path: "/meta/secondary", value: { label: "Secondary" } },
+      ],
+    });
+
+    expect(planDocumentEntries({
+      schema: Schema,
+      path: "/nested",
+      value: initial.nested,
+    })).toEqual({
+      kind: "object",
+      entries: [{ key: "flag", path: "/nested/flag", value: true }],
+    });
+
+    expect(planDocumentEntries({
+      schema: Schema,
+      path: "/title",
+      value: initial.title,
+    })).toEqual({
       kind: "primitive",
       entries: [],
     });
