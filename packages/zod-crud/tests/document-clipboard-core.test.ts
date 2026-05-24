@@ -15,6 +15,7 @@ import {
   planClipboardWriteBuffer,
   planClipboardWritePayload,
   planClipboardWriteSources,
+  planClipboardPastePreview,
   type ClipboardBuffer,
 } from "../src/application/document/clipboard.js";
 import type { ApplyResult, JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -431,6 +432,74 @@ describe("document clipboard core functions", () => {
       code: "path_not_found",
       message: "missing target",
     });
+  });
+
+  test("plans paste preview trust decisions without running paste", () => {
+    const plainPreview = ((operations: ReadonlyArray<JSONPatchOperation>) => ({
+      state: initial,
+      result: { ok: true },
+      applied: operations,
+    })) satisfies (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<typeof Schema>;
+    const trustedPreview = ((operations: ReadonlyArray<JSONPatchOperation>) => ({
+      state: initial,
+      result: { ok: true },
+      applied: operations,
+    })) satisfies (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<typeof Schema>;
+
+    const plain = planClipboardPastePreview({
+      trustedPayload: false,
+      options: {},
+      previewPatch: plainPreview,
+      previewTrustedValuesPatch: trustedPreview,
+    });
+    expect(plain).toMatchObject({
+      trustedPayload: false,
+      patchValuesTrusted: false,
+    });
+    expect(plain.previewPatch).toBe(plainPreview);
+
+    const trustedByInput = planClipboardPastePreview({
+      trustedPayload: true,
+      options: {},
+      previewPatch: plainPreview,
+      previewTrustedValuesPatch: trustedPreview,
+    });
+    expect(trustedByInput).toMatchObject({
+      trustedPayload: true,
+      patchValuesTrusted: true,
+    });
+    expect(trustedByInput.previewPatch).toBe(trustedPreview);
+
+    const trustedByOption = planClipboardPastePreview({
+      trustedPayload: false,
+      options: { trustedPayload: true },
+      previewPatch: plainPreview,
+      previewTrustedValuesPatch: trustedPreview,
+    });
+    expect(trustedByOption).toMatchObject({
+      trustedPayload: true,
+      patchValuesTrusted: true,
+    });
+    expect(trustedByOption.previewPatch).toBe(trustedPreview);
+
+    const trustedByRekey = planClipboardPastePreview({
+      trustedPayload: false,
+      options: { rekey: { fields: ["id"], strategy: "suffix" } },
+      previewPatch: plainPreview,
+      previewTrustedValuesPatch: trustedPreview,
+    });
+    expect(trustedByRekey).toMatchObject({
+      trustedPayload: false,
+      patchValuesTrusted: true,
+    });
+    expect(trustedByRekey.previewPatch).toBe(trustedPreview);
+
+    const trustedWithoutTrustedPreview = planClipboardPastePreview({
+      trustedPayload: true,
+      options: {},
+      previewPatch: plainPreview,
+    });
+    expect(trustedWithoutTrustedPreview.previewPatch).toBe(plainPreview);
   });
 
   test("uses trusted preview when the payload boundary is already owned", () => {

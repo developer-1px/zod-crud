@@ -131,6 +131,19 @@ export interface ClipboardPastePlanContext<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface ClipboardPastePreviewInput<S extends z.ZodType> {
+  trustedPayload: boolean;
+  options: PasteOptions;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export interface ClipboardPastePreviewPlan<S extends z.ZodType> {
+  trustedPayload: boolean;
+  patchValuesTrusted: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
 export interface ClipboardCopyPlanContext {
   state: unknown;
   source: ClipboardSource;
@@ -283,18 +296,34 @@ export function planClipboardPaste<S extends z.ZodType>(
     };
   }
   const spread = args.options.spread ?? context.spreadByDefault ?? false;
-  const inputTrustedPayload = context.trustedPayload === true
-    || args.options.trustedPayload === true;
-  const patchValuesTrusted = inputTrustedPayload || rekeyProducesTrustedPayload(args.options);
-  const pastePreview = patchValuesTrusted && context.previewTrustedValuesPatch
-    ? context.previewTrustedValuesPatch
-    : context.previewPatch;
+  const preview = planClipboardPastePreview({
+    trustedPayload: context.trustedPayload === true,
+    options: args.options,
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+    ...(context.previewTrustedValuesPatch !== undefined ? { previewTrustedValuesPatch: context.previewTrustedValuesPatch } : {}),
+  });
   return paste(context.schema, context.state, context.payload, target, args.mode, {
     ...args.options,
     spread,
-    previewPatch: pastePreview,
-    trustedPayload: inputTrustedPayload,
+    previewPatch: preview.previewPatch,
+    trustedPayload: preview.trustedPayload,
   });
+}
+
+export function planClipboardPastePreview<S extends z.ZodType>(
+  input: ClipboardPastePreviewInput<S>,
+): ClipboardPastePreviewPlan<S> {
+  const trustedPayload = input.trustedPayload || input.options.trustedPayload === true;
+  const patchValuesTrusted = trustedPayload || rekeyProducesTrustedPayload(input.options);
+  const previewPatch = patchValuesTrusted && input.previewTrustedValuesPatch
+    ? input.previewTrustedValuesPatch
+    : input.previewPatch;
+  const plan: ClipboardPastePreviewPlan<S> = {
+    trustedPayload,
+    patchValuesTrusted,
+  };
+  if (previewPatch !== undefined) plan.previewPatch = previewPatch;
+  return plan;
 }
 
 export function planClipboardPasteApplyResult<T>(
