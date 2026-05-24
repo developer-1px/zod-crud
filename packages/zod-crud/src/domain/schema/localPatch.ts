@@ -344,6 +344,16 @@ export interface PlanRootRecordRemovePatchInput {
 
 export type RootRecordRemovePatchStrategy = "clear" | "copyPrefix" | "copyDelete" | "rebuild";
 
+export interface PlanRootRecordRemoveStrategyInput {
+  sourceKeys: ReadonlyArray<string>;
+  operations: ReadonlyArray<RootRecordRemoveOperationPlan>;
+}
+
+export interface RootRecordRemoveStrategyPlan {
+  strategy: RootRecordRemovePatchStrategy;
+  keepCount: number;
+}
+
 export interface RootRecordRemoveOperationPlan {
   op: "remove";
   path: Pointer;
@@ -1503,7 +1513,16 @@ export function planRootRecordRemovePatch(
     operations.push({ op: "remove", path: op.path, key });
   }
 
+  const { strategy, keepCount } = planRootRecordRemoveStrategy({ sourceKeys, operations });
+  return { operations, strategy, keepCount };
+}
+
+export function planRootRecordRemoveStrategy(
+  input: PlanRootRecordRemoveStrategyInput,
+): RootRecordRemoveStrategyPlan {
+  const { sourceKeys, operations } = input;
   const keepCount = sourceKeys.length - operations.length;
+  const removedKeys = rootRecordRemoveKeySet(operations);
   const strategy: RootRecordRemovePatchStrategy = operations.length === sourceKeys.length
     ? "clear"
     : removedRootKeysMatchSuffix(sourceKeys, keepCount, removedKeys)
@@ -1511,7 +1530,7 @@ export function planRootRecordRemovePatch(
       : operations.length * 2 < sourceKeys.length
         ? "copyDelete"
         : "rebuild";
-  return { operations, strategy, keepCount };
+  return { strategy, keepCount };
 }
 
 function rootRecordRemoveKeySet(

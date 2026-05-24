@@ -46,6 +46,7 @@ import {
   planRootObjectReplacePatch,
   planRootRecordAddPatch,
   planRootRecordRemovePatch,
+  planRootRecordRemoveStrategy,
   planSameArrayElementReplacePatch,
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
@@ -2170,6 +2171,34 @@ describe("root record add patch planning", () => {
 });
 
 describe("root record remove patch planning", () => {
+  test("plans root record remove strategies from parsed operations", () => {
+    expect(planRootRecordRemoveStrategy({
+      sourceKeys: ["a", "b", "c"],
+      operations: [{ op: "remove", path: "/c", key: "c" }],
+    })).toEqual({ strategy: "copyPrefix", keepCount: 2 });
+
+    expect(planRootRecordRemoveStrategy({
+      sourceKeys: ["a", "b", "c"],
+      operations: [{ op: "remove", path: "/b", key: "b" }],
+    })).toEqual({ strategy: "copyDelete", keepCount: 2 });
+
+    expect(planRootRecordRemoveStrategy({
+      sourceKeys: ["a", "b", "c", "d"],
+      operations: [
+        { op: "remove", path: "/a", key: "a" },
+        { op: "remove", path: "/c", key: "c" },
+      ],
+    })).toEqual({ strategy: "rebuild", keepCount: 2 });
+
+    expect(planRootRecordRemoveStrategy({
+      sourceKeys: ["a", "b"],
+      operations: [
+        { op: "remove", path: "/b", key: "b" },
+        { op: "remove", path: "/a", key: "a" },
+      ],
+    })).toEqual({ strategy: "clear", keepCount: 0 });
+  });
+
   test("plans removal strategies from source key order", () => {
     expect(planRootRecordRemovePatch({
       sourceKeys: ["a", "b", "c"],
