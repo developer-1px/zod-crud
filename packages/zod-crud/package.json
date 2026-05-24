@@ -1,6 +1,6 @@
 {
   "name": "zod-crud",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "description": "Headless JSON editing primitives guarded by Zod schemas.",
   "type": "module",
   "license": "MIT",

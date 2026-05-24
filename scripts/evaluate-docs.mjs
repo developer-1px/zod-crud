@@ -167,6 +167,10 @@ if (packageJson.scripts?.prepublishOnly !== "npm --prefix ../.. run release:chec
   fail("package publish: prepublishOnly must delegate to root release:check.");
 }
 
+if (packageJson.version !== "1.0.0" || !releaseNotes.includes("1.0.0 package version")) {
+  fail("package release: version must be 1.0.0 and documented in release notes.");
+}
+
 if (!/prepublishOnly[\s\S]*release:check/.test(surfaces.llms) || !/prepublishOnly[\s\S]*release:check/.test(releaseNotes)) {
   fail("release docs: prepublishOnly must document release:check delegation.");
 }

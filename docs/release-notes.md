@@ -81,3 +81,21 @@ Before publishing 1.0, run:
 ```sh
 npm run release:check
 ```
+
+## 1.0.0 package version
+
+Date: 2026-05-24
+
+### What changed
+
+- Package version is now `1.0.0`.
+- The 1.0 package version is release-gated by the same root `release:check`
+  path used by `prepublishOnly`.
+
+### Release gate
+
+Before publishing 1.0.0, run:
+
+```sh
+npm run release:check
+```
