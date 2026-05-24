@@ -310,6 +310,10 @@ export interface PlanRootRecordAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanRootRecordAddOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface RootRecordAddOperationPlan {
   op: "add";
   path: Pointer;
@@ -1624,6 +1628,13 @@ export function applyRootRecordAddPlan(input: ApplyRootRecordAddPlanInput): Reco
 }
 
 export function planRootRecordAddPatch(input: PlanRootRecordAddPatchInput): RootRecordAddPatchPlan | null {
+  const operations = planRootRecordAddOperations(input);
+  return operations === null ? null : { operations };
+}
+
+export function planRootRecordAddOperations(
+  input: PlanRootRecordAddOperationsInput,
+): RootRecordAddOperationPlan[] | null {
   const ops = input.operations;
   if (!Array.isArray(ops) || ops.length === 0) return null;
 
@@ -1645,7 +1656,7 @@ export function planRootRecordAddPatch(input: PlanRootRecordAddPatchInput): Root
     operations.push({ op: "add", path: op.path, key: op.path.slice(1), value: op.value });
   }
 
-  return { operations };
+  return operations;
 }
 
 function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(

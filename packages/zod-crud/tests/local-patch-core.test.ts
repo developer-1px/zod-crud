@@ -44,6 +44,7 @@ import {
   planKnownJsonReplacePatch,
   planLocalPatchValueValidation,
   planRootObjectReplacePatch,
+  planRootRecordAddOperations,
   planRootRecordAddPatch,
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
@@ -2045,6 +2046,36 @@ describe("same array patch planning", () => {
 });
 
 describe("root record add patch planning", () => {
+  test("plans root record add operations from plain root keys", () => {
+    expect(planRootRecordAddOperations({
+      operations: [
+        { op: "add", path: "/alpha", value: 1 },
+        { op: "add", path: "/", value: "empty-key" },
+        { op: "add", path: "/__proto__", value: "data-key" },
+      ],
+    })).toEqual([
+      { op: "add", path: "/alpha", key: "alpha", value: 1 },
+      { op: "add", path: "/", key: "", value: "empty-key" },
+      { op: "add", path: "/__proto__", key: "__proto__", value: "data-key" },
+    ]);
+  });
+
+  test("rejects invalid root record add operation plans", () => {
+    expect(planRootRecordAddOperations({ operations: [] })).toBeNull();
+    expect(planRootRecordAddOperations({
+      operations: [{ op: "add", path: "", value: "root" }],
+    })).toBeNull();
+    expect(planRootRecordAddOperations({
+      operations: [{ op: "replace", path: "/alpha", value: 1 }],
+    })).toBeNull();
+    expect(planRootRecordAddOperations({
+      operations: [{ op: "add", path: "/alpha/nested", value: 1 }],
+    })).toBeNull();
+    expect(planRootRecordAddOperations({
+      operations: [{ op: "add", path: "/a~1b", value: 1 }],
+    })).toBeNull();
+  });
+
   test("plans root-level record add operations", () => {
     expect(planRootRecordAddPatch({
       operations: [
