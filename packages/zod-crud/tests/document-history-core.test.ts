@@ -5,6 +5,7 @@ import {
   compactHistoryMetadata,
   planDocumentActiveHistoryMetadata,
   planDocumentChangeCapture,
+  planDocumentChangeMetadata,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryAppend,
   planDocumentHistoryEntry,
@@ -120,6 +121,40 @@ describe("document history core functions", () => {
       mergeKey: "title",
       selectionBefore: { selectedPointers: ["/title"] },
       selectionAfter: { selectedPointers: [] },
+    });
+  });
+
+  test("plans change metadata from capture and selection inputs", () => {
+    expect(planDocumentChangeMetadata({
+      shouldCaptureMetadata: false,
+      activeHistoryMetadata: { label: "Ignored" },
+      metadata: { label: "Direct" },
+      selectionBefore: titleSelection,
+      selectionEnabled: true,
+    })).toBeUndefined();
+
+    expect(planDocumentChangeMetadata({
+      shouldCaptureMetadata: true,
+      activeHistoryMetadata: undefined,
+      metadata: undefined,
+      selectionBefore: titleSelection,
+      selectionEnabled: true,
+    })).toEqual({
+      selectionBefore: titleSelection,
+    });
+
+    expect(planDocumentChangeMetadata({
+      shouldCaptureMetadata: true,
+      activeHistoryMetadata: { label: "Active", origin: "keyboard", mergeKey: "typing" },
+      metadata: { label: "Direct", selectionAfter: emptySelection },
+      selectionBefore: titleSelection,
+      selectionEnabled: false,
+    })).toMatchObject({
+      label: "Direct",
+      origin: "keyboard",
+      mergeKey: "typing",
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
     });
   });
 
