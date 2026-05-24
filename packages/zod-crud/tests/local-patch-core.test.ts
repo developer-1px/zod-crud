@@ -35,6 +35,7 @@ import {
   readAppliedLocalOpSourceValue,
   replaceObjectDataValue,
   replaceValueAtSegments,
+  toAppliedAddOperations,
   writeObjectDataValue,
   writeRootRecordValue,
 } from "../src/domain/schema/localPatch.js";
@@ -122,6 +123,18 @@ describe("array add applied operation validation", () => {
       () => true,
       false,
     )).toBeNull();
+  });
+
+  test("strips planner-only metadata from applied add operations", () => {
+    const operations = [
+      { op: "add" as const, path: "/items/0", value: "A", index: 0 },
+      { op: "add" as const, path: "/items/1", value: "B", key: "ignored" },
+    ];
+
+    expect(toAppliedAddOperations(operations)).toEqual([
+      { op: "add", path: "/items/0", value: "A" },
+      { op: "add", path: "/items/1", value: "B" },
+    ]);
   });
 
   test("rejects untrusted non-serializable applied add values before schema parsing", () => {

@@ -555,6 +555,12 @@ export function planArrayAddAppliedOperations(
   return applied;
 }
 
+export function toAppliedAddOperations(
+  operations: ReadonlyArray<AppliedAddValueValidationOperation>,
+): Extract<JSONPatchOperation, { op: "add" }>[] {
+  return operations.map((op) => ({ op: "add", path: op.path, value: op.value }));
+}
+
 export function evaluateAppliedAddValueValidationPlan<S extends z.ZodType>(
   state: z.output<S>,
   operations: ReadonlyArray<AppliedAddValueValidationOperation>,
@@ -1308,22 +1314,14 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   }
 
   const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
-  const applied = new Array<JSONPatchOperation>(plan.operations.length);
-
-  for (let index = 0; index < plan.operations.length; index += 1) {
-    const op = plan.operations[index]!;
-    const valueAccepted = valueValidator !== null && valueValidator(op.value, new WeakSet<object>());
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: valueSchema,
-      value: op.value,
-      knownJsonAccepted: valueAccepted,
-      valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
-    applied[index] = { op: "add", path: op.path, value: op.value };
-  }
+  const valueFailure = evaluateAppliedAddValueValidationPlan(
+    state,
+    plan.operations,
+    valueSchema,
+    (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
+    valuesTrusted,
+  );
+  if (valueFailure) return valueFailure;
 
   const next = copyRootRecord(state as Record<string, unknown>);
   for (const op of plan.operations) {
@@ -1333,7 +1331,7 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   return {
     state: next as z.output<S>,
     result: { ok: true },
-    applied,
+    applied: toAppliedAddOperations(plan.operations),
   };
 }
 
