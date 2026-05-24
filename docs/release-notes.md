@@ -112,6 +112,8 @@ Date: 2026-05-24
   still need them.
 - `docs:evaluate` and docs consistency tests now reject unresolved `P0` wording
   in the API gap ledger.
+- Remaining external-usage priorities are documented as post-1.0 adoption work,
+  not package release blockers.
 
 ### Release decision
 

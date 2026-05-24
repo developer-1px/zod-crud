@@ -24,7 +24,7 @@ Each loop scores only the axis it tries to improve.
 
 ## Progress
 
-140 / 100 loops complete.
+141 / 100 loops complete.
 
 | Loop | Evaluate | Execute | Score |
 | --- | --- | --- | --- |
@@ -168,6 +168,7 @@ Each loop scores only the axis it tries to improve.
 | 138 | The final local gate was `release:check`, but package `prepublishOnly` still ran only package-local `verify`. A manual `npm publish -w zod-crud` could therefore skip docs drift, browser demo smoke, performance measurement, and final tarball packing. | Changed package `prepublishOnly` to delegate to root `release:check`; updated `llms.txt` and release notes; added docs evaluator and docs consistency guards so publish lifecycle drift is caught. | Runtime health: 5 -> 5 for publish gating. Evidence: `packages/zod-crud/package.json`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`; `llms.txt`; `docs/release-notes.md`. |
 | 139 | The release gate and public contract were 1.0-ready, but the actual package manifest still published `0.12.0`. That made the release artifact inconsistent with the project goal and could produce a tarball with the wrong semver identity. | Bumped `packages/zod-crud` and the workspace lockfile entry to `1.0.0`; documented the 1.0 package version in release notes; added docs evaluator and docs consistency guards so the package version cannot drift back without failing release checks. | API correctness evidence: stronger for the 1.0 package identity. Evidence: `packages/zod-crud/package.json`; `package-lock.json`; `docs/release-notes.md`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`. |
 | 140 | The API gap ledger still used P0 wording for legacy `doc.ops` and `doc.commands` consumer expectations even though the release decision keeps both outside the production root contract. That made external migration work look like a zod-crud 1.0 blocker. | Reclassified those expectations as external adapter/migration work, marked both drift entries closed for the zod-crud 1.0 root contract, documented the classification in release notes, and added docs evaluator plus docs consistency guards that reject unresolved P0 wording in the ledger. | API correctness evidence: stronger for 1.0 scope control. Evidence: `docs/api-usage-gaps.md`; `docs/release-notes.md`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`. |
+| 141 | The same API gap ledger still had `Decision needed` headings and P1/P2/P3 priorities without saying whether they were pre-1.0 blockers. That left selector subscription, scoped history, and browser clipboard adapter ideas looking undecided for the package release. | Added a 1.0 release classification stating no unresolved external-usage gap blocks the package release; converted remaining decision headings to post-1.0 decisions; extended docs evaluator and docs consistency checks so release-blocker classification cannot drift. | API correctness evidence: stronger for final release scope. Evidence: `docs/api-usage-gaps.md`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`; `docs/release-notes.md`. |
 
 ## Next Candidates
 

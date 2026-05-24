@@ -201,6 +201,14 @@ if (/\bP0\b/.test(apiUsageGaps)) {
   fail("api usage gaps: unresolved P0 wording must not remain in the 1.0 release ledger.");
 }
 
+if (!/No unresolved external-usage gap blocks the zod-crud 1\.0 package release/.test(apiUsageGaps)) {
+  fail("api usage gaps: 1.0 release-blocker classification is missing.");
+}
+
+if (/Decision needed/.test(apiUsageGaps)) {
+  fail("api usage gaps: remaining decisions must be classified as post-1.0 work.");
+}
+
 if (
   !/G-001: `doc\.ops` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/.test(apiUsageGaps)
   || !/G-002: `doc\.commands` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/.test(apiUsageGaps)

@@ -89,6 +89,8 @@ describe("public docs consistency", () => {
 
   test("keeps legacy facade drift out of the 1.0 root contract", () => {
     expect(apiUsageGaps).not.toMatch(/\bP0\b/);
+    expect(apiUsageGaps).not.toContain("Decision needed");
+    expect(apiUsageGaps).toMatch(/No unresolved external-usage gap blocks the zod-crud 1\.0 package release/);
     expect(apiUsageGaps).toMatch(/G-001: `doc\.ops` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/);
     expect(apiUsageGaps).toMatch(/G-002: `doc\.commands` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/);
     expect(apiUsageGaps).toMatch(/Keep `doc\.ops` out of the production root contract/);

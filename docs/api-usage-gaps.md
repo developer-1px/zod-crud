@@ -4,6 +4,15 @@ Date: 2026-05-24
 
 Scope: sibling packages under `../` that import `zod-crud`, `zod-crud/react`, or the JSON document primitives. This ledger records gaps only from external-interface usage. Internal source structure tests, private modules, and demo-only decoration are out of scope.
 
+## 1.0 Release Classification
+
+No unresolved external-usage gap blocks the zod-crud 1.0 package release.
+
+Priority labels below are post-1.0 adoption priorities unless a section
+explicitly says it blocks the 1.0 root contract. The locked 1.0 package
+contract is the root `zod-crud` entrypoint plus `zod-crud/react`, as recorded
+in `packages/zod-crud/public-contract.json`.
+
 ## Current Public Surface
 
 The package root currently exports:
@@ -108,7 +117,7 @@ Assessment:
 - This is not the same model as the current JSONDocument facade.
 - Restoring it in the root API would create duplicate concepts and conflict with the current RFC Pointer/Patch direction.
 
-Decision needed:
+Post-1.0 decision:
 
 - Keep this as migration-only.
 - If needed, create a separate `zod-crud/legacy` or local codemod guide; do not mix it into the main public API.
@@ -129,7 +138,7 @@ Current state:
 - `doc.at(pointer)` reads a pointer once.
 - There is no public `subscribePath`, `select`, or `watch` API.
 
-Decision needed:
+Post-1.0 decision:
 
 - Add a small read subscription helper only if repeated consumers need it.
 - Candidate shape should preserve external-interface testing: subscribe, mutate by public API, assert only relevant pointer snapshots change.
@@ -170,7 +179,7 @@ Current state:
 - `doc.history` is document-wide.
 - `doc.history.transaction` can coalesce multiple operations but cannot scope undo to a subtree or entity.
 
-Decision needed:
+Post-1.0 decision:
 
 - Decide whether scoped history is core or sidecar.
 - If core, the public contract should be explicit: e.g. history entries tagged by touched pointers, then `undo({ scope })` or a separate scoped controller.
@@ -190,7 +199,7 @@ Current state:
 - `doc.clipboard` is a headless JSON payload buffer.
 - It intentionally does not own `navigator.clipboard`, `DataTransfer`, TSV, HTML, or sanitization.
 
-Decision needed:
+Post-1.0 decision:
 
 - Keep core headless.
 - Consider documenting a system clipboard adapter recipe rather than adding browser clipboard to core.
