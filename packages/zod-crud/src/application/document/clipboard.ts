@@ -137,6 +137,15 @@ export interface ClipboardPasteApplyResultInput<T> {
   applied: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface ClipboardCutApplyResultInput<T> {
+  result: JSONResult;
+  state: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  payload: unknown;
+  source: Pointer;
+  sources: ReadonlyArray<Pointer>;
+}
+
 export interface ClipboardSchemaTrustedPayloadInput {
   state: unknown;
   stateJsonTrusted: boolean;
@@ -252,6 +261,27 @@ export function planClipboardPasteApplyResult<T>(
     ok: false,
     code: input.result.code,
     message: input.result.reason ?? input.result.code,
+  };
+}
+
+export function planClipboardCutApplyResult<T>(
+  input: ClipboardCutApplyResultInput<T>,
+): ClipboardCutResult<T> {
+  if (!input.result.ok) {
+    return {
+      ok: false,
+      code: input.result.code,
+      message: input.result.reason ?? input.result.code,
+      violations: [],
+    };
+  }
+  return {
+    ok: true,
+    value: input.state,
+    applied: input.applied,
+    payload: input.payload,
+    source: input.source,
+    sources: input.sources,
   };
 }
 
@@ -457,28 +487,23 @@ export function createClipboard<S extends z.ZodType>(
       const patchResult = applyPreviewedPatch
         ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
         : ops.patch(result.patch);
-      if (!patchResult.ok) {
-        return {
-          ok: false,
-          code: patchResult.code,
-          message: patchResult.reason ?? patchResult.code,
-          violations: [],
-        };
-      }
-      setBuffer({
-        payload: result.payload,
-        source: result.source,
-        sources: [...result.sources],
-        schemaTrusted: true,
-      });
-      return {
-        ok: true,
-        value: getState(),
+      const applyResult = planClipboardCutApplyResult({
+        result: patchResult,
+        state: getState(),
         applied: getAppliedPatch?.() ?? result.patch,
         payload: result.payload,
         source: result.source,
         sources: result.sources,
-      };
+      });
+      if (applyResult.ok) {
+        setBuffer({
+          payload: result.payload,
+          source: result.source,
+          sources: [...result.sources],
+          schemaTrusted: true,
+        });
+      }
+      return applyResult;
     },
 
     paste(target, options) {

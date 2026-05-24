@@ -3,6 +3,7 @@ import * as z from "zod";
 
 import {
   isClipboardSchemaTrustedPayload,
+  planClipboardCutApplyResult,
   planClipboardPasteApplyResult,
   planClipboardPeekBuffer,
   planClipboardReadBuffer,
@@ -168,6 +169,47 @@ describe("document clipboard core functions", () => {
       sources: ["/items/0"],
     });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  test("maps cut apply results to public cut mutation results", () => {
+    const applied: JSONPatchOperation[] = [
+      { op: "remove", path: "/items/0" },
+    ];
+    const payload = { id: "a", name: "A" };
+    const state = {
+      ...initial,
+      items: [{ id: "b", name: "B" }],
+    };
+
+    expect(planClipboardCutApplyResult({
+      result: { ok: true },
+      state,
+      applied,
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+    })).toEqual({
+      ok: true,
+      value: state,
+      applied,
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+
+    expect(planClipboardCutApplyResult({
+      result: { ok: false, code: "path_not_found", reason: "missing source" },
+      state,
+      applied,
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+    })).toEqual({
+      ok: false,
+      code: "path_not_found",
+      message: "missing source",
+      violations: [],
+    });
   });
 
   test("plans paste against an explicit selection target", () => {
