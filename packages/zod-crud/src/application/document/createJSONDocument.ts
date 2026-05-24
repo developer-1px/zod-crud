@@ -123,6 +123,13 @@ export interface PlanDocumentCommitSelectionInput {
   selectionEnabled: boolean;
 }
 
+export interface PlanDocumentCommitSelectionAfterInput {
+  current: SelectionSnap;
+  selection: SelectionAction | SelectionSnap;
+  state: unknown;
+  mode: SelectionMode;
+}
+
 export interface DocumentCommitSelectionPlan {
   selectionAfter: SelectionSnap;
   changeMetadata: JSONChangeMetadata | undefined;
@@ -1254,12 +1261,12 @@ export function planDocumentCommitRoute(
 export function planDocumentCommitSelection(
   input: PlanDocumentCommitSelectionInput,
 ): DocumentCommitSelectionPlan {
-  const selectionAfter = resolveCommitSelection(
-    input.selectionBefore,
-    input.selection,
-    input.state,
-    input.selectionMode,
-  );
+  const selectionAfter = planDocumentCommitSelectionAfter({
+    current: input.selectionBefore,
+    selection: input.selection,
+    state: input.state,
+    mode: input.selectionMode,
+  });
   const directMetadata: JSONChangeMetadata = input.metadata === undefined
     ? { selectionAfter }
     : { ...input.metadata, selectionAfter };
@@ -1272,6 +1279,14 @@ export function planDocumentCommitSelection(
       input.selectionEnabled,
     ),
   };
+}
+
+export function planDocumentCommitSelectionAfter(
+  input: PlanDocumentCommitSelectionAfterInput,
+): SelectionSnap {
+  return isDocumentSelectionSnapshot(input.selection)
+    ? restoreSelection(input.selection, input.mode, input.state)
+    : reduceSelection(input.current, input.selection, input.mode, input.state);
 }
 
 export function planDocumentCommitPreview(
@@ -1293,18 +1308,7 @@ export function shouldRecordDocumentCommitHistory(
     && input.operationCount > 0;
 }
 
-function resolveCommitSelection(
-  current: SelectionSnap,
-  selection: SelectionAction | SelectionSnap,
-  state: unknown,
-  mode: SelectionMode,
-): SelectionSnap {
-  return isSelectionSnap(selection)
-    ? restoreSelection(selection, mode, state)
-    : reduceSelection(current, selection, mode, state);
-}
-
-function isSelectionSnap(selection: SelectionAction | SelectionSnap): selection is SelectionSnap {
+export function isDocumentSelectionSnapshot(selection: SelectionAction | SelectionSnap): selection is SelectionSnap {
   return typeof selection === "object"
     && selection !== null
     && "selectionRanges" in selection

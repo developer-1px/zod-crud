@@ -1,6 +1,8 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  isDocumentSelectionSnapshot,
+  planDocumentCommitSelectionAfter,
   planDocumentCommitPreview,
   planDocumentCommitRoute,
   planDocumentCommitSelection,
@@ -95,6 +97,35 @@ describe("document commit core functions", () => {
       selectionBefore: emptySelection,
       selectionAfter: titleSelection,
     });
+  });
+
+  test("plans commit selection-after from actions and snapshots directly", () => {
+    expect(isDocumentSelectionSnapshot(titleSelection)).toBe(true);
+    expect(isDocumentSelectionSnapshot({ type: "collapse", point: "/title" })).toBe(false);
+
+    expect(planDocumentCommitSelectionAfter({
+      current: emptySelection,
+      selection: { type: "collapse", point: "/title" },
+      state: { title: "final" },
+      mode: "single",
+    })).toEqual(titleSelection);
+
+    const snapshot: SelectionSnap = {
+      selectedPointers: ["/items/0"],
+      selectionRanges: [{ anchor: "/items/0", focus: "/items/0" }],
+      primaryIndex: 0,
+      anchor: "/items/0",
+      focus: "/items/0",
+    };
+    const restored = planDocumentCommitSelectionAfter({
+      current: emptySelection,
+      selection: snapshot,
+      state: { items: [{ id: "a" }] },
+      mode: "multiple",
+    });
+
+    expect(restored).toEqual(snapshot);
+    expect(restored).not.toBe(snapshot);
   });
 
   test("accepts commit selection snapshots as the final selection", () => {
