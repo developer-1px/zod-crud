@@ -128,6 +128,20 @@ export interface DocumentCommitSelectionPlan {
   changeMetadata: JSONChangeMetadata | undefined;
 }
 
+export interface PlanDocumentCommitPreviewInput {
+  result: JSONResult;
+  state: unknown;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
+export type DocumentCommitPreviewPlan =
+  | { kind: "fallbackPatch" }
+  | {
+      kind: "trustedApply";
+      state: unknown;
+      applied: ReadonlyArray<JSONPatchOperation>;
+    };
+
 export interface DocumentCommitHistoryInput {
   historyLimit: number;
   isRestoring: boolean;
@@ -641,18 +655,19 @@ export function createJSONDocument<S extends z.ZodType>(
     const before = rawOps.state;
     const selectionBefore = snapSelection();
     const predicted = rawOps.previewPatch(operations);
-    if (!predicted.result.ok) return patch(operations, route.metadata);
+    const preview = planDocumentCommitPreview(predicted);
+    if (preview.kind === "fallbackPatch") return patch(operations, route.metadata);
 
     const plan = planDocumentCommitSelection({
       activeHistoryMetadata,
       metadata: route.metadata,
       selection: route.selection,
       selectionBefore,
-      state: predicted.state,
+      state: preview.state,
       selectionMode,
       selectionEnabled,
     });
-    const r = rawOps.trustedApply(predicted.state, predicted.applied, plan.changeMetadata);
+    const r = rawOps.trustedApply(preview.state as z.output<S>, preview.applied, plan.changeMetadata);
     if (!r.ok) return r;
 
     lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
@@ -1087,6 +1102,17 @@ export function planDocumentCommitSelection(
       input.selectionBefore,
       input.selectionEnabled,
     ),
+  };
+}
+
+export function planDocumentCommitPreview(
+  input: PlanDocumentCommitPreviewInput,
+): DocumentCommitPreviewPlan {
+  if (!input.result.ok) return { kind: "fallbackPatch" };
+  return {
+    kind: "trustedApply",
+    state: input.state,
+    applied: input.applied,
   };
 }
 

@@ -1,11 +1,13 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  planDocumentCommitPreview,
   planDocumentCommitRoute,
   planDocumentCommitSelection,
   shouldRecordDocumentCommitHistory,
 } from "../src/application/document/createJSONDocument.js";
 import type { SelectionSnap } from "../src/domain/selection/index.js";
+import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
 const emptySelection: SelectionSnap = {
   selectedPointers: [],
@@ -24,6 +26,27 @@ const titleSelection: SelectionSnap = {
 };
 
 describe("document commit core functions", () => {
+  test("routes commit previews to trusted apply only after successful prediction", () => {
+    const state = { title: "final" };
+    const applied: JSONPatchOperation[] = [{ op: "replace", path: "/title", value: "final" }];
+
+    expect(planDocumentCommitPreview({
+      result: { ok: false, code: "path_not_found", pointer: "/missing" },
+      state,
+      applied,
+    })).toEqual({ kind: "fallbackPatch" });
+
+    expect(planDocumentCommitPreview({
+      result: { ok: true },
+      state,
+      applied,
+    })).toEqual({
+      kind: "trustedApply",
+      state,
+      applied,
+    });
+  });
+
   test("routes commit options to patch or explicit selection execution", () => {
     expect(planDocumentCommitRoute({ options: undefined })).toEqual({
       kind: "patch",
