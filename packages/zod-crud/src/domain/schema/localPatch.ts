@@ -351,6 +351,13 @@ export type ValidatedArrayIndexReplacementsResult<S extends z.ZodType> =
   | { ok: true; replacements: ArrayIndexReplacement[] }
   | { ok: false; result: ApplyResult<S> | null };
 
+export interface ApplyValidatedArrayIndexReplacementsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> extends BuildValidatedArrayIndexReplacementsInput<S, Operation> {
+  arraySegments: ReadonlyArray<string>;
+}
+
 export interface BuildKnownJsonArrayIndexReplacementsInput<
   Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
 > {
@@ -1301,8 +1308,9 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
 
   const current = readArrayAtSegments({ state, segments: plan.arraySegments });
   if (!current.ok) return null;
-  const replacements = buildValidatedArrayIndexReplacements({
+  return applyValidatedArrayIndexReplacements({
     state,
+    arraySegments: plan.arraySegments,
     array: current.array,
     operations: plan.operations,
     valueSchema,
@@ -1312,16 +1320,6 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
       return replaced === null ? { ok: false } : { ok: true, value: replaced };
     },
   });
-  if (!replacements.ok) return replacements.result;
-
-  const nextState = applyArrayIndexReplacements({
-    state,
-    arraySegments: plan.arraySegments,
-    array: current.array,
-    replacements: replacements.replacements,
-  });
-  if (nextState === null) return null;
-  return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planSameArrayFieldReplacePatch(
@@ -2123,6 +2121,26 @@ export function buildValidatedArrayIndexReplacements<
   }
 
   return { ok: true, replacements };
+}
+
+export function applyValidatedArrayIndexReplacements<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyValidatedArrayIndexReplacementsInput<S, Operation>,
+): ApplyResult<S> | null {
+  const replacements = buildValidatedArrayIndexReplacements(input);
+  if (!replacements.ok) return replacements.result;
+
+  const nextState = applyArrayIndexReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: input.array,
+    replacements: replacements.replacements,
+  });
+  return nextState === null
+    ? null
+    : okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(input.operations));
 }
 
 export function buildKnownJsonArrayIndexReplacements<

@@ -20,6 +20,7 @@ import {
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
   applyValidatedArrayAddPlan,
+  applyValidatedArrayIndexReplacements,
   appendArrayIndexPath,
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -449,6 +450,75 @@ describe("array index replacement state materialization", () => {
 });
 
 describe("validated array index replacement planning", () => {
+  test("validates and applies array index replacements with applied operations", () => {
+    const state = { items: [{ name: "A" }, { name: "B" }], meta: true };
+
+    expect(applyValidatedArrayIndexReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      operations: [
+        { op: "replace", path: "/items/0/name", index: 0, value: "X" },
+        { op: "replace", path: "/items/1/name", index: 1, value: "Y" },
+      ],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (operation, currentValue) => {
+        const replaced = replaceObjectDataValue(currentValue, "name", operation.value);
+        return replaced === null ? { ok: false } : { ok: true, value: replaced };
+      },
+    })).toEqual({
+      state: { items: [{ name: "X" }, { name: "Y" }], meta: true },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/items/0/name", value: "X" },
+        { op: "replace", path: "/items/1/name", value: "Y" },
+      ],
+    });
+    expect(state.items).toEqual([{ name: "A" }, { name: "B" }]);
+  });
+
+  test("returns array index replacement validation failures before materialization", () => {
+    const state = { items: [{ name: "A" }] };
+    const result = applyValidatedArrayIndexReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      operations: [{ op: "replace", path: "/items/0/name", index: 0, value: 1 }],
+      valueSchema: z.string(),
+      valuesTrusted: true,
+      replacementValue: (operation, currentValue) => {
+        const replaced = replaceObjectDataValue(currentValue, "name", operation.value);
+        return replaced === null ? { ok: false } : { ok: true, value: replaced };
+      },
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+    expect(state.items).toEqual([{ name: "A" }]);
+  });
+
+  test("rejects validated array index replacements outside the current array", () => {
+    const state = { items: [{ name: "A" }] };
+
+    expect(applyValidatedArrayIndexReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      operations: [{ op: "replace", path: "/items/1/name", index: 1, value: "B" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (operation, currentValue) => {
+        const replaced = replaceObjectDataValue(currentValue, "name", operation.value);
+        return replaced === null ? { ok: false } : { ok: true, value: replaced };
+      },
+    })).toBeNull();
+    expect(state.items).toEqual([{ name: "A" }]);
+  });
+
   test("builds replacements after index, materialization, and value validation", () => {
     const state = { items: [{ name: "old-a" }, { name: "old-b" }] };
     const result = buildValidatedArrayIndexReplacements({
