@@ -11,6 +11,7 @@ import {
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
+  applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
   appendArrayIndexPath,
   arrayElementSchemaAtParent,
@@ -835,6 +836,64 @@ describe("root record copy and write helpers", () => {
     expect(replaceArrayField([{ name: "Draft" }], 1, "name", "Final")).toBeNull();
     expect(replaceArrayField([{ name: "Draft" }], 0, "missing", "Final")).toBeNull();
     expect(replaceArrayField(["Draft"], 0, "name", "Final")).toBeNull();
+  });
+
+  test("applies single root array field replacements to root arrays and shallow object arrays", () => {
+    const root = [{ name: "Draft" }, { name: "Keep" }];
+    expect(applySingleRootArrayFieldReplace({
+      state: root,
+      arrayPath: "",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toEqual([{ name: "Final" }, { name: "Keep" }]);
+    expect(root).toEqual([{ name: "Draft" }, { name: "Keep" }]);
+
+    const state = { items: [{ name: "Draft" }], meta: { keep: true } };
+    expect(applySingleRootArrayFieldReplace({
+      state,
+      arrayPath: "/items",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toEqual({ items: [{ name: "Final" }], meta: { keep: true } });
+    expect(state).toEqual({ items: [{ name: "Draft" }], meta: { keep: true } });
+  });
+
+  test("rejects single root array field replacements outside supported root shapes", () => {
+    const state = { items: [{ name: "Draft" }], "a/b": [{ name: "Draft" }] };
+
+    expect(applySingleRootArrayFieldReplace({
+      state,
+      arrayPath: "",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applySingleRootArrayFieldReplace({
+      state,
+      arrayPath: "/a~1b",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applySingleRootArrayFieldReplace({
+      state: { nested: { items: [{ name: "Draft" }] } },
+      arrayPath: "/nested/items",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applySingleRootArrayFieldReplace({
+      state,
+      arrayPath: "/missing",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toBeNull();
   });
 
   test("creates null-prototype key sets for structural data keys", () => {

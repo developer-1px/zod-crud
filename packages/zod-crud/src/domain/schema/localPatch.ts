@@ -54,6 +54,14 @@ export interface SingleReplacePatchPlan {
   operation: Extract<JSONPatchOperation, { op: "replace" }>;
 }
 
+export interface ApplySingleRootArrayFieldReplaceInput {
+  state: unknown;
+  arrayPath: Pointer;
+  index: number;
+  key: string;
+  value: unknown;
+}
+
 export interface PlanSingleRootObjectReplacePatchInput {
   operation: JSONPatchOperation;
   sourceKeys: ReadonlyArray<string>;
@@ -783,7 +791,13 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   const location = parseArrayFieldPath(op.path);
   if (location === null) return null;
 
-  const rootArrayReplace = applySingleRootArrayFieldReplace(state, location, op.value);
+  const rootArrayReplace = applySingleRootArrayFieldReplace({
+    state,
+    arrayPath: location.arrayPath,
+    index: location.index,
+    key: location.key,
+    value: op.value,
+  });
   if (rootArrayReplace !== null) return rootArrayReplace;
 
   let arraySegments: string[];
@@ -800,25 +814,22 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   return nextArray === null ? null : replaceValueAtSegments(state, arraySegments, 0, nextArray);
 }
 
-function applySingleRootArrayFieldReplace(
-  state: unknown,
-  location: ArrayFieldPath,
-  value: unknown,
-): unknown | null {
-  if (location.arrayPath === "") {
+export function applySingleRootArrayFieldReplace(input: ApplySingleRootArrayFieldReplaceInput): unknown | null {
+  const { state, arrayPath, index, key, value } = input;
+  if (arrayPath === "") {
     if (!Array.isArray(state)) return null;
-    return replaceArrayField(state, location.index, location.key, value);
+    return replaceArrayField(state, index, key, value);
   }
 
   if (
-    location.arrayPath[0] !== "/"
-    || location.arrayPath.includes("~")
-    || location.arrayPath.indexOf("/", 1) !== -1
+    arrayPath[0] !== "/"
+    || arrayPath.includes("~")
+    || arrayPath.indexOf("/", 1) !== -1
   ) {
     return null;
   }
 
-  const arrayKey = location.arrayPath.slice(1);
+  const arrayKey = arrayPath.slice(1);
   if (
     arrayKey === "__proto__"
     || state === null
@@ -831,7 +842,7 @@ function applySingleRootArrayFieldReplace(
 
   const current = (state as Record<string, unknown>)[arrayKey];
   if (!Array.isArray(current)) return null;
-  const nextArray = replaceArrayField(current, location.index, location.key, value);
+  const nextArray = replaceArrayField(current, index, key, value);
   if (nextArray === null) return null;
   return { ...(state as Record<string, unknown>), [arrayKey]: nextArray };
 }
