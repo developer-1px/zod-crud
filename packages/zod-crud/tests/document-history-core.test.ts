@@ -15,6 +15,7 @@ import {
   planDocumentHistoryMergeLast,
   planDocumentHistoryMergeMetadata,
   planDocumentHistoryMergeLastWrite,
+  planDocumentHistoryRecord,
   planDocumentHistoryRestore,
   planDocumentHistoryRestoreApply,
   planDocumentHistoryRestoreCompletion,
@@ -730,6 +731,74 @@ describe("document history core functions", () => {
       previous,
       entry: null,
     })).toEqual({ kind: "skip" });
+    expect(previous.forward).toEqual([{ op: "replace", path: "/title", value: "a" }]);
+  });
+
+  test("plans full history record writes from transaction state and patch context", () => {
+    const previous = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Typing" },
+      snapshot: { before: { title: "draft" } },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentHistoryRecord({
+      activeTransactionStartDepth: 0,
+      currentDepth: 1,
+      previous,
+      before: { title: "a" },
+      after: { title: "ab" },
+      operations: [{ op: "replace", path: "/title", value: "ab" }],
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
+      metadata: { mergeKey: "typing:title", selectionBefore: titleSelection },
+    })).toEqual({
+      kind: "replaceLast",
+      entry: {
+        forward: [{ op: "replace", path: "/title", value: "ab" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: emptySelection,
+        metadata: { label: "Typing", mergeKey: "typing:title" },
+        snapshot: { before: { title: "draft" } },
+      },
+    });
+
+    expect(planDocumentHistoryRecord({
+      activeTransactionStartDepth: undefined,
+      currentDepth: 0,
+      previous: undefined,
+      before: { title: "draft" },
+      after: { title: "final" },
+      operations: [{ op: "replace", path: "/title", value: "final" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Rename", selectionAfter: titleSelection },
+      operationsOwned: true,
+    })).toEqual({
+      kind: "commit",
+      entry: {
+        forward: [{ op: "replace", path: "/title", value: "final" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: titleSelection,
+        metadata: { label: "Rename" },
+      },
+    });
+
+    expect(planDocumentHistoryRecord({
+      activeTransactionStartDepth: undefined,
+      currentDepth: 0,
+      previous: undefined,
+      before: { title: "draft" },
+      after: { title: "draft" },
+      operations: [{ op: "remove", path: "/missing" }],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+    })).toEqual({ kind: "skip" });
+
     expect(previous.forward).toEqual([{ op: "replace", path: "/title", value: "a" }]);
   });
 

@@ -406,7 +406,7 @@ export interface PlanDocumentHistoryEntryInput {
   operations: ReadonlyArray<JSONPatchOperation>;
   selectionBefore: SelectionSnap;
   selectionAfter: SelectionSnap;
-  metadata?: HistoryTransactionOptions;
+  metadata?: JSONChangeMetadata;
   operationsOwned?: boolean;
 }
 
@@ -421,6 +421,19 @@ export type DocumentHistoryAppendPlan =
   | { kind: "skip" }
   | { kind: "replaceLast"; entry: DocumentHistoryEntry }
   | { kind: "commit"; entry: DocumentHistoryEntry };
+
+export interface PlanDocumentHistoryRecordInput {
+  activeTransactionStartDepth: number | undefined;
+  currentDepth: number;
+  previous: DocumentHistoryEntry | undefined;
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata?: JSONChangeMetadata;
+  operationsOwned?: boolean;
+}
 
 export interface PlanDocumentHistoryMergeMetadataInput {
   previous: HistoryTransactionOptions | undefined;
@@ -589,42 +602,25 @@ export function createJSONDocument<S extends z.ZodType>(
     metadata?: HistoryTransactionOptions,
     operationsOwned = false,
   ): void => {
-    const historyMetadata = metadata === undefined ? undefined : compactHistoryMetadata(metadata);
     const currentDepth = historyDepth(stack);
-    const fastPath = planDocumentTransactionAppendFastPath({
+    const recordPlan = planDocumentHistoryRecord({
       activeTransactionStartDepth,
       currentDepth,
       previous: stack.undo[stack.undo.length - 1],
-      operations,
-      selectionAfter,
-      metadata: historyMetadata,
-    });
-    if (fastPath.kind === "replaceLast") {
-      stack.undo[stack.undo.length - 1] = fastPath.entry;
-      return;
-    }
-
-    const entry = planDocumentHistoryEntry({
       before,
       after,
       operations,
       selectionBefore,
       selectionAfter,
-      ...(historyMetadata !== undefined ? { metadata: historyMetadata } : {}),
+      ...(metadata !== undefined ? { metadata } : {}),
       ...(operationsOwned ? { operationsOwned } : {}),
     });
-    const appendPlan = planDocumentHistoryAppend({
-      activeTransactionStartDepth,
-      currentDepth,
-      previous: stack.undo[stack.undo.length - 1],
-      entry,
-    });
-    if (appendPlan.kind === "skip") return;
-    if (appendPlan.kind === "replaceLast") {
-      stack.undo[stack.undo.length - 1] = appendPlan.entry;
+    if (recordPlan.kind === "skip") return;
+    if (recordPlan.kind === "replaceLast") {
+      stack.undo[stack.undo.length - 1] = recordPlan.entry;
       return;
     }
-    commitHistory(stack, appendPlan.entry, historyLimit);
+    commitHistory(stack, recordPlan.entry, historyLimit);
   };
 
   const applyDocumentChangePlan = (plan: DocumentChangeApplyResultPlan): void => {
@@ -1653,6 +1649,37 @@ export function planDocumentHistoryAppend(
   }
 
   return { kind: "commit", entry };
+}
+
+export function planDocumentHistoryRecord(
+  input: PlanDocumentHistoryRecordInput,
+): DocumentHistoryAppendPlan {
+  const historyMetadata = compactHistoryMetadata(input.metadata);
+  const fastPath = planDocumentTransactionAppendFastPath({
+    activeTransactionStartDepth: input.activeTransactionStartDepth,
+    currentDepth: input.currentDepth,
+    previous: input.previous,
+    operations: input.operations,
+    selectionAfter: input.selectionAfter,
+    metadata: historyMetadata,
+  });
+  if (fastPath.kind === "replaceLast") return fastPath;
+
+  const entry = planDocumentHistoryEntry({
+    before: input.before,
+    after: input.after,
+    operations: input.operations,
+    selectionBefore: input.selectionBefore,
+    selectionAfter: input.selectionAfter,
+    ...(historyMetadata !== undefined ? { metadata: historyMetadata } : {}),
+    ...(input.operationsOwned === true ? { operationsOwned: true } : {}),
+  });
+  return planDocumentHistoryAppend({
+    activeTransactionStartDepth: input.activeTransactionStartDepth,
+    currentDepth: input.currentDepth,
+    previous: input.previous,
+    entry,
+  });
 }
 
 export function planDocumentHistoryRestore(
