@@ -3,10 +3,12 @@ import * as z from "zod";
 
 import {
   isClipboardSchemaTrustedPayload,
+  planClipboardCopy,
   planClipboardCutApplyResult,
   planClipboardPasteApplyResult,
   planClipboardPeekBuffer,
   planClipboardReadBuffer,
+  planClipboardSchemaTrustedSourceBuffer,
   planClipboardCut,
   planClipboardPaste,
   planClipboardWriteBuffer,
@@ -213,6 +215,60 @@ describe("document clipboard core functions", () => {
         code: "not_serializable",
       },
     });
+  });
+
+  test("plans copy without a clipboard shell", () => {
+    const result = planClipboardCopy({
+      state: initial,
+      source: "/items/0",
+      stateJsonTrusted: true,
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      payload: { id: "a", name: "A" },
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+    if (result.ok) expect(result.payload).not.toBe(initial.items[0]);
+
+    const direct = planClipboardCopy({
+      state: initial,
+      source: "/items/0",
+      stateJsonTrusted: true,
+      clonePayload: false,
+    });
+    if (!direct.ok) throw new Error("expected copy to succeed");
+    expect(direct.payload).toBe(initial.items[0]);
+
+    expect(planClipboardCopy({
+      state: initial,
+      source: "items/0",
+      stateJsonTrusted: true,
+    })).toEqual({
+      ok: false,
+      code: "invalid_pointer",
+      message: "invalid source pointer: items/0",
+    });
+  });
+
+  test("plans schema-trusted source buffers for copy and cut results", () => {
+    const payload = { id: "a", name: "A" };
+    const sources = ["/items/0"];
+
+    const buffer = planClipboardSchemaTrustedSourceBuffer({
+      payload,
+      source: "/items/0",
+      sources,
+    });
+
+    expect(buffer).toEqual({
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+      schemaTrusted: true,
+    });
+    expect(buffer.sources).not.toBe(sources);
   });
 
   test("plans cut without applying document state or touching clipboard buffer", () => {

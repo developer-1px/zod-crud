@@ -131,6 +131,13 @@ export interface ClipboardPastePlanContext<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface ClipboardCopyPlanContext {
+  state: unknown;
+  source: ClipboardSource;
+  stateJsonTrusted?: boolean;
+  clonePayload?: boolean;
+}
+
 export interface ClipboardPasteApplyResultInput<T> {
   result: JSONResult;
   state: T;
@@ -164,6 +171,12 @@ export interface ClipboardWriteBufferInput {
   stateJsonTrusted: boolean;
   payload: unknown;
   options?: ClipboardWriteOptions;
+}
+
+export interface ClipboardSchemaTrustedSourceBufferInput {
+  payload: unknown;
+  source: Pointer;
+  sources: ReadonlyArray<Pointer>;
 }
 
 export type ClipboardWriteBufferPlan =
@@ -215,6 +228,16 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
   code: "empty_clipboard",
   message: "clipboard is empty",
 };
+
+export function planClipboardCopy(
+  context: ClipboardCopyPlanContext,
+): CopyOk | CopyError {
+  const copyOptions: { trusted: boolean; clonePayload?: boolean } = {
+    trusted: context.stateJsonTrusted === true,
+  };
+  if (context.clonePayload !== undefined) copyOptions.clonePayload = context.clonePayload;
+  return copy(context.state, context.source, copyOptions);
+}
 
 export function planClipboardCut<S extends z.ZodType>(
   context: ClipboardCutPlanContext<S>,
@@ -293,6 +316,17 @@ export function planClipboardCutApplyResult<T>(
     payload: input.payload,
     source: input.source,
     sources: input.sources,
+  };
+}
+
+export function planClipboardSchemaTrustedSourceBuffer(
+  input: ClipboardSchemaTrustedSourceBufferInput,
+): ClipboardBuffer {
+  return {
+    payload: input.payload,
+    source: input.source,
+    sources: [...input.sources],
+    schemaTrusted: true,
   };
 }
 
@@ -490,18 +524,14 @@ export function createClipboard<S extends z.ZodType>(
     copy(source, options = {}) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCopySource();
-      const copyOptions: { trusted: boolean; clonePayload?: boolean } = {
-        trusted: getStateJsonTrusted?.() === true,
-      };
-      if (options.clonePayload !== undefined) copyOptions.clonePayload = options.clonePayload;
-      const result = copy(getState(), resolved, copyOptions);
+      const result = planClipboardCopy({
+        state: getState(),
+        source: resolved,
+        stateJsonTrusted: getStateJsonTrusted?.() === true,
+        ...(options.clonePayload !== undefined ? { clonePayload: options.clonePayload } : {}),
+      });
       if (result.ok) {
-        setBuffer({
-          payload: result.payload,
-          source: result.source,
-          sources: [...result.sources],
-          schemaTrusted: true,
-        });
+        setBuffer(planClipboardSchemaTrustedSourceBuffer(result));
       }
       return result;
     },
@@ -530,12 +560,7 @@ export function createClipboard<S extends z.ZodType>(
         sources: result.sources,
       });
       if (applyResult.ok) {
-        setBuffer({
-          payload: result.payload,
-          source: result.source,
-          sources: [...result.sources],
-          schemaTrusted: true,
-        });
+        setBuffer(planClipboardSchemaTrustedSourceBuffer(applyResult));
       }
       return applyResult;
     },
