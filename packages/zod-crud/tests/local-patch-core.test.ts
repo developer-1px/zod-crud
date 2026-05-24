@@ -508,6 +508,24 @@ describe("append-only array add patch planning", () => {
     sparse[1] = { op: "add", path: "/items/-", value: "B" };
     expect(planAppendOnlyArrayAddPatch({ operations: sparse })).toBeNull();
   });
+
+  test("keeps append-only array add JSON guard before schema parsing", () => {
+    const state = { items: [] as unknown[] };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.unknown()) }),
+      state,
+      [
+        { op: "add", path: "/items/-", value: () => "not json" },
+        { op: "add", path: "/items/-", value: 2 },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
 
 describe("increasing array add patch planning", () => {
