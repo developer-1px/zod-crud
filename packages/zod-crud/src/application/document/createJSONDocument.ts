@@ -1190,10 +1190,16 @@ export function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
   if (options?.rekey !== undefined || options?.spread === true) return false;
   if (!isPlainStructuralSchemaForLocalValidation(schema)) return false;
 
-  const replaceTarget = replacePointerTarget(target);
+  const replaceTarget = planDocumentPasteReplaceTarget(target);
   if (replaceTarget === null || replaceTarget !== read.source) return false;
   const segments = tryParsePointer(replaceTarget);
   return segments !== null && readAt(state, segments).ok;
+}
+
+export function planDocumentPasteReplaceTarget(target: JSONDocumentPasteTarget): Pointer | null {
+  return typeof target === "object" && target !== null && "replace" in target
+    ? target.replace
+    : null;
 }
 
 export function planDocumentSelectionRuntime(
@@ -1213,12 +1219,6 @@ export function planDocumentSelectionRuntime(
     selectionMode: selectionOptions.mode ?? "single",
     createSelectionOptions,
   };
-}
-
-function replacePointerTarget(target: JSONDocumentPasteTarget): Pointer | null {
-  return typeof target === "object" && target !== null && "replace" in target
-    ? target.replace
-    : null;
 }
 
 function isPatchArray(operations: JSONPatchInput): operations is ReadonlyArray<JSONPatchOperation> {

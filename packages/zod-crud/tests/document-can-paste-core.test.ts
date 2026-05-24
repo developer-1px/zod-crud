@@ -4,6 +4,7 @@ import * as z from "zod";
 import {
   canTrustSameSourceReplaceCanPaste,
   planDocumentCanPaste,
+  planDocumentPasteReplaceTarget,
 } from "../src/application/document/createJSONDocument.js";
 import type { ClipboardPeekResult } from "../src/application/document/clipboard.js";
 
@@ -38,6 +39,13 @@ function clipboardWithData(
 }
 
 describe("document canPaste core planning", () => {
+  test("plans replace targets from paste target shapes", () => {
+    expect(planDocumentPasteReplaceTarget({ replace: "/items/0" })).toBe("/items/0");
+    expect(planDocumentPasteReplaceTarget("/items/0")).toBeNull();
+    expect(planDocumentPasteReplaceTarget({ before: "/items/0" })).toBeNull();
+    expect(planDocumentPasteReplaceTarget({ after: "/items/0" })).toBeNull();
+  });
+
   test("returns the empty clipboard capability result without a document facade", () => {
     expect(planDocumentCanPaste({
       schema: Schema,
