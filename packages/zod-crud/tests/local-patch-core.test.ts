@@ -3,11 +3,13 @@ import { z } from "zod";
 
 import {
   applyPatchWithLocalSchemaValidation,
+  appendArrayIndexPath,
   arrayElementSchemaAtPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
   evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
+  numericSegment,
   planAppliedLocalOpValidation,
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
@@ -155,6 +157,30 @@ describe("schema issue prefixing", () => {
       { code: "custom", message: "invalid", path: ["items", "01"] },
     ]);
     expect(issues[0]?.path).toEqual([]);
+  });
+});
+
+describe("numeric path helpers", () => {
+  test("parses canonical numeric pointer segments", () => {
+    expect(numericSegment("0")).toBe(0);
+    expect(numericSegment("1")).toBe(1);
+    expect(numericSegment("42")).toBe(42);
+  });
+
+  test("rejects empty, signed, decimal, and leading-zero segments", () => {
+    expect(numericSegment("")).toBeNull();
+    expect(numericSegment("-")).toBeNull();
+    expect(numericSegment("-1")).toBeNull();
+    expect(numericSegment("1.5")).toBeNull();
+    expect(numericSegment("01")).toBeNull();
+    expect(numericSegment("00")).toBeNull();
+    expect(numericSegment("1a")).toBeNull();
+  });
+
+  test("appends numeric indexes to root and nested array parents", () => {
+    expect(appendArrayIndexPath("", 0)).toBe("/0");
+    expect(appendArrayIndexPath("/items", 2)).toBe("/items/2");
+    expect(appendArrayIndexPath("/a~1b", 3)).toBe("/a~1b/3");
   });
 });
 

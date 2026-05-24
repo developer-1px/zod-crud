@@ -2552,7 +2552,7 @@ export function prefixIssues(
   }));
 }
 
-function numericSegment(segment: string): number | null {
+export function numericSegment(segment: string): number | null {
   if (segment.length === 0) return null;
   const first = segment.charCodeAt(0);
   if (first === 48) return segment.length === 1 ? 0 : null;
@@ -2564,7 +2564,7 @@ function numericSegment(segment: string): number | null {
   return Number(segment);
 }
 
-function appendArrayIndexPath(parent: Pointer, index: number): Pointer {
+export function appendArrayIndexPath(parent: Pointer, index: number): Pointer {
   return parent === "" ? `/${index}` : `${parent}/${index}`;
 }
 
