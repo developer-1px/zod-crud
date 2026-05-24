@@ -10,7 +10,7 @@ import {
   selectionRemoveRangeAction,
   selectionSelectRangesAction,
   selectionToggleRangeAction,
-} from "../src/application/document/selection.js";
+} from "../src/application/document/selectionPlan.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 import type { SelectionSnap } from "../src/domain/selection/index.js";
 
