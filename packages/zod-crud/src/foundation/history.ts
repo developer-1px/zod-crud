@@ -90,6 +90,23 @@ export type MutableHistoryCommitPlan =
       clearRedo: boolean;
     };
 
+export interface PlanMutableHistoryMoveBackInput {
+  undoLength: number;
+  undoStart: number;
+}
+
+export type MutableHistoryMoveBackPlan =
+  | { kind: "skip" }
+  | { kind: "move"; resetUndoPrefix: boolean };
+
+export interface PlanMutableHistoryMoveForwardInput {
+  redoLength: number;
+}
+
+export type MutableHistoryMoveForwardPlan =
+  | { kind: "skip" }
+  | { kind: "move" };
+
 export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
   return { undo: [], redo: [], undoStart: 0 };
 }
@@ -152,18 +169,40 @@ export function forwardEntry<E>(stack: MutableHistoryStack<E>): E | null {
 }
 
 export function moveBack<E>(stack: MutableHistoryStack<E>): void {
-  if (historyDepth(stack) === 0) return;
+  const plan = planMutableHistoryMoveBack({
+    undoLength: stack.undo.length,
+    undoStart: stack.undoStart,
+  });
+  if (plan.kind === "skip") return;
   const entry = stack.undo.pop();
   if (entry !== undefined) stack.redo.push(entry);
-  if (stack.undo.length === stack.undoStart) {
+  if (plan.resetUndoPrefix) {
     stack.undo.length = 0;
     stack.undoStart = 0;
   }
 }
 
 export function moveForward<E>(stack: MutableHistoryStack<E>): void {
+  const plan = planMutableHistoryMoveForward({ redoLength: stack.redo.length });
+  if (plan.kind === "skip") return;
   const entry = stack.redo.pop();
   if (entry !== undefined) stack.undo.push(entry);
+}
+
+export function planMutableHistoryMoveBack(
+  input: PlanMutableHistoryMoveBackInput,
+): MutableHistoryMoveBackPlan {
+  if (input.undoLength - input.undoStart <= 0) return { kind: "skip" };
+  return {
+    kind: "move",
+    resetUndoPrefix: input.undoLength - 1 === input.undoStart,
+  };
+}
+
+export function planMutableHistoryMoveForward(
+  input: PlanMutableHistoryMoveForwardInput,
+): MutableHistoryMoveForwardPlan {
+  return input.redoLength === 0 ? { kind: "skip" } : { kind: "move" };
 }
 
 export function mergeLastMutable<E>(

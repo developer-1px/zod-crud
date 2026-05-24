@@ -6,6 +6,8 @@ import {
   commitMutable,
   emptyMutableHistory,
   planMutableHistoryCommit,
+  planMutableHistoryMoveBack,
+  planMutableHistoryMoveForward,
   shouldCompactUndoPrefix,
 } from "../src/foundation/history.js";
 
@@ -136,6 +138,32 @@ describe("doc.history performance contract", () => {
       undoStart: 8192,
       undoLength: 16384,
     })).toBe(true);
+  });
+
+  test("plans mutable history undo and redo moves without mutating a stack", () => {
+    expect(planMutableHistoryMoveBack({
+      undoLength: 3,
+      undoStart: 3,
+    })).toEqual({ kind: "skip" });
+
+    expect(planMutableHistoryMoveBack({
+      undoLength: 4,
+      undoStart: 2,
+    })).toEqual({
+      kind: "move",
+      resetUndoPrefix: false,
+    });
+
+    expect(planMutableHistoryMoveBack({
+      undoLength: 3,
+      undoStart: 2,
+    })).toEqual({
+      kind: "move",
+      resetUndoPrefix: true,
+    });
+
+    expect(planMutableHistoryMoveForward({ redoLength: 0 })).toEqual({ kind: "skip" });
+    expect(planMutableHistoryMoveForward({ redoLength: 2 })).toEqual({ kind: "move" });
   });
 
   test("large transaction merges burst edits into one undo entry", () => {
