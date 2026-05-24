@@ -2,7 +2,7 @@
 
 import { parsePointer, readAt, type Pointer, PointerSyntaxError } from "../json-pointer/index.js";
 import { cloneJson, cloneTrustedJson } from "../json.js";
-import type { ErrorCode, JSONPatchOperation } from "./index.js";
+import type { ErrorCode, JSONPatchOperation } from "./types.js";
 
 // RFC 6902 §4.1: `/-` 는 array append marker. 적용 시점의 array 길이로 concrete index 정규화.
 // 비-array 부모거나 path 가 `/-` 가 아니면 원본 path 유지.

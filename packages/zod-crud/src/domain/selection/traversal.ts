@@ -1,11 +1,12 @@
 import { JSONPathSyntaxError, queryMatches } from "../../foundation/jsonpath/index.js";
 import { appendSegment, readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { clonePoint, pointPath, samePoint } from "./selectionPoint.js";
 import type {
   JSONPoint,
   SelectionCursorOptions,
   SelectionOrderOptions,
   SelectionScopeOptions,
-} from "./index.js";
+} from "./selectionTypes.js";
 
 type TraversalPointsResult =
   | { ok: true; points: JSONPoint[] }
@@ -116,22 +117,6 @@ function collectPointers(value: unknown, base: Pointer): Pointer[] {
     }
   }
   return pointers;
-}
-
-function pointPath(point: JSONPoint): Pointer {
-  return typeof point === "string" ? point : point.path;
-}
-
-function clonePoint(point: JSONPoint): JSONPoint {
-  return typeof point === "string" ? point : { ...point };
-}
-
-function samePoint(left: JSONPoint, right: JSONPoint): boolean {
-  if (typeof left === "string" || typeof right === "string") return left === right;
-  return left.path === right.path
-    && left.offset === right.offset
-    && left.edge === right.edge
-    && left.affinity === right.affinity;
 }
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {

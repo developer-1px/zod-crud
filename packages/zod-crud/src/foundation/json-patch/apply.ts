@@ -2,7 +2,7 @@
 
 import { isPrefix, type Pointer } from "../json-pointer/index.js";
 import { jsonSerializableError } from "../json.js";
-import type { ErrorCode, JSONPatchOperation } from "./index.js";
+import type { ErrorCode, JSONPatchOperation } from "./types.js";
 import {
   attachPointer,
   deepClone,

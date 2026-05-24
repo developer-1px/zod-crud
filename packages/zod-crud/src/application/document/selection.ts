@@ -50,15 +50,17 @@ import {
   type SelectionType,
 } from "../../domain/selection/index.js";
 import {
-  deleteSelectionText,
   replaceSelectionText,
   selectionTextEdits,
-  type DeleteSelectionTextResult,
   type ReplaceSelectionTextResult,
-  type SelectionTextDeleteOptions,
   type SelectionTextEditOptions,
   type SelectionTextEditsResult,
 } from "../../domain/selection/textEdit.js";
+import {
+  deleteSelectionText,
+  type DeleteSelectionTextResult,
+  type SelectionTextDeleteOptions,
+} from "../../domain/selection/textDelete.js";
 import {
   planInitialSelection,
   planSelectionPatchUpdate,

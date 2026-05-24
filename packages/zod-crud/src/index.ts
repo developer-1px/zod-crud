@@ -122,15 +122,17 @@ export type {
   SelectionType,
 } from "./domain/selection/index.js";
 export type {
-  DeleteSelectionTextResult,
   ReplaceSelectionTextResult,
-  SelectionTextDeleteDirection,
-  SelectionTextDeleteOptions,
   SelectionTextEdit,
   SelectionTextEditErrorCode,
   SelectionTextEditOptions,
   SelectionTextEditsResult,
 } from "./domain/selection/textEdit.js";
+export type {
+  DeleteSelectionTextResult,
+  SelectionTextDeleteDirection,
+  SelectionTextDeleteOptions,
+} from "./domain/selection/textDelete.js";
 export type {
   ClipboardSource,
   CopyError,
