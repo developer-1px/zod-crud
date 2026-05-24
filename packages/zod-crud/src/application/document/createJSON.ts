@@ -80,6 +80,15 @@ export interface JSONRootReplacementPlan<T> {
   notifyApplied: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface JSONNotificationInput {
+  applied: ReadonlyArray<JSONPatchOperation>;
+  disposed: boolean;
+}
+
+export interface JSONNotificationPlan {
+  lastApplied: ReadonlyArray<JSONPatchOperation> | null;
+}
+
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
 
 export function planJSONStateCommit<T>(
@@ -109,6 +118,14 @@ export function planJSONStateCommit<T>(
     stateJsonTrusted: input.changedStateJsonTrusted,
     notifyApplied: input.applied,
   };
+}
+
+export function planJSONNotification(
+  input: JSONNotificationInput,
+): JSONNotificationPlan {
+  return input.applied.length === 0 || input.disposed
+    ? { lastApplied: null }
+    : { lastApplied: input.applied };
 }
 
 export function planJSONRootReplacement<T>(
@@ -147,8 +164,9 @@ export function createJSON<S extends z.ZodType>(
     applied: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
   ): void => {
-    if (applied.length === 0 || disposed) return;
-    lastApplied = applied;
+    const plan = planJSONNotification({ applied, disposed });
+    if (plan.lastApplied === null) return;
+    lastApplied = plan.lastApplied;
     options.onChange?.();
     for (const listener of listeners) listener(applied, metadata);
   };

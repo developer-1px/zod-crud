@@ -1,12 +1,27 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  planJSONNotification,
   planJSONRootReplacement,
   planJSONStateCommit,
 } from "../src/application/document/createJSON.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
 describe("document JSON state core functions", () => {
+  test("plans notifications only for non-empty patches before disposal", () => {
+    const applied: JSONPatchOperation[] = [{ op: "replace", path: "/title", value: "final" }];
+
+    expect(planJSONNotification({ applied, disposed: false })).toEqual({
+      lastApplied: applied,
+    });
+    expect(planJSONNotification({ applied: [], disposed: false })).toEqual({
+      lastApplied: null,
+    });
+    expect(planJSONNotification({ applied, disposed: true })).toEqual({
+      lastApplied: null,
+    });
+  });
+
   test("plans root replacement state, trust, and notification patch", () => {
     const next = { title: "loaded" };
 
