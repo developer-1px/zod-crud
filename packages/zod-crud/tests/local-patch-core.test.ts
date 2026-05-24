@@ -54,6 +54,7 @@ import {
   planRootRecordRemovePatch,
   planRootRecordRemoveStrategy,
   planSameArrayPatchOperations,
+  planSameArrayElementReplaceOperations,
   planSameArrayElementReplacePatch,
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
@@ -3066,6 +3067,53 @@ describe("same array field replace patch planning", () => {
 });
 
 describe("same array element replace patch planning", () => {
+  test("plans element replacement operations within a known parent", () => {
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/items",
+      operations: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "replace", path: "/items/2", value: "B" },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/items/0", index: 0, value: "A" },
+      { op: "replace", path: "/items/2", index: 2, value: "B" },
+    ]);
+
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/a~1b",
+      operations: [
+        { op: "replace", path: "/a~1b/0", value: "A" },
+        { op: "replace", path: "/a~1b/1", value: "B" },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/a~1b/0", index: 0, value: "A" },
+      { op: "replace", path: "/a~1b/1", index: 1, value: "B" },
+    ]);
+  });
+
+  test("rejects element replacement operations outside a known parent", () => {
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/items",
+      operations: [],
+    })).toBeNull();
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/items",
+      operations: [{ op: "add", path: "/items/0", value: "A" }],
+    })).toBeNull();
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/items",
+      operations: [{ op: "replace", path: "/items/0/name", value: "A" }],
+    })).toBeNull();
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/items",
+      operations: [{ op: "replace", path: "/other/0", value: "A" }],
+    })).toBeNull();
+    expect(planSameArrayElementReplaceOperations({
+      parent: "/items",
+      operations: [{ op: "replace", path: "/items/01", value: "A" }],
+    })).toBeNull();
+  });
+
   test("plans element replacements across one array", () => {
     expect(planSameArrayElementReplacePatch({
       operations: [

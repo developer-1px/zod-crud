@@ -469,6 +469,11 @@ export interface PlanSameArrayElementReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanSameArrayElementReplaceOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  parent: Pointer;
+}
+
 export interface SameArrayElementReplaceOperationPlan {
   op: "replace";
   path: Pointer;
@@ -1099,43 +1104,52 @@ export function planSameArrayElementReplacePatch(
   const ops = input.operations;
   if (!Array.isArray(ops) || ops.length === 0) return null;
 
-  let parent: Pointer | null = null;
-  let parentIndexPrefix: string | null = null;
-  let parentSegments: string[] | null = null;
-  const operations: SameArrayElementReplaceOperationPlan[] = [];
+  if (!(0 in ops)) return null;
+  const first = ops[0]!;
+  if (!isReplacePatchOperationCandidate(first)) return null;
+
+  const firstLocation = arrayElementReplaceLocation(first.path);
+  if (firstLocation === null) return null;
+
+  const operations = planSameArrayElementReplaceOperations({
+    operations: ops,
+    parent: firstLocation.parent,
+  });
+  return operations === null
+    ? null
+    : { parent: firstLocation.parent, parentSegments: firstLocation.parentSegments, operations };
+}
+
+export function planSameArrayElementReplaceOperations(
+  input: PlanSameArrayElementReplaceOperationsInput,
+): SameArrayElementReplaceOperationPlan[] | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+
+  const parentIndexPrefix = arrayElementIndexPrefix(input.parent);
+  const operations = new Array<SameArrayElementReplaceOperationPlan>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return null;
     const op = ops[opIndex]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "replace"
-      || typeof op.path !== "string"
-    ) {
-      return null;
-    }
+    if (!isReplacePatchOperationCandidate(op)) return null;
 
-    let index: number;
-    if (parent === null) {
-      const location = arrayElementReplaceLocation(op.path);
-      if (location === null) return null;
-      parent = location.parent;
-      parentIndexPrefix = arrayElementIndexPrefix(parent);
-      parentSegments = location.parentSegments;
-      index = location.index;
-    } else {
-      if (parentIndexPrefix === null) return null;
-      const parsedIndex = parseKnownArrayElementReplaceIndex(op.path, parentIndexPrefix);
-      if (parsedIndex === null) return null;
-      index = parsedIndex;
-    }
-
-    operations.push({ op: "replace", path: op.path, index, value: op.value });
+    const index = parseKnownArrayElementReplaceIndex(op.path, parentIndexPrefix);
+    if (index === null) return null;
+    operations[opIndex] = { op: "replace", path: op.path, index, value: op.value };
   }
 
-  return parent === null || parentSegments === null
-    ? null
-    : { parent, parentSegments, operations };
+  return operations;
+}
+
+function isReplacePatchOperationCandidate(
+  op: JSONPatchOperation,
+): op is Extract<JSONPatchOperation, { op: "replace" }> {
+  return !!op
+    && typeof op === "object"
+    && validateOperationShape(op) === null
+    && op.op === "replace"
+    && typeof op.path === "string";
 }
 
 function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
