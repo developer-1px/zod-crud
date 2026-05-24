@@ -278,6 +278,15 @@ export interface ApplyArrayAddPlanInput {
   values: ReadonlyArray<unknown>;
 }
 
+export interface ReadArrayAtSegmentsInput {
+  state: unknown;
+  segments: ReadonlyArray<string>;
+}
+
+export type ReadArrayAtSegmentsResult =
+  | { ok: true; array: ReadonlyArray<unknown> }
+  | { ok: false };
+
 export interface AppliedAddValueValidationOperation {
   op: "add";
   path: Pointer;
@@ -991,10 +1000,10 @@ export function applySingleArrayFieldReplace(input: ApplySingleArrayFieldReplace
     return null;
   }
 
-  const current = readAt(state, arraySegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
+  const current = readArrayAtSegments({ state, segments: arraySegments });
+  if (!current.ok) return null;
 
-  const nextArray = replaceArrayField(current.value, plan.index, plan.key, plan.value);
+  const nextArray = replaceArrayField(current.array, plan.index, plan.key, plan.value);
   return nextArray === null ? null : replaceValueAtSegments(state, arraySegments, 0, nextArray);
 }
 
@@ -1173,11 +1182,11 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   const elementSchema = arrayElementSchemaAtParent(schema, plan.parent);
   if (!elementSchema) return null;
 
-  const current = readAt(state, plan.parentSegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
+  const current = readArrayAtSegments({ state, segments: plan.parentSegments });
+  if (!current.ok) return null;
   const replacements = buildKnownJsonArrayIndexReplacements({
     schema: elementSchema,
-    array: current.value,
+    array: current.array,
     operations: plan.operations,
   });
   if (replacements === null) return null;
@@ -1185,7 +1194,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   const nextState = applyArrayIndexReplacements({
     state,
     arraySegments: plan.parentSegments,
-    array: current.value,
+    array: current.array,
     replacements,
   });
   if (nextState === null) return null;
@@ -1259,11 +1268,11 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
   if (!valueSchema) return null;
 
-  const current = readAt(state, plan.arraySegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
+  const current = readArrayAtSegments({ state, segments: plan.arraySegments });
+  if (!current.ok) return null;
   const replacements = buildValidatedArrayIndexReplacements({
     state,
-    array: current.value,
+    array: current.array,
     operations: plan.operations,
     valueSchema,
     valuesTrusted,
@@ -1277,7 +1286,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   const nextState = applyArrayIndexReplacements({
     state,
     arraySegments: plan.arraySegments,
-    array: current.value,
+    array: current.array,
     replacements: replacements.replacements,
   });
   if (nextState === null) return null;
@@ -1356,9 +1365,9 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
   if (!valueSchema) return null;
 
-  const current = readAt(state, plan.arraySegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
-  const arrayValue = current.value;
+  const current = readArrayAtSegments({ state, segments: plan.arraySegments });
+  if (!current.ok) return null;
+  const arrayValue = current.array;
   const replacements = buildValidatedArrayIndexReplacements({
     state,
     array: arrayValue,
@@ -1899,9 +1908,9 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (plan === null) return null;
   const { parent, parentSegments, values } = plan;
 
-  const current = readAt(state, parentSegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
-  const initialLength = current.value.length;
+  const current = readArrayAtSegments({ state, segments: parentSegments });
+  if (!current.ok) return null;
+  const initialLength = current.array.length;
 
   const applied = planArrayAddAppliedOperations({ parent, start: initialLength, values });
   const valueValidation = evaluateArrayAddElementValues({
@@ -1916,7 +1925,7 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const nextState = applyArrayAddPlan({
     state,
     parentSegments,
-    array: current.value,
+    array: current.array,
     start: initialLength,
     values,
   });
@@ -1988,8 +1997,8 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   if (plan === null) return null;
   const { parent, parentSegments, start, values } = plan;
 
-  const current = readAt(state, parentSegments);
-  if (!current.ok || !Array.isArray(current.value)) return null;
+  const current = readArrayAtSegments({ state, segments: parentSegments });
+  if (!current.ok) return null;
 
   const applied = planArrayAddAppliedOperations({ parent, start, values });
   const valueValidation = evaluateArrayAddElementValues({
@@ -2004,7 +2013,7 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   const nextState = applyArrayAddPlan({
     state,
     parentSegments,
-    array: current.value,
+    array: current.array,
     start,
     values,
   });
@@ -2037,6 +2046,13 @@ export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null
     ? array.concat(values)
     : array.slice(0, start).concat(values, array.slice(start));
   return replaceValueAtSegments(state, parentSegments, 0, nextArray);
+}
+
+export function readArrayAtSegments(input: ReadArrayAtSegmentsInput): ReadArrayAtSegmentsResult {
+  const current = readAt(input.state, input.segments);
+  return current.ok && Array.isArray(current.value)
+    ? { ok: true, array: current.value }
+    : { ok: false };
 }
 
 export function buildValidatedArrayIndexReplacements<
@@ -2578,8 +2594,8 @@ function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPa
     if (rowIndex === null) continue;
 
     const arraySegments = segments.slice(0, index);
-    const current = readAt(state, arraySegments);
-    if (!current.ok || !Array.isArray(current.value)) continue;
+    const current = readArrayAtSegments({ state, segments: arraySegments });
+    if (!current.ok) continue;
 
     const arrayPath = buildPointer(arraySegments);
     const suffixSegments = segments.slice(index + 1);

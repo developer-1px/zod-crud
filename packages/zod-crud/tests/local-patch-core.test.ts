@@ -74,6 +74,7 @@ import {
   planSingleReplacePatch,
   prefixIssues,
   readAppliedLocalOpSourceValue,
+  readArrayAtSegments,
   replaceArrayField,
   replaceObjectDataValue,
   replaceValueAtSegments,
@@ -269,6 +270,26 @@ describe("array add applied operation validation", () => {
       result: { ok: false, code: "not_serializable" },
       applied: [],
     });
+  });
+});
+
+describe("array state reads", () => {
+  test("reads root and nested arrays by parsed segments", () => {
+    const state = { items: ["A"], nested: { items: [1] } };
+
+    const root = readArrayAtSegments({ state: state.items, segments: [] });
+    expect(root.ok && root.array).toBe(state.items);
+
+    const nested = readArrayAtSegments({ state, segments: ["nested", "items"] });
+    expect(nested.ok && nested.array).toBe(state.nested.items);
+  });
+
+  test("rejects missing and non-array paths", () => {
+    const state = { items: ["A"], title: "Draft" };
+
+    expect(readArrayAtSegments({ state, segments: ["missing"] })).toEqual({ ok: false });
+    expect(readArrayAtSegments({ state, segments: ["title"] })).toEqual({ ok: false });
+    expect(readArrayAtSegments({ state: null, segments: [] })).toEqual({ ok: false });
   });
 });
 
