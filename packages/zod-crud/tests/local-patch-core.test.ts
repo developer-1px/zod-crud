@@ -51,6 +51,7 @@ import {
   planSameArrayNestedReplacePatch,
   planSameArrayPatch,
   planSequentialPatch,
+  planSingleArrayFieldReplace,
   planSingleRootObjectReplacePatch,
   planSingleReplacePatch,
   prefixIssues,
@@ -927,6 +928,34 @@ describe("root record copy and write helpers", () => {
       key: "name",
       value: "Final",
     })).toBeNull();
+  });
+
+  test("plans single array field replacements from pointer paths", () => {
+    expect(planSingleArrayFieldReplace({
+      path: "/items/0/name",
+      value: "Final",
+    })).toEqual({
+      arrayPath: "/items",
+      index: 0,
+      key: "name",
+      value: "Final",
+    });
+
+    expect(planSingleArrayFieldReplace({
+      path: "/nested/items/2/a~1b",
+      value: 1,
+    })).toEqual({
+      arrayPath: "/nested/items",
+      index: 2,
+      key: "a/b",
+      value: 1,
+    });
+  });
+
+  test("rejects invalid single array field replacement paths", () => {
+    expect(planSingleArrayFieldReplace({ path: "", value: "Final" })).toBeNull();
+    expect(planSingleArrayFieldReplace({ path: "/items/01/name", value: "Final" })).toBeNull();
+    expect(planSingleArrayFieldReplace({ path: "/items/0/name/first", value: "Final" })).toBeNull();
   });
 
   test("applies single array field replacements across root and nested arrays", () => {

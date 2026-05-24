@@ -70,6 +70,18 @@ export interface SingleReplacePatchPlan {
   operation: Extract<JSONPatchOperation, { op: "replace" }>;
 }
 
+export interface PlanSingleArrayFieldReplaceInput {
+  path: Pointer;
+  value: unknown;
+}
+
+export interface SingleArrayFieldReplacePlan {
+  arrayPath: Pointer;
+  index: number;
+  key: string;
+  value: unknown;
+}
+
 export interface ApplySingleArrayFieldReplaceInput {
   state: unknown;
   path: Pointer;
@@ -826,21 +838,21 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
 
 export function applySingleArrayFieldReplace(input: ApplySingleArrayFieldReplaceInput): unknown | null {
   const { state, path, value } = input;
-  const location = parseArrayFieldPath(path);
-  if (location === null) return null;
+  const plan = planSingleArrayFieldReplace({ path, value });
+  if (plan === null) return null;
 
   const rootArrayReplace = applySingleRootArrayFieldReplace({
     state,
-    arrayPath: location.arrayPath,
-    index: location.index,
-    key: location.key,
-    value,
+    arrayPath: plan.arrayPath,
+    index: plan.index,
+    key: plan.key,
+    value: plan.value,
   });
   if (rootArrayReplace !== null) return rootArrayReplace;
 
   let arraySegments: string[];
   try {
-    arraySegments = parsePointer(location.arrayPath);
+    arraySegments = parsePointer(plan.arrayPath);
   } catch {
     return null;
   }
@@ -848,8 +860,17 @@ export function applySingleArrayFieldReplace(input: ApplySingleArrayFieldReplace
   const current = readAt(state, arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
 
-  const nextArray = replaceArrayField(current.value, location.index, location.key, value);
+  const nextArray = replaceArrayField(current.value, plan.index, plan.key, plan.value);
   return nextArray === null ? null : replaceValueAtSegments(state, arraySegments, 0, nextArray);
+}
+
+export function planSingleArrayFieldReplace(
+  input: PlanSingleArrayFieldReplaceInput,
+): SingleArrayFieldReplacePlan | null {
+  const location = parseArrayFieldPath(input.path);
+  return location === null
+    ? null
+    : { ...location, value: input.value };
 }
 
 export function applySingleRootArrayFieldReplace(input: ApplySingleRootArrayFieldReplaceInput): unknown | null {
