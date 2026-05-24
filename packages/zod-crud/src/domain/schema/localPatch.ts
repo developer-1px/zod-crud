@@ -151,6 +151,14 @@ export interface ApplyArrayIndexReplacementsInput {
   replacements: ReadonlyArray<ArrayIndexReplacement>;
 }
 
+export interface ApplyArrayNestedReplacementsInput {
+  state: unknown;
+  arraySegments: ReadonlyArray<string>;
+  array: ReadonlyArray<unknown>;
+  suffixSegments: ReadonlyArray<string>;
+  replacements: ReadonlyArray<ArrayIndexReplacement>;
+}
+
 export interface AppliedRemoveOperation {
   op: "remove";
   path: Pointer;
@@ -1022,7 +1030,7 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   const current = readAt(state, plan.arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
   const arrayValue = current.value;
-  const updateValues = new Array<unknown>(plan.operations.length);
+  const replacements = new Array<ArrayIndexReplacement>(plan.operations.length);
 
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
     const op = plan.operations[opIndex]!;
@@ -1035,19 +1043,16 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       valuesTrusted,
     );
     if (valueFailure) return valueFailure;
-    updateValues[opIndex] = op.value;
+    replacements[opIndex] = { index: op.index, value: op.value };
   }
 
-  const next = arrayValue.slice();
-  for (let index = 0; index < plan.operations.length; index += 1) {
-    const rowIndex = plan.operations[index]!.index;
-    const value = updateValues[index];
-    const replaced = replaceValueAtSegments(arrayValue[rowIndex], plan.suffixSegments, 0, value);
-    if (replaced === null) return null;
-    next[rowIndex] = replaced;
-  }
-
-  const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
+  const nextState = applyArrayNestedReplacements({
+    state,
+    arraySegments: plan.arraySegments,
+    array: arrayValue,
+    suffixSegments: plan.suffixSegments,
+    replacements,
+  });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
@@ -1569,6 +1574,29 @@ export function applyArrayIndexReplacements(input: ApplyArrayIndexReplacementsIn
     next[replacement.index] = replacement.value;
   }
   return replaceValueAtSegments(state, arraySegments, 0, next);
+}
+
+export function applyArrayNestedReplacements(input: ApplyArrayNestedReplacementsInput): unknown | null {
+  const { state, arraySegments, array, suffixSegments, replacements } = input;
+  const rowReplacements = new Array<ArrayIndexReplacement>(replacements.length);
+  for (let index = 0; index < replacements.length; index += 1) {
+    const replacement = replacements[index]!;
+    if (replacement.index < 0 || replacement.index >= array.length) return null;
+    const replaced = replaceValueAtSegments(
+      array[replacement.index],
+      suffixSegments,
+      0,
+      replacement.value,
+    );
+    if (replaced === null) return null;
+    rowReplacements[index] = { index: replacement.index, value: replaced };
+  }
+  return applyArrayIndexReplacements({
+    state,
+    arraySegments,
+    array,
+    replacements: rowReplacements,
+  });
 }
 
 export function planIncreasingArrayAddPatch(

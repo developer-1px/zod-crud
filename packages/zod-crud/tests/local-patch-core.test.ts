@@ -5,6 +5,7 @@ import {
   acceptsKnownJsonValue,
   applyArrayAddPlan,
   applyArrayIndexReplacements,
+  applyArrayNestedReplacements,
   applyRootObjectReplacePlan,
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
@@ -251,6 +252,66 @@ describe("array index replacement state materialization", () => {
       arraySegments: ["items"],
       array: state.items,
       replacements: [{ index: 1, value: "B" }],
+    })).toBeNull();
+  });
+});
+
+describe("array nested replacement state materialization", () => {
+  test("applies nested replacements to root and nested arrays without mutating the source", () => {
+    const state = {
+      items: [
+        { meta: { title: "old-a" } },
+        { meta: { title: "old-b" } },
+      ],
+      keep: true,
+    };
+
+    expect(applyArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["meta", "title"],
+      replacements: [
+        { index: 0, value: "A" },
+        { index: 1, value: "B" },
+      ],
+    })).toEqual({
+      items: [
+        { meta: { title: "A" } },
+        { meta: { title: "B" } },
+      ],
+      keep: true,
+    });
+    expect(state.items[0]?.meta.title).toBe("old-a");
+
+    const root = [{ meta: { title: "old" } }];
+    expect(applyArrayNestedReplacements({
+      state: root,
+      arraySegments: [],
+      array: root,
+      suffixSegments: ["meta", "title"],
+      replacements: [{ index: 0, value: "Root" }],
+    })).toEqual([{ meta: { title: "Root" } }]);
+    expect(root[0]?.meta.title).toBe("old");
+  });
+
+  test("rejects nested replacements outside the current array or suffix path", () => {
+    const state = { items: [{ meta: { title: "old" } }] };
+
+    expect(applyArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["meta", "title"],
+      replacements: [{ index: 1, value: "B" }],
+    })).toBeNull();
+
+    expect(applyArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["missing", "title"],
+      replacements: [{ index: 0, value: "B" }],
     })).toBeNull();
   });
 });
