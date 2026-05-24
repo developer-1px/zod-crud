@@ -9,6 +9,7 @@ import {
   applyRootObjectReplacePlan,
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
+  applyKnownJsonReplaceOperations,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
   applySequentialLocalOperations,
@@ -1322,6 +1323,41 @@ describe("known-json replace patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
     expect(planKnownJsonReplacePatch({ operations: sparse })).toBeNull();
+  });
+
+  test("applies known-json replace operations without mutating the source", () => {
+    const state = { title: "Draft", meta: { owner: "core" } };
+
+    expect(applyKnownJsonReplaceOperations({
+      state,
+      operations: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "/meta/owner", value: "docs" },
+      ],
+    })).toEqual({
+      state: { title: "Final", meta: { owner: "docs" } },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "/meta/owner", value: "docs" },
+      ],
+    });
+    expect(state).toEqual({ title: "Draft", meta: { owner: "core" } });
+  });
+
+  test("returns known-json replace failures against the original state", () => {
+    const state = { title: "Draft" };
+    const result = applyKnownJsonReplaceOperations({
+      state,
+      operations: [{ op: "replace", path: "/missing", value: "Final" }],
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false },
+      applied: [],
+    });
+    expect(result.state).toBe(state);
   });
 
   test("evaluates known-json replace values through local schemas", () => {

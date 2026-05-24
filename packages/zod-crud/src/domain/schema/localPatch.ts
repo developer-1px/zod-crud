@@ -138,6 +138,17 @@ export interface KnownJsonReplacePatchPlan {
   operations: Extract<JSONPatchOperation, { op: "replace" }>[];
 }
 
+export interface ApplyKnownJsonReplaceOperationsInput {
+  state: unknown;
+  operations: ReadonlyArray<Extract<JSONPatchOperation, { op: "replace" }>>;
+}
+
+export interface KnownJsonReplaceOperationsResult {
+  state: unknown;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface EvaluateKnownJsonReplaceValuesInput {
   schema: z.ZodType;
   operations: ReadonlyArray<Extract<JSONPatchOperation, { op: "replace" }>>;
@@ -1083,7 +1094,7 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
 
   if (!evaluateKnownJsonReplaceValues({ schema, operations: plan.operations })) return null;
 
-  const applied = applyAcceptedPatch(state, plan.operations);
+  const applied = applyKnownJsonReplaceOperations({ state, operations: plan.operations });
   if (!applied.result.ok) {
     return failedLocalPatch(state, applied.result);
   }
@@ -1110,6 +1121,15 @@ export function planKnownJsonReplaceOperations(
   }
 
   return operations;
+}
+
+export function applyKnownJsonReplaceOperations(
+  input: ApplyKnownJsonReplaceOperationsInput,
+): KnownJsonReplaceOperationsResult {
+  const applied = applyAcceptedPatch(input.state, input.operations);
+  return applied.result.ok
+    ? { state: applied.state, result: applied.result, applied: applied.applied }
+    : { state: input.state, result: applied.result, applied: [] };
 }
 
 export function evaluateKnownJsonReplaceValues(input: EvaluateKnownJsonReplaceValuesInput): boolean {
