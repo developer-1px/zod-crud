@@ -54,6 +54,7 @@ import {
   numericSegment,
   okLocalPatch,
   planAppliedLocalOpValidation,
+  planAppliedReplaceValueValidation,
   planArrayAddAppliedOperations,
   planAppendOnlyArrayAddPatch,
   planAppendOnlyArrayAddValues,
@@ -1311,6 +1312,46 @@ describe("replace applied operation validation", () => {
       operations: [{ op: "replace", path: "/title", value: "Final" }],
       valuesTrusted: false,
     })).toEqual({ ok: true });
+  });
+
+  test("plans applied replace value validation from local schemas", () => {
+    expect(planAppliedReplaceValueValidation({
+      schema: z.object({ title: z.string() }),
+      operation: { op: "replace", path: "/title", value: "Final" },
+      valuesTrusted: false,
+    })).toEqual({ kind: "accepted" });
+
+    const parsePlan = planAppliedReplaceValueValidation({
+      schema: z.object({ title: z.string() }),
+      operation: { op: "replace", path: "/title", value: 1 },
+      valuesTrusted: true,
+    });
+
+    expect(parsePlan).toMatchObject({ kind: "parse", path: "/title", value: 1 });
+    expect(parsePlan?.kind === "parse" && parsePlan.schema.safeParse(parsePlan.value).success).toBe(false);
+
+    expect(planAppliedReplaceValueValidation({
+      schema: z.object({ title: z.string() }),
+      operation: { op: "replace", path: "/title", value: () => "not json" },
+      valuesTrusted: false,
+    })).toMatchObject({
+      kind: "notSerializable",
+      reason: expect.stringContaining("function"),
+    });
+  });
+
+  test("rejects applied replace value validation plans without replace schemas", () => {
+    expect(planAppliedReplaceValueValidation({
+      schema: z.object({ items: z.array(z.string()) }),
+      operation: { op: "add", path: "/items/0", value: "A" },
+      valuesTrusted: false,
+    })).toBeNull();
+
+    expect(planAppliedReplaceValueValidation({
+      schema: z.object({ title: z.string() }),
+      operation: { op: "replace", path: "/missing", value: "Final" },
+      valuesTrusted: false,
+    })).toBeNull();
   });
 
   test("rejects applied replace operation lists with unsupported operations", () => {

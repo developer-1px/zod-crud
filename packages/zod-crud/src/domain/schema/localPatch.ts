@@ -178,6 +178,12 @@ export interface EvaluateAppliedReplaceOperationsInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface PlanAppliedReplaceValueValidationInput {
+  schema: z.ZodType;
+  operation: JSONPatchOperation;
+  valuesTrusted: boolean;
+}
+
 export interface ApplyReplaceOperationsInput {
   state: unknown;
   operations: ReadonlyArray<JSONPatchOperation>;
@@ -934,20 +940,30 @@ export function evaluateAppliedReplaceOperations<S extends z.ZodType>(
 ): AppliedReplaceOperationsValidationResult<S> {
   const { schema, state, operations, valuesTrusted } = input;
   for (const op of operations) {
-    if (op.op !== "replace") return { ok: false, result: null };
-    const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
-    if (!valueSchema) return { ok: false, result: null };
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: valueSchema,
-      value: op.value,
-      knownJsonAccepted: acceptsKnownJsonValue(valueSchema, op.value),
-      valuesTrusted,
-    });
+    const valueValidation = planAppliedReplaceValueValidation({ schema, operation: op, valuesTrusted });
+    if (valueValidation === null) return { ok: false, result: null };
     const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
     if (valueFailure) return { ok: false, result: valueFailure };
   }
   return { ok: true };
+}
+
+export function planAppliedReplaceValueValidation(
+  input: PlanAppliedReplaceValueValidationInput,
+): LocalPatchValueValidationPlan | null {
+  const { schema, operation, valuesTrusted } = input;
+  if (operation.op !== "replace") return null;
+
+  const valueSchema = cachedSchemaAtPointer(schema, operation.path, "value");
+  if (!valueSchema) return null;
+
+  return planLocalPatchValueValidation({
+    path: operation.path,
+    schema: valueSchema,
+    value: operation.value,
+    knownJsonAccepted: acceptsKnownJsonValue(valueSchema, operation.value),
+    valuesTrusted,
+  });
 }
 
 function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
