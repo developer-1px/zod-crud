@@ -276,6 +276,11 @@ export interface PlanDocumentChangeMetadataInput {
   selectionEnabled: boolean;
 }
 
+export interface PlanDocumentChangeSelectionInput {
+  shouldCaptureMetadata: boolean;
+  snapshot: () => SelectionSnap;
+}
+
 export interface PlanDocumentLifecycleChangeInput {
   result: JSONResult;
   preserveHistory: boolean;
@@ -708,7 +713,10 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionEnabled,
       documentSubscriberCount,
     });
-    const selectionBefore = capture.shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
+    const selectionBefore = planDocumentChangeSelection({
+      shouldCaptureMetadata: capture.shouldCaptureMetadata,
+      snapshot: snapSelection,
+    });
     const changeMetadata = planDocumentChangeMetadata({
       shouldCaptureMetadata: capture.shouldCaptureMetadata,
       activeHistoryMetadata,
@@ -717,7 +725,10 @@ export function createJSONDocument<S extends z.ZodType>(
       selectionEnabled,
     });
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);
-    const selectionAfter = capture.shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
+    const selectionAfter = planDocumentChangeSelection({
+      shouldCaptureMetadata: capture.shouldCaptureMetadata,
+      snapshot: snapSelection,
+    });
     if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: planned.patch.length, applied: rawOps.lastApplied });
     if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before, planned.next, planned.patch, selectionBefore, selectionAfter, changeMetadata);
@@ -1197,6 +1208,12 @@ export function planDocumentChangeMetadata(
     input.selectionBefore,
     input.selectionEnabled,
   );
+}
+
+export function planDocumentChangeSelection(
+  input: PlanDocumentChangeSelectionInput,
+): SelectionSnap {
+  return input.shouldCaptureMetadata ? input.snapshot() : EMPTY_SELECTION;
 }
 
 export function planDocumentLifecycleChange(

@@ -6,6 +6,7 @@ import {
   planDocumentActiveHistoryMetadata,
   planDocumentChangeCapture,
   planDocumentChangeMetadata,
+  planDocumentChangeSelection,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryAppend,
   planDocumentHistoryEntry,
@@ -161,6 +162,26 @@ describe("document history core functions", () => {
       selectionBefore: titleSelection,
       selectionAfter: emptySelection,
     });
+  });
+
+  test("captures selection only when change metadata is needed", () => {
+    let snapshotCalls = 0;
+    const snapshot = (): SelectionSnap => {
+      snapshotCalls += 1;
+      return titleSelection;
+    };
+
+    expect(planDocumentChangeSelection({
+      shouldCaptureMetadata: false,
+      snapshot,
+    })).toEqual(emptySelection);
+    expect(snapshotCalls).toBe(0);
+
+    expect(planDocumentChangeSelection({
+      shouldCaptureMetadata: true,
+      snapshot,
+    })).toBe(titleSelection);
+    expect(snapshotCalls).toBe(1);
   });
 
   test("keeps history metadata compact and separate from selection metadata", () => {
