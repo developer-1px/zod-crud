@@ -336,6 +336,14 @@ export function writeObjectDataValue(target: Record<string, unknown>, key: strin
   }
 }
 
+export function createDataKeySet(keys: ReadonlyArray<string>): Record<string, true> {
+  const keySet = Object.create(null) as Record<string, true>;
+  for (const key of keys) {
+    keySet[key] = true;
+  }
+  return keySet;
+}
+
 function removedRootKeysMatchSuffix(
   keys: ReadonlyArray<string>,
   keepCount: number,
@@ -1081,10 +1089,7 @@ export function planRootObjectReplacePatch(
   const sourceKeys = input.sourceKeys;
   if (!Array.isArray(ops) || ops.length < 2 || !Array.isArray(sourceKeys)) return null;
 
-  const sourceKeySet = Object.create(null) as Record<string, true>;
-  for (const key of sourceKeys) {
-    sourceKeySet[key] = true;
-  }
+  const sourceKeySet = createDataKeySet(sourceKeys);
 
   let ordered = ops.length === sourceKeys.length;
   const operations: RootObjectReplaceOperationPlan[] = [];
@@ -1187,12 +1192,9 @@ export function planRootRecordRemovePatch(
   const sourceKeys = input.sourceKeys;
   if (!Array.isArray(ops) || ops.length === 0 || !Array.isArray(sourceKeys)) return null;
 
-  const sourceKeySet = Object.create(null) as Record<string, true>;
-  for (const key of sourceKeys) {
-    sourceKeySet[key] = true;
-  }
+  const sourceKeySet = createDataKeySet(sourceKeys);
 
-  const removedKeys = Object.create(null) as Record<string, true>;
+  const removedKeys = createDataKeySet([]);
   const operations: RootRecordRemoveOperationPlan[] = [];
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
@@ -1229,11 +1231,7 @@ export function planRootRecordRemovePatch(
 function rootRecordRemoveKeySet(
   operations: ReadonlyArray<RootRecordRemoveOperationPlan>,
 ): Record<string, true> {
-  const removedKeys = Object.create(null) as Record<string, true>;
-  for (const op of operations) {
-    removedKeys[op.key] = true;
-  }
-  return removedKeys;
+  return createDataKeySet(operations.map((op) => op.key));
 }
 
 function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(

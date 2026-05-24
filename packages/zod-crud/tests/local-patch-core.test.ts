@@ -8,6 +8,7 @@ import {
   arrayElementSchemaAtPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
+  createDataKeySet,
   copyRootRecordKeyPrefix,
   evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
@@ -276,6 +277,15 @@ describe("root record copy and write helpers", () => {
     expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(target, "__proto__")).toBe(true);
     expect(target.__proto__).toEqual({ safe: "data" });
+  });
+
+  test("creates null-prototype key sets for structural data keys", () => {
+    const keySet = createDataKeySet(["alpha", "__proto__"]);
+
+    expect(Object.getPrototypeOf(keySet)).toBeNull();
+    expect(Object.prototype.hasOwnProperty.call(keySet, "alpha")).toBe(true);
+    expect(Object.prototype.hasOwnProperty.call(keySet, "__proto__")).toBe(true);
+    expect(keySet.__proto__).toBe(true);
   });
 });
 
