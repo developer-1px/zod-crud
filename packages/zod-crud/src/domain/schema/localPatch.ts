@@ -306,7 +306,7 @@ function copyRootRecordKeys(
   return copyRootRecordKeyPrefix(source, keys, keys.length);
 }
 
-function copyRootRecordKeyPrefix(
+export function copyRootRecordKeyPrefix(
   source: Record<string, unknown>,
   keys: ReadonlyArray<string>,
   end: number,
@@ -336,7 +336,7 @@ function copyRootRecordKeyPrefix(
   return next;
 }
 
-function writeRootRecordValue(target: Record<string, unknown>, key: string, value: unknown): void {
+export function writeRootRecordValue(target: Record<string, unknown>, key: string, value: unknown): void {
   if (key === "__proto__") {
     Object.defineProperty(target, key, {
       value,

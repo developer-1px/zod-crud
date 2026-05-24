@@ -7,6 +7,7 @@ import {
   arrayElementSchemaAtPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
+  copyRootRecordKeyPrefix,
   evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   numericSegment,
@@ -29,6 +30,7 @@ import {
   prefixIssues,
   readAppliedLocalOpSourceValue,
   replaceValueAtSegments,
+  writeRootRecordValue,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
@@ -181,6 +183,38 @@ describe("numeric path helpers", () => {
     expect(appendArrayIndexPath("", 0)).toBe("/0");
     expect(appendArrayIndexPath("/items", 2)).toBe("/items/2");
     expect(appendArrayIndexPath("/a~1b", 3)).toBe("/a~1b/3");
+  });
+});
+
+describe("root record copy and write helpers", () => {
+  test("copies root record key prefixes with structural data keys", () => {
+    const source: Record<string, unknown> = { alpha: 1, beta: 2 };
+    Object.defineProperty(source, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    const keys = Object.keys(source);
+
+    expect(copyRootRecordKeyPrefix(source, keys, 2)).toEqual({ alpha: 1, beta: 2 });
+
+    const copied = copyRootRecordKeyPrefix(source, keys, keys.length);
+    expect(Object.getPrototypeOf(copied)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(copied, "__proto__")).toBe(true);
+    expect(copied.__proto__).toEqual({ safe: true });
+  });
+
+  test("writes __proto__ as an own data key without changing the prototype", () => {
+    const target: Record<string, unknown> = {};
+
+    writeRootRecordValue(target, "alpha", 1);
+    writeRootRecordValue(target, "__proto__", { safe: false });
+
+    expect(target.alpha).toBe(1);
+    expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(target, "__proto__")).toBe(true);
+    expect(target.__proto__).toEqual({ safe: false });
   });
 });
 
