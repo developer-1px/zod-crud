@@ -732,7 +732,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-/** 외부 helper — Match[] → Pointer[] (domain/verbs/find 가 사용). */
+/** 외부 helper — Match[] -> Pointer[]. */
 export function matchPointers(matches: Match[]): string[] {
   const pointers = new Array<string>(matches.length);
   for (let index = 0; index < matches.length; index += 1) {
