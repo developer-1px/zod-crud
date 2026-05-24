@@ -7,6 +7,7 @@ import {
   checkDocumentPatch,
   checkDocumentRemove,
   checkDocumentReplace,
+  planDocumentPasteCheck,
   type DocumentCheckContext,
 } from "../src/application/document/check.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -86,6 +87,56 @@ describe("document check core functions", () => {
       stateJsonTrusted: true,
     }, "/items/0")).toEqual({ ok: true });
     expect(state.items[0]).toBe(bad);
+  });
+
+  test("plans paste checks from explicit state, selection target, and preview trust", () => {
+    let defaultPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
+    let trustedPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
+    const next = {
+      ...initial,
+      items: [
+        ...initial.items,
+        { id: "c", name: "C" },
+      ],
+    };
+
+    expect(planDocumentPasteCheck({
+      schema: Schema,
+      state: initial,
+      payload: { id: "c", name: "C" },
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "paste target selection is empty",
+    });
+
+    expect(planDocumentPasteCheck({
+      schema: Schema,
+      state: initial,
+      payload: { id: "c", name: "C" },
+      selectionTarget: "/items/-",
+      trustedPayload: true,
+      previewPatch(operations) {
+        defaultPreviewed = operations;
+        return {
+          state: initial,
+          result: { ok: false, code: "path_not_found" },
+          applied: [],
+        };
+      },
+      previewTrustedValuesPatch(operations) {
+        trustedPreviewed = operations;
+        return {
+          state: next,
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(defaultPreviewed).toBeUndefined();
+    expect(trustedPreviewed).toEqual([
+      { op: "add", path: "/items/-", value: { id: "c", name: "C" } },
+    ]);
   });
 
   test("checks JSONPath syntax without any document state", () => {

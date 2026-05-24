@@ -122,6 +122,18 @@ export interface CheckPasteExecutionOptions {
   trustedPayload?: boolean;
 }
 
+export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  payload: unknown;
+  selectionTarget?: Pointer | null;
+  target?: PasteTarget;
+  options?: PasteOptions;
+  trustedPayload?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
 type CheckableResult =
   | { ok: true }
   | {
@@ -354,18 +366,34 @@ export function checkDocumentPaste<S extends z.ZodType>(
   options?: PasteOptions,
   executionOptions?: CheckPasteExecutionOptions,
 ): CheckResult {
-  const args = resolvePasteArgs(target, options);
-  const resolvedTarget = targetOrSelection(context, args.target);
-  const inputTrustedPayload = executionOptions?.trustedPayload === true
+  return planDocumentPasteCheck({
+    schema: context.schema,
+    state: context.state,
+    payload,
+    selectionTarget: primaryPointer(selectionState(context)),
+    ...(target !== undefined ? { target } : {}),
+    ...(options !== undefined ? { options } : {}),
+    ...(executionOptions?.trustedPayload !== undefined ? { trustedPayload: executionOptions.trustedPayload } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+    ...(context.previewTrustedValuesPatch !== undefined ? { previewTrustedValuesPatch: context.previewTrustedValuesPatch } : {}),
+  });
+}
+
+export function planDocumentPasteCheck<S extends z.ZodType>(
+  input: PlanDocumentPasteCheckInput<S>,
+): CheckResult {
+  const args = resolvePasteArgs(input.target, input.options);
+  const resolvedTarget = args.target ?? input.selectionTarget ?? null;
+  const inputTrustedPayload = input.trustedPayload === true
     || args.options.trustedPayload === true;
   const patchValuesTrusted = inputTrustedPayload
     || rekeyProducesTrustedPayload(args.options);
-  const pastePreview = patchValuesTrusted && context.previewTrustedValuesPatch
-    ? context.previewTrustedValuesPatch
-    : context.previewPatch;
+  const pastePreview = patchValuesTrusted && input.previewTrustedValuesPatch
+    ? input.previewTrustedValuesPatch
+    : input.previewPatch;
   return resolvedTarget === null
     ? emptySelection("paste target selection is empty")
-    : toCheckResult(paste(context.schema, context.state, payload, resolvedTarget, args.mode, {
+    : toCheckResult(paste(input.schema, input.state, input.payload, resolvedTarget, args.mode, {
         ...args.options,
         previewPatch: pastePreview,
         trustedPayload: inputTrustedPayload,
