@@ -68,6 +68,9 @@ Date: 2026-05-24
 - The gate runs `verify`, `perf:core`, and `pack:library` so package checks,
   docs drift checks, browser demo smoke, performance measurement, and tarball
   creation are not tracked as separate pre-release memory items.
+- Public export names are locked in `packages/zod-crud/public-contract.json`,
+  which package smoke tests, docs consistency tests, and docs evaluation read as
+  the contract SSOT.
 
 ### Release gate
 

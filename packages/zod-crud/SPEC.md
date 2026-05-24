@@ -385,6 +385,8 @@ Public behavior tests must enter through root exports and the `JSONDocument` sur
 The source-layout SSOT is: `src/index.ts` for root exports, `src/react.ts` for
 the React hook, then `application`, `domain`, and `foundation` for internal
 implementation. Release notes must not introduce a second structure map.
+The public export contract SSOT is `packages/zod-crud/public-contract.json`;
+package smoke tests, docs consistency tests, and docs evaluation read that file.
 
 Required verification before release:
 

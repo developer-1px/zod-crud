@@ -13,127 +13,14 @@ const npmEnv = { ...process.env, npm_config_cache: npmCache, npm_config_package_
 const lockfilePath = join(monorepoRoot, "package-lock.json");
 const lockfileSnapshot = existsSync(lockfilePath) ? await readFile(lockfilePath) : null;
 const packageJson = JSON.parse(await readFile(join(repoRoot, "package.json"), "utf8"));
+const publicContract = JSON.parse(await readFile(join(repoRoot, "public-contract.json"), "utf8"));
 const readmeSource = await readFile(join(repoRoot, "README.md"), "utf8");
-const rootValueExports = [
-  "JSONCrudError",
-  "PointerSyntaxError",
-  "appendSegment",
-  "applyOperation",
-  "applyPatch",
-  "applyPatchToTrustedState",
-  "buildPointer",
-  "createJSONDocument",
-  "escapeSegment",
-  "lastSegment",
-  "lastSegmentIndex",
-  "parentPointer",
-  "parsePointer",
-  "trackPointer",
-  "tryParsePointer",
-  "unescapeSegment",
-  "withLastSegment",
-];
-const reactValueExports = ["useJSONDocument"];
-const rootPublicExports = [
-  ...rootValueExports,
-  "HistoryTransactionOptions",
-  "JSONCapabilityResult",
-  "JSONChangeMetadata",
-  "JSONDocument",
-  "JSONDocumentCommitOptions",
-  "JSONDocumentDuplicateOptions",
-  "JSONDocumentDuplicateResult",
-  "JSONDocumentHistory",
-  "JSONDocumentPasteOptions",
-  "JSONDocumentPasteTarget",
-  "JSONPatchInput",
-  "JSONPatchOperation",
-  "JSONPoint",
-  "JSONResult",
-  "Pointer",
-  "UseJSONDocumentOptions",
-  "ClipboardCopyOptions",
-  "ClipboardCutOk",
-  "ClipboardCutOptions",
-  "ClipboardCutResult",
-  "ClipboardEmpty",
-  "ClipboardMutationOk",
-  "ClipboardPasteResult",
-  "ClipboardReadOk",
-  "ClipboardReadOptions",
-  "ClipboardReadResult",
-  "ClipboardState",
-  "ClipboardWriteOptions",
-  "EntriesResult",
-  "EntryKind",
-  "QueryResult",
-  "ReadEntry",
-  "ReadResult",
-  "SchemaDescription",
-  "SchemaDescriptionResult",
-  "SchemaErrorCode",
-  "SchemaErrorResult",
-  "SchemaKind",
-  "SchemaKindResult",
-  "SchemaPathMode",
-  "SchemaQueryResult",
-  "SchemaState",
-  "UseSelectionOptions",
-  "JSONPointObject",
-  "OrderedSelectionRange",
-  "OrderedSelectionRangeEntry",
-  "SelectionAction",
-  "SelectionAffinity",
-  "SelectionContext",
-  "SelectionCursorDirection",
-  "SelectionCursorErrorCode",
-  "SelectionCursorOptions",
-  "SelectionCursorResult",
-  "SelectionCursorTarget",
-  "SelectionDirection",
-  "SelectionEdge",
-  "SelectionMode",
-  "SelectionOrderErrorCode",
-  "SelectionOrderOptions",
-  "SelectionPointOrderResult",
-  "SelectionPointerSpan",
-  "SelectionPointerSpansResult",
-  "SelectionRange",
-  "SelectionRangeInput",
-  "SelectionRangeOrderResult",
-  "SelectionRangesOrderResult",
-  "SelectionScopeErrorCode",
-  "SelectionScopeOptions",
-  "SelectionScopeResult",
-  "SelectionScopeTarget",
-  "SelectionSnap",
-  "SelectionSource",
-  "SelectionSpanOptions",
-  "SelectionState",
-  "SelectionType",
-  "DeleteSelectionTextResult",
-  "ReplaceSelectionTextResult",
-  "SelectionTextDeleteDirection",
-  "SelectionTextDeleteOptions",
-  "SelectionTextEdit",
-  "SelectionTextEditErrorCode",
-  "SelectionTextEditOptions",
-  "SelectionTextEditsResult",
-  "ClipboardSource",
-  "CopyError",
-  "CopyOk",
-  "CutError",
-  "CutOk",
-  "DuplicateError",
-  "DuplicateOk",
-  "PasteDuMismatch",
-  "PasteError",
-  "PasteOptions",
-  "PasteTarget",
-];
-const reactPublicExports = [...reactValueExports];
-const rootTypeExports = rootPublicExports.filter((name) => !rootValueExports.includes(name));
-const reactTypeExports = reactPublicExports.filter((name) => !reactValueExports.includes(name));
+const rootValueExports = publicContract.root.values;
+const rootTypeExports = publicContract.root.types;
+const reactValueExports = publicContract.react.values;
+const reactTypeExports = publicContract.react.types;
+const rootPublicExports = [...rootValueExports, ...rootTypeExports];
+const reactPublicExports = [...reactValueExports, ...reactTypeExports];
 const rootTypeOnlyExports = [...rootTypeExports];
 const reactTypeOnlyExports = [...reactTypeExports];
 
@@ -254,12 +141,53 @@ function markdownCodeBlocksAfterHeading(source, heading, language) {
 }
 
 function assertDeclarationExports(declarationSource, expectedNames, label) {
+  const actualNames = declarationExportNames(declarationSource).sort();
+  const sortedExpectedNames = [...expectedNames].sort();
+  if (JSON.stringify(actualNames) !== JSON.stringify(sortedExpectedNames)) {
+    throw new Error(
+      `${label} declaration exports mismatch:\nexpected ${sortedExpectedNames.join(", ")}\nactual ${actualNames.join(", ")}`,
+    );
+  }
+
   for (const name of expectedNames) {
     const exportNamePattern = new RegExp(`(^|[^A-Za-z0-9_$])${name}([^A-Za-z0-9_$]|$)`);
     if (!exportNamePattern.test(declarationSource)) {
       throw new Error(`${label} declaration export missing: ${name}`);
     }
   }
+}
+
+function declarationExportNames(declarationSource) {
+  const names = [];
+
+  for (const match of declarationSource.matchAll(/\bexport\s+(?:type\s+)?\{([^}]*)\}/g)) {
+    const list = match[1];
+    if (list === undefined) throw new Error("Declaration export list capture failed");
+    names.push(...exportListNames(list));
+  }
+
+  for (const match of declarationSource.matchAll(/\bexport\s+declare\s+(?:function|class|const|let|var|interface|type|enum)\s+([A-Za-z_$][\w$]*)/g)) {
+    const name = match[1];
+    if (name === undefined) throw new Error("Declaration export declaration capture failed");
+    names.push(name);
+  }
+
+  return [...new Set(names)].sort();
+}
+
+function exportListNames(list) {
+  return list
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0)
+    .map((part) => {
+      const withoutType = part.replace(/^type\s+/, "");
+      const aliasMatch = /\s+as\s+([A-Za-z_$][\w$]*)$/.exec(withoutType);
+      if (aliasMatch?.[1]) return aliasMatch[1];
+      const [name] = withoutType.split(/\s+/);
+      if (!name) throw new Error(`Declaration export name parse failed: ${part}`);
+      return name;
+    });
 }
 
 async function assertDeclarationSpecifiers(installedPackageRoot) {
@@ -595,6 +523,10 @@ try {
       'import { applyOperation, applyPatch, applyPatchToTrustedState, createJSONDocument, parsePointer, tryParsePointer, buildPointer, parentPointer, lastSegment, lastSegmentIndex, appendSegment, withLastSegment } from "zod-crud";',
       `const expectedRootValueExports = ${JSON.stringify(rootValueExports)};`,
       `const expectedRootTypeOnlyExports = ${JSON.stringify(rootTypeOnlyExports)};`,
+      'const actualRootValueExports = Object.keys(zc).sort();',
+      'if (JSON.stringify(actualRootValueExports) !== JSON.stringify([...expectedRootValueExports].sort())) {',
+      '  throw new Error(`root runtime exports mismatch: ${actualRootValueExports.join(", ")}`);',
+      '}',
       'for (const name of expectedRootValueExports) {',
       '  if (!(name in zc)) throw new Error(`${name} root runtime export missing`);',
       '}',
@@ -715,6 +647,10 @@ try {
       'import { useJSONDocument } from "zod-crud/react";',
       `const expectedReactValueExports = ${JSON.stringify(reactValueExports)};`,
       `const expectedReactTypeOnlyExports = ${JSON.stringify(reactTypeOnlyExports)};`,
+      'const actualReactValueExports = Object.keys(zcr).sort();',
+      'if (JSON.stringify(actualReactValueExports) !== JSON.stringify([...expectedReactValueExports].sort())) {',
+      '  throw new Error(`react runtime exports mismatch: ${actualReactValueExports.join(", ")}`);',
+      '}',
       'for (const name of expectedReactValueExports) {',
       '  if (!(name in zcr)) throw new Error(`${name} react runtime export missing`);',
       '}',

@@ -64,6 +64,8 @@ const siteRouteChecks = read("scripts/site-route-checks.mjs");
 const rootPackageJson = read("package.json");
 const rootPackage = JSON.parse(rootPackageJson);
 const packageJson = JSON.parse(read("packages/zod-crud/package.json"));
+const publicContractJson = read("packages/zod-crud/public-contract.json");
+const publicContract = JSON.parse(publicContractJson);
 const pagesWorkflow = read(".github/workflows/pages.yml");
 const siteRoutes = JSON.parse(siteRoutesJson);
 
@@ -126,119 +128,19 @@ for (const [name, source] of Object.entries(surfaces)) {
   if (!source.includes("canFind")) fail(`${name}: missing canFind in public can* family.`);
 }
 
-const publicExports = [
-  "JSONCrudError",
-  "createJSONDocument",
-  "applyOperation",
-  "applyPatch",
-  "applyPatchToTrustedState",
-  "parsePointer",
-  "tryParsePointer",
-  "buildPointer",
-  "escapeSegment",
-  "unescapeSegment",
-  "PointerSyntaxError",
-  "parentPointer",
-  "lastSegment",
-  "lastSegmentIndex",
-  "appendSegment",
-  "withLastSegment",
-  "trackPointer",
-  "HistoryTransactionOptions",
-  "JSONCapabilityResult",
-  "JSONChangeMetadata",
-  "JSONDocument",
-  "JSONDocumentCommitOptions",
-  "JSONDocumentDuplicateOptions",
-  "JSONDocumentDuplicateResult",
-  "JSONDocumentHistory",
-  "JSONDocumentPasteOptions",
-  "JSONDocumentPasteTarget",
-  "JSONPatchInput",
-  "JSONPatchOperation",
-  "JSONResult",
-  "Pointer",
-  "UseJSONDocumentOptions",
-  "ClipboardCopyOptions",
-  "ClipboardCutOk",
-  "ClipboardCutOptions",
-  "ClipboardCutResult",
-  "ClipboardEmpty",
-  "ClipboardMutationOk",
-  "ClipboardPasteResult",
-  "ClipboardReadOk",
-  "ClipboardReadOptions",
-  "ClipboardReadResult",
-  "ClipboardState",
-  "ClipboardWriteOptions",
-  "EntriesResult",
-  "EntryKind",
-  "QueryResult",
-  "ReadEntry",
-  "ReadResult",
-  "SchemaDescription",
-  "SchemaDescriptionResult",
-  "SchemaErrorCode",
-  "SchemaErrorResult",
-  "SchemaKind",
-  "SchemaKindResult",
-  "SchemaPathMode",
-  "SchemaQueryResult",
-  "SchemaState",
-  "UseSelectionOptions",
-  "JSONPointObject",
-  "JSONPoint",
-  "OrderedSelectionRange",
-  "OrderedSelectionRangeEntry",
-  "SelectionAction",
-  "SelectionAffinity",
-  "SelectionContext",
-  "SelectionCursorDirection",
-  "SelectionCursorErrorCode",
-  "SelectionCursorOptions",
-  "SelectionCursorResult",
-  "SelectionCursorTarget",
-  "SelectionDirection",
-  "SelectionEdge",
-  "SelectionMode",
-  "SelectionOrderErrorCode",
-  "SelectionOrderOptions",
-  "SelectionPointOrderResult",
-  "SelectionPointerSpan",
-  "SelectionPointerSpansResult",
-  "SelectionRange",
-  "SelectionRangeInput",
-  "SelectionRangeOrderResult",
-  "SelectionRangesOrderResult",
-  "SelectionScopeErrorCode",
-  "SelectionScopeOptions",
-  "SelectionScopeResult",
-  "SelectionScopeTarget",
-  "SelectionSource",
-  "SelectionSpanOptions",
-  "SelectionSnap",
-  "SelectionState",
-  "SelectionType",
-  "DeleteSelectionTextResult",
-  "ReplaceSelectionTextResult",
-  "SelectionTextDeleteDirection",
-  "SelectionTextDeleteOptions",
-  "SelectionTextEdit",
-  "SelectionTextEditErrorCode",
-  "SelectionTextEditOptions",
-  "SelectionTextEditsResult",
-  "ClipboardSource",
-  "CopyError",
-  "CopyOk",
-  "CutError",
-  "CutOk",
-  "DuplicateError",
-  "DuplicateOk",
-  "PasteDuMismatch",
-  "PasteError",
-  "PasteOptions",
-  "PasteTarget",
-];
+const publicExports = [...publicContract.root.values, ...publicContract.root.types];
+
+if (!publicContract.root.values.includes("createJSONDocument") || !publicContract.react.values.includes("useJSONDocument")) {
+  fail("public contract: missing required root or react value export.");
+}
+
+if (!/public-contract\.json/.test(smoke)) {
+  fail("package smoke: must read the public export contract SSOT.");
+}
+
+for (const [name, source] of Object.entries({ spec: surfaces.spec, releaseNotes })) {
+  if (!source.includes("public-contract.json")) fail(`${name}: missing public contract SSOT.`);
+}
 
 for (const exportName of publicExports) {
   for (const surfaceName of ["readme", "spec", "site"]) {
