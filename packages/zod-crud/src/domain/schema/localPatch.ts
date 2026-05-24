@@ -5,6 +5,7 @@ import {
   applyTrustedPatch,
   type ApplyResult,
   type JSONPatchOperation,
+  type JSONResult,
 } from "../../foundation/json-patch/index.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
 import {
@@ -442,11 +443,7 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   const applied = valuesTrusted ? applyAcceptedPatch(state, ops) : applyTrustedPatch(state, ops);
   if (!applied.result.ok) {
-    return {
-      state,
-      result: applied.result,
-      applied: [],
-    };
+    return failedLocalPatch(state, applied.result);
   }
 
   for (const op of applied.applied) {
@@ -514,11 +511,7 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   const applied = applyAcceptedPatch(state, [op]);
   if (!applied.result.ok) {
-    return {
-      state,
-      result: applied.result,
-      applied: [],
-    };
+    return failedLocalPatch(state, applied.result);
   }
   return {
     state: applied.state as z.output<S>,
@@ -782,11 +775,7 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
 
   const applied = applyAcceptedPatch(state, plan.operations);
   if (!applied.result.ok) {
-    return {
-      state,
-      result: applied.result,
-      applied: [],
-    };
+    return failedLocalPatch(state, applied.result);
   }
   return {
     state: applied.state as z.output<S>,
@@ -1409,11 +1398,7 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
     const sourceValue = readAppliedLocalOpSourceValue({ state: cur, operation: op });
     const applied = valuesTrusted ? applyAcceptedPatch(cur, [op]) : applyTrustedPatch(cur, [op]);
     if (!applied.result.ok) {
-      return {
-        state,
-        result: applied.result,
-        applied: [],
-      };
+      return failedLocalPatch(state, applied.result);
     }
 
     const appliedOp = applied.applied[0];
@@ -1648,11 +1633,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   const applied = applyTrustedPatch(state, ops, { valuesTrusted: true });
   if (!applied.result.ok) {
-    return {
-      state,
-      result: applied.result,
-      applied: [],
-    };
+    return failedLocalPatch(state, applied.result);
   }
   return {
     state: applied.state as z.output<S>,
@@ -2332,6 +2313,17 @@ function okLocalPatch<S extends z.ZodType>(
     state,
     result: { ok: true },
     applied,
+  };
+}
+
+export function failedLocalPatch<S extends z.ZodType>(
+  state: z.output<S>,
+  result: Extract<JSONResult, { ok: false }>,
+): ApplyResult<S> {
+  return {
+    state,
+    result,
+    applied: [],
   };
 }
 

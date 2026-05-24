@@ -14,6 +14,7 @@ import {
   evaluateAppliedLocalOpValidationPlan,
   evaluateAppliedReplaceValueValidationPlan,
   evaluateLocalPatchValueValidationPlan,
+  failedLocalPatch,
   numericSegment,
   planAppliedLocalOpValidation,
   planArrayAddAppliedOperations,
@@ -215,6 +216,26 @@ describe("remove applied operation normalization", () => {
       { op: "remove", path: "/items/0" },
       { op: "remove", path: "/items/1" },
     ]);
+  });
+});
+
+describe("local patch result helpers", () => {
+  test("wraps failed patch results with no applied operations", () => {
+    const state = { title: "Draft" };
+
+    expect(failedLocalPatch(state, {
+      ok: false,
+      code: "path_not_found",
+      pointer: "/missing",
+    })).toEqual({
+      state,
+      result: {
+        ok: false,
+        code: "path_not_found",
+        pointer: "/missing",
+      },
+      applied: [],
+    });
   });
 });
 
