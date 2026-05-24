@@ -64,6 +64,20 @@ export interface UseJSONDocumentOptions {
   onChange?: () => void;
 }
 
+export interface PlanDocumentSelectionRuntimeInput {
+  selection: UseJSONDocumentOptions["selection"];
+  onChange: UseJSONDocumentOptions["onChange"];
+}
+
+export interface DocumentSelectionRuntimePlan {
+  selectionEnabled: boolean;
+  selectionMode: SelectionMode;
+  createSelectionOptions: UseSelectionOptions & {
+    onChange?: () => void;
+    applyMetadataSelectionAfter: true;
+  };
+}
+
 type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
 type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };
 
@@ -354,21 +368,11 @@ export function createJSONDocument<S extends z.ZodType>(
   let lastPatch: ReadonlyArray<JSONPatchOperation> = [];
   let documentSubscriberCount = 0;
 
-  const selectionEnabled = options.selection !== undefined && options.selection !== false;
-  const selectionOptions: UseSelectionOptions =
-    typeof options.selection === "object" ? options.selection : {};
-  const selectionMode = selectionOptions.mode ?? "single";
-
-  const createSelectionOptions: UseSelectionOptions & {
-    onChange?: () => void;
-    applyMetadataSelectionAfter?: boolean;
-  } = {
-    ...selectionOptions,
-    applyMetadataSelectionAfter: true,
-  };
-  if (options.onChange !== undefined) {
-    createSelectionOptions.onChange = options.onChange;
-  }
+  const selectionRuntime = planDocumentSelectionRuntime({
+    selection: options.selection,
+    onChange: options.onChange,
+  });
+  const { selectionEnabled, selectionMode, createSelectionOptions } = selectionRuntime;
   const selectionState = selectionEnabled
     ? createSelection<z.output<S>>(rawOps, createSelectionOptions)
     : undefined;
@@ -853,6 +857,25 @@ export function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
   if (replaceTarget === null || replaceTarget !== read.source) return false;
   const segments = tryParsePointer(replaceTarget);
   return segments !== null && readAt(state, segments).ok;
+}
+
+export function planDocumentSelectionRuntime(
+  input: PlanDocumentSelectionRuntimeInput,
+): DocumentSelectionRuntimePlan {
+  const selectionEnabled = input.selection !== undefined && input.selection !== false;
+  const selectionOptions: UseSelectionOptions =
+    typeof input.selection === "object" ? input.selection : {};
+  const createSelectionOptions: DocumentSelectionRuntimePlan["createSelectionOptions"] = {
+    ...selectionOptions,
+    applyMetadataSelectionAfter: true,
+  };
+  if (input.onChange !== undefined) createSelectionOptions.onChange = input.onChange;
+
+  return {
+    selectionEnabled,
+    selectionMode: selectionOptions.mode ?? "single",
+    createSelectionOptions,
+  };
 }
 
 function replacePointerTarget(target: JSONDocumentPasteTarget): Pointer | null {

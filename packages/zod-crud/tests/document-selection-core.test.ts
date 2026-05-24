@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 
+import { planDocumentSelectionRuntime } from "../src/application/document/createJSONDocument.js";
 import {
   planInitialSelection,
   planSelectionStateUpdate,
@@ -108,6 +109,47 @@ describe("document selection core functions", () => {
       selectedPointers: ["/items/0/name", "/items/1/name"],
       primaryIndex: 0,
       context: { source: "test" },
+    });
+  });
+
+  test("plans document selection runtime options from facade options", () => {
+    expect(planDocumentSelectionRuntime({
+      selection: undefined,
+      onChange: undefined,
+    })).toEqual({
+      selectionEnabled: false,
+      selectionMode: "single",
+      createSelectionOptions: {
+        applyMetadataSelectionAfter: true,
+      },
+    });
+
+    expect(planDocumentSelectionRuntime({
+      selection: false,
+      onChange: undefined,
+    })).toMatchObject({
+      selectionEnabled: false,
+      selectionMode: "single",
+    });
+
+    const onChange = () => {};
+    expect(planDocumentSelectionRuntime({
+      selection: {
+        mode: "multiple",
+        initial: ["/items/0"],
+        context: { source: "test" },
+      },
+      onChange,
+    })).toEqual({
+      selectionEnabled: true,
+      selectionMode: "multiple",
+      createSelectionOptions: {
+        mode: "multiple",
+        initial: ["/items/0"],
+        context: { source: "test" },
+        applyMetadataSelectionAfter: true,
+        onChange,
+      },
     });
   });
 });
