@@ -9,11 +9,14 @@ import {
   checkDocumentReplace,
   planDocumentCopyCheck,
   planDocumentCutCheck,
+  planDocumentDeleteTextCheck,
   planDocumentDuplicateCheck,
   planDocumentMoveCheck,
   planDocumentPatchCheck,
   planDocumentPasteCheck,
+  planDocumentRemoveCheck,
   planDocumentReplaceCheck,
+  planDocumentReplaceTextCheck,
   type DocumentCheckContext,
 } from "../src/application/document/check.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -39,6 +42,19 @@ const selectedFirstItem: SelectionSnap = {
   primaryIndex: 0,
   anchor: "/items/0",
   focus: "/items/0",
+};
+
+const selectedFirstNameText: SelectionSnap = {
+  selectedPointers: ["/items/0/name"],
+  selectionRanges: [
+    {
+      anchor: { path: "/items/0/name", offset: 0 },
+      focus: { path: "/items/0/name", offset: 1 },
+    },
+  ],
+  primaryIndex: 0,
+  anchor: { path: "/items/0/name", offset: 0 },
+  focus: { path: "/items/0/name", offset: 1 },
 };
 
 describe("document check core functions", () => {
@@ -93,6 +109,39 @@ describe("document check core functions", () => {
     expect(checkDocumentRemove(context)).toEqual({ ok: true });
     expect(checkDocumentReplace(context, { id: "a1", name: "A1" })).toEqual({ ok: true });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  test("plans remove checks from explicit state and selection source", () => {
+    let removed: ReadonlyArray<JSONPatchOperation> | undefined;
+
+    expect(planDocumentRemoveCheck({
+      schema: Schema,
+      state: initial,
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "remove source selection is empty",
+    });
+
+    expect(planDocumentRemoveCheck({
+      schema: Schema,
+      state: initial,
+      selectionSource: "/items/0",
+      previewPatch(operations) {
+        removed = operations;
+        return {
+          state: {
+            ...initial,
+            items: [initial.items[1]!],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(removed).toEqual([
+      { op: "remove", path: "/items/0" },
+    ]);
   });
 
   test("plans replace checks from explicit state, target fallback, and JSONPath targets", () => {
@@ -153,6 +202,52 @@ describe("document check core functions", () => {
     expect(jsonpathPreviewed).toEqual([
       { op: "replace", path: "/items/0/name", value: "Renamed" },
       { op: "replace", path: "/items/1/name", value: "Renamed" },
+    ]);
+  });
+
+  test("plans text replacement and deletion checks from explicit selection", () => {
+    let replaced: ReadonlyArray<JSONPatchOperation> | undefined;
+    let deleted: ReadonlyArray<JSONPatchOperation> | undefined;
+
+    expect(planDocumentReplaceTextCheck({
+      schema: Schema,
+      state: initial,
+      selection: selectedFirstNameText,
+      replacement: "Alpha",
+      previewPatch(operations) {
+        replaced = operations;
+        return {
+          state: {
+            ...initial,
+            items: [{ id: "a", name: "Alpha" }, initial.items[1]!],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(replaced).toEqual([
+      { op: "replace", path: "/items/0/name", value: "Alpha" },
+    ]);
+
+    expect(planDocumentDeleteTextCheck({
+      schema: Schema,
+      state: initial,
+      selection: selectedFirstNameText,
+      previewPatch(operations) {
+        deleted = operations;
+        return {
+          state: {
+            ...initial,
+            items: [{ id: "a", name: "" }, initial.items[1]!],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(deleted).toEqual([
+      { op: "replace", path: "/items/0/name", value: "" },
     ]);
   });
 

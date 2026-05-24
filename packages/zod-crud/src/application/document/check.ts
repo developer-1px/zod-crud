@@ -129,12 +129,37 @@ export interface PlanDocumentPatchCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface PlanDocumentRemoveCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source?: SelectionSource;
+  selectionSource?: SelectionSource | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
 export interface PlanDocumentReplaceCheckInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   value: unknown;
   target?: Pointer;
   selectionTarget?: Pointer | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export interface PlanDocumentReplaceTextCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  selection: SelectionSnap;
+  replacement: string;
+  options?: SelectionTextEditOptions & HistoryTransactionOptions;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export interface PlanDocumentDeleteTextCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  selection: SelectionSnap;
+  options?: SelectionTextDeleteOptions & HistoryTransactionOptions;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
@@ -363,11 +388,28 @@ export function checkDocumentRemove<S extends z.ZodType>(
   context: DocumentCheckContext<S>,
   source?: SelectionSource,
 ): CheckResult {
-  const resolved = sourceOrSelection(context, source);
+  return planDocumentRemoveCheck({
+    schema: context.schema,
+    state: context.state,
+    selectionSource: selectedSource(selectionState(context)),
+    ...(source !== undefined ? { source } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentRemoveCheck<S extends z.ZodType>(
+  input: PlanDocumentRemoveCheckInput<S>,
+): CheckResult {
+  const resolved = input.source ?? input.selectionSource ?? null;
   if (resolved === null) return emptySelection("remove source selection is empty");
   const planned = removeSourcesPatch(resolved);
   return planned.ok
-    ? checkDocumentPatch(context, planned.patch)
+    ? planDocumentPatchCheck({
+        schema: input.schema,
+        state: input.state,
+        operations: planned.patch,
+        ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
+      })
     : toCheckResult(pointerSourceCheckError(planned, "remove"));
 }
 
@@ -412,9 +454,27 @@ export function checkDocumentReplaceText<S extends z.ZodType>(
   replacement: string,
   textOptions?: SelectionTextEditOptions & HistoryTransactionOptions,
 ): CheckResult {
-  const planned = replaceSelectionText(selectionState(context), context.state, replacement, textOptions);
+  return planDocumentReplaceTextCheck({
+    schema: context.schema,
+    state: context.state,
+    selection: selectionState(context),
+    replacement,
+    ...(textOptions !== undefined ? { options: textOptions } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentReplaceTextCheck<S extends z.ZodType>(
+  input: PlanDocumentReplaceTextCheckInput<S>,
+): CheckResult {
+  const planned = replaceSelectionText(input.selection, input.state, input.replacement, input.options);
   return planned.ok
-    ? checkDocumentPatch(context, planned.patch)
+    ? planDocumentPatchCheck({
+        schema: input.schema,
+        state: input.state,
+        operations: planned.patch,
+        ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
+      })
     : toCheckResult(planned);
 }
 
@@ -422,9 +482,26 @@ export function checkDocumentDeleteText<S extends z.ZodType>(
   context: DocumentCheckContext<S>,
   textOptions?: SelectionTextDeleteOptions & HistoryTransactionOptions,
 ): CheckResult {
-  const planned = deleteSelectionText(selectionState(context), context.state, textOptions);
+  return planDocumentDeleteTextCheck({
+    schema: context.schema,
+    state: context.state,
+    selection: selectionState(context),
+    ...(textOptions !== undefined ? { options: textOptions } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentDeleteTextCheck<S extends z.ZodType>(
+  input: PlanDocumentDeleteTextCheckInput<S>,
+): CheckResult {
+  const planned = deleteSelectionText(input.selection, input.state, input.options);
   return planned.ok
-    ? checkDocumentPatch(context, planned.patch)
+    ? planDocumentPatchCheck({
+        schema: input.schema,
+        state: input.state,
+        operations: planned.patch,
+        ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
+      })
     : toCheckResult(planned);
 }
 
@@ -547,13 +624,6 @@ function trustedState<S extends z.ZodType>(context: DocumentCheckContext<S>): bo
 
 function selectionState<S extends z.ZodType>(context: DocumentCheckContext<S>): SelectionSnap {
   return context.selection ?? EMPTY_SELECTION;
-}
-
-function sourceOrSelection<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
-  source?: ClipboardSource,
-): ClipboardSource | null {
-  return source ?? selectedSource(selectionState(context));
 }
 
 function toCheckResult(result: CheckableResult): CheckResult {
