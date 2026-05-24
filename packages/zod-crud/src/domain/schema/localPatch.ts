@@ -40,6 +40,16 @@ export interface SingleReplacePatchPlan {
   operation: Extract<JSONPatchOperation, { op: "replace" }>;
 }
 
+export interface PlanSingleRootObjectReplacePatchInput {
+  operation: JSONPatchOperation;
+  sourceKeys: ReadonlyArray<string>;
+}
+
+export interface SingleRootObjectReplacePatchPlan {
+  operation: Extract<JSONPatchOperation, { op: "replace" }>;
+  key: string;
+}
+
 export interface PlanAppendOnlyArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -564,32 +574,42 @@ function applySingleRootObjectReplacePatchWithLocalSchemaValidation(
   state: unknown,
   op: Extract<JSONPatchOperation, { op: "replace" }>,
 ): unknown | null {
+  if (state === null || typeof state !== "object" || Array.isArray(state)) return null;
+  const source = state as Record<string, unknown>;
+  const plan = planSingleRootObjectReplacePatch({
+    operation: op,
+    sourceKeys: Object.keys(source),
+  });
+  if (plan === null) return null;
+
+  const next = copyRootRecord(source);
+  writeRootRecordValue(next, plan.key, op.value);
+  return next;
+}
+
+export function planSingleRootObjectReplacePatch(
+  input: PlanSingleRootObjectReplacePatchInput,
+): SingleRootObjectReplacePatchPlan | null {
+  const op = input.operation;
+  const sourceKeys = input.sourceKeys;
   if (
-    op.path[0] !== "/"
+    !Array.isArray(sourceKeys)
+    || validateOperationShape(op) !== null
+    || op.op !== "replace"
+    || typeof op.path !== "string"
+    || op.path[0] !== "/"
     || op.path.includes("~")
     || op.path.indexOf("/", 1) !== -1
-    || state === null
-    || typeof state !== "object"
-    || Array.isArray(state)
   ) {
     return null;
   }
 
   const key = op.path.slice(1);
-  if (!objectHasOwn.call(state, key)) return null;
-
-  const next = { ...(state as Record<string, unknown>) };
-  if (key === "__proto__") {
-    Object.defineProperty(next, key, {
-      value: op.value,
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-  } else {
-    next[key] = op.value;
+  if (key === "") return null;
+  for (const sourceKey of sourceKeys) {
+    if (sourceKey === key) return { operation: op, key };
   }
-  return next;
+  return null;
 }
 
 function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(

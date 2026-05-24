@@ -13,6 +13,7 @@ import {
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
   planSameArrayPatch,
+  planSingleRootObjectReplacePatch,
   planSingleReplacePatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -62,6 +63,58 @@ describe("single replace patch planning", () => {
     );
 
     expect(result?.state).toEqual({ title: "Final" });
+    expect(result?.applied).toEqual([{ op: "replace", path: "/title", value: "Final" }]);
+  });
+});
+
+describe("single root object replace patch planning", () => {
+  test("plans one existing plain root key replacement", () => {
+    const operation = { op: "replace", path: "/title", value: "Final" } as const;
+
+    expect(planSingleRootObjectReplacePatch({
+      sourceKeys: ["title", "owner"],
+      operation,
+    })).toEqual({
+      operation,
+      key: "title",
+    });
+  });
+
+  test("rejects replacements outside existing plain root keys", () => {
+    expect(planSingleRootObjectReplacePatch({
+      sourceKeys: ["title"],
+      operation: { op: "replace", path: "/missing", value: "Final" },
+    })).toBeNull();
+
+    expect(planSingleRootObjectReplacePatch({
+      sourceKeys: [""],
+      operation: { op: "replace", path: "/", value: "Final" },
+    })).toBeNull();
+
+    expect(planSingleRootObjectReplacePatch({
+      sourceKeys: ["title"],
+      operation: { op: "replace", path: "/title/nested", value: "Final" },
+    })).toBeNull();
+
+    expect(planSingleRootObjectReplacePatch({
+      sourceKeys: ["a/b"],
+      operation: { op: "replace", path: "/a~1b", value: "Final" },
+    })).toBeNull();
+
+    expect(planSingleRootObjectReplacePatch({
+      sourceKeys: ["title"],
+      operation: { op: "add", path: "/title", value: "Final" },
+    })).toBeNull();
+  });
+
+  test("keeps single root object replace applied operation unchanged", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ title: z.string(), owner: z.string() }),
+      { title: "Draft", owner: "core" },
+      [{ op: "replace", path: "/title", value: "Final" }],
+    );
+
+    expect(result?.state).toEqual({ title: "Final", owner: "core" });
     expect(result?.applied).toEqual([{ op: "replace", path: "/title", value: "Final" }]);
   });
 });
