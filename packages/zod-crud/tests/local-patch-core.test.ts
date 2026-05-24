@@ -16,6 +16,7 @@ import {
   arrayElementSchemaAtPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
+  buildKnownJsonArrayIndexReplacements,
   buildValidatedArrayIndexReplacements,
   createDataKeySet,
   copyRootRecordKeyPrefix,
@@ -374,6 +375,39 @@ describe("validated array index replacement planning", () => {
       result: { ok: false, code: "schema_violation" },
       applied: [],
     });
+  });
+});
+
+describe("known-json array index replacement planning", () => {
+  test("builds replacements from schema-accepted known-json values", () => {
+    const array = ["old-a", "old-b"];
+
+    expect(buildKnownJsonArrayIndexReplacements({
+      schema: z.string(),
+      array,
+      operations: [
+        { op: "replace", path: "/items/0", index: 0, value: "A" },
+        { op: "replace", path: "/items/1", index: 1, value: "B" },
+      ],
+    })).toEqual([
+      { index: 0, value: "A" },
+      { index: 1, value: "B" },
+    ]);
+    expect(array).toEqual(["old-a", "old-b"]);
+  });
+
+  test("rejects out-of-bounds indexes and values outside known-json schemas", () => {
+    expect(buildKnownJsonArrayIndexReplacements({
+      schema: z.string(),
+      array: ["old"],
+      operations: [{ op: "replace", path: "/items/1", index: 1, value: "A" }],
+    })).toBeNull();
+
+    expect(buildKnownJsonArrayIndexReplacements({
+      schema: z.string(),
+      array: ["old"],
+      operations: [{ op: "replace", path: "/items/0", index: 0, value: 1 }],
+    })).toBeNull();
   });
 });
 

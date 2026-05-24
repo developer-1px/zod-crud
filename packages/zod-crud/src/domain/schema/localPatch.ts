@@ -203,6 +203,14 @@ export type ValidatedArrayIndexReplacementsResult<S extends z.ZodType> =
   | { ok: true; replacements: ArrayIndexReplacement[] }
   | { ok: false; result: ApplyResult<S> | null };
 
+export interface BuildKnownJsonArrayIndexReplacementsInput<
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  schema: z.ZodType;
+  array: ReadonlyArray<unknown>;
+  operations: ReadonlyArray<Operation>;
+}
+
 export interface ApplyArrayIndexReplacementsInput {
   state: unknown;
   arraySegments: ReadonlyArray<string>;
@@ -934,17 +942,15 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
 
   const elementSchema = arrayElementSchemaAtParent(schema, plan.parent);
   if (!elementSchema) return null;
-  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
   const current = readAt(state, plan.parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
-  const replacements = new Array<ArrayIndexReplacement>(plan.operations.length);
-
-  for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
-    const op = plan.operations[opIndex]!;
-    if (!acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
-    replacements[opIndex] = { index: op.index, value: op.value };
-  }
+  const replacements = buildKnownJsonArrayIndexReplacements({
+    schema: elementSchema,
+    array: current.value,
+    operations: plan.operations,
+  });
+  if (replacements === null) return null;
 
   const nextState = applyArrayIndexReplacements({
     state,
@@ -1754,6 +1760,25 @@ export function buildValidatedArrayIndexReplacements<
   }
 
   return { ok: true, replacements };
+}
+
+export function buildKnownJsonArrayIndexReplacements<
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: BuildKnownJsonArrayIndexReplacementsInput<Operation>,
+): ArrayIndexReplacement[] | null {
+  const { schema, array, operations } = input;
+  const valueValidator = knownJsonValueValidatorForSchema(schema);
+  const replacements = new Array<ArrayIndexReplacement>(operations.length);
+
+  for (let opIndex = 0; opIndex < operations.length; opIndex += 1) {
+    const op = operations[opIndex]!;
+    if (op.index < 0 || op.index >= array.length) return null;
+    if (!acceptsKnownJsonValueWithValidator(valueValidator, op.value)) return null;
+    replacements[opIndex] = { index: op.index, value: op.value };
+  }
+
+  return replacements;
 }
 
 export function applyArrayIndexReplacements(input: ApplyArrayIndexReplacementsInput): unknown | null {
