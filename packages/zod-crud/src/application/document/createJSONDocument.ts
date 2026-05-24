@@ -236,6 +236,18 @@ export interface PlanDocumentTransactionMergeInput {
   end: number;
 }
 
+export interface PlanDocumentTransactionMergeRangeInput {
+  undoStart: number;
+  undoLength: number;
+  depthBefore: number;
+  currentDepth: number;
+}
+
+export interface DocumentTransactionMergeRange {
+  start: number;
+  end: number;
+}
+
 export interface PlanDocumentTransactionAppendCompactInput {
   previous: DocumentHistoryEntry;
   operations: ReadonlyArray<JSONPatchOperation>;
@@ -645,15 +657,17 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const mergeTransactionEntries = (depthBefore: number): void => {
-    if (historyDepth(stack) <= depthBefore + 1) return;
-
-    const start = stack.undoStart + depthBefore;
-    const end = stack.undo.length;
-    if (start < stack.undoStart || end - start <= 1) return;
-    const merged = planDocumentTransactionMerge({ entries: stack.undo, start, end });
+    const range = planDocumentTransactionMergeRange({
+      undoStart: stack.undoStart,
+      undoLength: stack.undo.length,
+      depthBefore,
+      currentDepth: historyDepth(stack),
+    });
+    if (range === null) return;
+    const merged = planDocumentTransactionMerge({ entries: stack.undo, start: range.start, end: range.end });
     if (merged === null) return;
-    stack.undo[start] = merged;
-    stack.undo.length = start + 1;
+    stack.undo[range.start] = merged;
+    stack.undo.length = range.start + 1;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
@@ -1035,6 +1049,17 @@ export function planDocumentTransactionMerge(
   };
   if (metadata !== undefined) merged.metadata = metadata;
   return merged;
+}
+
+export function planDocumentTransactionMergeRange(
+  input: PlanDocumentTransactionMergeRangeInput,
+): DocumentTransactionMergeRange | null {
+  if (input.currentDepth <= input.depthBefore + 1) return null;
+
+  const start = input.undoStart + input.depthBefore;
+  const end = input.undoLength;
+  if (start < input.undoStart || end - start <= 1) return null;
+  return { start, end };
 }
 
 export function planDocumentTransactionAppendCompact(

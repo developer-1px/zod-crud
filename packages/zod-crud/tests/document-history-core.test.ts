@@ -12,6 +12,7 @@ import {
   planDocumentHistoryRestore,
   planDocumentTransactionAppendCompact,
   planDocumentTransactionMerge,
+  planDocumentTransactionMergeRange,
   planMergedDocumentHistoryEntry,
   shouldCaptureDocumentChangeMetadata,
 } from "../src/application/document/createJSONDocument.js";
@@ -448,6 +449,29 @@ describe("document history core functions", () => {
       metadata: { label: "B", origin: "keyboard", mergeKey: "batch" },
     });
     expect(planDocumentTransactionMerge({ entries, start: 2, end: 2 })).toBeNull();
+  });
+
+  test("plans transaction merge ranges from mutable history counters", () => {
+    expect(planDocumentTransactionMergeRange({
+      undoStart: 3,
+      undoLength: 7,
+      depthBefore: 1,
+      currentDepth: 4,
+    })).toEqual({ start: 4, end: 7 });
+
+    expect(planDocumentTransactionMergeRange({
+      undoStart: 3,
+      undoLength: 5,
+      depthBefore: 1,
+      currentDepth: 2,
+    })).toBeNull();
+
+    expect(planDocumentTransactionMergeRange({
+      undoStart: 3,
+      undoLength: 4,
+      depthBefore: -1,
+      currentDepth: 4,
+    })).toBeNull();
   });
 
   test("plans undo restore patches, snapshot state, and redo selection without mutating the entry", () => {
