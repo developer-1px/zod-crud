@@ -164,8 +164,19 @@ export interface ApplySequentialLocalOperationInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface ApplySequentialLocalOperationsInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  operations: ReadonlyArray<SequentialPatchOperationPlan>;
+  valuesTrusted: boolean;
+}
+
 export type SequentialLocalOperationResult<S extends z.ZodType> =
   | { ok: true; state: unknown; applied: JSONPatchOperation }
+  | { ok: false; result: ApplyResult<S> | null };
+
+export type SequentialLocalOperationsResult<S extends z.ZodType> =
+  | { ok: true; state: unknown; applied: JSONPatchOperation[] }
   | { ok: false; result: ApplyResult<S> | null };
 
 export interface PlanAppliedLocalOpValidationInput {
@@ -1744,22 +1755,34 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const plan = planSequentialPatch({ operations: ops });
   if (plan === null) return null;
 
-  let cur: unknown = state;
+  const applied = applySequentialLocalOperations({
+    schema,
+    state,
+    operations: plan.operations,
+    valuesTrusted,
+  });
+  return applied.ok ? okLocalPatch(applied.state as z.output<S>, applied.applied) : applied.result;
+}
+
+export function applySequentialLocalOperations<S extends z.ZodType>(
+  input: ApplySequentialLocalOperationsInput<S>,
+): SequentialLocalOperationsResult<S> {
+  let cur: unknown = input.state;
   const appliedOps: JSONPatchOperation[] = [];
-  for (const op of plan.operations) {
+  for (const op of input.operations) {
     const applied = applySequentialLocalOperation({
-      schema,
-      state,
+      schema: input.schema,
+      state: input.state,
       current: cur,
       operation: op,
-      valuesTrusted,
+      valuesTrusted: input.valuesTrusted,
     });
-    if (!applied.ok) return applied.result;
+    if (!applied.ok) return { ok: false, result: applied.result };
     cur = applied.state;
     appliedOps.push(applied.applied);
   }
 
-  return okLocalPatch(cur as z.output<S>, appliedOps);
+  return { ok: true, state: cur, applied: appliedOps };
 }
 
 export function applySequentialLocalOperation<S extends z.ZodType>(

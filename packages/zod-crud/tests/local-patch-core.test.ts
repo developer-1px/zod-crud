@@ -11,6 +11,7 @@ import {
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
+  applySequentialLocalOperations,
   applySingleArrayFieldReplace,
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
@@ -1333,6 +1334,49 @@ describe("sequential local operation application", () => {
   const schema = z.object({
     title: z.string(),
     items: z.array(z.string()),
+  });
+
+  test("applies sequential operations and preserves applied order", () => {
+    const state = { title: "Draft", items: [] as string[] };
+
+    expect(applySequentialLocalOperations({
+      schema,
+      state,
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "replace", path: "/title", value: "Final" },
+      ],
+      valuesTrusted: false,
+    })).toEqual({
+      ok: true,
+      state: { title: "Final", items: ["A"] },
+      applied: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "replace", path: "/title", value: "Final" },
+      ],
+    });
+  });
+
+  test("stops sequential operations at the first local operation failure", () => {
+    const state = { title: "Draft", items: [] as string[] };
+    const result = applySequentialLocalOperations({
+      schema,
+      state,
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/1", value: 1 },
+        { op: "replace", path: "/title", value: "Final" },
+      ],
+      valuesTrusted: true,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected sequential failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 
   test("applies one operation and returns the applied operation", () => {
