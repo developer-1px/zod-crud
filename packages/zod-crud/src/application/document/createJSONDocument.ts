@@ -253,6 +253,18 @@ export interface PlanDocumentHistoryEntryInput {
   operationsOwned?: boolean;
 }
 
+export interface PlanDocumentHistoryAppendInput {
+  activeTransactionStartDepth: number | undefined;
+  currentDepth: number;
+  previous: DocumentHistoryEntry | undefined;
+  entry: DocumentHistoryEntry | null;
+}
+
+export type DocumentHistoryAppendPlan =
+  | { kind: "skip" }
+  | { kind: "replaceLast"; entry: DocumentHistoryEntry }
+  | { kind: "commit"; entry: DocumentHistoryEntry };
+
 export interface PlanDocumentHistoryMergeMetadataInput {
   previous: HistoryTransactionOptions | undefined;
   next: HistoryTransactionOptions | undefined;
@@ -365,19 +377,18 @@ export function createJSONDocument<S extends z.ZodType>(
       ...(historyMetadata !== undefined ? { metadata: historyMetadata } : {}),
       ...(operationsOwned ? { operationsOwned } : {}),
     });
-    if (entry === null) return;
-    if (activeTransactionStartDepth !== undefined && historyDepth(stack) > activeTransactionStartDepth) {
-      const prev = stack.undo[stack.undo.length - 1]!;
-      const compactMetadata = entry.metadata === undefined
-        ? prev.metadata
-        : mergeRepeatedReplaceTransactionMetadata(prev.metadata, entry.metadata);
-      const compact = planCompactedRepeatedReplaceHistory(prev, entry, compactMetadata);
-      if (compact !== null) {
-        stack.undo[stack.undo.length - 1] = compact;
-        return;
-      }
+    const appendPlan = planDocumentHistoryAppend({
+      activeTransactionStartDepth,
+      currentDepth: historyDepth(stack),
+      previous: stack.undo[stack.undo.length - 1],
+      entry,
+    });
+    if (appendPlan.kind === "skip") return;
+    if (appendPlan.kind === "replaceLast") {
+      stack.undo[stack.undo.length - 1] = appendPlan.entry;
+      return;
     }
-    commitHistory(stack, entry, historyLimit);
+    commitHistory(stack, appendPlan.entry, historyLimit);
   };
 
   const applyDocumentPatch = (
@@ -1088,6 +1099,27 @@ export function planDocumentHistoryEntry(
   const historyMetadata = compactHistoryMetadata(input.metadata);
   if (historyMetadata !== undefined) entry.metadata = historyMetadata;
   return entry;
+}
+
+export function planDocumentHistoryAppend(
+  input: PlanDocumentHistoryAppendInput,
+): DocumentHistoryAppendPlan {
+  const { entry } = input;
+  if (entry === null) return { kind: "skip" };
+
+  if (
+    input.previous !== undefined
+    && input.activeTransactionStartDepth !== undefined
+    && input.currentDepth > input.activeTransactionStartDepth
+  ) {
+    const compactMetadata = entry.metadata === undefined
+      ? input.previous.metadata
+      : mergeRepeatedReplaceTransactionMetadata(input.previous.metadata, entry.metadata);
+    const compact = planCompactedRepeatedReplaceHistory(input.previous, entry, compactMetadata);
+    if (compact !== null) return { kind: "replaceLast", entry: compact };
+  }
+
+  return { kind: "commit", entry };
 }
 
 export function planDocumentHistoryRestore(

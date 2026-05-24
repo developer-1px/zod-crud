@@ -6,6 +6,7 @@ import {
   planDocumentActiveHistoryMetadata,
   planDocumentChangeCapture,
   planCompactedRepeatedReplaceHistory,
+  planDocumentHistoryAppend,
   planDocumentHistoryEntry,
   planDocumentHistoryMergeMetadata,
   planDocumentHistoryRestore,
@@ -358,6 +359,56 @@ describe("document history core functions", () => {
       selectionAfter: emptySelection,
       metadata: undefined,
     })).toBeNull();
+  });
+
+  test("plans history append actions after an entry has been built", () => {
+    const previous = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Typing" },
+      snapshot: { before: { title: "draft" } },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const entry = {
+      forward: [{ op: "replace", path: "/title", value: "ab" }],
+      inverse: [{ op: "replace", path: "/title", value: "a" }],
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
+      metadata: { mergeKey: "typing:title" },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentHistoryAppend({
+      activeTransactionStartDepth: undefined,
+      currentDepth: 1,
+      previous,
+      entry,
+    })).toEqual({ kind: "commit", entry });
+
+    expect(planDocumentHistoryAppend({
+      activeTransactionStartDepth: 0,
+      currentDepth: 1,
+      previous,
+      entry,
+    })).toEqual({
+      kind: "replaceLast",
+      entry: {
+        forward: [{ op: "replace", path: "/title", value: "ab" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: emptySelection,
+        metadata: { label: "Typing", mergeKey: "typing:title" },
+        snapshot: { before: { title: "draft" } },
+      },
+    });
+
+    expect(planDocumentHistoryAppend({
+      activeTransactionStartDepth: 0,
+      currentDepth: 1,
+      previous,
+      entry: null,
+    })).toEqual({ kind: "skip" });
+    expect(previous.forward).toEqual([{ op: "replace", path: "/title", value: "a" }]);
   });
 
   test("plans general transaction merge for a selected entry range", () => {
