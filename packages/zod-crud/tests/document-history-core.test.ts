@@ -18,6 +18,7 @@ import {
   planDocumentTransactionCall,
   planDocumentTransactionMerge,
   planDocumentTransactionMergeRange,
+  planDocumentTransactionMergeWrite,
   planDocumentTransactionScope,
   planMergedDocumentHistoryEntry,
   shouldCaptureDocumentChangeMetadata,
@@ -611,6 +612,35 @@ describe("document history core functions", () => {
       depthBefore: -1,
       currentDepth: 4,
     })).toBeNull();
+  });
+
+  test("plans transaction merge writes for mutable undo stacks", () => {
+    const entry = {
+      forward: [{ op: "replace", path: "/title", value: "final" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentTransactionMergeWrite({
+      range: null,
+      merged: entry,
+    })).toEqual({ kind: "skip" });
+
+    expect(planDocumentTransactionMergeWrite({
+      range: { start: 2, end: 5 },
+      merged: null,
+    })).toEqual({ kind: "skip" });
+
+    expect(planDocumentTransactionMergeWrite({
+      range: { start: 2, end: 5 },
+      merged: entry,
+    })).toEqual({
+      kind: "replaceRange",
+      index: 2,
+      length: 3,
+      entry,
+    });
   });
 
   test("plans undo restore patches, snapshot state, and redo selection without mutating the entry", () => {

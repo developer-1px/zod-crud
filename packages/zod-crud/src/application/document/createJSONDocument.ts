@@ -307,6 +307,20 @@ export interface DocumentTransactionMergeRange {
   end: number;
 }
 
+export interface PlanDocumentTransactionMergeWriteInput {
+  range: DocumentTransactionMergeRange | null;
+  merged: DocumentHistoryEntry | null;
+}
+
+export type DocumentTransactionMergeWritePlan =
+  | { kind: "skip" }
+  | {
+      kind: "replaceRange";
+      index: number;
+      length: number;
+      entry: DocumentHistoryEntry;
+    };
+
 export interface PlanDocumentTransactionAppendCompactInput {
   previous: DocumentHistoryEntry;
   operations: ReadonlyArray<JSONPatchOperation>;
@@ -795,9 +809,10 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     if (range === null) return;
     const merged = planDocumentTransactionMerge({ entries: stack.undo, start: range.start, end: range.end });
-    if (merged === null) return;
-    stack.undo[range.start] = merged;
-    stack.undo.length = range.start + 1;
+    const write = planDocumentTransactionMergeWrite({ range, merged });
+    if (write.kind === "skip") return;
+    stack.undo[write.index] = write.entry;
+    stack.undo.length = write.length;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
@@ -1272,6 +1287,18 @@ export function planDocumentTransactionMergeRange(
   const end = input.undoLength;
   if (start < input.undoStart || end - start <= 1) return null;
   return { start, end };
+}
+
+export function planDocumentTransactionMergeWrite(
+  input: PlanDocumentTransactionMergeWriteInput,
+): DocumentTransactionMergeWritePlan {
+  if (input.range === null || input.merged === null) return { kind: "skip" };
+  return {
+    kind: "replaceRange",
+    index: input.range.start,
+    length: input.range.start + 1,
+    entry: input.merged,
+  };
 }
 
 export function planDocumentTransactionAppendCompact(
