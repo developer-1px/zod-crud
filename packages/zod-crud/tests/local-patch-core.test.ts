@@ -4,6 +4,7 @@ import {
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
+  planSameArrayPatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
@@ -209,5 +210,98 @@ describe("increasing array add patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/items/1", value: "B" };
     expect(planIncreasingArrayAddPatch({ operations: sparse })).toBeNull();
+  });
+});
+
+describe("same array patch planning", () => {
+  test("plans add, remove, copy, and move operations in one array parent", () => {
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "remove", path: "/items/1" },
+        { op: "add", path: "/items/-", value: "A" },
+        { op: "copy", from: "/items/0", path: "/items/2" },
+        { op: "move", from: "/items/2", path: "/items/0" },
+      ],
+    })).toEqual({
+      parent: "/items",
+      parentSegments: ["items"],
+      operations: [
+        { op: "remove", path: "/items/1", index: 1 },
+        { op: "add", path: "/items/-", index: "-", value: "A" },
+        { op: "copy", from: "/items/0", path: "/items/2", fromIndex: 0, index: 2 },
+        { op: "move", from: "/items/2", path: "/items/0", fromIndex: 2, index: 0 },
+      ],
+    });
+  });
+
+  test("plans root and escaped parent array operations", () => {
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "copy", from: "/0", path: "/-" },
+      ],
+    })).toEqual({
+      parent: "",
+      parentSegments: [],
+      operations: [
+        { op: "copy", from: "/0", path: "/-", fromIndex: 0, index: "-" },
+      ],
+    });
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "move", from: "/a~1b/0", path: "/a~1b/-" },
+      ],
+    })).toEqual({
+      parent: "/a~1b",
+      parentSegments: ["a/b"],
+      operations: [
+        { op: "move", from: "/a~1b/0", path: "/a~1b/-", fromIndex: 0, index: "-" },
+      ],
+    });
+  });
+
+  test("rejects operations outside one array parent", () => {
+    expect(planSameArrayPatch({ operations: [] })).toBeNull();
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "replace", path: "/items/0", value: "A" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "remove", path: "/other/0" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "remove", path: "/items/-" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "copy", from: "/other/0", path: "/items/0" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "move", from: "/items/-", path: "/items/0" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayPatch({
+      operations: [
+        { op: "add", path: "/items/01", value: "A" },
+      ],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "remove", path: "/items/1" };
+    expect(planSameArrayPatch({ operations: sparse })).toBeNull();
   });
 });

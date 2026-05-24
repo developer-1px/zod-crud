@@ -53,6 +53,22 @@ export interface IncreasingArrayAddPatchPlan {
   values: unknown[];
 }
 
+export interface PlanSameArrayPatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export type SameArrayPatchOperationPlan =
+  | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
+  | { op: "remove"; path: Pointer; index: number }
+  | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
+  | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" };
+
+export interface SameArrayPatchPlan {
+  parent: Pointer;
+  parentSegments: string[];
+  operations: SameArrayPatchOperationPlan[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -1289,73 +1305,14 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length < 1) return null;
-
-  let parent: Pointer | null = null;
-  let elementSchema: z.ZodType | null = null;
-  const parsedOps: Array<
-    | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
-    | { op: "remove"; path: Pointer; index: number }
-    | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
-    | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
-  > = [];
-
-  for (let index = 0; index < ops.length; index++) {
-    if (!(index in ops)) return null;
-    const op = ops[index]!;
-    if (
-      validateOperationShape(op) !== null
-      || (
-        op.op !== "add"
-        && op.op !== "remove"
-        && op.op !== "copy"
-        && op.op !== "move"
-      )
-      || typeof op.path !== "string"
-    ) {
-      return null;
-    }
-    let pathIndex: number | "-";
-    if (parent === null) {
-      const location = arrayLocation(schema, op.path);
-      if (!location) return null;
-      parent = location.parent;
-      elementSchema = location.element;
-      pathIndex = location.index;
-    } else {
-      const location = arrayIndexInParent(op.path, parent);
-      if (!location) return null;
-      pathIndex = location.index;
-    }
-    if (op.op === "add") {
-      parsedOps.push({ op: "add", path: op.path, index: pathIndex, value: op.value });
-    } else if (op.op === "remove") {
-      if (pathIndex === "-") return null;
-      parsedOps.push({ op: "remove", path: op.path, index: pathIndex });
-    } else {
-      const parentPath = parent;
-      if (parentPath === null) return null;
-      const fromLocation = arrayIndexInParent(op.from, parentPath);
-      if (
-        !fromLocation
-        || fromLocation.index === "-"
-      ) {
-        return null;
-      }
-      parsedOps.push({
-        op: op.op,
-        from: op.from,
-        path: op.path,
-        fromIndex: fromLocation.index,
-        index: pathIndex,
-      });
-    }
-  }
-
-  if (parent === null || elementSchema === null) return null;
+  const plan = planSameArrayPatch({ operations: ops });
+  if (plan === null) return null;
+  const parentSchema = cachedSchemaAtPointer(schema, plan.parent, "value");
+  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  if (elementSchema === null) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
-  for (const op of parsedOps) {
+  for (const op of plan.operations) {
     if (op.op !== "add") continue;
     const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, op.value);
     if (!valueAccepted && !valuesTrusted) {
@@ -1381,6 +1338,66 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+export function planSameArrayPatch(input: PlanSameArrayPatchInput): SameArrayPatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length < 1) return null;
+
+  let parent: Pointer | null = null;
+  let parentSegments: string[] | null = null;
+  const operations: SameArrayPatchOperationPlan[] = [];
+
+  for (let index = 0; index < ops.length; index++) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || (
+        op.op !== "add"
+        && op.op !== "remove"
+        && op.op !== "copy"
+        && op.op !== "move"
+      )
+      || typeof op.path !== "string"
+    ) {
+      return null;
+    }
+
+    let pathIndex: number | "-";
+    if (parent === null) {
+      const location = arrayIndexPathLocation(op.path);
+      if (location === null) return null;
+      parent = location.parent;
+      parentSegments = location.parentSegments;
+      pathIndex = location.index;
+    } else {
+      const location = arrayIndexInParent(op.path, parent);
+      if (location === null) return null;
+      pathIndex = location.index;
+    }
+
+    if (op.op === "add") {
+      operations.push({ op: "add", path: op.path, index: pathIndex, value: op.value });
+    } else if (op.op === "remove") {
+      if (pathIndex === "-") return null;
+      operations.push({ op: "remove", path: op.path, index: pathIndex });
+    } else {
+      const fromLocation = arrayIndexInParent(op.from, parent);
+      if (fromLocation === null || fromLocation.index === "-") return null;
+      operations.push({
+        op: op.op,
+        from: op.from,
+        path: op.path,
+        fromIndex: fromLocation.index,
+        index: pathIndex,
+      });
+    }
+  }
+
+  return parent === null || parentSegments === null
+    ? null
+    : { parent, parentSegments, operations };
 }
 
 function validateAppliedLocalOp<S extends z.ZodType>(
@@ -1444,34 +1461,6 @@ function isSupportedLocalOpCandidate(op: JSONPatchOperation): boolean {
       || op.op === "move"
     )
     && typeof op.path === "string";
-}
-
-function arrayLocation(
-  schema: z.ZodType,
-  path: Pointer,
-): { parent: Pointer; element: z.ZodType; index: number | "-" } | null {
-  const simple = parseSimpleArrayIndexPath(path);
-  if (simple !== null) {
-    const parentSchema = cachedSchemaAtPointer(schema, simple.parent, "value");
-    const element = parentSchema ? getArrayElement(parentSchema) : null;
-    return element ? { parent: simple.parent, element, index: simple.index } : null;
-  }
-
-  const parent = parentPointer(path);
-  if (parent === null) return null;
-  let segments: string[];
-  try {
-    segments = parsePointer(path);
-  } catch {
-    return null;
-  }
-  const segment = segments[segments.length - 1];
-  if (segment === undefined) return null;
-  const index = segment === "-" ? "-" : numericSegment(segment);
-  if (index === null) return null;
-  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
-  const element = parentSchema ? getArrayElement(parentSchema) : null;
-  return element ? { parent, element, index } : null;
 }
 
 function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "-" } | null {
