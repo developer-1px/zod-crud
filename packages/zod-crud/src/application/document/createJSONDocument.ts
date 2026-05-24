@@ -101,6 +101,18 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   selection?: SelectionAction | SelectionSnap;
 }
 
+export interface PlanDocumentCommitRouteInput {
+  options: JSONDocumentCommitOptions | undefined;
+}
+
+export type DocumentCommitRoutePlan =
+  | { kind: "patch"; metadata: HistoryTransactionOptions | undefined }
+  | {
+      kind: "selection";
+      metadata: HistoryTransactionOptions | undefined;
+      selection: SelectionAction | SelectionSnap;
+    };
+
 export interface PlanDocumentCommitSelectionInput {
   activeHistoryMetadata: HistoryTransactionOptions | undefined;
   metadata: HistoryTransactionOptions | undefined;
@@ -517,21 +529,18 @@ export function createJSONDocument<S extends z.ZodType>(
     operations: ReadonlyArray<JSONPatchOperation>,
     commitOptions?: JSONDocumentCommitOptions,
   ): JSONResult => {
-    if (commitOptions === undefined) return applyDocumentPatch(operations);
-
-    const { selection } = commitOptions;
-    const metadataOptions = compactHistoryMetadata(commitOptions);
-    if (selection === undefined) return applyDocumentPatch(operations, metadataOptions);
+    const route = planDocumentCommitRoute({ options: commitOptions });
+    if (route.kind === "patch") return applyDocumentPatch(operations, route.metadata);
 
     const before = rawOps.state;
     const selectionBefore = snapSelection();
     const predicted = rawOps.previewPatch(operations);
-    if (!predicted.result.ok) return patch(operations, metadataOptions);
+    if (!predicted.result.ok) return patch(operations, route.metadata);
 
     const plan = planDocumentCommitSelection({
       activeHistoryMetadata,
-      metadata: metadataOptions,
-      selection,
+      metadata: route.metadata,
+      selection: route.selection,
       selectionBefore,
       state: predicted.state,
       selectionMode,
@@ -905,6 +914,24 @@ function normalizePatchInput(operations: JSONPatchInput): ReadonlyArray<JSONPatc
 
 function isPatchArray(operations: JSONPatchInput): operations is ReadonlyArray<JSONPatchOperation> {
   return Array.isArray(operations);
+}
+
+export function planDocumentCommitRoute(
+  input: PlanDocumentCommitRouteInput,
+): DocumentCommitRoutePlan {
+  if (input.options === undefined) {
+    return { kind: "patch", metadata: undefined };
+  }
+
+  const metadata = compactHistoryMetadata(input.options);
+  if (input.options.selection === undefined) {
+    return { kind: "patch", metadata };
+  }
+  return {
+    kind: "selection",
+    metadata,
+    selection: input.options.selection,
+  };
 }
 
 export function planDocumentCommitSelection(

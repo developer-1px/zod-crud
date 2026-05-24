@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  planDocumentCommitRoute,
   planDocumentCommitSelection,
   shouldRecordDocumentCommitHistory,
 } from "../src/application/document/createJSONDocument.js";
@@ -23,6 +24,35 @@ const titleSelection: SelectionSnap = {
 };
 
 describe("document commit core functions", () => {
+  test("routes commit options to patch or explicit selection execution", () => {
+    expect(planDocumentCommitRoute({ options: undefined })).toEqual({
+      kind: "patch",
+      metadata: undefined,
+    });
+
+    expect(planDocumentCommitRoute({
+      options: { label: "Rename", origin: "keyboard", mergeKey: "typing:title" },
+    })).toEqual({
+      kind: "patch",
+      metadata: {
+        label: "Rename",
+        origin: "keyboard",
+        mergeKey: "typing:title",
+      },
+    });
+
+    expect(planDocumentCommitRoute({
+      options: {
+        label: "Rename",
+        selection: { type: "collapse", point: "/title" },
+      },
+    })).toEqual({
+      kind: "selection",
+      metadata: { label: "Rename" },
+      selection: { type: "collapse", point: "/title" },
+    });
+  });
+
   test("plans explicit commit selection and merged metadata without a document facade", () => {
     const plan = planDocumentCommitSelection({
       activeHistoryMetadata: { origin: "keyboard" },
