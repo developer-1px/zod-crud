@@ -296,6 +296,16 @@ export interface PlanDocumentActiveHistoryMetadataInput {
   next: HistoryTransactionOptions | undefined;
 }
 
+export interface PlanDocumentTransactionScopeInput {
+  activeTransactionStartDepth: number | undefined;
+  depthBefore: number;
+}
+
+export interface DocumentTransactionScopePlan {
+  activeTransactionStartDepth: number;
+  restoreTransactionStartDepth: number | undefined;
+}
+
 export type DocumentHistoryRestoreDirection = "undo" | "redo";
 
 export interface PlanDocumentHistoryRestoreInput {
@@ -698,14 +708,15 @@ export function createJSONDocument<S extends z.ZodType>(
     const fn = hasOptions ? maybeFn : optionsOrFn;
     if (!fn) return;
     const depthBefore = historyDepth(stack);
-    const previousTransactionStartDepth = activeTransactionStartDepth;
-    if (previousTransactionStartDepth === undefined) {
-      activeTransactionStartDepth = depthBefore;
-    }
+    const scope = planDocumentTransactionScope({
+      activeTransactionStartDepth,
+      depthBefore,
+    });
+    activeTransactionStartDepth = scope.activeTransactionStartDepth;
     try {
       withHistoryMetadata(transactionOptions, fn);
     } finally {
-      activeTransactionStartDepth = previousTransactionStartDepth;
+      activeTransactionStartDepth = scope.restoreTransactionStartDepth;
     }
     mergeTransactionEntries(depthBefore);
   };
@@ -1313,6 +1324,15 @@ export function planDocumentActiveHistoryMetadata(
 ): HistoryTransactionOptions | undefined {
   if (input.next === undefined) return input.active;
   return { ...input.active, ...input.next };
+}
+
+export function planDocumentTransactionScope(
+  input: PlanDocumentTransactionScopeInput,
+): DocumentTransactionScopePlan {
+  return {
+    activeTransactionStartDepth: input.activeTransactionStartDepth ?? input.depthBefore,
+    restoreTransactionStartDepth: input.activeTransactionStartDepth,
+  };
 }
 
 function mergeGeneralTransactionMetadata(

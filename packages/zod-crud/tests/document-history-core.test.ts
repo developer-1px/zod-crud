@@ -14,6 +14,7 @@ import {
   planDocumentTransactionAppendCompact,
   planDocumentTransactionMerge,
   planDocumentTransactionMergeRange,
+  planDocumentTransactionScope,
   planMergedDocumentHistoryEntry,
   shouldCaptureDocumentChangeMetadata,
 } from "../src/application/document/createJSONDocument.js";
@@ -225,6 +226,24 @@ describe("document history core functions", () => {
       label: "Inner",
       origin: "keyboard",
       mergeKey: "inner",
+    });
+  });
+
+  test("plans transaction scope depth for root and nested transactions", () => {
+    expect(planDocumentTransactionScope({
+      activeTransactionStartDepth: undefined,
+      depthBefore: 3,
+    })).toEqual({
+      activeTransactionStartDepth: 3,
+      restoreTransactionStartDepth: undefined,
+    });
+
+    expect(planDocumentTransactionScope({
+      activeTransactionStartDepth: 1,
+      depthBefore: 3,
+    })).toEqual({
+      activeTransactionStartDepth: 1,
+      restoreTransactionStartDepth: 1,
     });
   });
 
