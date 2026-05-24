@@ -5,7 +5,9 @@ import { createJSONDocument, type JSONPatchOperation } from "../src/index.js";
 import {
   commitMutable,
   emptyMutableHistory,
+  mergeLastMutable,
   planMutableHistoryCommit,
+  planMutableHistoryMergeLast,
   planMutableHistoryMoveBack,
   planMutableHistoryMoveForward,
   shouldCompactUndoPrefix,
@@ -164,6 +166,45 @@ describe("doc.history performance contract", () => {
 
     expect(planMutableHistoryMoveForward({ redoLength: 0 })).toEqual({ kind: "skip" });
     expect(planMutableHistoryMoveForward({ redoLength: 2 })).toEqual({ kind: "move" });
+  });
+
+  test("plans mutable history merge indexes without mutating a stack", () => {
+    expect(planMutableHistoryMergeLast({
+      undoLength: 1,
+      undoStart: 0,
+    })).toEqual({ kind: "skip" });
+
+    expect(planMutableHistoryMergeLast({
+      undoLength: 4,
+      undoStart: 3,
+    })).toEqual({ kind: "skip" });
+
+    expect(planMutableHistoryMergeLast({
+      undoLength: 5,
+      undoStart: 3,
+    })).toEqual({
+      kind: "merge",
+      previousIndex: 3,
+      topIndex: 4,
+      writeIndex: 3,
+      length: 4,
+    });
+  });
+
+  test("mutable history merge applies the planned write behind a compacted prefix", () => {
+    const stack = {
+      undo: [{ value: 0 }, { value: 1 }, { value: 2 }, { value: 3 }],
+      redo: [],
+      undoStart: 2,
+    };
+
+    expect(mergeLastMutable(stack, (prev, top) => ({ value: prev.value + top.value }))).toBe(true);
+
+    expect(stack).toEqual({
+      undo: [{ value: 0 }, { value: 1 }, { value: 5 }],
+      redo: [],
+      undoStart: 2,
+    });
   });
 
   test("large transaction merges burst edits into one undo entry", () => {

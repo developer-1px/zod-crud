@@ -107,6 +107,21 @@ export type MutableHistoryMoveForwardPlan =
   | { kind: "skip" }
   | { kind: "move" };
 
+export interface PlanMutableHistoryMergeLastInput {
+  undoLength: number;
+  undoStart: number;
+}
+
+export type MutableHistoryMergeLastPlan =
+  | { kind: "skip" }
+  | {
+      kind: "merge";
+      previousIndex: number;
+      topIndex: number;
+      writeIndex: number;
+      length: number;
+    };
+
 export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
   return { undo: [], redo: [], undoStart: 0 };
 }
@@ -209,14 +224,33 @@ export function mergeLastMutable<E>(
   stack: MutableHistoryStack<E>,
   merge: (prev: E, top: E) => E,
 ): boolean {
-  if (historyDepth(stack) < 2) return false;
-  const top = stack.undo[stack.undo.length - 1]!;
-  const prev = stack.undo[stack.undo.length - 2]!;
+  const plan = planMutableHistoryMergeLast({
+    undoLength: stack.undo.length,
+    undoStart: stack.undoStart,
+  });
+  if (plan.kind === "skip") return false;
+
+  const top = stack.undo[plan.topIndex]!;
+  const prev = stack.undo[plan.previousIndex]!;
   const merged = merge(prev, top);
-  const mergeIndex = stack.undo.length - 2;
-  stack.undo[mergeIndex] = merged;
-  stack.undo.pop();
+  stack.undo[plan.writeIndex] = merged;
+  stack.undo.length = plan.length;
   return true;
+}
+
+export function planMutableHistoryMergeLast(
+  input: PlanMutableHistoryMergeLastInput,
+): MutableHistoryMergeLastPlan {
+  if (input.undoLength - input.undoStart < 2) return { kind: "skip" };
+  const topIndex = input.undoLength - 1;
+  const previousIndex = input.undoLength - 2;
+  return {
+    kind: "merge",
+    previousIndex,
+    topIndex,
+    writeIndex: previousIndex,
+    length: topIndex,
+  };
 }
 
 export function historyDepth<E>(stack: MutableHistoryStack<E>): number {
