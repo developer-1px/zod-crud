@@ -1322,13 +1322,19 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   for (let index = 0; index < plan.operations.length; index += 1) {
     const op = plan.operations[index]!;
     const valueAccepted = valueValidator !== null && valueValidator(op.value, new WeakSet<object>());
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: valueSchema,
+      value: op.value,
+      knownJsonAccepted: valueAccepted,
+      valuesTrusted,
+    });
+    if (valueValidation.kind === "notSerializable") {
+      return operationFailure(state, "not_serializable", valueValidation.reason);
     }
-    if (!valueAccepted) {
-      const result = valueSchema.safeParse(op.value);
-      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    if (valueValidation.kind === "parse") {
+      const result = valueValidation.schema.safeParse(valueValidation.value);
+      if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
     }
     applied[index] = { op: "add", path: op.path, value: op.value };
   }

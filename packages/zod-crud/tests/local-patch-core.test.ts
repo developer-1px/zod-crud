@@ -853,6 +853,24 @@ describe("root record remove patch planning", () => {
     expect(result?.applied).toEqual([{ op: "add", path: "/alpha", value: 1 }]);
     expect(result?.applied[0]).not.toHaveProperty("key");
   });
+
+  test("keeps root record add JSON guard before schema parsing", () => {
+    const state = {};
+    const result = applyPatchWithLocalSchemaValidation(
+      z.record(z.string(), z.unknown()),
+      state,
+      [
+        { op: "add", path: "/alpha", value: () => "not json" },
+        { op: "add", path: "/beta", value: 2 },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
 
 describe("root object replace patch planning", () => {
