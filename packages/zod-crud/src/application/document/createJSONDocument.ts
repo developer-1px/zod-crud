@@ -283,6 +283,14 @@ export interface PlanDocumentHistoryMergeMetadataInput {
   options?: { mergeKey?: string };
 }
 
+export interface PlanDocumentHistoryMergeLastInput {
+  isRestoring: boolean;
+  historyDepth: number;
+  previous: DocumentHistoryEntry | undefined;
+  top: DocumentHistoryEntry | undefined;
+  options?: { mergeKey?: string };
+}
+
 export interface PlanDocumentActiveHistoryMetadataInput {
   active: HistoryTransactionOptions | undefined;
   next: HistoryTransactionOptions | undefined;
@@ -640,16 +648,14 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const mergeLast = (mergeOptions?: { mergeKey?: string }): boolean => {
-    if (isRestoring) return false;
-    if (historyDepth(stack) < 2) return false;
-    const top = stack.undo[stack.undo.length - 1]!;
-    const prev = stack.undo[stack.undo.length - 2]!;
-    const metadata = planDocumentHistoryMergeMetadata({
-      previous: prev.metadata,
-      next: top.metadata,
+    const merged = planDocumentHistoryMergeLast({
+      isRestoring,
+      historyDepth: historyDepth(stack),
+      previous: stack.undo[stack.undo.length - 2],
+      top: stack.undo[stack.undo.length - 1],
       ...(mergeOptions !== undefined ? { options: mergeOptions } : {}),
     });
-    const merged = planMergedDocumentHistoryEntry(prev, top, metadata);
+    if (merged === null) return false;
     const mergeIndex = stack.undo.length - 2;
     stack.undo[mergeIndex] = merged;
     stack.undo.pop();
@@ -1287,6 +1293,19 @@ export function planDocumentHistoryMergeMetadata(
   }
   const merged = { ...input.previous, ...input.next, ...input.options };
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+export function planDocumentHistoryMergeLast(
+  input: PlanDocumentHistoryMergeLastInput,
+): DocumentHistoryEntry | null {
+  if (input.isRestoring || input.historyDepth < 2) return null;
+  if (input.previous === undefined || input.top === undefined) return null;
+  const metadata = planDocumentHistoryMergeMetadata({
+    previous: input.previous.metadata,
+    next: input.top.metadata,
+    ...(input.options !== undefined ? { options: input.options } : {}),
+  });
+  return planMergedDocumentHistoryEntry(input.previous, input.top, metadata);
 }
 
 export function planDocumentActiveHistoryMetadata(

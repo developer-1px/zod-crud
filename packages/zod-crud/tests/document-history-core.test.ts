@@ -8,6 +8,7 @@ import {
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryAppend,
   planDocumentHistoryEntry,
+  planDocumentHistoryMergeLast,
   planDocumentHistoryMergeMetadata,
   planDocumentHistoryRestore,
   planDocumentTransactionAppendCompact,
@@ -148,6 +149,59 @@ describe("document history core functions", () => {
       label: "Next",
       origin: "keyboard",
       mergeKey: "explicit",
+    });
+  });
+
+  test("plans mergeLast output with guard conditions", () => {
+    const previous = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Previous", origin: "keyboard", mergeKey: "prev" },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const top = {
+      forward: [{ op: "replace", path: "/count", value: 1 }],
+      inverse: [{ op: "replace", path: "/count", value: 0 }],
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "Top" },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentHistoryMergeLast({
+      isRestoring: true,
+      historyDepth: 2,
+      previous,
+      top,
+    })).toBeNull();
+    expect(planDocumentHistoryMergeLast({
+      isRestoring: false,
+      historyDepth: 1,
+      previous,
+      top,
+    })).toBeNull();
+    expect(planDocumentHistoryMergeLast({
+      isRestoring: false,
+      historyDepth: 2,
+      previous,
+      top,
+      options: { mergeKey: "explicit" },
+    })).toEqual({
+      forward: [
+        { op: "replace", path: "/title", value: "a" },
+        { op: "replace", path: "/count", value: 1 },
+      ],
+      inverse: [
+        { op: "replace", path: "/count", value: 0 },
+        { op: "replace", path: "/title", value: "draft" },
+      ],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+      metadata: {
+        label: "Top",
+        origin: "keyboard",
+        mergeKey: "explicit",
+      },
     });
   });
 
