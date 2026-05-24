@@ -312,26 +312,9 @@ export function copyRootRecordKeyPrefix(
   end: number,
 ): Record<string, unknown> {
   const next: Record<string, unknown> = {};
-  if (!objectHasOwn.call(source, "__proto__")) {
-    for (let index = 0; index < end; index += 1) {
-      const key = keys[index]!;
-      next[key] = source[key];
-    }
-    return next;
-  }
-
   for (let index = 0; index < end; index += 1) {
     const key = keys[index]!;
-    if (key !== "__proto__") {
-      next[key] = source[key];
-      continue;
-    }
-    Object.defineProperty(next, key, {
-      value: source[key],
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
+    writeObjectDataValue(next, key, source[key]);
   }
   return next;
 }
