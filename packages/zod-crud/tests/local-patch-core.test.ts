@@ -21,6 +21,7 @@ import {
   applySingleRootObjectReplacePlan,
   applyValidatedArrayAddPlan,
   applyValidatedArrayIndexReplacements,
+  applyValidatedArrayNestedReplacements,
   appendArrayIndexPath,
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -626,6 +627,92 @@ describe("known-json array index replacement planning", () => {
 });
 
 describe("array nested replacement state materialization", () => {
+  test("validates and applies array nested replacements with applied operations", () => {
+    const state = {
+      items: [
+        { meta: { title: "old-a" } },
+        { meta: { title: "old-b" } },
+      ],
+      keep: true,
+    };
+
+    expect(applyValidatedArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["meta", "title"],
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
+        { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
+      ],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (operation) => ({ ok: true, value: operation.value }),
+    })).toEqual({
+      state: {
+        items: [
+          { meta: { title: "A" } },
+          { meta: { title: "B" } },
+        ],
+        keep: true,
+      },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    });
+    expect(state.items[0]?.meta.title).toBe("old-a");
+  });
+
+  test("returns array nested replacement validation failures before materialization", () => {
+    const state = { items: [{ meta: { title: "old" } }] };
+    const result = applyValidatedArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["meta", "title"],
+      operations: [{ op: "replace", path: "/items/0/meta/title", index: 0, value: 1 }],
+      valueSchema: z.string(),
+      valuesTrusted: true,
+      replacementValue: (operation) => ({ ok: true, value: operation.value }),
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+    expect(state.items[0]?.meta.title).toBe("old");
+  });
+
+  test("rejects validated array nested replacements outside the current array or suffix path", () => {
+    const state = { items: [{ meta: { title: "old" } }] };
+
+    expect(applyValidatedArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["meta", "title"],
+      operations: [{ op: "replace", path: "/items/1/meta/title", index: 1, value: "B" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (operation) => ({ ok: true, value: operation.value }),
+    })).toBeNull();
+
+    expect(applyValidatedArrayNestedReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      suffixSegments: ["missing", "title"],
+      operations: [{ op: "replace", path: "/items/0/missing/title", index: 0, value: "B" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (operation) => ({ ok: true, value: operation.value }),
+    })).toBeNull();
+    expect(state.items[0]?.meta.title).toBe("old");
+  });
+
   test("applies nested replacements to root and nested arrays without mutating the source", () => {
     const state = {
       items: [

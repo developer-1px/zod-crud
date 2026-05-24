@@ -358,6 +358,14 @@ export interface ApplyValidatedArrayIndexReplacementsInput<
   arraySegments: ReadonlyArray<string>;
 }
 
+export interface ApplyValidatedArrayNestedReplacementsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> extends BuildValidatedArrayIndexReplacementsInput<S, Operation> {
+  arraySegments: ReadonlyArray<string>;
+  suffixSegments: ReadonlyArray<string>;
+}
+
 export interface BuildKnownJsonArrayIndexReplacementsInput<
   Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
 > {
@@ -1396,26 +1404,16 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
 
   const current = readArrayAtSegments({ state, segments: plan.arraySegments });
   if (!current.ok) return null;
-  const arrayValue = current.array;
-  const replacements = buildValidatedArrayIndexReplacements({
+  return applyValidatedArrayNestedReplacements({
     state,
-    array: arrayValue,
+    arraySegments: plan.arraySegments,
+    array: current.array,
+    suffixSegments: plan.suffixSegments,
     operations: plan.operations,
     valueSchema,
     valuesTrusted,
     replacementValue: (op) => ({ ok: true, value: op.value }),
   });
-  if (!replacements.ok) return replacements.result;
-
-  const nextState = applyArrayNestedReplacements({
-    state,
-    arraySegments: plan.arraySegments,
-    array: arrayValue,
-    suffixSegments: plan.suffixSegments,
-    replacements: replacements.replacements,
-  });
-  if (nextState === null) return null;
-  return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planSameArrayNestedReplacePatch(
@@ -2136,6 +2134,27 @@ export function applyValidatedArrayIndexReplacements<
     state: input.state,
     arraySegments: input.arraySegments,
     array: input.array,
+    replacements: replacements.replacements,
+  });
+  return nextState === null
+    ? null
+    : okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(input.operations));
+}
+
+export function applyValidatedArrayNestedReplacements<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyValidatedArrayNestedReplacementsInput<S, Operation>,
+): ApplyResult<S> | null {
+  const replacements = buildValidatedArrayIndexReplacements(input);
+  if (!replacements.ok) return replacements.result;
+
+  const nextState = applyArrayNestedReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: input.array,
+    suffixSegments: input.suffixSegments,
     replacements: replacements.replacements,
   });
   return nextState === null
