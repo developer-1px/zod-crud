@@ -348,6 +348,19 @@ export interface DocumentTransactionScopePlan {
   restoreTransactionStartDepth: number | undefined;
 }
 
+export interface PlanDocumentTransactionCallInput {
+  optionsOrFn: HistoryTransactionOptions | (() => void);
+  maybeFn: (() => void) | undefined;
+}
+
+export type DocumentTransactionCallPlan =
+  | { kind: "skip" }
+  | {
+      kind: "run";
+      metadata: HistoryTransactionOptions | undefined;
+      fn: () => void;
+    };
+
 export type DocumentHistoryRestoreDirection = "undo" | "redo";
 
 export interface PlanDocumentHistoryRestoreInput {
@@ -736,10 +749,8 @@ export function createJSONDocument<S extends z.ZodType>(
     optionsOrFn: HistoryTransactionOptions | (() => void),
     maybeFn?: () => void,
   ): void => {
-    const hasOptions = typeof optionsOrFn !== "function";
-    const transactionOptions = hasOptions ? optionsOrFn : undefined;
-    const fn = hasOptions ? maybeFn : optionsOrFn;
-    if (!fn) return;
+    const call = planDocumentTransactionCall({ optionsOrFn, maybeFn });
+    if (call.kind === "skip") return;
     const depthBefore = historyDepth(stack);
     const scope = planDocumentTransactionScope({
       activeTransactionStartDepth,
@@ -747,7 +758,7 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     activeTransactionStartDepth = scope.activeTransactionStartDepth;
     try {
-      withHistoryMetadata(transactionOptions, fn);
+      withHistoryMetadata(call.metadata, call.fn);
     } finally {
       activeTransactionStartDepth = scope.restoreTransactionStartDepth;
     }
@@ -1425,6 +1436,24 @@ export function planDocumentTransactionScope(
   return {
     activeTransactionStartDepth: input.activeTransactionStartDepth ?? input.depthBefore,
     restoreTransactionStartDepth: input.activeTransactionStartDepth,
+  };
+}
+
+export function planDocumentTransactionCall(
+  input: PlanDocumentTransactionCallInput,
+): DocumentTransactionCallPlan {
+  if (typeof input.optionsOrFn === "function") {
+    return {
+      kind: "run",
+      metadata: undefined,
+      fn: input.optionsOrFn,
+    };
+  }
+  if (input.maybeFn === undefined) return { kind: "skip" };
+  return {
+    kind: "run",
+    metadata: input.optionsOrFn,
+    fn: input.maybeFn,
   };
 }
 

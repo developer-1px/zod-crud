@@ -12,6 +12,7 @@ import {
   planDocumentHistoryMergeMetadata,
   planDocumentHistoryRestore,
   planDocumentTransactionAppendCompact,
+  planDocumentTransactionCall,
   planDocumentTransactionMerge,
   planDocumentTransactionMergeRange,
   planDocumentTransactionScope,
@@ -245,6 +246,34 @@ describe("document history core functions", () => {
       activeTransactionStartDepth: 1,
       restoreTransactionStartDepth: 1,
     });
+  });
+
+  test("plans transaction call overload parsing without a document shell", () => {
+    const fn = () => undefined;
+    const metadata = { label: "Batch", origin: "keyboard", mergeKey: "batch" };
+
+    expect(planDocumentTransactionCall({
+      optionsOrFn: fn,
+      maybeFn: undefined,
+    })).toEqual({
+      kind: "run",
+      metadata: undefined,
+      fn,
+    });
+
+    expect(planDocumentTransactionCall({
+      optionsOrFn: metadata,
+      maybeFn: fn,
+    })).toEqual({
+      kind: "run",
+      metadata,
+      fn,
+    });
+
+    expect(planDocumentTransactionCall({
+      optionsOrFn: metadata,
+      maybeFn: undefined,
+    })).toEqual({ kind: "skip" });
   });
 
   test("plans compact history entries for repeated replace batches", () => {
