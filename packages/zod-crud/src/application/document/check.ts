@@ -122,6 +122,22 @@ export interface CheckPasteExecutionOptions {
   trustedPayload?: boolean;
 }
 
+export interface PlanDocumentPatchCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export interface PlanDocumentReplaceCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  value: unknown;
+  target?: Pointer;
+  selectionTarget?: Pointer | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
 export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -300,15 +316,33 @@ export function checkDocumentReplace<S extends z.ZodType>(
   hasValueArg = arguments.length >= 3,
 ): CheckResult {
   const args = resolveReplaceArgs(pathOrValue, maybeValue, hasValueArg);
-  if (args.target !== undefined && isJSONPath(args.target)) {
-    return toCheckResult(replaceVerb(context.schema, context.state, args.target, args.value, {
-      previewPatch: context.previewPatch,
+  return planDocumentReplaceCheck({
+    schema: context.schema,
+    state: context.state,
+    value: args.value,
+    selectionTarget: primaryPointer(selectionState(context)),
+    ...(args.target !== undefined ? { target: args.target } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentReplaceCheck<S extends z.ZodType>(
+  input: PlanDocumentReplaceCheckInput<S>,
+): CheckResult {
+  if (input.target !== undefined && isJSONPath(input.target)) {
+    return toCheckResult(replaceVerb(input.schema, input.state, input.target, input.value, {
+      previewPatch: input.previewPatch,
     }));
   }
-  const target = targetOrSelection(context, args.target);
+  const target = input.target ?? input.selectionTarget ?? null;
   return target === null
     ? emptySelection("replace target selection is empty")
-    : checkDocumentPatch(context, [{ op: "replace", path: target, value: args.value }]);
+    : planDocumentPatchCheck({
+        schema: input.schema,
+        state: input.state,
+        operations: [{ op: "replace", path: target, value: input.value }],
+        ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
+      });
 }
 
 export function checkDocumentReplaceText<S extends z.ZodType>(
@@ -404,16 +438,21 @@ export function checkDocumentPatch<S extends z.ZodType>(
   context: DocumentCheckContext<S>,
   operations: ReadonlyArray<JSONPatchOperation>,
 ): CheckResult {
-  return toCheckResult(checkPatch(context, operations));
+  return planDocumentPatchCheck({
+    schema: context.schema,
+    state: context.state,
+    operations,
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
 }
 
-function checkPatch<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
-  patch: ReadonlyArray<JSONPatchOperation>,
-): CheckableResult {
-  return context.previewPatch
-    ? preFlightFromApplyResult(context.previewPatch(patch))
-    : preFlight(context.schema, context.state, patch);
+export function planDocumentPatchCheck<S extends z.ZodType>(
+  input: PlanDocumentPatchCheckInput<S>,
+): CheckResult {
+  const result = input.previewPatch
+    ? preFlightFromApplyResult(input.previewPatch(input.operations))
+    : preFlight(input.schema, input.state, input.operations);
+  return toCheckResult(result);
 }
 
 function trustedState<S extends z.ZodType>(context: DocumentCheckContext<S>): boolean {
@@ -429,13 +468,6 @@ function sourceOrSelection<S extends z.ZodType>(
   source?: ClipboardSource,
 ): ClipboardSource | null {
   return source ?? selectedSource(selectionState(context));
-}
-
-function targetOrSelection<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
-  target?: Pointer,
-): Pointer | null {
-  return target ?? primaryPointer(selectionState(context));
 }
 
 function primarySourceOrSelection<S extends z.ZodType>(
