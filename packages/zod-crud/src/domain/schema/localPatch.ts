@@ -342,6 +342,11 @@ export interface PlanRootRecordRemovePatchInput {
   sourceKeys: ReadonlyArray<string>;
 }
 
+export interface PlanRootRecordRemoveOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  sourceKeys: ReadonlyArray<string>;
+}
+
 export type RootRecordRemovePatchStrategy = "clear" | "copyPrefix" | "copyDelete" | "rebuild";
 
 export interface PlanRootRecordRemoveStrategyInput {
@@ -1484,6 +1489,16 @@ export function applyRootRecordRemovePlan(input: ApplyRootRecordRemovePlanInput)
 export function planRootRecordRemovePatch(
   input: PlanRootRecordRemovePatchInput,
 ): RootRecordRemovePatchPlan | null {
+  const operations = planRootRecordRemoveOperations(input);
+  if (operations === null) return null;
+  const { sourceKeys } = input;
+  const { strategy, keepCount } = planRootRecordRemoveStrategy({ sourceKeys, operations });
+  return { operations, strategy, keepCount };
+}
+
+export function planRootRecordRemoveOperations(
+  input: PlanRootRecordRemoveOperationsInput,
+): RootRecordRemoveOperationPlan[] | null {
   const ops = input.operations;
   const sourceKeys = input.sourceKeys;
   if (!Array.isArray(ops) || ops.length === 0 || !Array.isArray(sourceKeys)) return null;
@@ -1513,8 +1528,7 @@ export function planRootRecordRemovePatch(
     operations.push({ op: "remove", path: op.path, key });
   }
 
-  const { strategy, keepCount } = planRootRecordRemoveStrategy({ sourceKeys, operations });
-  return { operations, strategy, keepCount };
+  return operations;
 }
 
 export function planRootRecordRemoveStrategy(

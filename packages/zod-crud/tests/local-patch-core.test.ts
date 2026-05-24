@@ -45,6 +45,7 @@ import {
   planLocalPatchValueValidation,
   planRootObjectReplacePatch,
   planRootRecordAddPatch,
+  planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
   planRootRecordRemoveStrategy,
   planSameArrayElementReplacePatch,
@@ -2171,6 +2172,44 @@ describe("root record add patch planning", () => {
 });
 
 describe("root record remove patch planning", () => {
+  test("plans root record remove operations from plain existing keys", () => {
+    expect(planRootRecordRemoveOperations({
+      sourceKeys: ["a", "", "__proto__"],
+      operations: [
+        { op: "remove", path: "/a" },
+        { op: "remove", path: "/" },
+        { op: "remove", path: "/__proto__" },
+      ],
+    })).toEqual([
+      { op: "remove", path: "/a", key: "a" },
+      { op: "remove", path: "/", key: "" },
+      { op: "remove", path: "/__proto__", key: "__proto__" },
+    ]);
+  });
+
+  test("rejects invalid root record remove operation plans", () => {
+    expect(planRootRecordRemoveOperations({ sourceKeys: ["a"], operations: [] })).toBeNull();
+    expect(planRootRecordRemoveOperations({
+      sourceKeys: ["a"],
+      operations: [{ op: "remove", path: "/missing" }],
+    })).toBeNull();
+    expect(planRootRecordRemoveOperations({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "remove", path: "/a" },
+        { op: "remove", path: "/a" },
+      ],
+    })).toBeNull();
+    expect(planRootRecordRemoveOperations({
+      sourceKeys: ["a"],
+      operations: [{ op: "remove", path: "/a/nested" }],
+    })).toBeNull();
+    expect(planRootRecordRemoveOperations({
+      sourceKeys: ["a/b"],
+      operations: [{ op: "remove", path: "/a~1b" }],
+    })).toBeNull();
+  });
+
   test("plans root record remove strategies from parsed operations", () => {
     expect(planRootRecordRemoveStrategy({
       sourceKeys: ["a", "b", "c"],
