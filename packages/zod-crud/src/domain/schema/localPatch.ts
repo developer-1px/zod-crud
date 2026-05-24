@@ -896,8 +896,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   const plan = planSameArrayElementReplacePatch({ operations: ops });
   if (plan === null) return null;
 
-  const parentSchema = cachedSchemaAtPointer(schema, plan.parent, "value");
-  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  const elementSchema = arrayElementSchemaAtParent(schema, plan.parent);
   if (!elementSchema) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
@@ -1575,8 +1574,7 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (plan === null) return null;
   const { parent, parentSegments, values } = plan;
 
-  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
-  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  const elementSchema = arrayElementSchemaAtParent(schema, parent);
   if (!elementSchema) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
@@ -1656,8 +1654,7 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   const plan = planIncreasingArrayAddPatch({ operations: ops });
   if (plan === null) return null;
   const { parent, parentSegments, start, values } = plan;
-  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
-  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  const elementSchema = arrayElementSchemaAtParent(schema, parent);
   if (!elementSchema) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
@@ -1782,8 +1779,7 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
 ): LocalPatchResult<S> {
   const plan = planSameArrayPatch({ operations: ops });
   if (plan === null) return null;
-  const parentSchema = cachedSchemaAtPointer(schema, plan.parent, "value");
-  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  const elementSchema = arrayElementSchemaAtParent(schema, plan.parent);
   if (elementSchema === null) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
@@ -2214,7 +2210,11 @@ function parseKnownArrayNestedIndexText(
 export function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
   const location = arrayIndexPathLocation(path);
   if (location === null) return null;
-  const parentSchema = cachedSchemaAtPointer(schema, location.parent, "value");
+  return arrayElementSchemaAtParent(schema, location.parent);
+}
+
+export function arrayElementSchemaAtParent(schema: z.ZodType, parent: Pointer): z.ZodType | null {
+  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   return parentSchema ? getArrayElement(parentSchema) : null;
 }
 

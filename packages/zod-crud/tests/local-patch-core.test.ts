@@ -12,6 +12,7 @@ import {
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
   appendArrayIndexPath,
+  arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
@@ -1054,6 +1055,21 @@ describe("replace value at segments", () => {
 });
 
 describe("array element schema lookup", () => {
+  test("finds element schemas from array parent pointers", () => {
+    const item = z.object({ name: z.string() });
+    const escapedItem = z.number();
+    const schema = z.object({
+      items: z.array(item),
+      "a/b": z.array(escapedItem),
+      title: z.string(),
+    });
+
+    expect(arrayElementSchemaAtParent(schema, "/items")).toBe(item);
+    expect(arrayElementSchemaAtParent(schema, "/a~1b")).toBe(escapedItem);
+    expect(arrayElementSchemaAtParent(schema, "/title")).toBeNull();
+    expect(arrayElementSchemaAtParent(schema, "/missing")).toBeNull();
+  });
+
   test("finds element schemas for root, nested, append, and escaped array paths", () => {
     const rootItem = z.string();
     expect(arrayElementSchemaAtPath(z.array(rootItem), "/0")).toBe(rootItem);
