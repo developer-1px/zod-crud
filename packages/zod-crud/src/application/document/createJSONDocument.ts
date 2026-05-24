@@ -167,6 +167,15 @@ export type DocumentCanPastePlan =
       executionOptions: CheckPasteExecutionOptions;
     };
 
+export interface PlanDocumentPatchCallInput {
+  operations: JSONPatchInput;
+}
+
+export interface DocumentPatchCallPlan {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  operationsOwned: boolean;
+}
+
 export interface JSONDocument<T> {
   readonly value: T;
   readonly lastPatch: ReadonlyArray<JSONPatchOperation>;
@@ -549,10 +558,10 @@ export function createJSONDocument<S extends z.ZodType>(
     }
     return r;
   };
-  const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult =>
-    isPatchArray(operations)
-      ? applyDocumentPatch(operations, metadata)
-      : applyDocumentPatch([operations], metadata, true);
+  const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult => {
+    const plan = planDocumentPatchCall({ operations });
+    return applyDocumentPatch(plan.operations, metadata, plan.operationsOwned);
+  };
 
   const commit = (
     operations: ReadonlyArray<JSONPatchOperation>,
@@ -844,7 +853,7 @@ export function createJSONDocument<S extends z.ZodType>(
     exists: read.exists,
     query: read.query,
     entries: read.entries,
-    canPatch: (operations) => check.patch(normalizePatchInput(operations)),
+    canPatch: (operations) => check.patch(planDocumentPatchCall({ operations }).operations),
     canFind: check.find,
     canReplace: check.replace,
     canRemove: check.remove,
@@ -939,12 +948,23 @@ function replacePointerTarget(target: JSONDocumentPasteTarget): Pointer | null {
     : null;
 }
 
-function normalizePatchInput(operations: JSONPatchInput): ReadonlyArray<JSONPatchOperation> {
-  return isPatchArray(operations) ? operations : [operations];
-}
-
 function isPatchArray(operations: JSONPatchInput): operations is ReadonlyArray<JSONPatchOperation> {
   return Array.isArray(operations);
+}
+
+export function planDocumentPatchCall(
+  input: PlanDocumentPatchCallInput,
+): DocumentPatchCallPlan {
+  if (isPatchArray(input.operations)) {
+    return {
+      operations: input.operations,
+      operationsOwned: false,
+    };
+  }
+  return {
+    operations: [input.operations],
+    operationsOwned: true,
+  };
 }
 
 export function planDocumentCommitRoute(
