@@ -2541,7 +2541,7 @@ function cacheKnownJsonOutputSchema(schema: z.ZodType, value: boolean): boolean 
   return value;
 }
 
-function prefixIssues(
+export function prefixIssues(
   path: Pointer,
   issues: z.ZodError["issues"],
 ): z.ZodError["issues"] {

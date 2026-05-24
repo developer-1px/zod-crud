@@ -24,6 +24,7 @@ import {
   planSequentialPatch,
   planSingleRootObjectReplacePatch,
   planSingleReplacePatch,
+  prefixIssues,
   readAppliedLocalOpSourceValue,
   replaceValueAtSegments,
 } from "../src/domain/schema/localPatch.js";
@@ -126,6 +127,34 @@ describe("local patch value validation evaluation", () => {
     if (result.result.ok) throw new Error("expected schema violation");
     const issues = JSON.parse(result.result.reason ?? "[]");
     expect(issues[0].path).toEqual(["title"]);
+  });
+});
+
+describe("schema issue prefixing", () => {
+  test("prefixes issue paths with decoded pointer segments", () => {
+    const issues: z.ZodError["issues"] = [
+      { code: "custom", message: "invalid", path: ["name"] },
+    ];
+
+    expect(prefixIssues("/items/0", issues)).toEqual([
+      { code: "custom", message: "invalid", path: ["items", 0, "name"] },
+    ]);
+
+    expect(prefixIssues("/a~1b/0", issues)).toEqual([
+      { code: "custom", message: "invalid", path: ["a/b", 0, "name"] },
+    ]);
+  });
+
+  test("keeps root prefixes empty and preserves non-canonical numeric text", () => {
+    const issues: z.ZodError["issues"] = [
+      { code: "custom", message: "invalid", path: [] },
+    ];
+
+    expect(prefixIssues("", issues)).toEqual(issues);
+    expect(prefixIssues("/items/01", issues)).toEqual([
+      { code: "custom", message: "invalid", path: ["items", "01"] },
+    ]);
+    expect(issues[0]?.path).toEqual([]);
   });
 });
 
