@@ -28,6 +28,7 @@ import {
   applyValidatedArrayIndexReplacements,
   applyValidatedArrayNestedReplacements,
   applyValidatedArrayNestedValueReplacements,
+  applyValidatedArrayNestedValueReplacementsAtSegments,
   appendArrayIndexPath,
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -872,6 +873,78 @@ describe("known-json array index replacement planning", () => {
 });
 
 describe("array nested replacement state materialization", () => {
+  test("validates and applies array nested value replacements at state segments", () => {
+    const state = {
+      items: [
+        { meta: { title: "old-a" } },
+        { meta: { title: "old-b" } },
+      ],
+      keep: true,
+    };
+
+    expect(applyValidatedArrayNestedValueReplacementsAtSegments({
+      state,
+      arraySegments: ["items"],
+      suffixSegments: ["meta", "title"],
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
+        { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
+      ],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+    })).toEqual({
+      state: {
+        items: [
+          { meta: { title: "A" } },
+          { meta: { title: "B" } },
+        ],
+        keep: true,
+      },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    });
+    expect(state.items[0]?.meta.title).toBe("old-a");
+  });
+
+  test("rejects array nested value replacements at invalid state segments", () => {
+    const state = { items: [{ meta: { title: "old" } }], text: "old" };
+
+    expect(applyValidatedArrayNestedValueReplacementsAtSegments({
+      state,
+      arraySegments: ["missing"],
+      suffixSegments: ["meta", "title"],
+      operations: [{ op: "replace", path: "/missing/0/meta/title", index: 0, value: "A" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+    })).toBeNull();
+
+    expect(applyValidatedArrayNestedValueReplacementsAtSegments({
+      state,
+      arraySegments: ["text"],
+      suffixSegments: ["meta", "title"],
+      operations: [{ op: "replace", path: "/text/0/meta/title", index: 0, value: "A" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+    })).toBeNull();
+
+    expect(applyValidatedArrayNestedValueReplacementsAtSegments({
+      state,
+      arraySegments: ["items"],
+      suffixSegments: ["meta", "title"],
+      operations: [{ op: "replace", path: "/items/0/meta/title", index: 0, value: 1 }],
+      valueSchema: z.string(),
+      valuesTrusted: true,
+    })).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+    expect(state.items[0]?.meta.title).toBe("old");
+  });
+
   test("validates and applies array nested value replacements with applied operations", () => {
     const state = {
       items: [

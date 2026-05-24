@@ -421,6 +421,18 @@ export interface ApplyValidatedArrayNestedValueReplacementsInput<
   valuesTrusted: boolean;
 }
 
+export interface ApplyValidatedArrayNestedValueReplacementsAtSegmentsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  state: z.output<S>;
+  arraySegments: ReadonlyArray<string>;
+  suffixSegments: ReadonlyArray<string>;
+  operations: ReadonlyArray<Operation>;
+  valueSchema: z.ZodType;
+  valuesTrusted: boolean;
+}
+
 export interface BuildKnownJsonArrayIndexReplacementsInput<
   Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
 > {
@@ -1474,12 +1486,9 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
   if (!valueSchema) return null;
 
-  const current = readArrayAtSegments({ state, segments: plan.arraySegments });
-  if (!current.ok) return null;
-  return applyValidatedArrayNestedValueReplacements({
+  return applyValidatedArrayNestedValueReplacementsAtSegments({
     state,
     arraySegments: plan.arraySegments,
-    array: current.array,
     suffixSegments: plan.suffixSegments,
     operations: plan.operations,
     valueSchema,
@@ -2288,6 +2297,26 @@ export function applyValidatedArrayNestedValueReplacements<
     valueSchema: input.valueSchema,
     valuesTrusted: input.valuesTrusted,
     replacementValue: (op) => ({ ok: true, value: op.value }),
+  });
+}
+
+export function applyValidatedArrayNestedValueReplacementsAtSegments<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyValidatedArrayNestedValueReplacementsAtSegmentsInput<S, Operation>,
+): ApplyResult<S> | null {
+  const current = readArrayAtSegments({ state: input.state, segments: input.arraySegments });
+  if (!current.ok) return null;
+
+  return applyValidatedArrayNestedValueReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: current.array,
+    suffixSegments: input.suffixSegments,
+    operations: input.operations,
+    valueSchema: input.valueSchema,
+    valuesTrusted: input.valuesTrusted,
   });
 }
 
