@@ -19,6 +19,7 @@ import {
   copyRootRecordKeyPrefix,
   evaluateAppliedAddValueValidationPlan,
   evaluateAppliedLocalOpValidationPlan,
+  evaluateAppliedReplaceOperations,
   evaluateAppliedReplaceValueValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   failedLocalPatch,
@@ -318,6 +319,46 @@ describe("array nested replacement state materialization", () => {
 });
 
 describe("replace applied operation validation", () => {
+  test("accepts applied replace operation lists that satisfy local schemas", () => {
+    const state = { title: "Final" };
+
+    expect(evaluateAppliedReplaceOperations({
+      schema: z.object({ title: z.string() }),
+      state,
+      operations: [{ op: "replace", path: "/title", value: "Final" }],
+      valuesTrusted: false,
+    })).toEqual({ ok: true });
+  });
+
+  test("rejects applied replace operation lists with unsupported operations", () => {
+    const state = { title: "Draft", items: [] as string[] };
+
+    expect(evaluateAppliedReplaceOperations({
+      schema: z.object({ title: z.string(), items: z.array(z.string()) }),
+      state,
+      operations: [{ op: "add", path: "/items/0", value: "A" }],
+      valuesTrusted: false,
+    })).toEqual({ ok: false, result: null });
+  });
+
+  test("returns validation failures for applied replace values", () => {
+    const state = { title: "Draft" };
+    const result = evaluateAppliedReplaceOperations({
+      schema: z.object({ title: z.string() }),
+      state,
+      operations: [{ op: "replace", path: "/title", value: 1 }],
+      valuesTrusted: false,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+  });
+
   test("accepts replace values when known-json validation accepts them", () => {
     const state = { items: [{ name: "old" }] };
     const operations = [{ op: "replace" as const, path: "/items/0/name", value: "A", index: 0 }];

@@ -72,6 +72,17 @@ export interface KnownJsonReplacePatchPlan {
   operations: Extract<JSONPatchOperation, { op: "replace" }>[];
 }
 
+export interface EvaluateAppliedReplaceOperationsInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  valuesTrusted: boolean;
+}
+
+export type AppliedReplaceOperationsValidationResult<S extends z.ZodType> =
+  | { ok: true }
+  | { ok: false; result: ApplyResult<S> | null };
+
 export interface PlanSequentialPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -503,10 +514,25 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     return failedLocalPatch(state, applied.result);
   }
 
-  for (const op of applied.applied) {
-    if (op.op !== "replace") return null;
+  const validation = evaluateAppliedReplaceOperations({
+    schema,
+    state,
+    operations: applied.applied,
+    valuesTrusted,
+  });
+  if (!validation.ok) return validation.result;
+
+  return okLocalPatch(applied.state as z.output<S>, applied.applied);
+}
+
+export function evaluateAppliedReplaceOperations<S extends z.ZodType>(
+  input: EvaluateAppliedReplaceOperationsInput<S>,
+): AppliedReplaceOperationsValidationResult<S> {
+  const { schema, state, operations, valuesTrusted } = input;
+  for (const op of operations) {
+    if (op.op !== "replace") return { ok: false, result: null };
     const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
-    if (!valueSchema) return null;
+    if (!valueSchema) return { ok: false, result: null };
     const valueValidation = planLocalPatchValueValidation({
       path: op.path,
       schema: valueSchema,
@@ -515,10 +541,9 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
       valuesTrusted,
     });
     const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
+    if (valueFailure) return { ok: false, result: valueFailure };
   }
-
-  return okLocalPatch(applied.state as z.output<S>, applied.applied);
+  return { ok: true };
 }
 
 function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
