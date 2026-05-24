@@ -2,7 +2,12 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { createJSONDocument, type JSONPatchOperation } from "../src/index.js";
-import { commitMutable, emptyMutableHistory } from "../src/foundation/history.js";
+import {
+  commitMutable,
+  emptyMutableHistory,
+  planMutableHistoryCommit,
+  shouldCompactUndoPrefix,
+} from "../src/foundation/history.js";
 
 describe("doc.history performance contract", () => {
   test("large history depth preserves undo and redo order", () => {
@@ -67,6 +72,70 @@ describe("doc.history performance contract", () => {
       expect(stack.undoStart).toBe(0);
       expect(stack.undo[0]).toEqual({ value: index });
     }
+  });
+
+  test("plans mutable history commit limits and prefix compaction without mutating a stack", () => {
+    expect(planMutableHistoryCommit({
+      limit: 0,
+      undoLength: 3,
+      undoStart: 0,
+      redoLength: 2,
+    })).toEqual({ kind: "skip" });
+
+    expect(planMutableHistoryCommit({
+      limit: 1,
+      undoLength: 3,
+      undoStart: 2,
+      redoLength: 1,
+    })).toEqual({
+      kind: "replaceLatest",
+      clearRedo: true,
+    });
+
+    expect(planMutableHistoryCommit({
+      limit: 3,
+      undoLength: 2,
+      undoStart: 0,
+      redoLength: 0,
+    })).toEqual({
+      kind: "append",
+      undoStart: 0,
+      compactUndoPrefix: false,
+      clearRedo: false,
+    });
+
+    expect(planMutableHistoryCommit({
+      limit: 3,
+      undoLength: 4,
+      undoStart: 0,
+      redoLength: 2,
+    })).toEqual({
+      kind: "append",
+      undoStart: 2,
+      compactUndoPrefix: false,
+      clearRedo: true,
+    });
+
+    expect(planMutableHistoryCommit({
+      limit: 2,
+      undoLength: 4,
+      undoStart: 0,
+      redoLength: 0,
+    })).toEqual({
+      kind: "append",
+      undoStart: 3,
+      compactUndoPrefix: true,
+      clearRedo: false,
+    });
+
+    expect(shouldCompactUndoPrefix({
+      undoStart: 4096,
+      undoLength: 16384,
+    })).toBe(false);
+    expect(shouldCompactUndoPrefix({
+      undoStart: 8192,
+      undoLength: 16384,
+    })).toBe(true);
   });
 
   test("large transaction merges burst edits into one undo entry", () => {

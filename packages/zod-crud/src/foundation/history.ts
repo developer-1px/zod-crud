@@ -73,26 +73,74 @@ export interface MutableHistoryStack<E> {
 
 const UNDO_PREFIX_COMPACT_THRESHOLD = 8192;
 
+export interface PlanMutableHistoryCommitInput {
+  limit: number;
+  undoLength: number;
+  undoStart: number;
+  redoLength: number;
+}
+
+export type MutableHistoryCommitPlan =
+  | { kind: "skip" }
+  | { kind: "replaceLatest"; clearRedo: boolean }
+  | {
+      kind: "append";
+      undoStart: number;
+      compactUndoPrefix: boolean;
+      clearRedo: boolean;
+    };
+
 export function emptyMutableHistory<E>(): MutableHistoryStack<E> {
   return { undo: [], redo: [], undoStart: 0 };
 }
 
 export function commitMutable<E>(stack: MutableHistoryStack<E>, entry: E, limit: number): void {
-  if (limit <= 0) return;
-  if (limit === 1) {
+  const plan = planMutableHistoryCommit({
+    limit,
+    undoLength: stack.undo.length,
+    undoStart: stack.undoStart,
+    redoLength: stack.redo.length,
+  });
+  if (plan.kind === "skip") return;
+  if (plan.kind === "replaceLatest") {
     stack.undo[0] = entry;
     stack.undo.length = 1;
     stack.undoStart = 0;
-    if (stack.redo.length !== 0) stack.redo.length = 0;
+    if (plan.clearRedo) stack.redo.length = 0;
     return;
   }
+
   stack.undo.push(entry);
-  const depth = stack.undo.length - stack.undoStart;
-  if (depth > limit) {
-    stack.undoStart += depth - limit;
-    compactUndoPrefix(stack);
+  stack.undoStart = plan.undoStart;
+  if (plan.compactUndoPrefix) compactUndoPrefix(stack);
+  if (plan.clearRedo) stack.redo.length = 0;
+}
+
+export function planMutableHistoryCommit(
+  input: PlanMutableHistoryCommitInput,
+): MutableHistoryCommitPlan {
+  if (input.limit <= 0) return { kind: "skip" };
+  if (input.limit === 1) {
+    return {
+      kind: "replaceLatest",
+      clearRedo: input.redoLength !== 0,
+    };
   }
-  if (stack.redo.length !== 0) stack.redo.length = 0;
+
+  const undoLengthAfterAppend = input.undoLength + 1;
+  const depthAfterAppend = undoLengthAfterAppend - input.undoStart;
+  const undoStart = depthAfterAppend > input.limit
+    ? input.undoStart + depthAfterAppend - input.limit
+    : input.undoStart;
+  return {
+    kind: "append",
+    undoStart,
+    compactUndoPrefix: shouldCompactUndoPrefix({
+      undoStart,
+      undoLength: undoLengthAfterAppend,
+    }),
+    clearRedo: input.redoLength !== 0,
+  };
 }
 
 export function backEntry<E>(stack: MutableHistoryStack<E>): E | null {
@@ -148,14 +196,27 @@ export function canRedoMutable<E>(stack: MutableHistoryStack<E>): boolean {
   return stack.redo.length > 0;
 }
 
-function compactUndoPrefix<E>(stack: MutableHistoryStack<E>): void {
-  if (stack.undoStart === 0) return;
+export interface ShouldCompactUndoPrefixInput {
+  undoStart: number;
+  undoLength: number;
+}
+
+export function shouldCompactUndoPrefix(input: ShouldCompactUndoPrefixInput): boolean {
+  if (input.undoStart === 0) return false;
   if (
-    stack.undoStart < UNDO_PREFIX_COMPACT_THRESHOLD
-    && stack.undoStart * 2 < stack.undo.length
+    input.undoStart < UNDO_PREFIX_COMPACT_THRESHOLD
+    && input.undoStart * 2 < input.undoLength
   ) {
-    return;
+    return false;
   }
+  return true;
+}
+
+function compactUndoPrefix<E>(stack: MutableHistoryStack<E>): void {
+  if (!shouldCompactUndoPrefix({
+    undoStart: stack.undoStart,
+    undoLength: stack.undo.length,
+  })) return;
   stack.undo.splice(0, stack.undoStart);
   stack.undoStart = 0;
 }
