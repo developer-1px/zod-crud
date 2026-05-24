@@ -84,6 +84,23 @@ export interface SchemaState {
   describe(path: Pointer, mode?: SchemaPathMode): SchemaDescriptionResult;
 }
 
+export type DocumentSchemaParseResult =
+  | { success: true }
+  | {
+      success: false;
+      error: {
+        issues: ReadonlyArray<{
+          path: PropertyKey[];
+          message: string;
+        }>;
+      };
+    };
+
+export interface PlanDocumentSchemaAcceptsResultInput {
+  path: Pointer;
+  result: DocumentSchemaParseResult;
+}
+
 interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
@@ -167,16 +184,7 @@ export function checkDocumentSchemaAccepts<S extends z.ZodType>(
   }
 
   const parsed = resolved.schema.safeParse(value);
-  if (parsed.success) return { ok: true };
-  return {
-    ok: false,
-    code: "schema_violation",
-    reason: JSON.stringify(parsed.error.issues),
-    violations: parsed.error.issues.map((issue) => ({
-      path: absoluteIssuePath(path, issue.path),
-      message: issue.message,
-    })),
-  };
+  return planDocumentSchemaAcceptsResult({ path, result: parsed });
 }
 
 export function describeDocumentSchema<S extends z.ZodType>(
@@ -191,6 +199,21 @@ export function describeDocumentSchema<S extends z.ZodType>(
     path,
     mode,
     description: result.description,
+  };
+}
+
+export function planDocumentSchemaAcceptsResult(
+  input: PlanDocumentSchemaAcceptsResultInput,
+): CheckResult {
+  if (input.result.success) return { ok: true };
+  return {
+    ok: false,
+    code: "schema_violation",
+    reason: JSON.stringify(input.result.error.issues),
+    violations: input.result.error.issues.map((issue) => ({
+      path: absoluteIssuePath(input.path, issue.path),
+      message: issue.message,
+    })),
   };
 }
 

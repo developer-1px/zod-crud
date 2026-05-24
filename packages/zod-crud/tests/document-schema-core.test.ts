@@ -4,6 +4,7 @@ import * as z from "zod";
 import {
   checkDocumentSchemaAccepts,
   describeDocumentSchema,
+  planDocumentSchemaAcceptsResult,
   queryDocumentSchema,
   readDocumentSchemaKind,
   type DocumentSchemaContext,
@@ -80,6 +81,29 @@ describe("document schema core functions", () => {
     expect(failed).toMatchObject({ ok: false, code: "schema_violation" });
     if (!failed.ok) {
       expect(failed.violations).toEqual([{ path: "/items/done", message: expect.any(String) }]);
+    }
+  });
+
+  test("plans accepts results from zod parse output without resolving a document schema", () => {
+    const Item = z.object({ id: z.string(), done: z.boolean() });
+
+    expect(planDocumentSchemaAcceptsResult({
+      path: "/items",
+      result: Item.safeParse({ id: "b", done: true }),
+    })).toEqual({ ok: true });
+
+    const failed = planDocumentSchemaAcceptsResult({
+      path: "/items",
+      result: Item.safeParse({ id: "b" }),
+    });
+
+    expect(failed).toMatchObject({
+      ok: false,
+      code: "schema_violation",
+    });
+    if (!failed.ok) {
+      expect(failed.violations).toEqual([{ path: "/items/done", message: expect.any(String) }]);
+      expect(failed.reason).toContain("\"done\"");
     }
   });
 
