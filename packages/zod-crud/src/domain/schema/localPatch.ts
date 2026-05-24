@@ -111,6 +111,15 @@ export interface ApplySingleRootArrayFieldReplaceInput {
   value: unknown;
 }
 
+export interface ReadSingleRootArrayFieldTargetInput {
+  state: unknown;
+  arrayPath: Pointer;
+}
+
+export type SingleRootArrayFieldTarget =
+  | { kind: "root"; array: unknown[] }
+  | { kind: "property"; source: Record<string, unknown>; key: string; array: unknown[] };
+
 export interface PlanSingleRootObjectReplacePatchInput {
   operation: JSONPatchOperation;
   sourceKeys: ReadonlyArray<string>;
@@ -1070,11 +1079,12 @@ export function planSingleArrayFieldReplace(
     : { ...location, value: input.value };
 }
 
-export function applySingleRootArrayFieldReplace(input: ApplySingleRootArrayFieldReplaceInput): unknown | null {
-  const { state, arrayPath, index, key, value } = input;
+export function readSingleRootArrayFieldTarget(
+  input: ReadSingleRootArrayFieldTargetInput,
+): SingleRootArrayFieldTarget | null {
+  const { state, arrayPath } = input;
   if (arrayPath === "") {
-    if (!Array.isArray(state)) return null;
-    return replaceArrayField(state, index, key, value);
+    return Array.isArray(state) ? { kind: "root", array: state } : null;
   }
 
   if (
@@ -1086,21 +1096,25 @@ export function applySingleRootArrayFieldReplace(input: ApplySingleRootArrayFiel
   }
 
   const arrayKey = arrayPath.slice(1);
-  if (
-    arrayKey === "__proto__"
-    || state === null
-    || typeof state !== "object"
-    || Array.isArray(state)
-    || !objectHasOwn.call(state, arrayKey)
-  ) {
-    return null;
-  }
+  if (arrayKey === "__proto__") return null;
 
-  const current = (state as Record<string, unknown>)[arrayKey];
-  if (!Array.isArray(current)) return null;
-  const nextArray = replaceArrayField(current, index, key, value);
+  const root = readRootRecordForLocalPatch({ state });
+  if (!root.ok || !objectHasOwn.call(root.source, arrayKey)) return null;
+
+  const current = root.source[arrayKey];
+  return Array.isArray(current)
+    ? { kind: "property", source: root.source, key: arrayKey, array: current }
+    : null;
+}
+
+export function applySingleRootArrayFieldReplace(input: ApplySingleRootArrayFieldReplaceInput): unknown | null {
+  const { state, arrayPath, index, key, value } = input;
+  const target = readSingleRootArrayFieldTarget({ state, arrayPath });
+  if (target === null) return null;
+
+  const nextArray = replaceArrayField(target.array, index, key, value);
   if (nextArray === null) return null;
-  return { ...(state as Record<string, unknown>), [arrayKey]: nextArray };
+  return target.kind === "root" ? nextArray : { ...target.source, [target.key]: nextArray };
 }
 
 export function replaceArrayField(

@@ -81,6 +81,7 @@ import {
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
   readRootRecordForLocalPatch,
+  readSingleRootArrayFieldTarget,
   replaceArrayField,
   replaceObjectDataValue,
   replaceValueAtSegments,
@@ -1263,6 +1264,44 @@ describe("root record copy and write helpers", () => {
     expect(replaceArrayField([{ name: "Draft" }], 1, "name", "Final")).toBeNull();
     expect(replaceArrayField([{ name: "Draft" }], 0, "missing", "Final")).toBeNull();
     expect(replaceArrayField(["Draft"], 0, "name", "Final")).toBeNull();
+  });
+
+  test("reads single root array field targets from root arrays and shallow object arrays", () => {
+    const root = [{ name: "Draft" }];
+    const rootTarget = readSingleRootArrayFieldTarget({ state: root, arrayPath: "" });
+
+    expect(rootTarget).toEqual({ kind: "root", array: root });
+    expect(rootTarget?.array).toBe(root);
+
+    const state = { items: [{ name: "Draft" }], meta: { keep: true } };
+    const propertyTarget = readSingleRootArrayFieldTarget({ state, arrayPath: "/items" });
+
+    expect(propertyTarget).toEqual({
+      kind: "property",
+      source: state,
+      key: "items",
+      array: state.items,
+    });
+    if (propertyTarget?.kind !== "property") throw new Error("expected property target");
+    expect(propertyTarget.source).toBe(state);
+    expect(propertyTarget.array).toBe(state.items);
+  });
+
+  test("rejects unsupported single root array field targets", () => {
+    const state = {
+      items: [{ name: "Draft" }],
+      nested: { items: [{ name: "Draft" }] },
+      "a/b": [{ name: "Draft" }],
+      text: "Draft",
+    };
+
+    expect(readSingleRootArrayFieldTarget({ state: {}, arrayPath: "" })).toBeNull();
+    expect(readSingleRootArrayFieldTarget({ state: [], arrayPath: "/items" })).toBeNull();
+    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/missing" })).toBeNull();
+    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/nested/items" })).toBeNull();
+    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/a~1b" })).toBeNull();
+    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/__proto__" })).toBeNull();
+    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/text" })).toBeNull();
   });
 
   test("applies single root array field replacements to root arrays and shallow object arrays", () => {
