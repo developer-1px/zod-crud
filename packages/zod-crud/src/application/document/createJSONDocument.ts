@@ -163,6 +163,13 @@ export type JSONDocumentDuplicateResult<T> =
 export type JSONDocumentPasteOptions = PasteOptions;
 export type JSONDocumentPasteTarget = PasteTarget;
 
+export interface PlanDocumentDuplicateApplyResultInput<T> {
+  result: JSONResult;
+  state: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  duplicatedTo: Pointer;
+}
+
 export interface PlanDocumentCanPasteInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -715,14 +722,12 @@ export function createJSONDocument<S extends z.ZodType>(
     if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before, planned.next, planned.patch, selectionBefore, selectionAfter, changeMetadata);
     }
-    return r.ok
-      ? {
-          ok: true,
-          value: rawOps.state,
-          applied: lastPatch,
-          duplicatedTo: planned.duplicatedTo,
-        }
-      : r;
+    return planDocumentDuplicateApplyResult({
+      result: r,
+      state: rawOps.state,
+      applied: lastPatch,
+      duplicatedTo: planned.duplicatedTo,
+    });
   };
 
   const restore = (direction: "undo" | "redo"): boolean => {
@@ -999,6 +1004,18 @@ export function planDocumentCanPaste<S extends z.ZodType>(
     target: input.target,
     options: { ...input.options, spread },
     executionOptions: { trustedPayload: true },
+  };
+}
+
+export function planDocumentDuplicateApplyResult<T>(
+  input: PlanDocumentDuplicateApplyResultInput<T>,
+): JSONDocumentDuplicateResult<T> {
+  if (!input.result.ok) return input.result;
+  return {
+    ok: true,
+    value: input.state,
+    applied: input.applied,
+    duplicatedTo: input.duplicatedTo,
   };
 }
 
