@@ -109,7 +109,16 @@ interface BuildCheckArgs<S extends z.ZodType> {
   selectionRef?: { current: SelectionSnap };
 }
 
-interface CheckPasteExecutionOptions {
+export interface DocumentCheckContext<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  selection?: SelectionSnap;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  stateJsonTrusted?: boolean;
+}
+
+export interface CheckPasteExecutionOptions {
   trustedPayload?: boolean;
 }
 
@@ -130,125 +139,60 @@ export function buildCheck<S extends z.ZodType>(
   args: BuildCheckArgs<S>,
 ): Check {
   const { schema, ops, previewPatch, previewTrustedValuesPatch, getStateJsonTrusted, history, selectionRef } = args;
-  const checkPatch = (patch: ReadonlyArray<JSONPatchOperation>) => previewPatch
-    ? preFlightFromApplyResult(previewPatch(patch))
-    : preFlight(schema, ops.state, patch);
-  const trustedState = (): boolean => getStateJsonTrusted?.() === true;
-  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
-    source ?? (selectionRef ? selectedSource(selectionRef.current) : null);
-  const targetOrSelection = (target?: Pointer): Pointer | null =>
-    target ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
-  const primarySourceOrSelection = (source?: Pointer): Pointer | null =>
-    source ?? (selectionRef ? primaryPointer(selectionRef.current) : null);
-  const selectionState = (): SelectionSnap => selectionRef?.current ?? EMPTY_SELECTION;
+  const context = (): DocumentCheckContext<S> => {
+    const current: DocumentCheckContext<S> = {
+      schema,
+      state: ops.state,
+      stateJsonTrusted: getStateJsonTrusted?.() === true,
+    };
+    if (selectionRef !== undefined) current.selection = selectionRef.current;
+    if (previewPatch !== undefined) current.previewPatch = previewPatch;
+    if (previewTrustedValuesPatch !== undefined) current.previewTrustedValuesPatch = previewTrustedValuesPatch;
+    return current;
+  };
 
   return {
     selectScope(options) {
-      return toCheckResult(resolveSelectionScope(ops.state, options));
+      return checkDocumentSelectScope(context(), options);
     },
     moveCursor(direction, options) {
-      return toCheckResult(resolveSelectionCursor(selectionState(), direction, ops.state, options));
+      return checkDocumentMoveCursor(context(), direction, options);
     },
     extendCursor(direction, options) {
-      return toCheckResult(resolveSelectionCursor(selectionState(), direction, ops.state, options));
+      return checkDocumentExtendCursor(context(), direction, options);
     },
     find(jsonpath) {
-      try {
-        parseJSONPath(jsonpath);
-        return OK;
-      } catch (error) {
-        if (error instanceof JSONPathSyntaxError) {
-          return { ok: false, code: "syntax_error", reason: error.message };
-        }
-        throw error;
-      }
+      return checkDocumentFind(jsonpath);
     },
     move(fromOrTo, maybeTo) {
-      const args = resolveMoveArgs(fromOrTo, maybeTo, arguments.length >= 2);
-      const source = primarySourceOrSelection(args.from);
-      return source === null
-        ? emptySelection("move source selection is empty")
-        : toCheckResult(moveVerb(schema, ops.state, source, args.to, { previewPatch }));
+      return checkDocumentMove(context(), fromOrTo, maybeTo, arguments.length >= 2);
     },
     duplicate(sourceOrOpts, opts) {
-      const args = resolveDuplicateArgs(sourceOrOpts, opts);
-      const source = primarySourceOrSelection(args.source);
-      return source === null
-        ? emptySelection("duplicate source selection is empty")
-        : toCheckResult(duplicate(schema, ops.state, source, args.opts, {
-            previewPatch,
-            trustedPayload: trustedState(),
-          }));
+      return checkDocumentDuplicate(context(), sourceOrOpts, opts);
     },
     remove(source) {
-      const resolved = sourceOrSelection(source);
-      if (resolved === null) return emptySelection("remove source selection is empty");
-      const planned = removeSourcesPatch(resolved);
-      return planned.ok
-        ? toCheckResult(checkPatch(planned.patch))
-        : toCheckResult(pointerSourceCheckError(planned, "remove"));
+      return checkDocumentRemove(context(), source);
     },
     replace(pathOrValue, maybeValue) {
-      const args = resolveReplaceArgs(pathOrValue, maybeValue, arguments.length >= 2);
-      if (args.target !== undefined && isJSONPath(args.target)) {
-        return toCheckResult(replaceVerb(schema, ops.state, args.target, args.value, { previewPatch }));
-      }
-      const target = targetOrSelection(args.target);
-      return target === null
-        ? emptySelection("replace target selection is empty")
-        : toCheckResult(checkPatch([{ op: "replace", path: target, value: args.value }]));
+      return checkDocumentReplace(context(), pathOrValue, maybeValue, arguments.length >= 2);
     },
     replaceText(replacement, textOptions) {
-      const planned = replaceSelectionText(selectionState(), ops.state, replacement, textOptions);
-      return planned.ok
-        ? toCheckResult(checkPatch(planned.patch))
-        : toCheckResult(planned);
+      return checkDocumentReplaceText(context(), replacement, textOptions);
     },
     deleteText(textOptions) {
-      const planned = deleteSelectionText(selectionState(), ops.state, textOptions);
-      return planned.ok
-        ? toCheckResult(checkPatch(planned.patch))
-        : toCheckResult(planned);
+      return checkDocumentDeleteText(context(), textOptions);
     },
     cut(source) {
-      const resolved = sourceOrSelection(source);
-      return resolved === null
-        ? emptySelection("cut source selection is empty")
-        : toCheckResult(cut(schema, ops.state, resolved, {
-            trusted: trustedState(),
-            clonePayload: false,
-            previewPatch,
-          }));
+      return checkDocumentCut(context(), source);
     },
     copy(source) {
-      const resolved = sourceOrSelection(source);
-      return resolved === null
-        ? emptySelection("copy source selection is empty")
-        : toCheckResult(copy(ops.state, resolved, {
-            trusted: trustedState(),
-            clonePayload: false,
-          }));
+      return checkDocumentCopy(context(), source);
     },
     paste(payload, target, options, executionOptions) {
-      const args = resolvePasteArgs(target, options);
-      const resolvedTarget = targetOrSelection(args.target);
-      const inputTrustedPayload = executionOptions?.trustedPayload === true
-        || args.options.trustedPayload === true;
-      const patchValuesTrusted = inputTrustedPayload
-        || rekeyProducesTrustedPayload(args.options);
-      const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
-        ? previewTrustedValuesPatch
-        : previewPatch;
-      return resolvedTarget === null
-        ? emptySelection("paste target selection is empty")
-        : toCheckResult(paste(schema, ops.state, payload, resolvedTarget, args.mode, {
-            ...args.options,
-            previewPatch: pastePreview,
-            trustedPayload: inputTrustedPayload,
-          }));
+      return checkDocumentPaste(context(), payload, target, options, executionOptions);
     },
     patch(operations) {
-      return toCheckResult(checkPatch(operations));
+      return checkDocumentPatch(context(), operations);
     },
 
     get undo() {
@@ -258,6 +202,219 @@ export function buildCheck<S extends z.ZodType>(
       return history.canRedo() ? OK : emptyStack("redo");
     },
   };
+}
+
+export function checkDocumentSelectScope<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  options?: SelectionScopeOptions,
+): CheckResult {
+  return toCheckResult(resolveSelectionScope(context.state, options));
+}
+
+export function checkDocumentMoveCursor<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  direction: SelectionCursorDirection,
+  options?: SelectionCursorOptions,
+): CheckResult {
+  return toCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
+}
+
+export function checkDocumentExtendCursor<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  direction: SelectionCursorDirection,
+  options?: SelectionCursorOptions,
+): CheckResult {
+  return toCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
+}
+
+export function checkDocumentFind(jsonpath: string): CheckResult {
+  try {
+    parseJSONPath(jsonpath);
+    return OK;
+  } catch (error) {
+    if (error instanceof JSONPathSyntaxError) {
+      return { ok: false, code: "syntax_error", reason: error.message };
+    }
+    throw error;
+  }
+}
+
+export function checkDocumentMove<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  fromOrTo: Pointer,
+  maybeTo?: Pointer,
+  hasToArg = arguments.length >= 3,
+): CheckResult {
+  const args = resolveMoveArgs(fromOrTo, maybeTo, hasToArg);
+  const source = primarySourceOrSelection(context, args.from);
+  return source === null
+    ? emptySelection("move source selection is empty")
+    : toCheckResult(moveVerb(context.schema, context.state, source, args.to, {
+        previewPatch: context.previewPatch,
+      }));
+}
+
+export function checkDocumentDuplicate<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  sourceOrOpts?: Pointer | DuplicateOpts,
+  opts?: DuplicateOpts,
+): CheckResult {
+  const args = resolveDuplicateArgs(sourceOrOpts, opts);
+  const source = primarySourceOrSelection(context, args.source);
+  return source === null
+    ? emptySelection("duplicate source selection is empty")
+    : toCheckResult(duplicate(context.schema, context.state, source, args.opts, {
+        previewPatch: context.previewPatch,
+        trustedPayload: trustedState(context),
+      }));
+}
+
+export function checkDocumentRemove<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  source?: SelectionSource,
+): CheckResult {
+  const resolved = sourceOrSelection(context, source);
+  if (resolved === null) return emptySelection("remove source selection is empty");
+  const planned = removeSourcesPatch(resolved);
+  return planned.ok
+    ? checkDocumentPatch(context, planned.patch)
+    : toCheckResult(pointerSourceCheckError(planned, "remove"));
+}
+
+export function checkDocumentReplace<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  pathOrValue: Pointer | unknown,
+  maybeValue?: unknown,
+  hasValueArg = arguments.length >= 3,
+): CheckResult {
+  const args = resolveReplaceArgs(pathOrValue, maybeValue, hasValueArg);
+  if (args.target !== undefined && isJSONPath(args.target)) {
+    return toCheckResult(replaceVerb(context.schema, context.state, args.target, args.value, {
+      previewPatch: context.previewPatch,
+    }));
+  }
+  const target = targetOrSelection(context, args.target);
+  return target === null
+    ? emptySelection("replace target selection is empty")
+    : checkDocumentPatch(context, [{ op: "replace", path: target, value: args.value }]);
+}
+
+export function checkDocumentReplaceText<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  replacement: string,
+  textOptions?: SelectionTextEditOptions & HistoryTransactionOptions,
+): CheckResult {
+  const planned = replaceSelectionText(selectionState(context), context.state, replacement, textOptions);
+  return planned.ok
+    ? checkDocumentPatch(context, planned.patch)
+    : toCheckResult(planned);
+}
+
+export function checkDocumentDeleteText<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  textOptions?: SelectionTextDeleteOptions & HistoryTransactionOptions,
+): CheckResult {
+  const planned = deleteSelectionText(selectionState(context), context.state, textOptions);
+  return planned.ok
+    ? checkDocumentPatch(context, planned.patch)
+    : toCheckResult(planned);
+}
+
+export function checkDocumentCut<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  source?: ClipboardSource,
+): CheckResult {
+  const resolved = sourceOrSelection(context, source);
+  return resolved === null
+    ? emptySelection("cut source selection is empty")
+    : toCheckResult(cut(context.schema, context.state, resolved, {
+        trusted: trustedState(context),
+        clonePayload: false,
+        previewPatch: context.previewPatch,
+      }));
+}
+
+export function checkDocumentCopy<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  source?: ClipboardSource,
+): CheckResult {
+  const resolved = sourceOrSelection(context, source);
+  return resolved === null
+    ? emptySelection("copy source selection is empty")
+    : toCheckResult(copy(context.state, resolved, {
+        trusted: trustedState(context),
+        clonePayload: false,
+      }));
+}
+
+export function checkDocumentPaste<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  payload: unknown,
+  target?: PasteTarget,
+  options?: PasteOptions,
+  executionOptions?: CheckPasteExecutionOptions,
+): CheckResult {
+  const args = resolvePasteArgs(target, options);
+  const resolvedTarget = targetOrSelection(context, args.target);
+  const inputTrustedPayload = executionOptions?.trustedPayload === true
+    || args.options.trustedPayload === true;
+  const patchValuesTrusted = inputTrustedPayload
+    || rekeyProducesTrustedPayload(args.options);
+  const pastePreview = patchValuesTrusted && context.previewTrustedValuesPatch
+    ? context.previewTrustedValuesPatch
+    : context.previewPatch;
+  return resolvedTarget === null
+    ? emptySelection("paste target selection is empty")
+    : toCheckResult(paste(context.schema, context.state, payload, resolvedTarget, args.mode, {
+        ...args.options,
+        previewPatch: pastePreview,
+        trustedPayload: inputTrustedPayload,
+      }));
+}
+
+export function checkDocumentPatch<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  operations: ReadonlyArray<JSONPatchOperation>,
+): CheckResult {
+  return toCheckResult(checkPatch(context, operations));
+}
+
+function checkPatch<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  patch: ReadonlyArray<JSONPatchOperation>,
+): CheckableResult {
+  return context.previewPatch
+    ? preFlightFromApplyResult(context.previewPatch(patch))
+    : preFlight(context.schema, context.state, patch);
+}
+
+function trustedState<S extends z.ZodType>(context: DocumentCheckContext<S>): boolean {
+  return context.stateJsonTrusted === true;
+}
+
+function selectionState<S extends z.ZodType>(context: DocumentCheckContext<S>): SelectionSnap {
+  return context.selection ?? EMPTY_SELECTION;
+}
+
+function sourceOrSelection<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  source?: ClipboardSource,
+): ClipboardSource | null {
+  return source ?? selectedSource(selectionState(context));
+}
+
+function targetOrSelection<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  target?: Pointer,
+): Pointer | null {
+  return target ?? primaryPointer(selectionState(context));
+}
+
+function primarySourceOrSelection<S extends z.ZodType>(
+  context: DocumentCheckContext<S>,
+  source?: Pointer,
+): Pointer | null {
+  return source ?? primaryPointer(selectionState(context));
 }
 
 function toCheckResult(result: CheckableResult): CheckResult {
