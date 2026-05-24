@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   planAppendOnlyArrayAddPatch,
+  planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -116,5 +117,97 @@ describe("append-only array add patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/items/-", value: "B" };
     expect(planAppendOnlyArrayAddPatch({ operations: sparse })).toBeNull();
+  });
+});
+
+describe("increasing array add patch planning", () => {
+  test("plans contiguous indexed add operations for one array target", () => {
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/items/1", value: "A" },
+        { op: "add", path: "/items/2", value: "B" },
+      ],
+    })).toEqual({
+      parent: "/items",
+      parentSegments: ["items"],
+      start: 1,
+      values: ["A", "B"],
+    });
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/0", value: 1 },
+        { op: "add", path: "/1", value: 2 },
+      ],
+    })).toEqual({
+      parent: "",
+      parentSegments: [],
+      start: 0,
+      values: [1, 2],
+    });
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/a~1b/0", value: "A" },
+        { op: "add", path: "/a~1b/1", value: "B" },
+      ],
+    })).toEqual({
+      parent: "/a~1b",
+      parentSegments: ["a/b"],
+      start: 0,
+      values: ["A", "B"],
+    });
+  });
+
+  test("rejects indexed add batches that are not contiguous in one parent", () => {
+    expect(planIncreasingArrayAddPatch({
+      operations: [{ op: "add", path: "/items/0", value: "A" }],
+    })).toBeNull();
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/items/-", value: "A" },
+        { op: "add", path: "/items/-", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/2", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/items/1", value: "A" },
+        { op: "add", path: "/items/0", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/other/1", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "add", path: "/items/01", value: "A" },
+        { op: "add", path: "/items/2", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planIncreasingArrayAddPatch({
+      operations: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/1", value: "B" },
+      ],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "add", path: "/items/1", value: "B" };
+    expect(planIncreasingArrayAddPatch({ operations: sparse })).toBeNull();
   });
 });

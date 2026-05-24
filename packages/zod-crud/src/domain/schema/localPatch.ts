@@ -42,6 +42,17 @@ export interface AppendOnlyArrayAddPatchPlan {
   values: unknown[];
 }
 
+export interface PlanIncreasingArrayAddPatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface IncreasingArrayAddPatchPlan {
+  parent: Pointer;
+  parentSegments: string[];
+  start: number;
+  values: unknown[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -1178,70 +1189,35 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length < 2) return null;
-
-  const first = ops[0];
-  if (
-    first === undefined
-    || validateOperationShape(first) !== null
-    || first.op !== "add"
-    || typeof first.path !== "string"
-    || first.path.endsWith("/-")
-  ) {
-    return null;
-  }
-
-  const firstLocation = arrayLocation(schema, first.path);
-  if (firstLocation === null || firstLocation.index === "-") return null;
-
-  const parent = firstLocation.parent;
-  const elementSchema = firstLocation.element;
+  const plan = planIncreasingArrayAddPatch({ operations: ops });
+  if (plan === null) return null;
+  const { parent, parentSegments, start, values } = plan;
+  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
+  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  if (!elementSchema) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
-  const start = firstLocation.index;
-  let parentSegments: string[];
-  try {
-    parentSegments = parsePointer(parent);
-  } catch {
-    return null;
-  }
 
   const current = readAt(state, parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
   if (start < 0 || start > current.value.length) return null;
 
-  const values = new Array<unknown>(ops.length);
-  const applied = new Array<JSONPatchOperation>(ops.length);
-  for (let index = 0; index < ops.length; index += 1) {
-    if (!(index in ops)) return null;
-    const op = ops[index]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "add"
-      || typeof op.path !== "string"
-      || op.path.endsWith("/-")
-    ) {
-      return null;
-    }
-
-    const location = index === 0
-      ? { index: start }
-      : arrayIndexInParent(op.path, parent);
-    if (location === null || location.index === "-" || location.index !== start + index) return null;
-
-    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, op.value);
+  const applied = new Array<JSONPatchOperation>(values.length);
+  for (let index = 0; index < values.length; index += 1) {
+    const value = values[index];
+    const path = appendArrayIndexPath(parent, start + index);
+    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, value);
     if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
+      const jsonError = jsonSerializableError(value);
       if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
     }
     if (!valueAccepted) {
-      const parsed = elementSchema.safeParse(op.value);
-      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+      const parsed = elementSchema.safeParse(value);
+      if (!parsed.success) return schemaViolation(state, path, parsed.error.issues);
     }
-    values[index] = op.value;
     applied[index] = {
       op: "add",
-      path: appendArrayIndexPath(parent, start + index),
-      value: op.value,
+      path,
+      value,
     };
   }
 
@@ -1259,6 +1235,52 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
     result: { ok: true },
     applied,
   };
+}
+
+export function planIncreasingArrayAddPatch(
+  input: PlanIncreasingArrayAddPatchInput,
+): IncreasingArrayAddPatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  const first = ops[0];
+  if (
+    first === undefined
+    || validateOperationShape(first) !== null
+    || first.op !== "add"
+    || typeof first.path !== "string"
+    || first.path.endsWith("/-")
+  ) {
+    return null;
+  }
+
+  const firstLocation = arrayIndexPathLocation(first.path);
+  if (firstLocation === null || firstLocation.index === "-") return null;
+
+  const { parent, parentSegments } = firstLocation;
+  const start = firstLocation.index;
+  const values = new Array<unknown>(ops.length);
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || op.path.endsWith("/-")
+    ) {
+      return null;
+    }
+
+    const location = index === 0
+      ? { index: start }
+      : arrayIndexInParent(op.path, parent);
+    if (location === null || location.index === "-" || location.index !== start + index) return null;
+    values[index] = op.value;
+  }
+
+  return { parent, parentSegments, start, values };
 }
 
 function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -1469,6 +1491,32 @@ function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "
   if (segment === undefined) return null;
   const index = segment === "-" ? "-" : numericSegment(segment);
   return index === null ? null : { index };
+}
+
+function arrayIndexPathLocation(
+  path: Pointer,
+): { parent: Pointer; parentSegments: string[]; index: number | "-" } | null {
+  const simple = parseSimpleArrayIndexPath(path);
+  if (simple !== null) {
+    return {
+      parent: simple.parent,
+      parentSegments: simple.parent === "" ? [] : simple.parent.slice(1).split("/"),
+      index: simple.index,
+    };
+  }
+
+  const parent = parentPointer(path);
+  if (parent === null) return null;
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch {
+    return null;
+  }
+  const segment = segments[segments.length - 1];
+  if (segment === undefined) return null;
+  const index = segment === "-" ? "-" : numericSegment(segment);
+  return index === null ? null : { parent, parentSegments: segments.slice(0, -1), index };
 }
 
 function parseSimpleArrayIndexPath(path: Pointer): { parent: Pointer; index: number | "-" } | null {
