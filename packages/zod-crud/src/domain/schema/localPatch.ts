@@ -1356,11 +1356,7 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
     appliedOps.push(appliedOp);
   }
 
-  return {
-    state: cur as z.output<S>,
-    result: { ok: true },
-    applied: appliedOps,
-  };
+  return okLocalPatch(cur as z.output<S>, appliedOps);
 }
 
 export function planSequentialPatch(input: PlanSequentialPatchInput): SequentialPatchPlan | null {
@@ -2267,15 +2263,14 @@ function schemaViolation<S extends z.ZodType>(
   path: Pointer,
   issues: z.ZodError["issues"],
 ): ApplyResult<S> {
-  return {
+  return failedLocalPatch(
     state,
-    result: {
+    {
       ok: false,
       code: "schema_violation",
       reason: JSON.stringify(prefixIssues(path, issues)),
     },
-    applied: [],
-  };
+  );
 }
 
 function operationFailure<S extends z.ZodType>(
@@ -2283,11 +2278,7 @@ function operationFailure<S extends z.ZodType>(
   code: "not_serializable",
   reason: string,
 ): ApplyResult<S> {
-  return {
-    state,
-    result: { ok: false, code, reason },
-    applied: [],
-  };
+  return failedLocalPatch(state, { ok: false, code, reason });
 }
 
 function cachedSchemaAtPointer(
