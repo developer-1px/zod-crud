@@ -419,6 +419,14 @@ export interface ApplyRootRecordAddPlanInput {
   plan: RootRecordAddPatchPlan;
 }
 
+export interface ReadRootRecordForLocalPatchInput {
+  state: unknown;
+}
+
+export type ReadRootRecordForLocalPatchResult =
+  | { ok: true; source: Record<string, unknown>; sourceKeys: string[] }
+  | { ok: false };
+
 export interface PlanRootRecordRemovePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
   sourceKeys: ReadonlyArray<string>;
@@ -1068,15 +1076,15 @@ function applySingleRootObjectReplacePatchWithLocalSchemaValidation(
   state: unknown,
   op: Extract<JSONPatchOperation, { op: "replace" }>,
 ): unknown | null {
-  if (state === null || typeof state !== "object" || Array.isArray(state)) return null;
-  const source = state as Record<string, unknown>;
+  const root = readRootRecordForLocalPatch({ state });
+  if (!root.ok) return null;
   const plan = planSingleRootObjectReplacePatch({
     operation: op,
-    sourceKeys: Object.keys(source),
+    sourceKeys: root.sourceKeys,
   });
   if (plan === null) return null;
 
-  return applySingleRootObjectReplacePlan({ source, plan });
+  return applySingleRootObjectReplacePlan({ source: root.source, plan });
 }
 
 export function applySingleRootObjectReplacePlan(input: ApplySingleRootObjectReplacePlanInput): Record<string, unknown> {
@@ -1452,19 +1460,11 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (
-    !Array.isArray(ops)
-    || ops.length < 2
-    || state === null
-    || typeof state !== "object"
-    || Array.isArray(state)
-  ) {
-    return null;
-  }
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+  const root = readRootRecordForLocalPatch({ state });
+  if (!root.ok) return null;
 
-  const source = state as Record<string, unknown>;
-  const sourceKeys = Object.keys(source);
-  const plan = planRootObjectReplacePatch({ operations: ops, sourceKeys });
+  const plan = planRootObjectReplacePatch({ operations: ops, sourceKeys: root.sourceKeys });
   if (plan === null) return null;
 
   const valueSource = rootObjectReplaceValueSourceForLocalPatch(schema);
@@ -1478,7 +1478,7 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   });
   if (!valueValidation.ok) return valueValidation.result;
 
-  const resultState = applyRootObjectReplacePlan({ source, sourceKeys, plan });
+  const resultState = applyRootObjectReplacePlan({ source: root.source, sourceKeys: root.sourceKeys, plan });
 
   return okLocalPatch(resultState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
@@ -1609,24 +1609,16 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
-  if (
-    !Array.isArray(ops)
-    || ops.length === 0
-    || state === null
-    || typeof state !== "object"
-    || Array.isArray(state)
-  ) {
-    return null;
-  }
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+  const root = readRootRecordForLocalPatch({ state });
+  if (!root.ok) return null;
 
   if (rootRecordValueSchemaForLocalPatch(schema) === null) return null;
 
-  const source = state as Record<string, unknown>;
-  const sourceKeys = Object.keys(source);
-  const plan = planRootRecordRemovePatch({ operations: ops, sourceKeys });
+  const plan = planRootRecordRemovePatch({ operations: ops, sourceKeys: root.sourceKeys });
   if (plan === null) return null;
   const applied = toAppliedRemoveOperations(plan.operations);
-  const next = applyRootRecordRemovePlan({ source, sourceKeys, plan });
+  const next = applyRootRecordRemovePlan({ source: root.source, sourceKeys: root.sourceKeys, plan });
 
   return okLocalPatch(next as z.output<S>, applied);
 }
@@ -1727,15 +1719,9 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (
-    !Array.isArray(ops)
-    || ops.length === 0
-    || state === null
-    || typeof state !== "object"
-    || Array.isArray(state)
-  ) {
-    return null;
-  }
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+  const root = readRootRecordForLocalPatch({ state });
+  if (!root.ok) return null;
 
   const plan = planRootRecordAddPatch({ operations: ops });
   if (plan === null) return null;
@@ -1748,9 +1734,16 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   });
   if (!valueValidation.ok) return valueValidation.result;
 
-  const next = applyRootRecordAddPlan({ source: state as Record<string, unknown>, plan });
+  const next = applyRootRecordAddPlan({ source: root.source, plan });
 
   return okLocalPatch(next as z.output<S>, toAppliedAddOperations(plan.operations));
+}
+
+export function readRootRecordForLocalPatch(input: ReadRootRecordForLocalPatchInput): ReadRootRecordForLocalPatchResult {
+  const { state } = input;
+  if (state === null || typeof state !== "object" || Array.isArray(state)) return { ok: false };
+  const source = state as Record<string, unknown>;
+  return { ok: true, source, sourceKeys: Object.keys(source) };
 }
 
 export function evaluateRootRecordAddValues<S extends z.ZodType>(

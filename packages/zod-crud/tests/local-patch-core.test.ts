@@ -75,6 +75,7 @@ import {
   prefixIssues,
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
+  readRootRecordForLocalPatch,
   replaceArrayField,
   replaceObjectDataValue,
   replaceValueAtSegments,
@@ -889,6 +890,28 @@ describe("numeric path helpers", () => {
 });
 
 describe("root record copy and write helpers", () => {
+  test("reads root records with source keys while rejecting non-record roots", () => {
+    const source: Record<string, unknown> = { alpha: 1 };
+    Object.defineProperty(source, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const result = readRootRecordForLocalPatch({ state: source });
+
+    expect(result).toEqual({
+      ok: true,
+      source,
+      sourceKeys: ["alpha", "__proto__"],
+    });
+    expect(result.ok && result.source).toBe(source);
+    expect(readRootRecordForLocalPatch({ state: [] })).toEqual({ ok: false });
+    expect(readRootRecordForLocalPatch({ state: null })).toEqual({ ok: false });
+    expect(readRootRecordForLocalPatch({ state: "text" })).toEqual({ ok: false });
+  });
+
   test("copies root record key prefixes with structural data keys", () => {
     const source: Record<string, unknown> = { alpha: 1, beta: 2 };
     Object.defineProperty(source, "__proto__", {
