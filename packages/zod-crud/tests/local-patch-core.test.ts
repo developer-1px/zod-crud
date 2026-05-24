@@ -58,6 +58,7 @@ import {
   planSameArrayElementReplacePatch,
   planSameArrayFieldReplaceOperations,
   planSameArrayFieldReplacePatch,
+  planSameArrayNestedReplaceOperations,
   planSameArrayNestedReplacePatch,
   planSameArrayPatch,
   planSequentialPatch,
@@ -3278,6 +3279,86 @@ describe("same array element replace patch planning", () => {
 });
 
 describe("same array nested replace patch planning", () => {
+  test("plans nested replacement operations within a known array and suffix", () => {
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/items",
+      suffixSegments: ["meta", "title"],
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
+      { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
+    ]);
+
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/a~1b",
+      suffixSegments: ["x/y", "value"],
+      prefixText: "/a~1b/",
+      suffixText: "/x~1y/value",
+      operations: [
+        { op: "replace", path: "/a~1b/0/x~1y/value", value: 10 },
+        { op: "replace", path: "/a~1b/1/x~1y/value", value: 11 },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/a~1b/0/x~1y/value", index: 0, value: 10 },
+      { op: "replace", path: "/a~1b/1/x~1y/value", index: 1, value: 11 },
+    ]);
+  });
+
+  test("rejects nested replacement operations outside a known array and suffix", () => {
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/items",
+      suffixSegments: ["meta", "title"],
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      operations: [{ op: "replace", path: "/items/0/meta/title", value: "A" }],
+    })).toBeNull();
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/items",
+      suffixSegments: ["meta", "title"],
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/label", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/items",
+      suffixSegments: ["meta", "title"],
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/other/1/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/items",
+      suffixSegments: ["meta", "title"],
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      operations: [
+        { op: "add", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planSameArrayNestedReplaceOperations({
+      arrayPath: "/items",
+      suffixSegments: ["meta", "title"],
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      operations: [
+        { op: "replace", path: "/items/01/meta/title", value: "A" },
+        { op: "replace", path: "/items/2/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+  });
+
   test("plans nested replacements across one array", () => {
     const state = {
       items: [

@@ -504,6 +504,14 @@ export interface PlanSameArrayNestedReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanSameArrayNestedReplaceOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  arrayPath: Pointer;
+  suffixSegments: string[];
+  prefixText: string;
+  suffixText: string;
+}
+
 export interface SameArrayNestedReplaceOperationPlan {
   op: "replace";
   path: Pointer;
@@ -1299,54 +1307,55 @@ export function planSameArrayNestedReplacePatch(
   const ops = input.operations;
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
-  let arrayPath: Pointer | null = null;
-  let arraySegments: string[] | null = null;
-  let prefixText: string | null = null;
-  let suffixText: string | null = null;
-  let suffixSegments: string[] | null = null;
-  const operations: SameArrayNestedReplaceOperationPlan[] = [];
+  if (!(0 in ops)) return null;
+  const first = ops[0]!;
+  if (!isReplacePatchOperationCandidate(first) || first.path === "") return null;
+
+  const firstLocation = parseFirstArrayNestedPath(input.state, first.path);
+  if (firstLocation === null) return null;
+
+  const operations = planSameArrayNestedReplaceOperations({
+    operations: ops,
+    arrayPath: firstLocation.arrayPath,
+    suffixSegments: firstLocation.suffixSegments,
+    prefixText: firstLocation.prefixText,
+    suffixText: firstLocation.suffixText,
+  });
+  return operations === null
+    ? null
+    : {
+        arrayPath: firstLocation.arrayPath,
+        arraySegments: firstLocation.arraySegments,
+        suffixSegments: firstLocation.suffixSegments,
+        operations,
+      };
+}
+
+export function planSameArrayNestedReplaceOperations(
+  input: PlanSameArrayNestedReplaceOperationsInput,
+): SameArrayNestedReplaceOperationPlan[] | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  const operations = new Array<SameArrayNestedReplaceOperationPlan>(ops.length);
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return null;
     const op = ops[opIndex]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "replace"
-      || typeof op.path !== "string"
-      || op.path === ""
-    ) {
-      return null;
-    }
+    if (!isReplacePatchOperationCandidate(op) || op.path === "") return null;
 
-    let index: number;
-    if (arrayPath === null) {
-      const location = parseFirstArrayNestedPath(input.state, op.path);
-      if (location === null) return null;
-      arrayPath = location.arrayPath;
-      arraySegments = location.arraySegments;
-      prefixText = location.prefixText;
-      suffixText = location.suffixText;
-      suffixSegments = location.suffixSegments;
-      index = location.index;
-    } else {
-      if (suffixSegments === null || prefixText === null || suffixText === null) return null;
-      const parsedIndex = parseKnownArrayNestedIndex(
-        op.path,
-        arrayPath,
-        suffixSegments,
-        prefixText,
-        suffixText,
-      );
-      if (parsedIndex === null) return null;
-      index = parsedIndex;
-    }
-
-    operations.push({ op: "replace", path: op.path, index, value: op.value });
+    const index = parseKnownArrayNestedIndex(
+      op.path,
+      input.arrayPath,
+      input.suffixSegments,
+      input.prefixText,
+      input.suffixText,
+    );
+    if (index === null) return null;
+    operations[opIndex] = { op: "replace", path: op.path, index, value: op.value };
   }
 
-  return arrayPath === null || arraySegments === null || suffixSegments === null
-    ? null
-    : { arrayPath, arraySegments, suffixSegments, operations };
+  return operations;
 }
 
 function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
