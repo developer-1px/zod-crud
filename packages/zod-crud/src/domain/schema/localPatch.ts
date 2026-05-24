@@ -28,6 +28,19 @@ interface LocalPatchOptions {
   valuesTrusted?: boolean;
 }
 
+export interface PlanLocalPatchValueValidationInput {
+  path: Pointer;
+  schema: z.ZodType;
+  value: unknown;
+  knownJsonAccepted: boolean;
+  valuesTrusted: boolean;
+}
+
+export type LocalPatchValueValidationPlan =
+  | { kind: "accepted" }
+  | { kind: "parse"; path: Pointer; schema: z.ZodType; value: unknown }
+  | { kind: "notSerializable"; reason: string };
+
 export interface PlanIndependentReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -440,14 +453,19 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
   if (!valueSchema) return null;
 
-  const valueAccepted = acceptsKnownJsonValue(valueSchema, op.value);
-  if (!valueAccepted && !valuesTrusted) {
-    const jsonError = jsonSerializableError(op.value);
-    if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+  const valueValidation = planLocalPatchValueValidation({
+    path: op.path,
+    schema: valueSchema,
+    value: op.value,
+    knownJsonAccepted: acceptsKnownJsonValue(valueSchema, op.value),
+    valuesTrusted,
+  });
+  if (valueValidation.kind === "notSerializable") {
+    return operationFailure(state, "not_serializable", valueValidation.reason);
   }
-  if (!valueAccepted) {
-    const result = valueSchema.safeParse(op.value);
-    if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+  if (valueValidation.kind === "parse") {
+    const result = valueValidation.schema.safeParse(valueValidation.value);
+    if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
   }
 
   const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, op);
@@ -481,6 +499,17 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+export function planLocalPatchValueValidation(
+  input: PlanLocalPatchValueValidationInput,
+): LocalPatchValueValidationPlan {
+  if (input.knownJsonAccepted) return { kind: "accepted" };
+  if (!input.valuesTrusted) {
+    const jsonError = jsonSerializableError(input.value);
+    if (jsonError !== null) return { kind: "notSerializable", reason: jsonError };
+  }
+  return { kind: "parse", path: input.path, schema: input.schema, value: input.value };
 }
 
 export function planSingleReplacePatch(input: PlanSingleReplacePatchInput): SingleReplacePatchPlan | null {

@@ -8,6 +8,7 @@ import {
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
   planKnownJsonReplacePatch,
+  planLocalPatchValueValidation,
   planRootObjectReplacePatch,
   planRootRecordAddPatch,
   planRootRecordRemovePatch,
@@ -21,6 +22,59 @@ import {
   readAppliedLocalOpSourceValue,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
+
+describe("local patch value validation planning", () => {
+  test("accepts known-json values without schema parsing", () => {
+    expect(planLocalPatchValueValidation({
+      path: "/title",
+      schema: z.string(),
+      value: "Final",
+      knownJsonAccepted: true,
+      valuesTrusted: false,
+    })).toEqual({ kind: "accepted" });
+  });
+
+  test("plans schema parsing for serializable values that are not known-json accepted", () => {
+    const result = planLocalPatchValueValidation({
+      path: "/title",
+      schema: z.string(),
+      value: 1,
+      knownJsonAccepted: false,
+      valuesTrusted: false,
+    });
+
+    expect(result).toMatchObject({ kind: "parse", path: "/title", value: 1 });
+    expect(result.kind === "parse" && result.schema.safeParse(result.value).success).toBe(false);
+  });
+
+  test("rejects untrusted non-serializable values before schema parsing", () => {
+    const result = planLocalPatchValueValidation({
+      path: "/title",
+      schema: z.unknown(),
+      value: () => "not json",
+      knownJsonAccepted: false,
+      valuesTrusted: false,
+    });
+
+    expect(result).toMatchObject({
+      kind: "notSerializable",
+      reason: expect.stringContaining("function"),
+    });
+  });
+
+  test("trusts caller-owned serializability and falls back to schema parsing", () => {
+    const value = () => "trusted";
+    const result = planLocalPatchValueValidation({
+      path: "/value",
+      schema: z.function(),
+      value,
+      knownJsonAccepted: false,
+      valuesTrusted: true,
+    });
+
+    expect(result).toMatchObject({ kind: "parse", path: "/value", value });
+  });
+});
 
 describe("single replace patch planning", () => {
   test("plans one non-root replace operation", () => {
