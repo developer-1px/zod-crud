@@ -193,6 +193,12 @@ export interface RootRecordRemovePatchPlan {
   keepCount: number;
 }
 
+export interface ApplyRootRecordRemovePlanInput {
+  source: Record<string, unknown>;
+  sourceKeys: ReadonlyArray<string>;
+  plan: RootRecordRemovePatchPlan;
+}
+
 export interface PlanRootObjectReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
   sourceKeys: ReadonlyArray<string>;
@@ -1181,22 +1187,22 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   const plan = planRootRecordRemovePatch({ operations: ops, sourceKeys });
   if (plan === null) return null;
   const applied = toAppliedRemoveOperations(plan.operations);
+  const next = applyRootRecordRemovePlan({ source, sourceKeys, plan });
 
-  if (plan.strategy === "clear") {
-    return okLocalPatch({} as z.output<S>, applied);
-  }
-  if (plan.strategy === "copyPrefix") {
-    return okLocalPatch(
-      copyRootRecordKeyPrefix(source, sourceKeys, plan.keepCount) as z.output<S>,
-      applied,
-    );
-  }
+  return okLocalPatch(next as z.output<S>, applied);
+}
+
+export function applyRootRecordRemovePlan(input: ApplyRootRecordRemovePlanInput): Record<string, unknown> {
+  const { source, sourceKeys, plan } = input;
+
+  if (plan.strategy === "clear") return {};
+  if (plan.strategy === "copyPrefix") return copyRootRecordKeyPrefix(source, sourceKeys, plan.keepCount);
   if (plan.strategy === "copyDelete") {
     const next = copyRootRecordKeys(source, sourceKeys);
     for (const op of plan.operations) {
       delete next[op.key];
     }
-    return okLocalPatch(next as z.output<S>, applied);
+    return next;
   }
 
   const removedKeys = rootRecordRemoveKeySet(plan.operations);
@@ -1206,7 +1212,7 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     writeRootRecordValue(next, key, source[key]);
   }
 
-  return okLocalPatch(next as z.output<S>, applied);
+  return next;
 }
 
 export function planRootRecordRemovePatch(

@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   acceptsKnownJsonValue,
+  applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   appendArrayIndexPath,
   arrayElementSchemaAtPath,
@@ -1469,6 +1470,64 @@ describe("root record remove patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "remove", path: "/a" };
     expect(planRootRecordRemovePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+  });
+
+  test("applies planned root record remove strategies to data records", () => {
+    const source = { a: 1, b: 2, c: 3, d: 4 };
+
+    expect(applyRootRecordRemovePlan({
+      source,
+      sourceKeys: ["a", "b", "c", "d"],
+      plan: {
+        operations: [
+          { op: "remove", path: "/b", key: "b" },
+          { op: "remove", path: "/d", key: "d" },
+        ],
+        strategy: "copyDelete",
+        keepCount: 2,
+      },
+    })).toEqual({ a: 1, c: 3 });
+
+    expect(applyRootRecordRemovePlan({
+      source,
+      sourceKeys: ["a", "b", "c", "d"],
+      plan: {
+        operations: [
+          { op: "remove", path: "/c", key: "c" },
+          { op: "remove", path: "/d", key: "d" },
+        ],
+        strategy: "copyPrefix",
+        keepCount: 2,
+      },
+    })).toEqual({ a: 1, b: 2 });
+
+    expect(applyRootRecordRemovePlan({
+      source,
+      sourceKeys: ["a", "b", "c", "d"],
+      plan: {
+        operations: [
+          { op: "remove", path: "/a", key: "a" },
+          { op: "remove", path: "/c", key: "c" },
+        ],
+        strategy: "rebuild",
+        keepCount: 2,
+      },
+    })).toEqual({ b: 2, d: 4 });
+
+    expect(applyRootRecordRemovePlan({
+      source,
+      sourceKeys: ["a", "b", "c", "d"],
+      plan: {
+        operations: [
+          { op: "remove", path: "/a", key: "a" },
+          { op: "remove", path: "/b", key: "b" },
+          { op: "remove", path: "/c", key: "c" },
+          { op: "remove", path: "/d", key: "d" },
+        ],
+        strategy: "clear",
+        keepCount: 0,
+      },
+    })).toEqual({});
   });
 
   test("keeps __proto__ as data through rebuild remove strategy", () => {
