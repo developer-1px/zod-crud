@@ -54,6 +54,12 @@ export interface SingleReplacePatchPlan {
   operation: Extract<JSONPatchOperation, { op: "replace" }>;
 }
 
+export interface ApplySingleArrayFieldReplaceInput {
+  state: unknown;
+  path: Pointer;
+  value: unknown;
+}
+
 export interface ApplySingleRootArrayFieldReplaceInput {
   state: unknown;
   arrayPath: Pointer;
@@ -788,7 +794,12 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   state: unknown,
   op: Extract<JSONPatchOperation, { op: "replace" }>,
 ): unknown | null {
-  const location = parseArrayFieldPath(op.path);
+  return applySingleArrayFieldReplace({ state, path: op.path, value: op.value });
+}
+
+export function applySingleArrayFieldReplace(input: ApplySingleArrayFieldReplaceInput): unknown | null {
+  const { state, path, value } = input;
+  const location = parseArrayFieldPath(path);
   if (location === null) return null;
 
   const rootArrayReplace = applySingleRootArrayFieldReplace({
@@ -796,7 +807,7 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
     arrayPath: location.arrayPath,
     index: location.index,
     key: location.key,
-    value: op.value,
+    value,
   });
   if (rootArrayReplace !== null) return rootArrayReplace;
 
@@ -810,7 +821,7 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   const current = readAt(state, arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
 
-  const nextArray = replaceArrayField(current.value, location.index, location.key, op.value);
+  const nextArray = replaceArrayField(current.value, location.index, location.key, value);
   return nextArray === null ? null : replaceValueAtSegments(state, arraySegments, 0, nextArray);
 }
 

@@ -11,6 +11,7 @@ import {
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
+  applySingleArrayFieldReplace,
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
   appendArrayIndexPath,
@@ -892,6 +893,68 @@ describe("root record copy and write helpers", () => {
       arrayPath: "/missing",
       index: 0,
       key: "name",
+      value: "Final",
+    })).toBeNull();
+  });
+
+  test("applies single array field replacements across root and nested arrays", () => {
+    const root = [{ name: "Draft" }];
+    expect(applySingleArrayFieldReplace({
+      state: root,
+      path: "/0/name",
+      value: "Final",
+    })).toEqual([{ name: "Final" }]);
+    expect(root).toEqual([{ name: "Draft" }]);
+
+    const state = {
+      nested: {
+        items: [
+          { "a/b": "Draft" },
+          { "a/b": "Keep" },
+        ],
+      },
+      keep: true,
+    };
+    expect(applySingleArrayFieldReplace({
+      state,
+      path: "/nested/items/0/a~1b",
+      value: "Final",
+    })).toEqual({
+      nested: {
+        items: [
+          { "a/b": "Final" },
+          { "a/b": "Keep" },
+        ],
+      },
+      keep: true,
+    });
+    expect(state.nested.items[0]?.["a/b"]).toBe("Draft");
+  });
+
+  test("rejects invalid single array field replacement paths and targets", () => {
+    const state = { items: [{ name: "Draft" }] };
+
+    expect(applySingleArrayFieldReplace({
+      state,
+      path: "/items/01/name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applySingleArrayFieldReplace({
+      state,
+      path: "/items/0/name/first",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applySingleArrayFieldReplace({
+      state,
+      path: "/missing/0/name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applySingleArrayFieldReplace({
+      state,
+      path: "/items/0/missing",
       value: "Final",
     })).toBeNull();
   });
