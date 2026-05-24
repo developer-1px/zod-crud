@@ -1,0 +1,75 @@
+import { describe, expect, test } from "vitest";
+
+import {
+  planDocumentCommitSelection,
+} from "../src/application/document/createJSONDocument.js";
+import type { SelectionSnap } from "../src/domain/selection/index.js";
+
+const emptySelection: SelectionSnap = {
+  selectedPointers: [],
+  selectionRanges: [],
+  primaryIndex: -1,
+  anchor: null,
+  focus: null,
+};
+
+const titleSelection: SelectionSnap = {
+  selectedPointers: ["/title"],
+  selectionRanges: [{ anchor: "/title", focus: "/title" }],
+  primaryIndex: 0,
+  anchor: "/title",
+  focus: "/title",
+};
+
+describe("document commit core functions", () => {
+  test("plans explicit commit selection and merged metadata without a document facade", () => {
+    const plan = planDocumentCommitSelection({
+      activeHistoryMetadata: { origin: "keyboard" },
+      metadata: { label: "Rename", mergeKey: "typing:title" },
+      selection: { type: "collapse", point: "/title" },
+      selectionBefore: emptySelection,
+      state: { title: "final" },
+      selectionMode: "single",
+      selectionEnabled: true,
+    });
+
+    expect(plan.selectionAfter).toEqual(titleSelection);
+    expect(plan.changeMetadata).toEqual({
+      label: "Rename",
+      origin: "keyboard",
+      mergeKey: "typing:title",
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+    });
+  });
+
+  test("accepts commit selection snapshots as the final selection", () => {
+    const selection: SelectionSnap = {
+      selectedPointers: ["/items/0", "/items/9"],
+      selectionRanges: [
+        { anchor: "/items/0", focus: "/items/0" },
+        { anchor: "/items/9", focus: "/items/9" },
+      ],
+      primaryIndex: 1,
+      anchor: "/items/9",
+      focus: "/items/9",
+    };
+
+    const plan = planDocumentCommitSelection({
+      activeHistoryMetadata: undefined,
+      metadata: undefined,
+      selection,
+      selectionBefore: emptySelection,
+      state: { items: [{ id: "a" }] },
+      selectionMode: "multiple",
+      selectionEnabled: false,
+    });
+
+    expect(plan.selectionAfter).toEqual(selection);
+    expect(plan.selectionAfter).not.toBe(selection);
+    expect(plan.changeMetadata).toEqual({
+      selectionBefore: emptySelection,
+      selectionAfter: selection,
+    });
+  });
+});

@@ -87,6 +87,21 @@ export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
   selection?: SelectionAction | SelectionSnap;
 }
 
+export interface PlanDocumentCommitSelectionInput {
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: HistoryTransactionOptions | undefined;
+  selection: SelectionAction | SelectionSnap;
+  selectionBefore: SelectionSnap;
+  state: unknown;
+  selectionMode: SelectionMode;
+  selectionEnabled: boolean;
+}
+
+export interface DocumentCommitSelectionPlan {
+  selectionAfter: SelectionSnap;
+  changeMetadata: JSONChangeMetadata | undefined;
+}
+
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 export type JSONCapabilityResult = CheckResult;
 export type JSONDocumentDuplicateOptions = DuplicateOpts;
@@ -410,23 +425,22 @@ export function createJSONDocument<S extends z.ZodType>(
     const predicted = rawOps.previewPatch(operations);
     if (!predicted.result.ok) return patch(operations, metadataOptions);
 
-    const selectionAfter = resolveCommitSelection(selectionBefore, selection, predicted.state, selectionMode);
-    const directMetadata = metadataOptions === undefined
-      ? { selectionAfter }
-      : { ...metadataOptions, selectionAfter };
-    const changeMetadata = buildChangeMetadata(
+    const plan = planDocumentCommitSelection({
       activeHistoryMetadata,
-      directMetadata,
+      metadata: metadataOptions,
+      selection,
       selectionBefore,
+      state: predicted.state,
+      selectionMode,
       selectionEnabled,
-    );
-    const r = rawOps.trustedApply(predicted.state, predicted.applied, changeMetadata);
+    });
+    const r = rawOps.trustedApply(predicted.state, predicted.applied, plan.changeMetadata);
     if (!r.ok) return r;
 
     lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
-    selectionState?.restore(selectionAfter);
+    selectionState?.restore(plan.selectionAfter);
     if (historyLimit > 0 && !isRestoring && operations.length > 0) {
-      recordHistory(before, predicted.state, operations, selectionBefore, selectionAfter, changeMetadata);
+      recordHistory(before, predicted.state, operations, selectionBefore, plan.selectionAfter, plan.changeMetadata);
     }
     return r;
   };
@@ -857,6 +871,29 @@ function normalizePatchInput(operations: JSONPatchInput): ReadonlyArray<JSONPatc
 
 function isPatchArray(operations: JSONPatchInput): operations is ReadonlyArray<JSONPatchOperation> {
   return Array.isArray(operations);
+}
+
+export function planDocumentCommitSelection(
+  input: PlanDocumentCommitSelectionInput,
+): DocumentCommitSelectionPlan {
+  const selectionAfter = resolveCommitSelection(
+    input.selectionBefore,
+    input.selection,
+    input.state,
+    input.selectionMode,
+  );
+  const directMetadata: JSONChangeMetadata = input.metadata === undefined
+    ? { selectionAfter }
+    : { ...input.metadata, selectionAfter };
+  return {
+    selectionAfter,
+    changeMetadata: buildChangeMetadata(
+      input.activeHistoryMetadata,
+      directMetadata,
+      input.selectionBefore,
+      input.selectionEnabled,
+    ),
+  };
 }
 
 function resolveCommitSelection(
