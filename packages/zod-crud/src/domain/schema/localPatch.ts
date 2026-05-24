@@ -1550,14 +1550,19 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   for (let index = 0; index < values.length; index += 1) {
     const value = values[index];
     const path = appendArrayIndexPath(parent, start + index);
-    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const valueValidation = planLocalPatchValueValidation({
+      path,
+      schema: elementSchema,
+      value,
+      knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, value),
+      valuesTrusted,
+    });
+    if (valueValidation.kind === "notSerializable") {
+      return operationFailure(state, "not_serializable", valueValidation.reason);
     }
-    if (!valueAccepted) {
-      const parsed = elementSchema.safeParse(value);
-      if (!parsed.success) return schemaViolation(state, path, parsed.error.issues);
+    if (valueValidation.kind === "parse") {
+      const parsed = valueValidation.schema.safeParse(valueValidation.value);
+      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
     }
     applied[index] = {
       op: "add",

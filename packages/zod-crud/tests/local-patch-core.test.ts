@@ -618,6 +618,24 @@ describe("increasing array add patch planning", () => {
     sparse[1] = { op: "add", path: "/items/1", value: "B" };
     expect(planIncreasingArrayAddPatch({ operations: sparse })).toBeNull();
   });
+
+  test("keeps increasing array add JSON guard before schema parsing", () => {
+    const state = { items: [] as unknown[] };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.unknown()) }),
+      state,
+      [
+        { op: "add", path: "/items/0", value: () => "not json" },
+        { op: "add", path: "/items/1", value: 2 },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
 
 describe("same array patch planning", () => {
