@@ -188,6 +188,12 @@ export interface PlanIncreasingArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanIncreasingArrayAddValuesInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  parent: Pointer;
+  start: number;
+}
+
 export interface PlanArrayAddAppliedOperationsInput {
   parent: Pointer;
   start: number;
@@ -1982,44 +1988,50 @@ export function planIncreasingArrayAddPatch(
   const ops = input.operations;
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
-  const first = ops[0];
-  if (
-    first === undefined
-    || validateOperationShape(first) !== null
-    || first.op !== "add"
-    || typeof first.path !== "string"
-    || first.path.endsWith("/-")
-  ) {
-    return null;
-  }
+  if (!(0 in ops)) return null;
+  const first = ops[0]!;
+  if (!isIndexedArrayAddOperationCandidate(first)) return null;
 
   const firstLocation = arrayIndexPathLocation(first.path);
   if (firstLocation === null || firstLocation.index === "-") return null;
 
   const { parent, parentSegments } = firstLocation;
   const start = firstLocation.index;
+  const values = planIncreasingArrayAddValues({ operations: ops, parent, start });
+  return values === null ? null : { parent, parentSegments, start, values };
+}
+
+export function planIncreasingArrayAddValues(
+  input: PlanIncreasingArrayAddValuesInput,
+): unknown[] | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  const { parent, start } = input;
   const values = new Array<unknown>(ops.length);
 
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
     const op = ops[index]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "add"
-      || typeof op.path !== "string"
-      || op.path.endsWith("/-")
-    ) {
-      return null;
-    }
+    if (!isIndexedArrayAddOperationCandidate(op)) return null;
 
-    const location = index === 0
-      ? { index: start }
-      : arrayIndexInParent(op.path, parent);
+    const location = arrayIndexInParent(op.path, parent);
     if (location === null || location.index === "-" || location.index !== start + index) return null;
     values[index] = op.value;
   }
 
-  return { parent, parentSegments, start, values };
+  return values;
+}
+
+function isIndexedArrayAddOperationCandidate(
+  op: JSONPatchOperation,
+): op is Extract<JSONPatchOperation, { op: "add" }> {
+  return !!op
+    && typeof op === "object"
+    && validateOperationShape(op) === null
+    && op.op === "add"
+    && typeof op.path === "string"
+    && !op.path.endsWith("/-");
 }
 
 function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(

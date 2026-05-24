@@ -40,6 +40,7 @@ import {
   planArrayAddAppliedOperations,
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
+  planIncreasingArrayAddValues,
   planIndependentReplacePatch,
   planKnownJsonReplacePatch,
   planLocalPatchValueValidation,
@@ -1828,6 +1829,66 @@ describe("append-only array add patch planning", () => {
 });
 
 describe("increasing array add patch planning", () => {
+  test("plans contiguous indexed add values within a known parent and start", () => {
+    expect(planIncreasingArrayAddValues({
+      parent: "/items",
+      start: 1,
+      operations: [
+        { op: "add", path: "/items/1", value: "A" },
+        { op: "add", path: "/items/2", value: "B" },
+      ],
+    })).toEqual(["A", "B"]);
+
+    expect(planIncreasingArrayAddValues({
+      parent: "/a~1b",
+      start: 0,
+      operations: [
+        { op: "add", path: "/a~1b/0", value: "A" },
+        { op: "add", path: "/a~1b/1", value: "B" },
+      ],
+    })).toEqual(["A", "B"]);
+  });
+
+  test("rejects indexed add value plans that are not contiguous in one parent", () => {
+    expect(planIncreasingArrayAddValues({
+      parent: "/items",
+      start: 0,
+      operations: [{ op: "add", path: "/items/0", value: "A" }],
+    })).toBeNull();
+    expect(planIncreasingArrayAddValues({
+      parent: "/items",
+      start: 0,
+      operations: [
+        { op: "add", path: "/items/-", value: "A" },
+        { op: "add", path: "/items/-", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planIncreasingArrayAddValues({
+      parent: "/items",
+      start: 0,
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/2", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planIncreasingArrayAddValues({
+      parent: "/items",
+      start: 0,
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/other/1", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planIncreasingArrayAddValues({
+      parent: "/items",
+      start: 0,
+      operations: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/1", value: "B" },
+      ],
+    })).toBeNull();
+  });
+
   test("plans contiguous indexed add operations for one array target", () => {
     expect(planIncreasingArrayAddPatch({
       operations: [
