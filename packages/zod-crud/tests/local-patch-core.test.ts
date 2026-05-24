@@ -22,6 +22,7 @@ import {
   evaluateAppliedReplaceOperations,
   evaluateAppliedReplaceValueValidationPlan,
   evaluateLocalPatchValueValidationPlan,
+  evaluateRootRecordAddValues,
   evaluateRootObjectReplaceValues,
   failedLocalPatch,
   numericSegment,
@@ -1655,6 +1656,42 @@ describe("root record add patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/alpha", value: 1 };
     expect(planRootRecordAddPatch({ operations: sparse })).toBeNull();
+  });
+
+  test("validates root record add values through record schemas", () => {
+    const state = {};
+
+    expect(evaluateRootRecordAddValues({
+      schema: z.record(z.string(), z.number()),
+      state,
+      operations: [{ op: "add", path: "/alpha", key: "alpha", value: 1 }],
+      valuesTrusted: false,
+    })).toEqual({ ok: true });
+
+    expect(evaluateRootRecordAddValues({
+      schema: z.object({ alpha: z.number() }),
+      state: { alpha: 0 },
+      operations: [{ op: "add", path: "/alpha", key: "alpha", value: 1 }],
+      valuesTrusted: false,
+    })).toEqual({ ok: false, result: null });
+  });
+
+  test("returns root record add value validation failures", () => {
+    const state = {};
+    const result = evaluateRootRecordAddValues({
+      schema: z.record(z.string(), z.number()),
+      state,
+      operations: [{ op: "add", path: "/alpha", key: "alpha", value: "bad" }],
+      valuesTrusted: false,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 
   test("applies planned root record adds without mutating the source", () => {

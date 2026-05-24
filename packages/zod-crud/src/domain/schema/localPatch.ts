@@ -225,6 +225,17 @@ export interface RootRecordAddPatchPlan {
   operations: RootRecordAddOperationPlan[];
 }
 
+export interface EvaluateRootRecordAddValuesInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  operations: ReadonlyArray<RootRecordAddOperationPlan>;
+  valuesTrusted: boolean;
+}
+
+export type RootRecordAddValuesValidationResult<S extends z.ZodType> =
+  | { ok: true }
+  | { ok: false; result: ApplyResult<S> | null };
+
 export interface ApplyRootRecordAddPlanInput {
   source: Record<string, unknown>;
   plan: RootRecordAddPatchPlan;
@@ -1418,6 +1429,23 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const plan = planRootRecordAddPatch({ operations: ops });
   if (plan === null) return null;
 
+  const valueValidation = evaluateRootRecordAddValues({
+    schema,
+    state,
+    operations: plan.operations,
+    valuesTrusted,
+  });
+  if (!valueValidation.ok) return valueValidation.result;
+
+  const next = applyRootRecordAddPlan({ source: state as Record<string, unknown>, plan });
+
+  return okLocalPatch(next as z.output<S>, toAppliedAddOperations(plan.operations));
+}
+
+export function evaluateRootRecordAddValues<S extends z.ZodType>(
+  input: EvaluateRootRecordAddValuesInput<S>,
+): RootRecordAddValuesValidationResult<S> {
+  const { schema, state, operations, valuesTrusted } = input;
   const rootDef = getDef(schema) as ExtendedDef;
   const valueSchema = rootDef.valueType;
   if (
@@ -1425,22 +1453,18 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))
     || !valueSchema
   ) {
-    return null;
+    return { ok: false, result: null };
   }
 
   const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
   const valueFailure = evaluateAppliedAddValueValidationPlan(
     state,
-    plan.operations,
+    operations,
     valueSchema,
     (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
     valuesTrusted,
   );
-  if (valueFailure) return valueFailure;
-
-  const next = applyRootRecordAddPlan({ source: state as Record<string, unknown>, plan });
-
-  return okLocalPatch(next as z.output<S>, toAppliedAddOperations(plan.operations));
+  return valueFailure ? { ok: false, result: valueFailure } : { ok: true };
 }
 
 export function applyRootRecordAddPlan(input: ApplyRootRecordAddPlanInput): Record<string, unknown> {
