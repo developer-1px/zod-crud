@@ -39,6 +39,7 @@ import {
   planAppliedLocalOpValidation,
   planArrayAddAppliedOperations,
   planAppendOnlyArrayAddPatch,
+  planAppendOnlyArrayAddValues,
   planIncreasingArrayAddPatch,
   planIncreasingArrayAddValues,
   planIndependentReplacePatch,
@@ -1747,6 +1748,59 @@ describe("local patch core functions", () => {
 });
 
 describe("append-only array add patch planning", () => {
+  test("plans append-only add values for a known append path", () => {
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/items/-",
+      operations: [
+        { op: "add", path: "/items/-", value: "A" },
+        { op: "add", path: "/items/-", value: "B" },
+      ],
+    })).toEqual(["A", "B"]);
+
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/-",
+      operations: [
+        { op: "add", path: "/-", value: 1 },
+        { op: "add", path: "/-", value: 2 },
+      ],
+    })).toEqual([1, 2]);
+  });
+
+  test("rejects append-only value plans outside a known append path", () => {
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/items/-",
+      operations: [{ op: "add", path: "/items/-", value: "A" }],
+    })).toBeNull();
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/items/-",
+      operations: [
+        { op: "add", path: "/items/-", value: "A" },
+        { op: "add", path: "/other/-", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/items/-",
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/1", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/items/-",
+      operations: [
+        { op: "replace", path: "/items/-", value: "A" },
+        { op: "add", path: "/items/-", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planAppendOnlyArrayAddValues({
+      appendPath: "/items/0",
+      operations: [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "add", path: "/items/0", value: "B" },
+      ],
+    })).toBeNull();
+  });
+
   test("plans repeated append operations for one array target", () => {
     expect(planAppendOnlyArrayAddPatch({
       operations: [
