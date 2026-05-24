@@ -1648,14 +1648,19 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
 
   for (const op of plan.operations) {
     if (op.op !== "add") continue;
-    const valueAccepted = acceptsKnownJsonValueWithValidator(elementValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: elementSchema,
+      value: op.value,
+      knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, op.value),
+      valuesTrusted,
+    });
+    if (valueValidation.kind === "notSerializable") {
+      return operationFailure(state, "not_serializable", valueValidation.reason);
     }
-    if (!valueAccepted) {
-      const parsed = elementSchema.safeParse(op.value);
-      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    if (valueValidation.kind === "parse") {
+      const parsed = valueValidation.schema.safeParse(valueValidation.value);
+      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
     }
   }
 

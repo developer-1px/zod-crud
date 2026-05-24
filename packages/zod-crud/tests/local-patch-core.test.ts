@@ -729,6 +729,24 @@ describe("same array patch planning", () => {
     sparse[1] = { op: "remove", path: "/items/1" };
     expect(planSameArrayPatch({ operations: sparse })).toBeNull();
   });
+
+  test("keeps same-array structural add JSON guard before schema parsing", () => {
+    const state = { items: ["old"] as unknown[] };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.unknown()) }),
+      state,
+      [
+        { op: "remove", path: "/items/0" },
+        { op: "add", path: "/items/0", value: () => "not json" },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
 
 describe("root record add patch planning", () => {
