@@ -48,6 +48,7 @@ import {
   readAppliedLocalOpSourceValue,
   replaceObjectDataValue,
   replaceValueAtSegments,
+  rootRecordValueSchemaForLocalPatch,
   toAppliedAddOperations,
   toAppliedRemoveOperations,
   toAppliedReplaceOperations,
@@ -1674,6 +1675,15 @@ describe("root record add patch planning", () => {
       operations: [{ op: "add", path: "/alpha", key: "alpha", value: 1 }],
       valuesTrusted: false,
     })).toEqual({ ok: false, result: null });
+  });
+
+  test("finds local root record value schemas only for plain string-key records", () => {
+    const valueSchema = rootRecordValueSchemaForLocalPatch(z.record(z.string(), z.number()));
+
+    expect(valueSchema?.safeParse(1).success).toBe(true);
+    expect(valueSchema?.safeParse("bad").success).toBe(false);
+    expect(rootRecordValueSchemaForLocalPatch(z.object({ alpha: z.number() }))).toBeNull();
+    expect(rootRecordValueSchemaForLocalPatch(z.record(z.string().min(1), z.number()))).toBeNull();
   });
 
   test("returns root record add value validation failures", () => {

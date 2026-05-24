@@ -1323,10 +1323,7 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     return null;
   }
 
-  const rootDef = getDef(schema) as ExtendedDef;
-  if (rootDef.type !== "record" || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))) {
-    return null;
-  }
+  if (rootRecordValueSchemaForLocalPatch(schema) === null) return null;
 
   const source = state as Record<string, unknown>;
   const sourceKeys = Object.keys(source);
@@ -1446,15 +1443,8 @@ export function evaluateRootRecordAddValues<S extends z.ZodType>(
   input: EvaluateRootRecordAddValuesInput<S>,
 ): RootRecordAddValuesValidationResult<S> {
   const { schema, state, operations, valuesTrusted } = input;
-  const rootDef = getDef(schema) as ExtendedDef;
-  const valueSchema = rootDef.valueType;
-  if (
-    rootDef.type !== "record"
-    || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))
-    || !valueSchema
-  ) {
-    return { ok: false, result: null };
-  }
+  const valueSchema = rootRecordValueSchemaForLocalPatch(schema);
+  if (valueSchema === null) return { ok: false, result: null };
 
   const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
   const valueFailure = evaluateAppliedAddValueValidationPlan(
@@ -1465,6 +1455,18 @@ export function evaluateRootRecordAddValues<S extends z.ZodType>(
     valuesTrusted,
   );
   return valueFailure ? { ok: false, result: valueFailure } : { ok: true };
+}
+
+export function rootRecordValueSchemaForLocalPatch(schema: z.ZodType): z.ZodType | null {
+  const rootDef = getDef(schema) as ExtendedDef;
+  if (
+    rootDef.type !== "record"
+    || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType))
+    || !rootDef.valueType
+  ) {
+    return null;
+  }
+  return rootDef.valueType;
 }
 
 export function applyRootRecordAddPlan(input: ApplyRootRecordAddPlanInput): Record<string, unknown> {
