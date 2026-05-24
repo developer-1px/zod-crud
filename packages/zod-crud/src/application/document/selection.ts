@@ -134,6 +134,59 @@ interface HeadlessSelectionState extends SelectionState {
   dispose(): void;
 }
 
+export type SelectionStateUpdatePlan =
+  | { snap: SelectionSnap; emit: false }
+  | { snap: SelectionSnap; emit: true; previous: SelectionSnap };
+
+export function planSelectionStateUpdate(
+  current: SelectionSnap,
+  next: SelectionSnap,
+  hasObservers: boolean,
+): SelectionStateUpdatePlan {
+  if (!hasObservers) return { snap: next, emit: false };
+
+  const previous = selectionSnapshot(current);
+  if (sameSelectionSnapshot(previous, next)) return { snap: current, emit: false };
+  return { snap: next, emit: true, previous };
+}
+
+export function selectionAddRangeAction(pointOrRange: SelectionRangeInput): SelectionAction {
+  return isSelectionRange(pointOrRange)
+    ? { type: "addRange", range: pointOrRange }
+    : { type: "addRange", point: pointOrRange };
+}
+
+export function selectionRemoveRangeAction(
+  pointOrRangeOrIndex: JSONPoint | SelectionRange | number,
+): SelectionAction {
+  return typeof pointOrRangeOrIndex === "number"
+    ? { type: "removeRange", index: pointOrRangeOrIndex }
+    : isSelectionRange(pointOrRangeOrIndex)
+      ? { type: "removeRange", range: pointOrRangeOrIndex }
+      : { type: "removeRange", point: pointOrRangeOrIndex };
+}
+
+export function selectionToggleRangeAction(pointOrRange: SelectionRangeInput): SelectionAction {
+  return isSelectionRange(pointOrRange)
+    ? { type: "toggleRange", range: pointOrRange }
+    : { type: "toggleRange", point: pointOrRange };
+}
+
+export function selectionSelectRangesAction(
+  ranges: ReadonlyArray<SelectionRangeInput>,
+  anchor?: JSONPoint | null,
+  focus?: JSONPoint | null,
+  primaryIndex?: number,
+): SelectionAction {
+  return {
+    type: "selectRanges",
+    ranges,
+    ...(anchor !== undefined ? { anchor } : {}),
+    ...(focus !== undefined ? { focus } : {}),
+    ...(primaryIndex !== undefined ? { primaryIndex } : {}),
+  };
+}
+
 export function createSelection<T>(
   ops: JSONOps<T>,
   options: CreateSelectionOptions = {},
@@ -141,7 +194,7 @@ export function createSelection<T>(
   const mode: SelectionMode = options.mode ?? "single";
   const applyMetadataSelectionAfter =
     (options as InternalCreateSelectionOptions).applyMetadataSelectionAfter === true;
-  let snap = initialSelection(options, mode, ops.state);
+  let snap = planInitialSelection(options, mode, ops.state);
   let disposed = false;
   const listeners = new Set<SelectionChangeListener>();
   const emit = (previous: SelectionSnap): void => {
@@ -153,14 +206,9 @@ export function createSelection<T>(
   };
   const hasObservers = (): boolean => options.onChange !== undefined || listeners.size > 0;
   const setSnap = (next: SelectionSnap): void => {
-    if (!hasObservers()) {
-      snap = next;
-      return;
-    }
-    const previous = selectionSnapshot(snap);
-    if (sameSelectionSnapshot(previous, next)) return;
-    snap = next;
-    emit(previous);
+    const plan = planSelectionStateUpdate(snap, next, hasObservers());
+    snap = plan.snap;
+    if (plan.emit) emit(plan.previous);
   };
   const dispatch = (action: SelectionAction): void => {
     setSnap(reduceSelection(snap, action, mode, ops.state));
@@ -194,21 +242,13 @@ export function createSelection<T>(
     setBaseAndExtent(anchor, focus) { dispatch({ type: "setBaseAndExtent", anchor, focus }); },
     extend(point) { dispatch({ type: "extend", point }); },
     addRange(pointOrRange) {
-      dispatch(isSelectionRange(pointOrRange)
-        ? { type: "addRange", range: pointOrRange }
-        : { type: "addRange", point: pointOrRange });
+      dispatch(selectionAddRangeAction(pointOrRange));
     },
     removeRange(pointOrRangeOrIndex) {
-      dispatch(typeof pointOrRangeOrIndex === "number"
-        ? { type: "removeRange", index: pointOrRangeOrIndex }
-        : isSelectionRange(pointOrRangeOrIndex)
-          ? { type: "removeRange", range: pointOrRangeOrIndex }
-          : { type: "removeRange", point: pointOrRangeOrIndex });
+      dispatch(selectionRemoveRangeAction(pointOrRangeOrIndex));
     },
     toggleRange(pointOrRange) {
-      dispatch(isSelectionRange(pointOrRange)
-        ? { type: "toggleRange", range: pointOrRange }
-        : { type: "toggleRange", point: pointOrRange });
+      dispatch(selectionToggleRangeAction(pointOrRange));
     },
     togglePointer(pointer) { dispatch({ type: "togglePointer", pointer }); },
     moveCursor(direction, cursorOptions) {
@@ -254,13 +294,7 @@ export function createSelection<T>(
       return resolveSelectionScope(ops.state, scopeOptions);
     },
     selectRanges(ranges, anchor, focus, primaryIndex) {
-      dispatch({
-        type: "selectRanges",
-        ranges,
-        ...(anchor !== undefined ? { anchor } : {}),
-        ...(focus !== undefined ? { focus } : {}),
-        ...(primaryIndex !== undefined ? { primaryIndex } : {}),
-      });
+      dispatch(selectionSelectRangesAction(ranges, anchor, focus, primaryIndex));
     },
     setContext(context) { dispatch({ type: "setContext", context }); },
     clearContext() { dispatch({ type: "clearContext" }); },
@@ -317,7 +351,7 @@ function samePoint(left: JSONPoint, right: JSONPoint): boolean {
     && left.affinity === right.affinity;
 }
 
-function initialSelection(
+export function planInitialSelection(
   options: UseSelectionOptions,
   mode: SelectionMode,
   state: unknown,
