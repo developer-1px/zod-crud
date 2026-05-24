@@ -24,7 +24,7 @@ Each loop scores only the axis it tries to improve.
 
 ## Progress
 
-137 / 100 loops complete.
+138 / 100 loops complete.
 
 | Loop | Evaluate | Execute | Score |
 | --- | --- | --- | --- |
@@ -165,6 +165,7 @@ Each loop scores only the axis it tries to improve.
 | 135 | The final local 1.0 gate was still a memory checklist: root `verify`, `perf:core`, and tarball packing were documented in different places, so a release could pass normal verification without recording the current performance run or package artifact creation. | Added root `release:check` to run `verify`, `perf:core`, and `pack:library` in order; documented it in README, SPEC, site API docs, `llms.txt`, and release notes; taught docs consistency and `docs:evaluate` to reject missing `release:check` drift. | Runtime health: 5 -> 5 for release gating. Performance regression evidence: stronger because the final local gate now includes `perf:core`. Evidence: `package.json`; `packages/zod-crud/README.md`; `packages/zod-crud/SPEC.md`; `apps/site/src/docs/zod-crud-api.md`; `llms.txt`; `docs/release-notes.md`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`. |
 | 136 | The browser part of the release gate could silently reuse any existing local server on the default port. A failed `release:check` run hit an unrelated app titled `ppt`, proving the gate was not isolating the demo smoke target. | Moved the default browser-test port away from common Vite ports, changed Playwright to start a strict-port dev server by default, and reuse an existing server only when `PLAYWRIGHT_REUSE_EXISTING_SERVER=1` is explicitly set; added a docs evaluator guard for the strict fresh-server policy. | Runtime health: 5 -> 5 for browser smoke determinism. Evidence: `playwright.config.ts`; `scripts/evaluate-docs.mjs`; failed run context showed `PPT Retouch` before the config change. |
 | 137 | The locked public export list was duplicated in package smoke, docs evaluation, and site docs consistency tests. That made the 1.0 API lock vulnerable to tests drifting apart while still passing locally. | Added `packages/zod-crud/public-contract.json` as the public export contract SSOT; package smoke, docs evaluation, and docs consistency now read the same root/react value/type export lists; SPEC and release notes document the SSOT. | API correctness evidence: stronger for the 1.0 public API lock. Evidence: `packages/zod-crud/public-contract.json`; `packages/zod-crud/test/package-smoke.mjs`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`; `packages/zod-crud/SPEC.md`; `docs/release-notes.md`. |
+| 138 | The final local gate was `release:check`, but package `prepublishOnly` still ran only package-local `verify`. A manual `npm publish -w zod-crud` could therefore skip docs drift, browser demo smoke, performance measurement, and final tarball packing. | Changed package `prepublishOnly` to delegate to root `release:check`; updated `llms.txt` and release notes; added docs evaluator and docs consistency guards so publish lifecycle drift is caught. | Runtime health: 5 -> 5 for publish gating. Evidence: `packages/zod-crud/package.json`; `scripts/evaluate-docs.mjs`; `apps/site/tests/docs-consistency.test.ts`; `llms.txt`; `docs/release-notes.md`. |
 
 ## Next Candidates
 

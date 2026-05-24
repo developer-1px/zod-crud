@@ -163,6 +163,14 @@ if (rootPackage.scripts?.["release:check"] !== "npm run verify && npm run perf:c
   fail("root package: release:check must run verify, perf:core, and pack:library in order.");
 }
 
+if (packageJson.scripts?.prepublishOnly !== "npm --prefix ../.. run release:check") {
+  fail("package publish: prepublishOnly must delegate to root release:check.");
+}
+
+if (!/prepublishOnly[\s\S]*release:check/.test(surfaces.llms) || !/prepublishOnly[\s\S]*release:check/.test(releaseNotes)) {
+  fail("release docs: prepublishOnly must document release:check delegation.");
+}
+
 const sourceLayoutSurfaces = { ...surfaces, releaseNotes };
 for (const [name, source] of Object.entries(sourceLayoutSurfaces)) {
   for (const token of ["src/index.ts", "src/react.ts", "application", "domain", "foundation"]) {

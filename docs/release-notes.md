@@ -71,6 +71,8 @@ Date: 2026-05-24
 - Public export names are locked in `packages/zod-crud/public-contract.json`,
   which package smoke tests, docs consistency tests, and docs evaluation read as
   the contract SSOT.
+- Package `prepublishOnly` delegates to the root `release:check`, so manual
+  publish attempts cannot bypass docs, browser, performance, or pack gates.
 
 ### Release gate
 

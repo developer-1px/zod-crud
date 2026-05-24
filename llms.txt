@@ -139,7 +139,7 @@ npm run playground:build
 ```
 
 Use `npm run release:check` as the final local gate before publishing. It runs
-root `verify`, `perf:core`, and `pack:library`. Package publish is guarded by
-`npm run verify` through `prepublishOnly`. The root `verify` script also runs
-`docs:evaluate` so docs drift, release notes, source-layout SSOT, and the
+root `verify`, `perf:core`, and `pack:library`. The package `prepublishOnly`
+hook delegates to the same root `release:check`. The root `verify` script also
+runs `docs:evaluate` so docs drift, release notes, source-layout SSOT, and the
 100-loop ledger are release-gated.

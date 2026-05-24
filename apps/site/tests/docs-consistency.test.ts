@@ -81,6 +81,8 @@ describe("public docs consistency", () => {
     expect(releaseNotes).toContain("release:check");
     expect(docs.spec).toContain("public-contract.json");
     expect(releaseNotes).toContain("public-contract.json");
+    expect(docs.llms).toMatch(/prepublishOnly[\s\S]*release:check/);
+    expect(releaseNotes).toMatch(/prepublishOnly[\s\S]*release:check/);
   });
 
   test("keeps the source layout SSOT aligned", () => {
