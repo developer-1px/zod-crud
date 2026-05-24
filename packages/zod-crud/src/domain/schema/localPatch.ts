@@ -1389,26 +1389,12 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     return null;
   }
 
-  const shape = getObjectShape(schema);
-  const rootDef = shape === null ? getDef(schema) as ExtendedDef : null;
-  const recordValueSchema = rootDef?.type === "record" ? (rootDef.valueType ?? null) : null;
-  const recordValueValidator = recordValueSchema
-    ? knownJsonValueValidatorForSchema(recordValueSchema)
-    : null;
   const source = state as Record<string, unknown>;
   const sourceKeys = Object.keys(source);
   const plan = planRootObjectReplacePatch({ operations: ops, sourceKeys });
   if (plan === null) return null;
 
-  const valueSource: RootObjectReplaceValueSource | null = shape
-    ? { kind: "object", shape }
-    : recordValueSchema
-      ? {
-          kind: "record",
-          schema: recordValueSchema,
-          acceptsKnownJson: (value) => acceptsKnownJsonValueWithValidator(recordValueValidator, value),
-        }
-      : null;
+  const valueSource = rootObjectReplaceValueSourceForLocalPatch(schema);
   if (valueSource === null) return null;
 
   const valueValidation = evaluateRootObjectReplaceValues({
@@ -1422,6 +1408,24 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   const resultState = applyRootObjectReplacePlan({ source, sourceKeys, plan });
 
   return okLocalPatch(resultState as z.output<S>, toAppliedReplaceOperations(plan.operations));
+}
+
+export function rootObjectReplaceValueSourceForLocalPatch(
+  schema: z.ZodType,
+): RootObjectReplaceValueSource | null {
+  const shape = getObjectShape(schema);
+  if (shape !== null) return { kind: "object", shape };
+
+  const rootDef = getDef(schema) as ExtendedDef;
+  const recordValueSchema = rootDef.type === "record" ? (rootDef.valueType ?? null) : null;
+  if (recordValueSchema === null) return null;
+
+  const recordValueValidator = knownJsonValueValidatorForSchema(recordValueSchema);
+  return {
+    kind: "record",
+    schema: recordValueSchema,
+    acceptsKnownJson: (value) => acceptsKnownJsonValueWithValidator(recordValueValidator, value),
+  };
 }
 
 export function evaluateRootObjectReplaceValues<S extends z.ZodType>(

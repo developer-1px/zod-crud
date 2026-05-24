@@ -74,6 +74,7 @@ import {
   replaceObjectDataValue,
   replaceValueAtSegments,
   rootRecordValueSchemaForLocalPatch,
+  rootObjectReplaceValueSourceForLocalPatch,
   toAppliedAddOperations,
   toAppliedRemoveOperations,
   toAppliedReplaceOperations,
@@ -2872,6 +2873,22 @@ describe("root object replace patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/a", value: 1 };
     expect(planRootObjectReplacePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+  });
+
+  test("plans root object replacement value sources from object and record schemas", () => {
+    const objectSource = rootObjectReplaceValueSourceForLocalPatch(z.object({ a: z.number() }));
+    expect(objectSource?.kind).toBe("object");
+    if (objectSource?.kind !== "object") throw new Error("expected object value source");
+    expect(objectSource.shape.a?.safeParse(1).success).toBe(true);
+
+    const recordSource = rootObjectReplaceValueSourceForLocalPatch(z.record(z.string(), z.number()));
+    expect(recordSource?.kind).toBe("record");
+    if (recordSource?.kind !== "record") throw new Error("expected record value source");
+    expect(recordSource.schema.safeParse(1).success).toBe(true);
+    expect(recordSource.acceptsKnownJson(1)).toBe(true);
+    expect(recordSource.acceptsKnownJson("bad")).toBe(false);
+
+    expect(rootObjectReplaceValueSourceForLocalPatch(z.array(z.number()))).toBeNull();
   });
 
   test("validates root object replacement values through object shape schemas", () => {
