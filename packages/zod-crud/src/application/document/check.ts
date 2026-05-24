@@ -138,6 +138,25 @@ export interface PlanDocumentReplaceCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface PlanDocumentMoveCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  target: Pointer;
+  source?: Pointer;
+  selectionSource?: Pointer | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export interface PlanDocumentDuplicateCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source?: Pointer;
+  selectionSource?: Pointer | null;
+  options?: DuplicateOpts;
+  stateJsonTrusted?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
 export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -274,11 +293,24 @@ export function checkDocumentMove<S extends z.ZodType>(
   hasToArg = arguments.length >= 3,
 ): CheckResult {
   const args = resolveMoveArgs(fromOrTo, maybeTo, hasToArg);
-  const source = primarySourceOrSelection(context, args.from);
+  return planDocumentMoveCheck({
+    schema: context.schema,
+    state: context.state,
+    target: args.to,
+    selectionSource: primaryPointer(selectionState(context)),
+    ...(args.from !== undefined ? { source: args.from } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentMoveCheck<S extends z.ZodType>(
+  input: PlanDocumentMoveCheckInput<S>,
+): CheckResult {
+  const source = input.source ?? input.selectionSource ?? null;
   return source === null
     ? emptySelection("move source selection is empty")
-    : toCheckResult(moveVerb(context.schema, context.state, source, args.to, {
-        previewPatch: context.previewPatch,
+    : toCheckResult(moveVerb(input.schema, input.state, source, input.target, {
+        previewPatch: input.previewPatch,
       }));
 }
 
@@ -288,12 +320,26 @@ export function checkDocumentDuplicate<S extends z.ZodType>(
   opts?: DuplicateOpts,
 ): CheckResult {
   const args = resolveDuplicateArgs(sourceOrOpts, opts);
-  const source = primarySourceOrSelection(context, args.source);
+  return planDocumentDuplicateCheck({
+    schema: context.schema,
+    state: context.state,
+    selectionSource: primaryPointer(selectionState(context)),
+    options: args.opts,
+    stateJsonTrusted: trustedState(context),
+    ...(args.source !== undefined ? { source: args.source } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentDuplicateCheck<S extends z.ZodType>(
+  input: PlanDocumentDuplicateCheckInput<S>,
+): CheckResult {
+  const source = input.source ?? input.selectionSource ?? null;
   return source === null
     ? emptySelection("duplicate source selection is empty")
-    : toCheckResult(duplicate(context.schema, context.state, source, args.opts, {
-        previewPatch: context.previewPatch,
-        trustedPayload: trustedState(context),
+    : toCheckResult(duplicate(input.schema, input.state, source, input.options, {
+        previewPatch: input.previewPatch,
+        trustedPayload: input.stateJsonTrusted === true,
       }));
 }
 
@@ -468,13 +514,6 @@ function sourceOrSelection<S extends z.ZodType>(
   source?: ClipboardSource,
 ): ClipboardSource | null {
   return source ?? selectedSource(selectionState(context));
-}
-
-function primarySourceOrSelection<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
-  source?: Pointer,
-): Pointer | null {
-  return source ?? primaryPointer(selectionState(context));
 }
 
 function toCheckResult(result: CheckableResult): CheckResult {

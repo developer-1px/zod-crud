@@ -7,6 +7,8 @@ import {
   checkDocumentPatch,
   checkDocumentRemove,
   checkDocumentReplace,
+  planDocumentDuplicateCheck,
+  planDocumentMoveCheck,
   planDocumentPatchCheck,
   planDocumentPasteCheck,
   planDocumentReplaceCheck,
@@ -149,6 +151,71 @@ describe("document check core functions", () => {
     expect(jsonpathPreviewed).toEqual([
       { op: "replace", path: "/items/0/name", value: "Renamed" },
       { op: "replace", path: "/items/1/name", value: "Renamed" },
+    ]);
+  });
+
+  test("plans move and duplicate checks from explicit state and selection source", () => {
+    let moved: ReadonlyArray<JSONPatchOperation> | undefined;
+    let duplicated: ReadonlyArray<JSONPatchOperation> | undefined;
+
+    expect(planDocumentMoveCheck({
+      schema: Schema,
+      state: initial,
+      target: "/items/1",
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "move source selection is empty",
+    });
+
+    expect(planDocumentMoveCheck({
+      schema: Schema,
+      state: initial,
+      selectionSource: "/items/0",
+      target: "/items/1",
+      previewPatch(operations) {
+        moved = operations;
+        return {
+          state: {
+            ...initial,
+            items: [initial.items[1]!, initial.items[0]!],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(moved).toEqual([
+      { op: "move", from: "/items/0", path: "/items/1" },
+    ]);
+
+    expect(planDocumentDuplicateCheck({
+      schema: Schema,
+      state: initial,
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "duplicate source selection is empty",
+    });
+
+    expect(planDocumentDuplicateCheck({
+      schema: Schema,
+      state: initial,
+      selectionSource: "/items/0",
+      previewPatch(operations) {
+        duplicated = operations;
+        return {
+          state: {
+            ...initial,
+            items: [initial.items[0]!, initial.items[0]!, initial.items[1]!],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(duplicated).toEqual([
+      { op: "copy", from: "/items/0", path: "/items/1" },
     ]);
   });
 
