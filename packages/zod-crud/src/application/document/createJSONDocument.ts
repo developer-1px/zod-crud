@@ -279,7 +279,11 @@ export function createJSONDocument<S extends z.ZodType>(
       const compactMetadata = entry.metadata === undefined
         ? prev.metadata
         : mergeRepeatedReplaceTransactionMetadata(prev.metadata, entry.metadata);
-      if (compactRepeatedReplaceHistory(prev, entry, compactMetadata) !== null) return;
+      const compact = planCompactedRepeatedReplaceHistory(prev, entry, compactMetadata);
+      if (compact !== null) {
+        stack.undo[stack.undo.length - 1] = compact;
+        return;
+      }
     }
     commitHistory(stack, entry, historyLimit);
   };
@@ -526,15 +530,8 @@ export function createJSONDocument<S extends z.ZodType>(
     if (historyDepth(stack) < 2) return false;
     const top = stack.undo[stack.undo.length - 1]!;
     const prev = stack.undo[stack.undo.length - 2]!;
-    if (mergeOptions === undefined && prev.metadata === undefined && top.metadata === undefined) {
-      const compact = compactRepeatedReplaceHistory(prev, top);
-      if (compact !== null) {
-        stack.undo.pop();
-        return true;
-      }
-    }
     const metadata = mergeEntryMetadata(prev, top, mergeOptions);
-    const merged = mergeHistoryEntries(prev, top, metadata);
+    const merged = planMergedDocumentHistoryEntry(prev, top, metadata);
     const mergeIndex = stack.undo.length - 2;
     stack.undo[mergeIndex] = merged;
     stack.undo.pop();
@@ -1037,12 +1034,12 @@ function sameHistoryMetadata(
     && left.mergeKey === right.mergeKey;
 }
 
-function mergeHistoryEntries(
-  prev: HistoryEntry,
-  top: HistoryEntry,
+export function planMergedDocumentHistoryEntry(
+  prev: DocumentHistoryEntry,
+  top: DocumentHistoryEntry,
   metadata?: HistoryTransactionOptions,
-): HistoryEntry {
-  const compact = compactRepeatedReplaceHistory(prev, top, metadata);
+): DocumentHistoryEntry {
+  const compact = planCompactedRepeatedReplaceHistory(prev, top, metadata);
   if (compact !== null) return compact;
   return {
     forward: [...prev.forward, ...top.forward],
@@ -1053,11 +1050,11 @@ function mergeHistoryEntries(
   };
 }
 
-function compactRepeatedReplaceHistory(
-  prev: HistoryEntry,
-  top: HistoryEntry,
+export function planCompactedRepeatedReplaceHistory(
+  prev: DocumentHistoryEntry,
+  top: DocumentHistoryEntry,
   metadata?: HistoryTransactionOptions,
-): HistoryEntry | null {
+): DocumentHistoryEntry | null {
   if (
     prev.forward.length !== 1
     || prev.inverse.length !== 1
@@ -1083,9 +1080,13 @@ function compactRepeatedReplaceHistory(
     return null;
   }
 
-  prev.forward[0] = topForward;
-  prev.selectionAfter = top.selectionAfter;
-  if (metadata !== undefined) prev.metadata = metadata;
-  else delete prev.metadata;
-  return prev;
+  const entry: DocumentHistoryEntry = {
+    forward: [topForward],
+    inverse: [prevInverse],
+    selectionBefore: prev.selectionBefore,
+    selectionAfter: top.selectionAfter,
+  };
+  if (prev.snapshot !== undefined) entry.snapshot = prev.snapshot;
+  if (metadata !== undefined) entry.metadata = metadata;
+  return entry;
 }

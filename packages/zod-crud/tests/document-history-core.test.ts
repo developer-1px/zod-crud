@@ -3,7 +3,9 @@ import { describe, expect, test } from "vitest";
 import {
   buildChangeMetadata,
   compactHistoryMetadata,
+  planCompactedRepeatedReplaceHistory,
   planDocumentHistoryEntry,
+  planMergedDocumentHistoryEntry,
   shouldCaptureDocumentChangeMetadata,
 } from "../src/application/document/createJSONDocument.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -137,5 +139,68 @@ describe("document history core functions", () => {
     expect(entry?.snapshot).toEqual({ before });
     expect(entry?.forward).toHaveLength(512);
     expect(entry?.inverse).toHaveLength(512);
+  });
+
+  test("plans compact merged replace history without mutating source entries", () => {
+    const prev = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { mergeKey: "typing:title" },
+      snapshot: { before: { title: "draft" } },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const top = {
+      forward: [{ op: "replace", path: "/title", value: "ab" }],
+      inverse: [{ op: "replace", path: "/title", value: "a" }],
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "Rename" },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planCompactedRepeatedReplaceHistory(prev, top, {
+      label: "Rename",
+      mergeKey: "typing:title",
+    })).toEqual({
+      forward: [{ op: "replace", path: "/title", value: "ab" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "Rename", mergeKey: "typing:title" },
+      snapshot: { before: { title: "draft" } },
+    });
+    expect(prev.forward).toEqual([{ op: "replace", path: "/title", value: "a" }]);
+    expect(top.forward).toEqual([{ op: "replace", path: "/title", value: "ab" }]);
+  });
+
+  test("plans general merged history order without a document shell", () => {
+    const prev = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const top = {
+      forward: [{ op: "replace", path: "/count", value: 1 }],
+      inverse: [{ op: "replace", path: "/count", value: 0 }],
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planMergedDocumentHistoryEntry(prev, top, { label: "Batch" })).toEqual({
+      forward: [
+        { op: "replace", path: "/title", value: "a" },
+        { op: "replace", path: "/count", value: 1 },
+      ],
+      inverse: [
+        { op: "replace", path: "/count", value: 0 },
+        { op: "replace", path: "/title", value: "draft" },
+      ],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "Batch" },
+    });
+    expect(prev.inverse).toEqual([{ op: "replace", path: "/title", value: "draft" }]);
+    expect(top.inverse).toEqual([{ op: "replace", path: "/count", value: 0 }]);
   });
 });
