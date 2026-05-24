@@ -508,12 +508,13 @@ fetch("/api/save", {
 
 ## Verification
 
-Before release, run the root gate. It includes package checks and
+Before release, run the release gate. It runs root `verify`, `perf:core`, and
+`pack:library`. The root `verify` gate includes package checks and
 `docs:evaluate`, which guards this README, the site API doc, SPEC, `llms.txt`,
 release notes, the source-layout SSOT, and the 100-loop ledger.
 
 ```sh
-npm run verify
+npm run release:check
 ```
 
 ## Public Exports

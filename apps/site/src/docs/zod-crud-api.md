@@ -475,10 +475,10 @@ doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
 
 ## verification
 
-배포 전에는 root gate를 기준으로 봅니다. `npm run verify`는 package 검증 뒤 `docs:evaluate`를 실행해서 README, SPEC, 이 문서, `llms.txt`, release notes, source-layout SSOT, 100-loop ledger drift를 같이 막습니다.
+배포 전에는 release gate를 기준으로 봅니다. `npm run release:check`는 root `verify`, `perf:core`, `pack:library`를 순서대로 실행합니다. `npm run verify`는 package 검증 뒤 `docs:evaluate`를 실행해서 README, SPEC, 이 문서, `llms.txt`, release notes, source-layout SSOT, 100-loop ledger drift를 같이 막습니다.
 
 ```sh
-npm run verify
+npm run release:check
 ```
 
 ## Public exports

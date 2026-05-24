@@ -184,8 +184,10 @@ describe("public docs consistency", () => {
   test("document release verification gates docs evaluation", () => {
     for (const [name, source] of Object.entries(docs)) {
       expect(source, `${name} missing docs:evaluate`).toContain("docs:evaluate");
+      expect(source, `${name} missing release:check`).toContain("release:check");
     }
     expect(releaseNotes).toContain("docs:evaluate");
+    expect(releaseNotes).toContain("release:check");
   });
 
   test("keeps the source layout SSOT aligned", () => {

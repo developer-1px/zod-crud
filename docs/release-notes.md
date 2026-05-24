@@ -57,3 +57,22 @@ Date: 2026-05-24
 ### Release gate
 
 `npm run verify` and package tarball smoke must pass before publishing.
+
+## 1.0 readiness release gate
+
+Date: 2026-05-24
+
+### What changed
+
+- Added a root `release:check` script as the final local gate.
+- The gate runs `verify`, `perf:core`, and `pack:library` so package checks,
+  docs drift checks, browser demo smoke, performance measurement, and tarball
+  creation are not tracked as separate pre-release memory items.
+
+### Release gate
+
+Before publishing 1.0, run:
+
+```sh
+npm run release:check
+```

@@ -130,12 +130,16 @@ For behavior rules, read `packages/zod-crud/SPEC.md`.
 ## Verification
 
 ```sh
+npm run release:check
 npm run verify
 npm run docs:evaluate
+npm run perf:core
 npm run playground:typecheck
 npm run playground:build
 ```
 
-Package publish is guarded by `npm run verify` through `prepublishOnly`.
-The root `verify` script also runs `docs:evaluate` so docs drift, release
-notes, source-layout SSOT, and the 100-loop ledger are release-gated.
+Use `npm run release:check` as the final local gate before publishing. It runs
+root `verify`, `perf:core`, and `pack:library`. Package publish is guarded by
+`npm run verify` through `prepublishOnly`. The root `verify` script also runs
+`docs:evaluate` so docs drift, release notes, source-layout SSOT, and the
+100-loop ledger are release-gated.

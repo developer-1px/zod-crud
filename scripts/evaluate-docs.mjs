@@ -62,6 +62,7 @@ const siteHttpEvaluator = read("scripts/evaluate-site-http.mjs");
 const liveSiteEvaluator = read("scripts/evaluate-live-site.mjs");
 const siteRouteChecks = read("scripts/site-route-checks.mjs");
 const rootPackageJson = read("package.json");
+const rootPackage = JSON.parse(rootPackageJson);
 const packageJson = JSON.parse(read("packages/zod-crud/package.json"));
 const pagesWorkflow = read(".github/workflows/pages.yml");
 const siteRoutes = JSON.parse(siteRoutesJson);
@@ -249,6 +250,15 @@ for (const exportName of publicExports) {
 
 for (const [name, source] of Object.entries(surfaces)) {
   if (!source.includes("docs:evaluate")) fail(`${name}: missing docs:evaluate release gate.`);
+  if (!source.includes("release:check")) fail(`${name}: missing release:check release gate.`);
+}
+
+if (!releaseNotes.includes("release:check")) {
+  fail("release notes: missing release:check release gate.");
+}
+
+if (rootPackage.scripts?.["release:check"] !== "npm run verify && npm run perf:core && npm run pack:library") {
+  fail("root package: release:check must run verify, perf:core, and pack:library in order.");
 }
 
 const sourceLayoutSurfaces = { ...surfaces, releaseNotes };
@@ -417,6 +427,10 @@ if (!/testDir: "\.\/tests\/browser"/.test(playwrightConfig) || !/webServer/.test
 
 if (!/video:\s*"off"/.test(playwrightConfig)) {
   fail("playwright config: video must stay off so CI does not require ffmpeg.");
+}
+
+if (!/--strictPort/.test(playwrightConfig) || !/PLAYWRIGHT_REUSE_EXISTING_SERVER/.test(playwrightConfig) || !/reuseExistingServer/.test(playwrightConfig)) {
+  fail("playwright config: browser tests must use a strict fresh server unless reuse is explicitly requested.");
 }
 
 if (

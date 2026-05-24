@@ -388,12 +388,15 @@ implementation. Release notes must not introduce a second structure map.
 
 Required verification before release:
 
+- `npm run release:check`
 - `npm run typecheck -w zod-crud`
 - `npm test -w zod-crud`
 - `npm run build -w zod-crud`
 - `npm run smoke:package -w zod-crud`
 - `npm run docs:evaluate`
 - `npm run verify`
+- `npm run perf:core`
+- `npm run pack:library`
 - `npm run playground:typecheck`
 - `npm run playground:test`
 - `npm run build -w @zod-crud/site`
