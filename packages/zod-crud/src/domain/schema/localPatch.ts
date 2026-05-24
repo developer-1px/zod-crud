@@ -2063,7 +2063,7 @@ export function replaceValueAtSegments(
   return { ...(current as Record<string, unknown>), [segment]: child };
 }
 
-function acceptsKnownJsonValue(schema: z.ZodType, value: unknown): boolean {
+export function acceptsKnownJsonValue(schema: z.ZodType, value: unknown): boolean {
   const validator = knownJsonValueValidatorForSchema(schema);
   return acceptsKnownJsonValueWithValidator(validator, value);
 }

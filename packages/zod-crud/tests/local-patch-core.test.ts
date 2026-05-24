@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
 import {
+  acceptsKnownJsonValue,
   applyPatchWithLocalSchemaValidation,
   appendArrayIndexPath,
   arrayElementSchemaAtPath,
@@ -132,6 +133,53 @@ describe("local patch value validation evaluation", () => {
     if (result.result.ok) throw new Error("expected schema violation");
     const issues = JSON.parse(result.result.reason ?? "[]");
     expect(issues[0].path).toEqual(["title"]);
+  });
+});
+
+describe("known-json value validation", () => {
+  test("accepts primitive schemas only for JSON-compatible values", () => {
+    expect(acceptsKnownJsonValue(z.string(), "A")).toBe(true);
+    expect(acceptsKnownJsonValue(z.number(), 1)).toBe(true);
+    expect(acceptsKnownJsonValue(z.number(), Number.NaN)).toBe(false);
+    expect(acceptsKnownJsonValue(z.boolean(), false)).toBe(true);
+    expect(acceptsKnownJsonValue(z.null(), null)).toBe(true);
+    expect(acceptsKnownJsonValue(z.literal("draft"), "draft")).toBe(true);
+    expect(acceptsKnownJsonValue(z.enum(["todo", "done"]), "done")).toBe(true);
+  });
+
+  test("accepts plain object, array, and record values without schema parsing", () => {
+    expect(acceptsKnownJsonValue(
+      z.object({ name: z.string(), done: z.boolean().optional() }),
+      { name: "A" },
+    )).toBe(true);
+
+    expect(acceptsKnownJsonValue(z.array(z.number()), [1, 2])).toBe(true);
+
+    const record: Record<string, unknown> = {};
+    writeObjectDataValue(record, "__proto__", "data");
+    expect(acceptsKnownJsonValue(z.record(z.string(), z.string()), record)).toBe(true);
+  });
+
+  test("rejects values that need schema parsing or are not plain JSON data", () => {
+    expect(acceptsKnownJsonValue(z.string().min(1), "A")).toBe(false);
+    expect(acceptsKnownJsonValue(z.coerce.number(), 1)).toBe(false);
+    expect(acceptsKnownJsonValue(z.unknown(), "A")).toBe(false);
+    expect(acceptsKnownJsonValue(z.object({ name: z.string() }), { name: "A", extra: 1 })).toBe(false);
+
+    const withGetter = {};
+    Object.defineProperty(withGetter, "name", {
+      get: () => "A",
+      enumerable: true,
+    });
+    expect(acceptsKnownJsonValue(z.object({ name: z.string() }), withGetter)).toBe(false);
+
+    const sparse = new Array<number>(2);
+    sparse[1] = 1;
+    expect(acceptsKnownJsonValue(z.array(z.number()), sparse)).toBe(false);
+
+    const cyclic: unknown[] = [];
+    cyclic.push(cyclic);
+    expect(acceptsKnownJsonValue(z.array(z.unknown()), cyclic)).toBe(false);
   });
 });
 
