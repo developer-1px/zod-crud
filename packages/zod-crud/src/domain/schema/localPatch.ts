@@ -139,6 +139,18 @@ export interface AppliedReplaceValueValidationOperation {
   value: unknown;
 }
 
+export interface ArrayIndexReplacement {
+  index: number;
+  value: unknown;
+}
+
+export interface ApplyArrayIndexReplacementsInput {
+  state: unknown;
+  arraySegments: ReadonlyArray<string>;
+  array: ReadonlyArray<unknown>;
+  replacements: ReadonlyArray<ArrayIndexReplacement>;
+}
+
 export interface AppliedRemoveOperation {
   op: "remove";
   path: Pointer;
@@ -825,16 +837,20 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
 
   const current = readAt(state, plan.parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
-  const next = current.value.slice();
+  const replacements = new Array<ArrayIndexReplacement>(plan.operations.length);
 
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
     const op = plan.operations[opIndex]!;
     if (!acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
-    if (op.index < 0 || op.index >= next.length) return null;
-    next[op.index] = op.value;
+    replacements[opIndex] = { index: op.index, value: op.value };
   }
 
-  const nextState = replaceValueAtSegments(state, plan.parentSegments, 0, next);
+  const nextState = applyArrayIndexReplacements({
+    state,
+    arraySegments: plan.parentSegments,
+    array: current.value,
+    replacements,
+  });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
@@ -900,12 +916,12 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
 
   const current = readAt(state, plan.arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
-  const next = current.value.slice();
+  const replacements = new Array<ArrayIndexReplacement>(plan.operations.length);
 
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex++) {
     const op = plan.operations[opIndex]!;
-    if (op.index < 0 || op.index >= next.length) return null;
-    const replaced = replaceObjectDataValue(next[op.index], plan.field, op.value);
+    if (op.index < 0 || op.index >= current.value.length) return null;
+    const replaced = replaceObjectDataValue(current.value[op.index], plan.field, op.value);
     if (replaced === null) return null;
     const valueFailure = evaluateAppliedReplaceValueValidationPlan(
       state,
@@ -916,10 +932,15 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     );
     if (valueFailure) return valueFailure;
 
-    next[op.index] = replaced;
+    replacements[opIndex] = { index: op.index, value: replaced };
   }
 
-  const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
+  const nextState = applyArrayIndexReplacements({
+    state,
+    arraySegments: plan.arraySegments,
+    array: current.value,
+    replacements,
+  });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
@@ -1538,6 +1559,16 @@ export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null
     ? array.concat(values)
     : array.slice(0, start).concat(values, array.slice(start));
   return replaceValueAtSegments(state, parentSegments, 0, nextArray);
+}
+
+export function applyArrayIndexReplacements(input: ApplyArrayIndexReplacementsInput): unknown | null {
+  const { state, arraySegments, array, replacements } = input;
+  const next = array.slice();
+  for (const replacement of replacements) {
+    if (replacement.index < 0 || replacement.index >= next.length) return null;
+    next[replacement.index] = replacement.value;
+  }
+  return replaceValueAtSegments(state, arraySegments, 0, next);
 }
 
 export function planIncreasingArrayAddPatch(

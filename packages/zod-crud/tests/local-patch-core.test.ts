@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   acceptsKnownJsonValue,
   applyArrayAddPlan,
+  applyArrayIndexReplacements,
   applyRootObjectReplacePlan,
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
@@ -206,6 +207,50 @@ describe("array add state materialization", () => {
       array: state.items,
       start: 2,
       values: ["B"],
+    })).toBeNull();
+  });
+});
+
+describe("array index replacement state materialization", () => {
+  test("applies index replacements to root and nested arrays without mutating the source", () => {
+    const state = { items: ["A", "B"], meta: { keep: true } };
+
+    expect(applyArrayIndexReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      replacements: [
+        { index: 0, value: "X" },
+        { index: 1, value: "Y" },
+      ],
+    })).toEqual({ items: ["X", "Y"], meta: { keep: true } });
+    expect(state.items).toEqual(["A", "B"]);
+
+    const root = ["A", "B"];
+    expect(applyArrayIndexReplacements({
+      state: root,
+      arraySegments: [],
+      array: root,
+      replacements: [{ index: 1, value: "Z" }],
+    })).toEqual(["A", "Z"]);
+    expect(root).toEqual(["A", "B"]);
+  });
+
+  test("rejects index replacements outside the current array bounds", () => {
+    const state = { items: ["A"] };
+
+    expect(applyArrayIndexReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      replacements: [{ index: -1, value: "B" }],
+    })).toBeNull();
+
+    expect(applyArrayIndexReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      replacements: [{ index: 1, value: "B" }],
     })).toBeNull();
   });
 });
