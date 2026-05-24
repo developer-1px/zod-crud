@@ -13,6 +13,7 @@ import {
   planDocumentHistoryMergeMetadata,
   planDocumentHistoryRestore,
   planDocumentHistoryRestoreApply,
+  planDocumentHistoryRestoreFlow,
   planDocumentTransactionAppendCompact,
   planDocumentTransactionCall,
   planDocumentTransactionMerge,
@@ -708,6 +709,20 @@ describe("document history core functions", () => {
       kind: "state",
       state,
       patch,
+    });
+  });
+
+  test("plans undo and redo restore stack flow", () => {
+    expect(planDocumentHistoryRestoreFlow({ direction: "undo" })).toEqual({
+      entryStack: "undo",
+      writeEntryPhase: "beforeApply",
+      move: "back",
+    });
+
+    expect(planDocumentHistoryRestoreFlow({ direction: "redo" })).toEqual({
+      entryStack: "redo",
+      writeEntryPhase: "afterApply",
+      move: "forward",
     });
   });
 });

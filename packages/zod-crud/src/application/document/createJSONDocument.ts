@@ -379,6 +379,19 @@ export type DocumentTransactionCallPlan =
     };
 
 export type DocumentHistoryRestoreDirection = "undo" | "redo";
+export type DocumentHistoryRestoreStack = "undo" | "redo";
+export type DocumentHistoryRestoreEntryWritePhase = "beforeApply" | "afterApply";
+export type DocumentHistoryRestoreMove = "back" | "forward";
+
+export interface PlanDocumentHistoryRestoreFlowInput {
+  direction: DocumentHistoryRestoreDirection;
+}
+
+export interface DocumentHistoryRestoreFlowPlan {
+  entryStack: DocumentHistoryRestoreStack;
+  writeEntryPhase: DocumentHistoryRestoreEntryWritePhase;
+  move: DocumentHistoryRestoreMove;
+}
 
 export interface PlanDocumentHistoryRestoreInput {
   direction: DocumentHistoryRestoreDirection;
@@ -659,7 +672,9 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 
   const restore = (direction: "undo" | "redo"): boolean => {
-    const entry = direction === "undo" ? backEntry(stack) : forwardEntry(stack);
+    const flow = planDocumentHistoryRestoreFlow({ direction });
+    const restoreStack = flow.entryStack === "undo" ? stack.undo : stack.redo;
+    const entry = flow.entryStack === "undo" ? backEntry(stack) : forwardEntry(stack);
     if (!entry) return false;
     const plan = planDocumentHistoryRestore({
       direction,
@@ -667,7 +682,9 @@ export function createJSONDocument<S extends z.ZodType>(
       currentState: rawOps.state,
       currentSelection: snapSelection(),
     });
-    if (direction === "undo") stack.undo[stack.undo.length - 1] = plan.entry;
+    if (flow.writeEntryPhase === "beforeApply") {
+      restoreStack[restoreStack.length - 1] = plan.entry;
+    }
     isRestoring = true;
     try {
       const applyPlan = planDocumentHistoryRestoreApply({
@@ -678,14 +695,16 @@ export function createJSONDocument<S extends z.ZodType>(
         ? rawOps.trustedPatch(applyPlan.patch)
         : rawOps.trustedApply(applyPlan.state as z.output<S>, applyPlan.patch);
       if (!r.ok) return false;
-      if (direction === "redo") stack.redo[stack.redo.length - 1] = plan.entry;
+      if (flow.writeEntryPhase === "afterApply") {
+        restoreStack[restoreStack.length - 1] = plan.entry;
+      }
       syncLastPatch();
     } catch {
       return false;
     } finally {
       isRestoring = false;
     }
-    if (direction === "undo") moveBack(stack);
+    if (flow.move === "back") moveBack(stack);
     else moveForward(stack);
     selectionState?.restore(plan.selectionAfter);
     return true;
@@ -1367,6 +1386,22 @@ export function planDocumentHistoryRestore(
   const state = direction === "undo" ? snapshot?.before : snapshot?.after;
   if (state !== undefined) plan.state = state;
   return plan;
+}
+
+export function planDocumentHistoryRestoreFlow(
+  input: PlanDocumentHistoryRestoreFlowInput,
+): DocumentHistoryRestoreFlowPlan {
+  return input.direction === "undo"
+    ? {
+        entryStack: "undo",
+        writeEntryPhase: "beforeApply",
+        move: "back",
+      }
+    : {
+        entryStack: "redo",
+        writeEntryPhase: "afterApply",
+        move: "forward",
+      };
 }
 
 export function planDocumentHistoryRestoreApply(
