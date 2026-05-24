@@ -51,6 +51,7 @@ import {
   planSingleReplacePatch,
   prefixIssues,
   readAppliedLocalOpSourceValue,
+  replaceArrayField,
   replaceObjectDataValue,
   replaceValueAtSegments,
   rootRecordValueSchemaForLocalPatch,
@@ -814,6 +815,25 @@ describe("root record copy and write helpers", () => {
     expect(replaceObjectDataValue({ name: "Draft" }, "missing", "Final")).toBeNull();
     expect(replaceObjectDataValue(["Draft"], "0", "Final")).toBeNull();
     expect(replaceObjectDataValue(null, "name", "Final")).toBeNull();
+  });
+
+  test("replaces object fields inside arrays without mutating the source", () => {
+    const array = [{ name: "Draft" }, { name: "Keep" }];
+
+    const next = replaceArrayField(array, 0, "name", "Final");
+
+    expect(next).toEqual([{ name: "Final" }, { name: "Keep" }]);
+    expect(next).not.toBe(array);
+    expect(next?.[0]).not.toBe(array[0]);
+    expect(next?.[1]).toBe(array[1]);
+    expect(array).toEqual([{ name: "Draft" }, { name: "Keep" }]);
+  });
+
+  test("rejects invalid array field replacements", () => {
+    expect(replaceArrayField([{ name: "Draft" }], -1, "name", "Final")).toBeNull();
+    expect(replaceArrayField([{ name: "Draft" }], 1, "name", "Final")).toBeNull();
+    expect(replaceArrayField([{ name: "Draft" }], 0, "missing", "Final")).toBeNull();
+    expect(replaceArrayField(["Draft"], 0, "name", "Final")).toBeNull();
   });
 
   test("creates null-prototype key sets for structural data keys", () => {

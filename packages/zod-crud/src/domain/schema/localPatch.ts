@@ -790,14 +790,9 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
 
   const current = readAt(state, arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
-  if (location.index < 0 || location.index >= current.value.length) return null;
 
-  const replaced = replaceObjectDataValue(current.value[location.index], location.key, op.value);
-  if (replaced === null) return null;
-
-  const next = current.value.slice();
-  next[location.index] = replaced;
-  return replaceValueAtSegments(state, arraySegments, 0, next);
+  const nextArray = replaceArrayField(current.value, location.index, location.key, op.value);
+  return nextArray === null ? null : replaceValueAtSegments(state, arraySegments, 0, nextArray);
 }
 
 function applySingleRootArrayFieldReplace(
@@ -836,7 +831,7 @@ function applySingleRootArrayFieldReplace(
   return { ...(state as Record<string, unknown>), [arrayKey]: nextArray };
 }
 
-function replaceArrayField(
+export function replaceArrayField(
   array: ReadonlyArray<unknown>,
   index: number,
   key: string,
