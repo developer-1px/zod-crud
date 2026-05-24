@@ -3,8 +3,8 @@ import type * as z from "zod";
 import { cloneJsonSerializable, cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
 import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
-import { normalizePointerSources } from "../../foundation/json-pointer/sourceSet.js";
-import type { JSONOps } from "./ops.js";
+import { normalizePointerSources } from "../../foundation/json-pointer/pointerSource.js";
+import type { JSONStateOps } from "./stateOps.js";
 import type { SelectionSource } from "../../domain/selection/index.js";
 import {
   copy,
@@ -237,7 +237,7 @@ export type ClipboardPastePlanResult<T> =
 interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
-  ops: JSONOps<z.output<S>>;
+  ops: JSONStateOps<z.output<S>>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   applyPreviewedPatch?: (

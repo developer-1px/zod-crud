@@ -4,7 +4,7 @@ import {
   normalizePointerSources,
   type PointerSource,
   type PointerSourceError,
-} from "../json-pointer/sourceSet.js";
+} from "../json-pointer/pointerSource.js";
 
 export interface RemoveSourcesPatchOk {
   ok: true;

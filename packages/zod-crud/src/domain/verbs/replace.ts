@@ -5,7 +5,7 @@
 import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 // note: verbs/* 끼리 import 금지 (lint rule). 여기서는 jsonpath 의 query 를 직접 호출.
 import { query as jsonpathQuery } from "../../foundation/jsonpath/index.js";
 import { JSONPathSyntaxError } from "../../foundation/jsonpath/index.js";
@@ -19,7 +19,7 @@ export interface ReplaceOk<T> {
 
 export interface ReplaceError {
   ok: false;
-  code: "syntax_error" | "empty_match" | PreFlightErrorCode;
+  code: "syntax_error" | "empty_match" | PatchPreflightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -52,8 +52,8 @@ export function replace<S extends z.ZodType>(
   const sorted = [...pointers].sort((a, b) => b.length - a.length);
   const patch: JSONPatchOperation[] = sorted.map((p) => ({ op: "replace", path: p, value }));
   const r = options.previewPatch
-    ? preFlightFromApplyResult(options.previewPatch(patch))
-    : preFlight(schema, state, patch);
+    ? patchPreflightFromApplyResult(options.previewPatch(patch))
+    : patchPreflight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }

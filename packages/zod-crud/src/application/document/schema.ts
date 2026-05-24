@@ -1,6 +1,6 @@
 import { toJSONSchema, type z } from "zod";
 
-import type { CheckResult } from "./check.js";
+import type { CapabilityResult } from "./capability.js";
 import {
   getArrayElement,
   getDef,
@@ -80,7 +80,7 @@ export type SchemaDescriptionResult =
 export interface SchemaState {
   at(path: Pointer, mode?: SchemaPathMode): SchemaQueryResult;
   kind(path: Pointer, mode?: SchemaPathMode): SchemaKindResult;
-  accepts(path: Pointer, value: unknown, mode?: SchemaPathMode): CheckResult;
+  accepts(path: Pointer, value: unknown, mode?: SchemaPathMode): CapabilityResult;
   describe(path: Pointer, mode?: SchemaPathMode): SchemaDescriptionResult;
 }
 
@@ -137,7 +137,7 @@ export function createSchemaState<S extends z.ZodType>(
       return readDocumentSchemaKind(context, path, mode);
     },
     accepts(path, value, mode = "value") {
-      return checkDocumentSchemaAccepts(context, path, value, mode);
+      return canDocumentSchemaAccepts(context, path, value, mode);
     },
     describe(path, mode = "value") {
       return describeDocumentSchema(context, path, mode);
@@ -176,19 +176,19 @@ export function readDocumentSchemaKind<S extends z.ZodType>(
   return { ok: true, path, mode, kind: result.kind };
 }
 
-export function checkDocumentSchemaAccepts<S extends z.ZodType>(
+export function canDocumentSchemaAccepts<S extends z.ZodType>(
   context: DocumentSchemaContext<S>,
   path: Pointer,
   value: unknown,
   mode: SchemaPathMode = "value",
-): CheckResult {
+): CapabilityResult {
   const resolved = planDocumentSchemaResolution({
     schema: context.schema,
     path,
     mode,
   });
   if (!resolved.ok) {
-    const error: Extract<CheckResult, { ok: false }> = {
+    const error: Extract<CapabilityResult, { ok: false }> = {
       ok: false,
       code: resolved.code,
       pointer: resolved.pointer,
@@ -218,7 +218,7 @@ export function describeDocumentSchema<S extends z.ZodType>(
 
 export function planDocumentSchemaAcceptsResult(
   input: PlanDocumentSchemaAcceptsResultInput,
-): CheckResult {
+): CapabilityResult {
   if (input.result.success) return { ok: true };
   return {
     ok: false,

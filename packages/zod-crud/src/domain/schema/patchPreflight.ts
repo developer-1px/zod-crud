@@ -1,4 +1,4 @@
-// domain/schema/preFlight — patch 적용 전 schema gate.
+// domain/schema/patchPreflight — patch 적용 전 schema gate.
 // (state, patch, schema) → Ok(draft) | Err(violations).
 // dry-apply 후 전체 schema.safeParse 를 실행한다.
 // cross-field refine/superRefine 위반도 commit 전에 schema_violation 으로 거부한다.
@@ -12,47 +12,47 @@ import {
 } from "../../foundation/json-patch/index.js";
 import { buildPointer } from "../../foundation/json-pointer/index.js";
 
-export interface PreFlightOk<T> {
+export interface PatchPreflightOk<T> {
   ok: true;
   draft: T;
   applied: ReadonlyArray<JSONPatchOperation>;
 }
 
-export type PreFlightErrorCode = ErrorCode | "preFlight_failed";
+export type PatchPreflightErrorCode = ErrorCode | "preflight_failed";
 
-export interface PreFlightErr {
+export interface PatchPreflightErr {
   ok: false;
-  code: PreFlightErrorCode;
+  code: PatchPreflightErrorCode;
   message: string;
   violations: ReadonlyArray<{ path: string; message: string }>;
 }
 
-export type PreFlightResult<T> = PreFlightOk<T> | PreFlightErr;
+export type PatchPreflightResult<T> = PatchPreflightOk<T> | PatchPreflightErr;
 
 /**
  * patch 가 commit 되기 전에 schema 위반 여부를 검증한다.
  * 실패 시 commit 하지 않는다 — history 오염 0.
  */
-export function preFlight<S extends z.ZodType>(
+export function patchPreflight<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   patch: ReadonlyArray<JSONPatchOperation>,
-): PreFlightResult<z.output<S>> {
-  return preFlightFromApplyResult(applyPatch(schema, state, patch));
+): PatchPreflightResult<z.output<S>> {
+  return patchPreflightFromApplyResult(applyPatch(schema, state, patch));
 }
 
-export function preFlightFromApplyResult<S extends z.ZodType>(
+export function patchPreflightFromApplyResult<S extends z.ZodType>(
   r: ApplyResult<S>,
-): PreFlightResult<z.output<S>> {
+): PatchPreflightResult<z.output<S>> {
   if (r.result.ok) {
     return { ok: true, draft: r.state, applied: r.applied };
   }
-  // schema_violation 또는 다른 RFC 6902 op 실패. preFlight 가 거부 — 호출자가 처리.
+  // schema_violation 또는 다른 RFC 6902 op 실패. patchPreflight 가 거부 — 호출자가 처리.
   // schema_violation 의 경우 result.reason 에 zod issues JSON 이 들어있다 (foundation/json-patch §applyPatch).
   return {
     ok: false,
     code: r.result.code,
-    message: (r.result as { reason?: string }).reason ?? "preFlight failed",
+    message: (r.result as { reason?: string }).reason ?? "patchPreflight failed",
     violations: parseViolations(r.result),
   };
 }

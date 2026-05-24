@@ -8,7 +8,6 @@ import {
   applyPatch,
   applySingleTrustedValuePatchToTrustedState,
   applyPatchToTrustedState,
-  applyTrustedPatch,
   type ApplyResult,
   type JSONPatchOperation,
   type JSONResult,
@@ -16,25 +15,25 @@ import {
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { jsonSerializableError } from "../../foundation/json.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
-import { applyPatchWithLocalSchemaValidation, schemaOutputIsKnownJson } from "../../domain/schema/localPatch.js";
+import { applyPatchWithLocalSchemaValidation, schemaOutputIsKnownJson } from "../../domain/schema/localSchemaValidation.js";
 import type {
   JSONChangeMetadata,
-  JSONOps,
-} from "./ops.js";
+  JSONStateOps,
+} from "./stateOps.js";
 
 type JSONChangeListener = (
   applied: ReadonlyArray<JSONPatchOperation>,
   metadata?: JSONChangeMetadata,
 ) => void;
 
-interface CreateJSONOptions extends ErrorPolicy {
+interface CreateJSONStateOptions extends ErrorPolicy {
   onChange?: () => void;
   trustedInitial?: boolean | undefined;
 }
 
 interface JSONState<T> {
   readonly value: T;
-  readonly ops: TrustedJSONOps<T>;
+  readonly ops: TrustedJSONStateOps<T>;
   subscribe(listener: JSONChangeListener): () => void;
 }
 
@@ -42,12 +41,12 @@ interface HeadlessJSONState<T> extends JSONState<T> {
   dispose(): void;
 }
 
-interface TrustedJSONOps<T> extends JSONOps<T> {
+interface TrustedJSONStateOps<T> extends JSONStateOps<T> {
   readonly lastApplied: ReadonlyArray<JSONPatchOperation>;
   readonly stateJsonTrusted: boolean;
   previewPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
   previewTrustedValuesPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };
-  trustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
+  applyTrustedPatch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
   trustedApply(state: T, applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 }
 
@@ -170,10 +169,10 @@ export function planJSONRootReplacementParse<T>(
   };
 }
 
-export function createJSON<S extends z.ZodType>(
+export function createJSONState<S extends z.ZodType>(
   schema: S,
   initial: z.input<S> | z.output<S>,
-  options: CreateJSONOptions = {},
+  options: CreateJSONStateOptions = {},
 ): HeadlessJSONState<z.output<S>> {
   const schemaOutputJsonTrusted = schemaOutputIsKnownJson(schema);
   let state: z.output<S>;
@@ -299,7 +298,7 @@ export function createJSON<S extends z.ZodType>(
     return plan.result;
   };
 
-  const ops: TrustedJSONOps<z.output<S>> = {
+  const ops: TrustedJSONStateOps<z.output<S>> = {
     add(path, value) {
       return single({ op: "add", path: path as Pointer, value });
     },
@@ -329,7 +328,7 @@ export function createJSON<S extends z.ZodType>(
     previewTrustedValuesPatch(operations) {
       return previewTrustedValuesPatchFrom(state, operations);
     },
-    trustedPatch(operations, metadata) {
+    applyTrustedPatch(operations, metadata) {
       return dispatchTrusted(operations, metadata);
     },
     trustedApply(next, applied, metadata) {

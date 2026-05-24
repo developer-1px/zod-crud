@@ -46,13 +46,13 @@ import {
   evaluateAppliedReplaceValueValidationPlan,
   evaluateArrayAddElementValues,
   evaluateKnownJsonReplaceValues,
-  evaluateLocalPatchValueValidationPlan,
+  evaluateLocalSchemaValidationValueValidationPlan,
   evaluateRootRecordAddValues,
   evaluateRootObjectReplaceValues,
-  failedLocalPatch,
+  failedLocalSchemaValidation,
   haveIndependentReplacePaths,
   numericSegment,
-  okLocalPatch,
+  okLocalSchemaValidation,
   planAppliedLocalOpValidation,
   planAppliedReplaceValueValidation,
   planArrayAddAppliedOperations,
@@ -64,7 +64,7 @@ import {
   planIndependentReplacePaths,
   planKnownJsonReplaceOperations,
   planKnownJsonReplacePatch,
-  planLocalPatchValueValidation,
+  planLocalSchemaValidationValueValidation,
   planRootObjectReplaceOperations,
   planRootObjectReplacePatch,
   planRootObjectReplaceStrategy,
@@ -91,24 +91,24 @@ import {
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
   readFirstArrayNestedPath,
-  readRootRecordForLocalPatch,
+  readRootRecordForLocalSchemaValidation,
   readSingleRootArrayFieldTarget,
   replaceArrayField,
   replaceObjectDataValue,
   replaceValueAtSegments,
-  rootRecordValueSchemaForLocalPatch,
-  rootObjectReplaceValueSourceForLocalPatch,
+  rootRecordValueSchemaForLocalSchemaValidation,
+  rootObjectReplaceValueSourceForLocalSchemaValidation,
   toAppliedAddOperations,
   toAppliedRemoveOperations,
   toAppliedReplaceOperations,
   writeObjectDataValue,
   writeRootRecordValue,
-} from "../src/domain/schema/localPatch.js";
+} from "../src/domain/schema/localSchemaValidation.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
 describe("local patch value validation planning", () => {
   test("accepts known-json values without schema parsing", () => {
-    expect(planLocalPatchValueValidation({
+    expect(planLocalSchemaValidationValueValidation({
       path: "/title",
       schema: z.string(),
       value: "Final",
@@ -118,7 +118,7 @@ describe("local patch value validation planning", () => {
   });
 
   test("plans schema parsing for serializable values that are not known-json accepted", () => {
-    const result = planLocalPatchValueValidation({
+    const result = planLocalSchemaValidationValueValidation({
       path: "/title",
       schema: z.string(),
       value: 1,
@@ -131,7 +131,7 @@ describe("local patch value validation planning", () => {
   });
 
   test("rejects untrusted non-serializable values before schema parsing", () => {
-    const result = planLocalPatchValueValidation({
+    const result = planLocalSchemaValidationValueValidation({
       path: "/title",
       schema: z.unknown(),
       value: () => "not json",
@@ -147,7 +147,7 @@ describe("local patch value validation planning", () => {
 
   test("trusts caller-owned serializability and falls back to schema parsing", () => {
     const value = () => "trusted";
-    const result = planLocalPatchValueValidation({
+    const result = planLocalSchemaValidationValueValidation({
       path: "/value",
       schema: z.function(),
       value,
@@ -1448,7 +1448,7 @@ describe("local patch result helpers", () => {
     const state = { title: "Final" };
     const applied = [{ op: "replace" as const, path: "/title", value: "Final" }];
 
-    expect(okLocalPatch(state, applied)).toEqual({
+    expect(okLocalSchemaValidation(state, applied)).toEqual({
       state,
       result: { ok: true },
       applied,
@@ -1458,7 +1458,7 @@ describe("local patch result helpers", () => {
   test("wraps failed patch results with no applied operations", () => {
     const state = { title: "Draft" };
 
-    expect(failedLocalPatch(state, {
+    expect(failedLocalSchemaValidation(state, {
       ok: false,
       code: "path_not_found",
       pointer: "/missing",
@@ -1476,7 +1476,7 @@ describe("local patch result helpers", () => {
 
 describe("local patch value validation evaluation", () => {
   test("accepts plans that need no runtime validation", () => {
-    expect(evaluateLocalPatchValueValidationPlan(
+    expect(evaluateLocalSchemaValidationValueValidationPlan(
       { title: "Draft" },
       { kind: "accepted" },
     )).toBeNull();
@@ -1484,7 +1484,7 @@ describe("local patch value validation evaluation", () => {
 
   test("converts non-serializable plans to local patch failures", () => {
     const state = { value: "Draft" };
-    const result = evaluateLocalPatchValueValidationPlan(state, {
+    const result = evaluateLocalSchemaValidationValueValidationPlan(state, {
       kind: "notSerializable",
       reason: "function is not JSON-serializable",
     });
@@ -1502,7 +1502,7 @@ describe("local patch value validation evaluation", () => {
 
   test("converts parse plans to prefixed schema violations", () => {
     const state = { title: "Draft" };
-    const result = evaluateLocalPatchValueValidationPlan(state, {
+    const result = evaluateLocalSchemaValidationValueValidationPlan(state, {
       kind: "parse",
       path: "/title",
       schema: z.string(),
@@ -1630,7 +1630,7 @@ describe("root record copy and write helpers", () => {
       writable: true,
     });
 
-    const result = readRootRecordForLocalPatch({ state: source });
+    const result = readRootRecordForLocalSchemaValidation({ state: source });
 
     expect(result).toEqual({
       ok: true,
@@ -1638,9 +1638,9 @@ describe("root record copy and write helpers", () => {
       sourceKeys: ["alpha", "__proto__"],
     });
     expect(result.ok && result.source).toBe(source);
-    expect(readRootRecordForLocalPatch({ state: [] })).toEqual({ ok: false });
-    expect(readRootRecordForLocalPatch({ state: null })).toEqual({ ok: false });
-    expect(readRootRecordForLocalPatch({ state: "text" })).toEqual({ ok: false });
+    expect(readRootRecordForLocalSchemaValidation({ state: [] })).toEqual({ ok: false });
+    expect(readRootRecordForLocalSchemaValidation({ state: null })).toEqual({ ok: false });
+    expect(readRootRecordForLocalSchemaValidation({ state: "text" })).toEqual({ ok: false });
   });
 
   test("copies root record key prefixes with structural data keys", () => {
@@ -3532,12 +3532,12 @@ describe("root record add patch planning", () => {
   });
 
   test("finds local root record value schemas only for plain string-key records", () => {
-    const valueSchema = rootRecordValueSchemaForLocalPatch(z.record(z.string(), z.number()));
+    const valueSchema = rootRecordValueSchemaForLocalSchemaValidation(z.record(z.string(), z.number()));
 
     expect(valueSchema?.safeParse(1).success).toBe(true);
     expect(valueSchema?.safeParse("bad").success).toBe(false);
-    expect(rootRecordValueSchemaForLocalPatch(z.object({ alpha: z.number() }))).toBeNull();
-    expect(rootRecordValueSchemaForLocalPatch(z.record(z.string().min(1), z.number()))).toBeNull();
+    expect(rootRecordValueSchemaForLocalSchemaValidation(z.object({ alpha: z.number() }))).toBeNull();
+    expect(rootRecordValueSchemaForLocalSchemaValidation(z.record(z.string().min(1), z.number()))).toBeNull();
   });
 
   test("returns root record add value validation failures", () => {
@@ -4025,19 +4025,19 @@ describe("root object replace patch planning", () => {
   });
 
   test("plans root object replacement value sources from object and record schemas", () => {
-    const objectSource = rootObjectReplaceValueSourceForLocalPatch(z.object({ a: z.number() }));
+    const objectSource = rootObjectReplaceValueSourceForLocalSchemaValidation(z.object({ a: z.number() }));
     expect(objectSource?.kind).toBe("object");
     if (objectSource?.kind !== "object") throw new Error("expected object value source");
     expect(objectSource.shape.a?.safeParse(1).success).toBe(true);
 
-    const recordSource = rootObjectReplaceValueSourceForLocalPatch(z.record(z.string(), z.number()));
+    const recordSource = rootObjectReplaceValueSourceForLocalSchemaValidation(z.record(z.string(), z.number()));
     expect(recordSource?.kind).toBe("record");
     if (recordSource?.kind !== "record") throw new Error("expected record value source");
     expect(recordSource.schema.safeParse(1).success).toBe(true);
     expect(recordSource.acceptsKnownJson(1)).toBe(true);
     expect(recordSource.acceptsKnownJson("bad")).toBe(false);
 
-    expect(rootObjectReplaceValueSourceForLocalPatch(z.array(z.number()))).toBeNull();
+    expect(rootObjectReplaceValueSourceForLocalSchemaValidation(z.array(z.number()))).toBeNull();
   });
 
   test("plans root object replacement value validation through object and record sources", () => {

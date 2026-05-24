@@ -1,8 +1,8 @@
 // verbs/move — Edit 기둥, RFC 6902 move op.
-// pure composer. preFlight gate 통과 후 next + patch 산출.
+// pure composer. patchPreflight gate 통과 후 next + patch 산출.
 
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import type * as z from "zod";
 
@@ -14,7 +14,7 @@ interface MoveOk<T> {
 
 interface MoveError {
   ok: false;
-  code: "empty_selection" | PreFlightErrorCode;
+  code: "empty_selection" | PatchPreflightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -39,8 +39,8 @@ export function resolveMoveArgs(
 }
 
 /**
- * RFC 6902 `move` op. (schema, state, from, to) → preFlight gate → { next, patch }.
- * preFlight 거부 시 commit 하지 않음 — history 오염 0 (P4.4).
+ * RFC 6902 `move` op. (schema, state, from, to) → patchPreflight gate → { next, patch }.
+ * patchPreflight 거부 시 commit 하지 않음 — history 오염 0 (P4.4).
  */
 export function move<S extends z.ZodType>(
   schema: S,
@@ -51,8 +51,8 @@ export function move<S extends z.ZodType>(
 ): MoveResult<z.output<S>> {
   const op: JSONPatchOperation = { op: "move", from, path: to };
   const r = options.previewPatch
-    ? preFlightFromApplyResult(options.previewPatch([op]))
-    : preFlight(schema, state, [op]);
+    ? patchPreflightFromApplyResult(options.previewPatch([op]))
+    : patchPreflight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }

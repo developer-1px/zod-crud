@@ -10,8 +10,8 @@ Date: 2026-05-22
 - `zod-crud` remains React-free.
 - `zod-crud/react` exports `useJSONDocument` from `src/react.ts` directly.
 - Internal source is grouped by concept layer:
-  - `application/document`: `JSONDocument` assembly, read/check/schema/clipboard/selection facades.
-  - `domain/verbs`: editing verbs such as copy, cut, paste, move, duplicate, replace, find.
+  - `application/document`: `JSONDocument` assembly, read/capability/schema/clipboard/selection facades.
+  - `domain/verbs`: editing verbs such as copy, cut, paste, move, duplicate, replace.
   - `domain/selection`, `domain/schema`, `domain/tracking`: domain rules.
   - `foundation/json-patch`, `foundation/json-pointer`, `foundation/jsonpath`: standards-backed primitives.
   - `foundation/history`, `foundation/json`, `foundation/errors`: runtime primitives.

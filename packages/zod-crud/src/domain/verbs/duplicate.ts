@@ -7,7 +7,7 @@ import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
 
 export interface DuplicateOpts {
@@ -35,7 +35,7 @@ export interface DuplicateError {
     | "key_conflict"
     | "not_serializable"
     | "rekey_failed"
-    | PreFlightErrorCode;
+    | PatchPreflightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -123,8 +123,8 @@ export function duplicate<S extends z.ZodType>(
   const payload = rekeyed.payload;
   const op: JSONPatchOperation = opts.rekey ? { op: "add", path: target, value: payload } : { op: "copy", from: source, path: target };
   const r = options.previewPatch
-    ? preFlightFromApplyResult(options.previewPatch([op]))
-    : preFlight(schema, state, [op]);
+    ? patchPreflightFromApplyResult(options.previewPatch([op]))
+    : patchPreflight(schema, state, [op]);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }

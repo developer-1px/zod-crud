@@ -4,7 +4,7 @@
 import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
-import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
+import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import { getDef, getDiscriminatedUnionInfo, getObjectShape, schemaAtPointer } from "../schema/introspection.js";
 import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
 
@@ -24,7 +24,7 @@ interface PasteOk<T> {
 
 export interface PasteError {
   ok: false;
-  code: "empty_selection" | "not_serializable" | "rekey_failed" | PreFlightErrorCode;
+  code: "empty_selection" | "not_serializable" | "rekey_failed" | PatchPreflightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -102,8 +102,8 @@ export function paste<S extends z.ZodType>(
 
   const patch = spread ? buildSpreadPasteOps(nextPayload, target, mode) : [buildPasteOp(nextPayload, target, mode)];
   const r = options.previewPatch
-    ? preFlightFromApplyResult(options.previewPatch(patch))
-    : preFlight(schema, state, patch);
+    ? patchPreflightFromApplyResult(options.previewPatch(patch))
+    : patchPreflight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }
@@ -120,7 +120,7 @@ function findPasteMismatch<S extends z.ZodType>(
   const targetSchema = schemaAtPointer(schema, target, mode === "into" || mode === "before" || mode === "after" ? "insert" : "value");
   if (!targetSchema) return null;
 
-  const checkPayload = createPayloadMismatchChecker(targetSchema);
+  const checkPayload = createPayloadMismatchCapabilityer(targetSchema);
   if (!spread) return checkPayload(payload);
   if (!Array.isArray(payload)) return null;
   for (const item of payload) {
@@ -130,7 +130,7 @@ function findPasteMismatch<S extends z.ZodType>(
   return null;
 }
 
-function createPayloadMismatchChecker(targetSchema: z.ZodType): (payload: unknown) => PasteDuMismatch | null {
+function createPayloadMismatchCapabilityer(targetSchema: z.ZodType): (payload: unknown) => PasteDuMismatch | null {
   const info = getDiscriminatedUnionInfo(targetSchema);
   if (info) {
     return (payload) => {

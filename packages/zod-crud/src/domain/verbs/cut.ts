@@ -1,6 +1,6 @@
 // verbs/cut — Clipboard 기둥. copy ⊗ RFC 6902 remove ⊗ commit, atomic.
 // (schema, state, source) → { next, patch, payload }.
-// payload + remove 가 atomic. preFlight 거부 시 둘 다 안 일어남 — history 오염 0.
+// payload + remove 가 atomic. patchPreflight 거부 시 둘 다 안 일어남 — history 오염 0.
 
 import type * as z from "zod";
 import { cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
@@ -8,8 +8,8 @@ import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patc
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
-import type { PointerSourceError } from "../../foundation/json-pointer/sourceSet.js";
-import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
+import type { PointerSourceError } from "../../foundation/json-pointer/pointerSource.js";
+import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import type { ClipboardSource } from "./copy.js";
 
 export interface CutOk<T> {
@@ -26,7 +26,7 @@ export interface CutOk<T> {
 
 export interface CutError {
   ok: false;
-  code: "empty_selection" | "invalid_pointer" | "path_not_found" | "not_serializable" | PreFlightErrorCode;
+  code: "empty_selection" | "invalid_pointer" | "path_not_found" | "not_serializable" | PatchPreflightErrorCode;
   message: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
@@ -54,12 +54,12 @@ export function cut<S extends z.ZodType>(
   }
   const payload = typeof source === "string" ? payloads[0] : payloads;
 
-  // 2) RFC 6902 remove patch 를 preFlight gate 통과시킨다.
+  // 2) RFC 6902 remove patch 를 patchPreflight gate 통과시킨다.
   // 같은 array parent 의 index shift 를 피하려고 patch 적용 순서만 뒤에서 앞으로 정렬한다.
   const patch: JSONPatchOperation[] = removePlan.patch;
   const r = options.previewPatch
-    ? preFlightFromApplyResult(options.previewPatch(patch))
-    : preFlight(schema, state, patch);
+    ? patchPreflightFromApplyResult(options.previewPatch(patch))
+    : patchPreflight(schema, state, patch);
   if (!r.ok) {
     return { ok: false, code: r.code, message: r.message, violations: r.violations };
   }

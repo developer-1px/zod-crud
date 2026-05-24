@@ -2,26 +2,26 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  checkDocumentCopy,
-  checkDocumentFind,
-  checkDocumentPatch,
-  checkDocumentRemove,
-  checkDocumentReplace,
+  canDocumentCopy,
+  canDocumentFind,
+  canDocumentPatch,
+  canDocumentRemove,
+  canDocumentReplace,
   isDocumentJSONPathTarget,
-  planDocumentCopyCheck,
-  planDocumentCheckResult,
-  planDocumentCutCheck,
-  planDocumentDeleteTextCheck,
-  planDocumentDuplicateCheck,
-  planDocumentMoveCheck,
-  planDocumentPatchCheck,
-  planDocumentPasteCheck,
+  planDocumentCopyCapability,
+  planDocumentCapabilityResult,
+  planDocumentCutCapability,
+  planDocumentDeleteTextCapability,
+  planDocumentDuplicateCapability,
+  planDocumentMoveCapability,
+  planDocumentPatchCapability,
+  planDocumentPasteCapability,
   planDocumentReplaceArgs,
-  planDocumentRemoveCheck,
-  planDocumentReplaceCheck,
-  planDocumentReplaceTextCheck,
-  type DocumentCheckContext,
-} from "../src/application/document/check.js";
+  planDocumentRemoveCapability,
+  planDocumentReplaceCapability,
+  planDocumentReplaceTextCapability,
+  type DocumentCapabilityContext,
+} from "../src/application/document/capability.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 import type { SelectionSnap } from "../src/domain/selection/index.js";
 
@@ -60,11 +60,11 @@ const selectedFirstNameText: SelectionSnap = {
   focus: { path: "/items/0/name", offset: 1 },
 };
 
-describe("document check core functions", () => {
-  test("normalizes checkable domain results without running a document facade", () => {
-    expect(planDocumentCheckResult({ ok: true })).toEqual({ ok: true });
+describe("document capability core functions", () => {
+  test("normalizes capability domain results without running a document facade", () => {
+    expect(planDocumentCapabilityResult({ ok: true })).toEqual({ ok: true });
 
-    expect(planDocumentCheckResult({
+    expect(planDocumentCapabilityResult({
       ok: false,
       code: "path_not_found",
       message: "missing path",
@@ -78,7 +78,7 @@ describe("document check core functions", () => {
       violations: [{ path: "/missing", message: "Missing" }],
     });
 
-    expect(planDocumentCheckResult({
+    expect(planDocumentCapabilityResult({
       ok: false,
       code: "path_not_found",
       reason: "preferred reason",
@@ -91,11 +91,11 @@ describe("document check core functions", () => {
     });
   });
 
-  test("checks a patch through an injected preview without a document facade", () => {
+  test("evaluates a patch capability through an injected preview without a document facade", () => {
     const operations: JSONPatchOperation[] = [{ op: "remove", path: "/missing" }];
     let previewed: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentPatchCheck({
+    expect(planDocumentPatchCapability({
       schema: Schema,
       state: initial,
       operations,
@@ -113,7 +113,7 @@ describe("document check core functions", () => {
     });
     expect(previewed).toBe(operations);
 
-    const context: DocumentCheckContext<typeof Schema> = {
+    const context: DocumentCapabilityContext<typeof Schema> = {
       schema: Schema,
       state: initial,
       previewPatch(next) {
@@ -125,22 +125,22 @@ describe("document check core functions", () => {
       },
     };
 
-    expect(checkDocumentPatch(context, operations)).toMatchObject({
+    expect(canDocumentPatch(context, operations)).toMatchObject({
       ok: false,
       code: "path_not_found",
     });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
   });
 
-  test("checks selected-source operations from plain state and selection data", () => {
-    const context: DocumentCheckContext<typeof Schema> = {
+  test("evaluates selected-source operations from plain state and selection data", () => {
+    const context: DocumentCapabilityContext<typeof Schema> = {
       schema: Schema,
       state: initial,
       selection: selectedFirstItem,
     };
 
-    expect(checkDocumentRemove(context)).toEqual({ ok: true });
-    expect(checkDocumentReplace(context, { id: "a1", name: "A1" })).toEqual({ ok: true });
+    expect(canDocumentRemove(context)).toEqual({ ok: true });
+    expect(canDocumentReplace(context, { id: "a1", name: "A1" })).toEqual({ ok: true });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
   });
 
@@ -167,10 +167,10 @@ describe("document check core functions", () => {
     expect(isDocumentJSONPathTarget("/items/0/name")).toBe(false);
   });
 
-  test("plans remove checks from explicit state and selection source", () => {
+  test("plans remove capabilities from explicit state and selection source", () => {
     let removed: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentRemoveCheck({
+    expect(planDocumentRemoveCapability({
       schema: Schema,
       state: initial,
     })).toEqual({
@@ -179,7 +179,7 @@ describe("document check core functions", () => {
       reason: "remove source selection is empty",
     });
 
-    expect(planDocumentRemoveCheck({
+    expect(planDocumentRemoveCapability({
       schema: Schema,
       state: initial,
       selectionSource: "/items/0",
@@ -200,11 +200,11 @@ describe("document check core functions", () => {
     ]);
   });
 
-  test("plans replace checks from explicit state, target fallback, and JSONPath targets", () => {
+  test("plans replace capabilities from explicit state, target fallback, and JSONPath targets", () => {
     let previewed: ReadonlyArray<JSONPatchOperation> | undefined;
     let jsonpathPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentReplaceCheck({
+    expect(planDocumentReplaceCapability({
       schema: Schema,
       state: initial,
       value: { id: "x", name: "X" },
@@ -214,7 +214,7 @@ describe("document check core functions", () => {
       reason: "replace target selection is empty",
     });
 
-    expect(planDocumentReplaceCheck({
+    expect(planDocumentReplaceCapability({
       schema: Schema,
       state: initial,
       value: { id: "a1", name: "A1" },
@@ -235,7 +235,7 @@ describe("document check core functions", () => {
       { op: "replace", path: "/items/0", value: { id: "a1", name: "A1" } },
     ]);
 
-    expect(planDocumentReplaceCheck({
+    expect(planDocumentReplaceCapability({
       schema: Schema,
       state: initial,
       value: "Renamed",
@@ -261,11 +261,11 @@ describe("document check core functions", () => {
     ]);
   });
 
-  test("plans text replacement and deletion checks from explicit selection", () => {
+  test("plans text replacement and deletion capabilities from explicit selection", () => {
     let replaced: ReadonlyArray<JSONPatchOperation> | undefined;
     let deleted: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentReplaceTextCheck({
+    expect(planDocumentReplaceTextCapability({
       schema: Schema,
       state: initial,
       selection: selectedFirstNameText,
@@ -286,7 +286,7 @@ describe("document check core functions", () => {
       { op: "replace", path: "/items/0/name", value: "Alpha" },
     ]);
 
-    expect(planDocumentDeleteTextCheck({
+    expect(planDocumentDeleteTextCapability({
       schema: Schema,
       state: initial,
       selection: selectedFirstNameText,
@@ -307,11 +307,11 @@ describe("document check core functions", () => {
     ]);
   });
 
-  test("plans move and duplicate checks from explicit state and selection source", () => {
+  test("plans move and duplicate capabilities from explicit state and selection source", () => {
     let moved: ReadonlyArray<JSONPatchOperation> | undefined;
     let duplicated: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentMoveCheck({
+    expect(planDocumentMoveCapability({
       schema: Schema,
       state: initial,
       target: "/items/1",
@@ -321,7 +321,7 @@ describe("document check core functions", () => {
       reason: "move source selection is empty",
     });
 
-    expect(planDocumentMoveCheck({
+    expect(planDocumentMoveCapability({
       schema: Schema,
       state: initial,
       selectionSource: "/items/0",
@@ -342,7 +342,7 @@ describe("document check core functions", () => {
       { op: "move", from: "/items/0", path: "/items/1" },
     ]);
 
-    expect(planDocumentDuplicateCheck({
+    expect(planDocumentDuplicateCapability({
       schema: Schema,
       state: initial,
     })).toEqual({
@@ -351,7 +351,7 @@ describe("document check core functions", () => {
       reason: "duplicate source selection is empty",
     });
 
-    expect(planDocumentDuplicateCheck({
+    expect(planDocumentDuplicateCapability({
       schema: Schema,
       state: initial,
       selectionSource: "/items/0",
@@ -372,10 +372,10 @@ describe("document check core functions", () => {
     ]);
   });
 
-  test("plans clipboard copy and cut checks from explicit state and selection source", () => {
+  test("plans clipboard copy and cut capabilities from explicit state and selection source", () => {
     let cutPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentCopyCheck({
+    expect(planDocumentCopyCapability({
       state: initial,
     })).toEqual({
       ok: false,
@@ -383,13 +383,13 @@ describe("document check core functions", () => {
       reason: "copy source selection is empty",
     });
 
-    expect(planDocumentCopyCheck({
+    expect(planDocumentCopyCapability({
       state: initial,
       selectionSource: "/items/0",
       stateJsonTrusted: true,
     })).toEqual({ ok: true });
 
-    expect(planDocumentCutCheck({
+    expect(planDocumentCutCapability({
       schema: Schema,
       state: initial,
     })).toEqual({
@@ -398,7 +398,7 @@ describe("document check core functions", () => {
       reason: "cut source selection is empty",
     });
 
-    expect(planDocumentCutCheck({
+    expect(planDocumentCutCapability({
       schema: Schema,
       state: initial,
       selectionSource: "/items/0",
@@ -425,21 +425,21 @@ describe("document check core functions", () => {
     const bad = () => "bad";
     const state = { items: [bad] };
 
-    expect(planDocumentCopyCheck({ state, source: "/items/0" })).toMatchObject({
+    expect(planDocumentCopyCapability({ state, source: "/items/0" })).toMatchObject({
       ok: false,
       code: "not_serializable",
     });
-    expect(planDocumentCopyCheck({
+    expect(planDocumentCopyCapability({
       state,
       source: "/items/0",
       stateJsonTrusted: true,
     })).toEqual({ ok: true });
 
-    expect(checkDocumentCopy({ schema: UnknownSchema, state }, "/items/0")).toMatchObject({
+    expect(canDocumentCopy({ schema: UnknownSchema, state }, "/items/0")).toMatchObject({
       ok: false,
       code: "not_serializable",
     });
-    expect(checkDocumentCopy({
+    expect(canDocumentCopy({
       schema: UnknownSchema,
       state,
       stateJsonTrusted: true,
@@ -447,7 +447,7 @@ describe("document check core functions", () => {
     expect(state.items[0]).toBe(bad);
   });
 
-  test("plans paste checks from explicit state, selection target, and preview trust", () => {
+  test("plans paste capabilities from explicit state, selection target, and preview trust", () => {
     let defaultPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
     let trustedPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
     const next = {
@@ -458,7 +458,7 @@ describe("document check core functions", () => {
       ],
     };
 
-    expect(planDocumentPasteCheck({
+    expect(planDocumentPasteCapability({
       schema: Schema,
       state: initial,
       payload: { id: "c", name: "C" },
@@ -468,7 +468,7 @@ describe("document check core functions", () => {
       reason: "paste target selection is empty",
     });
 
-    expect(planDocumentPasteCheck({
+    expect(planDocumentPasteCapability({
       schema: Schema,
       state: initial,
       payload: { id: "c", name: "C" },
@@ -497,9 +497,9 @@ describe("document check core functions", () => {
     ]);
   });
 
-  test("checks JSONPath syntax without any document state", () => {
-    expect(checkDocumentFind("$.items[*].id")).toEqual({ ok: true });
-    expect(checkDocumentFind("$.items[")).toMatchObject({
+  test("evaluates JSONPath syntax without any document state", () => {
+    expect(canDocumentFind("$.items[*].id")).toEqual({ ok: true });
+    expect(canDocumentFind("$.items[")).toMatchObject({
       ok: false,
       code: "syntax_error",
     });

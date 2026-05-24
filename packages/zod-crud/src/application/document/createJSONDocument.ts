@@ -3,7 +3,7 @@
 
 import type * as z from "zod";
 
-import { buildCheck, type CheckPasteExecutionOptions, type CheckResult } from "./check.js";
+import { buildDocumentCapabilities, type CapabilityPasteExecutionOptions, type CapabilityResult } from "./capability.js";
 import type {
   JSONPatchOperation,
   JSONResult,
@@ -33,11 +33,11 @@ import {
   type MutableHistoryStack,
 } from "../../foundation/history.js";
 import { INTERNAL_CLIPBOARD_PEEK, createClipboard, type ClipboardPeekResult, type ClipboardState } from "./clipboard.js";
-import { createJSON } from "./createJSON.js";
+import { createJSONState } from "./jsonState.js";
 import { buildReadFacade, type EntriesResult, type QueryResult, type ReadResult } from "./read.js";
 import { createSchemaState, type SchemaState } from "./schema.js";
 import { createSelection, type SelectionState, type UseSelectionOptions } from "./selection.js";
-import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/localPatch.js";
+import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/localSchemaValidation.js";
 import {
   duplicate as duplicateVerb,
   type DuplicateError,
@@ -48,8 +48,8 @@ import type { JSONCrudError } from "../../foundation/errors.js";
 import type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-  JSONOps,
-} from "./ops.js";
+  JSONStateOps,
+} from "./stateOps.js";
 
 export interface UseJSONDocumentOptions {
   strict?: boolean | undefined;
@@ -156,7 +156,7 @@ export interface DocumentCommitHistoryInput {
 }
 
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
-export type JSONCapabilityResult = CheckResult;
+export type JSONCapabilityResult = CapabilityResult;
 export type JSONDocumentDuplicateOptions = DuplicateOpts;
 export type JSONDocumentDuplicateResult<T> =
   | {
@@ -188,11 +188,11 @@ export interface PlanDocumentCanPasteInput<S extends z.ZodType> {
 export type DocumentCanPastePlan =
   | { kind: "result"; result: JSONCapabilityResult }
   | {
-      kind: "check";
+      kind: "capability";
       payload: unknown;
       target: JSONDocumentPasteTarget;
       options: JSONDocumentPasteOptions;
-      executionOptions: CheckPasteExecutionOptions;
+      executionOptions: CapabilityPasteExecutionOptions;
     };
 
 export interface PlanDocumentPatchCallInput {
@@ -598,7 +598,7 @@ export function createJSONDocument<S extends z.ZodType>(
   initial: z.input<S> | z.output<S>,
   options: UseJSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
-  const json = createJSON(schema, initial, options);
+  const json = createJSONState(schema, initial, options);
   const rawOps = json.ops;
   const historyLimit = options.history ?? 0;
   let stack: MutableHistoryStack<HistoryEntry> = emptyMutableHistory<HistoryEntry>();
@@ -903,7 +903,7 @@ export function createJSONDocument<S extends z.ZodType>(
         state: plan.state,
       });
       const r = applyPlan.kind === "patch"
-        ? rawOps.trustedPatch(applyPlan.patch)
+        ? rawOps.applyTrustedPatch(applyPlan.patch)
         : rawOps.trustedApply(applyPlan.state as z.output<S>, applyPlan.patch);
       completion = planDocumentHistoryRestoreCompletion({
         result: r,
@@ -928,7 +928,7 @@ export function createJSONDocument<S extends z.ZodType>(
     return true;
   };
 
-  const ops: JSONOps<z.output<S>> = {
+  const ops: JSONStateOps<z.output<S>> = {
     add: (path, value) => applyDocumentPatch([{ op: "add", path: path as Pointer, value }], undefined, true),
     remove: (path) => applyDocumentPatch([{ op: "remove", path: path as Pointer }], undefined, true),
     replace: (path, value) => applyDocumentPatch([{ op: "replace", path: path as Pointer, value }], undefined, true),
@@ -1070,7 +1070,7 @@ export function createJSONDocument<S extends z.ZodType>(
   const selectionRef = activeSelection
     ? { get current() { return activeSelection; } }
     : undefined;
-  const check = buildCheck({
+  const capabilities = buildDocumentCapabilities({
     schema,
     ops,
     previewPatch: rawOps.previewPatch,
@@ -1114,14 +1114,14 @@ export function createJSONDocument<S extends z.ZodType>(
     exists: read.exists,
     query: read.query,
     entries: read.entries,
-    canPatch: (operations) => check.patch(planDocumentPatchCall({ operations }).operations),
-    canFind: check.find,
-    canReplace: check.replace,
-    canRemove: check.remove,
-    canMove: check.move,
-    canDuplicate: check.duplicate,
-    canCopy: check.copy,
-    canCut: check.cut,
+    canPatch: (operations) => capabilities.patch(planDocumentPatchCall({ operations }).operations),
+    canFind: capabilities.find,
+    canReplace: capabilities.replace,
+    canRemove: capabilities.remove,
+    canMove: capabilities.move,
+    canDuplicate: capabilities.duplicate,
+    canCopy: capabilities.copy,
+    canCut: capabilities.cut,
     canPaste: (target, canPasteOptions) => {
       const plan = planDocumentCanPaste({
         schema,
@@ -1131,11 +1131,11 @@ export function createJSONDocument<S extends z.ZodType>(
         ...(canPasteOptions !== undefined ? { options: canPasteOptions } : {}),
       });
       if (plan.kind === "result") return plan.result;
-      return check.paste(plan.payload, plan.target, plan.options, plan.executionOptions);
+      return capabilities.paste(plan.payload, plan.target, plan.options, plan.executionOptions);
     },
-    canPastePayload: (target, payload, canPasteOptions) => check.paste(payload, target, canPasteOptions),
-    canUndo: () => check.undo,
-    canRedo: () => check.redo,
+    canPastePayload: (target, payload, canPasteOptions) => capabilities.paste(payload, target, canPasteOptions),
+    canUndo: () => capabilities.undo,
+    canRedo: () => capabilities.redo,
   };
 }
 
@@ -1158,7 +1158,7 @@ export function planDocumentCanPaste<S extends z.ZodType>(
   }
   const spread = input.options?.spread ?? ((read.sources?.length ?? 0) > 1);
   return {
-    kind: "check",
+    kind: "capability",
     payload: read.payload,
     target: input.target,
     options: { ...input.options, spread },

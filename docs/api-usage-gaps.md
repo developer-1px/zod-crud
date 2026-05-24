@@ -24,9 +24,9 @@ The package root currently exports:
 - public support types for the document facade: `UseJSONDocumentOptions`, `ClipboardState`, `SchemaState`, `ReadResult`, `QueryResult`, `EntriesResult`, clipboard option/result types, schema option/result types, and selection option/result types
 - React entrypoint: `zod-crud/react` exports `useJSONDocument`
 
-The root does not export `JSONOps`, `Check`, or command/can builder namespaces, and `JSONDocument<T>` does not expose `doc.ops`, `doc.commands`, or `doc.can`.
+The root does not export `JSONStateOps` or capability builder namespaces, and `JSONDocument<T>` does not expose `doc.ops`, `doc.commands`, or `doc.can`.
 
-Important boundary: `packages/zod-crud/src/application/document/ops.ts` defines a low-level ops facade internally, but it is not public package surface.
+Important boundary: `packages/zod-crud/src/application/document/stateOps.ts` defines a low-level ops facade internally, but it is not public package surface.
 
 Public contract is intentionally locked today:
 
@@ -38,10 +38,10 @@ Public contract is intentionally locked today:
 
 | Consumer | Import shape | Observed usage | API status |
 | --- | --- | --- | --- |
-| `../zod-admin-ui` | `useJSONDocument`, `JSONDocument`, `JSONOps` | Rebuilds `doc.ops` and `doc.commands` in `src/lib/bridge/zodCrudReactCompat.ts`; module-augments `zod-crud` in `src/types/zod-crud-compat.d.ts`; table/form code calls `doc.ops.*`, `doc.commands.*`, `doc.history.transaction`, `doc.clipboard.*`. | External adapter migration. This does not reopen the zod-crud 1.0 root contract. |
+| `../zod-admin-ui` | `useJSONDocument`, `JSONDocument`, `JSONStateOps` | Rebuilds `doc.ops` and `doc.commands` in `src/lib/bridge/zodCrudReactCompat.ts`; module-augments `zod-crud` in `src/types/zod-crud-compat.d.ts`; table/form code calls `doc.ops.*`, `doc.commands.*`, `doc.history.transaction`, `doc.clipboard.*`. | External adapter migration. This does not reopen the zod-crud 1.0 root contract. |
 | `../zod-admin-ui/packages/zod-admin-ui` | peer `zod-crud@^0.12.0`, public props typed as `JSONDocument<T>` | Package runtime calls `doc.ops.replace/add/remove`, `doc.commands.move/duplicate/copy/paste/undo/redo` from inside `createAutoForm` and `useNavigator`. | External packaging migration. The package needs its own compat adapter or a peer update, not a zod-crud root API expansion. |
 | `../editable/apps/composer-demo` | `useJSONDocument` | Calls `jd.ops.patch`, `jd.ops.load`, `jd.commands.undo`, `jd.commands.redo` in examples. | Legacy facade expectation. Keep it in app-side compatibility code. |
-| `../editable/packages/anyeditable` | `JSONPatchOperation`, `applyPatch` | Defines its own `JSONOps` as `{ apply(patches) }`; wraps user ops with synchronous local snapshot via `applyPatch`. | Not necessarily a core gap, but shows a need for a tiny patch-sink adapter type. |
+| `../editable/packages/anyeditable` | `JSONPatchOperation`, `applyPatch` | Defines its own `JSONStateOps` as `{ apply(patches) }`; wraps user ops with synchronous local snapshot via `applyPatch`. | Not necessarily a core gap, but shows a need for a tiny patch-sink adapter type. |
 | `../aria-kernel-apps/legacy/packages/editable-tree` | `useJSONDocument`, `JSONResult` from `zod-crud/react` | Uses `doc.ops.add/remove`, `doc.commands.replace/paste/move/undo/redo`, plus local clipboard state. | Legacy facade expectation. Also imports a type from the React entrypoint that is not exported there; migrate to root type imports or local compatibility types. |
 | `../aria-kernel-apps/legacy/apps/*`, `legacy/packages/slides` | `createJsonCrud`, `JsonCrud`, `JsonDoc`, `JsonValue` | Uses old graph-shaped CRUD API with `focusFilter`, `childKeys`, `defaultFor`; repo has `tooling/zod-crud-shim.ts` that stubs these names and throws. | Migration gap, not a candidate to restore wholesale unless a separate compat entrypoint is desired. |
 | `../nano-edit` | `createJSONDocument`, `JSONDocument`, pointer/selection types | Uses current document facade well: `history`, `selection`, `commit(...,{ selection })`, `lastPatch`, `mergeLast`. ProseMirror/Markdown adapters stay app-side. | Good current-API reference. Minor docs opportunity for editor adapter patterns. |
@@ -63,13 +63,13 @@ Priority: P2 for external adapter migration.
 Evidence:
 
 - `../zod-admin-ui/src/lib/bridge/zodCrudReactCompat.ts` creates `ops.add/remove/replace/move/copy/test/patch/load/reset/subscribe/state`.
-- `../zod-admin-ui/src/types/zod-crud-compat.d.ts` module-augments `zod-crud` to export `JSONOps<T>` and add `doc.ops`.
+- `../zod-admin-ui/src/types/zod-crud-compat.d.ts` module-augments `zod-crud` to export `JSONStateOps<T>` and add `doc.ops`.
 - `../spredsheet/src/sheet/useSheetDocument.ts` recreates a narrower `SheetOps`.
 - `../editable/apps/composer-demo` and `../aria-kernel-apps/legacy/packages/editable-tree` call `doc.ops.*`.
 
 Current state:
 
-- `JSONOps<T>` exists in `packages/zod-crud/src/application/document/ops.ts`.
+- `JSONStateOps<T>` exists in `packages/zod-crud/src/application/document/stateOps.ts`.
 - It is not exported from `packages/zod-crud/src/index.ts`.
 - `createJSONDocument` builds an internal `ops` object but does not attach it to `JSONDocument<T>`.
 
@@ -302,13 +302,13 @@ Priority: P3
 
 Evidence:
 
-- `../editable/packages/anyeditable` defines a local `JSONOps` as `{ apply(patches) }`.
+- `../editable/packages/anyeditable` defines a local `JSONStateOps` as `{ apply(patches) }`.
 - `../editable/packages/anyeditable/src/composer/syncDocOps.ts` wraps that sink with a synchronous local snapshot before forwarding to the user setter.
 
 Assessment:
 
 - `JSONPatchOperation` and `applyPatch` already fit the data contract.
-- A tiny exported `JSONPatchSink` or docs recipe could reduce local naming drift, but this should not be confused with the richer internal `JSONOps<T>`.
+- A tiny exported `JSONPatchSink` or docs recipe could reduce local naming drift, but this should not be confused with the richer internal `JSONStateOps<T>`.
 
 ## Positive References
 

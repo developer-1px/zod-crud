@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  checkDocumentSchemaAccepts,
+  canDocumentSchemaAccepts,
   describeDocumentSchema,
   planDocumentSchemaAcceptsResult,
   planDocumentSchemaResolution,
@@ -74,10 +74,10 @@ describe("document schema core functions", () => {
   });
 
   test("checks whether a schema path accepts a value", () => {
-    expect(checkDocumentSchemaAccepts(context, "/title", "final")).toEqual({ ok: true });
-    expect(checkDocumentSchemaAccepts(context, "/items", { id: "b", done: true }, "insert")).toEqual({ ok: true });
+    expect(canDocumentSchemaAccepts(context, "/title", "final")).toEqual({ ok: true });
+    expect(canDocumentSchemaAccepts(context, "/items", { id: "b", done: true }, "insert")).toEqual({ ok: true });
 
-    const failed = checkDocumentSchemaAccepts(context, "/items", { id: "b" }, "insert");
+    const failed = canDocumentSchemaAccepts(context, "/items", { id: "b" }, "insert");
 
     expect(failed).toMatchObject({ ok: false, code: "schema_violation" });
     if (!failed.ok) {
@@ -166,7 +166,7 @@ describe("document schema core functions", () => {
       reason: "schema path not found: /missing",
       pointer: "/missing",
     });
-    expect(checkDocumentSchemaAccepts(context, "title", "final")).toEqual({
+    expect(canDocumentSchemaAccepts(context, "title", "final")).toEqual({
       ok: false,
       code: "invalid_pointer",
       reason: "invalid schema pointer: title",

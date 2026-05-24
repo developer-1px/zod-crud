@@ -1,7 +1,7 @@
-// jsonOps — internal boundary type. Low-level state producers and document
+// JSONStateOps — internal boundary type. Low-level state producers and document
 // feature modules share this contract without exposing it as public API.
 //
-// JSONOps<T>: low-level JSON operation 표면. RFC 6902 6 op + lifecycle + pub/sub.
+// JSONStateOps<T>: low-level JSON operation 표면. RFC 6902 6 op + lifecycle + pub/sub.
 
 import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
 import type { SelectionSnap } from "../../domain/selection/index.js";
@@ -18,7 +18,7 @@ export interface JSONChangeMetadata extends HistoryTransactionOptions {
   selectionAfter?: SelectionSnap;
 }
 
-export interface JSONOps<T> {
+export interface JSONStateOps<T> {
   add<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
   remove<P extends PointerOf<T>>(path: P): JSONResult;
   replace<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;

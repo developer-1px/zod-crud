@@ -9,7 +9,7 @@ export { JSONCrudError } from "./foundation/errors.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "./application/document/ops.js";
+} from "./application/document/stateOps.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./application/document/createJSONDocument.js";
@@ -64,7 +64,7 @@ export type {
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/json-patch/index.js";
-export { applyPatchToTrustedState } from "./application/trustedPatch.js";
+export { applyPatchToTrustedState } from "./application/trustedStatePatch.js";
 export type {
   JSONPatchOperation,
   JSONResult,

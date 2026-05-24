@@ -3,13 +3,13 @@ import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation, ErrorCode } from "../../foundation/json-patch/index.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
-import type { PointerSourceError } from "../../foundation/json-pointer/sourceSet.js";
+import type { PointerSourceError } from "../../foundation/json-pointer/pointerSource.js";
 import {
-  preFlight,
-  preFlightFromApplyResult,
-  type PreFlightErrorCode,
-} from "../../domain/schema/preFlight.js";
-import type { HistoryTransactionOptions, JSONOps } from "./ops.js";
+  patchPreflight,
+  patchPreflightFromApplyResult,
+  type PatchPreflightErrorCode,
+} from "../../domain/schema/patchPreflight.js";
+import type { HistoryTransactionOptions, JSONStateOps } from "./stateOps.js";
 import { copy, type ClipboardSource } from "../../domain/verbs/copy.js";
 import { cut } from "../../domain/verbs/cut.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "../../domain/verbs/duplicate.js";
@@ -37,9 +37,9 @@ import {
 } from "../../domain/selection/index.js";
 import { JSONPathSyntaxError, parse as parseJSONPath } from "../../foundation/jsonpath/index.js";
 
-type CheckErrorCode =
+type CapabilityErrorCode =
   | ErrorCode
-  | PreFlightErrorCode
+  | PatchPreflightErrorCode
   | SelectionTextEditErrorCode
   | "du_branch_mismatch"
   | "rekey_failed"
@@ -54,62 +54,62 @@ type CheckErrorCode =
   | "apply_failed"
   | "empty_clipboard";
 
-interface CheckViolation {
+interface CapabilityViolation {
   path: string;
   message: string;
 }
 
-export type CheckResult =
+export type CapabilityResult =
   | { ok: true }
   | {
       ok: false;
-      code: CheckErrorCode;
+      code: CapabilityErrorCode;
       reason?: string;
       pointer?: Pointer;
-      violations?: ReadonlyArray<CheckViolation>;
+      violations?: ReadonlyArray<CapabilityViolation>;
     };
 
-interface Check {
-  selectScope(options?: SelectionScopeOptions): CheckResult;
-  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
-  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CheckResult;
-  find(jsonpath: string): CheckResult;
-  move(fromOrTo: Pointer, to?: Pointer): CheckResult;
-  duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CheckResult;
-  remove(source?: SelectionSource): CheckResult;
-  replace(pathOrValue: Pointer | unknown, value?: unknown): CheckResult;
-  replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CheckResult;
-  deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CheckResult;
-  cut(source?: ClipboardSource): CheckResult;
-  copy(source?: ClipboardSource): CheckResult;
+interface DocumentCapabilities {
+  selectScope(options?: SelectionScopeOptions): CapabilityResult;
+  moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CapabilityResult;
+  extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CapabilityResult;
+  find(jsonpath: string): CapabilityResult;
+  move(fromOrTo: Pointer, to?: Pointer): CapabilityResult;
+  duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CapabilityResult;
+  remove(source?: SelectionSource): CapabilityResult;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): CapabilityResult;
+  replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CapabilityResult;
+  deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CapabilityResult;
+  cut(source?: ClipboardSource): CapabilityResult;
+  copy(source?: ClipboardSource): CapabilityResult;
   paste(
     payload: unknown,
     target?: PasteTarget,
     options?: PasteOptions,
-    executionOptions?: CheckPasteExecutionOptions,
-  ): CheckResult;
-  patch(ops: ReadonlyArray<JSONPatchOperation>): CheckResult;
+    executionOptions?: CapabilityPasteExecutionOptions,
+  ): CapabilityResult;
+  patch(ops: ReadonlyArray<JSONPatchOperation>): CapabilityResult;
 
-  readonly undo: CheckResult;
-  readonly redo: CheckResult;
+  readonly undo: CapabilityResult;
+  readonly redo: CapabilityResult;
 }
 
-interface CheckHistoryControls {
+interface CapabilityHistoryControls {
   canUndo(): boolean;
   canRedo(): boolean;
 }
 
-interface BuildCheckArgs<S extends z.ZodType> {
+interface BuildDocumentCapabilitiesArgs<S extends z.ZodType> {
   schema: S;
-  ops: JSONOps<z.output<S>>;
+  ops: JSONStateOps<z.output<S>>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   getStateJsonTrusted?: () => boolean;
-  history: CheckHistoryControls;
+  history: CapabilityHistoryControls;
   selectionRef?: { current: SelectionSnap };
 }
 
-export interface DocumentCheckContext<S extends z.ZodType> {
+export interface DocumentCapabilityContext<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   selection?: SelectionSnap;
@@ -118,18 +118,18 @@ export interface DocumentCheckContext<S extends z.ZodType> {
   stateJsonTrusted?: boolean;
 }
 
-export interface CheckPasteExecutionOptions {
+export interface CapabilityPasteExecutionOptions {
   trustedPayload?: boolean;
 }
 
-export interface PlanDocumentPatchCheckInput<S extends z.ZodType> {
+export interface PlanDocumentPatchCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   operations: ReadonlyArray<JSONPatchOperation>;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentRemoveCheckInput<S extends z.ZodType> {
+export interface PlanDocumentRemoveCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   source?: SelectionSource;
@@ -137,7 +137,7 @@ export interface PlanDocumentRemoveCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentReplaceCheckInput<S extends z.ZodType> {
+export interface PlanDocumentReplaceCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   value: unknown;
@@ -154,7 +154,7 @@ export interface PlanDocumentReplaceArgsInput {
 
 export type DocumentReplaceArgsPlan = { target?: Pointer; value: unknown };
 
-export interface PlanDocumentReplaceTextCheckInput<S extends z.ZodType> {
+export interface PlanDocumentReplaceTextCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   selection: SelectionSnap;
@@ -163,7 +163,7 @@ export interface PlanDocumentReplaceTextCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentDeleteTextCheckInput<S extends z.ZodType> {
+export interface PlanDocumentDeleteTextCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   selection: SelectionSnap;
@@ -171,7 +171,7 @@ export interface PlanDocumentDeleteTextCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentMoveCheckInput<S extends z.ZodType> {
+export interface PlanDocumentMoveCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   target: Pointer;
@@ -180,7 +180,7 @@ export interface PlanDocumentMoveCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentDuplicateCheckInput<S extends z.ZodType> {
+export interface PlanDocumentDuplicateCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   source?: Pointer;
@@ -190,14 +190,14 @@ export interface PlanDocumentDuplicateCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentCopyCheckInput {
+export interface PlanDocumentCopyCapabilityInput {
   state: unknown;
   source?: ClipboardSource;
   selectionSource?: ClipboardSource | null;
   stateJsonTrusted?: boolean;
 }
 
-export interface PlanDocumentCutCheckInput<S extends z.ZodType> {
+export interface PlanDocumentCutCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   source?: ClipboardSource;
@@ -206,7 +206,7 @@ export interface PlanDocumentCutCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
+export interface PlanDocumentPasteCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   payload: unknown;
@@ -218,25 +218,25 @@ export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export type DocumentCheckableResult =
+export type DocumentCapabilitySourceResult =
   | { ok: true }
   | {
       ok: false;
-      code: CheckErrorCode;
+      code: CapabilityErrorCode;
       message?: string;
       reason?: string;
       pointer?: Pointer | null;
-      violations?: ReadonlyArray<CheckViolation>;
+      violations?: ReadonlyArray<CapabilityViolation>;
     };
 
-const OK: CheckResult = { ok: true };
+const OK: CapabilityResult = { ok: true };
 
-export function buildCheck<S extends z.ZodType>(
-  args: BuildCheckArgs<S>,
-): Check {
+export function buildDocumentCapabilities<S extends z.ZodType>(
+  args: BuildDocumentCapabilitiesArgs<S>,
+): DocumentCapabilities {
   const { schema, ops, previewPatch, previewTrustedValuesPatch, getStateJsonTrusted, history, selectionRef } = args;
-  const context = (): DocumentCheckContext<S> => {
-    const current: DocumentCheckContext<S> = {
+  const context = (): DocumentCapabilityContext<S> => {
+    const current: DocumentCapabilityContext<S> = {
       schema,
       state: ops.state,
       stateJsonTrusted: getStateJsonTrusted?.() === true,
@@ -249,46 +249,46 @@ export function buildCheck<S extends z.ZodType>(
 
   return {
     selectScope(options) {
-      return checkDocumentSelectScope(context(), options);
+      return canDocumentSelectScope(context(), options);
     },
     moveCursor(direction, options) {
-      return checkDocumentMoveCursor(context(), direction, options);
+      return canDocumentMoveCursor(context(), direction, options);
     },
     extendCursor(direction, options) {
-      return checkDocumentExtendCursor(context(), direction, options);
+      return canDocumentExtendCursor(context(), direction, options);
     },
     find(jsonpath) {
-      return checkDocumentFind(jsonpath);
+      return canDocumentFind(jsonpath);
     },
     move(fromOrTo, maybeTo) {
-      return checkDocumentMove(context(), fromOrTo, maybeTo, arguments.length >= 2);
+      return canDocumentMove(context(), fromOrTo, maybeTo, arguments.length >= 2);
     },
     duplicate(sourceOrOpts, opts) {
-      return checkDocumentDuplicate(context(), sourceOrOpts, opts);
+      return canDocumentDuplicate(context(), sourceOrOpts, opts);
     },
     remove(source) {
-      return checkDocumentRemove(context(), source);
+      return canDocumentRemove(context(), source);
     },
     replace(pathOrValue, maybeValue) {
-      return checkDocumentReplace(context(), pathOrValue, maybeValue, arguments.length >= 2);
+      return canDocumentReplace(context(), pathOrValue, maybeValue, arguments.length >= 2);
     },
     replaceText(replacement, textOptions) {
-      return checkDocumentReplaceText(context(), replacement, textOptions);
+      return canDocumentReplaceText(context(), replacement, textOptions);
     },
     deleteText(textOptions) {
-      return checkDocumentDeleteText(context(), textOptions);
+      return canDocumentDeleteText(context(), textOptions);
     },
     cut(source) {
-      return checkDocumentCut(context(), source);
+      return canDocumentCut(context(), source);
     },
     copy(source) {
-      return checkDocumentCopy(context(), source);
+      return canDocumentCopy(context(), source);
     },
     paste(payload, target, options, executionOptions) {
-      return checkDocumentPaste(context(), payload, target, options, executionOptions);
+      return canDocumentPaste(context(), payload, target, options, executionOptions);
     },
     patch(operations) {
-      return checkDocumentPatch(context(), operations);
+      return canDocumentPatch(context(), operations);
     },
 
     get undo() {
@@ -300,30 +300,30 @@ export function buildCheck<S extends z.ZodType>(
   };
 }
 
-export function checkDocumentSelectScope<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentSelectScope<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   options?: SelectionScopeOptions,
-): CheckResult {
-  return planDocumentCheckResult(resolveSelectionScope(context.state, options));
+): CapabilityResult {
+  return planDocumentCapabilityResult(resolveSelectionScope(context.state, options));
 }
 
-export function checkDocumentMoveCursor<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentMoveCursor<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   direction: SelectionCursorDirection,
   options?: SelectionCursorOptions,
-): CheckResult {
-  return planDocumentCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
+): CapabilityResult {
+  return planDocumentCapabilityResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
 }
 
-export function checkDocumentExtendCursor<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentExtendCursor<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   direction: SelectionCursorDirection,
   options?: SelectionCursorOptions,
-): CheckResult {
-  return planDocumentCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
+): CapabilityResult {
+  return planDocumentCapabilityResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
 }
 
-export function checkDocumentFind(jsonpath: string): CheckResult {
+export function canDocumentFind(jsonpath: string): CapabilityResult {
   try {
     parseJSONPath(jsonpath);
     return OK;
@@ -335,14 +335,14 @@ export function checkDocumentFind(jsonpath: string): CheckResult {
   }
 }
 
-export function checkDocumentMove<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentMove<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   fromOrTo: Pointer,
   maybeTo?: Pointer,
   hasToArg = arguments.length >= 3,
-): CheckResult {
+): CapabilityResult {
   const args = resolveMoveArgs(fromOrTo, maybeTo, hasToArg);
-  return planDocumentMoveCheck({
+  return planDocumentMoveCapability({
     schema: context.schema,
     state: context.state,
     target: args.to,
@@ -352,24 +352,24 @@ export function checkDocumentMove<S extends z.ZodType>(
   });
 }
 
-export function planDocumentMoveCheck<S extends z.ZodType>(
-  input: PlanDocumentMoveCheckInput<S>,
-): CheckResult {
+export function planDocumentMoveCapability<S extends z.ZodType>(
+  input: PlanDocumentMoveCapabilityInput<S>,
+): CapabilityResult {
   const source = input.source ?? input.selectionSource ?? null;
   return source === null
     ? emptySelection("move source selection is empty")
-    : planDocumentCheckResult(moveVerb(input.schema, input.state, source, input.target, {
+    : planDocumentCapabilityResult(moveVerb(input.schema, input.state, source, input.target, {
         previewPatch: input.previewPatch,
       }));
 }
 
-export function checkDocumentDuplicate<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentDuplicate<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   sourceOrOpts?: Pointer | DuplicateOpts,
   opts?: DuplicateOpts,
-): CheckResult {
+): CapabilityResult {
   const args = resolveDuplicateArgs(sourceOrOpts, opts);
-  return planDocumentDuplicateCheck({
+  return planDocumentDuplicateCapability({
     schema: context.schema,
     state: context.state,
     selectionSource: primaryPointer(selectionState(context)),
@@ -380,23 +380,23 @@ export function checkDocumentDuplicate<S extends z.ZodType>(
   });
 }
 
-export function planDocumentDuplicateCheck<S extends z.ZodType>(
-  input: PlanDocumentDuplicateCheckInput<S>,
-): CheckResult {
+export function planDocumentDuplicateCapability<S extends z.ZodType>(
+  input: PlanDocumentDuplicateCapabilityInput<S>,
+): CapabilityResult {
   const source = input.source ?? input.selectionSource ?? null;
   return source === null
     ? emptySelection("duplicate source selection is empty")
-    : planDocumentCheckResult(duplicate(input.schema, input.state, source, input.options, {
+    : planDocumentCapabilityResult(duplicate(input.schema, input.state, source, input.options, {
         previewPatch: input.previewPatch,
         trustedPayload: input.stateJsonTrusted === true,
       }));
 }
 
-export function checkDocumentRemove<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentRemove<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   source?: SelectionSource,
-): CheckResult {
-  return planDocumentRemoveCheck({
+): CapabilityResult {
+  return planDocumentRemoveCapability({
     schema: context.schema,
     state: context.state,
     selectionSource: selectedSource(selectionState(context)),
@@ -405,34 +405,34 @@ export function checkDocumentRemove<S extends z.ZodType>(
   });
 }
 
-export function planDocumentRemoveCheck<S extends z.ZodType>(
-  input: PlanDocumentRemoveCheckInput<S>,
-): CheckResult {
+export function planDocumentRemoveCapability<S extends z.ZodType>(
+  input: PlanDocumentRemoveCapabilityInput<S>,
+): CapabilityResult {
   const resolved = input.source ?? input.selectionSource ?? null;
   if (resolved === null) return emptySelection("remove source selection is empty");
   const planned = removeSourcesPatch(resolved);
   return planned.ok
-    ? planDocumentPatchCheck({
+    ? planDocumentPatchCapability({
         schema: input.schema,
         state: input.state,
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : planDocumentCheckResult(pointerSourceCheckError(planned, "remove"));
+    : planDocumentCapabilityResult(pointerSourceCapabilityError(planned, "remove"));
 }
 
-export function checkDocumentReplace<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentReplace<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   pathOrValue: Pointer | unknown,
   maybeValue?: unknown,
   hasValueArg = arguments.length >= 3,
-): CheckResult {
+): CapabilityResult {
   const args = planDocumentReplaceArgs({
     pathOrValue,
     value: maybeValue,
     hasValueArg,
   });
-  return planDocumentReplaceCheck({
+  return planDocumentReplaceCapability({
     schema: context.schema,
     state: context.state,
     value: args.value,
@@ -442,18 +442,18 @@ export function checkDocumentReplace<S extends z.ZodType>(
   });
 }
 
-export function planDocumentReplaceCheck<S extends z.ZodType>(
-  input: PlanDocumentReplaceCheckInput<S>,
-): CheckResult {
+export function planDocumentReplaceCapability<S extends z.ZodType>(
+  input: PlanDocumentReplaceCapabilityInput<S>,
+): CapabilityResult {
   if (input.target !== undefined && isDocumentJSONPathTarget(input.target)) {
-    return planDocumentCheckResult(replaceVerb(input.schema, input.state, input.target, input.value, {
+    return planDocumentCapabilityResult(replaceVerb(input.schema, input.state, input.target, input.value, {
       previewPatch: input.previewPatch,
     }));
   }
   const target = input.target ?? input.selectionTarget ?? null;
   return target === null
     ? emptySelection("replace target selection is empty")
-    : planDocumentPatchCheck({
+    : planDocumentPatchCapability({
         schema: input.schema,
         state: input.state,
         operations: [{ op: "replace", path: target, value: input.value }],
@@ -461,12 +461,12 @@ export function planDocumentReplaceCheck<S extends z.ZodType>(
       });
 }
 
-export function checkDocumentReplaceText<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentReplaceText<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   replacement: string,
   textOptions?: SelectionTextEditOptions & HistoryTransactionOptions,
-): CheckResult {
-  return planDocumentReplaceTextCheck({
+): CapabilityResult {
+  return planDocumentReplaceTextCapability({
     schema: context.schema,
     state: context.state,
     selection: selectionState(context),
@@ -476,25 +476,25 @@ export function checkDocumentReplaceText<S extends z.ZodType>(
   });
 }
 
-export function planDocumentReplaceTextCheck<S extends z.ZodType>(
-  input: PlanDocumentReplaceTextCheckInput<S>,
-): CheckResult {
+export function planDocumentReplaceTextCapability<S extends z.ZodType>(
+  input: PlanDocumentReplaceTextCapabilityInput<S>,
+): CapabilityResult {
   const planned = replaceSelectionText(input.selection, input.state, input.replacement, input.options);
   return planned.ok
-    ? planDocumentPatchCheck({
+    ? planDocumentPatchCapability({
         schema: input.schema,
         state: input.state,
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : planDocumentCheckResult(planned);
+    : planDocumentCapabilityResult(planned);
 }
 
-export function checkDocumentDeleteText<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentDeleteText<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   textOptions?: SelectionTextDeleteOptions & HistoryTransactionOptions,
-): CheckResult {
-  return planDocumentDeleteTextCheck({
+): CapabilityResult {
+  return planDocumentDeleteTextCapability({
     schema: context.schema,
     state: context.state,
     selection: selectionState(context),
@@ -503,25 +503,25 @@ export function checkDocumentDeleteText<S extends z.ZodType>(
   });
 }
 
-export function planDocumentDeleteTextCheck<S extends z.ZodType>(
-  input: PlanDocumentDeleteTextCheckInput<S>,
-): CheckResult {
+export function planDocumentDeleteTextCapability<S extends z.ZodType>(
+  input: PlanDocumentDeleteTextCapabilityInput<S>,
+): CapabilityResult {
   const planned = deleteSelectionText(input.selection, input.state, input.options);
   return planned.ok
-    ? planDocumentPatchCheck({
+    ? planDocumentPatchCapability({
         schema: input.schema,
         state: input.state,
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : planDocumentCheckResult(planned);
+    : planDocumentCapabilityResult(planned);
 }
 
-export function checkDocumentCut<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentCut<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   source?: ClipboardSource,
-): CheckResult {
-  return planDocumentCutCheck({
+): CapabilityResult {
+  return planDocumentCutCapability({
     schema: context.schema,
     state: context.state,
     selectionSource: selectedSource(selectionState(context)),
@@ -531,24 +531,24 @@ export function checkDocumentCut<S extends z.ZodType>(
   });
 }
 
-export function planDocumentCutCheck<S extends z.ZodType>(
-  input: PlanDocumentCutCheckInput<S>,
-): CheckResult {
+export function planDocumentCutCapability<S extends z.ZodType>(
+  input: PlanDocumentCutCapabilityInput<S>,
+): CapabilityResult {
   const resolved = input.source ?? input.selectionSource ?? null;
   return resolved === null
     ? emptySelection("cut source selection is empty")
-    : planDocumentCheckResult(cut(input.schema, input.state, resolved, {
+    : planDocumentCapabilityResult(cut(input.schema, input.state, resolved, {
         trusted: input.stateJsonTrusted === true,
         clonePayload: false,
         previewPatch: input.previewPatch,
       }));
 }
 
-export function checkDocumentCopy<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentCopy<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   source?: ClipboardSource,
-): CheckResult {
-  return planDocumentCopyCheck({
+): CapabilityResult {
+  return planDocumentCopyCapability({
     state: context.state,
     selectionSource: selectedSource(selectionState(context)),
     stateJsonTrusted: trustedState(context),
@@ -556,26 +556,26 @@ export function checkDocumentCopy<S extends z.ZodType>(
   });
 }
 
-export function planDocumentCopyCheck(
-  input: PlanDocumentCopyCheckInput,
-): CheckResult {
+export function planDocumentCopyCapability(
+  input: PlanDocumentCopyCapabilityInput,
+): CapabilityResult {
   const resolved = input.source ?? input.selectionSource ?? null;
   return resolved === null
     ? emptySelection("copy source selection is empty")
-    : planDocumentCheckResult(copy(input.state, resolved, {
+    : planDocumentCapabilityResult(copy(input.state, resolved, {
         trusted: input.stateJsonTrusted === true,
         clonePayload: false,
       }));
 }
 
-export function checkDocumentPaste<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentPaste<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   payload: unknown,
   target?: PasteTarget,
   options?: PasteOptions,
-  executionOptions?: CheckPasteExecutionOptions,
-): CheckResult {
-  return planDocumentPasteCheck({
+  executionOptions?: CapabilityPasteExecutionOptions,
+): CapabilityResult {
+  return planDocumentPasteCapability({
     schema: context.schema,
     state: context.state,
     payload,
@@ -588,9 +588,9 @@ export function checkDocumentPaste<S extends z.ZodType>(
   });
 }
 
-export function planDocumentPasteCheck<S extends z.ZodType>(
-  input: PlanDocumentPasteCheckInput<S>,
-): CheckResult {
+export function planDocumentPasteCapability<S extends z.ZodType>(
+  input: PlanDocumentPasteCapabilityInput<S>,
+): CapabilityResult {
   const args = resolvePasteArgs(input.target, input.options);
   const resolvedTarget = args.target ?? input.selectionTarget ?? null;
   const inputTrustedPayload = input.trustedPayload === true
@@ -602,18 +602,18 @@ export function planDocumentPasteCheck<S extends z.ZodType>(
     : input.previewPatch;
   return resolvedTarget === null
     ? emptySelection("paste target selection is empty")
-    : planDocumentCheckResult(paste(input.schema, input.state, input.payload, resolvedTarget, args.mode, {
+    : planDocumentCapabilityResult(paste(input.schema, input.state, input.payload, resolvedTarget, args.mode, {
         ...args.options,
         previewPatch: pastePreview,
         trustedPayload: inputTrustedPayload,
       }));
 }
 
-export function checkDocumentPatch<S extends z.ZodType>(
-  context: DocumentCheckContext<S>,
+export function canDocumentPatch<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
   operations: ReadonlyArray<JSONPatchOperation>,
-): CheckResult {
-  return planDocumentPatchCheck({
+): CapabilityResult {
+  return planDocumentPatchCapability({
     schema: context.schema,
     state: context.state,
     operations,
@@ -621,27 +621,27 @@ export function checkDocumentPatch<S extends z.ZodType>(
   });
 }
 
-export function planDocumentPatchCheck<S extends z.ZodType>(
-  input: PlanDocumentPatchCheckInput<S>,
-): CheckResult {
+export function planDocumentPatchCapability<S extends z.ZodType>(
+  input: PlanDocumentPatchCapabilityInput<S>,
+): CapabilityResult {
   const result = input.previewPatch
-    ? preFlightFromApplyResult(input.previewPatch(input.operations))
-    : preFlight(input.schema, input.state, input.operations);
-  return planDocumentCheckResult(result);
+    ? patchPreflightFromApplyResult(input.previewPatch(input.operations))
+    : patchPreflight(input.schema, input.state, input.operations);
+  return planDocumentCapabilityResult(result);
 }
 
-function trustedState<S extends z.ZodType>(context: DocumentCheckContext<S>): boolean {
+function trustedState<S extends z.ZodType>(context: DocumentCapabilityContext<S>): boolean {
   return context.stateJsonTrusted === true;
 }
 
-function selectionState<S extends z.ZodType>(context: DocumentCheckContext<S>): SelectionSnap {
+function selectionState<S extends z.ZodType>(context: DocumentCapabilityContext<S>): SelectionSnap {
   return context.selection ?? EMPTY_SELECTION;
 }
 
-export function planDocumentCheckResult(result: DocumentCheckableResult): CheckResult {
+export function planDocumentCapabilityResult(result: DocumentCapabilitySourceResult): CapabilityResult {
   if (result.ok) return OK;
 
-  const out: Extract<CheckResult, { ok: false }> = {
+  const out: Extract<CapabilityResult, { ok: false }> = {
     ok: false,
     code: result.code,
   };
@@ -652,7 +652,7 @@ export function planDocumentCheckResult(result: DocumentCheckableResult): CheckR
   return out;
 }
 
-function emptyStack(kind: "undo" | "redo"): CheckResult {
+function emptyStack(kind: "undo" | "redo"): CapabilityResult {
   return {
     ok: false,
     code: "empty_stack",
@@ -660,7 +660,7 @@ function emptyStack(kind: "undo" | "redo"): CheckResult {
   };
 }
 
-function emptySelection(reason: string): CheckResult {
+function emptySelection(reason: string): CapabilityResult {
   return {
     ok: false,
     code: "empty_selection",
@@ -668,7 +668,7 @@ function emptySelection(reason: string): CheckResult {
   };
 }
 
-function pointerSourceCheckError(error: PointerSourceError, label: string): DocumentCheckableResult {
+function pointerSourceCapabilityError(error: PointerSourceError, label: string): DocumentCapabilitySourceResult {
   return error.code === "invalid_pointer"
     ? { ok: false, code: "invalid_pointer", reason: `invalid ${label} source pointer: ${error.pointer}`, pointer: error.pointer }
     : { ok: false, code: "empty_selection", reason: `${label} source selection is empty` };

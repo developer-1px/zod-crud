@@ -62,7 +62,7 @@ describe("document canPaste core planning", () => {
     });
   });
 
-  test("accepts trusted same-source replace checks without schema preview work", () => {
+  test("accepts trusted same-source replace capabilities without schema preview work", () => {
     const clipboard = clipboardWithData();
 
     expect(canTrustSameSourceReplaceCanPaste(
@@ -82,7 +82,7 @@ describe("document canPaste core planning", () => {
     });
   });
 
-  test("falls back to check planning when same-source replace trust does not apply", () => {
+  test("falls back to capability planning when same-source replace trust does not apply", () => {
     const clipboard = clipboardWithData();
 
     expect(planDocumentCanPaste({
@@ -91,7 +91,7 @@ describe("document canPaste core planning", () => {
       clipboard,
       target: "/items/-",
     })).toEqual({
-      kind: "check",
+      kind: "capability",
       payload: initial.items[0],
       target: "/items/-",
       options: { spread: false },
@@ -99,7 +99,7 @@ describe("document canPaste core planning", () => {
     });
   });
 
-  test("defaults multi-source clipboard checks to spread paste", () => {
+  test("defaults multi-source clipboard capabilities to spread paste", () => {
     const payload = [initial.items[0], initial.items[1]];
     const clipboard = clipboardWithData({
       payload,
@@ -113,7 +113,7 @@ describe("document canPaste core planning", () => {
       clipboard,
       target: "/items/-",
     })).toEqual({
-      kind: "check",
+      kind: "capability",
       payload,
       target: "/items/-",
       options: { spread: true },
@@ -126,7 +126,7 @@ describe("document canPaste core planning", () => {
       target: "/items/-",
       options: { spread: false },
     })).toMatchObject({
-      kind: "check",
+      kind: "capability",
       options: { spread: false },
     });
   });
@@ -141,7 +141,7 @@ describe("document canPaste core planning", () => {
       target: { replace: "/items/0" },
       options: { rekey: { fields: ["id"], strategy: "suffix" } },
     })).toMatchObject({
-      kind: "check",
+      kind: "capability",
       options: {
         rekey: { fields: ["id"], strategy: "suffix" },
         spread: false,

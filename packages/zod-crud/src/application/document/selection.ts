@@ -1,7 +1,7 @@
 // Headless selection state facade.
 // React hook and JSONDocument use this same implementation.
 
-import type { JSONChangeMetadata, JSONOps } from "./ops.js";
+import type { JSONChangeMetadata, JSONStateOps } from "./stateOps.js";
 import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { jsonEqual } from "../../foundation/json.js";
@@ -206,7 +206,7 @@ export function selectionSelectRangesAction(
 }
 
 export function createSelection<T>(
-  ops: JSONOps<T>,
+  ops: JSONStateOps<T>,
   options: CreateSelectionOptions = {},
 ): HeadlessSelectionState {
   const mode: SelectionMode = options.mode ?? "single";

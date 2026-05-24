@@ -5,7 +5,7 @@
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
 import { readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
-import { normalizePointerSources, type PointerSource, type PointerSourceError } from "../../foundation/json-pointer/sourceSet.js";
+import { normalizePointerSources, type PointerSource, type PointerSourceError } from "../../foundation/json-pointer/pointerSource.js";
 
 export interface CopyOk {
   ok: true;
