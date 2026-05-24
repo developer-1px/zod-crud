@@ -2060,7 +2060,9 @@ export function replaceValueAtSegments(
     value,
   );
   if (child === null) return null;
-  return { ...(current as Record<string, unknown>), [segment]: child };
+  const next = { ...(current as Record<string, unknown>) };
+  writeObjectDataValue(next, segment, child);
+  return next;
 }
 
 export function acceptsKnownJsonValue(schema: z.ZodType, value: unknown): boolean {
