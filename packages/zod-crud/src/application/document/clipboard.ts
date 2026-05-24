@@ -131,6 +131,13 @@ export interface ClipboardPastePlanContext<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface ClipboardSchemaTrustedPayloadInput {
+  state: unknown;
+  stateJsonTrusted: boolean;
+  payload: unknown;
+  sources: ReadonlyArray<Pointer> | null;
+}
+
 export type ClipboardCutPlanResult<T> =
   | {
       ok: true;
@@ -271,6 +278,32 @@ export function planClipboardWriteSources(
   };
 }
 
+export function isClipboardSchemaTrustedPayload(
+  input: ClipboardSchemaTrustedPayloadInput,
+): boolean {
+  if (!input.stateJsonTrusted) return false;
+  const { state, payload, sources } = input;
+  if (payload === state) return true;
+  const isSourcePayload = (source: Pointer): boolean => {
+    const segments = tryParsePointer(source);
+    if (segments === null) return false;
+    const value = readAt(state, segments);
+    return value.ok && value.value === payload;
+  };
+  for (const source of sources ?? []) {
+    if (isSourcePayload(source)) return true;
+  }
+  if (state !== null && typeof state === "object" && !Array.isArray(state)) {
+    for (const key in state as Record<string, unknown>) {
+      if (Object.prototype.hasOwnProperty.call(state, key)
+        && (state as Record<string, unknown>)[key] === payload) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function cloneWritePayload(
   payload: unknown,
   trustedPayload: boolean,
@@ -321,29 +354,6 @@ export function createClipboard<S extends z.ZodType>(
     source ?? getSelectionSource?.() ?? null;
   const targetOrSelection = (target?: Pointer): Pointer | null =>
     target ?? getSelectionTarget?.() ?? null;
-  const isTrustedWritePayload = (payload: unknown, sources: ReadonlyArray<Pointer> | null): boolean => {
-    if (getStateJsonTrusted?.() !== true) return false;
-    const state = getState();
-    if (payload === state) return true;
-    const isSourcePayload = (source: Pointer): boolean => {
-      const segments = tryParsePointer(source);
-      if (segments === null) return false;
-      const value = readAt(state, segments);
-      return value.ok && value.value === payload;
-    };
-    for (const source of sources ?? []) {
-      if (isSourcePayload(source)) return true;
-    }
-    if (state !== null && typeof state === "object" && !Array.isArray(state)) {
-      for (const key in state as Record<string, unknown>) {
-        if (Object.prototype.hasOwnProperty.call(state, key)
-          && (state as Record<string, unknown>)[key] === payload) {
-          return true;
-        }
-      }
-    }
-    return false;
-  };
 
   return {
     get hasData() { return buffer !== null; },
@@ -364,7 +374,12 @@ export function createClipboard<S extends z.ZodType>(
       const sources = writtenSources.sources;
       const schemaTrustedPayload = options.trustedPayload === true && sources === null
         ? false
-        : isTrustedWritePayload(payload, sources);
+        : isClipboardSchemaTrustedPayload({
+            state: getState(),
+            stateJsonTrusted: getStateJsonTrusted?.() === true,
+            payload,
+            sources,
+          });
       const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
       const cloned = cloneWritePayload(payload, trustedPayload, options.clonePayload !== false);
       if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };

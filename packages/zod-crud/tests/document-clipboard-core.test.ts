@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
+  isClipboardSchemaTrustedPayload,
   planClipboardPeekBuffer,
   planClipboardReadBuffer,
   planClipboardCut,
@@ -79,6 +80,41 @@ describe("document clipboard core functions", () => {
         pointer: "items/0",
       },
     });
+  });
+
+  test("checks schema-trusted clipboard payloads from explicit state and sources", () => {
+    const sourcePayload = initial.items[0];
+
+    expect(isClipboardSchemaTrustedPayload({
+      state: initial,
+      stateJsonTrusted: false,
+      payload: initial,
+      sources: null,
+    })).toBe(false);
+    expect(isClipboardSchemaTrustedPayload({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: initial,
+      sources: null,
+    })).toBe(true);
+    expect(isClipboardSchemaTrustedPayload({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: sourcePayload,
+      sources: ["/items/0"],
+    })).toBe(true);
+    expect(isClipboardSchemaTrustedPayload({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: initial.items,
+      sources: null,
+    })).toBe(true);
+    expect(isClipboardSchemaTrustedPayload({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: { id: "a", name: "A" },
+      sources: ["/items/0"],
+    })).toBe(false);
   });
 
   test("plans cut without applying document state or touching clipboard buffer", () => {
