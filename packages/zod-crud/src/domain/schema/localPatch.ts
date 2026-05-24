@@ -1085,13 +1085,19 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     const valueAccepted = shape
       ? acceptsKnownJsonValue(valueSchema, op.value)
       : acceptsKnownJsonValueWithValidator(recordValueValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: valueSchema,
+      value: op.value,
+      knownJsonAccepted: valueAccepted,
+      valuesTrusted,
+    });
+    if (valueValidation.kind === "notSerializable") {
+      return operationFailure(state, "not_serializable", valueValidation.reason);
     }
-    if (!valueAccepted) {
-      const result = valueSchema.safeParse(op.value);
-      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    if (valueValidation.kind === "parse") {
+      const result = valueValidation.schema.safeParse(valueValidation.value);
+      if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
     }
     applied[index] = { op: "replace", path: op.path, value: op.value };
   }

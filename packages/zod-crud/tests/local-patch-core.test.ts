@@ -953,6 +953,40 @@ describe("root object replace patch planning", () => {
     ]);
     expect(result?.applied[0]).not.toHaveProperty("key");
   });
+
+  test("keeps root object replace JSON guard before schema parsing", () => {
+    const objectState = { a: 0, b: 0 };
+    const objectResult = applyPatchWithLocalSchemaValidation(
+      z.object({ a: z.unknown(), b: z.unknown() }),
+      objectState,
+      [
+        { op: "replace", path: "/a", value: () => "not json" },
+        { op: "replace", path: "/b", value: 2 },
+      ],
+    );
+
+    expect(objectResult).toMatchObject({
+      state: objectState,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+
+    const recordState = { a: 0, b: 0 };
+    const recordResult = applyPatchWithLocalSchemaValidation(
+      z.record(z.string(), z.unknown()),
+      recordState,
+      [
+        { op: "replace", path: "/a", value: () => "not json" },
+        { op: "replace", path: "/b", value: 2 },
+      ],
+    );
+
+    expect(recordResult).toMatchObject({
+      state: recordState,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
 
 describe("same array field replace patch planning", () => {
