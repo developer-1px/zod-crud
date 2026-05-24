@@ -32,6 +32,16 @@ export interface PlanIndependentReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanAppendOnlyArrayAddPatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface AppendOnlyArrayAddPatchPlan {
+  parent: Pointer;
+  parentSegments: string[];
+  values: unknown[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -1074,41 +1084,10 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length < 2) return null;
-
-  let parent: Pointer | null = null;
-  let appendPath: Pointer | null = null;
-  const values = new Array<unknown>(ops.length);
-  const applied = new Array<JSONPatchOperation>(ops.length);
-
-  for (let index = 0; index < ops.length; index += 1) {
-    if (!(index in ops)) return null;
-    const op = ops[index]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "add"
-      || typeof op.path !== "string"
-      || !op.path.endsWith("/-")
-    ) {
-      return null;
-    }
-
-    if (appendPath === null) {
-      appendPath = op.path;
-      parent = op.path.slice(0, -2);
-    } else if (op.path !== appendPath) {
-      return null;
-    }
-    values[index] = op.value;
-  }
-
-  if (parent === null) return null;
-  let parentSegments: string[];
-  try {
-    parentSegments = parsePointer(parent);
-  } catch {
-    return null;
-  }
+  const plan = planAppendOnlyArrayAddPatch({ operations: ops });
+  if (plan === null) return null;
+  const { parent, parentSegments, values } = plan;
+  const applied = new Array<JSONPatchOperation>(values.length);
 
   const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
@@ -1149,6 +1128,48 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied,
   };
+}
+
+export function planAppendOnlyArrayAddPatch(
+  input: PlanAppendOnlyArrayAddPatchInput,
+): AppendOnlyArrayAddPatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  let parent: Pointer | null = null;
+  let appendPath: string | null = null;
+  const values = new Array<unknown>(ops.length);
+
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "add"
+      || typeof op.path !== "string"
+      || !op.path.endsWith("/-")
+    ) {
+      return null;
+    }
+
+    if (appendPath === null) {
+      appendPath = op.path;
+      parent = op.path.slice(0, -2) as Pointer;
+    } else if (op.path !== appendPath) {
+      return null;
+    }
+    values[index] = op.value;
+  }
+
+  if (parent === null) return null;
+  let parentSegments: string[];
+  try {
+    parentSegments = parsePointer(parent);
+  } catch {
+    return null;
+  }
+
+  return { parent, parentSegments, values };
 }
 
 function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
