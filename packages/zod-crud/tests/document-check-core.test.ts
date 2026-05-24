@@ -8,6 +8,7 @@ import {
   checkDocumentRemove,
   checkDocumentReplace,
   planDocumentCopyCheck,
+  planDocumentCheckResult,
   planDocumentCutCheck,
   planDocumentDeleteTextCheck,
   planDocumentDuplicateCheck,
@@ -58,6 +59,36 @@ const selectedFirstNameText: SelectionSnap = {
 };
 
 describe("document check core functions", () => {
+  test("normalizes checkable domain results without running a document facade", () => {
+    expect(planDocumentCheckResult({ ok: true })).toEqual({ ok: true });
+
+    expect(planDocumentCheckResult({
+      ok: false,
+      code: "path_not_found",
+      message: "missing path",
+      pointer: "/missing",
+      violations: [{ path: "/missing", message: "Missing" }],
+    })).toEqual({
+      ok: false,
+      code: "path_not_found",
+      reason: "missing path",
+      pointer: "/missing",
+      violations: [{ path: "/missing", message: "Missing" }],
+    });
+
+    expect(planDocumentCheckResult({
+      ok: false,
+      code: "path_not_found",
+      reason: "preferred reason",
+      message: "fallback message",
+      pointer: null,
+    })).toEqual({
+      ok: false,
+      code: "path_not_found",
+      reason: "preferred reason",
+    });
+  });
+
   test("checks a patch through an injected preview without a document facade", () => {
     const operations: JSONPatchOperation[] = [{ op: "remove", path: "/missing" }];
     let previewed: ReadonlyArray<JSONPatchOperation> | undefined;

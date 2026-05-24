@@ -210,7 +210,7 @@ export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-type CheckableResult =
+export type DocumentCheckableResult =
   | { ok: true }
   | {
       ok: false;
@@ -296,7 +296,7 @@ export function checkDocumentSelectScope<S extends z.ZodType>(
   context: DocumentCheckContext<S>,
   options?: SelectionScopeOptions,
 ): CheckResult {
-  return toCheckResult(resolveSelectionScope(context.state, options));
+  return planDocumentCheckResult(resolveSelectionScope(context.state, options));
 }
 
 export function checkDocumentMoveCursor<S extends z.ZodType>(
@@ -304,7 +304,7 @@ export function checkDocumentMoveCursor<S extends z.ZodType>(
   direction: SelectionCursorDirection,
   options?: SelectionCursorOptions,
 ): CheckResult {
-  return toCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
+  return planDocumentCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
 }
 
 export function checkDocumentExtendCursor<S extends z.ZodType>(
@@ -312,7 +312,7 @@ export function checkDocumentExtendCursor<S extends z.ZodType>(
   direction: SelectionCursorDirection,
   options?: SelectionCursorOptions,
 ): CheckResult {
-  return toCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
+  return planDocumentCheckResult(resolveSelectionCursor(selectionState(context), direction, context.state, options));
 }
 
 export function checkDocumentFind(jsonpath: string): CheckResult {
@@ -350,7 +350,7 @@ export function planDocumentMoveCheck<S extends z.ZodType>(
   const source = input.source ?? input.selectionSource ?? null;
   return source === null
     ? emptySelection("move source selection is empty")
-    : toCheckResult(moveVerb(input.schema, input.state, source, input.target, {
+    : planDocumentCheckResult(moveVerb(input.schema, input.state, source, input.target, {
         previewPatch: input.previewPatch,
       }));
 }
@@ -378,7 +378,7 @@ export function planDocumentDuplicateCheck<S extends z.ZodType>(
   const source = input.source ?? input.selectionSource ?? null;
   return source === null
     ? emptySelection("duplicate source selection is empty")
-    : toCheckResult(duplicate(input.schema, input.state, source, input.options, {
+    : planDocumentCheckResult(duplicate(input.schema, input.state, source, input.options, {
         previewPatch: input.previewPatch,
         trustedPayload: input.stateJsonTrusted === true,
       }));
@@ -410,7 +410,7 @@ export function planDocumentRemoveCheck<S extends z.ZodType>(
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : toCheckResult(pointerSourceCheckError(planned, "remove"));
+    : planDocumentCheckResult(pointerSourceCheckError(planned, "remove"));
 }
 
 export function checkDocumentReplace<S extends z.ZodType>(
@@ -434,7 +434,7 @@ export function planDocumentReplaceCheck<S extends z.ZodType>(
   input: PlanDocumentReplaceCheckInput<S>,
 ): CheckResult {
   if (input.target !== undefined && isJSONPath(input.target)) {
-    return toCheckResult(replaceVerb(input.schema, input.state, input.target, input.value, {
+    return planDocumentCheckResult(replaceVerb(input.schema, input.state, input.target, input.value, {
       previewPatch: input.previewPatch,
     }));
   }
@@ -475,7 +475,7 @@ export function planDocumentReplaceTextCheck<S extends z.ZodType>(
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : toCheckResult(planned);
+    : planDocumentCheckResult(planned);
 }
 
 export function checkDocumentDeleteText<S extends z.ZodType>(
@@ -502,7 +502,7 @@ export function planDocumentDeleteTextCheck<S extends z.ZodType>(
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : toCheckResult(planned);
+    : planDocumentCheckResult(planned);
 }
 
 export function checkDocumentCut<S extends z.ZodType>(
@@ -525,7 +525,7 @@ export function planDocumentCutCheck<S extends z.ZodType>(
   const resolved = input.source ?? input.selectionSource ?? null;
   return resolved === null
     ? emptySelection("cut source selection is empty")
-    : toCheckResult(cut(input.schema, input.state, resolved, {
+    : planDocumentCheckResult(cut(input.schema, input.state, resolved, {
         trusted: input.stateJsonTrusted === true,
         clonePayload: false,
         previewPatch: input.previewPatch,
@@ -550,7 +550,7 @@ export function planDocumentCopyCheck(
   const resolved = input.source ?? input.selectionSource ?? null;
   return resolved === null
     ? emptySelection("copy source selection is empty")
-    : toCheckResult(copy(input.state, resolved, {
+    : planDocumentCheckResult(copy(input.state, resolved, {
         trusted: input.stateJsonTrusted === true,
         clonePayload: false,
       }));
@@ -590,7 +590,7 @@ export function planDocumentPasteCheck<S extends z.ZodType>(
     : input.previewPatch;
   return resolvedTarget === null
     ? emptySelection("paste target selection is empty")
-    : toCheckResult(paste(input.schema, input.state, input.payload, resolvedTarget, args.mode, {
+    : planDocumentCheckResult(paste(input.schema, input.state, input.payload, resolvedTarget, args.mode, {
         ...args.options,
         previewPatch: pastePreview,
         trustedPayload: inputTrustedPayload,
@@ -615,7 +615,7 @@ export function planDocumentPatchCheck<S extends z.ZodType>(
   const result = input.previewPatch
     ? preFlightFromApplyResult(input.previewPatch(input.operations))
     : preFlight(input.schema, input.state, input.operations);
-  return toCheckResult(result);
+  return planDocumentCheckResult(result);
 }
 
 function trustedState<S extends z.ZodType>(context: DocumentCheckContext<S>): boolean {
@@ -626,7 +626,7 @@ function selectionState<S extends z.ZodType>(context: DocumentCheckContext<S>): 
   return context.selection ?? EMPTY_SELECTION;
 }
 
-function toCheckResult(result: CheckableResult): CheckResult {
+export function planDocumentCheckResult(result: DocumentCheckableResult): CheckResult {
   if (result.ok) return OK;
 
   const out: Extract<CheckResult, { ok: false }> = {
@@ -656,7 +656,7 @@ function emptySelection(reason: string): CheckResult {
   };
 }
 
-function pointerSourceCheckError(error: PointerSourceError, label: string): CheckableResult {
+function pointerSourceCheckError(error: PointerSourceError, label: string): DocumentCheckableResult {
   return error.code === "invalid_pointer"
     ? { ok: false, code: "invalid_pointer", reason: `invalid ${label} source pointer: ${error.pointer}`, pointer: error.pointer }
     : { ok: false, code: "empty_selection", reason: `${label} source selection is empty` };
