@@ -388,6 +388,18 @@ export interface ApplyValidatedArrayFieldReplacementsInput<
   valuesTrusted: boolean;
 }
 
+export interface ApplyValidatedArrayFieldReplacementsAtSegmentsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  state: z.output<S>;
+  arraySegments: ReadonlyArray<string>;
+  field: string;
+  operations: ReadonlyArray<Operation>;
+  valueSchema: z.ZodType;
+  valuesTrusted: boolean;
+}
+
 export interface ApplyValidatedArrayNestedReplacementsInput<
   S extends z.ZodType,
   Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
@@ -1380,12 +1392,9 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
   if (!valueSchema) return null;
 
-  const current = readArrayAtSegments({ state, segments: plan.arraySegments });
-  if (!current.ok) return null;
-  return applyValidatedArrayFieldReplacements({
+  return applyValidatedArrayFieldReplacementsAtSegments({
     state,
     arraySegments: plan.arraySegments,
-    array: current.array,
     operations: plan.operations,
     field: plan.field,
     valueSchema,
@@ -2220,6 +2229,26 @@ export function applyValidatedArrayFieldReplacements<
       const replaced = replaceObjectDataValue(currentValue, input.field, op.value);
       return replaced === null ? { ok: false } : { ok: true, value: replaced };
     },
+  });
+}
+
+export function applyValidatedArrayFieldReplacementsAtSegments<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyValidatedArrayFieldReplacementsAtSegmentsInput<S, Operation>,
+): ApplyResult<S> | null {
+  const current = readArrayAtSegments({ state: input.state, segments: input.arraySegments });
+  if (!current.ok) return null;
+
+  return applyValidatedArrayFieldReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: current.array,
+    field: input.field,
+    operations: input.operations,
+    valueSchema: input.valueSchema,
+    valuesTrusted: input.valuesTrusted,
   });
 }
 
