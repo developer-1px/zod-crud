@@ -375,6 +375,19 @@ export interface ApplyValidatedArrayIndexReplacementsInput<
   arraySegments: ReadonlyArray<string>;
 }
 
+export interface ApplyValidatedArrayFieldReplacementsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  state: z.output<S>;
+  arraySegments: ReadonlyArray<string>;
+  array: ReadonlyArray<unknown>;
+  field: string;
+  operations: ReadonlyArray<Operation>;
+  valueSchema: z.ZodType;
+  valuesTrusted: boolean;
+}
+
 export interface ApplyValidatedArrayNestedReplacementsInput<
   S extends z.ZodType,
   Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
@@ -1349,17 +1362,14 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
 
   const current = readArrayAtSegments({ state, segments: plan.arraySegments });
   if (!current.ok) return null;
-  return applyValidatedArrayIndexReplacements({
+  return applyValidatedArrayFieldReplacements({
     state,
     arraySegments: plan.arraySegments,
     array: current.array,
     operations: plan.operations,
+    field: plan.field,
     valueSchema,
     valuesTrusted,
-    replacementValue: (op, currentValue) => {
-      const replaced = replaceObjectDataValue(currentValue, plan.field, op.value);
-      return replaced === null ? { ok: false } : { ok: true, value: replaced };
-    },
   });
 }
 
@@ -2172,6 +2182,26 @@ export function applyValidatedArrayIndexReplacements<
   return nextState === null
     ? null
     : okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(input.operations));
+}
+
+export function applyValidatedArrayFieldReplacements<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyValidatedArrayFieldReplacementsInput<S, Operation>,
+): ApplyResult<S> | null {
+  return applyValidatedArrayIndexReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: input.array,
+    operations: input.operations,
+    valueSchema: input.valueSchema,
+    valuesTrusted: input.valuesTrusted,
+    replacementValue: (op, currentValue) => {
+      const replaced = replaceObjectDataValue(currentValue, input.field, op.value);
+      return replaced === null ? { ok: false } : { ok: true, value: replaced };
+    },
+  });
 }
 
 export function applyValidatedArrayNestedReplacements<

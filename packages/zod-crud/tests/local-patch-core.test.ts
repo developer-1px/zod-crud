@@ -22,6 +22,7 @@ import {
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
   applyValidatedArrayAddPlan,
+  applyValidatedArrayFieldReplacements,
   applyValidatedArrayIndexReplacements,
   applyValidatedArrayNestedReplacements,
   appendArrayIndexPath,
@@ -454,6 +455,77 @@ describe("array index replacement state materialization", () => {
 });
 
 describe("validated array index replacement planning", () => {
+  test("validates and applies array field replacements with applied operations", () => {
+    const state = {
+      items: [
+        { name: "old-a", done: false },
+        { name: "old-b", done: true },
+      ],
+      meta: true,
+    };
+
+    expect(applyValidatedArrayFieldReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      field: "name",
+      operations: [
+        { op: "replace", path: "/items/0/name", index: 0, value: "A" },
+        { op: "replace", path: "/items/1/name", index: 1, value: "B" },
+      ],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+    })).toEqual({
+      state: {
+        items: [
+          { name: "A", done: false },
+          { name: "B", done: true },
+        ],
+        meta: true,
+      },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/name", value: "B" },
+      ],
+    });
+    expect(state.items).toEqual([
+      { name: "old-a", done: false },
+      { name: "old-b", done: true },
+    ]);
+  });
+
+  test("rejects validated array field replacements before materialization", () => {
+    const state = { items: [{ name: "old" }] };
+
+    expect(applyValidatedArrayFieldReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      field: "missing",
+      operations: [{ op: "replace", path: "/items/0/missing", index: 0, value: "A" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+    })).toBeNull();
+
+    const result = applyValidatedArrayFieldReplacements({
+      state,
+      arraySegments: ["items"],
+      array: state.items,
+      field: "name",
+      operations: [{ op: "replace", path: "/items/0/name", index: 0, value: 1 }],
+      valueSchema: z.string(),
+      valuesTrusted: true,
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+    expect(state.items).toEqual([{ name: "old" }]);
+  });
+
   test("validates and applies array index replacements with applied operations", () => {
     const state = { items: [{ name: "A" }, { name: "B" }], meta: true };
 
