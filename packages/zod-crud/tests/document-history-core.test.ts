@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildChangeMetadata,
   compactHistoryMetadata,
+  planDocumentChangeCapture,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryEntry,
   planDocumentHistoryRestore,
@@ -53,6 +54,47 @@ describe("document history core functions", () => {
       selectionEnabled: true,
       documentSubscriberCount: 1,
     })).toBe(true);
+  });
+
+  test("plans history recording and metadata capture from document change inputs", () => {
+    expect(planDocumentChangeCapture({
+      historyLimit: 10,
+      isRestoring: false,
+      operationCount: 1,
+      activeHistoryMetadata: undefined,
+      metadata: undefined,
+      selectionEnabled: false,
+      documentSubscriberCount: 0,
+    })).toEqual({
+      shouldRecordHistory: true,
+      shouldCaptureMetadata: true,
+    });
+
+    expect(planDocumentChangeCapture({
+      historyLimit: 10,
+      isRestoring: true,
+      operationCount: 1,
+      activeHistoryMetadata: undefined,
+      metadata: undefined,
+      selectionEnabled: false,
+      documentSubscriberCount: 0,
+    })).toEqual({
+      shouldRecordHistory: false,
+      shouldCaptureMetadata: false,
+    });
+
+    expect(planDocumentChangeCapture({
+      historyLimit: 0,
+      isRestoring: false,
+      operationCount: 0,
+      activeHistoryMetadata: undefined,
+      metadata: undefined,
+      selectionEnabled: true,
+      documentSubscriberCount: 1,
+    })).toEqual({
+      shouldRecordHistory: false,
+      shouldCaptureMetadata: true,
+    });
   });
 
   test("builds subscriber metadata from active metadata, direct metadata, and selection", () => {

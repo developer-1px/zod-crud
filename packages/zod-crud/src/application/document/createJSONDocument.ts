@@ -191,6 +191,21 @@ export interface DocumentChangeMetadataCaptureInput {
   documentSubscriberCount: number;
 }
 
+export interface PlanDocumentChangeCaptureInput {
+  historyLimit: number;
+  isRestoring: boolean;
+  operationCount: number;
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: JSONChangeMetadata | undefined;
+  selectionEnabled: boolean;
+  documentSubscriberCount: number;
+}
+
+export interface DocumentChangeCapturePlan {
+  shouldRecordHistory: boolean;
+  shouldCaptureMetadata: boolean;
+}
+
 export interface PlanDocumentHistoryEntryInput {
   before: unknown;
   after: unknown;
@@ -266,16 +281,6 @@ export function createJSONDocument<S extends z.ZodType>(
     lastPatch = rawOps.lastApplied;
   };
   const snapSelection = (): SelectionSnap => selectionState?.snapshot() ?? EMPTY_SELECTION;
-  const shouldCaptureSelectionMetadata = (
-    shouldRecordHistory: boolean,
-    metadata?: JSONChangeMetadata,
-  ): boolean => shouldCaptureDocumentChangeMetadata({
-    shouldRecordHistory,
-    activeHistoryMetadata,
-    metadata,
-    selectionEnabled,
-    documentSubscriberCount,
-  });
 
   const recordHistory = (
     before: z.output<S>,
@@ -357,15 +362,22 @@ export function createJSONDocument<S extends z.ZodType>(
     metadata?: JSONChangeMetadata,
     operationsOwned = false,
   ): JSONResult => {
-    const shouldRecordHistory = historyLimit > 0 && !isRestoring && operations.length > 0;
-    const shouldCaptureMetadata = shouldCaptureSelectionMetadata(shouldRecordHistory, metadata);
-    if (!shouldCaptureMetadata) {
+    const capture = planDocumentChangeCapture({
+      historyLimit,
+      isRestoring,
+      operationCount: operations.length,
+      activeHistoryMetadata,
+      metadata,
+      selectionEnabled,
+      documentSubscriberCount,
+    });
+    if (!capture.shouldCaptureMetadata) {
       const r = rawOps.patch(operations);
       if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
       return r;
     }
 
-    const before = shouldRecordHistory ? rawOps.state : undefined;
+    const before = capture.shouldRecordHistory ? rawOps.state : undefined;
     const selectionBefore = snapSelection();
     const changeMetadata = activeHistoryMetadata !== undefined || metadata !== undefined || selectionEnabled
       ? buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled)
@@ -373,7 +385,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = snapSelection();
     if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
-    if (r.ok && shouldRecordHistory) {
+    if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before!, rawOps.state, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
     }
     return r;
@@ -384,15 +396,22 @@ export function createJSONDocument<S extends z.ZodType>(
     applied: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
   ): JSONResult => {
-    const shouldRecordHistory = historyLimit > 0 && !isRestoring && operations.length > 0;
-    const shouldCaptureMetadata = shouldCaptureSelectionMetadata(shouldRecordHistory, metadata);
-    if (!shouldCaptureMetadata) {
+    const capture = planDocumentChangeCapture({
+      historyLimit,
+      isRestoring,
+      operationCount: operations.length,
+      activeHistoryMetadata,
+      metadata,
+      selectionEnabled,
+      documentSubscriberCount,
+    });
+    if (!capture.shouldCaptureMetadata) {
       const r = rawOps.trustedApply(next, applied);
       if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
       return r;
     }
 
-    const before = shouldRecordHistory ? rawOps.state : undefined;
+    const before = capture.shouldRecordHistory ? rawOps.state : undefined;
     const selectionBefore = snapSelection();
     const changeMetadata = activeHistoryMetadata !== undefined || metadata !== undefined || selectionEnabled
       ? buildChangeMetadata(activeHistoryMetadata, metadata, selectionBefore, selectionEnabled)
@@ -400,7 +419,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const r = rawOps.trustedApply(next, applied, changeMetadata);
     const selectionAfter = snapSelection();
     if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
-    if (r.ok && shouldRecordHistory) {
+    if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before!, next, operations, selectionBefore, selectionAfter, changeMetadata);
     }
     return r;
@@ -455,16 +474,23 @@ export function createJSONDocument<S extends z.ZodType>(
       trustedPayload: rawOps.stateJsonTrusted,
     });
     if (!planned.ok) return planned;
-    const shouldRecordHistory = historyLimit > 0 && !isRestoring && planned.patch.length > 0;
-    const shouldCaptureMetadata = shouldCaptureSelectionMetadata(shouldRecordHistory);
-    const selectionBefore = shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
-    const changeMetadata = shouldCaptureMetadata
+    const capture = planDocumentChangeCapture({
+      historyLimit,
+      isRestoring,
+      operationCount: planned.patch.length,
+      activeHistoryMetadata,
+      metadata: undefined,
+      selectionEnabled,
+      documentSubscriberCount,
+    });
+    const selectionBefore = capture.shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
+    const changeMetadata = capture.shouldCaptureMetadata
       ? buildChangeMetadata(activeHistoryMetadata, undefined, selectionBefore, selectionEnabled)
       : undefined;
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);
-    const selectionAfter = shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
+    const selectionAfter = capture.shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
     if (r.ok) lastPatch = planned.patch.length === 0 ? [] : rawOps.lastApplied;
-    if (r.ok && shouldRecordHistory) {
+    if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before, planned.next, planned.patch, selectionBefore, selectionAfter, changeMetadata);
     }
     return r.ok
@@ -922,6 +948,24 @@ export function shouldCaptureDocumentChangeMetadata(
     || input.activeHistoryMetadata !== undefined
     || input.metadata !== undefined
     || (input.selectionEnabled && input.documentSubscriberCount > 0);
+}
+
+export function planDocumentChangeCapture(
+  input: PlanDocumentChangeCaptureInput,
+): DocumentChangeCapturePlan {
+  const shouldRecordHistory = input.historyLimit > 0
+    && !input.isRestoring
+    && input.operationCount > 0;
+  return {
+    shouldRecordHistory,
+    shouldCaptureMetadata: shouldCaptureDocumentChangeMetadata({
+      shouldRecordHistory,
+      activeHistoryMetadata: input.activeHistoryMetadata,
+      metadata: input.metadata,
+      selectionEnabled: input.selectionEnabled,
+      documentSubscriberCount: input.documentSubscriberCount,
+    }),
+  };
 }
 
 export function planDocumentHistoryEntry(
