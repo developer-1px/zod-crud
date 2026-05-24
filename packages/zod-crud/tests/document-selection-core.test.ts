@@ -5,6 +5,7 @@ import {
   planInitialSelection,
   planSelectionPatchUpdate,
   planSelectionStateUpdate,
+  sameSelectionSnapshot,
   selectionAddRangeAction,
   selectionRemoveRangeAction,
   selectionSelectRangesAction,
@@ -50,6 +51,51 @@ describe("document selection core functions", () => {
       snap: itemSelection,
       emit: false,
     });
+  });
+
+  test("compares selection snapshots by value for observer decisions", () => {
+    const textSelection: SelectionSnap = {
+      selectedPointers: ["/items/0/name"],
+      selectionRanges: [
+        {
+          anchor: { path: "/items/0/name", offset: 1, edge: "before", affinity: "forward" },
+          focus: { path: "/items/0/name", offset: 4, edge: "after", affinity: "backward" },
+        },
+      ],
+      primaryIndex: 0,
+      anchor: { path: "/items/0/name", offset: 1, edge: "before", affinity: "forward" },
+      focus: { path: "/items/0/name", offset: 4, edge: "after", affinity: "backward" },
+      context: { source: "keyboard", nested: { depth: 1 } },
+    };
+
+    expect(sameSelectionSnapshot(textSelection, {
+      selectedPointers: ["/items/0/name"],
+      selectionRanges: [
+        {
+          anchor: { path: "/items/0/name", offset: 1, edge: "before", affinity: "forward" },
+          focus: { path: "/items/0/name", offset: 4, edge: "after", affinity: "backward" },
+        },
+      ],
+      primaryIndex: 0,
+      anchor: { path: "/items/0/name", offset: 1, edge: "before", affinity: "forward" },
+      focus: { path: "/items/0/name", offset: 4, edge: "after", affinity: "backward" },
+      context: { source: "keyboard", nested: { depth: 1 } },
+    })).toBe(true);
+
+    expect(sameSelectionSnapshot(textSelection, {
+      ...textSelection,
+      focus: { path: "/items/0/name", offset: 4, edge: "before", affinity: "forward" },
+    })).toBe(false);
+
+    expect(sameSelectionSnapshot(textSelection, {
+      ...textSelection,
+      selectedPointers: ["/items/1/name"],
+    })).toBe(false);
+
+    expect(sameSelectionSnapshot(textSelection, {
+      ...textSelection,
+      context: { source: "mouse", nested: { depth: 1 } },
+    })).toBe(false);
   });
 
   test("plans observer emits with a defensive previous snapshot", () => {
