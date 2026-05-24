@@ -186,6 +186,22 @@ export interface PlanDocumentHistoryEntryInput {
   operationsOwned?: boolean;
 }
 
+export type DocumentHistoryRestoreDirection = "undo" | "redo";
+
+export interface PlanDocumentHistoryRestoreInput {
+  direction: DocumentHistoryRestoreDirection;
+  entry: DocumentHistoryEntry;
+  currentState: unknown;
+  currentSelection: SelectionSnap;
+}
+
+export interface DocumentHistoryRestorePlan {
+  patch: ReadonlyArray<JSONPatchOperation>;
+  selectionAfter: SelectionSnap;
+  entry: DocumentHistoryEntry;
+  state?: unknown;
+}
+
 const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
 
 export function createJSONDocument<S extends z.ZodType>(
@@ -450,22 +466,20 @@ export function createJSONDocument<S extends z.ZodType>(
   const restore = (direction: "undo" | "redo"): boolean => {
     const entry = direction === "undo" ? backEntry(stack) : forwardEntry(stack);
     if (!entry) return false;
-    if (direction === "undo") entry.selectionAfter = snapSelection();
+    const plan = planDocumentHistoryRestore({
+      direction,
+      entry,
+      currentState: rawOps.state,
+      currentSelection: snapSelection(),
+    });
+    if (direction === "undo") stack.undo[stack.undo.length - 1] = plan.entry;
     isRestoring = true;
     try {
-      const restoreSnapshot = entry.snapshot;
-      const patch = direction === "undo" ? entry.inverse : entry.forward;
-      if (direction === "undo" && restoreSnapshot !== undefined) restoreSnapshot.after = rawOps.state;
-      const snapshotState = restoreSnapshot === undefined
-        ? undefined
-        : direction === "undo"
-          ? restoreSnapshot.before
-          : restoreSnapshot.after;
-      const r = snapshotState === undefined
-        ? rawOps.trustedPatch(patch)
-        : rawOps.trustedApply(snapshotState as z.output<S>, patch);
+      const r = plan.state === undefined
+        ? rawOps.trustedPatch(plan.patch)
+        : rawOps.trustedApply(plan.state as z.output<S>, plan.patch);
       if (!r.ok) return false;
-      if (direction === "redo" && restoreSnapshot !== undefined) delete restoreSnapshot.after;
+      if (direction === "redo") stack.redo[stack.redo.length - 1] = plan.entry;
       syncLastPatch();
     } catch {
       return false;
@@ -474,7 +488,7 @@ export function createJSONDocument<S extends z.ZodType>(
     }
     if (direction === "undo") moveBack(stack);
     else moveForward(stack);
-    selectionState?.restore(direction === "undo" ? entry.selectionBefore : entry.selectionAfter);
+    selectionState?.restore(plan.selectionAfter);
     return true;
   };
 
@@ -900,6 +914,35 @@ export function planDocumentHistoryEntry(
   const historyMetadata = compactHistoryMetadata(input.metadata);
   if (historyMetadata !== undefined) entry.metadata = historyMetadata;
   return entry;
+}
+
+export function planDocumentHistoryRestore(
+  input: PlanDocumentHistoryRestoreInput,
+): DocumentHistoryRestorePlan {
+  const { direction, entry } = input;
+  const snapshot = entry.snapshot;
+  const nextEntry: DocumentHistoryEntry = {
+    forward: entry.forward,
+    inverse: entry.inverse,
+    selectionBefore: entry.selectionBefore,
+    selectionAfter: direction === "undo" ? input.currentSelection : entry.selectionAfter,
+  };
+  if (entry.metadata !== undefined) nextEntry.metadata = entry.metadata;
+
+  if (snapshot !== undefined) {
+    nextEntry.snapshot = direction === "undo"
+      ? { ...snapshot, after: input.currentState }
+      : { before: snapshot.before };
+  }
+
+  const plan: DocumentHistoryRestorePlan = {
+    patch: direction === "undo" ? entry.inverse : entry.forward,
+    selectionAfter: direction === "undo" ? entry.selectionBefore : entry.selectionAfter,
+    entry: nextEntry,
+  };
+  const state = direction === "undo" ? snapshot?.before : snapshot?.after;
+  if (state !== undefined) plan.state = state;
+  return plan;
 }
 
 function compactRepeatedReplaceBatchForHistory(

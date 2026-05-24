@@ -5,6 +5,7 @@ import {
   compactHistoryMetadata,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryEntry,
+  planDocumentHistoryRestore,
   planMergedDocumentHistoryEntry,
   shouldCaptureDocumentChangeMetadata,
 } from "../src/application/document/createJSONDocument.js";
@@ -202,5 +203,82 @@ describe("document history core functions", () => {
     });
     expect(prev.inverse).toEqual([{ op: "replace", path: "/title", value: "draft" }]);
     expect(top.inverse).toEqual([{ op: "replace", path: "/count", value: 0 }]);
+  });
+
+  test("plans undo restore patches, snapshot state, and redo selection without mutating the entry", () => {
+    const entry = {
+      forward: [{ op: "replace", path: "/title", value: "final" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      snapshot: { before: { title: "draft" } },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const currentSelection: SelectionSnap = {
+      selectedPointers: ["/count"],
+      selectionRanges: [{ anchor: "/count", focus: "/count" }],
+      primaryIndex: 0,
+      anchor: "/count",
+      focus: "/count",
+    };
+
+    expect(planDocumentHistoryRestore({
+      direction: "undo",
+      entry,
+      currentState: { title: "final" },
+      currentSelection,
+    })).toEqual({
+      patch: [{ op: "replace", path: "/title", value: "draft" }],
+      state: { title: "draft" },
+      selectionAfter: emptySelection,
+      entry: {
+        forward: [{ op: "replace", path: "/title", value: "final" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: currentSelection,
+        snapshot: {
+          before: { title: "draft" },
+          after: { title: "final" },
+        },
+      },
+    });
+    expect(entry.selectionAfter).toBe(titleSelection);
+    expect(entry.snapshot).toEqual({ before: { title: "draft" } });
+  });
+
+  test("plans redo restore patches and clears transient snapshot-after on the next entry", () => {
+    const entry = {
+      forward: [{ op: "replace", path: "/title", value: "final" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Redo title" },
+      snapshot: {
+        before: { title: "draft" },
+        after: { title: "final" },
+      },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentHistoryRestore({
+      direction: "redo",
+      entry,
+      currentState: { title: "draft" },
+      currentSelection: emptySelection,
+    })).toEqual({
+      patch: [{ op: "replace", path: "/title", value: "final" }],
+      state: { title: "final" },
+      selectionAfter: titleSelection,
+      entry: {
+        forward: [{ op: "replace", path: "/title", value: "final" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: titleSelection,
+        metadata: { label: "Redo title" },
+        snapshot: { before: { title: "draft" } },
+      },
+    });
+    expect(entry.snapshot).toEqual({
+      before: { title: "draft" },
+      after: { title: "final" },
+    });
   });
 });
