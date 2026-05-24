@@ -253,6 +253,12 @@ export interface PlanDocumentHistoryEntryInput {
   operationsOwned?: boolean;
 }
 
+export interface PlanDocumentHistoryMergeMetadataInput {
+  previous: HistoryTransactionOptions | undefined;
+  next: HistoryTransactionOptions | undefined;
+  options?: { mergeKey?: string };
+}
+
 export type DocumentHistoryRestoreDirection = "undo" | "redo";
 
 export interface PlanDocumentHistoryRestoreInput {
@@ -610,7 +616,11 @@ export function createJSONDocument<S extends z.ZodType>(
     if (historyDepth(stack) < 2) return false;
     const top = stack.undo[stack.undo.length - 1]!;
     const prev = stack.undo[stack.undo.length - 2]!;
-    const metadata = mergeEntryMetadata(prev, top, mergeOptions);
+    const metadata = planDocumentHistoryMergeMetadata({
+      previous: prev.metadata,
+      next: top.metadata,
+      ...(mergeOptions !== undefined ? { options: mergeOptions } : {}),
+    });
     const merged = planMergedDocumentHistoryEntry(prev, top, metadata);
     const mergeIndex = stack.undo.length - 2;
     stack.undo[mergeIndex] = merged;
@@ -1204,15 +1214,13 @@ export function compactHistoryMetadata(
   return compact;
 }
 
-function mergeEntryMetadata(
-  prev: HistoryEntry,
-  top: HistoryEntry,
-  options?: { mergeKey?: string },
+export function planDocumentHistoryMergeMetadata(
+  input: PlanDocumentHistoryMergeMetadataInput,
 ): HistoryTransactionOptions | undefined {
-  if (prev.metadata === undefined && top.metadata === undefined && options === undefined) {
+  if (input.previous === undefined && input.next === undefined && input.options === undefined) {
     return undefined;
   }
-  const merged = { ...prev.metadata, ...top.metadata, ...options };
+  const merged = { ...input.previous, ...input.next, ...input.options };
   return Object.keys(merged).length > 0 ? merged : undefined;
 }
 

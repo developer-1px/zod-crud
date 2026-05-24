@@ -6,6 +6,7 @@ import {
   planDocumentChangeCapture,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryEntry,
+  planDocumentHistoryMergeMetadata,
   planDocumentHistoryRestore,
   planDocumentTransactionAppendCompact,
   planDocumentTransactionMerge,
@@ -127,6 +128,23 @@ describe("document history core functions", () => {
       label: "Rename",
       origin: "keyboard",
       mergeKey: "typing:title",
+    });
+  });
+
+  test("plans merge metadata from previous, next, and explicit merge options", () => {
+    expect(planDocumentHistoryMergeMetadata({
+      previous: undefined,
+      next: undefined,
+    })).toBeUndefined();
+
+    expect(planDocumentHistoryMergeMetadata({
+      previous: { label: "Previous", origin: "keyboard", mergeKey: "prev" },
+      next: { label: "Next" },
+      options: { mergeKey: "explicit" },
+    })).toEqual({
+      label: "Next",
+      origin: "keyboard",
+      mergeKey: "explicit",
     });
   });
 
