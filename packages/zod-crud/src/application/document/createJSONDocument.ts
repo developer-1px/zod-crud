@@ -255,6 +255,11 @@ export interface DocumentSubscriptionChangePlan {
   shouldCallUnderlyingUnsubscribe: boolean;
 }
 
+export interface PlanDocumentSubscriptionMetadataInput {
+  metadata: JSONChangeMetadata | undefined;
+  selectionAfter: SelectionSnap;
+}
+
 export interface PlanDocumentTransactionMergeInput {
   entries: ReadonlyArray<DocumentHistoryEntry>;
   start: number;
@@ -649,10 +654,10 @@ export function createJSONDocument<S extends z.ZodType>(
       documentSubscriberCount = subscribePlan.subscriberCount;
       const unsubscribe = rawOps.subscribe((applied, metadata) => {
         lastPatch = applied;
-        listener(applied, {
-          ...metadata,
-          selectionAfter: metadata?.selectionAfter ?? snapSelection(),
-        });
+        listener(applied, planDocumentSubscriptionMetadata({
+          metadata,
+          selectionAfter: snapSelection(),
+        }));
       });
       let subscribed = subscribePlan.subscribed;
       return () => {
@@ -1026,6 +1031,15 @@ export function planDocumentSubscriptionChange(
     subscriberCount: Math.max(0, input.subscriberCount - 1),
     subscribed: false,
     shouldCallUnderlyingUnsubscribe: true,
+  };
+}
+
+export function planDocumentSubscriptionMetadata(
+  input: PlanDocumentSubscriptionMetadataInput,
+): JSONChangeMetadata {
+  return {
+    ...input.metadata,
+    selectionAfter: input.metadata?.selectionAfter ?? input.selectionAfter,
   };
 }
 

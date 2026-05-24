@@ -1,6 +1,26 @@
 import { describe, expect, test } from "vitest";
 
-import { planDocumentSubscriptionChange } from "../src/application/document/createJSONDocument.js";
+import {
+  planDocumentSubscriptionChange,
+  planDocumentSubscriptionMetadata,
+} from "../src/application/document/createJSONDocument.js";
+import type { SelectionSnap } from "../src/domain/selection/index.js";
+
+const emptySelection: SelectionSnap = {
+  selectedPointers: [],
+  selectionRanges: [],
+  primaryIndex: -1,
+  anchor: null,
+  focus: null,
+};
+
+const titleSelection: SelectionSnap = {
+  selectedPointers: ["/title"],
+  selectionRanges: [{ anchor: "/title", focus: "/title" }],
+  primaryIndex: 0,
+  anchor: "/title",
+  focus: "/title",
+};
 
 describe("document subscription core functions", () => {
   test("plans subscription count increment without touching the document shell", () => {
@@ -47,6 +67,34 @@ describe("document subscription core functions", () => {
       subscriberCount: 0,
       subscribed: false,
       shouldCallUnderlyingUnsubscribe: true,
+    });
+  });
+
+  test("plans subscriber metadata with a final selection fallback", () => {
+    expect(planDocumentSubscriptionMetadata({
+      metadata: undefined,
+      selectionAfter: titleSelection,
+    })).toEqual({
+      selectionAfter: titleSelection,
+    });
+
+    expect(planDocumentSubscriptionMetadata({
+      metadata: { label: "Rename" },
+      selectionAfter: titleSelection,
+    })).toEqual({
+      label: "Rename",
+      selectionAfter: titleSelection,
+    });
+
+    expect(planDocumentSubscriptionMetadata({
+      metadata: {
+        label: "Rename",
+        selectionAfter: emptySelection,
+      },
+      selectionAfter: titleSelection,
+    })).toEqual({
+      label: "Rename",
+      selectionAfter: emptySelection,
     });
   });
 });
