@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   applyPatchWithLocalSchemaValidation,
+  arrayElementSchemaAtPath,
   evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   planAppliedLocalOpValidation,
@@ -410,6 +411,37 @@ describe("replace value at segments", () => {
     expect(Object.getPrototypeOf(next)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(next, "__proto__")).toBe(true);
     expect(next.__proto__).toEqual({ label: "new" });
+  });
+});
+
+describe("array element schema lookup", () => {
+  test("finds element schemas for root, nested, append, and escaped array paths", () => {
+    const rootItem = z.string();
+    expect(arrayElementSchemaAtPath(z.array(rootItem), "/0")).toBe(rootItem);
+
+    const item = z.object({ name: z.string() });
+    const escapedItem = z.number();
+    const schema = z.object({
+      items: z.array(item),
+      "a/b": z.array(escapedItem),
+    });
+
+    expect(arrayElementSchemaAtPath(schema, "/items/0")).toBe(item);
+    expect(arrayElementSchemaAtPath(schema, "/items/-")).toBe(item);
+    expect(arrayElementSchemaAtPath(schema, "/a~1b/0")).toBe(escapedItem);
+  });
+
+  test("rejects paths that do not name an array element position", () => {
+    const schema = z.object({
+      title: z.string(),
+      items: z.array(z.object({ name: z.string() })),
+    });
+
+    expect(arrayElementSchemaAtPath(schema, "")).toBeNull();
+    expect(arrayElementSchemaAtPath(schema, "/title")).toBeNull();
+    expect(arrayElementSchemaAtPath(schema, "/items/name")).toBeNull();
+    expect(arrayElementSchemaAtPath(schema, "/items/01")).toBeNull();
+    expect(arrayElementSchemaAtPath(schema, "/items/0/name")).toBeNull();
   });
 });
 

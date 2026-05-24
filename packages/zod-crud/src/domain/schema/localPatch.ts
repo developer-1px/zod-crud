@@ -2062,10 +2062,10 @@ function parseKnownArrayNestedIndexText(
   return indexText.includes("/") ? null : numericSegment(indexText);
 }
 
-function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
-  const parent = parentPointer(path);
-  if (parent === null) return null;
-  const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
+export function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType | null {
+  const location = arrayIndexPathLocation(path);
+  if (location === null) return null;
+  const parentSchema = cachedSchemaAtPointer(schema, location.parent, "value");
   return parentSchema ? getArrayElement(parentSchema) : null;
 }
 
