@@ -4,6 +4,8 @@ import { z } from "zod";
 import {
   applyPatchWithLocalSchemaValidation,
   arrayElementSchemaAtPath,
+  arrayIndexInParent,
+  arrayIndexPathLocation,
   evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   planAppliedLocalOpValidation,
@@ -442,6 +444,51 @@ describe("array element schema lookup", () => {
     expect(arrayElementSchemaAtPath(schema, "/items/name")).toBeNull();
     expect(arrayElementSchemaAtPath(schema, "/items/01")).toBeNull();
     expect(arrayElementSchemaAtPath(schema, "/items/0/name")).toBeNull();
+  });
+});
+
+describe("array index path parsing", () => {
+  test("parses array index paths with parent segments", () => {
+    expect(arrayIndexPathLocation("/0")).toEqual({
+      parent: "",
+      parentSegments: [],
+      index: 0,
+    });
+
+    expect(arrayIndexPathLocation("/items/2")).toEqual({
+      parent: "/items",
+      parentSegments: ["items"],
+      index: 2,
+    });
+
+    expect(arrayIndexPathLocation("/items/-")).toEqual({
+      parent: "/items",
+      parentSegments: ["items"],
+      index: "-",
+    });
+
+    expect(arrayIndexPathLocation("/a~1b/0")).toEqual({
+      parent: "/a~1b",
+      parentSegments: ["a/b"],
+      index: 0,
+    });
+  });
+
+  test("rejects non-array-index paths", () => {
+    expect(arrayIndexPathLocation("items/0")).toBeNull();
+    expect(arrayIndexPathLocation("")).toBeNull();
+    expect(arrayIndexPathLocation("/items/name")).toBeNull();
+    expect(arrayIndexPathLocation("/items/01")).toBeNull();
+    expect(arrayIndexPathLocation("/items/0/name")).toBeNull();
+  });
+
+  test("parses indexes only inside the requested parent", () => {
+    expect(arrayIndexInParent("/items/0", "/items")).toEqual({ index: 0 });
+    expect(arrayIndexInParent("/items/-", "/items")).toEqual({ index: "-" });
+    expect(arrayIndexInParent("/a~1b/3", "/a~1b")).toEqual({ index: 3 });
+    expect(arrayIndexInParent("/other/0", "/items")).toBeNull();
+    expect(arrayIndexInParent("/items/0/name", "/items")).toBeNull();
+    expect(arrayIndexInParent("/items/01", "/items")).toBeNull();
   });
 });
 

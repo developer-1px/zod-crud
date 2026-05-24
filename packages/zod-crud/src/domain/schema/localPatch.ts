@@ -1794,7 +1794,7 @@ function isSequentialPatchOperationCandidate(op: JSONPatchOperation): op is Sequ
     && typeof op.path === "string";
 }
 
-function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "-" } | null {
+export function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "-" } | null {
   const simple = parseSimpleArrayIndexPath(path);
   if (simple !== null) {
     return simple.parent === parent ? { index: simple.index } : null;
@@ -1813,7 +1813,7 @@ function arrayIndexInParent(path: Pointer, parent: Pointer): { index: number | "
   return index === null ? null : { index };
 }
 
-function arrayIndexPathLocation(
+export function arrayIndexPathLocation(
   path: Pointer,
 ): { parent: Pointer; parentSegments: string[]; index: number | "-" } | null {
   const simple = parseSimpleArrayIndexPath(path);
