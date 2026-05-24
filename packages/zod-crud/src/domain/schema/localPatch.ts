@@ -130,6 +130,10 @@ export interface PlanKnownJsonReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanKnownJsonReplaceOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface KnownJsonReplacePatchPlan {
   operations: Extract<JSONPatchOperation, { op: "replace" }>[];
 }
@@ -1087,24 +1091,25 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
 }
 
 export function planKnownJsonReplacePatch(input: PlanKnownJsonReplacePatchInput): KnownJsonReplacePatchPlan | null {
+  const operations = planKnownJsonReplaceOperations(input);
+  return operations === null ? null : { operations };
+}
+
+export function planKnownJsonReplaceOperations(
+  input: PlanKnownJsonReplaceOperationsInput,
+): Extract<JSONPatchOperation, { op: "replace" }>[] | null {
   const ops = input.operations;
   if (!Array.isArray(ops) || ops.length === 0) return null;
 
-  const operations: Extract<JSONPatchOperation, { op: "replace" }>[] = [];
+  const operations = new Array<Extract<JSONPatchOperation, { op: "replace" }>>(ops.length);
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
     const op = ops[index]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "replace"
-      || typeof op.path !== "string"
-    ) {
-      return null;
-    }
-    operations.push(op);
+    if (!isReplacePatchOperationCandidate(op)) return null;
+    operations[index] = op;
   }
 
-  return { operations };
+  return operations;
 }
 
 export function evaluateKnownJsonReplaceValues(input: EvaluateKnownJsonReplaceValuesInput): boolean {

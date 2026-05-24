@@ -47,6 +47,7 @@ import {
   planIncreasingArrayAddValues,
   planIndependentReplacePatch,
   planIndependentReplacePaths,
+  planKnownJsonReplaceOperations,
   planKnownJsonReplacePatch,
   planLocalPatchValueValidation,
   planRootObjectReplaceOperations,
@@ -1254,6 +1255,35 @@ describe("single root object replace patch planning", () => {
 });
 
 describe("known-json replace patch planning", () => {
+  test("plans known-json replace operations before schema-specific checks", () => {
+    expect(planKnownJsonReplaceOperations({
+      operations: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "", value: { title: "root" } },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/title", value: "Final" },
+      { op: "replace", path: "", value: { title: "root" } },
+    ]);
+  });
+
+  test("rejects invalid known-json replace operation plans", () => {
+    expect(planKnownJsonReplaceOperations({ operations: [] })).toBeNull();
+    expect(planKnownJsonReplaceOperations({
+      operations: [{ op: "add", path: "/title", value: "Final" }],
+    })).toBeNull();
+    expect(planKnownJsonReplaceOperations({
+      operations: [{ op: "replace", path: "/title" } as JSONPatchOperation],
+    })).toBeNull();
+    expect(planKnownJsonReplaceOperations({
+      operations: [{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/title", value: "Final" };
+    expect(planKnownJsonReplaceOperations({ operations: sparse })).toBeNull();
+  });
+
   test("plans replace operations before schema-specific known-json checks", () => {
     expect(planKnownJsonReplacePatch({
       operations: [
