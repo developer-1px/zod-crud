@@ -146,6 +146,14 @@ export interface PlanDocumentReplaceCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface PlanDocumentReplaceArgsInput {
+  pathOrValue: Pointer | unknown;
+  value: unknown;
+  hasValueArg: boolean;
+}
+
+export type DocumentReplaceArgsPlan = { target?: Pointer; value: unknown };
+
 export interface PlanDocumentReplaceTextCheckInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -419,7 +427,11 @@ export function checkDocumentReplace<S extends z.ZodType>(
   maybeValue?: unknown,
   hasValueArg = arguments.length >= 3,
 ): CheckResult {
-  const args = resolveReplaceArgs(pathOrValue, maybeValue, hasValueArg);
+  const args = planDocumentReplaceArgs({
+    pathOrValue,
+    value: maybeValue,
+    hasValueArg,
+  });
   return planDocumentReplaceCheck({
     schema: context.schema,
     state: context.state,
@@ -433,7 +445,7 @@ export function checkDocumentReplace<S extends z.ZodType>(
 export function planDocumentReplaceCheck<S extends z.ZodType>(
   input: PlanDocumentReplaceCheckInput<S>,
 ): CheckResult {
-  if (input.target !== undefined && isJSONPath(input.target)) {
+  if (input.target !== undefined && isDocumentJSONPathTarget(input.target)) {
     return planDocumentCheckResult(replaceVerb(input.schema, input.state, input.target, input.value, {
       previewPatch: input.previewPatch,
     }));
@@ -662,16 +674,14 @@ function pointerSourceCheckError(error: PointerSourceError, label: string): Docu
     : { ok: false, code: "empty_selection", reason: `${label} source selection is empty` };
 }
 
-function resolveReplaceArgs(
-  pathOrValue: Pointer | unknown,
-  value: unknown,
-  hasValueArg: boolean,
-): { target?: Pointer; value: unknown } {
-  return hasValueArg
-    ? { target: pathOrValue as Pointer, value }
-    : { value: pathOrValue };
+export function planDocumentReplaceArgs(
+  input: PlanDocumentReplaceArgsInput,
+): DocumentReplaceArgsPlan {
+  return input.hasValueArg
+    ? { target: input.pathOrValue as Pointer, value: input.value }
+    : { value: input.pathOrValue };
 }
 
-function isJSONPath(value: Pointer): boolean {
+export function isDocumentJSONPathTarget(value: Pointer): boolean {
   return value.startsWith("$");
 }

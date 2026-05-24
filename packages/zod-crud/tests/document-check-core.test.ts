@@ -7,6 +7,7 @@ import {
   checkDocumentPatch,
   checkDocumentRemove,
   checkDocumentReplace,
+  isDocumentJSONPathTarget,
   planDocumentCopyCheck,
   planDocumentCheckResult,
   planDocumentCutCheck,
@@ -15,6 +16,7 @@ import {
   planDocumentMoveCheck,
   planDocumentPatchCheck,
   planDocumentPasteCheck,
+  planDocumentReplaceArgs,
   planDocumentRemoveCheck,
   planDocumentReplaceCheck,
   planDocumentReplaceTextCheck,
@@ -140,6 +142,29 @@ describe("document check core functions", () => {
     expect(checkDocumentRemove(context)).toEqual({ ok: true });
     expect(checkDocumentReplace(context, { id: "a1", name: "A1" })).toEqual({ ok: true });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  test("plans replace overload arguments and JSONPath target detection", () => {
+    expect(planDocumentReplaceArgs({
+      pathOrValue: "/items/0/name",
+      value: "Alpha",
+      hasValueArg: true,
+    })).toEqual({
+      target: "/items/0/name",
+      value: "Alpha",
+    });
+
+    const replacement = { id: "a1", name: "Alpha" };
+    expect(planDocumentReplaceArgs({
+      pathOrValue: replacement,
+      value: undefined,
+      hasValueArg: false,
+    })).toEqual({ value: replacement });
+
+    expect(isDocumentJSONPathTarget("$.items[*].name")).toBe(true);
+    expect(isDocumentJSONPathTarget("$")).toBe(true);
+    expect(isDocumentJSONPathTarget("/items/$")).toBe(false);
+    expect(isDocumentJSONPathTarget("/items/0/name")).toBe(false);
   });
 
   test("plans remove checks from explicit state and selection source", () => {
