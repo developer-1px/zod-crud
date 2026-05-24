@@ -328,6 +328,19 @@ export interface PlanDocumentTransactionAppendCompactInput {
   metadata: HistoryTransactionOptions | undefined;
 }
 
+export interface PlanDocumentTransactionAppendFastPathInput {
+  activeTransactionStartDepth: number | undefined;
+  currentDepth: number;
+  previous: DocumentHistoryEntry | undefined;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionAfter: SelectionSnap;
+  metadata: HistoryTransactionOptions | undefined;
+}
+
+export type DocumentTransactionAppendFastPathPlan =
+  | { kind: "skip" }
+  | { kind: "replaceLast"; entry: DocumentHistoryEntry };
+
 export interface PlanDocumentHistoryEntryInput {
   before: unknown;
   after: unknown;
@@ -487,20 +500,18 @@ export function createJSONDocument<S extends z.ZodType>(
     operationsOwned = false,
   ): void => {
     const historyMetadata = metadata === undefined ? undefined : compactHistoryMetadata(metadata);
-    if (
-      activeTransactionStartDepth !== undefined
-      && historyDepth(stack) > activeTransactionStartDepth
-    ) {
-      const compact = planDocumentTransactionAppendCompact({
-        previous: stack.undo[stack.undo.length - 1]!,
-        operations,
-        selectionAfter,
-        metadata: historyMetadata,
-      });
-      if (compact !== null) {
-        stack.undo[stack.undo.length - 1] = compact;
-        return;
-      }
+    const currentDepth = historyDepth(stack);
+    const fastPath = planDocumentTransactionAppendFastPath({
+      activeTransactionStartDepth,
+      currentDepth,
+      previous: stack.undo[stack.undo.length - 1],
+      operations,
+      selectionAfter,
+      metadata: historyMetadata,
+    });
+    if (fastPath.kind === "replaceLast") {
+      stack.undo[stack.undo.length - 1] = fastPath.entry;
+      return;
     }
 
     const entry = planDocumentHistoryEntry({
@@ -514,7 +525,7 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     const appendPlan = planDocumentHistoryAppend({
       activeTransactionStartDepth,
-      currentDepth: historyDepth(stack),
+      currentDepth,
       previous: stack.undo[stack.undo.length - 1],
       entry,
     });
@@ -1334,6 +1345,28 @@ export function planDocumentTransactionAppendCompact(
     : mergeRepeatedReplaceTransactionMetadata(previous.metadata, input.metadata);
   if (metadata !== undefined) compact.metadata = metadata;
   return compact;
+}
+
+export function planDocumentTransactionAppendFastPath(
+  input: PlanDocumentTransactionAppendFastPathInput,
+): DocumentTransactionAppendFastPathPlan {
+  if (
+    input.previous === undefined
+    || input.activeTransactionStartDepth === undefined
+    || input.currentDepth <= input.activeTransactionStartDepth
+  ) {
+    return { kind: "skip" };
+  }
+
+  const compact = planDocumentTransactionAppendCompact({
+    previous: input.previous,
+    operations: input.operations,
+    selectionAfter: input.selectionAfter,
+    metadata: input.metadata,
+  });
+  return compact === null
+    ? { kind: "skip" }
+    : { kind: "replaceLast", entry: compact };
 }
 
 export function planDocumentHistoryEntry(

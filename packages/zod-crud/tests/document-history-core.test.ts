@@ -15,6 +15,7 @@ import {
   planDocumentHistoryRestoreApply,
   planDocumentHistoryRestoreFlow,
   planDocumentTransactionAppendCompact,
+  planDocumentTransactionAppendFastPath,
   planDocumentTransactionCall,
   planDocumentTransactionMerge,
   planDocumentTransactionMergeRange,
@@ -500,6 +501,55 @@ describe("document history core functions", () => {
       selectionAfter: emptySelection,
       metadata: undefined,
     })).toBeNull();
+  });
+
+  test("plans active transaction append fast path before inverse computation", () => {
+    const previous = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Typing" },
+      snapshot: { before: { title: "draft" } },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentTransactionAppendFastPath({
+      activeTransactionStartDepth: undefined,
+      currentDepth: 1,
+      previous,
+      operations: [{ op: "replace", path: "/title", value: "ab" }],
+      selectionAfter: emptySelection,
+      metadata: undefined,
+    })).toEqual({ kind: "skip" });
+
+    expect(planDocumentTransactionAppendFastPath({
+      activeTransactionStartDepth: 1,
+      currentDepth: 1,
+      previous,
+      operations: [{ op: "replace", path: "/title", value: "ab" }],
+      selectionAfter: emptySelection,
+      metadata: undefined,
+    })).toEqual({ kind: "skip" });
+
+    expect(planDocumentTransactionAppendFastPath({
+      activeTransactionStartDepth: 0,
+      currentDepth: 1,
+      previous,
+      operations: [{ op: "replace", path: "/title", value: "ab" }],
+      selectionAfter: emptySelection,
+      metadata: { mergeKey: "typing:title" },
+    })).toEqual({
+      kind: "replaceLast",
+      entry: {
+        forward: [{ op: "replace", path: "/title", value: "ab" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: emptySelection,
+        metadata: { label: "Typing", mergeKey: "typing:title" },
+        snapshot: { before: { title: "draft" } },
+      },
+    });
+    expect(previous.forward).toEqual([{ op: "replace", path: "/title", value: "a" }]);
   });
 
   test("plans history append actions after an entry has been built", () => {
