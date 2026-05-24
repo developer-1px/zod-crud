@@ -51,7 +51,53 @@ interface TrustedJSONOps<T> extends JSONOps<T> {
   trustedApply(state: T, applied: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 }
 
+export interface JSONStateCommitInput<T> {
+  current: T;
+  currentJsonTrusted: boolean;
+  next: T;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  unchangedStateJsonTrusted?: boolean;
+  changedStateJsonTrusted: boolean;
+}
+
+export interface JSONStateCommitPlan<T> {
+  result: JSONResult;
+  state: T;
+  stateJsonTrusted: boolean;
+  notifyApplied: ReadonlyArray<JSONPatchOperation> | null;
+}
+
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
+
+export function planJSONStateCommit<T>(
+  input: JSONStateCommitInput<T>,
+): JSONStateCommitPlan<T> {
+  if (!input.result.ok) {
+    return {
+      result: input.result,
+      state: input.current,
+      stateJsonTrusted: input.currentJsonTrusted,
+      notifyApplied: null,
+    };
+  }
+
+  if (input.next === input.current) {
+    return {
+      result: input.result,
+      state: input.current,
+      stateJsonTrusted: input.unchangedStateJsonTrusted ?? input.currentJsonTrusted,
+      notifyApplied: null,
+    };
+  }
+
+  return {
+    result: input.result,
+    state: input.next,
+    stateJsonTrusted: input.changedStateJsonTrusted,
+    notifyApplied: input.applied,
+  };
+}
 
 export function createJSON<S extends z.ZodType>(
   schema: S,
@@ -91,12 +137,21 @@ export function createJSON<S extends z.ZodType>(
   ): JSONResult => {
     const before = state;
     const applied = previewPatchFrom(before, operations);
-    if (!applied.result.ok) return handleResult(policy, label, applied.result);
-    stateJsonTrusted = true;
-    if (applied.state === before) return applied.result;
-    state = applied.state;
-    notify(applied.applied, metadata);
-    return applied.result;
+    const plan = planJSONStateCommit({
+      current: before,
+      currentJsonTrusted: stateJsonTrusted,
+      next: applied.state,
+      result: applied.result,
+      applied: applied.applied,
+      unchangedStateJsonTrusted: true,
+      changedStateJsonTrusted: true,
+    });
+    if (!plan.result.ok) return handleResult(policy, label, plan.result);
+    stateJsonTrusted = plan.stateJsonTrusted;
+    if (plan.notifyApplied === null) return plan.result;
+    state = plan.state;
+    notify(plan.notifyApplied, metadata);
+    return plan.result;
   };
   const dispatchTrusted = (
     operations: ReadonlyArray<JSONPatchOperation>,
@@ -104,23 +159,41 @@ export function createJSON<S extends z.ZodType>(
   ): JSONResult => {
     const before = state;
     const applied = applyAcceptedPatch(before, operations);
-    if (!applied.result.ok) return handleResult(policy, "patch", applied.result);
-    if (applied.state === before) return applied.result;
-    state = applied.state;
-    if (!stateJsonTrusted) stateJsonTrusted = schemaOutputJsonTrusted || jsonSerializableError(state) === null;
-    notify(applied.applied, metadata);
-    return applied.result;
+    const plan = planJSONStateCommit({
+      current: before,
+      currentJsonTrusted: stateJsonTrusted,
+      next: applied.state,
+      result: applied.result,
+      applied: applied.applied,
+      changedStateJsonTrusted: stateJsonTrusted
+        ? true
+        : schemaOutputJsonTrusted || jsonSerializableError(applied.state) === null,
+    });
+    if (!plan.result.ok) return handleResult(policy, "patch", plan.result);
+    stateJsonTrusted = plan.stateJsonTrusted;
+    if (plan.notifyApplied === null) return plan.result;
+    state = plan.state;
+    notify(plan.notifyApplied, metadata);
+    return plan.result;
   };
   const applyTrustedState = (
     next: z.output<S>,
     applied: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
   ): JSONResult => {
-    if (next === state) return { ok: true };
-    state = next;
-    stateJsonTrusted = true;
-    notify(applied, metadata);
-    return { ok: true };
+    const plan = planJSONStateCommit({
+      current: state,
+      currentJsonTrusted: stateJsonTrusted,
+      next,
+      result: { ok: true },
+      applied,
+      changedStateJsonTrusted: true,
+    });
+    stateJsonTrusted = plan.stateJsonTrusted;
+    if (plan.notifyApplied === null) return plan.result;
+    state = plan.state;
+    notify(plan.notifyApplied, metadata);
+    return plan.result;
   };
   const previewPatchFrom = (
     from: z.output<S>,
