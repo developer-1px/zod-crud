@@ -11,6 +11,7 @@ import {
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
+  applySingleRootObjectReplacePlan,
   appendArrayIndexPath,
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -963,6 +964,39 @@ describe("single root object replace patch planning", () => {
       sourceKeys: ["title"],
       operation: { op: "add", path: "/title", value: "Final" },
     })).toBeNull();
+  });
+
+  test("applies one root object replacement without mutating the source", () => {
+    const source: Record<string, unknown> = { title: "Draft", owner: "core" };
+    const operation = { op: "replace", path: "/title", value: "Final" } as const;
+
+    expect(applySingleRootObjectReplacePlan({
+      source,
+      plan: { operation, key: "title" },
+    })).toEqual({ title: "Final", owner: "core" });
+    expect(source).toEqual({ title: "Draft", owner: "core" });
+  });
+
+  test("applies single root object replacements to __proto__ data keys", () => {
+    const source: Record<string, unknown> = { title: "Draft" };
+    Object.defineProperty(source, "__proto__", {
+      value: { safe: false },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    const operation = { op: "replace", path: "/__proto__", value: { safe: true } } as const;
+
+    const next = applySingleRootObjectReplacePlan({
+      source,
+      plan: { operation, key: "__proto__" },
+    });
+
+    expect(next.title).toBe("Draft");
+    expect(Object.getPrototypeOf(next)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(next, "__proto__")).toBe(true);
+    expect(next.__proto__).toEqual({ safe: true });
+    expect(source.__proto__).toEqual({ safe: false });
   });
 
   test("keeps single root object replace applied operation unchanged", () => {

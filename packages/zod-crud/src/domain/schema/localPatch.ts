@@ -64,6 +64,11 @@ export interface SingleRootObjectReplacePatchPlan {
   key: string;
 }
 
+export interface ApplySingleRootObjectReplacePlanInput {
+  source: Record<string, unknown>;
+  plan: SingleRootObjectReplacePatchPlan;
+}
+
 export interface PlanKnownJsonReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -858,8 +863,13 @@ function applySingleRootObjectReplacePatchWithLocalSchemaValidation(
   });
   if (plan === null) return null;
 
+  return applySingleRootObjectReplacePlan({ source, plan });
+}
+
+export function applySingleRootObjectReplacePlan(input: ApplySingleRootObjectReplacePlanInput): Record<string, unknown> {
+  const { source, plan } = input;
   const next = copyRootRecord(source);
-  writeRootRecordValue(next, plan.key, op.value);
+  writeRootRecordValue(next, plan.key, plan.operation.value);
   return next;
 }
 
