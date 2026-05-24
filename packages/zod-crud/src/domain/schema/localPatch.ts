@@ -32,6 +32,14 @@ export interface PlanIndependentReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanSingleReplacePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface SingleReplacePatchPlan {
+  operation: Extract<JSONPatchOperation, { op: "replace" }>;
+}
+
 export interface PlanAppendOnlyArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -380,16 +388,9 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length !== 1 || !(0 in ops)) return null;
-  const op = ops[0]!;
-  if (
-    validateOperationShape(op) !== null
-    || op.op !== "replace"
-    || typeof op.path !== "string"
-    || op.path === ""
-  ) {
-    return null;
-  }
+  const plan = planSingleReplacePatch({ operations: ops });
+  if (plan === null) return null;
+  const op = plan.operation;
 
   const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
   if (!valueSchema) return null;
@@ -422,7 +423,7 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     };
   }
 
-  const applied = applyAcceptedPatch(state, ops);
+  const applied = applyAcceptedPatch(state, [op]);
   if (!applied.result.ok) {
     return {
       state,
@@ -435,6 +436,22 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+export function planSingleReplacePatch(input: PlanSingleReplacePatchInput): SingleReplacePatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length !== 1 || !(0 in ops)) return null;
+  const op = ops[0]!;
+  if (
+    validateOperationShape(op) !== null
+    || op.op !== "replace"
+    || typeof op.path !== "string"
+    || op.path === ""
+  ) {
+    return null;
+  }
+
+  return { operation: op };
 }
 
 function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(

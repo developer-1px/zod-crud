@@ -13,8 +13,58 @@ import {
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
   planSameArrayPatch,
+  planSingleReplacePatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
+
+describe("single replace patch planning", () => {
+  test("plans one non-root replace operation", () => {
+    expect(planSingleReplacePatch({
+      operations: [{ op: "replace", path: "/title", value: "Final" }],
+    })).toEqual({
+      operation: { op: "replace", path: "/title", value: "Final" },
+    });
+
+    expect(planSingleReplacePatch({
+      operations: [{ op: "replace", path: "/a~1b", value: 1 }],
+    })).toEqual({
+      operation: { op: "replace", path: "/a~1b", value: 1 },
+    });
+  });
+
+  test("rejects patches that are not one non-root replace operation", () => {
+    expect(planSingleReplacePatch({ operations: [] })).toBeNull();
+
+    expect(planSingleReplacePatch({
+      operations: [
+        { op: "replace", path: "/title", value: "A" },
+        { op: "replace", path: "/owner", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSingleReplacePatch({
+      operations: [{ op: "replace", path: "", value: { title: "root" } }],
+    })).toBeNull();
+
+    expect(planSingleReplacePatch({
+      operations: [{ op: "add", path: "/title", value: "Final" }],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(1);
+    expect(planSingleReplacePatch({ operations: sparse })).toBeNull();
+  });
+
+  test("keeps single replace applied operation unchanged", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ title: z.string() }),
+      { title: "Draft" },
+      [{ op: "replace", path: "/title", value: "Final" }],
+    );
+
+    expect(result?.state).toEqual({ title: "Final" });
+    expect(result?.applied).toEqual([{ op: "replace", path: "/title", value: "Final" }]);
+  });
+});
 
 describe("local patch core functions", () => {
   test("plans independent replace batches without schema work", () => {
