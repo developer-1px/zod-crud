@@ -9,6 +9,7 @@ import {
   planClipboardReadBuffer,
   planClipboardCut,
   planClipboardPaste,
+  planClipboardWriteBuffer,
   planClipboardWritePayload,
   planClipboardWriteSources,
   type ClipboardBuffer,
@@ -148,6 +149,70 @@ describe("document clipboard core functions", () => {
       trustedPayload: true,
       clonePayload: false,
     })).toEqual({ ok: true, value: bad });
+  });
+
+  test("plans write buffers from state trust, sources, and payload guards", () => {
+    const payload = initial.items[0]!;
+    const sourceTrusted = planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload,
+      options: { source: "/items/0" },
+    });
+
+    expect(sourceTrusted).toMatchObject({
+      ok: true,
+      buffer: {
+        payload,
+        source: "/items/0",
+        sources: ["/items/0"],
+        schemaTrusted: true,
+      },
+    });
+    if (sourceTrusted.ok) expect(sourceTrusted.buffer.payload).not.toBe(payload);
+
+    const trustedExternal = () => "external";
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: trustedExternal,
+      options: { trustedPayload: true, clonePayload: false },
+    })).toEqual({
+      ok: true,
+      buffer: {
+        payload: trustedExternal,
+        source: null,
+        sources: null,
+        schemaTrusted: false,
+      },
+    });
+
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload,
+      options: { source: "items/0" },
+    })).toEqual({
+      ok: false,
+      result: {
+        ok: false,
+        code: "invalid_pointer",
+        reason: "invalid clipboard source pointer: items/0",
+        pointer: "items/0",
+      },
+    });
+
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: trustedExternal,
+    })).toMatchObject({
+      ok: false,
+      result: {
+        ok: false,
+        code: "not_serializable",
+      },
+    });
   });
 
   test("plans cut without applying document state or touching clipboard buffer", () => {

@@ -159,6 +159,17 @@ export interface ClipboardWritePayloadInput {
   clonePayload: boolean;
 }
 
+export interface ClipboardWriteBufferInput {
+  state: unknown;
+  stateJsonTrusted: boolean;
+  payload: unknown;
+  options?: ClipboardWriteOptions;
+}
+
+export type ClipboardWriteBufferPlan =
+  | { ok: true; buffer: ClipboardBuffer }
+  | { ok: false; result: Exclude<JSONResult, { ok: true }> };
+
 export type ClipboardCutPlanResult<T> =
   | {
       ok: true;
@@ -379,6 +390,46 @@ export function planClipboardWritePayload(
     : { ok: false, reason };
 }
 
+export function planClipboardWriteBuffer(
+  input: ClipboardWriteBufferInput,
+): ClipboardWriteBufferPlan {
+  const options = input.options ?? {};
+  const writtenSources = planClipboardWriteSources(options);
+  if (!writtenSources.ok) return writtenSources;
+
+  const sources = writtenSources.sources;
+  const schemaTrustedPayload = options.trustedPayload === true && sources === null
+    ? false
+    : isClipboardSchemaTrustedPayload({
+        state: input.state,
+        stateJsonTrusted: input.stateJsonTrusted,
+        payload: input.payload,
+        sources,
+      });
+  const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
+  const cloned = planClipboardWritePayload({
+    payload: input.payload,
+    trustedPayload,
+    clonePayload: options.clonePayload !== false,
+  });
+  if (!cloned.ok) {
+    return {
+      ok: false,
+      result: { ok: false, code: "not_serializable", reason: cloned.reason },
+    };
+  }
+
+  return {
+    ok: true,
+    buffer: {
+      payload: cloned.value,
+      source: sources?.[0] ?? null,
+      sources,
+      schemaTrusted: schemaTrustedPayload,
+    },
+  };
+}
+
 export function createClipboard<S extends z.ZodType>(
   args: CreateClipboardOptions<S>,
 ): InternalClipboardState<z.output<S>> {
@@ -421,31 +472,14 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     write(payload, options = {}) {
-      const writtenSources = planClipboardWriteSources(options);
-      if (!writtenSources.ok) return writtenSources.result;
-      const sources = writtenSources.sources;
-      const schemaTrustedPayload = options.trustedPayload === true && sources === null
-        ? false
-        : isClipboardSchemaTrustedPayload({
-            state: getState(),
-            stateJsonTrusted: getStateJsonTrusted?.() === true,
-            payload,
-            sources,
-          });
-      const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
-      const cloned = planClipboardWritePayload({
+      const plan = planClipboardWriteBuffer({
+        state: getState(),
+        stateJsonTrusted: getStateJsonTrusted?.() === true,
         payload,
-        trustedPayload,
-        clonePayload: options.clonePayload !== false,
+        options,
       });
-      if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
-      const source = sources?.[0] ?? null;
-      setBuffer({
-        payload: cloned.value,
-        source,
-        sources,
-        schemaTrusted: schemaTrustedPayload,
-      });
+      if (!plan.ok) return plan.result;
+      setBuffer(plan.buffer);
       return { ok: true };
     },
 
