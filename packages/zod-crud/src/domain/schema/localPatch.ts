@@ -58,6 +58,16 @@ export interface KnownJsonReplacePatchPlan {
   operations: Extract<JSONPatchOperation, { op: "replace" }>[];
 }
 
+export interface PlanSequentialPatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export type SequentialPatchOperationPlan = Exclude<JSONPatchOperation, { op: "test" }>;
+
+export interface SequentialPatchPlan {
+  operations: SequentialPatchOperationPlan[];
+}
+
 export interface PlanAppendOnlyArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -1304,15 +1314,12 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length === 0) return null;
+  const plan = planSequentialPatch({ operations: ops });
+  if (plan === null) return null;
 
   let cur: unknown = state;
   const appliedOps: JSONPatchOperation[] = [];
-  for (let index = 0; index < ops.length; index++) {
-    if (!(index in ops)) return null;
-    const op = ops[index]!;
-    if (!isSupportedLocalOpCandidate(op)) return null;
-
+  for (const op of plan.operations) {
     const sourceValue = sourceValueForValidation(cur, op);
     const applied = valuesTrusted ? applyAcceptedPatch(cur, [op]) : applyTrustedPatch(cur, [op]);
     if (!applied.result.ok) {
@@ -1336,6 +1343,21 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
     result: { ok: true },
     applied: appliedOps,
   };
+}
+
+export function planSequentialPatch(input: PlanSequentialPatchInput): SequentialPatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+
+  const operations = new Array<SequentialPatchOperationPlan>(ops.length);
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (!isSequentialPatchOperationCandidate(op)) return null;
+    operations[index] = op;
+  }
+
+  return { operations };
 }
 
 function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -1682,7 +1704,7 @@ function validateAppliedLocalOp<S extends z.ZodType>(
   }
 }
 
-function isSupportedLocalOpCandidate(op: JSONPatchOperation): boolean {
+function isSequentialPatchOperationCandidate(op: JSONPatchOperation): op is SequentialPatchOperationPlan {
   return !!op
     && typeof op === "object"
     && validateOperationShape(op) === null

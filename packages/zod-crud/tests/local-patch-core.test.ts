@@ -14,6 +14,7 @@ import {
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
   planSameArrayPatch,
+  planSequentialPatch,
   planSingleRootObjectReplacePatch,
   planSingleReplacePatch,
 } from "../src/domain/schema/localPatch.js";
@@ -159,6 +160,61 @@ describe("known-json replace patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
     expect(planKnownJsonReplacePatch({ operations: sparse })).toBeNull();
+  });
+});
+
+describe("sequential patch planning", () => {
+  test("plans supported local operation candidates in order", () => {
+    const operations: JSONPatchOperation[] = [
+      { op: "add", path: "/items/0", value: "A" },
+      { op: "replace", path: "/title", value: "Final" },
+      { op: "copy", from: "/items/0", path: "/items/1" },
+      { op: "move", from: "/items/1", path: "/items/0" },
+      { op: "remove", path: "/items/0" },
+    ];
+
+    expect(planSequentialPatch({ operations })).toEqual({ operations });
+  });
+
+  test("rejects unsupported or malformed sequential candidates", () => {
+    expect(planSequentialPatch({ operations: [] })).toBeNull();
+
+    expect(planSequentialPatch({
+      operations: [{ op: "test", path: "/title", value: "Draft" }],
+    })).toBeNull();
+
+    expect(planSequentialPatch({
+      operations: [{ op: "add", path: "/title" } as JSONPatchOperation],
+    })).toBeNull();
+
+    expect(planSequentialPatch({
+      operations: [{ op: "copy", path: "/title" } as JSONPatchOperation],
+    })).toBeNull();
+
+    expect(planSequentialPatch({
+      operations: [{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/title", value: "Final" };
+    expect(planSequentialPatch({ operations: sparse })).toBeNull();
+  });
+
+  test("keeps mixed sequential fallback applied operations in order", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ title: z.string(), items: z.array(z.string()) }),
+      { title: "Draft", items: [] },
+      [
+        { op: "add", path: "/items/0", value: "A" },
+        { op: "replace", path: "/title", value: "Final" },
+      ],
+    );
+
+    expect(result?.state).toEqual({ title: "Final", items: ["A"] });
+    expect(result?.applied).toEqual([
+      { op: "add", path: "/items/0", value: "A" },
+      { op: "replace", path: "/title", value: "Final" },
+    ]);
   });
 });
 
