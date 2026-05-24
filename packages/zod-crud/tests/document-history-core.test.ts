@@ -17,6 +17,7 @@ import {
   planDocumentHistoryMergeLastWrite,
   planDocumentHistoryRestore,
   planDocumentHistoryRestoreApply,
+  planDocumentHistoryRestoreCompletion,
   planDocumentHistoryRestoreFlow,
   planDocumentTransactionAppendCompact,
   planDocumentTransactionAppendFastPath,
@@ -919,6 +920,48 @@ describe("document history core functions", () => {
       kind: "state",
       state,
       patch,
+    });
+  });
+
+  test("plans restore completion side effects from apply result and flow", () => {
+    const entry = {
+      forward: [{ op: "replace", path: "/title", value: "final" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentHistoryRestoreCompletion({
+      result: { ok: false, code: "test_failed", pointer: "/title" },
+      flow: planDocumentHistoryRestoreFlow({ direction: "undo" }),
+      entry,
+      selectionAfter: emptySelection,
+    })).toEqual({ ok: false });
+
+    expect(planDocumentHistoryRestoreCompletion({
+      result: { ok: true },
+      flow: planDocumentHistoryRestoreFlow({ direction: "undo" }),
+      entry,
+      selectionAfter: emptySelection,
+    })).toEqual({
+      ok: true,
+      writeEntryAfterApply: null,
+      syncLastPatch: true,
+      move: "back",
+      selectionAfter: emptySelection,
+    });
+
+    expect(planDocumentHistoryRestoreCompletion({
+      result: { ok: true },
+      flow: planDocumentHistoryRestoreFlow({ direction: "redo" }),
+      entry,
+      selectionAfter: titleSelection,
+    })).toEqual({
+      ok: true,
+      writeEntryAfterApply: entry,
+      syncLastPatch: true,
+      move: "forward",
+      selectionAfter: titleSelection,
     });
   });
 

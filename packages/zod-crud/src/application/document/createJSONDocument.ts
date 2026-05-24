@@ -523,6 +523,23 @@ export type DocumentHistoryRestoreApplyPlan =
       patch: ReadonlyArray<JSONPatchOperation>;
     };
 
+export interface PlanDocumentHistoryRestoreCompletionInput {
+  result: JSONResult;
+  flow: DocumentHistoryRestoreFlowPlan;
+  entry: DocumentHistoryEntry;
+  selectionAfter: SelectionSnap;
+}
+
+export type DocumentHistoryRestoreCompletionPlan =
+  | { ok: false }
+  | {
+      ok: true;
+      writeEntryAfterApply: DocumentHistoryEntry | null;
+      syncLastPatch: true;
+      move: DocumentHistoryRestoreMove;
+      selectionAfter: SelectionSnap;
+    };
+
 const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
 
 export function createJSONDocument<S extends z.ZodType>(
@@ -855,6 +872,7 @@ export function createJSONDocument<S extends z.ZodType>(
       restoreStack[restoreStack.length - 1] = plan.entry;
     }
     isRestoring = true;
+    let completion: DocumentHistoryRestoreCompletionPlan | null = null;
     try {
       const applyPlan = planDocumentHistoryRestoreApply({
         patch: plan.patch,
@@ -863,19 +881,26 @@ export function createJSONDocument<S extends z.ZodType>(
       const r = applyPlan.kind === "patch"
         ? rawOps.trustedPatch(applyPlan.patch)
         : rawOps.trustedApply(applyPlan.state as z.output<S>, applyPlan.patch);
-      if (!r.ok) return false;
-      if (flow.writeEntryPhase === "afterApply") {
-        restoreStack[restoreStack.length - 1] = plan.entry;
+      completion = planDocumentHistoryRestoreCompletion({
+        result: r,
+        flow,
+        entry: plan.entry,
+        selectionAfter: plan.selectionAfter,
+      });
+      if (!completion.ok) return false;
+      if (completion.writeEntryAfterApply !== null) {
+        restoreStack[restoreStack.length - 1] = completion.writeEntryAfterApply;
       }
-      syncLastPatch();
+      if (completion.syncLastPatch) syncLastPatch();
     } catch {
       return false;
     } finally {
       isRestoring = false;
     }
-    if (flow.move === "back") moveBack(stack);
+    if (completion === null || !completion.ok) return false;
+    if (completion.move === "back") moveBack(stack);
     else moveForward(stack);
-    selectionState?.restore(plan.selectionAfter);
+    selectionState?.restore(completion.selectionAfter);
     return true;
   };
 
@@ -1688,6 +1713,20 @@ export function planDocumentHistoryRestoreApply(
     kind: "state",
     state: input.state,
     patch: input.patch,
+  };
+}
+
+export function planDocumentHistoryRestoreCompletion(
+  input: PlanDocumentHistoryRestoreCompletionInput,
+): DocumentHistoryRestoreCompletionPlan {
+  if (!input.result.ok) return { ok: false };
+
+  return {
+    ok: true,
+    writeEntryAfterApply: input.flow.writeEntryPhase === "afterApply" ? input.entry : null,
+    syncLastPatch: true,
+    move: input.flow.move,
+    selectionAfter: input.selectionAfter,
   };
 }
 
