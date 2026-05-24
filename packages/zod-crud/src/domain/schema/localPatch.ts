@@ -122,6 +122,24 @@ export interface RootObjectReplacePatchPlan {
   strategy: RootObjectReplacePatchStrategy;
 }
 
+export interface PlanSameArrayFieldReplacePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface SameArrayFieldReplaceOperationPlan {
+  op: "replace";
+  path: Pointer;
+  index: number;
+  value: unknown;
+}
+
+export interface SameArrayFieldReplacePatchPlan {
+  arrayPath: Pointer;
+  arraySegments: string[];
+  field: string;
+  operations: SameArrayFieldReplaceOperationPlan[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -627,16 +645,71 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
+  const plan = planSameArrayFieldReplacePatch({ operations: ops });
+  if (plan === null) return null;
+  const first = plan.operations[0];
+  if (first === undefined) return null;
+  const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
+  if (!valueSchema) return null;
+  const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
+
+  const current = readAt(state, plan.arraySegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+  const next = current.value.slice();
+  const applied = new Array<JSONPatchOperation>(plan.operations.length);
+
+  for (let opIndex = 0; opIndex < plan.operations.length; opIndex++) {
+    const op = plan.operations[opIndex]!;
+    if (op.index < 0 || op.index >= next.length) return null;
+    const row = next[op.index];
+    if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
+    if (!objectHasOwn.call(row, plan.field)) return null;
+    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const result = valueSchema.safeParse(op.value);
+      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    }
+
+    const sourceRow = row as Record<string, unknown>;
+    const replaced = { ...sourceRow };
+    if (plan.field === "__proto__") {
+      Object.defineProperty(replaced, plan.field, {
+        value: op.value,
+        enumerable: true,
+        configurable: true,
+        writable: true,
+      });
+    } else {
+      replaced[plan.field] = op.value;
+    }
+    next[op.index] = replaced;
+    applied[opIndex] = { op: "replace", path: op.path, value: op.value };
+  }
+
+  const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+export function planSameArrayFieldReplacePatch(
+  input: PlanSameArrayFieldReplacePatchInput,
+): SameArrayFieldReplacePatchPlan | null {
+  const ops = input.operations;
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
   let arrayPath: Pointer | null = null;
   let arraySegments: string[] | null = null;
   let field: string | null = null;
   let fieldText: ArrayFieldText | null = null;
-  let valueSchema: z.ZodType | null = null;
-  let valueValidator: KnownJsonValueValidator | null = null;
-  let next: unknown[] | null = null;
-  const applied = new Array<JSONPatchOperation>(ops.length);
+  const operations: SameArrayFieldReplaceOperationPlan[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex++) {
     if (!(opIndex in ops)) return null;
@@ -660,69 +733,30 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     }
     if (location === null) return null;
 
-    if (field === null) {
-      field = location.key;
-      fieldText = arrayFieldText(op.path);
-    } else if (field !== location.key) return null;
-
-    if (valueSchema === null) {
-      valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
-      if (!valueSchema) return null;
-      valueValidator = knownJsonValueValidatorForSchema(valueSchema);
-    }
-
-    if (next === null) {
+    if (arrayPath === null) {
       arrayPath = location.arrayPath;
       try {
         arraySegments = parsePointer(arrayPath);
       } catch {
         return null;
       }
-      const current = readAt(state, arraySegments);
-      if (!current.ok || !Array.isArray(current.value)) return null;
-      next = current.value.slice();
     } else if (arrayPath !== location.arrayPath) {
       return null;
     }
 
-    if (location.index < 0 || location.index >= next.length) return null;
-    const row = next[location.index];
-    if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
-    if (!objectHasOwn.call(row, location.key)) return null;
-    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
-    }
-    if (!valueAccepted) {
-      const result = valueSchema.safeParse(op.value);
-      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    if (field === null) {
+      field = location.key;
+      fieldText = arrayFieldText(op.path);
+    } else if (field !== location.key) {
+      return null;
     }
 
-    const sourceRow = row as Record<string, unknown>;
-    const replaced = { ...sourceRow };
-    if (location.key === "__proto__") {
-      Object.defineProperty(replaced, location.key, {
-        value: op.value,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      replaced[location.key] = op.value;
-    }
-    next[location.index] = replaced;
-    applied[opIndex] = op;
+    operations.push({ op: "replace", path: op.path, index: location.index, value: op.value });
   }
 
-  if (arraySegments === null || field === null || valueSchema === null || next === null) return null;
-  const nextState = replaceValueAtSegments(state, arraySegments, 0, next);
-  if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return arrayPath === null || arraySegments === null || field === null
+    ? null
+    : { arrayPath, arraySegments, field, operations };
 }
 
 function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(

@@ -9,6 +9,7 @@ import {
   planRootObjectReplacePatch,
   planRootRecordAddPatch,
   planRootRecordRemovePatch,
+  planSameArrayFieldReplacePatch,
   planSameArrayPatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -568,5 +569,116 @@ describe("root object replace patch planning", () => {
       { op: "replace", path: "/b", value: 2 },
     ]);
     expect(result?.applied[0]).not.toHaveProperty("key");
+  });
+});
+
+describe("same array field replace patch planning", () => {
+  test("plans same-field replacements across one array", () => {
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/2/name", value: "B" },
+      ],
+    })).toEqual({
+      arrayPath: "/items",
+      arraySegments: ["items"],
+      field: "name",
+      operations: [
+        { op: "replace", path: "/items/0/name", index: 0, value: "A" },
+        { op: "replace", path: "/items/2/name", index: 2, value: "B" },
+      ],
+    });
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/0/title", value: "A" },
+        { op: "replace", path: "/1/title", value: "B" },
+      ],
+    })).toEqual({
+      arrayPath: "",
+      arraySegments: [],
+      field: "title",
+      operations: [
+        { op: "replace", path: "/0/title", index: 0, value: "A" },
+        { op: "replace", path: "/1/title", index: 1, value: "B" },
+      ],
+    });
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/a~1b/0/x~1y", value: "A" },
+        { op: "replace", path: "/a~1b/1/x~1y", value: "B" },
+      ],
+    })).toEqual({
+      arrayPath: "/a~1b",
+      arraySegments: ["a/b"],
+      field: "x/y",
+      operations: [
+        { op: "replace", path: "/a~1b/0/x~1y", index: 0, value: "A" },
+        { op: "replace", path: "/a~1b/1/x~1y", index: 1, value: "B" },
+      ],
+    });
+  });
+
+  test("rejects replacements that are not one field across one array", () => {
+    expect(planSameArrayFieldReplacePatch({
+      operations: [{ op: "replace", path: "/items/0/name", value: "A" }],
+    })).toBeNull();
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/title", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/other/1/name", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/01/name", value: "A" },
+        { op: "replace", path: "/items/2/name", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/name/first", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayFieldReplacePatch({
+      operations: [
+        { op: "add", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/name", value: "B" },
+      ],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/items/1/name", value: "B" };
+    expect(planSameArrayFieldReplacePatch({ operations: sparse })).toBeNull();
+  });
+
+  test("keeps same-array field replace applied operations free of planner-only indexes", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.object({ name: z.string(), done: z.boolean() })) }),
+      { items: [{ name: "old", done: false }, { name: "old", done: true }] },
+      [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/name", value: "B" },
+      ],
+    );
+
+    expect(result?.applied).toEqual([
+      { op: "replace", path: "/items/0/name", value: "A" },
+      { op: "replace", path: "/items/1/name", value: "B" },
+    ]);
+    expect(result?.applied[0]).not.toHaveProperty("index");
   });
 });
