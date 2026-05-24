@@ -23,6 +23,7 @@ import {
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
   applyValidatedArrayAddPlan,
+  applyValidatedArrayAddPlanAtSegments,
   applyValidatedArrayFieldReplacements,
   applyValidatedArrayFieldReplacementsAtSegments,
   applyValidatedArrayIndexReplacements,
@@ -307,6 +308,84 @@ describe("array state reads", () => {
 });
 
 describe("array add state materialization", () => {
+  test("validates and applies array add plans at state segments", () => {
+    const schema = z.object({ items: z.array(z.string()) });
+    const state = { items: ["A", "D"], meta: true };
+
+    expect(applyValidatedArrayAddPlanAtSegments({
+      schema,
+      state,
+      parent: "/items",
+      parentSegments: ["items"],
+      start: 1,
+      values: ["B", "C"],
+      valuesTrusted: false,
+    })).toEqual({
+      state: { items: ["A", "B", "C", "D"], meta: true },
+      result: { ok: true },
+      applied: [
+        { op: "add", path: "/items/1", value: "B" },
+        { op: "add", path: "/items/2", value: "C" },
+      ],
+    });
+    expect(state.items).toEqual(["A", "D"]);
+
+    expect(applyValidatedArrayAddPlanAtSegments({
+      schema,
+      state,
+      parent: "/items",
+      parentSegments: ["items"],
+      start: "append",
+      values: ["E"],
+      valuesTrusted: false,
+    })).toMatchObject({
+      state: { items: ["A", "D", "E"], meta: true },
+      applied: [{ op: "add", path: "/items/2", value: "E" }],
+    });
+  });
+
+  test("rejects array add plans at invalid state segments", () => {
+    const schema = z.object({ items: z.array(z.string()), text: z.string() });
+    const state = { items: ["A"], text: "old" };
+
+    expect(applyValidatedArrayAddPlanAtSegments({
+      schema,
+      state,
+      parent: "/missing",
+      parentSegments: ["missing"],
+      start: 0,
+      values: ["B"],
+      valuesTrusted: false,
+    })).toBeNull();
+
+    expect(applyValidatedArrayAddPlanAtSegments({
+      schema,
+      state,
+      parent: "/text",
+      parentSegments: ["text"],
+      start: 0,
+      values: ["B"],
+      valuesTrusted: false,
+    })).toBeNull();
+
+    const result = applyValidatedArrayAddPlanAtSegments({
+      schema,
+      state,
+      parent: "/items",
+      parentSegments: ["items"],
+      start: "append",
+      values: [1],
+      valuesTrusted: true,
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+    expect(state.items).toEqual(["A"]);
+  });
+
   test("validates and applies array add plans with applied operations", () => {
     const schema = z.object({ items: z.array(z.string()) });
     const state = { items: ["A"], meta: true };

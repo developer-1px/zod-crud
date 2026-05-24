@@ -318,6 +318,16 @@ export interface ApplyValidatedArrayAddPlanInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface ApplyValidatedArrayAddPlanAtSegmentsInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  parent: Pointer;
+  parentSegments: ReadonlyArray<string>;
+  start: number | "append";
+  values: ReadonlyArray<unknown>;
+  valuesTrusted: boolean;
+}
+
 export interface ReadArrayAtSegmentsInput {
   state: unknown;
   segments: ReadonlyArray<string>;
@@ -2013,17 +2023,12 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (plan === null) return null;
   const { parent, parentSegments, values } = plan;
 
-  const current = readArrayAtSegments({ state, segments: parentSegments });
-  if (!current.ok) return null;
-  const initialLength = current.array.length;
-
-  return applyValidatedArrayAddPlan({
+  return applyValidatedArrayAddPlanAtSegments({
     schema,
     state,
     parent,
     parentSegments,
-    array: current.array,
-    start: initialLength,
+    start: "append",
     values,
     valuesTrusted,
   });
@@ -2093,15 +2098,11 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   if (plan === null) return null;
   const { parent, parentSegments, start, values } = plan;
 
-  const current = readArrayAtSegments({ state, segments: parentSegments });
-  if (!current.ok) return null;
-
-  return applyValidatedArrayAddPlan({
+  return applyValidatedArrayAddPlanAtSegments({
     schema,
     state,
     parent,
     parentSegments,
-    array: current.array,
     start,
     values,
     valuesTrusted,
@@ -2150,6 +2151,25 @@ export function applyValidatedArrayAddPlan<S extends z.ZodType>(
     values: input.values,
   });
   return nextState === null ? null : okLocalPatch(nextState as z.output<S>, applied);
+}
+
+export function applyValidatedArrayAddPlanAtSegments<S extends z.ZodType>(
+  input: ApplyValidatedArrayAddPlanAtSegmentsInput<S>,
+): ApplyResult<S> | null {
+  const current = readArrayAtSegments({ state: input.state, segments: input.parentSegments });
+  if (!current.ok) return null;
+  const start = input.start === "append" ? current.array.length : input.start;
+
+  return applyValidatedArrayAddPlan({
+    schema: input.schema,
+    state: input.state,
+    parent: input.parent,
+    parentSegments: input.parentSegments,
+    array: current.array,
+    start,
+    values: input.values,
+    valuesTrusted: input.valuesTrusted,
+  });
 }
 
 export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null {
