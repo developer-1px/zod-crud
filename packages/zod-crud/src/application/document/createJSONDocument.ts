@@ -377,6 +377,20 @@ export interface PlanDocumentHistoryMergeLastInput {
   options?: { mergeKey?: string };
 }
 
+export interface PlanDocumentHistoryMergeLastWriteInput {
+  undoLength: number;
+  merged: DocumentHistoryEntry | null;
+}
+
+export type DocumentHistoryMergeLastWritePlan =
+  | { kind: "skip" }
+  | {
+      kind: "replaceLastPair";
+      index: number;
+      length: number;
+      entry: DocumentHistoryEntry;
+    };
+
 export interface PlanDocumentActiveHistoryMetadataInput {
   active: HistoryTransactionOptions | undefined;
   next: HistoryTransactionOptions | undefined;
@@ -804,10 +818,13 @@ export function createJSONDocument<S extends z.ZodType>(
       top: stack.undo[stack.undo.length - 1],
       ...(mergeOptions !== undefined ? { options: mergeOptions } : {}),
     });
-    if (merged === null) return false;
-    const mergeIndex = stack.undo.length - 2;
-    stack.undo[mergeIndex] = merged;
-    stack.undo.pop();
+    const write = planDocumentHistoryMergeLastWrite({
+      undoLength: stack.undo.length,
+      merged,
+    });
+    if (write.kind === "skip") return false;
+    stack.undo[write.index] = write.entry;
+    stack.undo.length = write.length;
     return true;
   };
 
@@ -1604,6 +1621,18 @@ export function planDocumentHistoryMergeLast(
     ...(input.options !== undefined ? { options: input.options } : {}),
   });
   return planMergedDocumentHistoryEntry(input.previous, input.top, metadata);
+}
+
+export function planDocumentHistoryMergeLastWrite(
+  input: PlanDocumentHistoryMergeLastWriteInput,
+): DocumentHistoryMergeLastWritePlan {
+  if (input.merged === null || input.undoLength < 2) return { kind: "skip" };
+  return {
+    kind: "replaceLastPair",
+    index: input.undoLength - 2,
+    length: input.undoLength - 1,
+    entry: input.merged,
+  };
 }
 
 export function planDocumentActiveHistoryMetadata(

@@ -11,6 +11,7 @@ import {
   planDocumentHistoryEntry,
   planDocumentHistoryMergeLast,
   planDocumentHistoryMergeMetadata,
+  planDocumentHistoryMergeLastWrite,
   planDocumentHistoryRestore,
   planDocumentHistoryRestoreApply,
   planDocumentHistoryRestoreFlow,
@@ -243,6 +244,35 @@ describe("document history core functions", () => {
         origin: "keyboard",
         mergeKey: "explicit",
       },
+    });
+  });
+
+  test("plans mergeLast mutable write after an entry pair has been merged", () => {
+    const merged = {
+      forward: [{ op: "replace", path: "/title", value: "final" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+
+    expect(planDocumentHistoryMergeLastWrite({
+      undoLength: 3,
+      merged: null,
+    })).toEqual({ kind: "skip" });
+
+    expect(planDocumentHistoryMergeLastWrite({
+      undoLength: 1,
+      merged,
+    })).toEqual({ kind: "skip" });
+
+    expect(planDocumentHistoryMergeLastWrite({
+      undoLength: 3,
+      merged,
+    })).toEqual({
+      kind: "replaceLastPair",
+      index: 1,
+      length: 2,
+      entry: merged,
     });
   });
 
