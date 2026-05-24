@@ -89,6 +89,18 @@ export interface ReadAppliedLocalOpSourceValueInput {
   operation: JSONPatchOperation;
 }
 
+export interface ApplySequentialLocalOperationInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  current: unknown;
+  operation: SequentialPatchOperationPlan;
+  valuesTrusted: boolean;
+}
+
+export type SequentialLocalOperationResult<S extends z.ZodType> =
+  | { ok: true; state: unknown; applied: JSONPatchOperation }
+  | { ok: false; result: ApplyResult<S> | null };
+
 export interface PlanAppliedLocalOpValidationInput {
   schema: z.ZodType;
   operation: JSONPatchOperation;
@@ -1404,21 +1416,40 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   let cur: unknown = state;
   const appliedOps: JSONPatchOperation[] = [];
   for (const op of plan.operations) {
-    const sourceValue = readAppliedLocalOpSourceValue({ state: cur, operation: op });
-    const applied = valuesTrusted ? applyAcceptedPatch(cur, [op]) : applyTrustedPatch(cur, [op]);
-    if (!applied.result.ok) {
-      return failedLocalPatch(state, applied.result);
-    }
-
-    const appliedOp = applied.applied[0];
-    if (!appliedOp) return null;
-    const validation = validateAppliedLocalOp(schema, state, appliedOp, sourceValue);
-    if (validation === null || !validation.result.ok) return validation;
+    const applied = applySequentialLocalOperation({
+      schema,
+      state,
+      current: cur,
+      operation: op,
+      valuesTrusted,
+    });
+    if (!applied.ok) return applied.result;
     cur = applied.state;
-    appliedOps.push(appliedOp);
+    appliedOps.push(applied.applied);
   }
 
   return okLocalPatch(cur as z.output<S>, appliedOps);
+}
+
+export function applySequentialLocalOperation<S extends z.ZodType>(
+  input: ApplySequentialLocalOperationInput<S>,
+): SequentialLocalOperationResult<S> {
+  const sourceValue = readAppliedLocalOpSourceValue({
+    state: input.current,
+    operation: input.operation,
+  });
+  const applied = input.valuesTrusted
+    ? applyAcceptedPatch(input.current, [input.operation])
+    : applyTrustedPatch(input.current, [input.operation]);
+  if (!applied.result.ok) {
+    return { ok: false, result: failedLocalPatch(input.state, applied.result) };
+  }
+
+  const appliedOp = applied.applied[0];
+  if (!appliedOp) return { ok: false, result: null };
+  const validation = validateAppliedLocalOp(input.schema, input.state, appliedOp, sourceValue);
+  if (validation === null || !validation.result.ok) return { ok: false, result: validation };
+  return { ok: true, state: applied.state, applied: appliedOp };
 }
 
 export function planSequentialPatch(input: PlanSequentialPatchInput): SequentialPatchPlan | null {

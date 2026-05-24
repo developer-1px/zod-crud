@@ -10,6 +10,7 @@ import {
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
+  applySequentialLocalOperation,
   appendArrayIndexPath,
   arrayElementSchemaAtPath,
   arrayIndexInParent,
@@ -825,6 +826,67 @@ describe("sequential patch planning", () => {
       { op: "add", path: "/items/0", value: "A" },
       { op: "replace", path: "/title", value: "Final" },
     ]);
+  });
+});
+
+describe("sequential local operation application", () => {
+  const schema = z.object({
+    title: z.string(),
+    items: z.array(z.string()),
+  });
+
+  test("applies one operation and returns the applied operation", () => {
+    const state = { title: "Draft", items: [] as string[] };
+
+    expect(applySequentialLocalOperation({
+      schema,
+      state,
+      current: state,
+      operation: { op: "add", path: "/items/0", value: "A" },
+      valuesTrusted: false,
+    })).toEqual({
+      ok: true,
+      state: { title: "Draft", items: ["A"] },
+      applied: { op: "add", path: "/items/0", value: "A" },
+    });
+  });
+
+  test("returns patch failures against the original state", () => {
+    const state = { title: "Draft", items: [] as string[] };
+    const result = applySequentialLocalOperation({
+      schema,
+      state,
+      current: state,
+      operation: { op: "remove", path: "/items/0" },
+      valuesTrusted: false,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected patch failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false },
+      applied: [],
+    });
+  });
+
+  test("returns schema validation failures after successful patch application", () => {
+    const state = { title: "Draft", items: [] as string[] };
+    const result = applySequentialLocalOperation({
+      schema,
+      state,
+      current: state,
+      operation: { op: "add", path: "/items/0", value: 1 },
+      valuesTrusted: true,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 });
 
