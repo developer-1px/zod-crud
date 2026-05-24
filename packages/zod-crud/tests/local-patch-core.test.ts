@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   acceptsKnownJsonValue,
+  applyArrayAddPlan,
   applyRootObjectReplacePlan,
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
@@ -161,6 +162,51 @@ describe("array add applied operation validation", () => {
       result: { ok: false, code: "not_serializable" },
       applied: [],
     });
+  });
+});
+
+describe("array add state materialization", () => {
+  test("applies array add plans to root and nested arrays without mutating the source", () => {
+    const state = { items: ["A", "D"], meta: { keep: true } };
+
+    expect(applyArrayAddPlan({
+      state,
+      parentSegments: ["items"],
+      array: state.items,
+      start: 1,
+      values: ["B", "C"],
+    })).toEqual({ items: ["A", "B", "C", "D"], meta: { keep: true } });
+    expect(state.items).toEqual(["A", "D"]);
+
+    const root = ["A"];
+    expect(applyArrayAddPlan({
+      state: root,
+      parentSegments: [],
+      array: root,
+      start: 1,
+      values: ["B"],
+    })).toEqual(["A", "B"]);
+    expect(root).toEqual(["A"]);
+  });
+
+  test("rejects array add plans outside the current array bounds", () => {
+    const state = { items: ["A"] };
+
+    expect(applyArrayAddPlan({
+      state,
+      parentSegments: ["items"],
+      array: state.items,
+      start: -1,
+      values: ["B"],
+    })).toBeNull();
+
+    expect(applyArrayAddPlan({
+      state,
+      parentSegments: ["items"],
+      array: state.items,
+      start: 2,
+      values: ["B"],
+    })).toBeNull();
   });
 });
 

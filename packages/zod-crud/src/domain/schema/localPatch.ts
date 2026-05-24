@@ -119,6 +119,14 @@ export interface PlanArrayAddAppliedOperationsInput {
   values: ReadonlyArray<unknown>;
 }
 
+export interface ApplyArrayAddPlanInput {
+  state: unknown;
+  parentSegments: ReadonlyArray<string>;
+  array: ReadonlyArray<unknown>;
+  start: number;
+  values: ReadonlyArray<unknown>;
+}
+
 export interface AppliedAddValueValidationOperation {
   op: "add";
   path: Pointer;
@@ -1431,12 +1439,13 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   );
   if (valueFailure) return valueFailure;
 
-  const nextState = replaceValueAtSegments(
+  const nextState = applyArrayAddPlan({
     state,
     parentSegments,
-    0,
-    current.value.concat(values),
-  );
+    array: current.value,
+    start: initialLength,
+    values,
+  });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, applied);
 }
@@ -1499,7 +1508,6 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
 
   const current = readAt(state, parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
-  if (start < 0 || start > current.value.length) return null;
 
   const applied = planArrayAddAppliedOperations({ parent, start, values });
   const valueFailure = evaluateAppliedAddValueValidationPlan(
@@ -1511,16 +1519,25 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   );
   if (valueFailure) return valueFailure;
 
-  const nextState = replaceValueAtSegments(
+  const nextState = applyArrayAddPlan({
     state,
     parentSegments,
-    0,
-    start === current.value.length
-      ? current.value.concat(values)
-      : current.value.slice(0, start).concat(values, current.value.slice(start)),
-  );
+    array: current.value,
+    start,
+    values,
+  });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, applied);
+}
+
+export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null {
+  const { state, parentSegments, array, start, values } = input;
+  if (start < 0 || start > array.length) return null;
+
+  const nextArray = start === array.length
+    ? array.concat(values)
+    : array.slice(0, start).concat(values, array.slice(start));
+  return replaceValueAtSegments(state, parentSegments, 0, nextArray);
 }
 
 export function planIncreasingArrayAddPatch(
