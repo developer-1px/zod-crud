@@ -51,6 +51,7 @@ import {
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
   planRootRecordRemoveStrategy,
+  planSameArrayPatchOperations,
   planSameArrayElementReplacePatch,
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
@@ -1937,6 +1938,46 @@ describe("increasing array add patch planning", () => {
 });
 
 describe("same array patch planning", () => {
+  test("plans same-array operations within a known parent", () => {
+    expect(planSameArrayPatchOperations({
+      parent: "/items",
+      operations: [
+        { op: "remove", path: "/items/1" },
+        { op: "add", path: "/items/-", value: "A" },
+        { op: "copy", from: "/items/0", path: "/items/2" },
+        { op: "move", from: "/items/2", path: "/items/0" },
+      ],
+    })).toEqual([
+      { op: "remove", path: "/items/1", index: 1 },
+      { op: "add", path: "/items/-", index: "-", value: "A" },
+      { op: "copy", from: "/items/0", path: "/items/2", fromIndex: 0, index: 2 },
+      { op: "move", from: "/items/2", path: "/items/0", fromIndex: 2, index: 0 },
+    ]);
+  });
+
+  test("rejects same-array operation plans outside a known parent", () => {
+    expect(planSameArrayPatchOperations({
+      parent: "/items",
+      operations: [],
+    })).toBeNull();
+    expect(planSameArrayPatchOperations({
+      parent: "/items",
+      operations: [{ op: "replace", path: "/items/0", value: "A" }],
+    })).toBeNull();
+    expect(planSameArrayPatchOperations({
+      parent: "/items",
+      operations: [{ op: "remove", path: "/other/0" }],
+    })).toBeNull();
+    expect(planSameArrayPatchOperations({
+      parent: "/items",
+      operations: [{ op: "remove", path: "/items/-" }],
+    })).toBeNull();
+    expect(planSameArrayPatchOperations({
+      parent: "/items",
+      operations: [{ op: "copy", from: "/items/-", path: "/items/0" }],
+    })).toBeNull();
+  });
+
   test("plans add, remove, copy, and move operations in one array parent", () => {
     expect(planSameArrayPatch({
       operations: [
