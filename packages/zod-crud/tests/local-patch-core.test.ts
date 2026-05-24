@@ -10,6 +10,7 @@ import {
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
   applyKnownJsonReplaceOperations,
+  applyReplaceOperations,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
   applySequentialLocalOperations,
@@ -528,6 +529,69 @@ describe("array nested replacement state materialization", () => {
 });
 
 describe("replace applied operation validation", () => {
+  test("applies replace operations and preserves applied order", () => {
+    const state = { title: "Draft", meta: { owner: "core" } };
+
+    expect(applyReplaceOperations({
+      state,
+      operations: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "/meta/owner", value: "docs" },
+      ],
+      valuesTrusted: false,
+    })).toEqual({
+      state: { title: "Final", meta: { owner: "docs" } },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "/meta/owner", value: "docs" },
+      ],
+    });
+    expect(state).toEqual({ title: "Draft", meta: { owner: "core" } });
+  });
+
+  test("returns replace operation failures against the original state", () => {
+    const state = { title: "Draft" };
+    const result = applyReplaceOperations({
+      state,
+      operations: [{ op: "replace", path: "/missing", value: "Final" }],
+      valuesTrusted: false,
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false },
+      applied: [],
+    });
+    expect(result.state).toBe(state);
+  });
+
+  test("uses trusted replace values only when caller marks them trusted", () => {
+    const handler = () => "trusted";
+    const state = { handler: null as unknown };
+    const operation = { op: "replace" as const, path: "/handler", value: handler };
+
+    expect(applyReplaceOperations({
+      state,
+      operations: [operation],
+      valuesTrusted: false,
+    })).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+
+    expect(applyReplaceOperations({
+      state,
+      operations: [operation],
+      valuesTrusted: true,
+    })).toEqual({
+      state: { handler },
+      result: { ok: true },
+      applied: [operation],
+    });
+  });
+
   test("accepts applied replace operation lists that satisfy local schemas", () => {
     const state = { title: "Final" };
 

@@ -161,6 +161,18 @@ export interface EvaluateAppliedReplaceOperationsInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface ApplyReplaceOperationsInput {
+  state: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  valuesTrusted: boolean;
+}
+
+export interface ReplaceOperationsResult {
+  state: unknown;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 export type AppliedReplaceOperationsValidationResult<S extends z.ZodType> =
   | { ok: true }
   | { ok: false; result: ApplyResult<S> | null };
@@ -737,7 +749,7 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     : applyKnownJsonReplacePatchWithLocalSchemaValidation(schema, state, ops);
   if (acceptedValues) return acceptedValues;
 
-  const applied = valuesTrusted ? applyAcceptedPatch(state, ops) : applyTrustedPatch(state, ops);
+  const applied = applyReplaceOperations({ state, operations: ops, valuesTrusted });
   if (!applied.result.ok) {
     return failedLocalPatch(state, applied.result);
   }
@@ -751,6 +763,15 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (!validation.ok) return validation.result;
 
   return okLocalPatch(applied.state as z.output<S>, applied.applied);
+}
+
+export function applyReplaceOperations(input: ApplyReplaceOperationsInput): ReplaceOperationsResult {
+  const applied = input.valuesTrusted
+    ? applyAcceptedPatch(input.state, input.operations)
+    : applyTrustedPatch(input.state, input.operations);
+  return applied.result.ok
+    ? { state: applied.state, result: applied.result, applied: applied.applied }
+    : { state: input.state, result: applied.result, applied: [] };
 }
 
 export function evaluateAppliedReplaceOperations<S extends z.ZodType>(
