@@ -69,6 +69,21 @@ export interface SameArrayPatchPlan {
   operations: SameArrayPatchOperationPlan[];
 }
 
+export interface PlanRootRecordAddPatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface RootRecordAddOperationPlan {
+  op: "add";
+  path: Pointer;
+  key: string;
+  value: unknown;
+}
+
+export interface RootRecordAddPatchPlan {
+  operations: RootRecordAddOperationPlan[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -1011,6 +1026,9 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     return null;
   }
 
+  const plan = planRootRecordAddPatch({ operations: ops });
+  if (plan === null) return null;
+
   const rootDef = getDef(schema) as ExtendedDef;
   const valueSchema = rootDef.valueType;
   if (
@@ -1022,8 +1040,39 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   }
 
   const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
-  const applied = new Array<JSONPatchOperation>(ops.length);
+  const applied = new Array<JSONPatchOperation>(plan.operations.length);
 
+  for (let index = 0; index < plan.operations.length; index += 1) {
+    const op = plan.operations[index]!;
+    const valueAccepted = valueValidator !== null && valueValidator(op.value, new WeakSet<object>());
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const result = valueSchema.safeParse(op.value);
+      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    }
+    applied[index] = op;
+  }
+
+  const next = copyRootRecord(state as Record<string, unknown>);
+  for (const op of plan.operations) {
+    writeRootRecordValue(next, op.key, op.value);
+  }
+
+  return {
+    state: next as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+export function planRootRecordAddPatch(input: PlanRootRecordAddPatchInput): RootRecordAddPatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+
+  const operations: RootRecordAddOperationPlan[] = [];
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
     const op = ops[index]!;
@@ -1038,31 +1087,10 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
     ) {
       return null;
     }
-
-    const valueAccepted = valueValidator !== null && valueValidator(op.value, new WeakSet<object>());
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
-    }
-    if (!valueAccepted) {
-      const result = valueSchema.safeParse(op.value);
-      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
-    }
-    applied[index] = op;
+    operations.push({ op: "add", path: op.path, key: op.path.slice(1), value: op.value });
   }
 
-  const next = copyRootRecord(state as Record<string, unknown>);
-  for (let index = 0; index < ops.length; index += 1) {
-    const op = ops[index]!;
-    const key = op.path.slice(1);
-    writeRootRecordValue(next, key, op.value);
-  }
-
-  return {
-    state: next as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return { operations };
 }
 
 function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(

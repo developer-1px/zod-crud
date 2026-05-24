@@ -4,6 +4,7 @@ import {
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
+  planRootRecordAddPatch,
   planSameArrayPatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -303,5 +304,51 @@ describe("same array patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "remove", path: "/items/1" };
     expect(planSameArrayPatch({ operations: sparse })).toBeNull();
+  });
+});
+
+describe("root record add patch planning", () => {
+  test("plans root-level record add operations", () => {
+    expect(planRootRecordAddPatch({
+      operations: [
+        { op: "add", path: "/alpha", value: 1 },
+        { op: "add", path: "/", value: "empty-key" },
+        { op: "add", path: "/__proto__", value: "data-key" },
+      ],
+    })).toEqual({
+      operations: [
+        { op: "add", path: "/alpha", key: "alpha", value: 1 },
+        { op: "add", path: "/", key: "", value: "empty-key" },
+        { op: "add", path: "/__proto__", key: "__proto__", value: "data-key" },
+      ],
+    });
+  });
+
+  test("rejects adds that are not plain root record keys", () => {
+    expect(planRootRecordAddPatch({ operations: [] })).toBeNull();
+
+    expect(planRootRecordAddPatch({
+      operations: [{ op: "add", path: "", value: "root" }],
+    })).toBeNull();
+
+    expect(planRootRecordAddPatch({
+      operations: [{ op: "replace", path: "/alpha", value: 1 }],
+    })).toBeNull();
+
+    expect(planRootRecordAddPatch({
+      operations: [{ op: "add", path: "/alpha/nested", value: 1 }],
+    })).toBeNull();
+
+    expect(planRootRecordAddPatch({
+      operations: [{ op: "add", path: "/a~1b", value: 1 }],
+    })).toBeNull();
+
+    expect(planRootRecordAddPatch({
+      operations: [{ op: "add", path: "alpha", value: 1 }],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "add", path: "/alpha", value: 1 };
+    expect(planRootRecordAddPatch({ operations: sparse })).toBeNull();
   });
 });
