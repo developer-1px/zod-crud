@@ -136,7 +136,7 @@ export interface JSONDocument<T> {
   canRedo(): JSONCapabilityResult;
 }
 
-interface HistoryEntry {
+export interface DocumentHistoryEntry {
   forward: JSONPatchOperation[];
   inverse: JSONPatchOperation[];
   selectionBefore: SelectionSnap;
@@ -146,6 +146,26 @@ interface HistoryEntry {
     before: unknown;
     after?: unknown;
   };
+}
+
+type HistoryEntry = DocumentHistoryEntry;
+
+export interface DocumentChangeMetadataCaptureInput {
+  shouldRecordHistory: boolean;
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: JSONChangeMetadata | undefined;
+  selectionEnabled: boolean;
+  documentSubscriberCount: number;
+}
+
+export interface PlanDocumentHistoryEntryInput {
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata?: HistoryTransactionOptions;
+  operationsOwned?: boolean;
 }
 
 const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
@@ -200,11 +220,13 @@ export function createJSONDocument<S extends z.ZodType>(
   const shouldCaptureSelectionMetadata = (
     shouldRecordHistory: boolean,
     metadata?: JSONChangeMetadata,
-  ): boolean =>
-    shouldRecordHistory
-    || activeHistoryMetadata !== undefined
-    || metadata !== undefined
-    || (selectionEnabled && documentSubscriberCount > 0);
+  ): boolean => shouldCaptureDocumentChangeMetadata({
+    shouldRecordHistory,
+    activeHistoryMetadata,
+    metadata,
+    selectionEnabled,
+    documentSubscriberCount,
+  });
 
   const recordHistory = (
     before: z.output<S>,
@@ -224,27 +246,16 @@ export function createJSONDocument<S extends z.ZodType>(
       return;
     }
 
-    const repeatedReplace = compactRepeatedReplaceBatchForHistory(before, operations);
-    let forward: JSONPatchOperation[];
-    let inverseOps: JSONPatchOperation[];
-    if (repeatedReplace !== null) {
-      forward = repeatedReplace.forward;
-      inverseOps = repeatedReplace.inverse;
-    } else {
-      const inverse = computeInverses(before, operations);
-      if (!inverse.ok) return;
-      forward = operationsOwned ? operations as JSONPatchOperation[] : [...operations];
-      inverseOps = inverse.inverses;
-    }
-    const entry: HistoryEntry = {
-      forward,
-      inverse: inverseOps,
+    const entry = planDocumentHistoryEntry({
+      before,
+      after,
+      operations,
       selectionBefore,
       selectionAfter,
-    };
-    const snapshot = rootBulkHistorySnapshot(before, after, forward);
-    if (snapshot !== null) entry.snapshot = snapshot;
-    if (historyMetadata) entry.metadata = historyMetadata;
+      ...(historyMetadata !== undefined ? { metadata: historyMetadata } : {}),
+      ...(operationsOwned ? { operationsOwned } : {}),
+    });
+    if (entry === null) return;
     if (activeTransactionStartDepth !== undefined && historyDepth(stack) > activeTransactionStartDepth) {
       const prev = stack.undo[stack.undo.length - 1]!;
       const compactMetadata = entry.metadata === undefined
@@ -820,6 +831,44 @@ function isSelectionSnap(selection: SelectionAction | SelectionSnap): selection 
     && "primaryIndex" in selection;
 }
 
+export function shouldCaptureDocumentChangeMetadata(
+  input: DocumentChangeMetadataCaptureInput,
+): boolean {
+  return input.shouldRecordHistory
+    || input.activeHistoryMetadata !== undefined
+    || input.metadata !== undefined
+    || (input.selectionEnabled && input.documentSubscriberCount > 0);
+}
+
+export function planDocumentHistoryEntry(
+  input: PlanDocumentHistoryEntryInput,
+): DocumentHistoryEntry | null {
+  const repeatedReplace = compactRepeatedReplaceBatchForHistory(input.before, input.operations);
+  let forward: JSONPatchOperation[];
+  let inverseOps: JSONPatchOperation[];
+  if (repeatedReplace !== null) {
+    forward = repeatedReplace.forward;
+    inverseOps = repeatedReplace.inverse;
+  } else {
+    const inverse = computeInverses(input.before, input.operations);
+    if (!inverse.ok) return null;
+    forward = input.operationsOwned ? input.operations as JSONPatchOperation[] : [...input.operations];
+    inverseOps = inverse.inverses;
+  }
+
+  const entry: DocumentHistoryEntry = {
+    forward,
+    inverse: inverseOps,
+    selectionBefore: input.selectionBefore,
+    selectionAfter: input.selectionAfter,
+  };
+  const snapshot = rootBulkHistorySnapshot(input.before, input.after, forward);
+  if (snapshot !== null) entry.snapshot = snapshot;
+  const historyMetadata = compactHistoryMetadata(input.metadata);
+  if (historyMetadata !== undefined) entry.metadata = historyMetadata;
+  return entry;
+}
+
 function compactRepeatedReplaceBatchForHistory(
   before: unknown,
   operations: ReadonlyArray<JSONPatchOperation>,
@@ -886,7 +935,7 @@ function isRootObjectMutationBatch(operations: ReadonlyArray<JSONPatchOperation>
   return true;
 }
 
-function buildChangeMetadata(
+export function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,
   direct: JSONChangeMetadata | undefined,
   selectionBefore: SelectionSnap,
@@ -909,7 +958,7 @@ function mergeChangeMetadata(
   return { ...active, ...direct };
 }
 
-function compactHistoryMetadata(
+export function compactHistoryMetadata(
   metadata: HistoryTransactionOptions | undefined,
 ): HistoryTransactionOptions | undefined {
   if (metadata === undefined) return undefined;
