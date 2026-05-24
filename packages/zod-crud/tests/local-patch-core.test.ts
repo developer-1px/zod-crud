@@ -6,6 +6,7 @@ import {
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
+  planRootObjectReplacePatch,
   planRootRecordAddPatch,
   planRootRecordRemovePatch,
   planSameArrayPatch,
@@ -466,6 +467,106 @@ describe("root record remove patch planning", () => {
     );
 
     expect(result?.applied).toEqual([{ op: "add", path: "/alpha", value: 1 }]);
+    expect(result?.applied[0]).not.toHaveProperty("key");
+  });
+});
+
+describe("root object replace patch planning", () => {
+  test("plans ordered full-root replacement and copy-write replacement", () => {
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a", "b"],
+      operations: [
+        { op: "replace", path: "/a", value: 1 },
+        { op: "replace", path: "/b", value: 2 },
+      ],
+    })).toEqual({
+      operations: [
+        { op: "replace", path: "/a", key: "a", value: 1 },
+        { op: "replace", path: "/b", key: "b", value: 2 },
+      ],
+      strategy: "orderedReplace",
+    });
+
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a", "b", "c"],
+      operations: [
+        { op: "replace", path: "/b", value: 2 },
+        { op: "replace", path: "/a", value: 1 },
+      ],
+    })).toEqual({
+      operations: [
+        { op: "replace", path: "/b", key: "b", value: 2 },
+        { op: "replace", path: "/a", key: "a", value: 1 },
+      ],
+      strategy: "copyWrite",
+    });
+  });
+
+  test("rejects replacements outside existing plain root keys", () => {
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a"],
+      operations: [{ op: "replace", path: "/a", value: 1 }],
+    })).toBeNull();
+
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "replace", path: "/a", value: 1 },
+        { op: "replace", path: "/missing", value: 2 },
+      ],
+    })).toBeNull();
+
+    expect(planRootObjectReplacePatch({
+      sourceKeys: [""],
+      operations: [
+        { op: "replace", path: "/", value: 1 },
+        { op: "replace", path: "/", value: 2 },
+      ],
+    })).toBeNull();
+
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "replace", path: "/a", value: 1 },
+        { op: "replace", path: "/a/nested", value: 2 },
+      ],
+    })).toBeNull();
+
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a/b"],
+      operations: [
+        { op: "replace", path: "/a~1b", value: 1 },
+        { op: "replace", path: "/a~1b", value: 2 },
+      ],
+    })).toBeNull();
+
+    expect(planRootObjectReplacePatch({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "add", path: "/a", value: 1 },
+        { op: "replace", path: "/a", value: 2 },
+      ],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/a", value: 1 };
+    expect(planRootObjectReplacePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+  });
+
+  test("keeps root object replace applied operations free of planner-only keys", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ a: z.number(), b: z.number() }),
+      { a: 0, b: 0 },
+      [
+        { op: "replace", path: "/a", value: 1 },
+        { op: "replace", path: "/b", value: 2 },
+      ],
+    );
+
+    expect(result?.applied).toEqual([
+      { op: "replace", path: "/a", value: 1 },
+      { op: "replace", path: "/b", value: 2 },
+    ]);
     expect(result?.applied[0]).not.toHaveProperty("key");
   });
 });

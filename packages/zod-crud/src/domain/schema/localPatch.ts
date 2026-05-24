@@ -103,6 +103,25 @@ export interface RootRecordRemovePatchPlan {
   keepCount: number;
 }
 
+export interface PlanRootObjectReplacePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  sourceKeys: ReadonlyArray<string>;
+}
+
+export type RootObjectReplacePatchStrategy = "orderedReplace" | "copyWrite";
+
+export interface RootObjectReplaceOperationPlan {
+  op: "replace";
+  path: Pointer;
+  key: string;
+  value: unknown;
+}
+
+export interface RootObjectReplacePatchPlan {
+  operations: RootObjectReplaceOperationPlan[];
+  strategy: RootObjectReplacePatchStrategy;
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -817,8 +836,6 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     return null;
   }
 
-  let next: Record<string, unknown> | null = null;
-  const applied = new Array<JSONPatchOperation>(ops.length);
   const shape = getObjectShape(schema);
   const rootDef = shape === null ? getDef(schema) as ExtendedDef : null;
   const recordValueSchema = rootDef?.type === "record" ? (rootDef.valueType ?? null) : null;
@@ -827,9 +844,58 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     : null;
   const source = state as Record<string, unknown>;
   const sourceKeys = Object.keys(source);
-  let matchesSourceKeyOrder = ops.length === sourceKeys.length;
-  const orderedNext: Record<string, unknown> | null = matchesSourceKeyOrder ? {} : null;
+  const plan = planRootObjectReplacePatch({ operations: ops, sourceKeys });
+  if (plan === null) return null;
+  const applied = new Array<JSONPatchOperation>(plan.operations.length);
 
+  for (let index = 0; index < plan.operations.length; index += 1) {
+    const op = plan.operations[index]!;
+    const valueSchema = shape
+      ? (objectHasOwn.call(shape, op.key) ? (shape[op.key] ?? null) : null)
+      : recordValueSchema;
+    if (!valueSchema) return null;
+    const valueAccepted = shape
+      ? acceptsKnownJsonValue(valueSchema, op.value)
+      : acceptsKnownJsonValueWithValidator(recordValueValidator, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const result = valueSchema.safeParse(op.value);
+      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    }
+    applied[index] = { op: "replace", path: op.path, value: op.value };
+  }
+
+  const resultState = plan.strategy === "orderedReplace"
+    ? {}
+    : copyRootRecordKeys(source, sourceKeys);
+  for (const op of plan.operations) {
+    writeRootRecordValue(resultState, op.key, op.value);
+  }
+
+  return {
+    state: resultState as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+export function planRootObjectReplacePatch(
+  input: PlanRootObjectReplacePatchInput,
+): RootObjectReplacePatchPlan | null {
+  const ops = input.operations;
+  const sourceKeys = input.sourceKeys;
+  if (!Array.isArray(ops) || ops.length < 2 || !Array.isArray(sourceKeys)) return null;
+
+  const sourceKeySet = Object.create(null) as Record<string, true>;
+  for (const key of sourceKeys) {
+    sourceKeySet[key] = true;
+  }
+
+  let ordered = ops.length === sourceKeys.length;
+  const operations: RootObjectReplaceOperationPlan[] = [];
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
     const op = ops[index]!;
@@ -845,57 +911,15 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     }
 
     const key = op.path.slice(1);
-    const matchesSourceKey = matchesSourceKeyOrder && key !== "" && key === sourceKeys[index];
-    if (!matchesSourceKey) {
-      if (matchesSourceKeyOrder) {
-        matchesSourceKeyOrder = false;
-        if (orderedNext !== null && next === null) {
-          next = copyRootRecordKeys(source, sourceKeys);
-          for (let previousIndex = 0; previousIndex < index; previousIndex += 1) {
-            const previous = ops[previousIndex]!;
-            if (previous.op !== "replace" || typeof previous.path !== "string") return null;
-            writeRootRecordValue(next, previous.path.slice(1), previous.value);
-          }
-        }
-      }
-      if (key === "" || !objectHasOwn.call(source, key)) return null;
-    }
-
-    const valueSchema = shape
-      ? (objectHasOwn.call(shape, key) ? (shape[key] ?? null) : null)
-      : recordValueSchema;
-    if (!valueSchema) return null;
-    const valueAccepted = shape
-      ? acceptsKnownJsonValue(valueSchema, op.value)
-      : acceptsKnownJsonValueWithValidator(recordValueValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
-    }
-    if (!valueAccepted) {
-      const result = valueSchema.safeParse(op.value);
-      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
-    }
-
-    if (matchesSourceKey && orderedNext !== null) {
-      writeRootRecordValue(orderedNext, key, op.value);
-      applied[index] = op;
-      continue;
-    }
-
-    if (next === null) next = copyRootRecordKeys(source, sourceKeys);
-    writeRootRecordValue(next, key, op.value);
-    applied[index] = op;
+    if (key === "" || !objectHasOwn.call(sourceKeySet, key)) return null;
+    if (ordered && key !== sourceKeys[index]) ordered = false;
+    operations.push({ op: "replace", path: op.path, key, value: op.value });
   }
 
-  const resultState = matchesSourceKeyOrder && orderedNext !== null ? orderedNext : next;
-  return resultState === null
-    ? null
-    : {
-        state: resultState as z.output<S>,
-        result: { ok: true },
-        applied,
-      };
+  return {
+    operations,
+    strategy: ordered ? "orderedReplace" : "copyWrite",
+  };
 }
 
 function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType>(
