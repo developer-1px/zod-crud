@@ -426,11 +426,15 @@ function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     if (op.op !== "replace") return null;
     const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
     if (!valueSchema) return null;
-    if (acceptsKnownJsonValue(valueSchema, op.value)) continue;
-    const parsed = valueSchema.safeParse(op.value);
-    if (!parsed.success) {
-      return schemaViolation(state, op.path, parsed.error.issues);
-    }
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: valueSchema,
+      value: op.value,
+      knownJsonAccepted: acceptsKnownJsonValue(valueSchema, op.value),
+      valuesTrusted,
+    });
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
   }
 
   return {
@@ -460,13 +464,8 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
     knownJsonAccepted: acceptsKnownJsonValue(valueSchema, op.value),
     valuesTrusted,
   });
-  if (valueValidation.kind === "notSerializable") {
-    return operationFailure(state, "not_serializable", valueValidation.reason);
-  }
-  if (valueValidation.kind === "parse") {
-    const result = valueValidation.schema.safeParse(valueValidation.value);
-    if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
-  }
+  const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+  if (valueFailure) return valueFailure;
 
   const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, op);
   if (singleArrayFieldReplace) {
@@ -510,6 +509,20 @@ export function planLocalPatchValueValidation(
     if (jsonError !== null) return { kind: "notSerializable", reason: jsonError };
   }
   return { kind: "parse", path: input.path, schema: input.schema, value: input.value };
+}
+
+export function evaluateLocalPatchValueValidationPlan<S extends z.ZodType>(
+  state: z.output<S>,
+  plan: LocalPatchValueValidationPlan,
+): ApplyResult<S> | null {
+  if (plan.kind === "notSerializable") {
+    return operationFailure(state, "not_serializable", plan.reason);
+  }
+  if (plan.kind === "parse") {
+    const result = plan.schema.safeParse(plan.value);
+    if (!result.success) return schemaViolation(state, plan.path, result.error.issues);
+  }
+  return null;
 }
 
 export function planSingleReplacePatch(input: PlanSingleReplacePatchInput): SingleReplacePatchPlan | null {
@@ -840,13 +853,8 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
       knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, op.value),
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const result = valueValidation.schema.safeParse(valueValidation.value);
-      if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
 
     const sourceRow = row as Record<string, unknown>;
     const replaced = { ...sourceRow };
@@ -963,13 +971,8 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, op.value),
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const parsed = valueValidation.schema.safeParse(valueValidation.value);
-      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
     updateValues[opIndex] = op.value;
     applied[opIndex] = { op: "replace", path: op.path, value: op.value };
   }
@@ -1092,13 +1095,8 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
       knownJsonAccepted: valueAccepted,
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const result = valueValidation.schema.safeParse(valueValidation.value);
-      if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
     applied[index] = { op: "replace", path: op.path, value: op.value };
   }
 
@@ -1329,13 +1327,8 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
       knownJsonAccepted: valueAccepted,
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const result = valueValidation.schema.safeParse(valueValidation.value);
-      if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
     applied[index] = { op: "add", path: op.path, value: op.value };
   }
 
@@ -1458,13 +1451,8 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
       knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, value),
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const parsed = valueValidation.schema.safeParse(valueValidation.value);
-      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
     applied[index] = {
       op: "add",
       path,
@@ -1557,13 +1545,8 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
       knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, value),
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const parsed = valueValidation.schema.safeParse(valueValidation.value);
-      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
     applied[index] = {
       op: "add",
       path,
@@ -1655,13 +1638,8 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
       knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, op.value),
       valuesTrusted,
     });
-    if (valueValidation.kind === "notSerializable") {
-      return operationFailure(state, "not_serializable", valueValidation.reason);
-    }
-    if (valueValidation.kind === "parse") {
-      const parsed = valueValidation.schema.safeParse(valueValidation.value);
-      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
-    }
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return valueFailure;
   }
 
   const applied = applyTrustedPatch(state, ops, { valuesTrusted: true });

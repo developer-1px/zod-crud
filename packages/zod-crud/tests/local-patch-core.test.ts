@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   applyPatchWithLocalSchemaValidation,
+  evaluateLocalPatchValueValidationPlan,
   planAppliedLocalOpValidation,
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
@@ -73,6 +74,53 @@ describe("local patch value validation planning", () => {
     });
 
     expect(result).toMatchObject({ kind: "parse", path: "/value", value });
+  });
+});
+
+describe("local patch value validation evaluation", () => {
+  test("accepts plans that need no runtime validation", () => {
+    expect(evaluateLocalPatchValueValidationPlan(
+      { title: "Draft" },
+      { kind: "accepted" },
+    )).toBeNull();
+  });
+
+  test("converts non-serializable plans to local patch failures", () => {
+    const state = { value: "Draft" };
+    const result = evaluateLocalPatchValueValidationPlan(state, {
+      kind: "notSerializable",
+      reason: "function is not JSON-serializable",
+    });
+
+    expect(result).toEqual({
+      state,
+      result: {
+        ok: false,
+        code: "not_serializable",
+        reason: "function is not JSON-serializable",
+      },
+      applied: [],
+    });
+  });
+
+  test("converts parse plans to prefixed schema violations", () => {
+    const state = { title: "Draft" };
+    const result = evaluateLocalPatchValueValidationPlan(state, {
+      kind: "parse",
+      path: "/title",
+      schema: z.string(),
+      value: 1,
+    });
+
+    expect(result).not.toBeNull();
+    if (result === null) throw new Error("expected validation failure");
+    expect(result.state).toBe(state);
+    expect(result.applied).toEqual([]);
+    expect(result.result).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(result.result.ok).toBe(false);
+    if (result.result.ok) throw new Error("expected schema violation");
+    const issues = JSON.parse(result.result.reason ?? "[]");
+    expect(issues[0].path).toEqual(["title"]);
   });
 });
 
