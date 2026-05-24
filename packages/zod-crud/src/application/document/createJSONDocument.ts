@@ -216,6 +216,20 @@ export interface DocumentLifecycleChangePlan {
   clearHistory: boolean;
 }
 
+export type DocumentSubscriptionEvent = "subscribe" | "unsubscribe";
+
+export interface PlanDocumentSubscriptionChangeInput {
+  event: DocumentSubscriptionEvent;
+  subscriberCount: number;
+  subscribed: boolean;
+}
+
+export interface DocumentSubscriptionChangePlan {
+  subscriberCount: number;
+  subscribed: boolean;
+  shouldCallUnderlyingUnsubscribe: boolean;
+}
+
 export interface PlanDocumentTransactionMergeInput {
   entries: ReadonlyArray<DocumentHistoryEntry>;
   start: number;
@@ -556,7 +570,12 @@ export function createJSONDocument<S extends z.ZodType>(
       return r;
     },
     subscribe(listener) {
-      documentSubscriberCount += 1;
+      const subscribePlan = planDocumentSubscriptionChange({
+        event: "subscribe",
+        subscriberCount: documentSubscriberCount,
+        subscribed: false,
+      });
+      documentSubscriberCount = subscribePlan.subscriberCount;
       const unsubscribe = rawOps.subscribe((applied, metadata) => {
         lastPatch = applied;
         listener(applied, {
@@ -564,12 +583,16 @@ export function createJSONDocument<S extends z.ZodType>(
           selectionAfter: metadata?.selectionAfter ?? snapSelection(),
         });
       });
-      let subscribed = true;
+      let subscribed = subscribePlan.subscribed;
       return () => {
-        if (!subscribed) return;
-        subscribed = false;
-        documentSubscriberCount -= 1;
-        unsubscribe();
+        const unsubscribePlan = planDocumentSubscriptionChange({
+          event: "unsubscribe",
+          subscriberCount: documentSubscriberCount,
+          subscribed,
+        });
+        documentSubscriberCount = unsubscribePlan.subscriberCount;
+        subscribed = unsubscribePlan.subscribed;
+        if (unsubscribePlan.shouldCallUnderlyingUnsubscribe) unsubscribe();
       };
     },
     get state() { return rawOps.state; },
@@ -859,6 +882,38 @@ export function planDocumentLifecycleChange(
   return {
     syncLastPatch: true,
     clearHistory: !input.preserveHistory,
+  };
+}
+
+export function planDocumentSubscriptionChange(
+  input: PlanDocumentSubscriptionChangeInput,
+): DocumentSubscriptionChangePlan {
+  if (input.event === "subscribe") {
+    if (input.subscribed) {
+      return {
+        subscriberCount: input.subscriberCount,
+        subscribed: true,
+        shouldCallUnderlyingUnsubscribe: false,
+      };
+    }
+    return {
+      subscriberCount: input.subscriberCount + 1,
+      subscribed: true,
+      shouldCallUnderlyingUnsubscribe: false,
+    };
+  }
+
+  if (!input.subscribed) {
+    return {
+      subscriberCount: input.subscriberCount,
+      subscribed: false,
+      shouldCallUnderlyingUnsubscribe: false,
+    };
+  }
+  return {
+    subscriberCount: Math.max(0, input.subscriberCount - 1),
+    subscribed: false,
+    shouldCallUnderlyingUnsubscribe: true,
   };
 }
 
