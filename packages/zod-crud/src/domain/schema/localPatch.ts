@@ -174,6 +174,11 @@ export interface RootRecordAddPatchPlan {
   operations: RootRecordAddOperationPlan[];
 }
 
+export interface ApplyRootRecordAddPlanInput {
+  source: Record<string, unknown>;
+  plan: RootRecordAddPatchPlan;
+}
+
 export interface PlanRootRecordRemovePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
   sourceKeys: ReadonlyArray<string>;
@@ -1315,12 +1320,17 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   );
   if (valueFailure) return valueFailure;
 
-  const next = copyRootRecord(state as Record<string, unknown>);
-  for (const op of plan.operations) {
-    writeRootRecordValue(next, op.key, op.value);
-  }
+  const next = applyRootRecordAddPlan({ source: state as Record<string, unknown>, plan });
 
   return okLocalPatch(next as z.output<S>, toAppliedAddOperations(plan.operations));
+}
+
+export function applyRootRecordAddPlan(input: ApplyRootRecordAddPlanInput): Record<string, unknown> {
+  const next = copyRootRecord(input.source);
+  for (const op of input.plan.operations) {
+    writeRootRecordValue(next, op.key, op.value);
+  }
+  return next;
 }
 
 export function planRootRecordAddPatch(input: PlanRootRecordAddPatchInput): RootRecordAddPatchPlan | null {

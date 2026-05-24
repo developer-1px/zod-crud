@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   acceptsKnownJsonValue,
   applyRootObjectReplacePlan,
+  applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   appendArrayIndexPath,
@@ -1368,6 +1369,42 @@ describe("root record add patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/alpha", value: 1 };
     expect(planRootRecordAddPatch({ operations: sparse })).toBeNull();
+  });
+
+  test("applies planned root record adds without mutating the source", () => {
+    const source = { alpha: 1, beta: 2 };
+
+    const result = applyRootRecordAddPlan({
+      source,
+      plan: {
+        operations: [
+          { op: "add", path: "/beta", key: "beta", value: 20 },
+          { op: "add", path: "/gamma", key: "gamma", value: 3 },
+        ],
+      },
+    });
+
+    expect(result).toEqual({ alpha: 1, beta: 20, gamma: 3 });
+    expect(result).not.toBe(source);
+    expect(source).toEqual({ alpha: 1, beta: 2 });
+  });
+
+  test("keeps __proto__ as a data key when applying root record adds", () => {
+    const source: Record<string, unknown> = { alpha: 1 };
+
+    const result = applyRootRecordAddPlan({
+      source,
+      plan: {
+        operations: [
+          { op: "add", path: "/__proto__", key: "__proto__", value: { safe: true } },
+        ],
+      },
+    });
+
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect(result.__proto__).toEqual({ safe: true });
+    expect(Object.prototype.hasOwnProperty.call(source, "__proto__")).toBe(false);
   });
 });
 
