@@ -1725,6 +1725,14 @@ function validateAppliedLocalOp<S extends z.ZodType>(
 ): LocalPatchResult<S> {
   const plan = planAppliedLocalOpValidation({ schema, operation: appliedOp, sourceValue });
   if (plan === null) return null;
+  return evaluateAppliedLocalOpValidationPlan(state, appliedOp, plan);
+}
+
+export function evaluateAppliedLocalOpValidationPlan<S extends z.ZodType>(
+  state: z.output<S>,
+  appliedOp: JSONPatchOperation,
+  plan: AppliedLocalOpValidationPlan,
+): ApplyResult<S> {
   if (plan.kind === "presence") return okLocalPatch(state, [appliedOp]);
 
   const parsed = plan.schema.safeParse(plan.value);

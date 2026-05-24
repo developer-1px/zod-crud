@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   applyPatchWithLocalSchemaValidation,
+  evaluateAppliedLocalOpValidationPlan,
   evaluateLocalPatchValueValidationPlan,
   planAppliedLocalOpValidation,
   planAppendOnlyArrayAddPatch,
@@ -442,6 +443,54 @@ describe("applied local op validation planning", () => {
       operation: { op: "test", path: "/title", value: "Draft" },
       sourceValue: { ok: false },
     })).toBeNull();
+  });
+});
+
+describe("applied local op validation evaluation", () => {
+  test("accepts presence plans without parsing values", () => {
+    const state = { items: ["B"] };
+    const op = { op: "remove", path: "/items/0" } as const;
+
+    expect(evaluateAppliedLocalOpValidationPlan(state, op, { kind: "presence" })).toEqual({
+      state,
+      result: { ok: true },
+      applied: [op],
+    });
+  });
+
+  test("accepts parse plans that satisfy the local schema", () => {
+    const state = { title: "Final" };
+    const op = { op: "replace", path: "/title", value: "Final" } as const;
+
+    expect(evaluateAppliedLocalOpValidationPlan(state, op, {
+      kind: "parse",
+      path: "/title",
+      schema: z.string(),
+      value: "Final",
+    })).toEqual({
+      state,
+      result: { ok: true },
+      applied: [op],
+    });
+  });
+
+  test("converts parse failures to prefixed schema violations", () => {
+    const state = { title: 1 };
+    const op = { op: "replace", path: "/title", value: 1 } as const;
+    const result = evaluateAppliedLocalOpValidationPlan(state, op, {
+      kind: "parse",
+      path: "/title",
+      schema: z.string(),
+      value: 1,
+    });
+
+    expect(result.state).toBe(state);
+    expect(result.applied).toEqual([]);
+    expect(result.result).toMatchObject({ ok: false, code: "schema_violation" });
+    expect(result.result.ok).toBe(false);
+    if (result.result.ok) throw new Error("expected schema violation");
+    const issues = JSON.parse(result.result.reason ?? "[]");
+    expect(issues[0].path).toEqual(["title"]);
   });
 });
 
