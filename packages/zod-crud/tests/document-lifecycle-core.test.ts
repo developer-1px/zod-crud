@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 
-import { planDocumentLifecycleChange } from "../src/application/document/createJSONDocument.js";
+import {
+  planDocumentLastPatch,
+  planDocumentLifecycleChange,
+} from "../src/application/document/createJSONDocument.js";
+import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
 describe("document lifecycle core functions", () => {
   test("syncs lastPatch and clears history after successful replacement by default", () => {
@@ -31,5 +35,12 @@ describe("document lifecycle core functions", () => {
       syncLastPatch: false,
       clearHistory: false,
     });
+  });
+
+  test("plans lastPatch without leaking stale applied patches for no-op changes", () => {
+    const applied: JSONPatchOperation[] = [{ op: "replace", path: "/title", value: "final" }];
+
+    expect(planDocumentLastPatch({ operationCount: 0, applied })).toEqual([]);
+    expect(planDocumentLastPatch({ operationCount: 1, applied })).toBe(applied);
   });
 });

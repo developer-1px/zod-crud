@@ -216,6 +216,11 @@ export interface DocumentLifecycleChangePlan {
   clearHistory: boolean;
 }
 
+export interface PlanDocumentLastPatchInput {
+  operationCount: number;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 export type DocumentSubscriptionEvent = "subscribe" | "unsubscribe";
 
 export interface PlanDocumentSubscriptionChangeInput {
@@ -437,7 +442,7 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     if (!capture.shouldCaptureMetadata) {
       const r = rawOps.patch(operations);
-      if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
+      if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
       return r;
     }
 
@@ -448,7 +453,7 @@ export function createJSONDocument<S extends z.ZodType>(
       : undefined;
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok) lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
+    if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
     if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before!, rawOps.state, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
     }
@@ -471,7 +476,7 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     if (!capture.shouldCaptureMetadata) {
       const r = rawOps.trustedApply(next, applied);
-      if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
+      if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: applied.length, applied: rawOps.lastApplied });
       return r;
     }
 
@@ -482,7 +487,7 @@ export function createJSONDocument<S extends z.ZodType>(
       : undefined;
     const r = rawOps.trustedApply(next, applied, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok) lastPatch = applied.length === 0 ? [] : rawOps.lastApplied;
+    if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: applied.length, applied: rawOps.lastApplied });
     if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before!, next, operations, selectionBefore, selectionAfter, changeMetadata);
     }
@@ -520,7 +525,7 @@ export function createJSONDocument<S extends z.ZodType>(
     const r = rawOps.trustedApply(predicted.state, predicted.applied, plan.changeMetadata);
     if (!r.ok) return r;
 
-    lastPatch = operations.length === 0 ? [] : rawOps.lastApplied;
+    lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
     selectionState?.restore(plan.selectionAfter);
     if (historyLimit > 0 && !isRestoring && operations.length > 0) {
       recordHistory(before, predicted.state, operations, selectionBefore, plan.selectionAfter, plan.changeMetadata);
@@ -553,7 +558,7 @@ export function createJSONDocument<S extends z.ZodType>(
       : undefined;
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);
     const selectionAfter = capture.shouldCaptureMetadata ? snapSelection() : EMPTY_SELECTION;
-    if (r.ok) lastPatch = planned.patch.length === 0 ? [] : rawOps.lastApplied;
+    if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: planned.patch.length, applied: rawOps.lastApplied });
     if (r.ok && capture.shouldRecordHistory) {
       recordHistory(before, planned.next, planned.patch, selectionBefore, selectionAfter, changeMetadata);
     }
@@ -943,6 +948,12 @@ export function planDocumentLifecycleChange(
     syncLastPatch: true,
     clearHistory: !input.preserveHistory,
   };
+}
+
+export function planDocumentLastPatch(
+  input: PlanDocumentLastPatchInput,
+): ReadonlyArray<JSONPatchOperation> {
+  return input.operationCount === 0 ? [] : input.applied;
 }
 
 export function planDocumentSubscriptionChange(
