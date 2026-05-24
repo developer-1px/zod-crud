@@ -7,6 +7,7 @@ import {
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryEntry,
   planDocumentHistoryRestore,
+  planDocumentTransactionMerge,
   planMergedDocumentHistoryEntry,
   shouldCaptureDocumentChangeMetadata,
 } from "../src/application/document/createJSONDocument.js";
@@ -245,6 +246,82 @@ describe("document history core functions", () => {
     });
     expect(prev.inverse).toEqual([{ op: "replace", path: "/title", value: "draft" }]);
     expect(top.inverse).toEqual([{ op: "replace", path: "/count", value: 0 }]);
+  });
+
+  test("plans compact repeated replace transaction entries without mutating source entries", () => {
+    const entries = [
+      {
+        forward: [{ op: "replace", path: "/title", value: "a" }],
+        inverse: [{ op: "replace", path: "/title", value: "draft" }],
+        selectionBefore: emptySelection,
+        selectionAfter: titleSelection,
+        metadata: { label: "Typing" },
+        snapshot: { before: { title: "draft" } },
+      },
+      {
+        forward: [{ op: "replace", path: "/title", value: "ab" }],
+        inverse: [{ op: "replace", path: "/title", value: "a" }],
+        selectionBefore: titleSelection,
+        selectionAfter: titleSelection,
+        metadata: { mergeKey: "typing:title" },
+      },
+      {
+        forward: [{ op: "replace", path: "/title", value: "abc" }],
+        inverse: [{ op: "replace", path: "/title", value: "ab" }],
+        selectionBefore: titleSelection,
+        selectionAfter: emptySelection,
+      },
+    ] satisfies Array<NonNullable<ReturnType<typeof planDocumentHistoryEntry>>>;
+
+    expect(planDocumentTransactionMerge({ entries, start: 0, end: entries.length })).toEqual({
+      forward: [{ op: "replace", path: "/title", value: "abc" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "Typing", mergeKey: "typing:title" },
+      snapshot: { before: { title: "draft" } },
+    });
+    expect(entries[0]?.forward).toEqual([{ op: "replace", path: "/title", value: "a" }]);
+    expect(entries[0]?.selectionAfter).toBe(titleSelection);
+  });
+
+  test("plans general transaction merge for a selected entry range", () => {
+    const prefix = {
+      forward: [{ op: "replace", path: "/skip", value: 1 }],
+      inverse: [{ op: "replace", path: "/skip", value: 0 }],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const first = {
+      forward: [{ op: "replace", path: "/title", value: "a" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "A", origin: "keyboard" },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const second = {
+      forward: [{ op: "replace", path: "/count", value: 1 }],
+      inverse: [{ op: "replace", path: "/count", value: 0 }],
+      selectionBefore: titleSelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "B", mergeKey: "batch" },
+    } satisfies NonNullable<ReturnType<typeof planDocumentHistoryEntry>>;
+    const entries = [prefix, first, second];
+
+    expect(planDocumentTransactionMerge({ entries, start: 1, end: 3 })).toEqual({
+      forward: [
+        { op: "replace", path: "/title", value: "a" },
+        { op: "replace", path: "/count", value: 1 },
+      ],
+      inverse: [
+        { op: "replace", path: "/count", value: 0 },
+        { op: "replace", path: "/title", value: "draft" },
+      ],
+      selectionBefore: emptySelection,
+      selectionAfter: emptySelection,
+      metadata: { label: "B", origin: "keyboard", mergeKey: "batch" },
+    });
+    expect(planDocumentTransactionMerge({ entries, start: 2, end: 2 })).toBeNull();
   });
 
   test("plans undo restore patches, snapshot state, and redo selection without mutating the entry", () => {

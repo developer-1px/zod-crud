@@ -216,6 +216,12 @@ export interface DocumentLifecycleChangePlan {
   clearHistory: boolean;
 }
 
+export interface PlanDocumentTransactionMergeInput {
+  entries: ReadonlyArray<DocumentHistoryEntry>;
+  start: number;
+  end: number;
+}
+
 export interface PlanDocumentHistoryEntryInput {
   before: unknown;
   after: unknown;
@@ -613,131 +619,10 @@ export function createJSONDocument<S extends z.ZodType>(
     const start = stack.undoStart + depthBefore;
     const end = stack.undo.length;
     if (start < stack.undoStart || end - start <= 1) return;
-    if (compactRepeatedReplaceTransaction(start, end)) return;
-
-    const first = stack.undo[start]!;
-    const last = stack.undo[end - 1]!;
-    let forwardLength = 0;
-    let inverseLength = 0;
-    let metadata: HistoryTransactionOptions | undefined;
-    let repeatedReplacePath: Pointer | false | null = null;
-    let repeatedReplaceForward: JSONPatchOperation | undefined;
-    let repeatedReplaceInverse: JSONPatchOperation | undefined;
-
-    for (let index = start; index < end; index += 1) {
-      const entry = stack.undo[index]!;
-      forwardLength += entry.forward.length;
-      inverseLength += entry.inverse.length;
-      if (entry.metadata !== undefined) {
-        metadata = metadata === undefined
-          ? entry.metadata
-          : { ...metadata, ...entry.metadata };
-      }
-
-      if (repeatedReplacePath !== false) {
-        const forward = entry.forward.length === 1 ? entry.forward[0] : undefined;
-        const inverse = entry.inverse.length === 1 ? entry.inverse[0] : undefined;
-        if (
-          forward?.op === "replace"
-          && inverse?.op === "replace"
-          && forward.path === inverse.path
-          && (repeatedReplacePath === null || repeatedReplacePath === forward.path)
-        ) {
-          repeatedReplacePath = forward.path;
-          repeatedReplaceForward = forward;
-          repeatedReplaceInverse ??= inverse;
-        } else {
-          repeatedReplacePath = false;
-        }
-      }
-    }
-
-    if (
-      repeatedReplacePath !== false
-      && repeatedReplaceForward !== undefined
-      && repeatedReplaceInverse !== undefined
-    ) {
-      first.forward[0] = repeatedReplaceForward;
-      first.inverse[0] = repeatedReplaceInverse;
-      first.selectionAfter = last.selectionAfter;
-      if (metadata !== undefined) first.metadata = metadata;
-      else delete first.metadata;
-      stack.undo.length = start + 1;
-      return;
-    }
-
-    const forward = new Array<JSONPatchOperation>(forwardLength);
-    let forwardIndex = 0;
-    for (let entryIndex = start; entryIndex < end; entryIndex += 1) {
-      const entryForward = stack.undo[entryIndex]!.forward;
-      for (let index = 0; index < entryForward.length; index += 1) {
-        forward[forwardIndex] = entryForward[index]!;
-        forwardIndex += 1;
-      }
-    }
-
-    const inverse = new Array<JSONPatchOperation>(inverseLength);
-    let inverseIndex = 0;
-    for (let entryIndex = end - 1; entryIndex >= start; entryIndex -= 1) {
-      const entryInverse = stack.undo[entryIndex]!.inverse;
-      for (let index = 0; index < entryInverse.length; index += 1) {
-        inverse[inverseIndex] = entryInverse[index]!;
-        inverseIndex += 1;
-      }
-    }
-
-    const merged: HistoryEntry = {
-      forward,
-      inverse,
-      selectionBefore: first.selectionBefore,
-      selectionAfter: last.selectionAfter,
-    };
-    if (metadata !== undefined) merged.metadata = metadata;
+    const merged = planDocumentTransactionMerge({ entries: stack.undo, start, end });
+    if (merged === null) return;
     stack.undo[start] = merged;
     stack.undo.length = start + 1;
-  };
-
-  const compactRepeatedReplaceTransaction = (start: number, end: number): boolean => {
-    const first = stack.undo[start]!;
-    const firstForward = first.forward.length === 1 ? first.forward[0] : undefined;
-    const firstInverse = first.inverse.length === 1 ? first.inverse[0] : undefined;
-    if (
-      firstForward?.op !== "replace"
-      || firstInverse?.op !== "replace"
-      || firstForward.path !== firstInverse.path
-    ) {
-      return false;
-    }
-
-    const path = firstForward.path;
-    let metadata = first.metadata;
-    let repeatedForward = firstForward;
-    for (let index = start + 1; index < end; index += 1) {
-      const entry = stack.undo[index]!;
-      const forward = entry.forward.length === 1 ? entry.forward[0] : undefined;
-      const inverse = entry.inverse.length === 1 ? entry.inverse[0] : undefined;
-      if (
-        forward?.op !== "replace"
-        || inverse?.op !== "replace"
-        || forward.path !== path
-        || inverse.path !== path
-      ) {
-        return false;
-      }
-      if (entry.metadata !== undefined) {
-        metadata = mergeRepeatedReplaceTransactionMetadata(metadata, entry.metadata);
-      }
-      repeatedForward = forward;
-    }
-
-    const last = stack.undo[end - 1]!;
-    first.forward[0] = repeatedForward;
-    first.inverse[0] = firstInverse;
-    first.selectionAfter = last.selectionAfter;
-    if (metadata !== undefined) first.metadata = metadata;
-    else delete first.metadata;
-    stack.undo.length = start + 1;
-    return true;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
@@ -995,6 +880,97 @@ export function planDocumentLifecycleChange(
   };
 }
 
+export function planDocumentTransactionMerge(
+  input: PlanDocumentTransactionMergeInput,
+): DocumentHistoryEntry | null {
+  const { entries, start, end } = input;
+  if (start < 0 || end > entries.length || end - start <= 1) return null;
+
+  const first = entries[start]!;
+  const last = entries[end - 1]!;
+  let forwardLength = 0;
+  let inverseLength = 0;
+  let metadata: HistoryTransactionOptions | undefined;
+  let repeatedReplacePath: Pointer | false | null = null;
+  let repeatedReplaceForward: JSONPatchOperation | undefined;
+  let repeatedReplaceInverse: JSONPatchOperation | undefined;
+
+  for (let index = start; index < end; index += 1) {
+    const entry = entries[index];
+    if (entry === undefined) return null;
+    forwardLength += entry.forward.length;
+    inverseLength += entry.inverse.length;
+    if (entry.metadata !== undefined) {
+      metadata = repeatedReplacePath === false
+        ? mergeGeneralTransactionMetadata(metadata, entry.metadata)
+        : mergeRepeatedReplaceTransactionMetadata(metadata, entry.metadata);
+    }
+
+    if (repeatedReplacePath !== false) {
+      const forward = entry.forward.length === 1 ? entry.forward[0] : undefined;
+      const inverse = entry.inverse.length === 1 ? entry.inverse[0] : undefined;
+      if (
+        forward?.op === "replace"
+        && inverse?.op === "replace"
+        && forward.path === inverse.path
+        && (repeatedReplacePath === null || repeatedReplacePath === forward.path)
+      ) {
+        repeatedReplacePath = forward.path;
+        repeatedReplaceForward = forward;
+        repeatedReplaceInverse ??= inverse;
+      } else {
+        repeatedReplacePath = false;
+        metadata = mergeTransactionMetadataRange(entries, start, index + 1);
+      }
+    }
+  }
+
+  if (
+    repeatedReplacePath !== false
+    && repeatedReplaceForward !== undefined
+    && repeatedReplaceInverse !== undefined
+  ) {
+    const compact: DocumentHistoryEntry = {
+      forward: [repeatedReplaceForward],
+      inverse: [repeatedReplaceInverse],
+      selectionBefore: first.selectionBefore,
+      selectionAfter: last.selectionAfter,
+    };
+    if (first.snapshot !== undefined) compact.snapshot = first.snapshot;
+    if (metadata !== undefined) compact.metadata = metadata;
+    return compact;
+  }
+
+  const forward = new Array<JSONPatchOperation>(forwardLength);
+  let forwardIndex = 0;
+  for (let entryIndex = start; entryIndex < end; entryIndex += 1) {
+    const entryForward = entries[entryIndex]!.forward;
+    for (let index = 0; index < entryForward.length; index += 1) {
+      forward[forwardIndex] = entryForward[index]!;
+      forwardIndex += 1;
+    }
+  }
+
+  const inverse = new Array<JSONPatchOperation>(inverseLength);
+  let inverseIndex = 0;
+  for (let entryIndex = end - 1; entryIndex >= start; entryIndex -= 1) {
+    const entryInverse = entries[entryIndex]!.inverse;
+    for (let index = 0; index < entryInverse.length; index += 1) {
+      inverse[inverseIndex] = entryInverse[index]!;
+      inverseIndex += 1;
+    }
+  }
+
+  const merged: DocumentHistoryEntry = {
+    forward,
+    inverse,
+    selectionBefore: first.selectionBefore,
+    selectionAfter: last.selectionAfter,
+  };
+  if (metadata !== undefined) merged.metadata = metadata;
+  return merged;
+}
+
 export function planDocumentHistoryEntry(
   input: PlanDocumentHistoryEntryInput,
 ): DocumentHistoryEntry | null {
@@ -1166,6 +1142,27 @@ function mergeEntryMetadata(
   }
   const merged = { ...prev.metadata, ...top.metadata, ...options };
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+function mergeGeneralTransactionMetadata(
+  current: HistoryTransactionOptions | undefined,
+  next: HistoryTransactionOptions,
+): HistoryTransactionOptions {
+  return current === undefined ? next : { ...current, ...next };
+}
+
+function mergeTransactionMetadataRange(
+  entries: ReadonlyArray<DocumentHistoryEntry>,
+  start: number,
+  end: number,
+): HistoryTransactionOptions | undefined {
+  let metadata: HistoryTransactionOptions | undefined;
+  for (let index = start; index < end; index += 1) {
+    const entryMetadata = entries[index]?.metadata;
+    if (entryMetadata === undefined) continue;
+    metadata = mergeGeneralTransactionMetadata(metadata, entryMetadata);
+  }
+  return metadata;
 }
 
 function mergeRepeatedReplaceTransactionMetadata(
