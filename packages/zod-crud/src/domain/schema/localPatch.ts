@@ -42,6 +42,22 @@ export type LocalPatchValueValidationPlan =
   | { kind: "parse"; path: Pointer; schema: z.ZodType; value: unknown }
   | { kind: "notSerializable"; reason: string };
 
+export interface AppliedValueValidationOperation {
+  path: Pointer;
+  value: unknown;
+}
+
+export interface EvaluateAppliedValueValidationPlanInput<
+  S extends z.ZodType,
+  Operation extends AppliedValueValidationOperation = AppliedValueValidationOperation,
+> {
+  state: z.output<S>;
+  operations: ReadonlyArray<Operation>;
+  schema: z.ZodType;
+  knownJsonAccepted: (value: unknown) => boolean;
+  valuesTrusted: boolean;
+}
+
 export interface PlanIndependentReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -739,6 +755,22 @@ export function evaluateAppliedAddValueValidationPlan<S extends z.ZodType>(
   knownJsonAccepted: (value: unknown) => boolean,
   valuesTrusted: boolean,
 ): ApplyResult<S> | null {
+  return evaluateAppliedValueValidationPlan({
+    state,
+    operations,
+    schema,
+    knownJsonAccepted,
+    valuesTrusted,
+  });
+}
+
+export function evaluateAppliedValueValidationPlan<
+  S extends z.ZodType,
+  Operation extends AppliedValueValidationOperation = AppliedValueValidationOperation,
+>(
+  input: EvaluateAppliedValueValidationPlanInput<S, Operation>,
+): ApplyResult<S> | null {
+  const { state, operations, schema, knownJsonAccepted, valuesTrusted } = input;
   for (const op of operations) {
     const valueValidation = planLocalPatchValueValidation({
       path: op.path,
@@ -760,18 +792,13 @@ export function evaluateAppliedReplaceValueValidationPlan<S extends z.ZodType>(
   knownJsonAccepted: (value: unknown) => boolean,
   valuesTrusted: boolean,
 ): ApplyResult<S> | null {
-  for (const op of operations) {
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema,
-      value: op.value,
-      knownJsonAccepted: knownJsonAccepted(op.value),
-      valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
-  }
-  return null;
+  return evaluateAppliedValueValidationPlan({
+    state,
+    operations,
+    schema,
+    knownJsonAccepted,
+    valuesTrusted,
+  });
 }
 
 export function planSingleReplacePatch(input: PlanSingleReplacePatchInput): SingleReplacePatchPlan | null {

@@ -26,6 +26,7 @@ import {
   evaluateAppliedAddValueValidationPlan,
   evaluateAppliedLocalOpValidationPlan,
   evaluateAppliedReplaceOperations,
+  evaluateAppliedValueValidationPlan,
   evaluateAppliedReplaceValueValidationPlan,
   evaluateArrayAddElementValues,
   evaluateKnownJsonReplaceValues,
@@ -116,6 +117,37 @@ describe("local patch value validation planning", () => {
     });
 
     expect(result).toMatchObject({ kind: "parse", path: "/value", value });
+  });
+});
+
+describe("applied value validation", () => {
+  test("accepts applied values when known-json validation accepts them", () => {
+    const state = { title: "Draft" };
+
+    expect(evaluateAppliedValueValidationPlan({
+      state,
+      operations: [{ path: "/title", value: "Final" }],
+      schema: z.never(),
+      knownJsonAccepted: () => true,
+      valuesTrusted: false,
+    })).toBeNull();
+  });
+
+  test("returns schema failures for applied values that need parsing", () => {
+    const state = { title: "Draft" };
+    const result = evaluateAppliedValueValidationPlan({
+      state,
+      operations: [{ path: "/title", value: 1 }],
+      schema: z.string(),
+      knownJsonAccepted: () => false,
+      valuesTrusted: false,
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 });
 
