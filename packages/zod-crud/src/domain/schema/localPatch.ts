@@ -74,6 +74,17 @@ export interface SingleReplacePatchPlan {
   operation: Extract<JSONPatchOperation, { op: "replace" }>;
 }
 
+export interface ApplySingleReplaceOperationInput {
+  state: unknown;
+  operation: Extract<JSONPatchOperation, { op: "replace" }>;
+}
+
+export interface SingleReplaceOperationResult {
+  state: unknown;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface PlanSingleArrayFieldReplaceInput {
   path: Pointer;
   value: unknown;
@@ -766,21 +777,28 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   });
   if (!valueValidation.ok) return valueValidation.result;
 
-  const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, op);
-  if (singleArrayFieldReplace) {
-    return okLocalPatch(singleArrayFieldReplace as z.output<S>, [op]);
+  const applied = applySingleReplaceOperation({ state, operation: op });
+  return applied.result.ok
+    ? okLocalPatch(applied.state as z.output<S>, applied.applied)
+    : failedLocalPatch(state, applied.result);
+}
+
+export function applySingleReplaceOperation(input: ApplySingleReplaceOperationInput): SingleReplaceOperationResult {
+  const { state, operation } = input;
+  const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, operation);
+  if (singleArrayFieldReplace !== null) {
+    return { state: singleArrayFieldReplace, result: { ok: true }, applied: [operation] };
   }
 
-  const singleRootReplace = applySingleRootObjectReplacePatchWithLocalSchemaValidation(state, op);
-  if (singleRootReplace) {
-    return okLocalPatch(singleRootReplace as z.output<S>, [op]);
+  const singleRootReplace = applySingleRootObjectReplacePatchWithLocalSchemaValidation(state, operation);
+  if (singleRootReplace !== null) {
+    return { state: singleRootReplace, result: { ok: true }, applied: [operation] };
   }
 
-  const applied = applyAcceptedPatch(state, [op]);
-  if (!applied.result.ok) {
-    return failedLocalPatch(state, applied.result);
-  }
-  return okLocalPatch(applied.state as z.output<S>, applied.applied);
+  const applied = applyAcceptedPatch(state, [operation]);
+  return applied.result.ok
+    ? { state: applied.state, result: applied.result, applied: applied.applied }
+    : { state, result: applied.result, applied: [] };
 }
 
 export function planLocalPatchValueValidation(

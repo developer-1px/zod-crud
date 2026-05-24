@@ -12,6 +12,7 @@ import {
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
   applySequentialLocalOperations,
+  applySingleReplaceOperation,
   applySingleArrayFieldReplace,
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
@@ -1080,6 +1081,49 @@ describe("single replace patch planning", () => {
 
     const sparse = new Array<JSONPatchOperation>(1);
     expect(planSingleReplacePatch({ operations: sparse })).toBeNull();
+  });
+
+  test("applies single replace operations through fast paths and fallback patching", () => {
+    expect(applySingleReplaceOperation({
+      state: { items: [{ name: "old" }] },
+      operation: { op: "replace", path: "/items/0/name", value: "new" },
+    })).toEqual({
+      state: { items: [{ name: "new" }] },
+      result: { ok: true },
+      applied: [{ op: "replace", path: "/items/0/name", value: "new" }],
+    });
+
+    expect(applySingleReplaceOperation({
+      state: { title: "Draft", owner: "core" },
+      operation: { op: "replace", path: "/title", value: "Final" },
+    })).toEqual({
+      state: { title: "Final", owner: "core" },
+      result: { ok: true },
+      applied: [{ op: "replace", path: "/title", value: "Final" }],
+    });
+
+    expect(applySingleReplaceOperation({
+      state: { nested: { title: "Draft" } },
+      operation: { op: "replace", path: "/nested/title", value: "Final" },
+    })).toEqual({
+      state: { nested: { title: "Final" } },
+      result: { ok: true },
+      applied: [{ op: "replace", path: "/nested/title", value: "Final" }],
+    });
+  });
+
+  test("returns single replace patch failures against the original state", () => {
+    const state = { title: "Draft" };
+    const result = applySingleReplaceOperation({
+      state,
+      operation: { op: "replace", path: "/missing", value: "Final" },
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false },
+      applied: [],
+    });
   });
 
   test("keeps single replace applied operation unchanged", () => {
