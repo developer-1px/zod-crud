@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   acceptsKnownJsonValue,
+  applyRootObjectReplacePlan,
   applyRootRecordRemovePlan,
   applyPatchWithLocalSchemaValidation,
   appendArrayIndexPath,
@@ -1672,6 +1673,58 @@ describe("root object replace patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/a", value: 1 };
     expect(planRootObjectReplacePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+  });
+
+  test("applies planned root object replace strategies to data records", () => {
+    const source = { a: 0, b: 0, c: 0 };
+
+    expect(applyRootObjectReplacePlan({
+      source,
+      sourceKeys: ["a", "b", "c"],
+      plan: {
+        operations: [
+          { op: "replace", path: "/a", key: "a", value: 1 },
+          { op: "replace", path: "/b", key: "b", value: 2 },
+          { op: "replace", path: "/c", key: "c", value: 3 },
+        ],
+        strategy: "orderedReplace",
+      },
+    })).toEqual({ a: 1, b: 2, c: 3 });
+
+    expect(applyRootObjectReplacePlan({
+      source,
+      sourceKeys: ["a", "b", "c"],
+      plan: {
+        operations: [
+          { op: "replace", path: "/b", key: "b", value: 2 },
+          { op: "replace", path: "/a", key: "a", value: 1 },
+        ],
+        strategy: "copyWrite",
+      },
+    })).toEqual({ a: 1, b: 2, c: 0 });
+  });
+
+  test("keeps __proto__ as a data key when applying root object replacements", () => {
+    const source: Record<string, unknown> = { a: 0 };
+    Object.defineProperty(source, "__proto__", {
+      value: { old: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const result = applyRootObjectReplacePlan({
+      source,
+      sourceKeys: Object.keys(source),
+      plan: {
+        operations: [{ op: "replace", path: "/__proto__", key: "__proto__", value: { safe: true } }],
+        strategy: "copyWrite",
+      },
+    });
+
+    expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
+    expect(result.__proto__).toEqual({ safe: true });
   });
 
   test("keeps root object replace applied operations free of planner-only keys", () => {

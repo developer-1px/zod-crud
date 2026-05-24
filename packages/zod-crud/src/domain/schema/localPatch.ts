@@ -218,6 +218,12 @@ export interface RootObjectReplacePatchPlan {
   strategy: RootObjectReplacePatchStrategy;
 }
 
+export interface ApplyRootObjectReplacePlanInput {
+  source: Record<string, unknown>;
+  sourceKeys: ReadonlyArray<string>;
+  plan: RootObjectReplacePatchPlan;
+}
+
 export interface PlanSameArrayFieldReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -1115,14 +1121,20 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     if (valueFailure) return valueFailure;
   }
 
-  const resultState = plan.strategy === "orderedReplace"
+  const resultState = applyRootObjectReplacePlan({ source, sourceKeys, plan });
+
+  return okLocalPatch(resultState as z.output<S>, toAppliedReplaceOperations(plan.operations));
+}
+
+export function applyRootObjectReplacePlan(input: ApplyRootObjectReplacePlanInput): Record<string, unknown> {
+  const { source, sourceKeys, plan } = input;
+  const next = plan.strategy === "orderedReplace"
     ? {}
     : copyRootRecordKeys(source, sourceKeys);
   for (const op of plan.operations) {
-    writeRootRecordValue(resultState, op.key, op.value);
+    writeRootRecordValue(next, op.key, op.value);
   }
-
-  return okLocalPatch(resultState as z.output<S>, toAppliedReplaceOperations(plan.operations));
+  return next;
 }
 
 export function planRootObjectReplacePatch(
