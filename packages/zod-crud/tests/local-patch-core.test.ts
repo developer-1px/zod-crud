@@ -31,6 +31,7 @@ import {
   planSingleReplacePatch,
   prefixIssues,
   readAppliedLocalOpSourceValue,
+  replaceObjectDataValue,
   replaceValueAtSegments,
   writeObjectDataValue,
   writeRootRecordValue,
@@ -277,6 +278,31 @@ describe("root record copy and write helpers", () => {
     expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(target, "__proto__")).toBe(true);
     expect(target.__proto__).toEqual({ safe: "data" });
+  });
+
+  test("replaces object data keys without mutating the source", () => {
+    const source: Record<string, unknown> = { name: "Draft" };
+    Object.defineProperty(source, "__proto__", {
+      value: { label: "old" },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const next = replaceObjectDataValue(source, "__proto__", { label: "new" });
+
+    expect(next?.name).toBe("Draft");
+    expect(next).not.toBe(source);
+    expect(Object.getPrototypeOf(next)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(next as object, "__proto__")).toBe(true);
+    expect(next?.__proto__).toEqual({ label: "new" });
+    expect(source.__proto__).toEqual({ label: "old" });
+  });
+
+  test("rejects missing and non-object data replacements", () => {
+    expect(replaceObjectDataValue({ name: "Draft" }, "missing", "Final")).toBeNull();
+    expect(replaceObjectDataValue(["Draft"], "0", "Final")).toBeNull();
+    expect(replaceObjectDataValue(null, "name", "Final")).toBeNull();
   });
 
   test("creates null-prototype key sets for structural data keys", () => {

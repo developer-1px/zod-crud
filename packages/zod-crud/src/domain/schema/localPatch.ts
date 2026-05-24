@@ -336,6 +336,15 @@ export function writeObjectDataValue(target: Record<string, unknown>, key: strin
   }
 }
 
+export function replaceObjectDataValue(current: unknown, key: string, value: unknown): Record<string, unknown> | null {
+  if (current === null || typeof current !== "object" || Array.isArray(current)) return null;
+  if (!objectHasOwn.call(current, key)) return null;
+
+  const next = { ...(current as Record<string, unknown>) };
+  writeObjectDataValue(next, key, value);
+  return next;
+}
+
 export function createDataKeySet(keys: ReadonlyArray<string>): Record<string, true> {
   const keySet = Object.create(null) as Record<string, true>;
   for (const key of keys) {
@@ -557,12 +566,8 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   if (!current.ok || !Array.isArray(current.value)) return null;
   if (location.index < 0 || location.index >= current.value.length) return null;
 
-  const row = current.value[location.index];
-  if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
-  if (!objectHasOwn.call(row, location.key)) return null;
-
-  const replaced = { ...(row as Record<string, unknown>) };
-  writeObjectDataValue(replaced, location.key, op.value);
+  const replaced = replaceObjectDataValue(current.value[location.index], location.key, op.value);
+  if (replaced === null) return null;
 
   const next = current.value.slice();
   next[location.index] = replaced;
@@ -612,12 +617,8 @@ function replaceArrayField(
   value: unknown,
 ): unknown[] | null {
   if (index < 0 || index >= array.length) return null;
-  const row = array[index];
-  if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
-  if (!objectHasOwn.call(row, key)) return null;
-
-  const replaced = { ...(row as Record<string, unknown>) };
-  writeObjectDataValue(replaced, key, value);
+  const replaced = replaceObjectDataValue(array[index], key, value);
+  if (replaced === null) return null;
 
   const next = array.slice();
   next[index] = replaced;
@@ -820,9 +821,8 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex++) {
     const op = plan.operations[opIndex]!;
     if (op.index < 0 || op.index >= next.length) return null;
-    const row = next[op.index];
-    if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
-    if (!objectHasOwn.call(row, plan.field)) return null;
+    const replaced = replaceObjectDataValue(next[op.index], plan.field, op.value);
+    if (replaced === null) return null;
     const valueValidation = planLocalPatchValueValidation({
       path: op.path,
       schema: valueSchema,
@@ -833,9 +833,6 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
     if (valueFailure) return valueFailure;
 
-    const sourceRow = row as Record<string, unknown>;
-    const replaced = { ...sourceRow };
-    writeObjectDataValue(replaced, plan.field, op.value);
     next[op.index] = replaced;
     applied[opIndex] = { op: "replace", path: op.path, value: op.value };
   }
@@ -2058,9 +2055,7 @@ export function replaceValueAtSegments(
     value,
   );
   if (child === null) return null;
-  const next = { ...(current as Record<string, unknown>) };
-  writeObjectDataValue(next, segment, child);
-  return next;
+  return replaceObjectDataValue(current, segment, child);
 }
 
 export function acceptsKnownJsonValue(schema: z.ZodType, value: unknown): boolean {
