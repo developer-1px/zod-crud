@@ -105,7 +105,7 @@ export type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
 
-type CloneWritePayloadResult =
+export type ClipboardWritePayloadPlan =
   | { ok: true; value: unknown }
   | { ok: false; reason: string };
 
@@ -136,6 +136,12 @@ export interface ClipboardSchemaTrustedPayloadInput {
   stateJsonTrusted: boolean;
   payload: unknown;
   sources: ReadonlyArray<Pointer> | null;
+}
+
+export interface ClipboardWritePayloadInput {
+  payload: unknown;
+  trustedPayload: boolean;
+  clonePayload: boolean;
 }
 
 export type ClipboardCutPlanResult<T> =
@@ -304,21 +310,19 @@ export function isClipboardSchemaTrustedPayload(
   return false;
 }
 
-function cloneWritePayload(
-  payload: unknown,
-  trustedPayload: boolean,
-  clonePayload: boolean,
-): CloneWritePayloadResult {
-  if (clonePayload) {
-    return trustedPayload
-      ? { ok: true, value: cloneTrustedPlainJson(payload) }
-      : cloneJsonSerializable(payload);
+export function planClipboardWritePayload(
+  input: ClipboardWritePayloadInput,
+): ClipboardWritePayloadPlan {
+  if (input.clonePayload) {
+    return input.trustedPayload
+      ? { ok: true, value: cloneTrustedPlainJson(input.payload) }
+      : cloneJsonSerializable(input.payload);
   }
-  if (trustedPayload) return { ok: true, value: payload };
+  if (input.trustedPayload) return { ok: true, value: input.payload };
 
-  const reason = jsonSerializableError(payload);
+  const reason = jsonSerializableError(input.payload);
   return reason === null
-    ? { ok: true, value: payload }
+    ? { ok: true, value: input.payload }
     : { ok: false, reason };
 }
 
@@ -381,7 +385,11 @@ export function createClipboard<S extends z.ZodType>(
             sources,
           });
       const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
-      const cloned = cloneWritePayload(payload, trustedPayload, options.clonePayload !== false);
+      const cloned = planClipboardWritePayload({
+        payload,
+        trustedPayload,
+        clonePayload: options.clonePayload !== false,
+      });
       if (!cloned.ok) return { ok: false, code: "not_serializable", reason: cloned.reason };
       const source = sources?.[0] ?? null;
       setBuffer({

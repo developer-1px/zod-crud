@@ -7,6 +7,7 @@ import {
   planClipboardReadBuffer,
   planClipboardCut,
   planClipboardPaste,
+  planClipboardWritePayload,
   planClipboardWriteSources,
   type ClipboardBuffer,
 } from "../src/application/document/clipboard.js";
@@ -115,6 +116,36 @@ describe("document clipboard core functions", () => {
       payload: { id: "a", name: "A" },
       sources: ["/items/0"],
     })).toBe(false);
+  });
+
+  test("plans write payload cloning and JSON guard decisions", () => {
+    const payload = { id: "a", nested: { name: "A" } };
+    const cloned = planClipboardWritePayload({
+      payload,
+      trustedPayload: false,
+      clonePayload: true,
+    });
+
+    expect(cloned).toEqual({ ok: true, value: payload });
+    if (cloned.ok) expect(cloned.value).not.toBe(payload);
+
+    expect(planClipboardWritePayload({
+      payload,
+      trustedPayload: false,
+      clonePayload: false,
+    })).toEqual({ ok: true, value: payload });
+
+    const bad = () => "bad";
+    expect(planClipboardWritePayload({
+      payload: bad,
+      trustedPayload: false,
+      clonePayload: true,
+    })).toMatchObject({ ok: false });
+    expect(planClipboardWritePayload({
+      payload: bad,
+      trustedPayload: true,
+      clonePayload: false,
+    })).toEqual({ ok: true, value: bad });
   });
 
   test("plans cut without applying document state or touching clipboard buffer", () => {
