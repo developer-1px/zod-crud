@@ -53,7 +53,7 @@
     "build": "npm run clean && tsc -p tsconfig.json",
     "prepack": "npm run build",
     "prepublishOnly": "npm --prefix ../.. run release:check",
-    "smoke:package": "node ./test/package-smoke.mjs",
+    "smoke:package": "node ./tests/smoke/package-smoke.mjs",
     "test": "vitest run --config vitest.config.ts",
     "typecheck": "tsc -p tsconfig.test.json --noEmit",
     "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package"
