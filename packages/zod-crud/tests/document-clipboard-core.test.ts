@@ -2,8 +2,12 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
+  planClipboardPeekBuffer,
+  planClipboardReadBuffer,
   planClipboardCut,
   planClipboardPaste,
+  planClipboardWriteSources,
+  type ClipboardBuffer,
 } from "../src/application/document/clipboard.js";
 import type { ApplyResult, JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
@@ -21,6 +25,62 @@ const initial: z.output<typeof Schema> = {
 };
 
 describe("document clipboard core functions", () => {
+  test("plans buffer reads and peeks without a clipboard shell", () => {
+    const payload = { id: "a", nested: { name: "A" } };
+    const buffer: ClipboardBuffer = {
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+      schemaTrusted: true,
+    };
+
+    expect(planClipboardReadBuffer(null)).toMatchObject({
+      ok: false,
+      code: "empty_clipboard",
+    });
+
+    const cloned = planClipboardReadBuffer(buffer);
+    expect(cloned).toEqual({
+      ok: true,
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+    });
+    if (cloned.ok) {
+      expect(cloned.payload).not.toBe(payload);
+      expect(cloned.sources).not.toBe(buffer.sources);
+    }
+
+    const direct = planClipboardReadBuffer(buffer, { clonePayload: false });
+    expect(direct).toMatchObject({ ok: true, payload });
+    if (direct.ok) expect(direct.payload).toBe(payload);
+
+    expect(planClipboardPeekBuffer(buffer)).toEqual({
+      ok: true,
+      payload,
+      source: "/items/0",
+      sources: ["/items/0"],
+      schemaTrusted: true,
+    });
+  });
+
+  test("plans write source normalization without a clipboard shell", () => {
+    expect(planClipboardWriteSources({})).toEqual({ ok: true, sources: null });
+    expect(planClipboardWriteSources({
+      source: "/items/0",
+      sources: ["/items/0/name", "/items/0"],
+    })).toEqual({ ok: true, sources: ["/items/0"] });
+    expect(planClipboardWriteSources({ source: "items/0" })).toEqual({
+      ok: false,
+      result: {
+        ok: false,
+        code: "invalid_pointer",
+        reason: "invalid clipboard source pointer: items/0",
+        pointer: "items/0",
+      },
+    });
+  });
+
   test("plans cut without applying document state or touching clipboard buffer", () => {
     const result = planClipboardCut({
       schema: Schema,

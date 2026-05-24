@@ -94,14 +94,14 @@ interface InternalClipboardState<T> extends ClipboardState<T> {
   [INTERNAL_CLIPBOARD_PEEK](): ClipboardPeekResult;
 }
 
-interface ClipboardBuffer {
+export interface ClipboardBuffer {
   payload: unknown;
   source: Pointer | null;
   sources: ReadonlyArray<Pointer> | null;
   schemaTrusted: boolean;
 }
 
-type ClipboardWriteSourcesResult =
+export type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
 
@@ -219,6 +219,58 @@ export function planClipboardPaste<S extends z.ZodType>(
   });
 }
 
+export function planClipboardReadBuffer(
+  buffer: ClipboardBuffer | null,
+  options: ClipboardReadOptions = {},
+): ClipboardReadResult {
+  if (!buffer) return EMPTY_CLIPBOARD;
+  return {
+    ok: true,
+    payload: options.clonePayload === false
+      ? buffer.payload
+      : cloneTrustedPlainJson(buffer.payload),
+    source: buffer.source,
+    sources: buffer.sources ? [...buffer.sources] : null,
+  };
+}
+
+export function planClipboardPeekBuffer(
+  buffer: ClipboardBuffer | null,
+): ClipboardPeekResult {
+  if (!buffer) return EMPTY_CLIPBOARD;
+  return {
+    ok: true,
+    payload: buffer.payload,
+    source: buffer.source,
+    sources: buffer.sources ? [...buffer.sources] : null,
+    schemaTrusted: buffer.schemaTrusted,
+  };
+}
+
+export function planClipboardWriteSources(
+  options: ClipboardWriteOptions,
+): ClipboardWriteSourcesResult {
+  const candidates: Pointer[] = [];
+  if (options.source !== undefined && options.source !== null) candidates.push(options.source);
+  for (const item of options.sources ?? []) {
+    candidates.push(item);
+  }
+  if (candidates.length === 0) return { ok: true, sources: null };
+
+  const normalized = normalizePointerSources(candidates);
+  if (normalized.ok) return { ok: true, sources: normalized.sources };
+  if (normalized.code === "empty_selection") return { ok: true, sources: null };
+  return {
+    ok: false,
+    result: {
+      ok: false,
+      code: "invalid_pointer",
+      reason: `invalid clipboard source pointer: ${normalized.pointer}`,
+      pointer: normalized.pointer,
+    },
+  };
+}
+
 function cloneWritePayload(
   payload: unknown,
   trustedPayload: boolean,
@@ -269,27 +321,6 @@ export function createClipboard<S extends z.ZodType>(
     source ?? getSelectionSource?.() ?? null;
   const targetOrSelection = (target?: Pointer): Pointer | null =>
     target ?? getSelectionTarget?.() ?? null;
-  const writeSources = (options: ClipboardWriteOptions): ClipboardWriteSourcesResult => {
-    const candidates: Pointer[] = [];
-    if (options.source !== undefined && options.source !== null) candidates.push(options.source);
-    for (const item of options.sources ?? []) {
-      candidates.push(item);
-    }
-    if (candidates.length === 0) return { ok: true, sources: null };
-
-    const normalized = normalizePointerSources(candidates);
-    if (normalized.ok) return { ok: true, sources: normalized.sources };
-    if (normalized.code === "empty_selection") return { ok: true, sources: null };
-    return {
-      ok: false,
-      result: {
-        ok: false,
-        code: "invalid_pointer",
-        reason: `invalid clipboard source pointer: ${normalized.pointer}`,
-        pointer: normalized.pointer,
-      },
-    };
-  };
   const isTrustedWritePayload = (payload: unknown, sources: ReadonlyArray<Pointer> | null): boolean => {
     if (getStateJsonTrusted?.() !== true) return false;
     const state = getState();
@@ -320,30 +351,15 @@ export function createClipboard<S extends z.ZodType>(
     get sources() { return buffer?.sources ? [...buffer.sources] : null; },
 
     read(options = {}) {
-      if (!buffer) return EMPTY_CLIPBOARD;
-      return {
-        ok: true,
-        payload: options.clonePayload === false
-          ? buffer.payload
-          : cloneTrustedPlainJson(buffer.payload),
-        source: buffer.source,
-        sources: buffer.sources ? [...buffer.sources] : null,
-      };
+      return planClipboardReadBuffer(buffer, options);
     },
 
     [INTERNAL_CLIPBOARD_PEEK]() {
-      if (!buffer) return EMPTY_CLIPBOARD;
-      return {
-        ok: true,
-        payload: buffer.payload,
-        source: buffer.source,
-        sources: buffer.sources ? [...buffer.sources] : null,
-        schemaTrusted: buffer.schemaTrusted,
-      };
+      return planClipboardPeekBuffer(buffer);
     },
 
     write(payload, options = {}) {
-      const writtenSources = writeSources(options);
+      const writtenSources = planClipboardWriteSources(options);
       if (!writtenSources.ok) return writtenSources.result;
       const sources = writtenSources.sources;
       const schemaTrustedPayload = options.trustedPayload === true && sources === null
