@@ -197,6 +197,17 @@ if (!/Release decision:[\s\S]*Keep `doc\.commands` out of the production root co
   fail("api usage gaps: doc.commands production release decision is not locked.");
 }
 
+if (/\bP0\b/.test(apiUsageGaps)) {
+  fail("api usage gaps: unresolved P0 wording must not remain in the 1.0 release ledger.");
+}
+
+if (
+  !/G-001: `doc\.ops` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/.test(apiUsageGaps)
+  || !/G-002: `doc\.commands` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/.test(apiUsageGaps)
+) {
+  fail("api usage gaps: legacy doc.ops/doc.commands drift must be closed for the 1.0 root contract.");
+}
+
 if (!/Status: Closed for the production root contract/.test(apiUsageGaps)) {
   fail("api usage gaps: support type export gap is not closed.");
 }

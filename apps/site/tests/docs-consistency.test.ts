@@ -19,6 +19,7 @@ const docs = {
   llms: read("llms.txt"),
 };
 const releaseNotes = read("docs/release-notes.md");
+const apiUsageGaps = read("docs/api-usage-gaps.md");
 const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json")) as {
   root: { values: string[]; types: string[] };
   react: { values: string[]; types: string[] };
@@ -84,6 +85,14 @@ describe("public docs consistency", () => {
     expect(docs.llms).toMatch(/prepublishOnly[\s\S]*release:check/);
     expect(releaseNotes).toMatch(/prepublishOnly[\s\S]*release:check/);
     expect(releaseNotes).toContain("1.0.0 package version");
+  });
+
+  test("keeps legacy facade drift out of the 1.0 root contract", () => {
+    expect(apiUsageGaps).not.toMatch(/\bP0\b/);
+    expect(apiUsageGaps).toMatch(/G-001: `doc\.ops` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/);
+    expect(apiUsageGaps).toMatch(/G-002: `doc\.commands` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/);
+    expect(apiUsageGaps).toMatch(/Keep `doc\.ops` out of the production root contract/);
+    expect(apiUsageGaps).toMatch(/Keep `doc\.commands` out of the production root contract/);
   });
 
   test("keeps the source layout SSOT aligned", () => {

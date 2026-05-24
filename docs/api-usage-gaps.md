@@ -29,11 +29,11 @@ Public contract is intentionally locked today:
 
 | Consumer | Import shape | Observed usage | API status |
 | --- | --- | --- | --- |
-| `../zod-admin-ui` | `useJSONDocument`, `JSONDocument`, `JSONOps` | Rebuilds `doc.ops` and `doc.commands` in `src/lib/bridge/zodCrudReactCompat.ts`; module-augments `zod-crud` in `src/types/zod-crud-compat.d.ts`; table/form code calls `doc.ops.*`, `doc.commands.*`, `doc.history.transaction`, `doc.clipboard.*`. | Highest signal gap. Active consumer expects a `doc.ops` / `doc.commands` facade that current package does not expose. |
-| `../zod-admin-ui/packages/zod-admin-ui` | peer `zod-crud@^0.12.0`, public props typed as `JSONDocument<T>` | Package runtime calls `doc.ops.replace/add/remove`, `doc.commands.move/duplicate/copy/paste/undo/redo` from inside `createAutoForm` and `useNavigator`. | P0 packaging gap. The package declares current zod-crud but actually requires the root app's compat alias. |
-| `../editable/apps/composer-demo` | `useJSONDocument` | Calls `jd.ops.patch`, `jd.ops.load`, `jd.commands.undo`, `jd.commands.redo` in examples. | Same legacy facade expectation as zod-admin-ui. |
+| `../zod-admin-ui` | `useJSONDocument`, `JSONDocument`, `JSONOps` | Rebuilds `doc.ops` and `doc.commands` in `src/lib/bridge/zodCrudReactCompat.ts`; module-augments `zod-crud` in `src/types/zod-crud-compat.d.ts`; table/form code calls `doc.ops.*`, `doc.commands.*`, `doc.history.transaction`, `doc.clipboard.*`. | External adapter migration. This does not reopen the zod-crud 1.0 root contract. |
+| `../zod-admin-ui/packages/zod-admin-ui` | peer `zod-crud@^0.12.0`, public props typed as `JSONDocument<T>` | Package runtime calls `doc.ops.replace/add/remove`, `doc.commands.move/duplicate/copy/paste/undo/redo` from inside `createAutoForm` and `useNavigator`. | External packaging migration. The package needs its own compat adapter or a peer update, not a zod-crud root API expansion. |
+| `../editable/apps/composer-demo` | `useJSONDocument` | Calls `jd.ops.patch`, `jd.ops.load`, `jd.commands.undo`, `jd.commands.redo` in examples. | Legacy facade expectation. Keep it in app-side compatibility code. |
 | `../editable/packages/anyeditable` | `JSONPatchOperation`, `applyPatch` | Defines its own `JSONOps` as `{ apply(patches) }`; wraps user ops with synchronous local snapshot via `applyPatch`. | Not necessarily a core gap, but shows a need for a tiny patch-sink adapter type. |
-| `../aria-kernel-apps/legacy/packages/editable-tree` | `useJSONDocument`, `JSONResult` from `zod-crud/react` | Uses `doc.ops.add/remove`, `doc.commands.replace/paste/move/undo/redo`, plus local clipboard state. | Legacy facade expectation. Also imports a type from the React entrypoint that is not exported there. |
+| `../aria-kernel-apps/legacy/packages/editable-tree` | `useJSONDocument`, `JSONResult` from `zod-crud/react` | Uses `doc.ops.add/remove`, `doc.commands.replace/paste/move/undo/redo`, plus local clipboard state. | Legacy facade expectation. Also imports a type from the React entrypoint that is not exported there; migrate to root type imports or local compatibility types. |
 | `../aria-kernel-apps/legacy/apps/*`, `legacy/packages/slides` | `createJsonCrud`, `JsonCrud`, `JsonDoc`, `JsonValue` | Uses old graph-shaped CRUD API with `focusFilter`, `childKeys`, `defaultFor`; repo has `tooling/zod-crud-shim.ts` that stubs these names and throws. | Migration gap, not a candidate to restore wholesale unless a separate compat entrypoint is desired. |
 | `../nano-edit` | `createJSONDocument`, `JSONDocument`, pointer/selection types | Uses current document facade well: `history`, `selection`, `commit(...,{ selection })`, `lastPatch`, `mergeLast`. ProseMirror/Markdown adapters stay app-side. | Good current-API reference. Minor docs opportunity for editor adapter patterns. |
 | `../zod-editor` | `createJSONDocument`, `applyPatch`, `JSONDocument`, selection types | Uses current facade deeply: commits patches with explicit selection, keeps selection-only changes out of history, exposes agent command surface app-side. | Good current-API reference. No immediate core gap. |
@@ -47,7 +47,9 @@ Public contract is intentionally locked today:
 
 ### G-001: `doc.ops` Facade Drift
 
-Priority: P0
+Status: Closed for the zod-crud 1.0 root contract.
+
+Priority: P2 for external adapter migration.
 
 Evidence:
 
@@ -70,7 +72,9 @@ Release decision:
 
 ### G-002: `doc.commands` Facade Drift
 
-Priority: P0
+Status: Closed for the zod-crud 1.0 root contract.
+
+Priority: P2 for external adapter migration.
 
 Evidence:
 

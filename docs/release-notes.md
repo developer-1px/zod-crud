@@ -99,3 +99,22 @@ Before publishing 1.0.0, run:
 ```sh
 npm run release:check
 ```
+
+## 1.0 external gap classification
+
+Date: 2026-05-24
+
+### What changed
+
+- `docs/api-usage-gaps.md` no longer classifies legacy `doc.ops` or
+  `doc.commands` expectations as zod-crud 1.0 root-contract blockers.
+- Those names remain external adapter and migration issues for consumers that
+  still need them.
+- `docs:evaluate` and docs consistency tests now reject unresolved `P0` wording
+  in the API gap ledger.
+
+### Release decision
+
+- Keep `doc.ops` and `doc.commands` outside the production root contract.
+- Ship the 1.0 package with the locked root and `zod-crud/react` public
+  contract.
