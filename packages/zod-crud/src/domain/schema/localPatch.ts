@@ -833,14 +833,19 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
     const row = next[op.index];
     if (row === null || typeof row !== "object" || Array.isArray(row)) return null;
     if (!objectHasOwn.call(row, plan.field)) return null;
-    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: valueSchema,
+      value: op.value,
+      knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, op.value),
+      valuesTrusted,
+    });
+    if (valueValidation.kind === "notSerializable") {
+      return operationFailure(state, "not_serializable", valueValidation.reason);
     }
-    if (!valueAccepted) {
-      const result = valueSchema.safeParse(op.value);
-      if (!result.success) return schemaViolation(state, op.path, result.error.issues);
+    if (valueValidation.kind === "parse") {
+      const result = valueValidation.schema.safeParse(valueValidation.value);
+      if (!result.success) return schemaViolation(state, valueValidation.path, result.error.issues);
     }
 
     const sourceRow = row as Record<string, unknown>;

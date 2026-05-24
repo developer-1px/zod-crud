@@ -1064,6 +1064,24 @@ describe("same array field replace patch planning", () => {
     ]);
     expect(result?.applied[0]).not.toHaveProperty("index");
   });
+
+  test("keeps same-array field replace JSON guard before schema parsing", () => {
+    const state = { items: [{ name: "old" }, { name: "old" }] };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.object({ name: z.string() })) }),
+      state,
+      [
+        { op: "replace", path: "/items/0/name", value: () => "not json" },
+        { op: "replace", path: "/items/1/name", value: "B" },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
 
 describe("same array element replace patch planning", () => {
