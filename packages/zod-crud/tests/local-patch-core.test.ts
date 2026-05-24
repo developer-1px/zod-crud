@@ -1,10 +1,13 @@
 import { describe, expect, test } from "vitest";
+import { z } from "zod";
 
 import {
+  applyPatchWithLocalSchemaValidation,
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
   planRootRecordAddPatch,
+  planRootRecordRemovePatch,
   planSameArrayPatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -350,5 +353,119 @@ describe("root record add patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/alpha", value: 1 };
     expect(planRootRecordAddPatch({ operations: sparse })).toBeNull();
+  });
+});
+
+describe("root record remove patch planning", () => {
+  test("plans removal strategies from source key order", () => {
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a", "b", "c"],
+      operations: [{ op: "remove", path: "/b" }],
+    })).toEqual({
+      operations: [{ op: "remove", path: "/b", key: "b" }],
+      strategy: "copyDelete",
+      keepCount: 2,
+    });
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a", "b", "c"],
+      operations: [{ op: "remove", path: "/c" }],
+    })).toEqual({
+      operations: [{ op: "remove", path: "/c", key: "c" }],
+      strategy: "copyPrefix",
+      keepCount: 2,
+    });
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a", "b", "c"],
+      operations: [
+        { op: "remove", path: "/b" },
+        { op: "remove", path: "/c" },
+      ],
+    })).toEqual({
+      operations: [
+        { op: "remove", path: "/b", key: "b" },
+        { op: "remove", path: "/c", key: "c" },
+      ],
+      strategy: "copyPrefix",
+      keepCount: 1,
+    });
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a", "b", "c", "d"],
+      operations: [
+        { op: "remove", path: "/a" },
+        { op: "remove", path: "/c" },
+      ],
+    })).toEqual({
+      operations: [
+        { op: "remove", path: "/a", key: "a" },
+        { op: "remove", path: "/c", key: "c" },
+      ],
+      strategy: "rebuild",
+      keepCount: 2,
+    });
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a", "b"],
+      operations: [
+        { op: "remove", path: "/b" },
+        { op: "remove", path: "/a" },
+      ],
+    })).toEqual({
+      operations: [
+        { op: "remove", path: "/b", key: "b" },
+        { op: "remove", path: "/a", key: "a" },
+      ],
+      strategy: "clear",
+      keepCount: 0,
+    });
+  });
+
+  test("rejects remove batches that are not plain existing root keys", () => {
+    expect(planRootRecordRemovePatch({ sourceKeys: ["a"], operations: [] })).toBeNull();
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a"],
+      operations: [{ op: "remove", path: "/missing" }],
+    })).toBeNull();
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "remove", path: "/a" },
+        { op: "remove", path: "/a" },
+      ],
+    })).toBeNull();
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a"],
+      operations: [{ op: "remove", path: "/a/nested" }],
+    })).toBeNull();
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a/b"],
+      operations: [{ op: "remove", path: "/a~1b" }],
+    })).toBeNull();
+
+    expect(planRootRecordRemovePatch({
+      sourceKeys: ["a"],
+      operations: [{ op: "add", path: "/a", value: 1 }],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "remove", path: "/a" };
+    expect(planRootRecordRemovePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+  });
+
+  test("keeps root record add applied operations free of planner-only keys", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.record(z.string(), z.number()),
+      {},
+      [{ op: "add", path: "/alpha", value: 1 }],
+    );
+
+    expect(result?.applied).toEqual([{ op: "add", path: "/alpha", value: 1 }]);
+    expect(result?.applied[0]).not.toHaveProperty("key");
   });
 });

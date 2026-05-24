@@ -84,6 +84,25 @@ export interface RootRecordAddPatchPlan {
   operations: RootRecordAddOperationPlan[];
 }
 
+export interface PlanRootRecordRemovePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  sourceKeys: ReadonlyArray<string>;
+}
+
+export type RootRecordRemovePatchStrategy = "clear" | "copyPrefix" | "copyDelete" | "rebuild";
+
+export interface RootRecordRemoveOperationPlan {
+  op: "remove";
+  path: Pointer;
+  key: string;
+}
+
+export interface RootRecordRemovePatchPlan {
+  operations: RootRecordRemoveOperationPlan[];
+  strategy: RootRecordRemovePatchStrategy;
+  keepCount: number;
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -901,60 +920,28 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
 
   const source = state as Record<string, unknown>;
   const sourceKeys = Object.keys(source);
-  if (ops.length === sourceKeys.length) {
-    const applied = sourceOrderFullRootRecordRemoveOps(ops, sourceKeys);
-    if (applied !== null) {
-      return {
-        state: {} as z.output<S>,
-        result: { ok: true },
-        applied,
-      };
-    }
-  }
+  const plan = planRootRecordRemovePatch({ operations: ops, sourceKeys });
+  if (plan === null) return null;
+  const applied = plan.operations.map((op): JSONPatchOperation => ({ op: "remove", path: op.path }));
 
-  const removedKeys = Object.create(null) as Record<string, true>;
-  const applied = new Array<JSONPatchOperation>(ops.length);
-
-  for (let index = 0; index < ops.length; index += 1) {
-    if (!(index in ops)) return null;
-    const op = ops[index]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "remove"
-      || typeof op.path !== "string"
-      || op.path === ""
-      || op.path[0] !== "/"
-      || op.path.includes("~")
-      || op.path.indexOf("/", 1) !== -1
-    ) {
-      return null;
-    }
-
-    const key = op.path.slice(1);
-    if (!objectHasOwn.call(source, key) || objectHasOwn.call(removedKeys, key)) return null;
-    removedKeys[key] = true;
-    applied[index] = op;
-  }
-
-  if (ops.length === sourceKeys.length) {
+  if (plan.strategy === "clear") {
     return {
       state: {} as z.output<S>,
       result: { ok: true },
       applied,
     };
   }
-  const keepCount = sourceKeys.length - ops.length;
-  if (removedRootKeysMatchSuffix(sourceKeys, keepCount, removedKeys)) {
+  if (plan.strategy === "copyPrefix") {
     return {
-      state: copyRootRecordKeyPrefix(source, sourceKeys, keepCount) as z.output<S>,
+      state: copyRootRecordKeyPrefix(source, sourceKeys, plan.keepCount) as z.output<S>,
       result: { ok: true },
       applied,
     };
   }
-  if (ops.length * 2 < sourceKeys.length) {
+  if (plan.strategy === "copyDelete") {
     const next = copyRootRecordKeys(source, sourceKeys);
-    for (let index = 0; index < ops.length; index += 1) {
-      delete next[ops[index]!.path.slice(1)];
+    for (const op of plan.operations) {
+      delete next[op.key];
     }
     return {
       state: next as z.output<S>,
@@ -963,6 +950,7 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
     };
   }
 
+  const removedKeys = rootRecordRemoveKeySet(plan.operations);
   const next: Record<string, unknown> = {};
   for (const key of sourceKeys) {
     if (objectHasOwn.call(removedKeys, key)) continue;
@@ -985,11 +973,20 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   };
 }
 
-function sourceOrderFullRootRecordRemoveOps(
-  ops: ReadonlyArray<JSONPatchOperation>,
-  sourceKeys: ReadonlyArray<string>,
-): JSONPatchOperation[] | null {
-  const applied = new Array<JSONPatchOperation>(ops.length);
+export function planRootRecordRemovePatch(
+  input: PlanRootRecordRemovePatchInput,
+): RootRecordRemovePatchPlan | null {
+  const ops = input.operations;
+  const sourceKeys = input.sourceKeys;
+  if (!Array.isArray(ops) || ops.length === 0 || !Array.isArray(sourceKeys)) return null;
+
+  const sourceKeySet = Object.create(null) as Record<string, true>;
+  for (const key of sourceKeys) {
+    sourceKeySet[key] = true;
+  }
+
+  const removedKeys = Object.create(null) as Record<string, true>;
+  const operations: RootRecordRemoveOperationPlan[] = [];
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
     const op = ops[index]!;
@@ -1001,13 +998,35 @@ function sourceOrderFullRootRecordRemoveOps(
       || op.path[0] !== "/"
       || op.path.includes("~")
       || op.path.indexOf("/", 1) !== -1
-      || op.path.slice(1) !== sourceKeys[index]
     ) {
       return null;
     }
-    applied[index] = op;
+
+    const key = op.path.slice(1);
+    if (!objectHasOwn.call(sourceKeySet, key) || objectHasOwn.call(removedKeys, key)) return null;
+    removedKeys[key] = true;
+    operations.push({ op: "remove", path: op.path, key });
   }
-  return applied;
+
+  const keepCount = sourceKeys.length - operations.length;
+  const strategy: RootRecordRemovePatchStrategy = operations.length === sourceKeys.length
+    ? "clear"
+    : removedRootKeysMatchSuffix(sourceKeys, keepCount, removedKeys)
+      ? "copyPrefix"
+      : operations.length * 2 < sourceKeys.length
+        ? "copyDelete"
+        : "rebuild";
+  return { operations, strategy, keepCount };
+}
+
+function rootRecordRemoveKeySet(
+  operations: ReadonlyArray<RootRecordRemoveOperationPlan>,
+): Record<string, true> {
+  const removedKeys = Object.create(null) as Record<string, true>;
+  for (const op of operations) {
+    removedKeys[op.key] = true;
+  }
+  return removedKeys;
 }
 
 function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -1053,7 +1072,7 @@ function applyRootRecordAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
       const result = valueSchema.safeParse(op.value);
       if (!result.success) return schemaViolation(state, op.path, result.error.issues);
     }
-    applied[index] = op;
+    applied[index] = { op: "add", path: op.path, value: op.value };
   }
 
   const next = copyRootRecord(state as Record<string, unknown>);
