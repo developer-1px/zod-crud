@@ -140,6 +140,23 @@ export interface SameArrayFieldReplacePatchPlan {
   operations: SameArrayFieldReplaceOperationPlan[];
 }
 
+export interface PlanSameArrayElementReplacePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface SameArrayElementReplaceOperationPlan {
+  op: "replace";
+  path: Pointer;
+  index: number;
+  value: unknown;
+}
+
+export interface SameArrayElementReplacePatchPlan {
+  parent: Pointer;
+  parentSegments: string[];
+  operations: SameArrayElementReplaceOperationPlan[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -581,13 +598,46 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
+  const plan = planSameArrayElementReplacePatch({ operations: ops });
+  if (plan === null) return null;
+
+  const parentSchema = cachedSchemaAtPointer(schema, plan.parent, "value");
+  const elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
+  if (!elementSchema) return null;
+  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
+
+  const current = readAt(state, plan.parentSegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+  const next = current.value.slice();
+  const applied = new Array<JSONPatchOperation>(plan.operations.length);
+
+  for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
+    const op = plan.operations[opIndex]!;
+    if (!acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
+    if (op.index < 0 || op.index >= next.length) return null;
+    next[op.index] = op.value;
+    applied[opIndex] = { op: "replace", path: op.path, value: op.value };
+  }
+
+  const nextState = replaceValueAtSegments(state, plan.parentSegments, 0, next);
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+export function planSameArrayElementReplacePatch(
+  input: PlanSameArrayElementReplacePatchInput,
+): SameArrayElementReplacePatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+
   let parent: Pointer | null = null;
   let parentIndexPrefix: string | null = null;
   let parentSegments: string[] | null = null;
-  let elementSchema: z.ZodType | null = null;
-  let elementValidator: KnownJsonValueValidator | null = null;
-  let next: unknown[] | null = null;
-  const applied = new Array<JSONPatchOperation>(ops.length);
+  const operations: SameArrayElementReplaceOperationPlan[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return null;
@@ -607,14 +657,6 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
       parent = location.parent;
       parentIndexPrefix = arrayElementIndexPrefix(parent);
       parentSegments = location.parentSegments;
-      const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
-      elementSchema = parentSchema ? getArrayElement(parentSchema) : null;
-      if (!elementSchema) return null;
-      elementValidator = knownJsonValueValidatorForSchema(elementSchema);
-
-      const current = readAt(state, parentSegments);
-      if (!current.ok || !Array.isArray(current.value)) return null;
-      next = current.value.slice();
       index = location.index;
     } else {
       if (parentIndexPrefix === null) return null;
@@ -623,20 +665,12 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
       index = parsedIndex;
     }
 
-    if (!elementSchema || !acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
-    if (next === null || index < 0 || index >= next.length) return null;
-    next[index] = op.value;
-    applied[opIndex] = op;
+    operations.push({ op: "replace", path: op.path, index, value: op.value });
   }
 
-  if (parentSegments === null || next === null) return null;
-  const nextState = replaceValueAtSegments(state, parentSegments, 0, next);
-  if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return parent === null || parentSegments === null
+    ? null
+    : { parent, parentSegments, operations };
 }
 
 function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(

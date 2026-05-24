@@ -9,6 +9,7 @@ import {
   planRootObjectReplacePatch,
   planRootRecordAddPatch,
   planRootRecordRemovePatch,
+  planSameArrayElementReplacePatch,
   planSameArrayFieldReplacePatch,
   planSameArrayPatch,
 } from "../src/domain/schema/localPatch.js";
@@ -678,6 +679,96 @@ describe("same array field replace patch planning", () => {
     expect(result?.applied).toEqual([
       { op: "replace", path: "/items/0/name", value: "A" },
       { op: "replace", path: "/items/1/name", value: "B" },
+    ]);
+    expect(result?.applied[0]).not.toHaveProperty("index");
+  });
+});
+
+describe("same array element replace patch planning", () => {
+  test("plans element replacements across one array", () => {
+    expect(planSameArrayElementReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "replace", path: "/items/2", value: "B" },
+      ],
+    })).toEqual({
+      parent: "/items",
+      parentSegments: ["items"],
+      operations: [
+        { op: "replace", path: "/items/0", index: 0, value: "A" },
+        { op: "replace", path: "/items/2", index: 2, value: "B" },
+      ],
+    });
+
+    expect(planSameArrayElementReplacePatch({
+      operations: [
+        { op: "replace", path: "/0", value: 1 },
+        { op: "replace", path: "/1", value: 2 },
+      ],
+    })).toEqual({
+      parent: "",
+      parentSegments: [],
+      operations: [
+        { op: "replace", path: "/0", index: 0, value: 1 },
+        { op: "replace", path: "/1", index: 1, value: 2 },
+      ],
+    });
+
+    expect(planSameArrayElementReplacePatch({
+      operations: [
+        { op: "replace", path: "/a~1b/0", value: "A" },
+        { op: "replace", path: "/a~1b/1", value: "B" },
+      ],
+    })).toEqual({
+      parent: "/a~1b",
+      parentSegments: ["a/b"],
+      operations: [
+        { op: "replace", path: "/a~1b/0", index: 0, value: "A" },
+        { op: "replace", path: "/a~1b/1", index: 1, value: "B" },
+      ],
+    });
+  });
+
+  test("rejects replacements that are not direct elements in one array", () => {
+    expect(planSameArrayElementReplacePatch({ operations: [] })).toBeNull();
+
+    expect(planSameArrayElementReplacePatch({
+      operations: [{ op: "add", path: "/items/0", value: "A" }],
+    })).toBeNull();
+
+    expect(planSameArrayElementReplacePatch({
+      operations: [{ op: "replace", path: "/items/0/name", value: "A" }],
+    })).toBeNull();
+
+    expect(planSameArrayElementReplacePatch({
+      operations: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "replace", path: "/other/1", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayElementReplacePatch({
+      operations: [{ op: "replace", path: "/items/01", value: "A" }],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/items/1", value: "B" };
+    expect(planSameArrayElementReplacePatch({ operations: sparse })).toBeNull();
+  });
+
+  test("keeps same-array element replace applied operations free of planner-only indexes", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.number()) }),
+      { items: [0, 1] },
+      [
+        { op: "replace", path: "/items/0", value: 10 },
+        { op: "replace", path: "/items/1", value: 11 },
+      ],
+    );
+
+    expect(result?.applied).toEqual([
+      { op: "replace", path: "/items/0", value: 10 },
+      { op: "replace", path: "/items/1", value: 11 },
     ]);
     expect(result?.applied[0]).not.toHaveProperty("index");
   });
