@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   planDocumentCommitSelection,
+  shouldRecordDocumentCommitHistory,
 } from "../src/application/document/createJSONDocument.js";
 import type { SelectionSnap } from "../src/domain/selection/index.js";
 
@@ -71,5 +72,31 @@ describe("document commit core functions", () => {
       selectionBefore: emptySelection,
       selectionAfter: selection,
     });
+  });
+
+  test("decides whether explicit selection commits should enter history", () => {
+    expect(shouldRecordDocumentCommitHistory({
+      historyLimit: 10,
+      isRestoring: false,
+      operationCount: 1,
+    })).toBe(true);
+
+    expect(shouldRecordDocumentCommitHistory({
+      historyLimit: 0,
+      isRestoring: false,
+      operationCount: 1,
+    })).toBe(false);
+
+    expect(shouldRecordDocumentCommitHistory({
+      historyLimit: 10,
+      isRestoring: true,
+      operationCount: 1,
+    })).toBe(false);
+
+    expect(shouldRecordDocumentCommitHistory({
+      historyLimit: 10,
+      isRestoring: false,
+      operationCount: 0,
+    })).toBe(false);
   });
 });

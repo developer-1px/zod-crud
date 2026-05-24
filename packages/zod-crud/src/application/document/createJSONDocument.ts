@@ -116,6 +116,12 @@ export interface DocumentCommitSelectionPlan {
   changeMetadata: JSONChangeMetadata | undefined;
 }
 
+export interface DocumentCommitHistoryInput {
+  historyLimit: number;
+  isRestoring: boolean;
+  operationCount: number;
+}
+
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 export type JSONCapabilityResult = CheckResult;
 export type JSONDocumentDuplicateOptions = DuplicateOpts;
@@ -531,7 +537,11 @@ export function createJSONDocument<S extends z.ZodType>(
 
     lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
     selectionState?.restore(plan.selectionAfter);
-    if (historyLimit > 0 && !isRestoring && operations.length > 0) {
+    if (shouldRecordDocumentCommitHistory({
+      historyLimit,
+      isRestoring,
+      operationCount: operations.length,
+    })) {
       recordHistory(before, predicted.state, operations, selectionBefore, plan.selectionAfter, plan.changeMetadata);
     }
     return r;
@@ -913,6 +923,14 @@ export function planDocumentCommitSelection(
       input.selectionEnabled,
     ),
   };
+}
+
+export function shouldRecordDocumentCommitHistory(
+  input: DocumentCommitHistoryInput,
+): boolean {
+  return input.historyLimit > 0
+    && !input.isRestoring
+    && input.operationCount > 0;
 }
 
 function resolveCommitSelection(
