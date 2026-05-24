@@ -70,6 +70,11 @@ export interface SequentialPatchPlan {
 
 export type AppliedLocalOpSourceValue = { ok: true; value: unknown } | { ok: false };
 
+export interface ReadAppliedLocalOpSourceValueInput {
+  state: unknown;
+  operation: JSONPatchOperation;
+}
+
 export interface PlanAppliedLocalOpValidationInput {
   schema: z.ZodType;
   operation: JSONPatchOperation;
@@ -1332,7 +1337,7 @@ function applySequentialPatchWithLocalSchemaValidation<S extends z.ZodType>(
   let cur: unknown = state;
   const appliedOps: JSONPatchOperation[] = [];
   for (const op of plan.operations) {
-    const sourceValue = sourceValueForValidation(cur, op);
+    const sourceValue = readAppliedLocalOpSourceValue({ state: cur, operation: op });
     const applied = valuesTrusted ? applyAcceptedPatch(cur, [op]) : applyTrustedPatch(cur, [op]);
     if (!applied.result.ok) {
       return {
@@ -2011,13 +2016,13 @@ function arrayElementSchemaAtPath(schema: z.ZodType, path: Pointer): z.ZodType |
   return parentSchema ? getArrayElement(parentSchema) : null;
 }
 
-function sourceValueForValidation(
-  state: unknown,
-  op: JSONPatchOperation,
-): { ok: true; value: unknown } | { ok: false } {
-  if (op.op !== "copy" && op.op !== "move") return { ok: false };
+export function readAppliedLocalOpSourceValue(
+  input: ReadAppliedLocalOpSourceValueInput,
+): AppliedLocalOpSourceValue {
+  const { operation, state } = input;
+  if (operation.op !== "copy" && operation.op !== "move") return { ok: false };
   try {
-    return readAt(state, parsePointer(op.from));
+    return readAt(state, parsePointer(operation.from));
   } catch {
     return { ok: false };
   }

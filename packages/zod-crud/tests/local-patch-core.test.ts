@@ -18,6 +18,7 @@ import {
   planSequentialPatch,
   planSingleRootObjectReplacePatch,
   planSingleReplacePatch,
+  readAppliedLocalOpSourceValue,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
@@ -216,6 +217,44 @@ describe("sequential patch planning", () => {
       { op: "add", path: "/items/0", value: "A" },
       { op: "replace", path: "/title", value: "Final" },
     ]);
+  });
+});
+
+describe("applied local op source value reading", () => {
+  test("reads source values for copy and move operations", () => {
+    const state = {
+      items: ["A", "B"],
+      "a/b": ["escaped"],
+    };
+
+    expect(readAppliedLocalOpSourceValue({
+      state,
+      operation: { op: "copy", from: "/items/0", path: "/items/1" },
+    })).toEqual({ ok: true, value: "A" });
+
+    expect(readAppliedLocalOpSourceValue({
+      state,
+      operation: { op: "move", from: "/a~1b/0", path: "/items/0" },
+    })).toEqual({ ok: true, value: "escaped" });
+  });
+
+  test("returns no source value for non-source and unreadable operations", () => {
+    const state = { items: ["A"] };
+
+    expect(readAppliedLocalOpSourceValue({
+      state,
+      operation: { op: "replace", path: "/items/0", value: "B" },
+    })).toEqual({ ok: false });
+
+    expect(readAppliedLocalOpSourceValue({
+      state,
+      operation: { op: "copy", from: "/missing/0", path: "/items/1" },
+    })).toEqual({ ok: false });
+
+    expect(readAppliedLocalOpSourceValue({
+      state,
+      operation: { op: "move", from: "items/0", path: "/items/1" },
+    })).toEqual({ ok: false });
   });
 });
 
