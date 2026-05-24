@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import {
   applyPatchWithLocalSchemaValidation,
+  planAppliedLocalOpValidation,
   planAppendOnlyArrayAddPatch,
   planIncreasingArrayAddPatch,
   planIndependentReplacePatch,
@@ -215,6 +216,91 @@ describe("sequential patch planning", () => {
       { op: "add", path: "/items/0", value: "A" },
       { op: "replace", path: "/title", value: "Final" },
     ]);
+  });
+});
+
+describe("applied local op validation planning", () => {
+  const schema = z.object({
+    title: z.string(),
+    items: z.array(z.string()),
+  });
+
+  test("plans parse validation for replace and add operations", () => {
+    const replace = planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "replace", path: "/title", value: "Final" },
+      sourceValue: { ok: false },
+    });
+
+    expect(replace).toMatchObject({ kind: "parse", path: "/title", value: "Final" });
+    expect(replace?.kind === "parse" && replace.schema.safeParse(replace.value).success).toBe(true);
+
+    const add = planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "add", path: "/items/0", value: "A" },
+      sourceValue: { ok: false },
+    });
+
+    expect(add).toMatchObject({ kind: "parse", path: "/items/0", value: "A" });
+    expect(add?.kind === "parse" && add.schema.safeParse(add.value).success).toBe(true);
+  });
+
+  test("plans source-value validation for copy and move operations", () => {
+    const copy = planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "copy", from: "/items/0", path: "/items/1" },
+      sourceValue: { ok: true, value: "A" },
+    });
+
+    expect(copy).toMatchObject({ kind: "parse", path: "/items/1", value: "A" });
+
+    const move = planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "move", from: "/items/0", path: "/items/1" },
+      sourceValue: { ok: true, value: "B" },
+    });
+
+    expect(move).toMatchObject({ kind: "parse", path: "/items/1", value: "B" });
+  });
+
+  test("plans presence validation for remove operations", () => {
+    expect(planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "remove", path: "/items/0" },
+      sourceValue: { ok: false },
+    })).toEqual({ kind: "presence" });
+  });
+
+  test("rejects applied operations without a local schema validation target", () => {
+    expect(planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "replace", path: "", value: { title: "root" } },
+      sourceValue: { ok: false },
+    })).toBeNull();
+
+    expect(planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "add", path: "/title", value: "A" },
+      sourceValue: { ok: false },
+    })).toBeNull();
+
+    expect(planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "copy", from: "/items/0", path: "/items/1" },
+      sourceValue: { ok: false },
+    })).toBeNull();
+
+    expect(planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "move", from: "/missing/0", path: "/items/1" },
+      sourceValue: { ok: true, value: "A" },
+    })).toBeNull();
+
+    expect(planAppliedLocalOpValidation({
+      schema,
+      operation: { op: "test", path: "/title", value: "Draft" },
+      sourceValue: { ok: false },
+    })).toBeNull();
   });
 });
 

@@ -68,6 +68,18 @@ export interface SequentialPatchPlan {
   operations: SequentialPatchOperationPlan[];
 }
 
+export type AppliedLocalOpSourceValue = { ok: true; value: unknown } | { ok: false };
+
+export interface PlanAppliedLocalOpValidationInput {
+  schema: z.ZodType;
+  operation: JSONPatchOperation;
+  sourceValue: AppliedLocalOpSourceValue;
+}
+
+export type AppliedLocalOpValidationPlan =
+  | { kind: "parse"; path: Pointer; schema: z.ZodType; value: unknown }
+  | { kind: "presence" };
+
 export interface PlanAppendOnlyArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -1659,45 +1671,51 @@ function validateAppliedLocalOp<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   appliedOp: JSONPatchOperation,
-  sourceValue: { ok: true; value: unknown } | { ok: false },
+  sourceValue: AppliedLocalOpSourceValue,
 ): LocalPatchResult<S> {
-  switch (appliedOp.op) {
+  const plan = planAppliedLocalOpValidation({ schema, operation: appliedOp, sourceValue });
+  if (plan === null) return null;
+  if (plan.kind === "presence") return okLocalPatch(state, [appliedOp]);
+
+  const parsed = plan.schema.safeParse(plan.value);
+  return parsed.success
+    ? okLocalPatch(state, [appliedOp])
+    : schemaViolation(state, plan.path, parsed.error.issues);
+}
+
+export function planAppliedLocalOpValidation(
+  input: PlanAppliedLocalOpValidationInput,
+): AppliedLocalOpValidationPlan | null {
+  const { operation, schema, sourceValue } = input;
+  switch (operation.op) {
     case "replace": {
-      if (appliedOp.path === "") return null;
-      const valueSchema = cachedSchemaAtPointer(schema, appliedOp.path, "value");
-      if (!valueSchema) return null;
-      const parsed = valueSchema.safeParse(appliedOp.value);
-      return parsed.success
-        ? okLocalPatch(state, [appliedOp])
-        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+      if (operation.path === "") return null;
+      const valueSchema = cachedSchemaAtPointer(schema, operation.path, "value");
+      return valueSchema === null
+        ? null
+        : { kind: "parse", path: operation.path, schema: valueSchema, value: operation.value };
     }
     case "add": {
-      const element = arrayElementSchemaAtPath(schema, appliedOp.path);
-      if (!element) return null;
-      const parsed = element.safeParse(appliedOp.value);
-      return parsed.success
-        ? okLocalPatch(state, [appliedOp])
-        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+      const element = arrayElementSchemaAtPath(schema, operation.path);
+      return element === null
+        ? null
+        : { kind: "parse", path: operation.path, schema: element, value: operation.value };
     }
     case "remove":
-      return arrayElementSchemaAtPath(schema, appliedOp.path)
-        ? okLocalPatch(state, [appliedOp])
-        : null;
+      return arrayElementSchemaAtPath(schema, operation.path) === null
+        ? null
+        : { kind: "presence" };
     case "copy": {
-      const element = arrayElementSchemaAtPath(schema, appliedOp.path);
-      if (!element || !sourceValue.ok) return null;
-      const parsed = element.safeParse(sourceValue.value);
-      return parsed.success
-        ? okLocalPatch(state, [appliedOp])
-        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+      const element = arrayElementSchemaAtPath(schema, operation.path);
+      return element === null || !sourceValue.ok
+        ? null
+        : { kind: "parse", path: operation.path, schema: element, value: sourceValue.value };
     }
     case "move": {
-      const element = arrayElementSchemaAtPath(schema, appliedOp.path);
-      if (!element || !sourceValue.ok || !arrayElementSchemaAtPath(schema, appliedOp.from)) return null;
-      const parsed = element.safeParse(sourceValue.value);
-      return parsed.success
-        ? okLocalPatch(state, [appliedOp])
-        : schemaViolation(state, appliedOp.path, parsed.error.issues);
+      const element = arrayElementSchemaAtPath(schema, operation.path);
+      return element === null || !sourceValue.ok || !arrayElementSchemaAtPath(schema, operation.from)
+        ? null
+        : { kind: "parse", path: operation.path, schema: element, value: sourceValue.value };
     }
     default:
       return null;
