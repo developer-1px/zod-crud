@@ -9,6 +9,7 @@ import {
   planClipboardPeekBuffer,
   planClipboardReadBuffer,
   planClipboardSchemaTrustedSourceBuffer,
+  planClipboardSource,
   planClipboardCut,
   planClipboardPaste,
   planClipboardWriteBuffer,
@@ -269,6 +270,49 @@ describe("document clipboard core functions", () => {
       schemaTrusted: true,
     });
     expect(buffer.sources).not.toBe(sources);
+  });
+
+  test("plans copy and cut source resolution from explicit input and selection fallback", () => {
+    expect(planClipboardSource({
+      operation: "copy",
+      source: "/items/0",
+      selectionSource: "/items/1",
+    })).toEqual({
+      ok: true,
+      source: "/items/0",
+    });
+
+    expect(planClipboardSource({
+      operation: "cut",
+      selectionSource: ["/items/0", "/items/1"],
+    })).toEqual({
+      ok: true,
+      source: ["/items/0", "/items/1"],
+    });
+
+    expect(planClipboardSource({
+      operation: "copy",
+      selectionSource: null,
+    })).toEqual({
+      ok: false,
+      result: {
+        ok: false,
+        code: "empty_selection",
+        message: "copy source selection is empty",
+      },
+    });
+
+    expect(planClipboardSource({
+      operation: "cut",
+      selectionSource: null,
+    })).toEqual({
+      ok: false,
+      result: {
+        ok: false,
+        code: "empty_selection",
+        message: "cut source selection is empty",
+      },
+    });
   });
 
   test("plans cut without applying document state or touching clipboard buffer", () => {

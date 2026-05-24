@@ -179,6 +179,22 @@ export interface ClipboardSchemaTrustedSourceBufferInput {
   sources: ReadonlyArray<Pointer>;
 }
 
+export type ClipboardSourceOperation = "copy" | "cut";
+
+export interface ClipboardSourcePlanInput {
+  operation: ClipboardSourceOperation;
+  source?: ClipboardSource;
+  selectionSource?: SelectionSource | null;
+}
+
+export type ClipboardCopySourcePlan =
+  | { ok: true; source: ClipboardSource }
+  | { ok: false; result: CopyError };
+
+export type ClipboardCutSourcePlan =
+  | { ok: true; source: ClipboardSource }
+  | { ok: false; result: CutError };
+
 export type ClipboardWriteBufferPlan =
   | { ok: true; buffer: ClipboardBuffer }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
@@ -327,6 +343,23 @@ export function planClipboardSchemaTrustedSourceBuffer(
     source: input.source,
     sources: [...input.sources],
     schemaTrusted: true,
+  };
+}
+
+export function planClipboardSource(
+  input: ClipboardSourcePlanInput & { operation: "copy" },
+): ClipboardCopySourcePlan;
+export function planClipboardSource(
+  input: ClipboardSourcePlanInput & { operation: "cut" },
+): ClipboardCutSourcePlan;
+export function planClipboardSource(
+  input: ClipboardSourcePlanInput,
+): ClipboardCopySourcePlan | ClipboardCutSourcePlan {
+  const source = input.source ?? input.selectionSource ?? null;
+  if (source !== null) return { ok: true, source };
+  return {
+    ok: false,
+    result: input.operation === "copy" ? emptyCopySource() : emptyCutSource(),
   };
 }
 
@@ -487,11 +520,6 @@ export function createClipboard<S extends z.ZodType>(
     onChange?.();
   };
 
-  const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
-    source ?? getSelectionSource?.() ?? null;
-  const targetOrSelection = (target?: Pointer): Pointer | null =>
-    target ?? getSelectionTarget?.() ?? null;
-
   return {
     get hasData() { return buffer !== null; },
     get source() { return buffer?.source ?? null; },
@@ -522,11 +550,15 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     copy(source, options = {}) {
-      const resolved = sourceOrSelection(source);
-      if (resolved === null) return emptyCopySource();
+      const sourcePlan = planClipboardSource({
+        operation: "copy",
+        ...(source !== undefined ? { source } : {}),
+        selectionSource: getSelectionSource?.() ?? null,
+      });
+      if (!sourcePlan.ok) return sourcePlan.result;
       const result = planClipboardCopy({
         state: getState(),
-        source: resolved,
+        source: sourcePlan.source,
         stateJsonTrusted: getStateJsonTrusted?.() === true,
         ...(options.clonePayload !== undefined ? { clonePayload: options.clonePayload } : {}),
       });
@@ -537,12 +569,16 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     cut(source, options = {}) {
-      const resolved = sourceOrSelection(source);
-      if (resolved === null) return emptyCutSource();
+      const sourcePlan = planClipboardSource({
+        operation: "cut",
+        ...(source !== undefined ? { source } : {}),
+        selectionSource: getSelectionSource?.() ?? null,
+      });
+      if (!sourcePlan.ok) return sourcePlan.result;
       const result = planClipboardCut({
         schema,
         state: getState(),
-        source: resolved,
+        source: sourcePlan.source,
         stateJsonTrusted: getStateJsonTrusted?.() === true,
         ...(options.clonePayload !== undefined ? { clonePayload: options.clonePayload } : {}),
         ...(previewPatch !== undefined ? { previewPatch } : {}),
