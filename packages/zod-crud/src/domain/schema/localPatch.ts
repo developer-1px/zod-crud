@@ -956,14 +956,19 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
     const op = plan.operations[opIndex]!;
     if (op.index < 0 || op.index >= arrayValue.length) return null;
-    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: valueSchema,
+      value: op.value,
+      knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, op.value),
+      valuesTrusted,
+    });
+    if (valueValidation.kind === "notSerializable") {
+      return operationFailure(state, "not_serializable", valueValidation.reason);
     }
-    if (!valueAccepted) {
-      const parsed = valueSchema.safeParse(op.value);
-      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    if (valueValidation.kind === "parse") {
+      const parsed = valueValidation.schema.safeParse(valueValidation.value);
+      if (!parsed.success) return schemaViolation(state, valueValidation.path, parsed.error.issues);
     }
     updateValues[opIndex] = op.value;
     applied[opIndex] = { op: "replace", path: op.path, value: op.value };

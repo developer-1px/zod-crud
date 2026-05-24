@@ -1317,4 +1317,24 @@ describe("same array nested replace patch planning", () => {
     ]);
     expect(result?.applied[0]).not.toHaveProperty("index");
   });
+
+  test("keeps same-array nested replace JSON guard before schema parsing", () => {
+    const state = {
+      items: [{ meta: { title: "old" } }, { meta: { title: "old" } }],
+    };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.object({ meta: z.object({ title: z.string() }) })) }),
+      state,
+      [
+        { op: "replace", path: "/items/0/meta/title", value: () => "not json" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
 });
