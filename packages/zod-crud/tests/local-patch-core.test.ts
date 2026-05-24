@@ -37,6 +37,7 @@ import {
   replaceObjectDataValue,
   replaceValueAtSegments,
   toAppliedAddOperations,
+  toAppliedRemoveOperations,
   toAppliedReplaceOperations,
   writeObjectDataValue,
   writeRootRecordValue,
@@ -200,6 +201,20 @@ describe("replace applied operation validation", () => {
       result: { ok: false, code: "not_serializable" },
       applied: [],
     });
+  });
+});
+
+describe("remove applied operation normalization", () => {
+  test("strips planner-only metadata from applied remove operations", () => {
+    const operations = [
+      { op: "remove" as const, path: "/items/0", index: 0 },
+      { op: "remove" as const, path: "/items/1", key: "ignored" },
+    ];
+
+    expect(toAppliedRemoveOperations(operations)).toEqual([
+      { op: "remove", path: "/items/0" },
+      { op: "remove", path: "/items/1" },
+    ]);
   });
 });
 

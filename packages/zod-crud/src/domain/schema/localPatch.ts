@@ -130,6 +130,11 @@ export interface AppliedReplaceValueValidationOperation {
   value: unknown;
 }
 
+export interface AppliedRemoveOperation {
+  op: "remove";
+  path: Pointer;
+}
+
 export interface IncreasingArrayAddPatchPlan {
   parent: Pointer;
   parentSegments: string[];
@@ -571,6 +576,12 @@ export function toAppliedReplaceOperations(
   operations: ReadonlyArray<AppliedReplaceValueValidationOperation>,
 ): Extract<JSONPatchOperation, { op: "replace" }>[] {
   return operations.map((op) => ({ op: "replace", path: op.path, value: op.value }));
+}
+
+export function toAppliedRemoveOperations(
+  operations: ReadonlyArray<AppliedRemoveOperation>,
+): Extract<JSONPatchOperation, { op: "remove" }>[] {
+  return operations.map((op) => ({ op: "remove", path: op.path }));
 }
 
 export function evaluateAppliedAddValueValidationPlan<S extends z.ZodType>(
@@ -1216,7 +1227,7 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   const sourceKeys = Object.keys(source);
   const plan = planRootRecordRemovePatch({ operations: ops, sourceKeys });
   if (plan === null) return null;
-  const applied = plan.operations.map((op): JSONPatchOperation => ({ op: "remove", path: op.path }));
+  const applied = toAppliedRemoveOperations(plan.operations);
 
   if (plan.strategy === "clear") {
     return {
