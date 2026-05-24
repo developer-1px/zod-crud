@@ -39,3 +39,21 @@ npm run verify
 
 The gate includes `docs:evaluate`, package smoke tests, site docs checks, and
 the release-note/source-layout drift checks.
+
+## 0.12.0 production API lock
+
+Date: 2026-05-24
+
+### What changed
+
+- Root type exports now include the support types visible through the public
+  `JSONDocument` facade: document options, read/schema/clipboard results,
+  selection options/results, and copy/cut/duplicate/paste result types.
+- Runtime entrypoints remain unchanged: `zod-crud` and `zod-crud/react`.
+- `doc.ops`, `doc.commands`, `doc.check`, and `doc.can` namespaces remain
+  outside the production root contract. Consumers should use local adapters if
+  they need those names.
+
+### Release gate
+
+`npm run verify` and package tarball smoke must pass before publishing.

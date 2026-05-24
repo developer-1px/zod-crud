@@ -17,7 +17,7 @@ export interface DuplicateOpts {
   rekey?: RekeyOptions;
 }
 
-interface DuplicateOk<T> {
+export interface DuplicateOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];

@@ -23,8 +23,44 @@ export type {
   JSONDocumentPasteTarget,
   JSONDocument,
   JSONPatchInput,
+  UseJSONDocumentOptions,
 } from "./application/document/createJSONDocument.js";
-export type { SelectionState } from "./application/document/selection.js";
+export type {
+  ClipboardCopyOptions,
+  ClipboardCutOk,
+  ClipboardCutOptions,
+  ClipboardCutResult,
+  ClipboardEmpty,
+  ClipboardMutationOk,
+  ClipboardPasteResult,
+  ClipboardReadOk,
+  ClipboardReadOptions,
+  ClipboardReadResult,
+  ClipboardState,
+  ClipboardWriteOptions,
+} from "./application/document/clipboard.js";
+export type {
+  EntriesResult,
+  EntryKind,
+  QueryResult,
+  ReadEntry,
+  ReadResult,
+} from "./application/document/read.js";
+export type {
+  SchemaDescription,
+  SchemaDescriptionResult,
+  SchemaErrorCode,
+  SchemaErrorResult,
+  SchemaKind,
+  SchemaKindResult,
+  SchemaPathMode,
+  SchemaQueryResult,
+  SchemaState,
+} from "./application/document/schema.js";
+export type {
+  SelectionState,
+  UseSelectionOptions,
+} from "./application/document/selection.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/json-patch/index.js";
@@ -52,10 +88,66 @@ export type { Pointer } from "./foundation/json-pointer/index.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
+  JSONPointObject,
   JSONPoint,
+  OrderedSelectionRange,
+  OrderedSelectionRangeEntry,
   SelectionAction,
+  SelectionAffinity,
+  SelectionContext,
+  SelectionCursorDirection,
+  SelectionCursorErrorCode,
+  SelectionCursorOptions,
+  SelectionCursorResult,
+  SelectionCursorTarget,
+  SelectionDirection,
+  SelectionEdge,
+  SelectionMode,
+  SelectionOrderErrorCode,
+  SelectionOrderOptions,
+  SelectionPointOrderResult,
+  SelectionPointerSpan,
+  SelectionPointerSpansResult,
   SelectionRange,
+  SelectionRangeInput,
+  SelectionRangeOrderResult,
+  SelectionRangesOrderResult,
+  SelectionScopeErrorCode,
+  SelectionScopeOptions,
+  SelectionScopeResult,
+  SelectionScopeTarget,
   SelectionSource,
+  SelectionSpanOptions,
   SelectionSnap,
+  SelectionType,
 } from "./domain/selection/index.js";
+export type {
+  DeleteSelectionTextResult,
+  ReplaceSelectionTextResult,
+  SelectionTextDeleteDirection,
+  SelectionTextDeleteOptions,
+  SelectionTextEdit,
+  SelectionTextEditErrorCode,
+  SelectionTextEditOptions,
+  SelectionTextEditsResult,
+} from "./domain/selection/textEdit.js";
+export type {
+  ClipboardSource,
+  CopyError,
+  CopyOk,
+} from "./domain/verbs/copy.js";
+export type {
+  CutError,
+  CutOk,
+} from "./domain/verbs/cut.js";
+export type {
+  DuplicateError,
+  DuplicateOk,
+} from "./domain/verbs/duplicate.js";
+export type {
+  PasteDuMismatch,
+  PasteError,
+  PasteOptions,
+  PasteTarget,
+} from "./domain/verbs/paste.js";
 export { trackPointer } from "./domain/tracking/pointer.js";

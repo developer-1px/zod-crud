@@ -1,6 +1,6 @@
 # zod-crud API Usage Gap Ledger
 
-Date: 2026-05-22
+Date: 2026-05-24
 
 Scope: sibling packages under `../` that import `zod-crud`, `zod-crud/react`, or the JSON document primitives. This ledger records gaps only from external-interface usage. Internal source structure tests, private modules, and demo-only decoration are out of scope.
 
@@ -12,6 +12,7 @@ The package root currently exports:
 - pure RFC helpers: `applyPatch`, `applyPatchToTrustedState`, `applyOperation`, `JSONPatchOperation`, `JSONResult`
 - JSON Pointer helpers: `parsePointer`, `buildPointer`, `appendSegment`, `parentPointer`, `lastSegment`, etc.
 - selection types: `JSONPoint`, `SelectionRange`, `SelectionSource`, `SelectionSnap`, `SelectionState`
+- public support types for the document facade: `UseJSONDocumentOptions`, `ClipboardState`, `SchemaState`, `ReadResult`, `QueryResult`, `EntriesResult`, clipboard option/result types, schema option/result types, and selection option/result types
 - React entrypoint: `zod-crud/react` exports `useJSONDocument`
 
 The root does not export `JSONOps`, `Check`, or command/can builder namespaces, and `JSONDocument<T>` does not expose `doc.ops`, `doc.commands`, or `doc.can`.
@@ -61,11 +62,11 @@ Current state:
 - It is not exported from `packages/zod-crud/src/index.ts`.
 - `createJSONDocument` builds an internal `ops` object but does not attach it to `JSONDocument<T>`.
 
-Decision needed:
+Release decision:
 
-- If `doc.patch`, `doc.load`, `doc.reset`, `doc.value`, and `doc.subscribe` are the final MECE API, publish a migration guide and stop consumers from expecting `doc.ops`.
-- If low-level RFC operation methods are intended, export `JSONOps` and expose `doc.ops` deliberately.
-- Avoid both names being first-class in the final docs unless one is explicitly marked compatibility-only.
+- Keep `doc.ops` out of the production root contract.
+- The final MECE API is `doc.patch`, `doc.commit`, `doc.load`, `doc.reset`, `doc.value`, `doc.subscribe`, plus the explicit read/schema/selection/clipboard/history groups.
+- Consumers that need `ops.add/remove/replace/...` should keep that as an app or compatibility adapter over the current facade. Do not module-augment `zod-crud` and treat that adapter as core API.
 
 ### G-002: `doc.commands` Facade Drift
 
@@ -83,10 +84,11 @@ Current state:
 - There is no internal `buildCommands` namespace in the current package source.
 - `JSONDocument<T>` exposes many command-like methods directly or by subgroup: `duplicate`, `clipboard.copy/cut/paste`, `history.undo/redo`, `selection.*`, `can*`.
 
-Decision needed:
+Release decision:
 
-- Prefer one public command vocabulary. Current docs lean toward MECE groups: document mutation, selection state, clipboard payload, history, schema, read, `can*`.
-- If `doc.commands` remains useful for keyboard/event bridge code, expose it as a deliberate optional adapter or compatibility entrypoint rather than letting consumers patch it in.
+- Keep `doc.commands` out of the production root contract.
+- The public command vocabulary is the explicit grouped facade: document mutation, selection state, clipboard payload, history, schema, read, and `can*`.
+- Keyboard/event bridges may expose their own command object, but it should be documented as adapter code, not package surface.
 
 ### G-003: Legacy `createJsonCrud` Graph API
 
@@ -226,6 +228,8 @@ Assessment:
 
 Priority: P1
 
+Status: Closed for the production root contract.
+
 Evidence:
 
 - `JSONDocument<T>` exposes `clipboard: ClipboardState<T>`, `schema: SchemaState`, `at(): ReadResult`, `query(): QueryResult`, and `entries(): EntriesResult`.
@@ -235,13 +239,12 @@ Evidence:
 
 Current state:
 
-- Some support types are exported indirectly through property types, but consumers cannot consistently import the named type they see in docs or declarations.
-- `JSONDocumentPasteOptions` is exported, but SPEC still says `PasteOptions` in the `canPaste` example.
+- Root exports now include the public document support types consumers see in declarations and docs: `UseJSONDocumentOptions`, `ClipboardState`, clipboard option/result types, `SchemaState`, schema option/result types, `ReadResult`, `QueryResult`, `EntriesResult`, read entry types, selection option/result types, copy/cut/duplicate/paste result types, and the paste support aliases.
+- `JSONDocumentPasteOptions` remains the document-facade alias; `PasteOptions` is also exported as the lower-level support type used by `ClipboardState`.
 
-Decision needed:
+Release decision:
 
-- Export every named type that appears in the public `.d.ts` or docs, or remove those names from docs and teach consumers to use indexed access types.
-- This is a low-runtime-risk release cleanup because it broadens type exports without changing behavior.
+- Keep these type exports as part of the locked root contract. They are type-only and do not change runtime behavior.
 
 ### G-011: Commit Prediction / Mutation Result State
 
@@ -305,8 +308,8 @@ Use these as external-interface examples when refining docs or API:
 
 ## Immediate Recommendations
 
-1. Decide `doc.ops` / `doc.commands` before release.
-   Current active consumers are not aligned with the documented facade. Either expose a deliberate compatibility layer or update consumers away from those names.
+1. Keep `doc.ops` / `doc.commands` outside the production root contract.
+   Current active consumers that need those names should use local adapters over `doc.patch`, `doc.commit`, `doc.history`, and `doc.clipboard`.
 
 2. Do not restore `createJsonCrud` into the main API.
    Treat it as legacy migration because it reintroduces graph/node vocabulary that conflicts with the current RFC Pointer/Patch model.
@@ -320,5 +323,5 @@ Use these as external-interface examples when refining docs or API:
 5. Use `zod-editor` and `nano-edit` as current-API dogfood examples.
    They show the newer `commit + selection + history` model working without `doc.ops` or `doc.commands`.
 
-6. Export public support types before adding new behavior.
-   This is the cheapest way to reduce consumer-side aliases and module augmentation.
+6. Keep public support type exports locked before adding new behavior.
+   Type-only exports now cover the document, read, schema, clipboard, selection, copy/cut/duplicate, and paste result surfaces.

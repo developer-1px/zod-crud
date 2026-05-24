@@ -12,7 +12,7 @@ import type { PointerSourceError } from "../../foundation/json-pointer/sourceSet
 import { preFlight, preFlightFromApplyResult, type PreFlightErrorCode } from "../schema/preFlight.js";
 import type { ClipboardSource } from "./copy.js";
 
-interface CutOk<T> {
+export interface CutOk<T> {
   ok: true;
   next: T;
   patch: JSONPatchOperation[];

@@ -11,9 +11,9 @@ import {
 } from "../../domain/schema/introspection.js";
 import { appendSegment, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 
-type SchemaPathMode = "value" | "insert";
+export type SchemaPathMode = "value" | "insert";
 
-type SchemaKind =
+export type SchemaKind =
   | "unknown"
   | "string"
   | "number"
@@ -30,7 +30,7 @@ type SchemaKind =
   | "nullable"
   | "any";
 
-interface SchemaDescription {
+export interface SchemaDescription {
   kind: SchemaKind;
   jsonSchema: unknown;
   keys?: string[];
@@ -40,16 +40,16 @@ interface SchemaDescription {
   allowed?: unknown[];
 }
 
-type SchemaErrorCode = "invalid_pointer" | "path_not_found";
+export type SchemaErrorCode = "invalid_pointer" | "path_not_found";
 
-interface SchemaErrorResult {
+export interface SchemaErrorResult {
   ok: false;
   code: SchemaErrorCode;
   reason?: string;
   pointer: Pointer;
 }
 
-type SchemaQueryResult =
+export type SchemaQueryResult =
   | {
       ok: true;
       path: Pointer;
@@ -59,7 +59,7 @@ type SchemaQueryResult =
     }
   | SchemaErrorResult;
 
-type SchemaKindResult =
+export type SchemaKindResult =
   | {
       ok: true;
       path: Pointer;
@@ -68,7 +68,7 @@ type SchemaKindResult =
     }
   | SchemaErrorResult;
 
-type SchemaDescriptionResult =
+export type SchemaDescriptionResult =
   | {
       ok: true;
       path: Pointer;

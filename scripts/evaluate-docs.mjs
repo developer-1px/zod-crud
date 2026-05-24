@@ -40,6 +40,7 @@ const surfaces = {
   llms: read("llms.txt"),
 };
 const releaseNotes = read("docs/release-notes.md");
+const apiUsageGaps = read("docs/api-usage-gaps.md");
 const smoke = read("packages/zod-crud/test/package-smoke.mjs");
 const markdownViewer = read("apps/site/src/components/MarkdownViewer.tsx");
 const workbenchPlayground = read("apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx");
@@ -156,12 +157,86 @@ const publicExports = [
   "JSONPatchOperation",
   "JSONResult",
   "Pointer",
+  "UseJSONDocumentOptions",
+  "ClipboardCopyOptions",
+  "ClipboardCutOk",
+  "ClipboardCutOptions",
+  "ClipboardCutResult",
+  "ClipboardEmpty",
+  "ClipboardMutationOk",
+  "ClipboardPasteResult",
+  "ClipboardReadOk",
+  "ClipboardReadOptions",
+  "ClipboardReadResult",
+  "ClipboardState",
+  "ClipboardWriteOptions",
+  "EntriesResult",
+  "EntryKind",
+  "QueryResult",
+  "ReadEntry",
+  "ReadResult",
+  "SchemaDescription",
+  "SchemaDescriptionResult",
+  "SchemaErrorCode",
+  "SchemaErrorResult",
+  "SchemaKind",
+  "SchemaKindResult",
+  "SchemaPathMode",
+  "SchemaQueryResult",
+  "SchemaState",
+  "UseSelectionOptions",
+  "JSONPointObject",
   "JSONPoint",
+  "OrderedSelectionRange",
+  "OrderedSelectionRangeEntry",
   "SelectionAction",
+  "SelectionAffinity",
+  "SelectionContext",
+  "SelectionCursorDirection",
+  "SelectionCursorErrorCode",
+  "SelectionCursorOptions",
+  "SelectionCursorResult",
+  "SelectionCursorTarget",
+  "SelectionDirection",
+  "SelectionEdge",
+  "SelectionMode",
+  "SelectionOrderErrorCode",
+  "SelectionOrderOptions",
+  "SelectionPointOrderResult",
+  "SelectionPointerSpan",
+  "SelectionPointerSpansResult",
   "SelectionRange",
+  "SelectionRangeInput",
+  "SelectionRangeOrderResult",
+  "SelectionRangesOrderResult",
+  "SelectionScopeErrorCode",
+  "SelectionScopeOptions",
+  "SelectionScopeResult",
+  "SelectionScopeTarget",
   "SelectionSource",
+  "SelectionSpanOptions",
   "SelectionSnap",
   "SelectionState",
+  "SelectionType",
+  "DeleteSelectionTextResult",
+  "ReplaceSelectionTextResult",
+  "SelectionTextDeleteDirection",
+  "SelectionTextDeleteOptions",
+  "SelectionTextEdit",
+  "SelectionTextEditErrorCode",
+  "SelectionTextEditOptions",
+  "SelectionTextEditsResult",
+  "ClipboardSource",
+  "CopyError",
+  "CopyOk",
+  "CutError",
+  "CutOk",
+  "DuplicateError",
+  "DuplicateOk",
+  "PasteDuMismatch",
+  "PasteError",
+  "PasteOptions",
+  "PasteTarget",
 ];
 
 for (const exportName of publicExports) {
@@ -188,6 +263,18 @@ for (const [name, source] of Object.entries(sourceLayoutSurfaces)) {
 
 if (!/0\.12\.0 final source layout/.test(releaseNotes) || !/No package import path changed/.test(releaseNotes) || !/docs:evaluate/.test(releaseNotes)) {
   fail("release notes: missing final source-layout release contract.");
+}
+
+if (!/Release decision:[\s\S]*Keep `doc\.ops` out of the production root contract/.test(apiUsageGaps)) {
+  fail("api usage gaps: doc.ops production release decision is not locked.");
+}
+
+if (!/Release decision:[\s\S]*Keep `doc\.commands` out of the production root contract/.test(apiUsageGaps)) {
+  fail("api usage gaps: doc.commands production release decision is not locked.");
+}
+
+if (!/Status: Closed for the production root contract/.test(apiUsageGaps)) {
+  fail("api usage gaps: support type export gap is not closed.");
 }
 
 for (const [name, source] of Object.entries({ readme: surfaces.readme, llms: surfaces.llms })) {

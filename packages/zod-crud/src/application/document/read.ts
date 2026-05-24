@@ -12,9 +12,9 @@ export type QueryResult =
   | { ok: true; query: string; pointers: Pointer[] }
   | { ok: false; code: "invalid_query"; reason?: string };
 
-type EntryKind = "root" | "object" | "array" | "record" | "primitive";
+export type EntryKind = "root" | "object" | "array" | "record" | "primitive";
 
-interface ReadEntry {
+export interface ReadEntry {
   key: string;
   path: Pointer;
   value: unknown;

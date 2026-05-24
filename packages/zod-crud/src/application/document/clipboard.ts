@@ -17,7 +17,7 @@ import { paste, rekeyProducesTrustedPayload, resolvePasteArgs, type PasteDuMisma
 
 export const INTERNAL_CLIPBOARD_PEEK: unique symbol = Symbol("zod-crud.internal.clipboard.peek");
 
-interface ClipboardWriteOptions {
+export interface ClipboardWriteOptions {
   source?: Pointer | null;
   sources?: ReadonlyArray<Pointer> | null;
   /** Skip JSON-serializability validation when the caller already owns that boundary. */
@@ -26,22 +26,22 @@ interface ClipboardWriteOptions {
   clonePayload?: boolean;
 }
 
-interface ClipboardReadOptions {
+export interface ClipboardReadOptions {
   /** Return the buffered payload reference directly. Use only when the caller owns its mutation boundary. */
   clonePayload?: boolean;
 }
 
-interface ClipboardCopyOptions {
+export interface ClipboardCopyOptions {
   /** Store and return the copied source reference directly. Use only when the caller owns its mutation boundary. */
   clonePayload?: boolean;
 }
 
-interface ClipboardCutOptions {
+export interface ClipboardCutOptions {
   /** Store and return the cut source reference directly. Use only when the caller owns its mutation boundary. */
   clonePayload?: boolean;
 }
 
-interface ClipboardReadOk {
+export interface ClipboardReadOk {
   ok: true;
   payload: unknown;
   source: Pointer | null;
@@ -52,29 +52,29 @@ interface ClipboardPeekOk extends ClipboardReadOk {
   schemaTrusted: boolean;
 }
 
-interface ClipboardEmpty {
+export interface ClipboardEmpty {
   ok: false;
   code: "empty_clipboard";
   message: string;
 }
 
-type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
+export type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
 export type ClipboardPeekResult = ClipboardPeekOk | ClipboardEmpty;
 
-interface ClipboardMutationOk<T> {
+export interface ClipboardMutationOk<T> {
   ok: true;
   value: T;
   applied: ReadonlyArray<JSONPatchOperation>;
 }
 
-interface ClipboardCutOk<T> extends ClipboardMutationOk<T> {
+export interface ClipboardCutOk<T> extends ClipboardMutationOk<T> {
   payload: unknown;
   source: Pointer;
   sources: ReadonlyArray<Pointer>;
 }
 
-type ClipboardCutResult<T> = ClipboardCutOk<T> | CutError;
-type ClipboardPasteResult<T> = ClipboardMutationOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
+export type ClipboardCutResult<T> = ClipboardCutOk<T> | CutError;
+export type ClipboardPasteResult<T> = ClipboardMutationOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
 
 export interface ClipboardState<T> {
   readonly hasData: boolean;
