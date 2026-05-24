@@ -451,6 +451,18 @@ export interface PlanSameArrayFieldReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface ArrayFieldText {
+  prefixText: string;
+  suffixText: string;
+}
+
+export interface PlanSameArrayFieldReplaceOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  arrayPath: Pointer;
+  field: string;
+  fieldText: ArrayFieldText;
+}
+
 export interface SameArrayFieldReplaceOperationPlan {
   op: "replace";
   path: Pointer;
@@ -545,11 +557,6 @@ interface ArrayNestedPath {
   prefixText: string;
   suffixText: string;
   suffixSegments: string[];
-}
-
-interface ArrayFieldText {
-  prefixText: string;
-  suffixText: string;
 }
 
 const objectHasOwn = Object.prototype.hasOwnProperty;
@@ -1196,58 +1203,57 @@ export function planSameArrayFieldReplacePatch(
   const ops = input.operations;
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
-  let arrayPath: Pointer | null = null;
-  let arraySegments: string[] | null = null;
-  let field: string | null = null;
-  let fieldText: ArrayFieldText | null = null;
-  const operations: SameArrayFieldReplaceOperationPlan[] = [];
+  if (!(0 in ops)) return null;
+  const first = ops[0]!;
+  if (!isReplacePatchOperationCandidate(first) || first.path === "") return null;
 
-  for (let opIndex = 0; opIndex < ops.length; opIndex++) {
-    if (!(opIndex in ops)) return null;
-    const op = ops[opIndex]!;
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "replace"
-      || typeof op.path !== "string"
-      || op.path === ""
-    ) {
-      return null;
-    }
+  const firstLocation = parseArrayFieldPath(first.path);
+  if (firstLocation === null) return null;
 
-    const knownIndex = fieldText === null ? null : parseKnownArrayFieldIndex(op.path, fieldText);
-    let location: ArrayFieldPath | null;
-    if (knownIndex === null) {
-      location = parseArrayFieldPath(op.path);
-    } else {
-      if (arrayPath === null || field === null) return null;
-      location = { arrayPath, index: knownIndex, key: field };
-    }
-    if (location === null) return null;
-
-    if (arrayPath === null) {
-      arrayPath = location.arrayPath;
-      try {
-        arraySegments = parsePointer(arrayPath);
-      } catch {
-        return null;
-      }
-    } else if (arrayPath !== location.arrayPath) {
-      return null;
-    }
-
-    if (field === null) {
-      field = location.key;
-      fieldText = arrayFieldText(op.path);
-    } else if (field !== location.key) {
-      return null;
-    }
-
-    operations.push({ op: "replace", path: op.path, index: location.index, value: op.value });
+  let arraySegments: string[];
+  try {
+    arraySegments = parsePointer(firstLocation.arrayPath);
+  } catch {
+    return null;
   }
 
-  return arrayPath === null || arraySegments === null || field === null
+  const fieldText = arrayFieldText(first.path);
+  if (fieldText === null) return null;
+
+  const operations = planSameArrayFieldReplaceOperations({
+    operations: ops,
+    arrayPath: firstLocation.arrayPath,
+    field: firstLocation.key,
+    fieldText,
+  });
+  return operations === null
     ? null
-    : { arrayPath, arraySegments, field, operations };
+    : { arrayPath: firstLocation.arrayPath, arraySegments, field: firstLocation.key, operations };
+}
+
+export function planSameArrayFieldReplaceOperations(
+  input: PlanSameArrayFieldReplaceOperationsInput,
+): SameArrayFieldReplaceOperationPlan[] | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length < 2) return null;
+
+  const operations = new Array<SameArrayFieldReplaceOperationPlan>(ops.length);
+
+  for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
+    if (!(opIndex in ops)) return null;
+    const op = ops[opIndex]!;
+    if (!isReplacePatchOperationCandidate(op) || op.path === "") return null;
+
+    const knownIndex = parseKnownArrayFieldIndex(op.path, input.fieldText);
+    const location = knownIndex === null
+      ? parseArrayFieldPath(op.path)
+      : { arrayPath: input.arrayPath, index: knownIndex, key: input.field };
+    if (location === null || location.arrayPath !== input.arrayPath || location.key !== input.field) return null;
+
+    operations[opIndex] = { op: "replace", path: op.path, index: location.index, value: op.value };
+  }
+
+  return operations;
 }
 
 function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(

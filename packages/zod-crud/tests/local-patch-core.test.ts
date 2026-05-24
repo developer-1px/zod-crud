@@ -56,6 +56,7 @@ import {
   planSameArrayPatchOperations,
   planSameArrayElementReplaceOperations,
   planSameArrayElementReplacePatch,
+  planSameArrayFieldReplaceOperations,
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
   planSameArrayPatch,
@@ -2938,6 +2939,79 @@ describe("root object replace patch planning", () => {
 });
 
 describe("same array field replace patch planning", () => {
+  test("plans same-field replacement operations within a known array and field", () => {
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/items",
+      field: "name",
+      fieldText: { prefixText: "/items/", suffixText: "/name" },
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/2/name", value: "B" },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/items/0/name", index: 0, value: "A" },
+      { op: "replace", path: "/items/2/name", index: 2, value: "B" },
+    ]);
+
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/a~1b",
+      field: "x/y",
+      fieldText: { prefixText: "/a~1b/", suffixText: "/x~1y" },
+      operations: [
+        { op: "replace", path: "/a~1b/0/x~1y", value: "A" },
+        { op: "replace", path: "/a~1b/1/x~1y", value: "B" },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/a~1b/0/x~1y", index: 0, value: "A" },
+      { op: "replace", path: "/a~1b/1/x~1y", index: 1, value: "B" },
+    ]);
+  });
+
+  test("rejects same-field replacement operations outside a known array and field", () => {
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/items",
+      field: "name",
+      fieldText: { prefixText: "/items/", suffixText: "/name" },
+      operations: [{ op: "replace", path: "/items/0/name", value: "A" }],
+    })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/items",
+      field: "name",
+      fieldText: { prefixText: "/items/", suffixText: "/name" },
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/title", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/items",
+      field: "name",
+      fieldText: { prefixText: "/items/", suffixText: "/name" },
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/other/1/name", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/items",
+      field: "name",
+      fieldText: { prefixText: "/items/", suffixText: "/name" },
+      operations: [
+        { op: "replace", path: "/items/01/name", value: "A" },
+        { op: "replace", path: "/items/2/name", value: "B" },
+      ],
+    })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations({
+      arrayPath: "/items",
+      field: "name",
+      fieldText: { prefixText: "/items/", suffixText: "/name" },
+      operations: [
+        { op: "replace", path: "/items/0/name", value: "A" },
+        { op: "replace", path: "/items/1/name/first", value: "B" },
+      ],
+    })).toBeNull();
+  });
+
   test("plans same-field replacements across one array", () => {
     expect(planSameArrayFieldReplacePatch({
       operations: [
