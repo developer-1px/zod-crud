@@ -16,6 +16,7 @@ import {
   arrayElementSchemaAtPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
+  buildValidatedArrayIndexReplacements,
   createDataKeySet,
   copyRootRecordKeyPrefix,
   evaluateAppliedAddValueValidationPlan,
@@ -299,6 +300,80 @@ describe("array index replacement state materialization", () => {
       array: state.items,
       replacements: [{ index: 1, value: "B" }],
     })).toBeNull();
+  });
+});
+
+describe("validated array index replacement planning", () => {
+  test("builds replacements after index, materialization, and value validation", () => {
+    const state = { items: [{ name: "old-a" }, { name: "old-b" }] };
+    const result = buildValidatedArrayIndexReplacements({
+      state,
+      array: state.items,
+      operations: [
+        { op: "replace", path: "/items/0/name", index: 0, value: "A" },
+        { op: "replace", path: "/items/1/name", index: 1, value: "B" },
+      ],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (op, currentValue) => {
+        const replaced = replaceObjectDataValue(currentValue, "name", op.value);
+        return replaced === null ? { ok: false } : { ok: true, value: replaced };
+      },
+    });
+
+    expect(result).toEqual({
+      ok: true,
+      replacements: [
+        { index: 0, value: { name: "A" } },
+        { index: 1, value: { name: "B" } },
+      ],
+    });
+    expect(state.items).toEqual([{ name: "old-a" }, { name: "old-b" }]);
+  });
+
+  test("returns null results for invalid indexes and replacement values", () => {
+    const state = { items: [{ name: "old" }] };
+
+    expect(buildValidatedArrayIndexReplacements({
+      state,
+      array: state.items,
+      operations: [{ op: "replace", path: "/items/1/name", index: 1, value: "A" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (op) => ({ ok: true, value: op.value }),
+    })).toEqual({ ok: false, result: null });
+
+    expect(buildValidatedArrayIndexReplacements({
+      state,
+      array: [1],
+      operations: [{ op: "replace", path: "/items/0/name", index: 0, value: "A" }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (op, currentValue) => {
+        const replaced = replaceObjectDataValue(currentValue, "name", op.value);
+        return replaced === null ? { ok: false } : { ok: true, value: replaced };
+      },
+    })).toEqual({ ok: false, result: null });
+  });
+
+  test("returns replace value validation failures", () => {
+    const state = { items: [{ name: "old" }] };
+    const result = buildValidatedArrayIndexReplacements({
+      state,
+      array: state.items,
+      operations: [{ op: "replace", path: "/items/0/name", index: 0, value: 1 }],
+      valueSchema: z.string(),
+      valuesTrusted: false,
+      replacementValue: (op) => ({ ok: true, value: { name: op.value } }),
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 });
 

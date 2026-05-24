@@ -174,10 +174,34 @@ export interface AppliedReplaceValueValidationOperation {
   value: unknown;
 }
 
+export interface IndexedReplaceValueValidationOperation extends AppliedReplaceValueValidationOperation {
+  index: number;
+}
+
 export interface ArrayIndexReplacement {
   index: number;
   value: unknown;
 }
+
+export type ArrayReplacementValueResult =
+  | { ok: true; value: unknown }
+  | { ok: false };
+
+export interface BuildValidatedArrayIndexReplacementsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  state: z.output<S>;
+  array: ReadonlyArray<unknown>;
+  operations: ReadonlyArray<Operation>;
+  valueSchema: z.ZodType;
+  valuesTrusted: boolean;
+  replacementValue: (operation: Operation, currentValue: unknown) => ArrayReplacementValueResult;
+}
+
+export type ValidatedArrayIndexReplacementsResult<S extends z.ZodType> =
+  | { ok: true; replacements: ArrayIndexReplacement[] }
+  | { ok: false; result: ApplyResult<S> | null };
 
 export interface ApplyArrayIndexReplacementsInput {
   state: unknown;
@@ -989,34 +1013,27 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
   if (first === undefined) return null;
   const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
   if (!valueSchema) return null;
-  const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
 
   const current = readAt(state, plan.arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
-  const replacements = new Array<ArrayIndexReplacement>(plan.operations.length);
-
-  for (let opIndex = 0; opIndex < plan.operations.length; opIndex++) {
-    const op = plan.operations[opIndex]!;
-    if (op.index < 0 || op.index >= current.value.length) return null;
-    const replaced = replaceObjectDataValue(current.value[op.index], plan.field, op.value);
-    if (replaced === null) return null;
-    const valueFailure = evaluateAppliedReplaceValueValidationPlan(
-      state,
-      [op],
-      valueSchema,
-      (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
-      valuesTrusted,
-    );
-    if (valueFailure) return valueFailure;
-
-    replacements[opIndex] = { index: op.index, value: replaced };
-  }
+  const replacements = buildValidatedArrayIndexReplacements({
+    state,
+    array: current.value,
+    operations: plan.operations,
+    valueSchema,
+    valuesTrusted,
+    replacementValue: (op, currentValue) => {
+      const replaced = replaceObjectDataValue(currentValue, plan.field, op.value);
+      return replaced === null ? { ok: false } : { ok: true, value: replaced };
+    },
+  });
+  if (!replacements.ok) return replacements.result;
 
   const nextState = applyArrayIndexReplacements({
     state,
     arraySegments: plan.arraySegments,
     array: current.value,
-    replacements,
+    replacements: replacements.replacements,
   });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
@@ -1094,33 +1111,26 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   if (first === undefined) return null;
   const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
   if (!valueSchema) return null;
-  const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
 
   const current = readAt(state, plan.arraySegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
   const arrayValue = current.value;
-  const replacements = new Array<ArrayIndexReplacement>(plan.operations.length);
-
-  for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
-    const op = plan.operations[opIndex]!;
-    if (op.index < 0 || op.index >= arrayValue.length) return null;
-    const valueFailure = evaluateAppliedReplaceValueValidationPlan(
-      state,
-      [op],
-      valueSchema,
-      (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
-      valuesTrusted,
-    );
-    if (valueFailure) return valueFailure;
-    replacements[opIndex] = { index: op.index, value: op.value };
-  }
+  const replacements = buildValidatedArrayIndexReplacements({
+    state,
+    array: arrayValue,
+    operations: plan.operations,
+    valueSchema,
+    valuesTrusted,
+    replacementValue: (op) => ({ ok: true, value: op.value }),
+  });
+  if (!replacements.ok) return replacements.result;
 
   const nextState = applyArrayNestedReplacements({
     state,
     arraySegments: plan.arraySegments,
     array: arrayValue,
     suffixSegments: plan.suffixSegments,
-    replacements,
+    replacements: replacements.replacements,
   });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
@@ -1712,6 +1722,38 @@ export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null
     ? array.concat(values)
     : array.slice(0, start).concat(values, array.slice(start));
   return replaceValueAtSegments(state, parentSegments, 0, nextArray);
+}
+
+export function buildValidatedArrayIndexReplacements<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: BuildValidatedArrayIndexReplacementsInput<S, Operation>,
+): ValidatedArrayIndexReplacementsResult<S> {
+  const { state, array, operations, valueSchema, valuesTrusted, replacementValue } = input;
+  const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
+  const replacements = new Array<ArrayIndexReplacement>(operations.length);
+
+  for (let opIndex = 0; opIndex < operations.length; opIndex += 1) {
+    const op = operations[opIndex]!;
+    if (op.index < 0 || op.index >= array.length) return { ok: false, result: null };
+
+    const replacement = replacementValue(op, array[op.index]);
+    if (!replacement.ok) return { ok: false, result: null };
+
+    const valueFailure = evaluateAppliedReplaceValueValidationPlan(
+      state,
+      [op],
+      valueSchema,
+      (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
+      valuesTrusted,
+    );
+    if (valueFailure) return { ok: false, result: valueFailure };
+
+    replacements[opIndex] = { index: op.index, value: replacement.value };
+  }
+
+  return { ok: true, replacements };
 }
 
 export function applyArrayIndexReplacements(input: ApplyArrayIndexReplacementsInput): unknown | null {
