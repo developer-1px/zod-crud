@@ -374,6 +374,14 @@ export interface BuildKnownJsonArrayIndexReplacementsInput<
   operations: ReadonlyArray<Operation>;
 }
 
+export interface ApplyKnownJsonArrayIndexReplacementsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> extends BuildKnownJsonArrayIndexReplacementsInput<Operation> {
+  state: z.output<S>;
+  arraySegments: ReadonlyArray<string>;
+}
+
 export interface ApplyArrayIndexReplacementsInput {
   state: unknown;
   arraySegments: ReadonlyArray<string>;
@@ -1230,21 +1238,13 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
 
   const current = readArrayAtSegments({ state, segments: plan.parentSegments });
   if (!current.ok) return null;
-  const replacements = buildKnownJsonArrayIndexReplacements({
+  return applyKnownJsonArrayIndexReplacements({
+    state,
     schema: elementSchema,
+    arraySegments: plan.parentSegments,
     array: current.array,
     operations: plan.operations,
   });
-  if (replacements === null) return null;
-
-  const nextState = applyArrayIndexReplacements({
-    state,
-    arraySegments: plan.parentSegments,
-    array: current.array,
-    replacements,
-  });
-  if (nextState === null) return null;
-  return okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(plan.operations));
 }
 
 export function planSameArrayElementReplacePatch(
@@ -2179,6 +2179,26 @@ export function buildKnownJsonArrayIndexReplacements<
   }
 
   return replacements;
+}
+
+export function applyKnownJsonArrayIndexReplacements<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyKnownJsonArrayIndexReplacementsInput<S, Operation>,
+): ApplyResult<S> | null {
+  const replacements = buildKnownJsonArrayIndexReplacements(input);
+  if (replacements === null) return null;
+
+  const nextState = applyArrayIndexReplacements({
+    state: input.state,
+    arraySegments: input.arraySegments,
+    array: input.array,
+    replacements,
+  });
+  return nextState === null
+    ? null
+    : okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(input.operations));
 }
 
 export function applyArrayIndexReplacements(input: ApplyArrayIndexReplacementsInput): unknown | null {

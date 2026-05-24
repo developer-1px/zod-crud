@@ -10,6 +10,7 @@ import {
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
   applyKnownJsonReplaceOperations,
+  applyKnownJsonArrayIndexReplacements,
   applyReplaceOperations,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
@@ -594,6 +595,50 @@ describe("validated array index replacement planning", () => {
 });
 
 describe("known-json array index replacement planning", () => {
+  test("applies known-json array index replacements with applied operations", () => {
+    const state = { items: ["old-a", "old-b"], keep: true };
+
+    expect(applyKnownJsonArrayIndexReplacements({
+      state,
+      schema: z.string(),
+      arraySegments: ["items"],
+      array: state.items,
+      operations: [
+        { op: "replace", path: "/items/0", index: 0, value: "A" },
+        { op: "replace", path: "/items/1", index: 1, value: "B" },
+      ],
+    })).toEqual({
+      state: { items: ["A", "B"], keep: true },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "replace", path: "/items/1", value: "B" },
+      ],
+    });
+    expect(state.items).toEqual(["old-a", "old-b"]);
+  });
+
+  test("rejects known-json array index replacement plans before materialization", () => {
+    const state = { items: ["old"] };
+
+    expect(applyKnownJsonArrayIndexReplacements({
+      state,
+      schema: z.string(),
+      arraySegments: ["items"],
+      array: state.items,
+      operations: [{ op: "replace", path: "/items/1", index: 1, value: "A" }],
+    })).toBeNull();
+
+    expect(applyKnownJsonArrayIndexReplacements({
+      state,
+      schema: z.string(),
+      arraySegments: ["items"],
+      array: state.items,
+      operations: [{ op: "replace", path: "/items/0", index: 0, value: 1 }],
+    })).toBeNull();
+    expect(state.items).toEqual(["old"]);
+  });
+
   test("builds replacements from schema-accepted known-json values", () => {
     const array = ["old-a", "old-b"];
 
