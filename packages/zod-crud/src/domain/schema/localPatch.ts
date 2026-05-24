@@ -50,6 +50,14 @@ export interface SingleRootObjectReplacePatchPlan {
   key: string;
 }
 
+export interface PlanKnownJsonReplacePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface KnownJsonReplacePatchPlan {
+  operations: Extract<JSONPatchOperation, { op: "replace" }>[];
+}
+
 export interface PlanAppendOnlyArrayAddPatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -617,24 +625,18 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
   state: z.output<S>,
   ops: ReadonlyArray<JSONPatchOperation>,
 ): LocalPatchResult<S> {
-  if (!Array.isArray(ops) || ops.length === 0) return null;
+  const plan = planKnownJsonReplacePatch({ operations: ops });
+  if (plan === null) return null;
 
   const sameArrayElementReplace = applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation(schema, state, ops);
   if (sameArrayElementReplace) return sameArrayElementReplace;
 
-  for (const op of ops) {
-    if (
-      validateOperationShape(op) !== null
-      || op.op !== "replace"
-      || typeof op.path !== "string"
-    ) {
-      return null;
-    }
+  for (const op of plan.operations) {
     const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
     if (!valueSchema || !acceptsKnownJsonValue(valueSchema, op.value)) return null;
   }
 
-  const applied = applyAcceptedPatch(state, ops);
+  const applied = applyAcceptedPatch(state, plan.operations);
   if (!applied.result.ok) {
     return {
       state,
@@ -647,6 +649,27 @@ function applyKnownJsonReplacePatchWithLocalSchemaValidation<S extends z.ZodType
     result: { ok: true },
     applied: applied.applied,
   };
+}
+
+export function planKnownJsonReplacePatch(input: PlanKnownJsonReplacePatchInput): KnownJsonReplacePatchPlan | null {
+  const ops = input.operations;
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+
+  const operations: Extract<JSONPatchOperation, { op: "replace" }>[] = [];
+  for (let index = 0; index < ops.length; index += 1) {
+    if (!(index in ops)) return null;
+    const op = ops[index]!;
+    if (
+      validateOperationShape(op) !== null
+      || op.op !== "replace"
+      || typeof op.path !== "string"
+    ) {
+      return null;
+    }
+    operations.push(op);
+  }
+
+  return { operations };
 }
 
 function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
