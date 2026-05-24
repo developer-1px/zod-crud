@@ -3,12 +3,14 @@ import { describe, expect, test } from "vitest";
 import { planDocumentSelectionRuntime } from "../src/application/document/createJSONDocument.js";
 import {
   planInitialSelection,
+  planSelectionPatchUpdate,
   planSelectionStateUpdate,
   selectionAddRangeAction,
   selectionRemoveRangeAction,
   selectionSelectRangesAction,
   selectionToggleRangeAction,
 } from "../src/application/document/selection.js";
+import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 import type { SelectionSnap } from "../src/domain/selection/index.js";
 
 const emptySelection: SelectionSnap = {
@@ -109,6 +111,47 @@ describe("document selection core functions", () => {
       selectedPointers: ["/items/0/name", "/items/1/name"],
       primaryIndex: 0,
       context: { source: "test" },
+    });
+  });
+
+  test("plans patch-driven selection updates with metadata taking precedence over auto rules", () => {
+    const state = {
+      items: [
+        { name: "Inserted" },
+        { name: "A" },
+        { name: "B" },
+      ],
+    };
+    const applied: JSONPatchOperation[] = [
+      { op: "add", path: "/items/0", value: { name: "Inserted" } },
+    ];
+    const metadataSelection: SelectionSnap = {
+      selectedPointers: ["/items/2"],
+      selectionRanges: [{ anchor: "/items/2", focus: "/items/2" }],
+      primaryIndex: 0,
+      anchor: "/items/2",
+      focus: "/items/2",
+    };
+
+    expect(planSelectionPatchUpdate({
+      current: itemSelection,
+      applied,
+      state,
+      mode: "single",
+      applyMetadataSelectionAfter: true,
+      metadata: { selectionAfter: metadataSelection },
+    })).toEqual(metadataSelection);
+
+    expect(planSelectionPatchUpdate({
+      current: itemSelection,
+      applied,
+      state,
+      mode: "single",
+      applyMetadataSelectionAfter: false,
+      metadata: { selectionAfter: metadataSelection },
+    })).toMatchObject({
+      selectedPointers: ["/items/0"],
+      primaryIndex: 0,
     });
   });
 

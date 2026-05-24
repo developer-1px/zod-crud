@@ -1,7 +1,8 @@
 // Headless selection state facade.
 // React hook and JSONDocument use this same implementation.
 
-import type { JSONOps } from "./ops.js";
+import type { JSONChangeMetadata, JSONOps } from "./ops.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { jsonEqual } from "../../foundation/json.js";
 import {
@@ -138,6 +139,15 @@ export type SelectionStateUpdatePlan =
   | { snap: SelectionSnap; emit: false }
   | { snap: SelectionSnap; emit: true; previous: SelectionSnap };
 
+export interface PlanSelectionPatchUpdateInput {
+  current: SelectionSnap;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  state: unknown;
+  mode: SelectionMode;
+  applyMetadataSelectionAfter: boolean;
+  metadata: JSONChangeMetadata | undefined;
+}
+
 export function planSelectionStateUpdate(
   current: SelectionSnap,
   next: SelectionSnap,
@@ -148,6 +158,14 @@ export function planSelectionStateUpdate(
   const previous = selectionSnapshot(current);
   if (sameSelectionSnapshot(previous, next)) return { snap: current, emit: false };
   return { snap: next, emit: true, previous };
+}
+
+export function planSelectionPatchUpdate(
+  input: PlanSelectionPatchUpdateInput,
+): SelectionSnap {
+  return input.applyMetadataSelectionAfter && input.metadata?.selectionAfter
+    ? restoreSelection(input.metadata.selectionAfter, input.mode, input.state)
+    : applySelectionAutoRules(input.current, input.applied, input.state, input.mode);
 }
 
 export function selectionAddRangeAction(pointOrRange: SelectionRangeInput): SelectionAction {
@@ -214,9 +232,14 @@ export function createSelection<T>(
     setSnap(reduceSelection(snap, action, mode, ops.state));
   };
   const unsubscribe = ops.subscribe((applied, metadata) => {
-    setSnap(applyMetadataSelectionAfter && metadata?.selectionAfter
-      ? restoreSelection(metadata.selectionAfter, mode, ops.state)
-      : applySelectionAutoRules(snap, applied, ops.state, mode));
+    setSnap(planSelectionPatchUpdate({
+      current: snap,
+      applied,
+      state: ops.state,
+      mode,
+      applyMetadataSelectionAfter,
+      metadata,
+    }));
   });
 
   return {
