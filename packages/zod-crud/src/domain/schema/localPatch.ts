@@ -646,6 +646,12 @@ export interface EvaluateRootObjectReplaceValuesInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface PlanRootObjectReplaceValueValidationInput {
+  source: RootObjectReplaceValueSource;
+  operation: RootObjectReplaceOperationPlan;
+  valuesTrusted: boolean;
+}
+
 export type RootObjectReplaceValuesValidationResult<S extends z.ZodType> =
   | { ok: true }
   | { ok: false; result: ApplyResult<S> | null };
@@ -1636,19 +1642,28 @@ export function evaluateRootObjectReplaceValues<S extends z.ZodType>(
 ): RootObjectReplaceValuesValidationResult<S> {
   const { state, operations, source, valuesTrusted } = input;
   for (const op of operations) {
-    const valueSchema = rootObjectReplaceValueSchema(source, op.key);
-    if (valueSchema === null) return { ok: false, result: null };
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: valueSchema,
-      value: op.value,
-      knownJsonAccepted: rootObjectReplaceValueAccepted(source, valueSchema, op.value),
-      valuesTrusted,
-    });
+    const valueValidation = planRootObjectReplaceValueValidation({ source, operation: op, valuesTrusted });
+    if (valueValidation === null) return { ok: false, result: null };
     const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
     if (valueFailure) return { ok: false, result: valueFailure };
   }
   return { ok: true };
+}
+
+export function planRootObjectReplaceValueValidation(
+  input: PlanRootObjectReplaceValueValidationInput,
+): LocalPatchValueValidationPlan | null {
+  const { source, operation, valuesTrusted } = input;
+  const valueSchema = rootObjectReplaceValueSchema(source, operation.key);
+  if (valueSchema === null) return null;
+
+  return planLocalPatchValueValidation({
+    path: operation.path,
+    schema: valueSchema,
+    value: operation.value,
+    knownJsonAccepted: rootObjectReplaceValueAccepted(source, valueSchema, operation.value),
+    valuesTrusted,
+  });
 }
 
 function rootObjectReplaceValueSchema(

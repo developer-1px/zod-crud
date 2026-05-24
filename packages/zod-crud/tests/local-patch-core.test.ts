@@ -68,6 +68,7 @@ import {
   planRootObjectReplaceOperations,
   planRootObjectReplacePatch,
   planRootObjectReplaceStrategy,
+  planRootObjectReplaceValueValidation,
   planRootRecordAddOperations,
   planRootRecordAddPatch,
   planRootRecordRemoveOperations,
@@ -3996,6 +3997,43 @@ describe("root object replace patch planning", () => {
     expect(recordSource.acceptsKnownJson("bad")).toBe(false);
 
     expect(rootObjectReplaceValueSourceForLocalPatch(z.array(z.number()))).toBeNull();
+  });
+
+  test("plans root object replacement value validation through object and record sources", () => {
+    expect(planRootObjectReplaceValueValidation({
+      source: { kind: "object", shape: { a: z.number() } },
+      operation: { op: "replace", path: "/a", key: "a", value: 1 },
+      valuesTrusted: false,
+    })).toEqual({ kind: "accepted" });
+
+    const parsePlan = planRootObjectReplaceValueValidation({
+      source: { kind: "object", shape: { a: z.number() } },
+      operation: { op: "replace", path: "/a", key: "a", value: "bad" },
+      valuesTrusted: true,
+    });
+
+    expect(parsePlan).toMatchObject({ kind: "parse", path: "/a", value: "bad" });
+    expect(parsePlan?.kind === "parse" && parsePlan.schema.safeParse(parsePlan.value).success).toBe(false);
+
+    expect(planRootObjectReplaceValueValidation({
+      source: { kind: "record", schema: z.string(), acceptsKnownJson: (value) => typeof value === "string" },
+      operation: { op: "replace", path: "/dynamic", key: "dynamic", value: "ok" },
+      valuesTrusted: false,
+    })).toEqual({ kind: "accepted" });
+  });
+
+  test("rejects root object replacement value validation without a value schema", () => {
+    expect(planRootObjectReplaceValueValidation({
+      source: { kind: "object", shape: { a: z.number() } },
+      operation: { op: "replace", path: "/missing", key: "missing", value: 1 },
+      valuesTrusted: false,
+    })).toBeNull();
+
+    expect(planRootObjectReplaceValueValidation({
+      source: { kind: "object", shape: { a: undefined } },
+      operation: { op: "replace", path: "/a", key: "a", value: 1 },
+      valuesTrusted: false,
+    })).toBeNull();
   });
 
   test("validates root object replacement values through object shape schemas", () => {
