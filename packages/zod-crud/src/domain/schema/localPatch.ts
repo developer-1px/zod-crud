@@ -386,6 +386,11 @@ export interface PlanRootObjectReplacePatchInput {
   sourceKeys: ReadonlyArray<string>;
 }
 
+export interface PlanRootObjectReplaceOperationsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  sourceKeys: ReadonlyArray<string>;
+}
+
 export type RootObjectReplacePatchStrategy = "orderedReplace" | "copyWrite";
 
 export interface RootObjectReplaceOperationPlan {
@@ -398,6 +403,11 @@ export interface RootObjectReplaceOperationPlan {
 export interface RootObjectReplacePatchPlan {
   operations: RootObjectReplaceOperationPlan[];
   strategy: RootObjectReplacePatchStrategy;
+}
+
+export interface PlanRootObjectReplaceStrategyInput {
+  operations: ReadonlyArray<RootObjectReplaceOperationPlan>;
+  sourceKeys: ReadonlyArray<string>;
 }
 
 export type RootObjectReplaceValueSource =
@@ -1406,13 +1416,23 @@ export function applyRootObjectReplacePlan(input: ApplyRootObjectReplacePlanInpu
 export function planRootObjectReplacePatch(
   input: PlanRootObjectReplacePatchInput,
 ): RootObjectReplacePatchPlan | null {
+  const operations = planRootObjectReplaceOperations(input);
+  if (operations === null) return null;
+  return {
+    operations,
+    strategy: planRootObjectReplaceStrategy({ operations, sourceKeys: input.sourceKeys }),
+  };
+}
+
+export function planRootObjectReplaceOperations(
+  input: PlanRootObjectReplaceOperationsInput,
+): RootObjectReplaceOperationPlan[] | null {
   const ops = input.operations;
   const sourceKeys = input.sourceKeys;
   if (!Array.isArray(ops) || ops.length < 2 || !Array.isArray(sourceKeys)) return null;
 
   const sourceKeySet = createDataKeySet(sourceKeys);
 
-  let ordered = ops.length === sourceKeys.length;
   const operations: RootObjectReplaceOperationPlan[] = [];
   for (let index = 0; index < ops.length; index += 1) {
     if (!(index in ops)) return null;
@@ -1430,14 +1450,21 @@ export function planRootObjectReplacePatch(
 
     const key = op.path.slice(1);
     if (key === "" || !objectHasOwn.call(sourceKeySet, key)) return null;
-    if (ordered && key !== sourceKeys[index]) ordered = false;
     operations.push({ op: "replace", path: op.path, key, value: op.value });
   }
 
-  return {
-    operations,
-    strategy: ordered ? "orderedReplace" : "copyWrite",
-  };
+  return operations;
+}
+
+export function planRootObjectReplaceStrategy(
+  input: PlanRootObjectReplaceStrategyInput,
+): RootObjectReplacePatchStrategy {
+  const { operations, sourceKeys } = input;
+  if (operations.length !== sourceKeys.length) return "copyWrite";
+  for (let index = 0; index < operations.length; index += 1) {
+    if (operations[index]!.key !== sourceKeys[index]) return "copyWrite";
+  }
+  return "orderedReplace";
 }
 
 function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType>(

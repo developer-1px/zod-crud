@@ -43,7 +43,9 @@ import {
   planIndependentReplacePatch,
   planKnownJsonReplacePatch,
   planLocalPatchValueValidation,
+  planRootObjectReplaceOperations,
   planRootObjectReplacePatch,
+  planRootObjectReplaceStrategy,
   planRootRecordAddOperations,
   planRootRecordAddPatch,
   planRootRecordRemoveOperations,
@@ -2491,6 +2493,65 @@ describe("root record remove patch planning", () => {
 });
 
 describe("root object replace patch planning", () => {
+  test("plans root object replacement operations from existing plain keys", () => {
+    expect(planRootObjectReplaceOperations({
+      sourceKeys: ["a", "b"],
+      operations: [
+        { op: "replace", path: "/b", value: 2 },
+        { op: "replace", path: "/a", value: 1 },
+      ],
+    })).toEqual([
+      { op: "replace", path: "/b", key: "b", value: 2 },
+      { op: "replace", path: "/a", key: "a", value: 1 },
+    ]);
+  });
+
+  test("rejects invalid root object replacement operation plans", () => {
+    expect(planRootObjectReplaceOperations({
+      sourceKeys: ["a"],
+      operations: [{ op: "replace", path: "/a", value: 1 }],
+    })).toBeNull();
+    expect(planRootObjectReplaceOperations({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "replace", path: "/a", value: 1 },
+        { op: "replace", path: "/missing", value: 2 },
+      ],
+    })).toBeNull();
+    expect(planRootObjectReplaceOperations({
+      sourceKeys: ["a"],
+      operations: [
+        { op: "replace", path: "/a/nested", value: 1 },
+        { op: "replace", path: "/a", value: 2 },
+      ],
+    })).toBeNull();
+    expect(planRootObjectReplaceOperations({
+      sourceKeys: ["a/b"],
+      operations: [
+        { op: "replace", path: "/a~1b", value: 1 },
+        { op: "replace", path: "/a~1b", value: 2 },
+      ],
+    })).toBeNull();
+  });
+
+  test("plans root object replacement strategies from parsed operations", () => {
+    expect(planRootObjectReplaceStrategy({
+      sourceKeys: ["a", "b"],
+      operations: [
+        { op: "replace", path: "/a", key: "a", value: 1 },
+        { op: "replace", path: "/b", key: "b", value: 2 },
+      ],
+    })).toBe("orderedReplace");
+
+    expect(planRootObjectReplaceStrategy({
+      sourceKeys: ["a", "b"],
+      operations: [
+        { op: "replace", path: "/b", key: "b", value: 2 },
+        { op: "replace", path: "/a", key: "a", value: 1 },
+      ],
+    })).toBe("copyWrite");
+  });
+
   test("plans ordered full-root replacement and copy-write replacement", () => {
     expect(planRootObjectReplacePatch({
       sourceKeys: ["a", "b"],
