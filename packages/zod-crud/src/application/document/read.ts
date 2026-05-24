@@ -41,35 +41,22 @@ interface BuildReadFacadeArgs<S extends z.ZodType> {
   getState(): z.output<S>;
 }
 
+export interface DocumentReadContext<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+}
+
 export function buildReadFacade<S extends z.ZodType>(
   args: BuildReadFacadeArgs<S>,
 ): ReadFacade {
   const { schema, getState } = args;
 
-  const at = (path: Pointer): ReadResult => {
-    let segments: string[];
-    try {
-      segments = parsePointer(path);
-    } catch (error) {
-      return {
-        ok: false,
-        code: "invalid_pointer",
-        reason: error instanceof Error ? error.message : "invalid pointer",
-        pointer: path,
-      };
-    }
+  const context = (): DocumentReadContext<S> => ({
+    schema,
+    state: getState(),
+  });
 
-    const result = readAt(getState(), segments);
-    if (!result.ok) {
-      return {
-        ok: false,
-        code: "path_not_found",
-        reason: `path not found: ${path}`,
-        pointer: path,
-      };
-    }
-    return { ok: true, path, value: result.value };
-  };
+  const at = (path: Pointer): ReadResult => readDocumentPointer(getState(), path);
 
   return {
     at,
@@ -77,26 +64,62 @@ export function buildReadFacade<S extends z.ZodType>(
       return at(path).ok;
     },
     query(jsonpath) {
-      try {
-        return { ok: true, query: jsonpath, pointers: jsonpathQuery(jsonpath, getState()) };
-      } catch (error) {
-        if (error instanceof JSONPathSyntaxError) {
-          return { ok: false, code: "invalid_query", reason: error.message };
-        }
-        throw error;
-      }
+      return queryDocumentPointers(getState(), jsonpath);
     },
     entries(path) {
-      const result = at(path);
-      if (!result.ok) return result;
-
-      return {
-        ok: true,
-        path,
-        kind: entryKind(schema, path, result.value),
-        entries: readEntries(path, result.value),
-      };
+      return readDocumentEntries(context(), path);
     },
+  };
+}
+
+export function readDocumentPointer(state: unknown, path: Pointer): ReadResult {
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch (error) {
+    return {
+      ok: false,
+      code: "invalid_pointer",
+      reason: error instanceof Error ? error.message : "invalid pointer",
+      pointer: path,
+    };
+  }
+
+  const result = readAt(state, segments);
+  if (!result.ok) {
+    return {
+      ok: false,
+      code: "path_not_found",
+      reason: `path not found: ${path}`,
+      pointer: path,
+    };
+  }
+  return { ok: true, path, value: result.value };
+}
+
+export function queryDocumentPointers(state: unknown, jsonpath: string): QueryResult {
+  try {
+    return { ok: true, query: jsonpath, pointers: jsonpathQuery(jsonpath, state) };
+  } catch (error) {
+    if (error instanceof JSONPathSyntaxError) {
+      return { ok: false, code: "invalid_query", reason: error.message };
+    }
+    throw error;
+  }
+}
+
+export function readDocumentEntries<S extends z.ZodType>(
+  context: DocumentReadContext<S>,
+  path: Pointer,
+): EntriesResult {
+  const result = readDocumentPointer(context.state, path);
+  if (!result.ok) return result;
+
+  return {
+    ok: true,
+    path,
+    kind: entryKind(context.schema, path, result.value),
+    entries: readEntries(path, result.value),
   };
 }
 
