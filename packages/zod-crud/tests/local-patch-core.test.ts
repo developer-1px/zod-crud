@@ -34,6 +34,7 @@ import {
   evaluateRootRecordAddValues,
   evaluateRootObjectReplaceValues,
   failedLocalPatch,
+  haveIndependentReplacePaths,
   numericSegment,
   okLocalPatch,
   planAppliedLocalOpValidation,
@@ -43,6 +44,7 @@ import {
   planIncreasingArrayAddPatch,
   planIncreasingArrayAddValues,
   planIndependentReplacePatch,
+  planIndependentReplacePaths,
   planKnownJsonReplacePatch,
   planLocalPatchValueValidation,
   planRootObjectReplaceOperations,
@@ -1702,6 +1704,42 @@ describe("applied local op validation evaluation", () => {
 });
 
 describe("local patch core functions", () => {
+  test("plans independent replace paths without schema work", () => {
+    expect(planIndependentReplacePaths({
+      operations: [
+        { op: "replace", path: "/title", value: "Final" },
+        { op: "replace", path: "/meta/owner", value: "core" },
+      ],
+    })).toEqual(["/title", "/meta/owner"]);
+  });
+
+  test("rejects invalid independent replace path plans", () => {
+    expect(planIndependentReplacePaths({ operations: [] })).toBeNull();
+    expect(planIndependentReplacePaths({
+      operations: [{ op: "replace", path: "", value: { title: "root" } }],
+    })).toBeNull();
+    expect(planIndependentReplacePaths({
+      operations: [{ op: "add", path: "/title", value: "Final" }],
+    })).toBeNull();
+    expect(planIndependentReplacePaths({
+      operations: [{ op: "replace", path: "title", value: "Final" }],
+    })).toBeNull();
+    expect(planIndependentReplacePaths({
+      operations: [{ op: "replace", path: "/items/-/name", value: "Final" }],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/title", value: "Final" };
+    expect(planIndependentReplacePaths({ operations: sparse })).toBeNull();
+  });
+
+  test("detects independent replace path sets", () => {
+    expect(haveIndependentReplacePaths(["/title", "/meta/owner"])).toBe(true);
+    expect(haveIndependentReplacePaths([])).toBe(false);
+    expect(haveIndependentReplacePaths(["/items/0", "/items/0/name"])).toBe(false);
+    expect(haveIndependentReplacePaths(["/title", "/title"])).toBe(false);
+  });
+
   test("plans independent replace batches without schema work", () => {
     expect(planIndependentReplacePatch({
       operations: [

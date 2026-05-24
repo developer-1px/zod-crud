@@ -62,6 +62,10 @@ export interface PlanIndependentReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface PlanIndependentReplacePathsInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface PlanSingleReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
@@ -2372,11 +2376,17 @@ function parseSimpleArrayElementReplacePath(
 }
 
 export function planIndependentReplacePatch(input: PlanIndependentReplacePatchInput): boolean {
+  const paths = planIndependentReplacePaths(input);
+  return paths === null ? false : haveIndependentReplacePaths(paths);
+}
+
+export function planIndependentReplacePaths(input: PlanIndependentReplacePathsInput): Pointer[] | null {
   const ops = input.operations;
-  if (!Array.isArray(ops) || ops.length === 0) return false;
-  const paths: string[] = [];
+  if (!Array.isArray(ops) || ops.length === 0) return null;
+  const paths = new Array<Pointer>(ops.length);
+
   for (let index = 0; index < ops.length; index++) {
-    if (!(index in ops)) return false;
+    if (!(index in ops)) return null;
     const op = ops[index]!;
     if (
       validateOperationShape(op) !== null
@@ -2384,16 +2394,22 @@ export function planIndependentReplacePatch(input: PlanIndependentReplacePatchIn
       || typeof op.path !== "string"
       || op.path === ""
     ) {
-      return false;
+      return null;
     }
     try {
       const segments = parsePointer(op.path);
-      if (segments.includes("-")) return false;
+      if (segments.includes("-")) return null;
     } catch {
-      return false;
+      return null;
     }
-    paths.push(op.path);
+    paths[index] = op.path;
   }
+
+  return paths;
+}
+
+export function haveIndependentReplacePaths(paths: ReadonlyArray<Pointer>): boolean {
+  if (!Array.isArray(paths) || paths.length === 0) return false;
 
   const sorted = [...paths].sort();
   for (let index = 1; index < sorted.length; index++) {
