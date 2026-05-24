@@ -1,8 +1,10 @@
 import { describe, expect, test } from "vitest";
+import * as z from "zod";
 
 import {
   planJSONNotification,
   planJSONRootReplacement,
+  planJSONRootReplacementParse,
   planJSONStateCommit,
 } from "../src/application/document/createJSON.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -50,6 +52,33 @@ describe("document JSON state core functions", () => {
       schemaOutputJsonTrusted: true,
     })).toMatchObject({
       stateJsonTrusted: true,
+    });
+  });
+
+  test("plans root replacement parse results before applying state changes", () => {
+    const Schema = z.object({ title: z.string() });
+    const parsed = Schema.safeParse({ title: "loaded" });
+
+    expect(planJSONRootReplacementParse({
+      result: parsed,
+      schemaOutputJsonTrusted: false,
+    })).toEqual({
+      kind: "replace",
+      result: { ok: true },
+      state: { title: "loaded" },
+      stateJsonTrusted: true,
+      notifyApplied: [{ op: "replace", path: "", value: { title: "loaded" } }],
+    });
+
+    expect(planJSONRootReplacementParse({
+      result: Schema.safeParse({ title: 1 }),
+      schemaOutputJsonTrusted: false,
+    })).toMatchObject({
+      kind: "error",
+      result: {
+        ok: false,
+        code: "schema_violation",
+      },
     });
   });
 

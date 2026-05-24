@@ -73,12 +73,21 @@ export interface JSONRootReplacementInput<T> {
   schemaOutputJsonTrusted: boolean;
 }
 
+export interface JSONRootReplacementParseInput<T> {
+  result: { success: true; data: T } | { success: false; error: z.ZodError };
+  schemaOutputJsonTrusted: boolean;
+}
+
 export interface JSONRootReplacementPlan<T> {
   result: JSONResult;
   state: T;
   stateJsonTrusted: boolean;
   notifyApplied: ReadonlyArray<JSONPatchOperation>;
 }
+
+export type JSONRootReplacementParsePlan<T> =
+  | ({ kind: "replace" } & JSONRootReplacementPlan<T>)
+  | { kind: "error"; result: Extract<JSONResult, { ok: false }> };
 
 export interface JSONNotificationInput {
   applied: ReadonlyArray<JSONPatchOperation>;
@@ -136,6 +145,28 @@ export function planJSONRootReplacement<T>(
     state: input.next,
     stateJsonTrusted: input.schemaOutputJsonTrusted || jsonSerializableError(input.next) === null,
     notifyApplied: [ROOT_REPLACE(input.next)],
+  };
+}
+
+export function planJSONRootReplacementParse<T>(
+  input: JSONRootReplacementParseInput<T>,
+): JSONRootReplacementParsePlan<T> {
+  if (!input.result.success) {
+    return {
+      kind: "error",
+      result: {
+        ok: false,
+        code: "schema_violation",
+        reason: JSON.stringify(input.result.error.issues),
+      },
+    };
+  }
+  return {
+    kind: "replace",
+    ...planJSONRootReplacement({
+      next: input.result.data,
+      schemaOutputJsonTrusted: input.schemaOutputJsonTrusted,
+    }),
   };
 }
 
@@ -257,18 +288,11 @@ export function createJSON<S extends z.ZodType>(
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
 
   const replaceRoot = (label: "load" | "reset", value: unknown): JSONResult => {
-    const next = schema.safeParse(value);
-    if (!next.success) {
-      return handleResult(policy, label, {
-        ok: false,
-        code: "schema_violation",
-        reason: JSON.stringify(next.error.issues),
-      });
-    }
-    const plan = planJSONRootReplacement({
-      next: next.data as z.output<S>,
+    const plan = planJSONRootReplacementParse({
+      result: schema.safeParse(value),
       schemaOutputJsonTrusted,
     });
+    if (plan.kind === "error") return handleResult(policy, label, plan.result);
     state = plan.state;
     stateJsonTrusted = plan.stateJsonTrusted;
     notify(plan.notifyApplied);
