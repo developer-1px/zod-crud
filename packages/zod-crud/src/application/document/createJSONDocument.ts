@@ -394,6 +394,22 @@ export interface DocumentHistoryRestorePlan {
   state?: unknown;
 }
 
+export interface PlanDocumentHistoryRestoreApplyInput {
+  patch: ReadonlyArray<JSONPatchOperation>;
+  state: unknown | undefined;
+}
+
+export type DocumentHistoryRestoreApplyPlan =
+  | {
+      kind: "patch";
+      patch: ReadonlyArray<JSONPatchOperation>;
+    }
+  | {
+      kind: "state";
+      state: unknown;
+      patch: ReadonlyArray<JSONPatchOperation>;
+    };
+
 const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
 
 export function createJSONDocument<S extends z.ZodType>(
@@ -654,9 +670,13 @@ export function createJSONDocument<S extends z.ZodType>(
     if (direction === "undo") stack.undo[stack.undo.length - 1] = plan.entry;
     isRestoring = true;
     try {
-      const r = plan.state === undefined
-        ? rawOps.trustedPatch(plan.patch)
-        : rawOps.trustedApply(plan.state as z.output<S>, plan.patch);
+      const applyPlan = planDocumentHistoryRestoreApply({
+        patch: plan.patch,
+        state: plan.state,
+      });
+      const r = applyPlan.kind === "patch"
+        ? rawOps.trustedPatch(applyPlan.patch)
+        : rawOps.trustedApply(applyPlan.state as z.output<S>, applyPlan.patch);
       if (!r.ok) return false;
       if (direction === "redo") stack.redo[stack.redo.length - 1] = plan.entry;
       syncLastPatch();
@@ -1347,6 +1367,22 @@ export function planDocumentHistoryRestore(
   const state = direction === "undo" ? snapshot?.before : snapshot?.after;
   if (state !== undefined) plan.state = state;
   return plan;
+}
+
+export function planDocumentHistoryRestoreApply(
+  input: PlanDocumentHistoryRestoreApplyInput,
+): DocumentHistoryRestoreApplyPlan {
+  if (input.state === undefined) {
+    return {
+      kind: "patch",
+      patch: input.patch,
+    };
+  }
+  return {
+    kind: "state",
+    state: input.state,
+    patch: input.patch,
+  };
 }
 
 function compactRepeatedReplaceBatchForHistory(

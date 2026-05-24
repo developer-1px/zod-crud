@@ -12,6 +12,7 @@ import {
   planDocumentHistoryMergeLast,
   planDocumentHistoryMergeMetadata,
   planDocumentHistoryRestore,
+  planDocumentHistoryRestoreApply,
   planDocumentTransactionAppendCompact,
   planDocumentTransactionCall,
   planDocumentTransactionMerge,
@@ -685,6 +686,28 @@ describe("document history core functions", () => {
     expect(entry.snapshot).toEqual({
       before: { title: "draft" },
       after: { title: "final" },
+    });
+  });
+
+  test("plans restore application strategy from snapshot state availability", () => {
+    const patch: JSONPatchOperation[] = [{ op: "replace", path: "/title", value: "draft" }];
+    const state = { title: "draft" };
+
+    expect(planDocumentHistoryRestoreApply({
+      patch,
+      state: undefined,
+    })).toEqual({
+      kind: "patch",
+      patch,
+    });
+
+    expect(planDocumentHistoryRestoreApply({
+      patch,
+      state,
+    })).toEqual({
+      kind: "state",
+      state,
+      patch,
     });
   });
 });
