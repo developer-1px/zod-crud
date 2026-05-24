@@ -821,14 +821,12 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   const current = readAt(state, plan.parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
   const next = current.value.slice();
-  const applied = new Array<JSONPatchOperation>(plan.operations.length);
 
   for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
     const op = plan.operations[opIndex]!;
     if (!acceptsKnownJsonValueWithValidator(elementValidator, op.value)) return null;
     if (op.index < 0 || op.index >= next.length) return null;
     next[op.index] = op.value;
-    applied[opIndex] = { op: "replace", path: op.path, value: op.value };
   }
 
   const nextState = replaceValueAtSegments(state, plan.parentSegments, 0, next);
@@ -836,7 +834,7 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   return {
     state: nextState as z.output<S>,
     result: { ok: true },
-    applied,
+    applied: toAppliedReplaceOperations(plan.operations),
   };
 }
 
@@ -1122,7 +1120,6 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   const sourceKeys = Object.keys(source);
   const plan = planRootObjectReplacePatch({ operations: ops, sourceKeys });
   if (plan === null) return null;
-  const applied = new Array<JSONPatchOperation>(plan.operations.length);
 
   for (let index = 0; index < plan.operations.length; index += 1) {
     const op = plan.operations[index]!;
@@ -1142,7 +1139,6 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
     });
     const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
     if (valueFailure) return valueFailure;
-    applied[index] = { op: "replace", path: op.path, value: op.value };
   }
 
   const resultState = plan.strategy === "orderedReplace"
@@ -1155,7 +1151,7 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   return {
     state: resultState as z.output<S>,
     result: { ok: true },
-    applied,
+    applied: toAppliedReplaceOperations(plan.operations),
   };
 }
 
