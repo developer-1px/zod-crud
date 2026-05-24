@@ -206,6 +206,16 @@ export interface DocumentChangeCapturePlan {
   shouldCaptureMetadata: boolean;
 }
 
+export interface PlanDocumentLifecycleChangeInput {
+  result: JSONResult;
+  preserveHistory: boolean;
+}
+
+export interface DocumentLifecycleChangePlan {
+  syncLastPatch: boolean;
+  clearHistory: boolean;
+}
+
 export interface PlanDocumentHistoryEntryInput {
   before: unknown;
   after: unknown;
@@ -542,14 +552,19 @@ export function createJSONDocument<S extends z.ZodType>(
     patch: applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {
       const r = rawOps.load(value);
-      if (r.ok) syncLastPatch();
-      if (r.ok && !loadOptions?.preserveHistory) stack = emptyMutableHistory<HistoryEntry>();
+      const plan = planDocumentLifecycleChange({
+        result: r,
+        preserveHistory: loadOptions?.preserveHistory === true,
+      });
+      if (plan.syncLastPatch) syncLastPatch();
+      if (plan.clearHistory) stack = emptyMutableHistory<HistoryEntry>();
       return r;
     },
     reset(value) {
       const r = rawOps.reset(value);
-      if (r.ok) syncLastPatch();
-      if (r.ok) stack = emptyMutableHistory<HistoryEntry>();
+      const plan = planDocumentLifecycleChange({ result: r, preserveHistory: false });
+      if (plan.syncLastPatch) syncLastPatch();
+      if (plan.clearHistory) stack = emptyMutableHistory<HistoryEntry>();
       return r;
     },
     subscribe(listener) {
@@ -965,6 +980,18 @@ export function planDocumentChangeCapture(
       selectionEnabled: input.selectionEnabled,
       documentSubscriberCount: input.documentSubscriberCount,
     }),
+  };
+}
+
+export function planDocumentLifecycleChange(
+  input: PlanDocumentLifecycleChangeInput,
+): DocumentLifecycleChangePlan {
+  if (!input.result.ok) {
+    return { syncLastPatch: false, clearHistory: false };
+  }
+  return {
+    syncLastPatch: true,
+    clearHistory: !input.preserveHistory,
   };
 }
 
