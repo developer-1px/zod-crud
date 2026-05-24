@@ -68,6 +68,18 @@ export interface JSONStateCommitPlan<T> {
   notifyApplied: ReadonlyArray<JSONPatchOperation> | null;
 }
 
+export interface JSONRootReplacementInput<T> {
+  next: T;
+  schemaOutputJsonTrusted: boolean;
+}
+
+export interface JSONRootReplacementPlan<T> {
+  result: JSONResult;
+  state: T;
+  stateJsonTrusted: boolean;
+  notifyApplied: ReadonlyArray<JSONPatchOperation>;
+}
+
 const ROOT_REPLACE = (value: unknown): JSONPatchOperation => ({ op: "replace", path: "", value });
 
 export function planJSONStateCommit<T>(
@@ -96,6 +108,17 @@ export function planJSONStateCommit<T>(
     state: input.next,
     stateJsonTrusted: input.changedStateJsonTrusted,
     notifyApplied: input.applied,
+  };
+}
+
+export function planJSONRootReplacement<T>(
+  input: JSONRootReplacementInput<T>,
+): JSONRootReplacementPlan<T> {
+  return {
+    result: { ok: true },
+    state: input.next,
+    stateJsonTrusted: input.schemaOutputJsonTrusted || jsonSerializableError(input.next) === null,
+    notifyApplied: [ROOT_REPLACE(input.next)],
   };
 }
 
@@ -224,10 +247,14 @@ export function createJSON<S extends z.ZodType>(
         reason: JSON.stringify(next.error.issues),
       });
     }
-    state = next.data as z.output<S>;
-    stateJsonTrusted = schemaOutputJsonTrusted || jsonSerializableError(state) === null;
-    notify([ROOT_REPLACE(state)]);
-    return { ok: true };
+    const plan = planJSONRootReplacement({
+      next: next.data as z.output<S>,
+      schemaOutputJsonTrusted,
+    });
+    state = plan.state;
+    stateJsonTrusted = plan.stateJsonTrusted;
+    notify(plan.notifyApplied);
+    return plan.result;
   };
 
   const ops: TrustedJSONOps<z.output<S>> = {

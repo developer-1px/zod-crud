@@ -1,9 +1,43 @@
 import { describe, expect, test } from "vitest";
 
-import { planJSONStateCommit } from "../src/application/document/createJSON.js";
+import {
+  planJSONRootReplacement,
+  planJSONStateCommit,
+} from "../src/application/document/createJSON.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
 describe("document JSON state core functions", () => {
+  test("plans root replacement state, trust, and notification patch", () => {
+    const next = { title: "loaded" };
+
+    expect(planJSONRootReplacement({
+      next,
+      schemaOutputJsonTrusted: false,
+    })).toEqual({
+      result: { ok: true },
+      state: next,
+      stateJsonTrusted: true,
+      notifyApplied: [{ op: "replace", path: "", value: next }],
+    });
+
+    const nonSerializable = () => "bad";
+    expect(planJSONRootReplacement({
+      next: nonSerializable,
+      schemaOutputJsonTrusted: false,
+    })).toEqual({
+      result: { ok: true },
+      state: nonSerializable,
+      stateJsonTrusted: false,
+      notifyApplied: [{ op: "replace", path: "", value: nonSerializable }],
+    });
+    expect(planJSONRootReplacement({
+      next: nonSerializable,
+      schemaOutputJsonTrusted: true,
+    })).toMatchObject({
+      stateJsonTrusted: true,
+    });
+  });
+
   test("plans failed commits without changing state, trust, or notifications", () => {
     const current = { items: [1] };
     const applied: JSONPatchOperation[] = [{ op: "remove", path: "/missing" }];
