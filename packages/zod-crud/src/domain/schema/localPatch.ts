@@ -111,6 +111,14 @@ export interface ApplySingleRootArrayFieldReplaceInput {
   value: unknown;
 }
 
+export interface ApplyArrayFieldReplaceAtPointerInput {
+  state: unknown;
+  arrayPath: Pointer;
+  index: number;
+  key: string;
+  value: unknown;
+}
+
 export interface ReadSingleRootArrayFieldTargetInput {
   state: unknown;
   arrayPath: Pointer;
@@ -1056,9 +1064,20 @@ export function applySingleArrayFieldReplace(input: ApplySingleArrayFieldReplace
   });
   if (rootArrayReplace !== null) return rootArrayReplace;
 
+  return applyArrayFieldReplaceAtPointer({
+    state,
+    arrayPath: plan.arrayPath,
+    index: plan.index,
+    key: plan.key,
+    value: plan.value,
+  });
+}
+
+export function applyArrayFieldReplaceAtPointer(input: ApplyArrayFieldReplaceAtPointerInput): unknown | null {
+  const { state, arrayPath, index, key, value } = input;
   let arraySegments: string[];
   try {
-    arraySegments = parsePointer(plan.arrayPath);
+    arraySegments = parsePointer(arrayPath);
   } catch {
     return null;
   }
@@ -1066,7 +1085,7 @@ export function applySingleArrayFieldReplace(input: ApplySingleArrayFieldReplace
   const current = readArrayAtSegments({ state, segments: arraySegments });
   if (!current.ok) return null;
 
-  const nextArray = replaceArrayField(current.array, plan.index, plan.key, plan.value);
+  const nextArray = replaceArrayField(current.array, index, key, value);
   return nextArray === null ? null : replaceValueAtSegments(state, arraySegments, 0, nextArray);
 }
 

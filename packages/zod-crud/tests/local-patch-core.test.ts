@@ -4,6 +4,7 @@ import { z } from "zod";
 import {
   acceptsKnownJsonValue,
   applyArrayAddPlan,
+  applyArrayFieldReplaceAtPointer,
   applyArrayIndexReplacements,
   applyArrayNestedReplacements,
   applyRootObjectReplacePlan,
@@ -1302,6 +1303,72 @@ describe("root record copy and write helpers", () => {
     expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/a~1b" })).toBeNull();
     expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/__proto__" })).toBeNull();
     expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/text" })).toBeNull();
+  });
+
+  test("applies array field replacements at pointer paths", () => {
+    const state = {
+      nested: {
+        items: [
+          { "a/b": "Draft" },
+          { "a/b": "Keep" },
+        ],
+      },
+      keep: true,
+    };
+
+    expect(applyArrayFieldReplaceAtPointer({
+      state,
+      arrayPath: "/nested/items",
+      index: 0,
+      key: "a/b",
+      value: "Final",
+    })).toEqual({
+      nested: {
+        items: [
+          { "a/b": "Final" },
+          { "a/b": "Keep" },
+        ],
+      },
+      keep: true,
+    });
+    expect(state.nested.items[0]?.["a/b"]).toBe("Draft");
+
+    const escaped = { "a/b": [{ name: "Draft" }] };
+    expect(applyArrayFieldReplaceAtPointer({
+      state: escaped,
+      arrayPath: "/a~1b",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toEqual({ "a/b": [{ name: "Final" }] });
+  });
+
+  test("rejects array field replacements at invalid pointer targets", () => {
+    const state = { items: [{ name: "Draft" }], text: "Draft" };
+
+    expect(applyArrayFieldReplaceAtPointer({
+      state,
+      arrayPath: "/missing",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applyArrayFieldReplaceAtPointer({
+      state,
+      arrayPath: "/text",
+      index: 0,
+      key: "name",
+      value: "Final",
+    })).toBeNull();
+
+    expect(applyArrayFieldReplaceAtPointer({
+      state,
+      arrayPath: "/items",
+      index: 0,
+      key: "missing",
+      value: "Final",
+    })).toBeNull();
   });
 
   test("applies single root array field replacements to root arrays and shallow object arrays", () => {
