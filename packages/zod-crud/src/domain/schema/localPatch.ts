@@ -274,6 +274,21 @@ export interface RootObjectReplacePatchPlan {
   strategy: RootObjectReplacePatchStrategy;
 }
 
+export type RootObjectReplaceValueSource =
+  | { kind: "object"; shape: Record<string, z.ZodType | undefined> }
+  | { kind: "record"; schema: z.ZodType; acceptsKnownJson: (value: unknown) => boolean };
+
+export interface EvaluateRootObjectReplaceValuesInput<S extends z.ZodType> {
+  state: z.output<S>;
+  operations: ReadonlyArray<RootObjectReplaceOperationPlan>;
+  source: RootObjectReplaceValueSource;
+  valuesTrusted: boolean;
+}
+
+export type RootObjectReplaceValuesValidationResult<S extends z.ZodType> =
+  | { ok: true }
+  | { ok: false; result: ApplyResult<S> | null };
+
 export interface ApplyRootObjectReplacePlanInput {
   source: Record<string, unknown>;
   sourceKeys: ReadonlyArray<string>;
@@ -1172,29 +1187,66 @@ function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodTyp
   const plan = planRootObjectReplacePatch({ operations: ops, sourceKeys });
   if (plan === null) return null;
 
-  for (let index = 0; index < plan.operations.length; index += 1) {
-    const op = plan.operations[index]!;
-    const valueSchema = shape
-      ? (objectHasOwn.call(shape, op.key) ? (shape[op.key] ?? null) : null)
-      : recordValueSchema;
-    if (!valueSchema) return null;
-    const valueAccepted = shape
-      ? acceptsKnownJsonValue(valueSchema, op.value)
-      : acceptsKnownJsonValueWithValidator(recordValueValidator, op.value);
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: valueSchema,
-      value: op.value,
-      knownJsonAccepted: valueAccepted,
-      valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
-  }
+  const valueSource: RootObjectReplaceValueSource | null = shape
+    ? { kind: "object", shape }
+    : recordValueSchema
+      ? {
+          kind: "record",
+          schema: recordValueSchema,
+          acceptsKnownJson: (value) => acceptsKnownJsonValueWithValidator(recordValueValidator, value),
+        }
+      : null;
+  if (valueSource === null) return null;
+
+  const valueValidation = evaluateRootObjectReplaceValues({
+    state,
+    operations: plan.operations,
+    source: valueSource,
+    valuesTrusted,
+  });
+  if (!valueValidation.ok) return valueValidation.result;
 
   const resultState = applyRootObjectReplacePlan({ source, sourceKeys, plan });
 
   return okLocalPatch(resultState as z.output<S>, toAppliedReplaceOperations(plan.operations));
+}
+
+export function evaluateRootObjectReplaceValues<S extends z.ZodType>(
+  input: EvaluateRootObjectReplaceValuesInput<S>,
+): RootObjectReplaceValuesValidationResult<S> {
+  const { state, operations, source, valuesTrusted } = input;
+  for (const op of operations) {
+    const valueSchema = rootObjectReplaceValueSchema(source, op.key);
+    if (valueSchema === null) return { ok: false, result: null };
+    const valueValidation = planLocalPatchValueValidation({
+      path: op.path,
+      schema: valueSchema,
+      value: op.value,
+      knownJsonAccepted: rootObjectReplaceValueAccepted(source, valueSchema, op.value),
+      valuesTrusted,
+    });
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return { ok: false, result: valueFailure };
+  }
+  return { ok: true };
+}
+
+function rootObjectReplaceValueSchema(
+  source: RootObjectReplaceValueSource,
+  key: string,
+): z.ZodType | null {
+  if (source.kind === "record") return source.schema;
+  return objectHasOwn.call(source.shape, key) ? (source.shape[key] ?? null) : null;
+}
+
+function rootObjectReplaceValueAccepted(
+  source: RootObjectReplaceValueSource,
+  schema: z.ZodType,
+  value: unknown,
+): boolean {
+  return source.kind === "record"
+    ? source.acceptsKnownJson(value)
+    : acceptsKnownJsonValue(schema, value);
 }
 
 export function applyRootObjectReplacePlan(input: ApplyRootObjectReplacePlanInput): Record<string, unknown> {

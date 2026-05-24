@@ -22,6 +22,7 @@ import {
   evaluateAppliedReplaceOperations,
   evaluateAppliedReplaceValueValidationPlan,
   evaluateLocalPatchValueValidationPlan,
+  evaluateRootObjectReplaceValues,
   failedLocalPatch,
   numericSegment,
   okLocalPatch,
@@ -1995,6 +1996,49 @@ describe("root object replace patch planning", () => {
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/a", value: 1 };
     expect(planRootObjectReplacePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+  });
+
+  test("validates root object replacement values through object shape schemas", () => {
+    const state = { a: 0, b: 0 };
+
+    expect(evaluateRootObjectReplaceValues({
+      state,
+      operations: [
+        { op: "replace", path: "/a", key: "a", value: 1 },
+        { op: "replace", path: "/b", key: "b", value: 2 },
+      ],
+      source: { kind: "object", shape: { a: z.number(), b: z.number() } },
+      valuesTrusted: false,
+    })).toEqual({ ok: true });
+
+    expect(evaluateRootObjectReplaceValues({
+      state,
+      operations: [{ op: "replace", path: "/missing", key: "missing", value: 1 }],
+      source: { kind: "object", shape: { a: z.number() } },
+      valuesTrusted: false,
+    })).toEqual({ ok: false, result: null });
+  });
+
+  test("validates root record replacement values through one record value schema", () => {
+    const state = { a: 0 };
+    const result = evaluateRootObjectReplaceValues({
+      state,
+      operations: [{ op: "replace", path: "/a", key: "a", value: "bad" }],
+      source: {
+        kind: "record",
+        schema: z.number(),
+        acceptsKnownJson: () => false,
+      },
+      valuesTrusted: false,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 
   test("applies planned root object replace strategies to data records", () => {
