@@ -425,6 +425,16 @@ export interface ApplyKnownJsonArrayIndexReplacementsInput<
   arraySegments: ReadonlyArray<string>;
 }
 
+export interface ApplyKnownJsonArrayIndexReplacementsAtSegmentsInput<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+> {
+  state: z.output<S>;
+  schema: z.ZodType;
+  arraySegments: ReadonlyArray<string>;
+  operations: ReadonlyArray<Operation>;
+}
+
 export interface ApplyArrayIndexReplacementsInput {
   state: unknown;
   arraySegments: ReadonlyArray<string>;
@@ -1295,13 +1305,10 @@ function applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation<S e
   const elementSchema = arrayElementSchemaAtParent(schema, plan.parent);
   if (!elementSchema) return null;
 
-  const current = readArrayAtSegments({ state, segments: plan.parentSegments });
-  if (!current.ok) return null;
-  return applyKnownJsonArrayIndexReplacements({
+  return applyKnownJsonArrayIndexReplacementsAtSegments({
     state,
     schema: elementSchema,
     arraySegments: plan.parentSegments,
-    array: current.array,
     operations: plan.operations,
   });
 }
@@ -2292,6 +2299,24 @@ export function applyKnownJsonArrayIndexReplacements<
   return nextState === null
     ? null
     : okLocalPatch(nextState as z.output<S>, toAppliedReplaceOperations(input.operations));
+}
+
+export function applyKnownJsonArrayIndexReplacementsAtSegments<
+  S extends z.ZodType,
+  Operation extends IndexedReplaceValueValidationOperation = IndexedReplaceValueValidationOperation,
+>(
+  input: ApplyKnownJsonArrayIndexReplacementsAtSegmentsInput<S, Operation>,
+): ApplyResult<S> | null {
+  const current = readArrayAtSegments({ state: input.state, segments: input.arraySegments });
+  if (!current.ok) return null;
+
+  return applyKnownJsonArrayIndexReplacements({
+    state: input.state,
+    schema: input.schema,
+    arraySegments: input.arraySegments,
+    array: current.array,
+    operations: input.operations,
+  });
 }
 
 export function applyArrayIndexReplacements(input: ApplyArrayIndexReplacementsInput): unknown | null {

@@ -12,6 +12,7 @@ import {
   applyRootRecordRemovePlan,
   applyKnownJsonReplaceOperations,
   applyKnownJsonArrayIndexReplacements,
+  applyKnownJsonArrayIndexReplacementsAtSegments,
   applyReplaceOperations,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
@@ -670,6 +671,54 @@ describe("validated array index replacement planning", () => {
 });
 
 describe("known-json array index replacement planning", () => {
+  test("applies known-json array index replacements at state segments", () => {
+    const state = { items: ["old-a", "old-b"], keep: true };
+
+    expect(applyKnownJsonArrayIndexReplacementsAtSegments({
+      state,
+      schema: z.string(),
+      arraySegments: ["items"],
+      operations: [
+        { op: "replace", path: "/items/0", index: 0, value: "A" },
+        { op: "replace", path: "/items/1", index: 1, value: "B" },
+      ],
+    })).toEqual({
+      state: { items: ["A", "B"], keep: true },
+      result: { ok: true },
+      applied: [
+        { op: "replace", path: "/items/0", value: "A" },
+        { op: "replace", path: "/items/1", value: "B" },
+      ],
+    });
+    expect(state.items).toEqual(["old-a", "old-b"]);
+  });
+
+  test("rejects known-json array index replacements at invalid state segments", () => {
+    const state = { items: ["old"], text: "old" };
+
+    expect(applyKnownJsonArrayIndexReplacementsAtSegments({
+      state,
+      schema: z.string(),
+      arraySegments: ["missing"],
+      operations: [{ op: "replace", path: "/missing/0", index: 0, value: "A" }],
+    })).toBeNull();
+
+    expect(applyKnownJsonArrayIndexReplacementsAtSegments({
+      state,
+      schema: z.string(),
+      arraySegments: ["text"],
+      operations: [{ op: "replace", path: "/text/0", index: 0, value: "A" }],
+    })).toBeNull();
+
+    expect(applyKnownJsonArrayIndexReplacementsAtSegments({
+      state,
+      schema: z.string(),
+      arraySegments: ["items"],
+      operations: [{ op: "replace", path: "/items/0", index: 0, value: 1 }],
+    })).toBeNull();
+    expect(state.items).toEqual(["old"]);
+  });
+
   test("applies known-json array index replacements with applied operations", () => {
     const state = { items: ["old-a", "old-b"], keep: true };
 
