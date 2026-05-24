@@ -13,6 +13,7 @@ import {
   applyReplaceOperations,
   applyPatchWithLocalSchemaValidation,
   applySequentialLocalOperation,
+  applySequentialLocalOperationPatch,
   applySequentialLocalOperations,
   applySingleReplaceOperation,
   applySingleArrayFieldReplace,
@@ -1553,6 +1554,62 @@ describe("sequential local operation application", () => {
   const schema = z.object({
     title: z.string(),
     items: z.array(z.string()),
+  });
+
+  test("applies one sequential operation patch and returns the applied operation", () => {
+    const state = { title: "Draft", items: [] as string[] };
+
+    expect(applySequentialLocalOperationPatch({
+      current: state,
+      operation: { op: "add", path: "/items/0", value: "A" },
+      valuesTrusted: false,
+    })).toEqual({
+      state: { title: "Draft", items: ["A"] },
+      result: { ok: true },
+      applied: [{ op: "add", path: "/items/0", value: "A" }],
+    });
+  });
+
+  test("returns sequential operation patch failures against the current state", () => {
+    const state = { title: "Draft", items: [] as string[] };
+    const result = applySequentialLocalOperationPatch({
+      current: state,
+      operation: { op: "remove", path: "/items/0" },
+      valuesTrusted: false,
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false },
+      applied: [],
+    });
+    expect(result.state).toBe(state);
+  });
+
+  test("uses trusted sequential operation values only when caller marks them trusted", () => {
+    const handler = () => "trusted";
+    const state = { value: null as unknown };
+    const operation = { op: "replace" as const, path: "/value", value: handler };
+
+    expect(applySequentialLocalOperationPatch({
+      current: state,
+      operation,
+      valuesTrusted: false,
+    })).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+
+    expect(applySequentialLocalOperationPatch({
+      current: state,
+      operation,
+      valuesTrusted: true,
+    })).toEqual({
+      state: { value: handler },
+      result: { ok: true },
+      applied: [operation],
+    });
   });
 
   test("applies sequential operations and preserves applied order", () => {

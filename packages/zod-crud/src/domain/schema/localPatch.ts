@@ -202,6 +202,18 @@ export interface ApplySequentialLocalOperationInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface ApplySequentialLocalOperationPatchInput {
+  current: unknown;
+  operation: SequentialPatchOperationPlan;
+  valuesTrusted: boolean;
+}
+
+export interface SequentialLocalOperationPatchResult {
+  state: unknown;
+  result: JSONResult;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface ApplySequentialLocalOperationsInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -1862,9 +1874,11 @@ export function applySequentialLocalOperation<S extends z.ZodType>(
     state: input.current,
     operation: input.operation,
   });
-  const applied = input.valuesTrusted
-    ? applyAcceptedPatch(input.current, [input.operation])
-    : applyTrustedPatch(input.current, [input.operation]);
+  const applied = applySequentialLocalOperationPatch({
+    current: input.current,
+    operation: input.operation,
+    valuesTrusted: input.valuesTrusted,
+  });
   if (!applied.result.ok) {
     return { ok: false, result: failedLocalPatch(input.state, applied.result) };
   }
@@ -1874,6 +1888,17 @@ export function applySequentialLocalOperation<S extends z.ZodType>(
   const validation = validateAppliedLocalOp(input.schema, input.state, appliedOp, sourceValue);
   if (validation === null || !validation.result.ok) return { ok: false, result: validation };
   return { ok: true, state: applied.state, applied: appliedOp };
+}
+
+export function applySequentialLocalOperationPatch(
+  input: ApplySequentialLocalOperationPatchInput,
+): SequentialLocalOperationPatchResult {
+  const applied = input.valuesTrusted
+    ? applyAcceptedPatch(input.current, [input.operation])
+    : applyTrustedPatch(input.current, [input.operation]);
+  return applied.result.ok
+    ? { state: applied.state, result: applied.result, applied: applied.applied }
+    : { state: input.current, result: applied.result, applied: [] };
 }
 
 export function planSequentialPatch(input: PlanSequentialPatchInput): SequentialPatchPlan | null {
