@@ -87,6 +87,7 @@ import {
   prefixIssues,
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
+  readFirstArrayNestedPath,
   readRootRecordForLocalPatch,
   readSingleRootArrayFieldTarget,
   replaceArrayField,
@@ -4443,6 +4444,66 @@ describe("same array element replace patch planning", () => {
 });
 
 describe("same array nested replace patch planning", () => {
+  test("reads first array nested paths from state and pointer paths", () => {
+    expect(readFirstArrayNestedPath({
+      state: { items: [{ meta: { title: "old" } }] },
+      path: "/items/0/meta/title",
+    })).toEqual({
+      arrayPath: "/items",
+      arraySegments: ["items"],
+      index: 0,
+      prefixText: "/items/",
+      suffixText: "/meta/title",
+      suffixSegments: ["meta", "title"],
+    });
+
+    expect(readFirstArrayNestedPath({
+      state: [{ meta: { title: "old" } }],
+      path: "/0/meta/title",
+    })).toEqual({
+      arrayPath: "",
+      arraySegments: [],
+      index: 0,
+      prefixText: "/",
+      suffixText: "/meta/title",
+      suffixSegments: ["meta", "title"],
+    });
+
+    expect(readFirstArrayNestedPath({
+      state: { "a/b": [{ "x/y": { value: 0 } }] },
+      path: "/a~1b/0/x~1y/value",
+    })).toEqual({
+      arrayPath: "/a~1b",
+      arraySegments: ["a/b"],
+      index: 0,
+      prefixText: "/a~1b/",
+      suffixText: "/x~1y/value",
+      suffixSegments: ["x/y", "value"],
+    });
+  });
+
+  test("rejects first array nested paths without a state-backed array target", () => {
+    expect(readFirstArrayNestedPath({
+      state: { items: [{ meta: { title: "old" } }] },
+      path: "/items/0",
+    })).toBeNull();
+
+    expect(readFirstArrayNestedPath({
+      state: { items: [{ meta: { title: "old" } }] },
+      path: "/items/01/meta/title",
+    })).toBeNull();
+
+    expect(readFirstArrayNestedPath({
+      state: { items: { 0: { meta: { title: "old" } } } },
+      path: "/items/0/meta/title",
+    })).toBeNull();
+
+    expect(readFirstArrayNestedPath({
+      state: null,
+      path: "/0/meta/title",
+    })).toBeNull();
+  });
+
   test("plans nested replacement operations within a known array and suffix", () => {
     expect(planSameArrayNestedReplaceOperations({
       arrayPath: "/items",

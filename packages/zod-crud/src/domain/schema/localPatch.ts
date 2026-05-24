@@ -707,6 +707,11 @@ export interface PlanSameArrayNestedReplacePatchInput {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface ReadFirstArrayNestedPathInput {
+  state: unknown;
+  path: Pointer;
+}
+
 export interface PlanSameArrayNestedReplaceOperationsInput {
   operations: ReadonlyArray<JSONPatchOperation>;
   arrayPath: Pointer;
@@ -761,7 +766,7 @@ interface ArrayFieldPath {
   key: string;
 }
 
-interface ArrayNestedPath {
+export interface ArrayNestedPath {
   arrayPath: Pointer;
   arraySegments: string[];
   index: number;
@@ -1516,7 +1521,7 @@ export function planSameArrayNestedReplacePatch(
   const first = ops[0]!;
   if (!isReplacePatchOperationCandidate(first) || first.path === "") return null;
 
-  const firstLocation = parseFirstArrayNestedPath(input.state, first.path);
+  const firstLocation = readFirstArrayNestedPath({ state: input.state, path: first.path });
   if (firstLocation === null) return null;
 
   const operations = planSameArrayNestedReplaceOperations({
@@ -2871,7 +2876,8 @@ function parseSimpleArrayFieldPath(path: Pointer): ArrayFieldPath | null {
   return { arrayPath: path.slice(0, indexSlash), index, key: path.slice(keySlash + 1) };
 }
 
-function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayNestedPath | null {
+export function readFirstArrayNestedPath(input: ReadFirstArrayNestedPathInput): ArrayNestedPath | null {
+  const { state, path } = input;
   let segments: string[];
   try {
     segments = parsePointer(path);
