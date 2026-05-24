@@ -9,6 +9,7 @@ import {
   planDocumentChangeHistoryRecord,
   planDocumentChangeMetadata,
   planDocumentChangeSelection,
+  planCompactedRepeatedReplaceBatchHistory,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryAppend,
   planDocumentHistoryEntry,
@@ -28,6 +29,7 @@ import {
   planDocumentTransactionMergeWrite,
   planDocumentTransactionScope,
   planMergedDocumentHistoryEntry,
+  planRootBulkHistorySnapshot,
   shouldCaptureDocumentChangeMetadata,
 } from "../src/application/document/createJSONDocument.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -472,6 +474,38 @@ describe("document history core functions", () => {
     });
   });
 
+  test("plans compact repeated replace batches directly", () => {
+    const operations: JSONPatchOperation[] = [
+      { op: "replace", path: "/title", value: "a" },
+      { op: "replace", path: "/title", value: "ab" },
+      { op: "replace", path: "/title", value: "abc" },
+    ];
+
+    expect(planCompactedRepeatedReplaceBatchHistory({
+      before: { title: "draft" },
+      operations,
+    })).toEqual({
+      forward: [{ op: "replace", path: "/title", value: "abc" }],
+      inverse: [{ op: "replace", path: "/title", value: "draft" }],
+    });
+
+    expect(planCompactedRepeatedReplaceBatchHistory({
+      before: { title: "draft" },
+      operations: [
+        { op: "replace", path: "/title", value: "a" },
+        { op: "replace", path: "/other", value: "b" },
+      ],
+    })).toBeNull();
+
+    expect(planCompactedRepeatedReplaceBatchHistory({
+      before: { title: "draft" },
+      operations: [
+        { op: "replace", path: "/missing", value: "a" },
+        { op: "replace", path: "/missing", value: "b" },
+      ],
+    })).toBeNull();
+  });
+
   test("returns null when inverse planning cannot prove a history entry", () => {
     expect(planDocumentHistoryEntry({
       before: { title: "draft" },
@@ -501,6 +535,40 @@ describe("document history core functions", () => {
     expect(entry?.snapshot).toEqual({ before });
     expect(entry?.forward).toHaveLength(512);
     expect(entry?.inverse).toHaveLength(512);
+  });
+
+  test("plans root bulk history snapshot eligibility directly", () => {
+    const before = Object.fromEntries(
+      Array.from({ length: 512 }, (_, index) => [`k${index}`, index]),
+    );
+    const operations: JSONPatchOperation[] = Object.keys(before).map((key) => ({
+      op: "remove",
+      path: `/${key}`,
+    }));
+
+    expect(planRootBulkHistorySnapshot({
+      before,
+      after: {},
+      forward: operations,
+    })).toEqual({ before });
+
+    expect(planRootBulkHistorySnapshot({
+      before,
+      after: {},
+      forward: operations.slice(0, 511),
+    })).toBeNull();
+
+    expect(planRootBulkHistorySnapshot({
+      before,
+      after: {},
+      forward: [{ ...operations[0]!, path: "/nested/value" }, ...operations.slice(1)],
+    })).toBeNull();
+
+    expect(planRootBulkHistorySnapshot({
+      before,
+      after: {},
+      forward: [{ ...operations[0]!, path: "/escaped~0key" }, ...operations.slice(1)],
+    })).toBeNull();
   });
 
   test("plans compact merged replace history without mutating source entries", () => {

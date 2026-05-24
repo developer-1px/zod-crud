@@ -553,6 +553,27 @@ export type DocumentHistoryRestoreCompletionPlan =
       selectionAfter: SelectionSnap;
     };
 
+export interface PlanCompactedRepeatedReplaceBatchHistoryInput {
+  before: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface CompactedRepeatedReplaceBatchHistoryPlan {
+  forward: JSONPatchOperation[];
+  inverse: JSONPatchOperation[];
+}
+
+export interface PlanRootBulkHistorySnapshotInput {
+  before: unknown;
+  after: unknown;
+  forward: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface RootBulkHistorySnapshotPlan {
+  before: unknown;
+  after?: unknown;
+}
+
 const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
 
 export function createJSONDocument<S extends z.ZodType>(
@@ -1604,7 +1625,10 @@ export function planDocumentTransactionAppendFastPath(
 export function planDocumentHistoryEntry(
   input: PlanDocumentHistoryEntryInput,
 ): DocumentHistoryEntry | null {
-  const repeatedReplace = compactRepeatedReplaceBatchForHistory(input.before, input.operations);
+  const repeatedReplace = planCompactedRepeatedReplaceBatchHistory({
+    before: input.before,
+    operations: input.operations,
+  });
   let forward: JSONPatchOperation[];
   let inverseOps: JSONPatchOperation[];
   if (repeatedReplace !== null) {
@@ -1623,7 +1647,11 @@ export function planDocumentHistoryEntry(
     selectionBefore: input.selectionBefore,
     selectionAfter: input.selectionAfter,
   };
-  const snapshot = rootBulkHistorySnapshot(input.before, input.after, forward);
+  const snapshot = planRootBulkHistorySnapshot({
+    before: input.before,
+    after: input.after,
+    forward,
+  });
   if (snapshot !== null) entry.snapshot = snapshot;
   const historyMetadata = compactHistoryMetadata(input.metadata);
   if (historyMetadata !== undefined) entry.metadata = historyMetadata;
@@ -1757,10 +1785,10 @@ export function planDocumentHistoryRestoreCompletion(
   };
 }
 
-function compactRepeatedReplaceBatchForHistory(
-  before: unknown,
-  operations: ReadonlyArray<JSONPatchOperation>,
-): { forward: JSONPatchOperation[]; inverse: JSONPatchOperation[] } | null {
+export function planCompactedRepeatedReplaceBatchHistory(
+  input: PlanCompactedRepeatedReplaceBatchHistoryInput,
+): CompactedRepeatedReplaceBatchHistoryPlan | null {
+  const { before, operations } = input;
   if (!Array.isArray(operations) || operations.length < 2 || !(0 in operations)) return null;
 
   const first = operations[0]!;
@@ -1785,11 +1813,10 @@ function compactRepeatedReplaceBatchForHistory(
   };
 }
 
-function rootBulkHistorySnapshot(
-  before: unknown,
-  after: unknown,
-  forward: ReadonlyArray<JSONPatchOperation>,
-): { before: unknown; after?: unknown } | null {
+export function planRootBulkHistorySnapshot(
+  input: PlanRootBulkHistorySnapshotInput,
+): RootBulkHistorySnapshotPlan | null {
+  const { before, after, forward } = input;
   if (
     forward.length < ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD
     || before === null
