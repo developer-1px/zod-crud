@@ -118,6 +118,12 @@ export interface PlanArrayAddAppliedOperationsInput {
   values: ReadonlyArray<unknown>;
 }
 
+export interface AppliedAddValueValidationOperation {
+  op: "add";
+  path: Pointer;
+  value: unknown;
+}
+
 export interface IncreasingArrayAddPatchPlan {
   parent: Pointer;
   parentSegments: string[];
@@ -537,8 +543,8 @@ export function evaluateLocalPatchValueValidationPlan<S extends z.ZodType>(
 
 export function planArrayAddAppliedOperations(
   input: PlanArrayAddAppliedOperationsInput,
-): Extract<JSONPatchOperation, { op: "add" }>[] {
-  const applied = new Array<Extract<JSONPatchOperation, { op: "add" }>>(input.values.length);
+): AppliedAddValueValidationOperation[] {
+  const applied = new Array<AppliedAddValueValidationOperation>(input.values.length);
   for (let index = 0; index < input.values.length; index += 1) {
     applied[index] = {
       op: "add",
@@ -551,7 +557,7 @@ export function planArrayAddAppliedOperations(
 
 export function evaluateAppliedAddValueValidationPlan<S extends z.ZodType>(
   state: z.output<S>,
-  operations: ReadonlyArray<Extract<JSONPatchOperation, { op: "add" }>>,
+  operations: ReadonlyArray<AppliedAddValueValidationOperation>,
   schema: z.ZodType,
   knownJsonAccepted: (value: unknown) => boolean,
   valuesTrusted: boolean,
@@ -1596,18 +1602,17 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (elementSchema === null) return null;
   const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
-  for (const op of plan.operations) {
-    if (op.op !== "add") continue;
-    const valueValidation = planLocalPatchValueValidation({
-      path: op.path,
-      schema: elementSchema,
-      value: op.value,
-      knownJsonAccepted: acceptsKnownJsonValueWithValidator(elementValidator, op.value),
-      valuesTrusted,
-    });
-    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-    if (valueFailure) return valueFailure;
-  }
+  const addOperations = plan.operations.filter((op): op is Extract<SameArrayPatchOperationPlan, { op: "add" }> =>
+    op.op === "add"
+  );
+  const valueFailure = evaluateAppliedAddValueValidationPlan(
+    state,
+    addOperations,
+    elementSchema,
+    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    valuesTrusted,
+  );
+  if (valueFailure) return valueFailure;
 
   const applied = applyTrustedPatch(state, ops, { valuesTrusted: true });
   if (!applied.result.ok) {

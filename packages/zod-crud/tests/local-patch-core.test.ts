@@ -113,10 +113,11 @@ describe("array add applied operation validation", () => {
 
   test("accepts applied add values when known-json validation accepts them", () => {
     const state = { items: [] as unknown[] };
+    const operations = [{ op: "add" as const, path: "/items/0", value: "A", index: 0 }];
 
     expect(evaluateAppliedAddValueValidationPlan(
       state,
-      [{ op: "add", path: "/items/0", value: "A" }],
+      operations,
       z.never(),
       () => true,
       false,
