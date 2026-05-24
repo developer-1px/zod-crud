@@ -3,7 +3,7 @@
 
 import type * as z from "zod";
 
-import { buildCheck, type CheckResult } from "./check.js";
+import { buildCheck, type CheckPasteExecutionOptions, type CheckResult } from "./check.js";
 import type {
   JSONPatchOperation,
   JSONResult,
@@ -101,6 +101,24 @@ export type JSONDocumentDuplicateResult<T> =
   | Extract<JSONResult, { ok: false }>;
 export type JSONDocumentPasteOptions = PasteOptions;
 export type JSONDocumentPasteTarget = PasteTarget;
+
+export interface PlanDocumentCanPasteInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  clipboard: ClipboardPeekResult;
+  target: JSONDocumentPasteTarget;
+  options?: JSONDocumentPasteOptions;
+}
+
+export type DocumentCanPastePlan =
+  | { kind: "result"; result: JSONCapabilityResult }
+  | {
+      kind: "check";
+      payload: unknown;
+      target: JSONDocumentPasteTarget;
+      options: JSONDocumentPasteOptions;
+      executionOptions: CheckPasteExecutionOptions;
+    };
 
 export interface JSONDocument<T> {
   readonly value: T;
@@ -755,24 +773,15 @@ export function createJSONDocument<S extends z.ZodType>(
     canCopy: check.copy,
     canCut: check.cut,
     canPaste: (target, canPasteOptions) => {
-      const read = clipboard[INTERNAL_CLIPBOARD_PEEK]();
-      if (!read.ok) {
-        return {
-          ok: false,
-          code: "empty_clipboard",
-          reason: "clipboard is empty",
-        };
-      }
-      if (canTrustSameSourceReplaceCanPaste(schema, rawOps.state, read, target, canPasteOptions)) {
-        return { ok: true };
-      }
-      const spread = canPasteOptions?.spread ?? ((read.sources?.length ?? 0) > 1);
-      return check.paste(
-        read.payload,
+      const plan = planDocumentCanPaste({
+        schema,
+        state: rawOps.state,
+        clipboard: clipboard[INTERNAL_CLIPBOARD_PEEK](),
         target,
-        { ...canPasteOptions, spread },
-        { trustedPayload: true },
-      );
+        ...(canPasteOptions !== undefined ? { options: canPasteOptions } : {}),
+      });
+      if (plan.kind === "result") return plan.result;
+      return check.paste(plan.payload, plan.target, plan.options, plan.executionOptions);
     },
     canPastePayload: (target, payload, canPasteOptions) => check.paste(payload, target, canPasteOptions),
     canUndo: () => check.undo,
@@ -780,7 +789,34 @@ export function createJSONDocument<S extends z.ZodType>(
   };
 }
 
-function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
+export function planDocumentCanPaste<S extends z.ZodType>(
+  input: PlanDocumentCanPasteInput<S>,
+): DocumentCanPastePlan {
+  const read = input.clipboard;
+  if (!read.ok) {
+    return {
+      kind: "result",
+      result: {
+        ok: false,
+        code: "empty_clipboard",
+        reason: "clipboard is empty",
+      },
+    };
+  }
+  if (canTrustSameSourceReplaceCanPaste(input.schema, input.state, read, input.target, input.options)) {
+    return { kind: "result", result: { ok: true } };
+  }
+  const spread = input.options?.spread ?? ((read.sources?.length ?? 0) > 1);
+  return {
+    kind: "check",
+    payload: read.payload,
+    target: input.target,
+    options: { ...input.options, spread },
+    executionOptions: { trustedPayload: true },
+  };
+}
+
+export function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   read: Extract<ClipboardPeekResult, { ok: true }>,
