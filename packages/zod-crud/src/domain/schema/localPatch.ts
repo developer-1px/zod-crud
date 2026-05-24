@@ -549,6 +549,12 @@ export interface EvaluateRootRecordAddValuesInput<S extends z.ZodType> {
   valuesTrusted: boolean;
 }
 
+export interface PlanRootRecordAddValueValidationInput {
+  schema: z.ZodType;
+  operation: AppliedAddValueValidationOperation;
+  valuesTrusted: boolean;
+}
+
 export type RootRecordAddValuesValidationResult<S extends z.ZodType> =
   | { ok: true }
   | { ok: false; result: ApplyResult<S> | null };
@@ -1895,18 +1901,30 @@ export function evaluateRootRecordAddValues<S extends z.ZodType>(
   input: EvaluateRootRecordAddValuesInput<S>,
 ): RootRecordAddValuesValidationResult<S> {
   const { schema, state, operations, valuesTrusted } = input;
+  for (const operation of operations) {
+    const valueValidation = planRootRecordAddValueValidation({ schema, operation, valuesTrusted });
+    if (valueValidation === null) return { ok: false, result: null };
+    const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
+    if (valueFailure) return { ok: false, result: valueFailure };
+  }
+  return { ok: true };
+}
+
+export function planRootRecordAddValueValidation(
+  input: PlanRootRecordAddValueValidationInput,
+): LocalPatchValueValidationPlan | null {
+  const { schema, operation, valuesTrusted } = input;
   const valueSchema = rootRecordValueSchemaForLocalPatch(schema);
-  if (valueSchema === null) return { ok: false, result: null };
+  if (valueSchema === null) return null;
 
   const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
-  const valueFailure = evaluateAppliedAddValueValidationPlan(
-    state,
-    operations,
-    valueSchema,
-    (value) => acceptsKnownJsonValueWithValidator(valueValidator, value),
+  return planLocalPatchValueValidation({
+    path: operation.path,
+    schema: valueSchema,
+    value: operation.value,
+    knownJsonAccepted: acceptsKnownJsonValueWithValidator(valueValidator, operation.value),
     valuesTrusted,
-  );
-  return valueFailure ? { ok: false, result: valueFailure } : { ok: true };
+  });
 }
 
 export function rootRecordValueSchemaForLocalPatch(schema: z.ZodType): z.ZodType | null {

@@ -69,6 +69,7 @@ import {
   planRootObjectReplacePatch,
   planRootObjectReplaceStrategy,
   planRootObjectReplaceValueValidation,
+  planRootRecordAddValueValidation,
   planRootRecordAddOperations,
   planRootRecordAddPatch,
   planRootRecordRemoveOperations,
@@ -3488,6 +3489,46 @@ describe("root record add patch planning", () => {
       operations: [{ op: "add", path: "/alpha", key: "alpha", value: 1 }],
       valuesTrusted: false,
     })).toEqual({ ok: false, result: null });
+  });
+
+  test("plans root record add value validation through record schemas", () => {
+    expect(planRootRecordAddValueValidation({
+      schema: z.record(z.string(), z.number()),
+      operation: { op: "add", path: "/alpha", value: 1 },
+      valuesTrusted: false,
+    })).toEqual({ kind: "accepted" });
+
+    const parsePlan = planRootRecordAddValueValidation({
+      schema: z.record(z.string(), z.number()),
+      operation: { op: "add", path: "/alpha", value: "bad" },
+      valuesTrusted: true,
+    });
+
+    expect(parsePlan).toMatchObject({ kind: "parse", path: "/alpha", value: "bad" });
+    expect(parsePlan?.kind === "parse" && parsePlan.schema.safeParse(parsePlan.value).success).toBe(false);
+
+    expect(planRootRecordAddValueValidation({
+      schema: z.record(z.string(), z.unknown()),
+      operation: { op: "add", path: "/alpha", value: () => "not json" },
+      valuesTrusted: false,
+    })).toMatchObject({
+      kind: "notSerializable",
+      reason: expect.stringContaining("function"),
+    });
+  });
+
+  test("rejects root record add value validation without a record value schema", () => {
+    expect(planRootRecordAddValueValidation({
+      schema: z.object({ alpha: z.number() }),
+      operation: { op: "add", path: "/alpha", value: 1 },
+      valuesTrusted: false,
+    })).toBeNull();
+
+    expect(planRootRecordAddValueValidation({
+      schema: z.record(z.string().min(1), z.number()),
+      operation: { op: "add", path: "/alpha", value: 1 },
+      valuesTrusted: false,
+    })).toBeNull();
   });
 
   test("finds local root record value schemas only for plain string-key records", () => {
