@@ -22,6 +22,7 @@ import {
   evaluateAppliedLocalOpValidationPlan,
   evaluateAppliedReplaceOperations,
   evaluateAppliedReplaceValueValidationPlan,
+  evaluateArrayAddElementValues,
   evaluateLocalPatchValueValidationPlan,
   evaluateRootRecordAddValues,
   evaluateRootObjectReplaceValues,
@@ -140,6 +141,45 @@ describe("array add applied operation validation", () => {
       () => true,
       false,
     )).toBeNull();
+  });
+
+  test("validates applied array add values through parent element schemas", () => {
+    const state = { items: [] as string[] };
+
+    expect(evaluateArrayAddElementValues({
+      schema: z.object({ items: z.array(z.string()) }),
+      state,
+      parent: "/items",
+      operations: [{ op: "add", path: "/items/0", value: "A" }],
+      valuesTrusted: false,
+    })).toEqual({ ok: true });
+
+    expect(evaluateArrayAddElementValues({
+      schema: z.object({ title: z.string() }),
+      state: { title: "Draft" },
+      parent: "/title",
+      operations: [{ op: "add", path: "/title/0", value: "A" }],
+      valuesTrusted: false,
+    })).toEqual({ ok: false, result: null });
+  });
+
+  test("returns applied array add value validation failures", () => {
+    const state = { items: [] as string[] };
+    const result = evaluateArrayAddElementValues({
+      schema: z.object({ items: z.array(z.string()) }),
+      state,
+      parent: "/items",
+      operations: [{ op: "add", path: "/items/0", value: 1 }],
+      valuesTrusted: false,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) throw new Error("expected validation failure");
+    expect(result.result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
   });
 
   test("strips planner-only metadata from applied add operations", () => {

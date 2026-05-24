@@ -142,6 +142,18 @@ export interface PlanArrayAddAppliedOperationsInput {
   values: ReadonlyArray<unknown>;
 }
 
+export interface EvaluateArrayAddElementValuesInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  parent: Pointer;
+  operations: ReadonlyArray<AppliedAddValueValidationOperation>;
+  valuesTrusted: boolean;
+}
+
+export type ArrayAddElementValuesValidationResult<S extends z.ZodType> =
+  | { ok: true }
+  | { ok: false; result: ApplyResult<S> | null };
+
 export interface ApplyArrayAddPlanInput {
   state: unknown;
   parentSegments: ReadonlyArray<string>;
@@ -1574,23 +1586,19 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (plan === null) return null;
   const { parent, parentSegments, values } = plan;
 
-  const elementSchema = arrayElementSchemaAtParent(schema, parent);
-  if (!elementSchema) return null;
-  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
-
   const current = readAt(state, parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
   const initialLength = current.value.length;
 
   const applied = planArrayAddAppliedOperations({ parent, start: initialLength, values });
-  const valueFailure = evaluateAppliedAddValueValidationPlan(
+  const valueValidation = evaluateArrayAddElementValues({
+    schema,
     state,
-    applied,
-    elementSchema,
-    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    parent,
+    operations: applied,
     valuesTrusted,
-  );
-  if (valueFailure) return valueFailure;
+  });
+  if (!valueValidation.ok) return valueValidation.result;
 
   const nextState = applyArrayAddPlan({
     state,
@@ -1654,22 +1662,19 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   const plan = planIncreasingArrayAddPatch({ operations: ops });
   if (plan === null) return null;
   const { parent, parentSegments, start, values } = plan;
-  const elementSchema = arrayElementSchemaAtParent(schema, parent);
-  if (!elementSchema) return null;
-  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
   const current = readAt(state, parentSegments);
   if (!current.ok || !Array.isArray(current.value)) return null;
 
   const applied = planArrayAddAppliedOperations({ parent, start, values });
-  const valueFailure = evaluateAppliedAddValueValidationPlan(
+  const valueValidation = evaluateArrayAddElementValues({
+    schema,
     state,
-    applied,
-    elementSchema,
-    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    parent,
+    operations: applied,
     valuesTrusted,
-  );
-  if (valueFailure) return valueFailure;
+  });
+  if (!valueValidation.ok) return valueValidation.result;
 
   const nextState = applyArrayAddPlan({
     state,
@@ -1680,6 +1685,23 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   });
   if (nextState === null) return null;
   return okLocalPatch(nextState as z.output<S>, applied);
+}
+
+export function evaluateArrayAddElementValues<S extends z.ZodType>(
+  input: EvaluateArrayAddElementValuesInput<S>,
+): ArrayAddElementValuesValidationResult<S> {
+  const { schema, state, parent, operations, valuesTrusted } = input;
+  const elementSchema = arrayElementSchemaAtParent(schema, parent);
+  if (elementSchema === null) return { ok: false, result: null };
+  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
+  const valueFailure = evaluateAppliedAddValueValidationPlan(
+    state,
+    operations,
+    elementSchema,
+    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    valuesTrusted,
+  );
+  return valueFailure ? { ok: false, result: valueFailure } : { ok: true };
 }
 
 export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null {
@@ -1779,21 +1801,18 @@ function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(
 ): LocalPatchResult<S> {
   const plan = planSameArrayPatch({ operations: ops });
   if (plan === null) return null;
-  const elementSchema = arrayElementSchemaAtParent(schema, plan.parent);
-  if (elementSchema === null) return null;
-  const elementValidator = knownJsonValueValidatorForSchema(elementSchema);
 
   const addOperations = plan.operations.filter((op): op is Extract<SameArrayPatchOperationPlan, { op: "add" }> =>
     op.op === "add"
   );
-  const valueFailure = evaluateAppliedAddValueValidationPlan(
+  const valueValidation = evaluateArrayAddElementValues({
+    schema,
     state,
-    addOperations,
-    elementSchema,
-    (value) => acceptsKnownJsonValueWithValidator(elementValidator, value),
+    parent: plan.parent,
+    operations: addOperations,
     valuesTrusted,
-  );
-  if (valueFailure) return valueFailure;
+  });
+  if (!valueValidation.ok) return valueValidation.result;
 
   const applied = applyTrustedPatch(state, ops, { valuesTrusted: true });
   if (!applied.result.ok) {
