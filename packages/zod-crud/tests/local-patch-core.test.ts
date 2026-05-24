@@ -11,6 +11,7 @@ import {
   planRootRecordRemovePatch,
   planSameArrayElementReplacePatch,
   planSameArrayFieldReplacePatch,
+  planSameArrayNestedReplacePatch,
   planSameArrayPatch,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -769,6 +770,151 @@ describe("same array element replace patch planning", () => {
     expect(result?.applied).toEqual([
       { op: "replace", path: "/items/0", value: 10 },
       { op: "replace", path: "/items/1", value: 11 },
+    ]);
+    expect(result?.applied[0]).not.toHaveProperty("index");
+  });
+});
+
+describe("same array nested replace patch planning", () => {
+  test("plans nested replacements across one array", () => {
+    const state = {
+      items: [
+        { meta: { title: "old" } },
+        { meta: { title: "old" } },
+      ],
+    };
+
+    expect(planSameArrayNestedReplacePatch({
+      state,
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    })).toEqual({
+      arrayPath: "/items",
+      arraySegments: ["items"],
+      suffixSegments: ["meta", "title"],
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
+        { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
+      ],
+    });
+
+    expect(planSameArrayNestedReplacePatch({
+      state: [{ meta: { title: "old" } }, { meta: { title: "old" } }],
+      operations: [
+        { op: "replace", path: "/0/meta/title", value: "A" },
+        { op: "replace", path: "/1/meta/title", value: "B" },
+      ],
+    })).toEqual({
+      arrayPath: "",
+      arraySegments: [],
+      suffixSegments: ["meta", "title"],
+      operations: [
+        { op: "replace", path: "/0/meta/title", index: 0, value: "A" },
+        { op: "replace", path: "/1/meta/title", index: 1, value: "B" },
+      ],
+    });
+
+    expect(planSameArrayNestedReplacePatch({
+      state: {
+        "a/b": [
+          { "x/y": { value: 0 } },
+          { "x/y": { value: 1 } },
+        ],
+      },
+      operations: [
+        { op: "replace", path: "/a~1b/0/x~1y/value", value: 10 },
+        { op: "replace", path: "/a~1b/1/x~1y/value", value: 11 },
+      ],
+    })).toEqual({
+      arrayPath: "/a~1b",
+      arraySegments: ["a/b"],
+      suffixSegments: ["x/y", "value"],
+      operations: [
+        { op: "replace", path: "/a~1b/0/x~1y/value", index: 0, value: 10 },
+        { op: "replace", path: "/a~1b/1/x~1y/value", index: 1, value: 11 },
+      ],
+    });
+  });
+
+  test("rejects nested replacements outside one array suffix", () => {
+    const state = {
+      items: [
+        { meta: { title: "old", label: "old" } },
+        { meta: { title: "old", label: "old" } },
+      ],
+      other: [
+        { meta: { title: "old" } },
+        { meta: { title: "old" } },
+      ],
+    };
+
+    expect(planSameArrayNestedReplacePatch({ state, operations: [] })).toBeNull();
+
+    expect(planSameArrayNestedReplacePatch({
+      state,
+      operations: [{ op: "replace", path: "/items/0/meta/title", value: "A" }],
+    })).toBeNull();
+
+    expect(planSameArrayNestedReplacePatch({
+      state,
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/label", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayNestedReplacePatch({
+      state,
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/other/1/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayNestedReplacePatch({
+      state: { items: { 0: { meta: { title: "old" } } } },
+      operations: [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayNestedReplacePatch({
+      state,
+      operations: [
+        { op: "add", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+
+    expect(planSameArrayNestedReplacePatch({
+      state,
+      operations: [
+        { op: "replace", path: "/items/01/meta/title", value: "A" },
+        { op: "replace", path: "/items/2/meta/title", value: "B" },
+      ],
+    })).toBeNull();
+
+    const sparse = new Array<JSONPatchOperation>(2);
+    sparse[1] = { op: "replace", path: "/items/1/meta/title", value: "B" };
+    expect(planSameArrayNestedReplacePatch({ state, operations: sparse })).toBeNull();
+  });
+
+  test("keeps same-array nested replace applied operations free of planner-only indexes", () => {
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ items: z.array(z.object({ meta: z.object({ title: z.string() }) })) }),
+      { items: [{ meta: { title: "old" } }, { meta: { title: "old" } }] },
+      [
+        { op: "replace", path: "/items/0/meta/title", value: "A" },
+        { op: "replace", path: "/items/1/meta/title", value: "B" },
+      ],
+    );
+
+    expect(result?.applied).toEqual([
+      { op: "replace", path: "/items/0/meta/title", value: "A" },
+      { op: "replace", path: "/items/1/meta/title", value: "B" },
     ]);
     expect(result?.applied[0]).not.toHaveProperty("index");
   });

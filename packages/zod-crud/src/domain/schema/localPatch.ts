@@ -157,6 +157,25 @@ export interface SameArrayElementReplacePatchPlan {
   operations: SameArrayElementReplaceOperationPlan[];
 }
 
+export interface PlanSameArrayNestedReplacePatchInput {
+  state: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export interface SameArrayNestedReplaceOperationPlan {
+  op: "replace";
+  path: Pointer;
+  index: number;
+  value: unknown;
+}
+
+export interface SameArrayNestedReplacePatchPlan {
+  arrayPath: Pointer;
+  arraySegments: string[];
+  suffixSegments: string[];
+  operations: SameArrayNestedReplaceOperationPlan[];
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -799,6 +818,58 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   ops: ReadonlyArray<JSONPatchOperation>,
   valuesTrusted: boolean,
 ): LocalPatchResult<S> {
+  const plan = planSameArrayNestedReplacePatch({ state, operations: ops });
+  if (plan === null) return null;
+  const first = plan.operations[0];
+  if (first === undefined) return null;
+  const valueSchema = cachedSchemaAtPointer(schema, first.path, "value");
+  if (!valueSchema) return null;
+  const valueValidator = knownJsonValueValidatorForSchema(valueSchema);
+
+  const current = readAt(state, plan.arraySegments);
+  if (!current.ok || !Array.isArray(current.value)) return null;
+  const arrayValue = current.value;
+  const updateValues = new Array<unknown>(plan.operations.length);
+  const applied = new Array<JSONPatchOperation>(plan.operations.length);
+
+  for (let opIndex = 0; opIndex < plan.operations.length; opIndex += 1) {
+    const op = plan.operations[opIndex]!;
+    if (op.index < 0 || op.index >= arrayValue.length) return null;
+    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
+    if (!valueAccepted && !valuesTrusted) {
+      const jsonError = jsonSerializableError(op.value);
+      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
+    }
+    if (!valueAccepted) {
+      const parsed = valueSchema.safeParse(op.value);
+      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
+    }
+    updateValues[opIndex] = op.value;
+    applied[opIndex] = { op: "replace", path: op.path, value: op.value };
+  }
+
+  const next = arrayValue.slice();
+  for (let index = 0; index < plan.operations.length; index += 1) {
+    const rowIndex = plan.operations[index]!.index;
+    const value = updateValues[index];
+    const replaced = replaceValueAtSegments(arrayValue[rowIndex], plan.suffixSegments, 0, value);
+    if (replaced === null) return null;
+    next[rowIndex] = replaced;
+  }
+
+  const nextState = replaceValueAtSegments(state, plan.arraySegments, 0, next);
+  if (nextState === null) return null;
+  return {
+    state: nextState as z.output<S>,
+    result: { ok: true },
+    applied,
+  };
+}
+
+export function planSameArrayNestedReplacePatch(
+  input: PlanSameArrayNestedReplacePatchInput,
+): SameArrayNestedReplacePatchPlan | null {
+  const ops = input.operations;
   if (!Array.isArray(ops) || ops.length < 2) return null;
 
   let arrayPath: Pointer | null = null;
@@ -806,12 +877,7 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
   let prefixText: string | null = null;
   let suffixText: string | null = null;
   let suffixSegments: string[] | null = null;
-  let valueSchema: z.ZodType | null = null;
-  let valueValidator: KnownJsonValueValidator | null = null;
-  let arrayValue: unknown[] | null = null;
-  const updateIndexes = new Array<number>(ops.length);
-  const updateValues = new Array<unknown>(ops.length);
-  const applied = new Array<JSONPatchOperation>(ops.length);
+  const operations: SameArrayNestedReplaceOperationPlan[] = [];
 
   for (let opIndex = 0; opIndex < ops.length; opIndex += 1) {
     if (!(opIndex in ops)) return null;
@@ -825,22 +891,16 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
       return null;
     }
 
-    let rowIndex: number;
+    let index: number;
     if (arrayPath === null) {
-      const location = parseFirstArrayNestedPath(state, op.path);
+      const location = parseFirstArrayNestedPath(input.state, op.path);
       if (location === null) return null;
       arrayPath = location.arrayPath;
       arraySegments = location.arraySegments;
       prefixText = location.prefixText;
       suffixText = location.suffixText;
       suffixSegments = location.suffixSegments;
-      valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
-      if (!valueSchema) return null;
-      valueValidator = knownJsonValueValidatorForSchema(valueSchema);
-      const current = readAt(state, location.arraySegments);
-      if (!current.ok || !Array.isArray(current.value)) return null;
-      arrayValue = current.value;
-      rowIndex = location.index;
+      index = location.index;
     } else {
       if (suffixSegments === null || prefixText === null || suffixText === null) return null;
       const parsedIndex = parseKnownArrayNestedIndex(
@@ -851,41 +911,15 @@ function applySameArrayNestedReplacePatchWithLocalSchemaValidation<S extends z.Z
         suffixText,
       );
       if (parsedIndex === null) return null;
-      rowIndex = parsedIndex;
+      index = parsedIndex;
     }
 
-    if (arrayValue === null || valueSchema === null || rowIndex < 0 || rowIndex >= arrayValue.length) return null;
-    const valueAccepted = acceptsKnownJsonValueWithValidator(valueValidator, op.value);
-    if (!valueAccepted && !valuesTrusted) {
-      const jsonError = jsonSerializableError(op.value);
-      if (jsonError !== null) return operationFailure(state, "not_serializable", jsonError);
-    }
-    if (!valueAccepted) {
-      const parsed = valueSchema.safeParse(op.value);
-      if (!parsed.success) return schemaViolation(state, op.path, parsed.error.issues);
-    }
-    updateIndexes[opIndex] = rowIndex;
-    updateValues[opIndex] = op.value;
-    applied[opIndex] = op;
+    operations.push({ op: "replace", path: op.path, index, value: op.value });
   }
 
-  if (arraySegments === null || suffixSegments === null || arrayValue === null) return null;
-  const next = arrayValue.slice();
-  for (let index = 0; index < ops.length; index += 1) {
-    const rowIndex = updateIndexes[index]!;
-    const value = updateValues[index];
-    const replaced = replaceValueAtSegments(arrayValue[rowIndex], suffixSegments, 0, value);
-    if (replaced === null) return null;
-    next[rowIndex] = replaced;
-  }
-
-  const nextState = replaceValueAtSegments(state, arraySegments, 0, next);
-  if (nextState === null) return null;
-  return {
-    state: nextState as z.output<S>,
-    result: { ok: true },
-    applied,
-  };
+  return arrayPath === null || arraySegments === null || suffixSegments === null
+    ? null
+    : { arrayPath, arraySegments, suffixSegments, operations };
 }
 
 function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
