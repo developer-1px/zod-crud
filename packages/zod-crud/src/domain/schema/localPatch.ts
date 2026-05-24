@@ -290,6 +290,17 @@ export interface ApplyArrayAddPlanInput {
   values: ReadonlyArray<unknown>;
 }
 
+export interface ApplyValidatedArrayAddPlanInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  parent: Pointer;
+  parentSegments: ReadonlyArray<string>;
+  array: ReadonlyArray<unknown>;
+  start: number;
+  values: ReadonlyArray<unknown>;
+  valuesTrusted: boolean;
+}
+
 export interface ReadArrayAtSegmentsInput {
   state: unknown;
   segments: ReadonlyArray<string>;
@@ -1930,25 +1941,16 @@ function applyAppendOnlyAddPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (!current.ok) return null;
   const initialLength = current.array.length;
 
-  const applied = planArrayAddAppliedOperations({ parent, start: initialLength, values });
-  const valueValidation = evaluateArrayAddElementValues({
+  return applyValidatedArrayAddPlan({
     schema,
     state,
     parent,
-    operations: applied,
-    valuesTrusted,
-  });
-  if (!valueValidation.ok) return valueValidation.result;
-
-  const nextState = applyArrayAddPlan({
-    state,
     parentSegments,
     array: current.array,
     start: initialLength,
     values,
+    valuesTrusted,
   });
-  if (nextState === null) return null;
-  return okLocalPatch(nextState as z.output<S>, applied);
 }
 
 export function planAppendOnlyArrayAddPatch(
@@ -2018,25 +2020,16 @@ function applyIncreasingArrayAddPatchWithLocalSchemaValidation<S extends z.ZodTy
   const current = readArrayAtSegments({ state, segments: parentSegments });
   if (!current.ok) return null;
 
-  const applied = planArrayAddAppliedOperations({ parent, start, values });
-  const valueValidation = evaluateArrayAddElementValues({
+  return applyValidatedArrayAddPlan({
     schema,
     state,
     parent,
-    operations: applied,
-    valuesTrusted,
-  });
-  if (!valueValidation.ok) return valueValidation.result;
-
-  const nextState = applyArrayAddPlan({
-    state,
     parentSegments,
     array: current.array,
     start,
     values,
+    valuesTrusted,
   });
-  if (nextState === null) return null;
-  return okLocalPatch(nextState as z.output<S>, applied);
 }
 
 export function evaluateArrayAddElementValues<S extends z.ZodType>(
@@ -2054,6 +2047,33 @@ export function evaluateArrayAddElementValues<S extends z.ZodType>(
     valuesTrusted,
   );
   return valueFailure ? { ok: false, result: valueFailure } : { ok: true };
+}
+
+export function applyValidatedArrayAddPlan<S extends z.ZodType>(
+  input: ApplyValidatedArrayAddPlanInput<S>,
+): ApplyResult<S> | null {
+  const applied = planArrayAddAppliedOperations({
+    parent: input.parent,
+    start: input.start,
+    values: input.values,
+  });
+  const valueValidation = evaluateArrayAddElementValues({
+    schema: input.schema,
+    state: input.state,
+    parent: input.parent,
+    operations: applied,
+    valuesTrusted: input.valuesTrusted,
+  });
+  if (!valueValidation.ok) return valueValidation.result;
+
+  const nextState = applyArrayAddPlan({
+    state: input.state,
+    parentSegments: input.parentSegments,
+    array: input.array,
+    start: input.start,
+    values: input.values,
+  });
+  return nextState === null ? null : okLocalPatch(nextState as z.output<S>, applied);
 }
 
 export function applyArrayAddPlan(input: ApplyArrayAddPlanInput): unknown | null {

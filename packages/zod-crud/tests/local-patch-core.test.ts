@@ -19,6 +19,7 @@ import {
   applySingleArrayFieldReplace,
   applySingleRootArrayFieldReplace,
   applySingleRootObjectReplacePlan,
+  applyValidatedArrayAddPlan,
   appendArrayIndexPath,
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -296,6 +297,69 @@ describe("array state reads", () => {
 });
 
 describe("array add state materialization", () => {
+  test("validates and applies array add plans with applied operations", () => {
+    const schema = z.object({ items: z.array(z.string()) });
+    const state = { items: ["A"], meta: true };
+
+    expect(applyValidatedArrayAddPlan({
+      schema,
+      state,
+      parent: "/items",
+      parentSegments: ["items"],
+      array: state.items,
+      start: 1,
+      values: ["B", "C"],
+      valuesTrusted: false,
+    })).toEqual({
+      state: { items: ["A", "B", "C"], meta: true },
+      result: { ok: true },
+      applied: [
+        { op: "add", path: "/items/1", value: "B" },
+        { op: "add", path: "/items/2", value: "C" },
+      ],
+    });
+    expect(state.items).toEqual(["A"]);
+  });
+
+  test("returns array add validation failures before materialization", () => {
+    const schema = z.object({ items: z.array(z.string()) });
+    const state = { items: ["A"] };
+    const result = applyValidatedArrayAddPlan({
+      schema,
+      state,
+      parent: "/items",
+      parentSegments: ["items"],
+      array: state.items,
+      start: 1,
+      values: [1],
+      valuesTrusted: true,
+    });
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+    expect(state.items).toEqual(["A"]);
+  });
+
+  test("rejects validated array add plans outside the current array bounds", () => {
+    const schema = z.object({ items: z.array(z.string()) });
+    const state = { items: ["A"] };
+
+    expect(applyValidatedArrayAddPlan({
+      schema,
+      state,
+      parent: "/items",
+      parentSegments: ["items"],
+      array: state.items,
+      start: 2,
+      values: ["B"],
+      valuesTrusted: false,
+    })).toBeNull();
+    expect(state.items).toEqual(["A"]);
+  });
+
   test("applies array add plans to root and nested arrays without mutating the source", () => {
     const state = { items: ["A", "D"], meta: { keep: true } };
 
