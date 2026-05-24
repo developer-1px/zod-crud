@@ -719,6 +719,36 @@ describe("single replace patch planning", () => {
     expect(result?.state).toEqual({ title: "Final" });
     expect(result?.applied).toEqual([{ op: "replace", path: "/title", value: "Final" }]);
   });
+
+  test("keeps single replace JSON guard before schema parsing", () => {
+    const state = { title: "Draft" };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ title: z.unknown() }),
+      state,
+      [{ op: "replace", path: "/title", value: () => "not json" }],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "not_serializable" },
+      applied: [],
+    });
+  });
+
+  test("returns single replace schema violations through applied replace validation", () => {
+    const state = { title: "Draft" };
+    const result = applyPatchWithLocalSchemaValidation(
+      z.object({ title: z.string() }),
+      state,
+      [{ op: "replace", path: "/title", value: 1 }],
+    );
+
+    expect(result).toMatchObject({
+      state,
+      result: { ok: false, code: "schema_violation" },
+      applied: [],
+    });
+  });
 });
 
 describe("single root object replace patch planning", () => {

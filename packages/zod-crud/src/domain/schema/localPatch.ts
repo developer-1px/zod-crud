@@ -556,18 +556,13 @@ function applySingleReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (plan === null) return null;
   const op = plan.operation;
 
-  const valueSchema = cachedSchemaAtPointer(schema, op.path, "value");
-  if (!valueSchema) return null;
-
-  const valueValidation = planLocalPatchValueValidation({
-    path: op.path,
-    schema: valueSchema,
-    value: op.value,
-    knownJsonAccepted: acceptsKnownJsonValue(valueSchema, op.value),
+  const valueValidation = evaluateAppliedReplaceOperations({
+    schema,
+    state,
+    operations: [op],
     valuesTrusted,
   });
-  const valueFailure = evaluateLocalPatchValueValidationPlan(state, valueValidation);
-  if (valueFailure) return valueFailure;
+  if (!valueValidation.ok) return valueValidation.result;
 
   const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, op);
   if (singleArrayFieldReplace) {
