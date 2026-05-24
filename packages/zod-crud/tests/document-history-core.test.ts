@@ -3,6 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   buildChangeMetadata,
   compactHistoryMetadata,
+  planDocumentActiveHistoryMetadata,
   planDocumentChangeCapture,
   planCompactedRepeatedReplaceHistory,
   planDocumentHistoryEntry,
@@ -145,6 +146,29 @@ describe("document history core functions", () => {
       label: "Next",
       origin: "keyboard",
       mergeKey: "explicit",
+    });
+  });
+
+  test("plans active transaction metadata for nested history scopes", () => {
+    expect(planDocumentActiveHistoryMetadata({
+      active: undefined,
+      next: undefined,
+    })).toBeUndefined();
+    expect(planDocumentActiveHistoryMetadata({
+      active: { label: "Outer", origin: "keyboard", mergeKey: "outer" },
+      next: undefined,
+    })).toEqual({
+      label: "Outer",
+      origin: "keyboard",
+      mergeKey: "outer",
+    });
+    expect(planDocumentActiveHistoryMetadata({
+      active: { label: "Outer", origin: "keyboard", mergeKey: "outer" },
+      next: { label: "Inner", mergeKey: "inner" },
+    })).toEqual({
+      label: "Inner",
+      origin: "keyboard",
+      mergeKey: "inner",
     });
   });
 

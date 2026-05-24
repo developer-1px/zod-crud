@@ -259,6 +259,11 @@ export interface PlanDocumentHistoryMergeMetadataInput {
   options?: { mergeKey?: string };
 }
 
+export interface PlanDocumentActiveHistoryMetadataInput {
+  active: HistoryTransactionOptions | undefined;
+  next: HistoryTransactionOptions | undefined;
+}
+
 export type DocumentHistoryRestoreDirection = "undo" | "redo";
 
 export interface PlanDocumentHistoryRestoreInput {
@@ -642,7 +647,10 @@ export function createJSONDocument<S extends z.ZodType>(
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
     const previous = activeHistoryMetadata;
-    activeHistoryMetadata = metadata ? { ...previous, ...metadata } : previous;
+    activeHistoryMetadata = planDocumentActiveHistoryMetadata({
+      active: previous,
+      next: metadata,
+    });
     try {
       fn();
     } finally {
@@ -1222,6 +1230,13 @@ export function planDocumentHistoryMergeMetadata(
   }
   const merged = { ...input.previous, ...input.next, ...input.options };
   return Object.keys(merged).length > 0 ? merged : undefined;
+}
+
+export function planDocumentActiveHistoryMetadata(
+  input: PlanDocumentActiveHistoryMetadataInput,
+): HistoryTransactionOptions | undefined {
+  if (input.next === undefined) return input.active;
+  return { ...input.active, ...input.next };
 }
 
 function mergeGeneralTransactionMetadata(
