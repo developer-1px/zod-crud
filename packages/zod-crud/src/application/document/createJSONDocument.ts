@@ -268,6 +268,39 @@ export interface DocumentChangeCapturePlan {
   shouldCaptureMetadata: boolean;
 }
 
+export interface DocumentChangeHistoryRecord {
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata?: JSONChangeMetadata;
+  operationsOwned: boolean;
+}
+
+export interface PlanDocumentChangeHistoryRecordInput {
+  shouldRecordHistory: boolean;
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata: JSONChangeMetadata | undefined;
+  operationsOwned?: boolean;
+}
+
+export interface PlanDocumentChangeApplyResultInput {
+  result: JSONResult;
+  lastPatchOperationCount: number;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  history: DocumentChangeHistoryRecord | null;
+}
+
+export interface DocumentChangeApplyResultPlan {
+  lastPatch: ReadonlyArray<JSONPatchOperation> | null;
+  history: DocumentChangeHistoryRecord | null;
+}
+
 export interface PlanDocumentChangeMetadataInput {
   shouldCaptureMetadata: boolean;
   activeHistoryMetadata: HistoryTransactionOptions | undefined;
@@ -577,6 +610,21 @@ export function createJSONDocument<S extends z.ZodType>(
     commitHistory(stack, appendPlan.entry, historyLimit);
   };
 
+  const applyDocumentChangePlan = (plan: DocumentChangeApplyResultPlan): void => {
+    if (plan.lastPatch !== null) lastPatch = plan.lastPatch;
+    const history = plan.history;
+    if (history === null) return;
+    recordHistory(
+      history.before as z.output<S>,
+      history.after as z.output<S>,
+      history.operations,
+      history.selectionBefore,
+      history.selectionAfter,
+      history.metadata,
+      history.operationsOwned,
+    );
+  };
+
   const applyDocumentPatch = (
     operations: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
@@ -593,7 +641,12 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     if (!capture.shouldCaptureMetadata) {
       const r = rawOps.patch(operations);
-      if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
+      applyDocumentChangePlan(planDocumentChangeApplyResult({
+        result: r,
+        lastPatchOperationCount: operations.length,
+        applied: rawOps.lastApplied,
+        history: null,
+      }));
       return r;
     }
 
@@ -608,10 +661,21 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
-    if (r.ok && capture.shouldRecordHistory) {
-      recordHistory(before!, rawOps.state, operations, selectionBefore, selectionAfter, changeMetadata, operationsOwned);
-    }
+    applyDocumentChangePlan(planDocumentChangeApplyResult({
+      result: r,
+      lastPatchOperationCount: operations.length,
+      applied: rawOps.lastApplied,
+      history: planDocumentChangeHistoryRecord({
+        shouldRecordHistory: capture.shouldRecordHistory,
+        before,
+        after: rawOps.state,
+        operations,
+        selectionBefore,
+        selectionAfter,
+        metadata: changeMetadata,
+        operationsOwned,
+      }),
+    }));
     return r;
   };
   const applyPreviewedDocumentPatch = (
@@ -631,7 +695,12 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     if (!capture.shouldCaptureMetadata) {
       const r = rawOps.trustedApply(next, applied);
-      if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: applied.length, applied: rawOps.lastApplied });
+      applyDocumentChangePlan(planDocumentChangeApplyResult({
+        result: r,
+        lastPatchOperationCount: applied.length,
+        applied: rawOps.lastApplied,
+        history: null,
+      }));
       return r;
     }
 
@@ -646,10 +715,20 @@ export function createJSONDocument<S extends z.ZodType>(
     });
     const r = rawOps.trustedApply(next, applied, changeMetadata);
     const selectionAfter = snapSelection();
-    if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: applied.length, applied: rawOps.lastApplied });
-    if (r.ok && capture.shouldRecordHistory) {
-      recordHistory(before!, next, operations, selectionBefore, selectionAfter, changeMetadata);
-    }
+    applyDocumentChangePlan(planDocumentChangeApplyResult({
+      result: r,
+      lastPatchOperationCount: applied.length,
+      applied: rawOps.lastApplied,
+      history: planDocumentChangeHistoryRecord({
+        shouldRecordHistory: capture.shouldRecordHistory,
+        before,
+        after: next,
+        operations,
+        selectionBefore,
+        selectionAfter,
+        metadata: changeMetadata,
+      }),
+    }));
     return r;
   };
   const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult => {
@@ -682,15 +761,25 @@ export function createJSONDocument<S extends z.ZodType>(
     const r = rawOps.trustedApply(preview.state as z.output<S>, preview.applied, plan.changeMetadata);
     if (!r.ok) return r;
 
-    lastPatch = planDocumentLastPatch({ operationCount: operations.length, applied: rawOps.lastApplied });
     selectionState?.restore(plan.selectionAfter);
-    if (shouldRecordDocumentCommitHistory({
-      historyLimit,
-      isRestoring,
-      operationCount: operations.length,
-    })) {
-      recordHistory(before, predicted.state, operations, selectionBefore, plan.selectionAfter, plan.changeMetadata);
-    }
+    applyDocumentChangePlan(planDocumentChangeApplyResult({
+      result: r,
+      lastPatchOperationCount: operations.length,
+      applied: rawOps.lastApplied,
+      history: planDocumentChangeHistoryRecord({
+        shouldRecordHistory: shouldRecordDocumentCommitHistory({
+          historyLimit,
+          isRestoring,
+          operationCount: operations.length,
+        }),
+        before,
+        after: predicted.state,
+        operations,
+        selectionBefore,
+        selectionAfter: plan.selectionAfter,
+        metadata: plan.changeMetadata,
+      }),
+    }));
     return r;
   };
 
@@ -729,10 +818,20 @@ export function createJSONDocument<S extends z.ZodType>(
       shouldCaptureMetadata: capture.shouldCaptureMetadata,
       snapshot: snapSelection,
     });
-    if (r.ok) lastPatch = planDocumentLastPatch({ operationCount: planned.patch.length, applied: rawOps.lastApplied });
-    if (r.ok && capture.shouldRecordHistory) {
-      recordHistory(before, planned.next, planned.patch, selectionBefore, selectionAfter, changeMetadata);
-    }
+    applyDocumentChangePlan(planDocumentChangeApplyResult({
+      result: r,
+      lastPatchOperationCount: planned.patch.length,
+      applied: rawOps.lastApplied,
+      history: planDocumentChangeHistoryRecord({
+        shouldRecordHistory: capture.shouldRecordHistory,
+        before,
+        after: planned.next,
+        operations: planned.patch,
+        selectionBefore,
+        selectionAfter,
+        metadata: changeMetadata,
+      }),
+    }));
     return planDocumentDuplicateApplyResult({
       result: r,
       state: rawOps.state,
@@ -1195,6 +1294,41 @@ export function planDocumentChangeCapture(
       selectionEnabled: input.selectionEnabled,
       documentSubscriberCount: input.documentSubscriberCount,
     }),
+  };
+}
+
+export function planDocumentChangeHistoryRecord(
+  input: PlanDocumentChangeHistoryRecordInput,
+): DocumentChangeHistoryRecord | null {
+  if (!input.shouldRecordHistory) return null;
+
+  const record: DocumentChangeHistoryRecord = {
+    before: input.before,
+    after: input.after,
+    operations: input.operations,
+    selectionBefore: input.selectionBefore,
+    selectionAfter: input.selectionAfter,
+    operationsOwned: input.operationsOwned === true,
+  };
+  if (input.metadata !== undefined) record.metadata = input.metadata;
+  return record;
+}
+
+export function planDocumentChangeApplyResult(
+  input: PlanDocumentChangeApplyResultInput,
+): DocumentChangeApplyResultPlan {
+  if (!input.result.ok) {
+    return {
+      lastPatch: null,
+      history: null,
+    };
+  }
+  return {
+    lastPatch: planDocumentLastPatch({
+      operationCount: input.lastPatchOperationCount,
+      applied: input.applied,
+    }),
+    history: input.history,
   };
 }
 

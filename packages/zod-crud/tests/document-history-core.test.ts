@@ -4,7 +4,9 @@ import {
   buildChangeMetadata,
   compactHistoryMetadata,
   planDocumentActiveHistoryMetadata,
+  planDocumentChangeApplyResult,
   planDocumentChangeCapture,
+  planDocumentChangeHistoryRecord,
   planDocumentChangeMetadata,
   planDocumentChangeSelection,
   planCompactedRepeatedReplaceHistory,
@@ -110,6 +112,83 @@ describe("document history core functions", () => {
     })).toEqual({
       shouldRecordHistory: false,
       shouldCaptureMetadata: true,
+    });
+  });
+
+  test("plans change history records only when history should be recorded", () => {
+    const operations: JSONPatchOperation[] = [{ op: "replace", path: "/title", value: "final" }];
+
+    expect(planDocumentChangeHistoryRecord({
+      shouldRecordHistory: false,
+      before: { title: "draft" },
+      after: { title: "final" },
+      operations,
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Rename" },
+      operationsOwned: true,
+    })).toBeNull();
+
+    expect(planDocumentChangeHistoryRecord({
+      shouldRecordHistory: true,
+      before: { title: "draft" },
+      after: { title: "final" },
+      operations,
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Rename" },
+      operationsOwned: true,
+    })).toEqual({
+      before: { title: "draft" },
+      after: { title: "final" },
+      operations,
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: { label: "Rename" },
+      operationsOwned: true,
+    });
+  });
+
+  test("plans successful change side effects without applying a document shell", () => {
+    const applied: JSONPatchOperation[] = [{ op: "replace", path: "/title", value: "final" }];
+    const history = planDocumentChangeHistoryRecord({
+      shouldRecordHistory: true,
+      before: { title: "draft" },
+      after: { title: "final" },
+      operations: applied,
+      selectionBefore: emptySelection,
+      selectionAfter: titleSelection,
+      metadata: undefined,
+    });
+
+    expect(planDocumentChangeApplyResult({
+      result: { ok: true },
+      lastPatchOperationCount: applied.length,
+      applied,
+      history,
+    })).toEqual({
+      lastPatch: applied,
+      history,
+    });
+
+    expect(planDocumentChangeApplyResult({
+      result: { ok: true },
+      lastPatchOperationCount: 0,
+      applied,
+      history: null,
+    })).toEqual({
+      lastPatch: [],
+      history: null,
+    });
+
+    expect(planDocumentChangeApplyResult({
+      result: { ok: false, code: "path_not_found", pointer: "/missing" },
+      lastPatchOperationCount: applied.length,
+      applied,
+      history,
+    })).toEqual({
+      lastPatch: null,
+      history: null,
     });
   });
 
