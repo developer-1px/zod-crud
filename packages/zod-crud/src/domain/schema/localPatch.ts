@@ -2081,7 +2081,7 @@ export function readAppliedLocalOpSourceValue(
   }
 }
 
-function replaceValueAtSegments(
+export function replaceValueAtSegments(
   current: unknown,
   segments: ReadonlyArray<string>,
   index: number,

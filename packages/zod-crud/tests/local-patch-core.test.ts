@@ -22,6 +22,7 @@ import {
   planSingleRootObjectReplacePatch,
   planSingleReplacePatch,
   readAppliedLocalOpSourceValue,
+  replaceValueAtSegments,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
 
@@ -358,6 +359,57 @@ describe("applied local op source value reading", () => {
       state,
       operation: { op: "move", from: "items/0", path: "/items/1" },
     })).toEqual({ ok: false });
+  });
+});
+
+describe("replace value at segments", () => {
+  test("replaces the root when no segments remain", () => {
+    expect(replaceValueAtSegments({ title: "Draft" }, [], 0, { title: "Final" }))
+      .toEqual({ title: "Final" });
+  });
+
+  test("replaces nested array values with structural sharing", () => {
+    const untouched = { name: "B" };
+    const sibling = { keep: true };
+    const state = {
+      items: [{ name: "A" }, untouched],
+      sibling,
+    };
+
+    const next = replaceValueAtSegments(state, ["items", "0", "name"], 0, "Final") as typeof state;
+
+    expect(next).toEqual({
+      items: [{ name: "Final" }, { name: "B" }],
+      sibling: { keep: true },
+    });
+    expect(next).not.toBe(state);
+    expect(next.items).not.toBe(state.items);
+    expect(next.items[0]).not.toBe(state.items[0]);
+    expect(next.items[1]).toBe(untouched);
+    expect(next.sibling).toBe(sibling);
+    expect(state.items[0]?.name).toBe("A");
+  });
+
+  test("returns null for missing or non-container paths", () => {
+    expect(replaceValueAtSegments({ items: ["A"] }, ["items", "1"], 0, "B")).toBeNull();
+    expect(replaceValueAtSegments({ title: "Draft" }, ["title", "text"], 0, "Final")).toBeNull();
+    expect(replaceValueAtSegments({ items: ["A"] }, ["items", "01"], 0, "B")).toBeNull();
+  });
+
+  test("keeps __proto__ as an own data key", () => {
+    const state: Record<string, unknown> = {};
+    Object.defineProperty(state, "__proto__", {
+      value: { label: "old" },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+
+    const next = replaceValueAtSegments(state, ["__proto__", "label"], 0, "new") as Record<string, unknown>;
+
+    expect(Object.getPrototypeOf(next)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(next, "__proto__")).toBe(true);
+    expect(next.__proto__).toEqual({ label: "new" });
   });
 });
 
