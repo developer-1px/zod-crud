@@ -1210,16 +1210,7 @@ function applyRootRecordRemovePatchWithLocalSchemaValidation<S extends z.ZodType
   const next: Record<string, unknown> = {};
   for (const key of sourceKeys) {
     if (objectHasOwn.call(removedKeys, key)) continue;
-    if (key === "__proto__") {
-      Object.defineProperty(next, key, {
-        value: source[key],
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      next[key] = source[key];
-    }
+    writeRootRecordValue(next, key, source[key]);
   }
 
   return {

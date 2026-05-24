@@ -1214,6 +1214,38 @@ describe("root record remove patch planning", () => {
     expect(planRootRecordRemovePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
   });
 
+  test("keeps __proto__ as data through rebuild remove strategy", () => {
+    const state: Record<string, unknown> = { a: 1 };
+    Object.defineProperty(state, "__proto__", {
+      value: { safe: true },
+      enumerable: true,
+      configurable: true,
+      writable: true,
+    });
+    state.b = 2;
+    state.c = 3;
+
+    const result = applyPatchWithLocalSchemaValidation(
+      z.record(z.string(), z.unknown()),
+      state,
+      [
+        { op: "remove", path: "/a" },
+        { op: "remove", path: "/b" },
+      ],
+    );
+
+    expect(result).not.toBeNull();
+    if (result === null) throw new Error("expected local root record remove result");
+    expect(result.state).toMatchObject({ c: 3 });
+    expect(Object.getPrototypeOf(result.state)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(result.state as object, "__proto__")).toBe(true);
+    expect((result.state as Record<string, unknown>).__proto__).toEqual({ safe: true });
+    expect(result.applied).toEqual([
+      { op: "remove", path: "/a" },
+      { op: "remove", path: "/b" },
+    ]);
+  });
+
   test("keeps root record add applied operations free of planner-only keys", () => {
     const result = applyPatchWithLocalSchemaValidation(
       z.record(z.string(), z.number()),
