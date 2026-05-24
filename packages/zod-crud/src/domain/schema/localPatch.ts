@@ -28,6 +28,10 @@ interface LocalPatchOptions {
   valuesTrusted?: boolean;
 }
 
+export interface PlanIndependentReplacePatchInput {
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
 interface ExtendedDef {
   type?: string;
   coerce?: boolean;
@@ -168,7 +172,7 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   if (rootRecordAdd) return rootRecordAdd;
   const rootRecordRemove = applyRootRecordRemovePatchWithLocalSchemaValidation(schema, state, ops);
   if (rootRecordRemove) return rootRecordRemove;
-  if (isIndependentReplacePatch(ops)) {
+  if (planIndependentReplacePatch({ operations: ops })) {
     return applyReplacePatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   }
   const appendOnlyAdd = applyAppendOnlyAddPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
@@ -1507,7 +1511,8 @@ function parseSimpleArrayElementReplacePath(
   };
 }
 
-function isIndependentReplacePatch(ops: ReadonlyArray<JSONPatchOperation>): boolean {
+export function planIndependentReplacePatch(input: PlanIndependentReplacePatchInput): boolean {
+  const ops = input.operations;
   if (!Array.isArray(ops) || ops.length === 0) return false;
   const paths: string[] = [];
   for (let index = 0; index < ops.length; index++) {
