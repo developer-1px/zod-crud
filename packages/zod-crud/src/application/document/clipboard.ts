@@ -109,6 +109,50 @@ type CloneWritePayloadResult =
   | { ok: true; value: unknown }
   | { ok: false; reason: string };
 
+export interface ClipboardCutPlanContext<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source: ClipboardSource;
+  stateJsonTrusted?: boolean;
+  clonePayload?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export interface ClipboardPastePlanContext<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  payload: unknown;
+  target?: PasteTarget;
+  selectionTarget?: Pointer | null;
+  options?: PasteOptions;
+  spreadByDefault?: boolean;
+  trustedPayload?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+export type ClipboardCutPlanResult<T> =
+  | {
+      ok: true;
+      next: T;
+      patch: JSONPatchOperation[];
+      applied: ReadonlyArray<JSONPatchOperation>;
+      payload: unknown;
+      source: Pointer;
+      sources: ReadonlyArray<Pointer>;
+    }
+  | CutError;
+
+export type ClipboardPastePlanResult<T> =
+  | {
+      ok: true;
+      next: T;
+      patch: JSONPatchOperation[];
+      applied: ReadonlyArray<JSONPatchOperation>;
+    }
+  | PasteError
+  | PasteDuMismatch;
+
 interface CreateClipboardOptions<S extends z.ZodType> {
   schema: S;
   getState(): z.output<S>;
@@ -132,6 +176,48 @@ const EMPTY_CLIPBOARD: ClipboardEmpty = {
   code: "empty_clipboard",
   message: "clipboard is empty",
 };
+
+export function planClipboardCut<S extends z.ZodType>(
+  context: ClipboardCutPlanContext<S>,
+): ClipboardCutPlanResult<z.output<S>> {
+  const cutOptions: {
+    trusted: boolean;
+    clonePayload?: boolean;
+    previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  } = {
+    trusted: context.stateJsonTrusted === true,
+  };
+  if (context.clonePayload !== undefined) cutOptions.clonePayload = context.clonePayload;
+  if (context.previewPatch !== undefined) cutOptions.previewPatch = context.previewPatch;
+  return cut(context.schema, context.state, context.source, cutOptions);
+}
+
+export function planClipboardPaste<S extends z.ZodType>(
+  context: ClipboardPastePlanContext<S>,
+): ClipboardPastePlanResult<z.output<S>> {
+  const args = resolvePasteArgs(context.target, context.options);
+  const target = args.target ?? context.selectionTarget ?? null;
+  if (target === null) {
+    return {
+      ok: false,
+      code: "empty_selection",
+      message: "paste target selection is empty",
+    };
+  }
+  const spread = args.options.spread ?? context.spreadByDefault ?? false;
+  const inputTrustedPayload = context.trustedPayload === true
+    || args.options.trustedPayload === true;
+  const patchValuesTrusted = inputTrustedPayload || rekeyProducesTrustedPayload(args.options);
+  const pastePreview = patchValuesTrusted && context.previewTrustedValuesPatch
+    ? context.previewTrustedValuesPatch
+    : context.previewPatch;
+  return paste(context.schema, context.state, context.payload, target, args.mode, {
+    ...args.options,
+    spread,
+    previewPatch: pastePreview,
+    trustedPayload: inputTrustedPayload,
+  });
+}
 
 function cloneWritePayload(
   payload: unknown,
@@ -302,16 +388,14 @@ export function createClipboard<S extends z.ZodType>(
     cut(source, options = {}) {
       const resolved = sourceOrSelection(source);
       if (resolved === null) return emptyCutSource();
-      const cutOptions: {
-        trusted: boolean;
-        clonePayload?: boolean;
-        previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-      } = {
-        trusted: getStateJsonTrusted?.() === true,
-      };
-      if (options.clonePayload !== undefined) cutOptions.clonePayload = options.clonePayload;
-      if (previewPatch !== undefined) cutOptions.previewPatch = previewPatch;
-      const result = cut(schema, getState(), resolved, cutOptions);
+      const result = planClipboardCut({
+        schema,
+        state: getState(),
+        source: resolved,
+        stateJsonTrusted: getStateJsonTrusted?.() === true,
+        ...(options.clonePayload !== undefined ? { clonePayload: options.clonePayload } : {}),
+        ...(previewPatch !== undefined ? { previewPatch } : {}),
+      });
       if (!result.ok) return result;
       const patchResult = applyPreviewedPatch
         ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
@@ -357,26 +441,17 @@ export function createClipboard<S extends z.ZodType>(
     spreadByDefault: boolean,
     trustedPayload: boolean,
   ): ClipboardPasteResult<z.output<S>> {
-    const args = resolvePasteArgs(targetOrSelectionTarget, options);
-    const target = targetOrSelection(args.target);
-    if (target === null) {
-      return {
-        ok: false,
-        code: "empty_selection",
-        message: "paste target selection is empty",
-      };
-    }
-    const spread = args.options.spread ?? spreadByDefault;
-    const inputTrustedPayload = trustedPayload || args.options.trustedPayload === true;
-    const patchValuesTrusted = inputTrustedPayload || rekeyProducesTrustedPayload(args.options);
-    const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
-      ? previewTrustedValuesPatch
-      : previewPatch;
-    const result = paste(schema, getState(), payload, target, args.mode, {
-      ...args.options,
-      spread,
-      previewPatch: pastePreview,
-      trustedPayload: inputTrustedPayload,
+    const result = planClipboardPaste({
+      schema,
+      state: getState(),
+      payload,
+      selectionTarget: getSelectionTarget?.() ?? null,
+      spreadByDefault,
+      trustedPayload,
+      ...(targetOrSelectionTarget !== undefined ? { target: targetOrSelectionTarget } : {}),
+      ...(options !== undefined ? { options } : {}),
+      ...(previewPatch !== undefined ? { previewPatch } : {}),
+      ...(previewTrustedValuesPatch !== undefined ? { previewTrustedValuesPatch } : {}),
     });
     if (!result.ok) return result;
     const patchResult = applyPreviewedPatch
