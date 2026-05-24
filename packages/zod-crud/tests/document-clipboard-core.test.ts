@@ -3,6 +3,7 @@ import * as z from "zod";
 
 import {
   isClipboardSchemaTrustedPayload,
+  planClipboardPasteApplyResult,
   planClipboardPeekBuffer,
   planClipboardReadBuffer,
   planClipboardCut,
@@ -190,6 +191,39 @@ describe("document clipboard core functions", () => {
       applied: [{ op: "add", path: "/items/2", value: { id: "c", name: "C" } }],
     });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
+  });
+
+  test("maps paste apply results to public paste mutation results", () => {
+    const applied: JSONPatchOperation[] = [
+      { op: "add", path: "/items/2", value: { id: "c", name: "C" } },
+    ];
+    const state = {
+      ...initial,
+      items: [
+        ...initial.items,
+        { id: "c", name: "C" },
+      ],
+    };
+
+    expect(planClipboardPasteApplyResult({
+      result: { ok: true },
+      state,
+      applied,
+    })).toEqual({
+      ok: true,
+      value: state,
+      applied,
+    });
+
+    expect(planClipboardPasteApplyResult({
+      result: { ok: false, code: "path_not_found", reason: "missing target" },
+      state,
+      applied,
+    })).toEqual({
+      ok: false,
+      code: "path_not_found",
+      message: "missing target",
+    });
   });
 
   test("uses trusted preview when the payload boundary is already owned", () => {

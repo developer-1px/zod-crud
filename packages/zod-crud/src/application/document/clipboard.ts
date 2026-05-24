@@ -131,6 +131,12 @@ export interface ClipboardPastePlanContext<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface ClipboardPasteApplyResultInput<T> {
+  result: JSONResult;
+  state: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
 export interface ClipboardSchemaTrustedPayloadInput {
   state: unknown;
   stateJsonTrusted: boolean;
@@ -230,6 +236,23 @@ export function planClipboardPaste<S extends z.ZodType>(
     previewPatch: pastePreview,
     trustedPayload: inputTrustedPayload,
   });
+}
+
+export function planClipboardPasteApplyResult<T>(
+  input: ClipboardPasteApplyResultInput<T>,
+): ClipboardMutationOk<T> | PasteError {
+  if (input.result.ok) {
+    return {
+      ok: true,
+      value: input.state,
+      applied: input.applied,
+    };
+  }
+  return {
+    ok: false,
+    code: input.result.code,
+    message: input.result.reason ?? input.result.code,
+  };
 }
 
 export function planClipboardReadBuffer(
@@ -349,11 +372,6 @@ export function createClipboard<S extends z.ZodType>(
     onChange?.();
   };
 
-  const patchError = (result: Exclude<JSONResult, { ok: true }>): PasteError => ({
-    ok: false,
-    code: result.code,
-    message: result.reason ?? result.code,
-  });
   const sourceOrSelection = (source?: ClipboardSource): ClipboardSource | null =>
     source ?? getSelectionSource?.() ?? null;
   const targetOrSelection = (target?: Pointer): Pointer | null =>
@@ -496,13 +514,11 @@ export function createClipboard<S extends z.ZodType>(
     const patchResult = applyPreviewedPatch
       ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
       : ops.patch(result.patch);
-    return patchResult.ok
-      ? {
-          ok: true,
-          value: getState(),
-          applied: getAppliedPatch?.() ?? result.patch,
-        }
-      : patchError(patchResult);
+    return planClipboardPasteApplyResult({
+      result: patchResult,
+      state: getState(),
+      applied: getAppliedPatch?.() ?? result.patch,
+    });
   }
 }
 
