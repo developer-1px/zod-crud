@@ -7,6 +7,8 @@ import {
   checkDocumentPatch,
   checkDocumentRemove,
   checkDocumentReplace,
+  planDocumentCopyCheck,
+  planDocumentCutCheck,
   planDocumentDuplicateCheck,
   planDocumentMoveCheck,
   planDocumentPatchCheck,
@@ -219,10 +221,68 @@ describe("document check core functions", () => {
     ]);
   });
 
+  test("plans clipboard copy and cut checks from explicit state and selection source", () => {
+    let cutPreviewed: ReadonlyArray<JSONPatchOperation> | undefined;
+
+    expect(planDocumentCopyCheck({
+      state: initial,
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "copy source selection is empty",
+    });
+
+    expect(planDocumentCopyCheck({
+      state: initial,
+      selectionSource: "/items/0",
+      stateJsonTrusted: true,
+    })).toEqual({ ok: true });
+
+    expect(planDocumentCutCheck({
+      schema: Schema,
+      state: initial,
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "cut source selection is empty",
+    });
+
+    expect(planDocumentCutCheck({
+      schema: Schema,
+      state: initial,
+      selectionSource: "/items/0",
+      stateJsonTrusted: true,
+      previewPatch(operations) {
+        cutPreviewed = operations;
+        return {
+          state: {
+            ...initial,
+            items: [initial.items[1]!],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(cutPreviewed).toEqual([
+      { op: "remove", path: "/items/0" },
+    ]);
+  });
+
   test("keeps JSON guard decisions testable without createJSONDocument", () => {
     const UnknownSchema = z.object({ items: z.array(z.unknown()) });
     const bad = () => "bad";
     const state = { items: [bad] };
+
+    expect(planDocumentCopyCheck({ state, source: "/items/0" })).toMatchObject({
+      ok: false,
+      code: "not_serializable",
+    });
+    expect(planDocumentCopyCheck({
+      state,
+      source: "/items/0",
+      stateJsonTrusted: true,
+    })).toEqual({ ok: true });
 
     expect(checkDocumentCopy({ schema: UnknownSchema, state }, "/items/0")).toMatchObject({
       ok: false,

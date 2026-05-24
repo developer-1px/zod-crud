@@ -157,6 +157,22 @@ export interface PlanDocumentDuplicateCheckInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
+export interface PlanDocumentCopyCheckInput {
+  state: unknown;
+  source?: ClipboardSource;
+  selectionSource?: ClipboardSource | null;
+  stateJsonTrusted?: boolean;
+}
+
+export interface PlanDocumentCutCheckInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source?: ClipboardSource;
+  selectionSource?: ClipboardSource | null;
+  stateJsonTrusted?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
 export interface PlanDocumentPasteCheckInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
@@ -416,13 +432,26 @@ export function checkDocumentCut<S extends z.ZodType>(
   context: DocumentCheckContext<S>,
   source?: ClipboardSource,
 ): CheckResult {
-  const resolved = sourceOrSelection(context, source);
+  return planDocumentCutCheck({
+    schema: context.schema,
+    state: context.state,
+    selectionSource: selectedSource(selectionState(context)),
+    stateJsonTrusted: trustedState(context),
+    ...(source !== undefined ? { source } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
+export function planDocumentCutCheck<S extends z.ZodType>(
+  input: PlanDocumentCutCheckInput<S>,
+): CheckResult {
+  const resolved = input.source ?? input.selectionSource ?? null;
   return resolved === null
     ? emptySelection("cut source selection is empty")
-    : toCheckResult(cut(context.schema, context.state, resolved, {
-        trusted: trustedState(context),
+    : toCheckResult(cut(input.schema, input.state, resolved, {
+        trusted: input.stateJsonTrusted === true,
         clonePayload: false,
-        previewPatch: context.previewPatch,
+        previewPatch: input.previewPatch,
       }));
 }
 
@@ -430,11 +459,22 @@ export function checkDocumentCopy<S extends z.ZodType>(
   context: DocumentCheckContext<S>,
   source?: ClipboardSource,
 ): CheckResult {
-  const resolved = sourceOrSelection(context, source);
+  return planDocumentCopyCheck({
+    state: context.state,
+    selectionSource: selectedSource(selectionState(context)),
+    stateJsonTrusted: trustedState(context),
+    ...(source !== undefined ? { source } : {}),
+  });
+}
+
+export function planDocumentCopyCheck(
+  input: PlanDocumentCopyCheckInput,
+): CheckResult {
+  const resolved = input.source ?? input.selectionSource ?? null;
   return resolved === null
     ? emptySelection("copy source selection is empty")
-    : toCheckResult(copy(context.state, resolved, {
-        trusted: trustedState(context),
+    : toCheckResult(copy(input.state, resolved, {
+        trusted: input.stateJsonTrusted === true,
         clonePayload: false,
       }));
 }
