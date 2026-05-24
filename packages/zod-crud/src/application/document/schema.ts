@@ -88,6 +88,10 @@ interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
 
+export interface DocumentSchemaContext<S extends z.ZodType> {
+  schema: S;
+}
+
 interface ResolveSchemaOk {
   ok: true;
   schema: z.ZodType;
@@ -98,62 +102,95 @@ type ResolveSchemaResult = ResolveSchemaOk | SchemaErrorResult;
 export function createSchemaState<S extends z.ZodType>(
   args: CreateSchemaOptions<S>,
 ): SchemaState {
-  const rootSchema = args.schema;
+  const context: DocumentSchemaContext<S> = { schema: args.schema };
 
   const at = (path: Pointer, mode: SchemaPathMode = "value"): SchemaQueryResult => {
-    const resolved = resolveSchema(rootSchema, path, mode);
-    if (!resolved.ok) return resolved;
-    const description = describeSchema(resolved.schema);
-    return {
-      ok: true,
-      path,
-      mode,
-      kind: description.kind,
-      description,
-    };
+    return queryDocumentSchema(context, path, mode);
   };
 
   return {
     at,
     kind(path, mode = "value") {
-      const result = at(path, mode);
-      if (!result.ok) return result;
-      return { ok: true, path, mode, kind: result.kind };
+      return readDocumentSchemaKind(context, path, mode);
     },
     accepts(path, value, mode = "value") {
-      const resolved = resolveSchema(rootSchema, path, mode);
-      if (!resolved.ok) {
-        const error: Extract<CheckResult, { ok: false }> = {
-          ok: false,
-          code: resolved.code,
-          pointer: resolved.pointer,
-        };
-        if (resolved.reason !== undefined) error.reason = resolved.reason;
-        return error;
-      }
-
-      const parsed = resolved.schema.safeParse(value);
-      if (parsed.success) return { ok: true };
-      return {
-        ok: false,
-        code: "schema_violation",
-        reason: JSON.stringify(parsed.error.issues),
-        violations: parsed.error.issues.map((issue) => ({
-          path: absoluteIssuePath(path, issue.path),
-          message: issue.message,
-        })),
-      };
+      return checkDocumentSchemaAccepts(context, path, value, mode);
     },
     describe(path, mode = "value") {
-      const result = at(path, mode);
-      if (!result.ok) return result;
-      return {
-        ok: true,
-        path,
-        mode,
-        description: result.description,
-      };
+      return describeDocumentSchema(context, path, mode);
     },
+  };
+}
+
+export function queryDocumentSchema<S extends z.ZodType>(
+  context: DocumentSchemaContext<S>,
+  path: Pointer,
+  mode: SchemaPathMode = "value",
+): SchemaQueryResult {
+  const resolved = resolveSchema(context.schema, path, mode);
+  if (!resolved.ok) return resolved;
+  const description = describeSchema(resolved.schema);
+  return {
+    ok: true,
+    path,
+    mode,
+    kind: description.kind,
+    description,
+  };
+}
+
+export function readDocumentSchemaKind<S extends z.ZodType>(
+  context: DocumentSchemaContext<S>,
+  path: Pointer,
+  mode: SchemaPathMode = "value",
+): SchemaKindResult {
+  const result = queryDocumentSchema(context, path, mode);
+  if (!result.ok) return result;
+  return { ok: true, path, mode, kind: result.kind };
+}
+
+export function checkDocumentSchemaAccepts<S extends z.ZodType>(
+  context: DocumentSchemaContext<S>,
+  path: Pointer,
+  value: unknown,
+  mode: SchemaPathMode = "value",
+): CheckResult {
+  const resolved = resolveSchema(context.schema, path, mode);
+  if (!resolved.ok) {
+    const error: Extract<CheckResult, { ok: false }> = {
+      ok: false,
+      code: resolved.code,
+      pointer: resolved.pointer,
+    };
+    if (resolved.reason !== undefined) error.reason = resolved.reason;
+    return error;
+  }
+
+  const parsed = resolved.schema.safeParse(value);
+  if (parsed.success) return { ok: true };
+  return {
+    ok: false,
+    code: "schema_violation",
+    reason: JSON.stringify(parsed.error.issues),
+    violations: parsed.error.issues.map((issue) => ({
+      path: absoluteIssuePath(path, issue.path),
+      message: issue.message,
+    })),
+  };
+}
+
+export function describeDocumentSchema<S extends z.ZodType>(
+  context: DocumentSchemaContext<S>,
+  path: Pointer,
+  mode: SchemaPathMode = "value",
+): SchemaDescriptionResult {
+  const result = queryDocumentSchema(context, path, mode);
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    path,
+    mode,
+    description: result.description,
   };
 }
 
