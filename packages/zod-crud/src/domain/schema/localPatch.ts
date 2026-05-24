@@ -337,6 +337,10 @@ export function copyRootRecordKeyPrefix(
 }
 
 export function writeRootRecordValue(target: Record<string, unknown>, key: string, value: unknown): void {
+  writeObjectDataValue(target, key, value);
+}
+
+export function writeObjectDataValue(target: Record<string, unknown>, key: string, value: unknown): void {
   if (key === "__proto__") {
     Object.defineProperty(target, key, {
       value,
@@ -567,16 +571,7 @@ function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
   if (!objectHasOwn.call(row, location.key)) return null;
 
   const replaced = { ...(row as Record<string, unknown>) };
-  if (location.key === "__proto__") {
-    Object.defineProperty(replaced, location.key, {
-      value: op.value,
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-  } else {
-    replaced[location.key] = op.value;
-  }
+  writeObjectDataValue(replaced, location.key, op.value);
 
   const next = current.value.slice();
   next[location.index] = replaced;
@@ -631,16 +626,7 @@ function replaceArrayField(
   if (!objectHasOwn.call(row, key)) return null;
 
   const replaced = { ...(row as Record<string, unknown>) };
-  if (key === "__proto__") {
-    Object.defineProperty(replaced, key, {
-      value,
-      enumerable: true,
-      configurable: true,
-      writable: true,
-    });
-  } else {
-    replaced[key] = value;
-  }
+  writeObjectDataValue(replaced, key, value);
 
   const next = array.slice();
   next[index] = replaced;
@@ -858,16 +844,7 @@ function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.Zo
 
     const sourceRow = row as Record<string, unknown>;
     const replaced = { ...sourceRow };
-    if (plan.field === "__proto__") {
-      Object.defineProperty(replaced, plan.field, {
-        value: op.value,
-        enumerable: true,
-        configurable: true,
-        writable: true,
-      });
-    } else {
-      replaced[plan.field] = op.value;
-    }
+    writeObjectDataValue(replaced, plan.field, op.value);
     next[op.index] = replaced;
     applied[opIndex] = { op: "replace", path: op.path, value: op.value };
   }

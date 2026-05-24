@@ -30,6 +30,7 @@ import {
   prefixIssues,
   readAppliedLocalOpSourceValue,
   replaceValueAtSegments,
+  writeObjectDataValue,
   writeRootRecordValue,
 } from "../src/domain/schema/localPatch.js";
 import type { JSONPatchOperation } from "../src/foundation/json-patch/index.js";
@@ -215,6 +216,18 @@ describe("root record copy and write helpers", () => {
     expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(target, "__proto__")).toBe(true);
     expect(target.__proto__).toEqual({ safe: false });
+  });
+
+  test("writes object data keys for non-root replacement helpers", () => {
+    const target: Record<string, unknown> = {};
+
+    writeObjectDataValue(target, "name", "Final");
+    writeObjectDataValue(target, "__proto__", { safe: "data" });
+
+    expect(target.name).toBe("Final");
+    expect(Object.getPrototypeOf(target)).toBe(Object.prototype);
+    expect(Object.prototype.hasOwnProperty.call(target, "__proto__")).toBe(true);
+    expect(target.__proto__).toEqual({ safe: "data" });
   });
 });
 
