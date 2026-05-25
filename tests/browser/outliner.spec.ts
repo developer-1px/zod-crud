@@ -65,3 +65,27 @@ test("outliner supports keyboard editing and undo in a real browser", async ({ p
   ).toBe(3);
   await expect(page.locator(".toast")).not.toContainText(/not_serializable|circular/i);
 });
+
+test("outliner keeps DOM focus when ArrowRight enters a child and ArrowLeft returns to the row parent", async ({ page }) => {
+  await page.goto("/playground/outliner");
+
+  const treeTextboxes = page.getByRole("tree").getByRole("textbox");
+  const selectionRow = treeTextboxes.nth(5);
+  const clickFocusRow = treeTextboxes.nth(6);
+
+  await expect(selectionRow).toHaveValue("Selection");
+  await expect(clickFocusRow).toHaveValue("Click focus");
+  await selectionRow.click();
+  await expect(page.locator(".status")).toContainText("focus = /children/4");
+  await expect(selectionRow).toBeFocused();
+
+  await page.keyboard.press("ArrowRight");
+  await expect(page.locator(".status")).toContainText("focus = /children/4/children/0");
+  await expect(page.locator(".zc-outliner-row.is-focused input")).toHaveValue("Click focus");
+  await expect(clickFocusRow).toBeFocused();
+
+  await page.keyboard.press("ArrowLeft");
+  await expect(page.locator(".status")).toContainText("focus = /children/4");
+  await expect(page.locator(".zc-outliner-row.is-focused input")).toHaveValue("Selection");
+  await expect(selectionRow).toBeFocused();
+});

@@ -13,6 +13,16 @@ function navigate(ctx: CommandContext, compute: (state: OutlineNode, f: Pointer 
   if (target !== null) ctx.selection.collapse(target);
 }
 
+function parentRowOf(ctx: CommandContext, pointer: Pointer): Pointer | null {
+  let parent = parentOf(pointer);
+  while (parent !== null) {
+    const kind = parent === "" ? null : ctx.document.schema.kind(parent);
+    if (kind?.ok && kind.kind === "object") return parent;
+    parent = parentOf(parent);
+  }
+  return null;
+}
+
 export const focusPrev = (ctx: CommandContext) =>
   navigate(ctx, (s, f) => f === null ? lastVisible(s) : prevVisible(s, f));
 export const focusNext = (ctx: CommandContext) =>
@@ -24,7 +34,5 @@ export const focusFirstChild = (ctx: CommandContext) =>
 export const focusParent = (ctx: CommandContext) =>
   navigate(ctx, (_s, f) => {
     if (f === null) return null;
-    const p = parentOf(f);
-    // root ("") 은 편집 row 가 아님 (UI 정책) — 거기로 이동 안 함.
-    return p === null || p === "" ? null : p;
+    return parentRowOf(ctx, f);
   });
