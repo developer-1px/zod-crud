@@ -1,12 +1,12 @@
 import type * as z from "zod";
 
-import {
-  resolveSelectionCursor,
-  resolveSelectionScope,
-  type SelectionCursorDirection,
-  type SelectionCursorOptions,
-  type SelectionScopeOptions,
-} from "../../domain/selection/index.js";
+import { resolveSelectionCursor } from "../../domain/selection/selectionReducer.js";
+import { resolveSelectionScope } from "../../domain/selection/selectionOrder.js";
+import type {
+  SelectionCursorDirection,
+  SelectionCursorOptions,
+  SelectionScopeOptions,
+} from "../../domain/selection/selectionTypes.js";
 import {
   type CapabilityResult,
 } from "./capabilityResultTypes.js";

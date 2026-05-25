@@ -1,4 +1,4 @@
-import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type {
   JSONPoint,
   SelectionEdge,

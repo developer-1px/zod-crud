@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { Pointer } from "../json-pointer/index.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 
 export type JSONPatchOperation =
   | { op: "add";     path: Pointer; value: unknown }

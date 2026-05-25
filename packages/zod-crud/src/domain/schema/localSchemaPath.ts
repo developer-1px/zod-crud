@@ -4,8 +4,8 @@ import {
   parsePointer,
   readAt,
   type Pointer,
-} from "../../foundation/json-pointer/index.js";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+} from "../../foundation/json-pointer/pointerCore.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
 import { objectHasOwn, replaceObjectDataValue } from "./localSchemaObject.js";
 

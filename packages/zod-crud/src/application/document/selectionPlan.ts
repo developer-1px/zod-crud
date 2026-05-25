@@ -1,13 +1,9 @@
 import type { JSONChangeMetadata } from "./stateOps.js";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { jsonEqual } from "../../foundation/json.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { jsonEqual } from "../../foundation/jsonEqual.js";
 import {
   EMPTY_SELECTION,
-  applySelectionAutoRules,
-  reduceSelection,
-  restoreSelection,
-  selectionSnapshot,
   type JSONPoint,
   type SelectionAction,
   type SelectionContext,
@@ -15,7 +11,13 @@ import {
   type SelectionRange,
   type SelectionRangeInput,
   type SelectionSnap,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionTypes.js";
+import { applySelectionAutoRules } from "../../domain/selection/selectionAutoRules.js";
+import { reduceSelection } from "../../domain/selection/selectionReducer.js";
+import {
+  restoreSelection,
+  selectionSnapshot,
+} from "../../domain/selection/selectionSnap.js";
 import type { UseSelectionOptions } from "./selectionOptions.js";
 
 export type SelectionStateUpdatePlan =

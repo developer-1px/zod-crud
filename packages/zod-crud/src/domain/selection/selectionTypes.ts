@@ -1,5 +1,5 @@
-import type { JSONValue } from "../../foundation/json.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONValue } from "../../foundation/jsonTypes.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 
 export type SelectionMode = "single" | "multiple" | "extended";
 export type SelectionType = "None" | "Caret" | "Range";

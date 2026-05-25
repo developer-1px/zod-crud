@@ -4,7 +4,7 @@ import {
   planDocumentSubscriptionChange,
   planDocumentSubscriptionMetadata,
 } from "../../../src/application/document/createJSONDocumentChangePlan.js";
-import type { SelectionSnap } from "../../../src/domain/selection/index.js";
+import type { SelectionSnap } from "../../../src/domain/selection/selectionTypes.js";
 
 const emptySelection: SelectionSnap = {
   selectedPointers: [],

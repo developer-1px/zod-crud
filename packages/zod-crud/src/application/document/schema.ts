@@ -11,7 +11,7 @@ import {
   getObjectKeys,
   getObjectShape,
 } from "../../domain/schema/zodIntrospectionAdapter.js";
-import { appendSegment, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { appendSegment, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 
 export type SchemaPathMode = "value" | "insert";
 

@@ -3,8 +3,8 @@
 //
 // JSONStateOps<T>: low-level JSON operation 표면. RFC 6902 6 op + lifecycle + pub/sub.
 
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { SelectionSnap } from "../../domain/selection/index.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { PointerOf, ValueAt } from "../../foundation/json-pointer/types.js";
 
 export interface HistoryTransactionOptions {

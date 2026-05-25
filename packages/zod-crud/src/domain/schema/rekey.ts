@@ -1,4 +1,5 @@
-import { cloneJson, cloneTrustedJson } from "../../foundation/json.js";
+import { cloneJson } from "../../foundation/jsonClone.js";
+import { cloneTrustedJson } from "../../foundation/jsonTrustedClone.js";
 import { collectSuffixExistingValues } from "./rekeySuffix.js";
 import { scalarText, walk, walkSingleFieldText } from "./rekeyTraversal.js";
 import type {

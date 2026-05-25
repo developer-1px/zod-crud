@@ -1,5 +1,5 @@
-import type { SelectionSnap } from "../../domain/selection/index.js";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import type { HistoryTransactionOptions } from "./stateOps.js";
 import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
 

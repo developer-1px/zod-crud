@@ -1,4 +1,4 @@
-import { buildPointer } from "./json-pointer/index.js";
+import { buildPointer } from "./json-pointer/pointerCore.js";
 import type { CloneJsonResult } from "./jsonTypes.js";
 import { cloneTrustedPlainJson } from "./jsonTrustedClone.js";
 import { jsonSerializableErrorFast } from "./jsonSerializable.js";

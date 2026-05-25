@@ -1,8 +1,8 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { applyTrustedPatch } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import { applyTrustedPatch } from "../../foundation/json-patch/applyTrusted.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { evaluateArrayAddElementValues } from "./localSchemaArrayAdd.js";
 import {
   arrayIndexInParent,

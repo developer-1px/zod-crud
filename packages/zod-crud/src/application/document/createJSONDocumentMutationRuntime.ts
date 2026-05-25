@@ -1,8 +1,9 @@
 import type * as z from "zod";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { commitMutable, historyDepth } from "../../foundation/history.js";
 import { duplicate as duplicateVerb } from "../../domain/verbs/duplicate.js";
+import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { JSONDocumentCommitOptions, JSONDocumentDuplicateOptions, JSONDocumentDuplicateResult, JSONPatchInput } from "./createJSONDocumentPublicTypes.js";
 import type { DocumentChangeApplyResultPlan } from "./createJSONDocumentChangeTypes.js";
 import {
@@ -47,8 +48,8 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
     before: z.output<S>,
     after: z.output<S>,
     operations: ReadonlyArray<JSONPatchOperation>,
-    selectionBefore: import("../../domain/selection/index.js").SelectionSnap,
-    selectionAfter: import("../../domain/selection/index.js").SelectionSnap,
+    selectionBefore: SelectionSnap,
+    selectionAfter: SelectionSnap,
     metadata?: HistoryTransactionOptions,
     operationsOwned = false,
   ): void => {

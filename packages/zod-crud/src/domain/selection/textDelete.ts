@@ -1,4 +1,4 @@
-import { cloneJson } from "../../foundation/json.js";
+import { cloneJson } from "../../foundation/jsonClone.js";
 import { orderSelectionRanges } from "./selectionOrder.js";
 import type {
   JSONPoint,

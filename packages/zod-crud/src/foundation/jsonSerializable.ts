@@ -1,4 +1,4 @@
-import { buildPointer } from "./json-pointer/index.js";
+import { buildPointer } from "./json-pointer/pointerCore.js";
 
 export function jsonSerializableError(value: unknown): string | null {
   return jsonSerializableErrorFast(value) === null ? null : jsonSerializableErrorDetailed(value);

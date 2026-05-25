@@ -1,6 +1,6 @@
 import type * as z from "zod";
-import type { ApplyResult } from "../../foundation/json-patch/index.js";
-import { parsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult } from "../../foundation/json-patch/types.js";
+import { parsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   acceptsKnownJsonValueWithValidator,
   knownJsonValueValidatorForSchema,

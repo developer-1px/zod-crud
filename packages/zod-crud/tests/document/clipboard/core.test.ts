@@ -16,7 +16,7 @@ import {
   planClipboardPaste,
 } from "../../../src/application/document/clipboardPlan.js";
 import type { ClipboardBuffer } from "../../../src/application/document/clipboardTypes.js";
-import type { ApplyResult, JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),

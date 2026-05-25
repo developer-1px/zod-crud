@@ -1,5 +1,5 @@
-import { EMPTY_SELECTION, type SelectionSnap } from "../../domain/selection/index.js";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
+import { EMPTY_SELECTION, type SelectionSnap } from "../../domain/selection/selectionTypes.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
 import type {
   DocumentChangeApplyResultPlan,

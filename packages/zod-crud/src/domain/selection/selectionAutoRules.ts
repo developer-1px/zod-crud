@@ -1,5 +1,5 @@
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { buildPointer, isPrefix, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import { buildPointer, isPrefix, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { pickAutoTargetsInfo, pickPrimaryAutoTarget } from "../tracking/autoTarget.js";
 import { exists, recoverLostPointer, trackPointer } from "../tracking/pointer.js";
 import type {

@@ -1,4 +1,4 @@
-import { appendSegment, type Pointer } from "../json-pointer/index.js";
+import { appendSegment, type Pointer } from "../json-pointer/pointerCore.js";
 import { replaceValueAtSegments } from "./replaceValueAtSegments.js";
 import type { FastPatchResult, JSONPatchOperation, SameArrayStructuralItem } from "./types.js";
 

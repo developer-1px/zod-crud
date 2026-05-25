@@ -6,8 +6,8 @@ import {
   planDocumentCommitSelection,
   shouldRecordDocumentCommitHistory,
 } from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
-import type { SelectionSnap } from "../../../src/domain/selection/index.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
+import type { SelectionSnap } from "../../../src/domain/selection/selectionTypes.js";
+import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 const emptySelection: SelectionSnap = {
   selectedPointers: [],

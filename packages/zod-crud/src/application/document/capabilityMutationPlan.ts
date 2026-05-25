@@ -1,7 +1,7 @@
 import type * as z from "zod";
 
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   patchPreflight,
   patchPreflightFromApplyResult,

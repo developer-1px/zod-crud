@@ -1,4 +1,4 @@
-import type { Pointer } from "../json-pointer/index.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 import {
   mutateContainer,
   parseSafe,

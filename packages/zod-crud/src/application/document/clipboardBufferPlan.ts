@@ -1,6 +1,8 @@
-import { cloneJsonSerializable, cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
-import type { JSONResult } from "../../foundation/json-patch/index.js";
-import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { cloneJsonSerializable } from "../../foundation/jsonClone.js";
+import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
+import { cloneTrustedPlainJson } from "../../foundation/jsonTrustedClone.js";
+import type { JSONResult } from "../../foundation/json-patch/types.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { normalizePointerSources } from "../../foundation/json-pointer/pointerSource.js";
 import type {
   ClipboardBuffer,

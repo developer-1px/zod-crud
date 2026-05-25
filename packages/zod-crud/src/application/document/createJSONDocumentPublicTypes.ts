@@ -1,9 +1,9 @@
 import type * as z from "zod";
 import type { CapabilityPasteExecutionOptions } from "./capabilityClipboardTypes.js";
 import type { CapabilityResult } from "./capabilityResultTypes.js";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import type { SelectionAction, SelectionMode, SelectionSource, SelectionSnap } from "../../domain/selection/index.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { SelectionAction, SelectionMode, SelectionSource, SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { ClipboardPeekResult, ClipboardState } from "./clipboardTypes.js";
 import type { EntriesResult, QueryResult, ReadResult } from "./read.js";
 import type { SchemaState } from "./schema.js";

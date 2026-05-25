@@ -3,8 +3,8 @@
 // 단일 history commit 으로 전체 replace — undo 한 번에 전체 되돌림.
 
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 // note: verbs/* 끼리 import 금지 (lint rule). 여기서는 jsonpath 의 query 를 직접 호출.
 import { query as jsonpathQuery } from "../../foundation/jsonpath/index.js";

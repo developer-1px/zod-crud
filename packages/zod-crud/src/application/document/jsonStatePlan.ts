@@ -1,7 +1,7 @@
 import type * as z from "zod";
 
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import { jsonSerializableError } from "../../foundation/json.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
 
 export interface JSONStateCommitInput<T> {
   current: T;

@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { Pointer } from "../json-pointer/index.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 import type { ErrorCode, JSONResult } from "./types.js";
 
 export const ok: JSONResult = { ok: true };

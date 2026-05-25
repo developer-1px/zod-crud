@@ -1,5 +1,5 @@
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { SelectionSnap } from "../../domain/selection/index.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { SelectionMode, SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { MutableHistoryStack } from "../../foundation/history.js";
 import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
 import type { JSONChangeMetadata, JSONStateOps } from "./stateOps.js";
@@ -46,7 +46,7 @@ export interface DocumentPatchRuntimeState {
 
 export interface SelectionRuntimeAccess {
   selectionEnabled: boolean;
-  selectionMode: import("../../domain/selection/index.js").SelectionMode;
+  selectionMode: SelectionMode;
   snapSelection: () => SelectionSnap;
   restoreSelection: (selection: SelectionSnap) => void;
 }

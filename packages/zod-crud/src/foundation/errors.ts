@@ -1,7 +1,7 @@
 // JSONCrudError + strict/onError policy 'handle'.
 // JSON operation error handling policy 분리. boundary 표면 (index.ts 에서 re-export).
 
-import type { JSONPatchOperation, JSONResult } from "./json-patch/index.js";
+import type { JSONPatchOperation, JSONResult } from "./json-patch/types.js";
 
 export type JSONCrudOpLabel = JSONPatchOperation | "load" | "reset" | "patch";
 

@@ -1,8 +1,8 @@
 import type * as z from "zod";
 import { buildDocumentCapabilities } from "./capability.js";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { EMPTY_SELECTION } from "../../domain/selection/index.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { EMPTY_SELECTION } from "../../domain/selection/selectionTypes.js";
 import { emptyMutableHistory } from "../../foundation/history.js";
 import { INTERNAL_CLIPBOARD_PEEK, createClipboard } from "./clipboard.js";
 import { createJSONState } from "./jsonState.js";
@@ -208,16 +208,3 @@ export function createJSONDocument<S extends z.ZodType>(
     canRedo: () => capabilities.redo,
   };
 }
-
-export type {
-  HistoryTransactionOptions,
-  JSONChangeMetadata,
-  JSONDocumentCommitOptions,
-  JSONDocumentDuplicateOptions,
-  JSONDocumentDuplicateResult,
-  JSONDocumentPasteOptions,
-  JSONDocumentPasteTarget,
-  JSONPatchInput,
-  JSONResult,
-  JSONPatchOperation,
-};

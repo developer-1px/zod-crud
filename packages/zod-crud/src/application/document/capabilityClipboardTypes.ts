@@ -1,7 +1,7 @@
 import type * as z from "zod";
 
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type { ClipboardSource } from "../../domain/verbs/copy.js";
 import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
 

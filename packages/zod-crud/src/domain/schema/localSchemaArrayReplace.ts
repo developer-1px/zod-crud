@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import {
   arrayElementSchemaAtParent,
   cachedSchemaAtPointer,

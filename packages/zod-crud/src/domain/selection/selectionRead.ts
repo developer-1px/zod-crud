@@ -1,7 +1,6 @@
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type {
   JSONPoint,
-  SelectionMode,
   SelectionRange,
   SelectionSnap,
   SelectionSource,
@@ -13,9 +12,6 @@ import {
   pointPath,
   samePoint,
 } from "./selectionPoint.js";
-import { restoreSelection, selectionSnapshot } from "./selectionSnap.js";
-
-export { restoreSelection, selectionSnapshot };
 
 export function isCollapsed(s: SelectionSnap): boolean {
   return s.selectionRanges.length === 1
@@ -76,5 +72,3 @@ export function caretPointer(s: SelectionSnap): Pointer | null {
   const caret = caretPoint(s);
   return caret ? pointPath(caret) : null;
 }
-
-export type { SelectionMode };

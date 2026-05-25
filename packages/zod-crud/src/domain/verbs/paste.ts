@@ -2,8 +2,8 @@
 // (schema, state, payload, target, mode) → { next, patch }.
 
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import { getDiscriminatedUnionInfo, schemaAtPointer } from "../schema/introspection.js";
 import { tryRekeyPayload } from "../schema/rekey.js";

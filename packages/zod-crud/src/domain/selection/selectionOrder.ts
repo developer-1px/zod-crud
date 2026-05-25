@@ -1,4 +1,4 @@
-import { tryParsePointer } from "../../foundation/json-pointer/index.js";
+import { tryParsePointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   cursorPoints,
   emptyTraversalPointer,

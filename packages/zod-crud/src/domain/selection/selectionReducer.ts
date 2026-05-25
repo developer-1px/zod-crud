@@ -1,4 +1,4 @@
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   cursorPoints,
   emptyTraversalPointer,

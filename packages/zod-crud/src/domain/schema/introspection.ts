@@ -1,6 +1,6 @@
 import type * as z from "zod";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { tryParsePointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { tryParsePointer } from "../../foundation/json-pointer/pointerCore.js";
 import { getArrayElement, getDef, getObjectShape } from "./zodIntrospectionAdapter.js";
 
 export interface DiscriminatedUnionInfo {

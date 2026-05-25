@@ -63,12 +63,12 @@ export type {
 export type { UseSelectionOptions } from "./application/document/selectionOptions.js";
 
 // === RFC 6902 — JSON Patch ===
-export { applyOperation, applyPatch } from "./foundation/json-patch/index.js";
+export { applyOperation, applyPatch } from "./foundation/json-patch/applyPublic.js";
 export { applyPatchToTrustedState } from "./application/trustedStatePatch.js";
 export type {
   JSONPatchOperation,
   JSONResult,
-} from "./foundation/json-patch/index.js";
+} from "./foundation/json-patch/types.js";
 
 // === RFC 6901 — JSON Pointer ===
 export {
@@ -83,8 +83,8 @@ export {
   lastSegmentIndex,
   appendSegment,
   withLastSegment,
-} from "./foundation/json-pointer/index.js";
-export type { Pointer } from "./foundation/json-pointer/index.js";
+} from "./foundation/json-pointer/pointerCore.js";
+export type { Pointer } from "./foundation/json-pointer/pointerCore.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
@@ -120,7 +120,7 @@ export type {
   SelectionSpanOptions,
   SelectionSnap,
   SelectionType,
-} from "./domain/selection/index.js";
+} from "./domain/selection/selectionTypes.js";
 export type {
   ReplaceSelectionTextResult,
   SelectionTextEdit,

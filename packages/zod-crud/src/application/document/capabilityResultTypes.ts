@@ -1,5 +1,5 @@
-import type { ErrorCode } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { ErrorCode } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type { PatchPreflightErrorCode } from "../../domain/schema/patchPreflight.js";
 import type { SelectionTextEditErrorCode } from "../../domain/selection/textEdit.js";
 

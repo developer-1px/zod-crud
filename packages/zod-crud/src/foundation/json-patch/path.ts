@@ -1,4 +1,4 @@
-import { buildPointer, parentPointer, type Pointer } from "../json-pointer/index.js";
+import { buildPointer, parentPointer, type Pointer } from "../json-pointer/pointerCore.js";
 import { getValueAt, parseSafe } from "./internal.js";
 import type { ArrayFieldPath, ArrayFieldText, ArrayNestedPath } from "./types.js";
 

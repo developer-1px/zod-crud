@@ -1,5 +1,5 @@
 import type { JSONPatchOperation } from "./types.js";
-import { tryParsePointer, type Pointer } from "../json-pointer/index.js";
+import { tryParsePointer, type Pointer } from "../json-pointer/pointerCore.js";
 import {
   normalizePointerSources,
   type PointerSource,

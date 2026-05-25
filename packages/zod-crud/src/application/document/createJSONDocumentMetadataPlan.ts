@@ -1,4 +1,4 @@
-import type { SelectionSnap } from "../../domain/selection/index.js";
+import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
 import type {
   DocumentHistoryMergeLastWritePlan,

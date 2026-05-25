@@ -1,5 +1,5 @@
-import { jsonSerializableError } from "../json.js";
-import type { Pointer } from "../json-pointer/index.js";
+import { jsonSerializableError } from "../jsonSerializable.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 import { getValueAt, parseSafe } from "./internal.js";
 import { appendArrayIndexPath, arrayRemoveLocation } from "./path.js";
 import { replaceValueAtSegments } from "./replaceValueAtSegments.js";

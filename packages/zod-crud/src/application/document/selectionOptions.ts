@@ -2,7 +2,7 @@ import type {
   SelectionContext,
   SelectionMode,
   SelectionRangeInput,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionTypes.js";
 
 export interface UseSelectionOptions {
   mode?: SelectionMode;

@@ -1,5 +1,5 @@
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { buildPointer, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import { buildPointer, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type { JSONPoint, SelectionSnap } from "./selectionTypes.js";
 
 export function canKeepSelectionForStableReplacePatch(

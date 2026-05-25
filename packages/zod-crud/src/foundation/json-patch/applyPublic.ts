@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import { jsonSerializableError } from "../json.js";
+import { jsonSerializableError } from "../jsonSerializable.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeOp } from "./internal.js";
 import { applyPublicTrustedStateFastPatch } from "./fastStrategies.js";

@@ -2,8 +2,8 @@
 // 입력: 적용된 op + 기존 Pointer
 // 출력: 새 Pointer (또는 null = cascading drop)
 
-import { tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "../../foundation/json-pointer/index.js";
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import { tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { arrayIndexValue } from "./arrayPointer.js";
 
 export function exists(state: unknown, pointer: Pointer): boolean {

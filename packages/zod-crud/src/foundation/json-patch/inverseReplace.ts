@@ -1,4 +1,4 @@
-import { parsePointer } from "../json-pointer/index.js";
+import { parsePointer } from "../json-pointer/pointerCore.js";
 import type { JSONPatchOperation } from "./types.js";
 import { getValueAt } from "./internal.js";
 

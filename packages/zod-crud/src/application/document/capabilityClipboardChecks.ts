@@ -3,7 +3,7 @@ import type * as z from "zod";
 import {
   primaryPointer,
   selectedSource,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionRead.js";
 import type { ClipboardSource } from "../../domain/verbs/copy.js";
 import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
 import {

@@ -1,7 +1,7 @@
 // applyOpRaw — RFC 6902 6 op 의 raw 적용 (schema 검증 없음). public 노출은 patch.ts.
 
-import { isPrefix, type Pointer } from "../json-pointer/index.js";
-import { jsonSerializableError } from "../json.js";
+import { isPrefix, type Pointer } from "../json-pointer/pointerCore.js";
+import { jsonSerializableError } from "../jsonSerializable.js";
 import type { ErrorCode, JSONPatchOperation } from "./types.js";
 import {
   attachPointer,

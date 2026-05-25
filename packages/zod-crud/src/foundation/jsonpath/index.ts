@@ -15,7 +15,7 @@
 import { parse as parseJsonPath } from "./parser.js";
 import { evaluate, matchPointers } from "./evaluate.js";
 import { matchPointersForSimpleQuery } from "./evaluateSimple.js";
-import type { Pointer } from "../json-pointer/index.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 import type { Match, Query } from "./types.js";
 
 export { parseJsonPath as parse, evaluate, matchPointers, matchPointersForSimpleQuery };

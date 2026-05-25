@@ -1,5 +1,5 @@
 import { JSONPathSyntaxError, queryMatches } from "../../foundation/jsonpath/index.js";
-import { appendSegment, readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { appendSegment, readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { clonePoint, pointPath, samePoint } from "./selectionPoint.js";
 import type {
   JSONPoint,

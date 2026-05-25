@@ -1,5 +1,6 @@
-import { cloneJson, jsonEqual } from "../../foundation/json.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import { cloneJson } from "../../foundation/jsonClone.js";
+import { jsonEqual } from "../../foundation/jsonEqual.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { expandRange } from "./range.js";
 import {
   EMPTY_SELECTION,

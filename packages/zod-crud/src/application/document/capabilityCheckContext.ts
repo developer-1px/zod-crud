@@ -3,7 +3,7 @@ import type * as z from "zod";
 import {
   EMPTY_SELECTION,
   type SelectionSnap,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionTypes.js";
 import type { DocumentCapabilityContext } from "./capabilityFacadeTypes.js";
 
 export function documentSelectionState<S extends z.ZodType>(

@@ -1,5 +1,5 @@
-import { jsonSerializableError } from "../json.js";
-import { appendSegment } from "../json-pointer/index.js";
+import { jsonSerializableError } from "../jsonSerializable.js";
+import { appendSegment } from "../json-pointer/pointerCore.js";
 import { deepCloneTrusted, getValueAt, parseSafe } from "./internal.js";
 import { arrayLocation } from "./path.js";
 import { replaceValueAtSegments } from "./replaceValueAtSegments.js";

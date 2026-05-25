@@ -32,8 +32,8 @@ import {
 import type {
   DocumentCapabilityContext,
 } from "../../../src/application/document/capabilityFacadeTypes.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
-import type { SelectionSnap } from "../../../src/domain/selection/index.js";
+import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
+import type { SelectionSnap } from "../../../src/domain/selection/selectionTypes.js";
 
 const Item = z.object({ id: z.string(), name: z.string() });
 const Schema = z.object({

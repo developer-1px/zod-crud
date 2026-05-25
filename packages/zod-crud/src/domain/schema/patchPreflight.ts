@@ -4,13 +4,13 @@
 // cross-field refine/superRefine 위반도 commit 전에 schema_violation 으로 거부한다.
 
 import * as z from "zod";
-import {
-  applyPatch,
-  type ApplyResult,
-  type JSONPatchOperation,
-  type ErrorCode,
-} from "../../foundation/json-patch/index.js";
-import { buildPointer } from "../../foundation/json-pointer/index.js";
+import { applyPatch } from "../../foundation/json-patch/applyPublic.js";
+import type {
+  ApplyResult,
+  JSONPatchOperation,
+  ErrorCode,
+} from "../../foundation/json-patch/types.js";
+import { buildPointer } from "../../foundation/json-pointer/pointerCore.js";
 
 export interface PatchPreflightOk<T> {
   ok: true;

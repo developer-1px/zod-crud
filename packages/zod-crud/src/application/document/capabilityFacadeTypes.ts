@@ -1,14 +1,14 @@
 import type * as z from "zod";
 
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type {
   SelectionCursorDirection,
   SelectionCursorOptions,
   SelectionScopeOptions,
   SelectionSource,
   SelectionSnap,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionTypes.js";
 import type { SelectionTextDeleteOptions } from "../../domain/selection/textDelete.js";
 import type { SelectionTextEditOptions } from "../../domain/selection/textEdit.js";
 import type { ClipboardSource } from "../../domain/verbs/copy.js";

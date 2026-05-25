@@ -3,19 +3,22 @@
 import type * as z from "zod";
 
 import {
-  applyAcceptedPatch,
   applyOperation,
   applyPatch,
   applySingleTrustedValuePatchToTrustedState,
   applyPatchToTrustedState,
-  type ApplyResult,
-  type JSONPatchOperation,
-  type JSONResult,
-} from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { jsonSerializableError } from "../../foundation/json.js";
+} from "../../foundation/json-patch/applyPublic.js";
+import { applyAcceptedPatch } from "../../foundation/json-patch/applyTrusted.js";
+import type {
+  ApplyResult,
+  JSONPatchOperation,
+  JSONResult,
+} from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
-import { applyPatchWithLocalSchemaValidation, schemaOutputIsKnownJson } from "../../domain/schema/localSchemaCore.js";
+import { schemaOutputIsKnownJson } from "../../domain/schema/localSchemaInfo.js";
+import { applyPatchWithLocalSchemaValidation } from "../../domain/schema/localSchemaValidationCore.js";
 import type {
   JSONChangeMetadata,
   JSONStateOps,

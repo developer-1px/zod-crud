@@ -4,9 +4,9 @@
 // 내부적으로 RFC 6902 copy op 으로 환원.
 
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import { tryRekeyPayload } from "../schema/rekey.js";
 import type { RekeyOptions } from "../schema/rekeyTypes.js";

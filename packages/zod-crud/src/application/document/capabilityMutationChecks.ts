@@ -1,12 +1,12 @@
 import type * as z from "zod";
 
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   primaryPointer,
   selectedSource,
-  type SelectionSource,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionRead.js";
+import type { SelectionSource } from "../../domain/selection/selectionTypes.js";
 import type { SelectionTextDeleteOptions } from "../../domain/selection/textDelete.js";
 import type { SelectionTextEditOptions } from "../../domain/selection/textEdit.js";
 import { resolveDuplicateArgs, type DuplicateOpts } from "../../domain/verbs/duplicate.js";

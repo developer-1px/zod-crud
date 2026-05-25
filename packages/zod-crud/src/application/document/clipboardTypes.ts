@@ -1,8 +1,8 @@
 import type { ClipboardSource, CopyError, CopyOk } from "../../domain/verbs/copy.js";
 import type { CutError } from "../../domain/verbs/cut.js";
 import type { PasteDuMismatch, PasteError, PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 
 export interface ClipboardWriteOptions {
   source?: Pointer | null;

@@ -1,6 +1,6 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { prefixIssues } from "./localSchemaInfo.js";
 
 export function okLocalSchemaValidation<S extends z.ZodType>(

@@ -1,11 +1,11 @@
 import type * as z from "zod";
 
-import { applyPatchWithLocalSchemaValidation } from "../domain/schema/localSchemaCore.js";
+import { applyPatchWithLocalSchemaValidation } from "../domain/schema/localSchemaValidationCore.js";
+import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "../foundation/json-patch/applyPublic.js";
 import {
-  applyPatchToTrustedState as applyPatchToTrustedStateCore,
   type ApplyResult,
   type JSONPatchOperation,
-} from "../foundation/json-patch/index.js";
+} from "../foundation/json-patch/types.js";
 
 export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   schema: S,

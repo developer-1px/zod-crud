@@ -1,9 +1,9 @@
 // verbs/move — Edit 기둥, RFC 6902 move op.
 // pure composer. patchPreflight gate 통과 후 next + patch 산출.
 
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type * as z from "zod";
 
 interface MoveOk<T> {

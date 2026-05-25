@@ -10,8 +10,8 @@ import {
   selectionSelectRangesAction,
   selectionToggleRangeAction,
 } from "../../../src/application/document/selectionPlan.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
-import type { SelectionSnap } from "../../../src/domain/selection/index.js";
+import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
+import type { SelectionSnap } from "../../../src/domain/selection/selectionTypes.js";
 
 const emptySelection: SelectionSnap = {
   selectedPointers: [],

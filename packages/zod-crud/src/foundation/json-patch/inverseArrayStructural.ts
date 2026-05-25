@@ -1,4 +1,4 @@
-import { appendSegment, parsePointer, readAt } from "../json-pointer/index.js";
+import { appendSegment, parsePointer, readAt } from "../json-pointer/pointerCore.js";
 import type { JSONPatchOperation } from "./types.js";
 import { deepCloneTrusted } from "./internal.js";
 import { arrayLocation, readValueAtPointer } from "./inversePath.js";

@@ -1,5 +1,5 @@
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { appendArrayIndexes, arrayElementLocation, arrayIndexValue } from "./arrayPointer.js";
 import { trackPointerFrom } from "./pointer.js";
 

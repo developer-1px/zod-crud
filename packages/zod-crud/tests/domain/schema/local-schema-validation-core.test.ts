@@ -28,7 +28,7 @@ import {
 } from "../../../src/domain/schema/localSchemaKnownJson.js";
 import {
   applyPatchWithLocalSchemaValidation,
-} from "../../../src/domain/schema/localSchemaCore.js";
+} from "../../../src/domain/schema/localSchemaValidationCore.js";
 import {
   applyArrayAddPlan,
   applyValidatedArrayAddPlanAtSegments,
@@ -128,7 +128,7 @@ import {
 import {
   evaluateAppliedLocalOpValidationPlan,
 } from "../../../src/domain/schema/localSchemaSequential.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
+import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 describe("local patch value validation planning", () => {
   test("accepts known-json values without schema parsing", () => {

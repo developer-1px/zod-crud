@@ -6,7 +6,7 @@ import {
   planJSONRootReplacementParse,
   planJSONStateCommit,
 } from "../../../src/application/document/jsonStatePlan.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
+import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 describe("document JSON state core functions", () => {
   test("plans notifications only for non-empty patches before disposal", () => {

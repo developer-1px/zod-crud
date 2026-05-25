@@ -1,8 +1,8 @@
 import type * as z from "zod";
 
-import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import type { SelectionSource } from "../../domain/selection/index.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { SelectionSource } from "../../domain/selection/selectionTypes.js";
 import {
   copy,
   type ClipboardSource,

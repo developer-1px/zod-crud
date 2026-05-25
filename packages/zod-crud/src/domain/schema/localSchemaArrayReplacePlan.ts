@@ -1,6 +1,6 @@
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
-import { parsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { parsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   arrayElementIndexPrefix,
   arrayElementReplaceLocation,

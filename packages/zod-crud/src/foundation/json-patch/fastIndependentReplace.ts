@@ -1,5 +1,5 @@
-import { jsonSerializableError } from "../json.js";
-import type { Pointer } from "../json-pointer/index.js";
+import { jsonSerializableError } from "../jsonSerializable.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 import { getValueAt, parseSafe } from "./internal.js";
 import { validateOperationShape } from "./apply.js";
 import type { FastPatchResult, JSONPatchOperation } from "./types.js";

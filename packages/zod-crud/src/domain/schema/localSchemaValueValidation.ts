@@ -1,7 +1,7 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { jsonSerializableError } from "../../foundation/json.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
 import { appendArrayIndexPath } from "./localSchemaPath.js";
 import { operationFailure, schemaViolation } from "./localSchemaResult.js";
 

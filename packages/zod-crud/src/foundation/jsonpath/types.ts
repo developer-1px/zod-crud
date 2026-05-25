@@ -1,7 +1,7 @@
 // foundation/jsonpath — RFC 9535 JSONPath types.
 // AST 정의. tokenizer / parser / evaluator 가 공유.
 
-import type { Pointer } from "../json-pointer/index.js";
+import type { Pointer } from "../json-pointer/pointerCore.js";
 
 /** RFC 9535 query AST root. `$` + segments. */
 export interface Query {

@@ -7,7 +7,7 @@
 //
 // state 모르면 (또는 endpoint 가 그 type 집합에 없으면) [anchor, focus] 두 점만.
 
-import { readAt, escapeSegment, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
+import { readAt, escapeSegment, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 
 type ValueKind = "null" | "object" | "array" | "string" | "number" | "boolean" | "undefined";
 

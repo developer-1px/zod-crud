@@ -1,5 +1,5 @@
-import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type { HistoryTransactionOptions } from "./stateOps.js";
 import type {
   DocumentTransactionAppendFastPathPlan,

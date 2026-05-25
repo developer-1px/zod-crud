@@ -1,4 +1,4 @@
-import { jsonSerializableError } from "../json.js";
+import { jsonSerializableError } from "../jsonSerializable.js";
 import {
   copyRootObject,
   copyRootObjectKeyPrefix,

@@ -3,53 +3,61 @@
 
 import type { JSONStateOps } from "./stateOps.js";
 import type { UseSelectionOptions } from "./selectionOptions.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   anchorPointer,
   caretPoint,
   caretPointer,
-  extendSelectionCursor,
   focusPointer,
   hasSelection,
   isCollapsed,
   isSelected,
-  moveSelectionCursor,
-  orderPrimarySelectionRange,
-  orderSelectionRanges,
   primaryPointer,
   primaryRange,
   rangeCount,
-  reduceSelection,
-  resolveSelectionCursor,
-  resolveSelectionScope,
-  restoreSelection,
   selectedCount,
   selectedSource,
-  selectSelectionScope,
-  selectionSnapshot,
-  selectionSpansForPointer,
   selectionType,
-  type JSONPoint,
-  type SelectionAction,
-  type SelectionContext,
-  type SelectionCursorDirection,
-  type SelectionCursorOptions,
-  type SelectionCursorResult,
-  type SelectionMode,
-  type SelectionOrderOptions,
-  type SelectionPointerSpansResult,
-  type SelectionRange,
-  type SelectionRangeInput,
-  type SelectionRangeOrderResult,
-  type SelectionRangesOrderResult,
-  type SelectionScopeOptions,
-  type SelectionScopeResult,
-  type SelectionScopeTarget,
-  type SelectionSnap,
-  type SelectionSource,
-  type SelectionSpanOptions,
-  type SelectionType,
-} from "../../domain/selection/index.js";
+} from "../../domain/selection/selectionRead.js";
+import {
+  restoreSelection,
+  selectionSnapshot,
+} from "../../domain/selection/selectionSnap.js";
+import {
+  orderPrimarySelectionRange,
+  orderSelectionRanges,
+  resolveSelectionScope,
+  selectSelectionScope,
+} from "../../domain/selection/selectionOrder.js";
+import {
+  extendSelectionCursor,
+  moveSelectionCursor,
+  reduceSelection,
+  resolveSelectionCursor,
+} from "../../domain/selection/selectionReducer.js";
+import { selectionSpansForPointer } from "../../domain/selection/selectionSpans.js";
+import type {
+  JSONPoint,
+  SelectionAction,
+  SelectionContext,
+  SelectionCursorDirection,
+  SelectionCursorOptions,
+  SelectionCursorResult,
+  SelectionMode,
+  SelectionOrderOptions,
+  SelectionPointerSpansResult,
+  SelectionRange,
+  SelectionRangeInput,
+  SelectionRangeOrderResult,
+  SelectionRangesOrderResult,
+  SelectionScopeOptions,
+  SelectionScopeResult,
+  SelectionScopeTarget,
+  SelectionSnap,
+  SelectionSource,
+  SelectionSpanOptions,
+  SelectionType,
+} from "../../domain/selection/selectionTypes.js";
 import {
   replaceSelectionText,
   selectionTextEdits,

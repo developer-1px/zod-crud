@@ -3,11 +3,12 @@
 // payload + remove 가 atomic. patchPreflight 거부 시 둘 다 안 일어남 — history 오염 0.
 
 import type * as z from "zod";
-import { cloneTrustedPlainJson, jsonSerializableError } from "../../foundation/json.js";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
+import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
+import { cloneTrustedPlainJson } from "../../foundation/jsonTrustedClone.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
-import type { Pointer } from "../../foundation/json-pointer/index.js";
-import { readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { readAt, tryParsePointer } from "../../foundation/json-pointer/pointerCore.js";
 import type { PointerSourceError } from "../../foundation/json-pointer/pointerSource.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import type { ClipboardSource } from "./copy.js";

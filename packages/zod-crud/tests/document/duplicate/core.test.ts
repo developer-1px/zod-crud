@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
 import { planDocumentDuplicateApplyResult } from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
+import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 describe("document duplicate core functions", () => {
   test("maps successful duplicate application to the public duplicate result shape", () => {
