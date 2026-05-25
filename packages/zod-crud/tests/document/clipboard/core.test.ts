@@ -12,8 +12,8 @@ import {
   planClipboardSchemaTrustedSourceBuffer,
   planClipboardSource,
   planClipboardWriteBuffer,
-} from "../../../src/application/document/clipboard.js";
-import type { ClipboardBuffer } from "../../../src/application/document/clipboardTypes.js";
+} from "../../../src/application/document/clipboard/core.js";
+import type { ClipboardBuffer } from "../../../src/application/document/clipboard/types.js";
 import type { ApplyResult, JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 const Schema = z.object({

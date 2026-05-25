@@ -1,4 +1,4 @@
-import { jsonSerializableError } from "../jsonSerializable.js";
+import { jsonSerializableError } from "../json/serializable.js";
 import type { Pointer } from "../json-pointer/pointerCore.js";
 import { getValueAt, parseSafe } from "./internal.js";
 import { objectHasOwn } from "./object.js";

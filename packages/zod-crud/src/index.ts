@@ -5,7 +5,7 @@
 // React peer is not required for pure JSON Patch / Pointer consumers.
 
 import type * as z from "zod";
-import { applyPatchWithLocalSchemaValidation } from "./domain/schema/localSchemaValidationCore.js";
+import { applyPatchWithLocalSchemaValidation } from "./domain/schema/local/validation.js";
 import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "./foundation/json-patch/applyPublic.js";
 import type {
   ApplyResult,
@@ -17,10 +17,10 @@ export { JSONCrudError } from "./foundation/errors.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "./application/document/stateOps.js";
+} from "./application/document/runtime/stateOps.js";
 
 // === Headless document facade ===
-export { createJSONDocument } from "./application/document/createJSONDocumentCore.js";
+export { createJSONDocument } from "./application/document/createJSONDocument.js";
 export type {
   JSONCapabilityResult,
   JSONDocumentCommitOptions,
@@ -32,7 +32,7 @@ export type {
   JSONDocument,
   JSONPatchInput,
   UseJSONDocumentOptions,
-} from "./application/document/createJSONDocumentPublicTypes.js";
+} from "./application/document/publicTypes.js";
 export type {
   ClipboardCopyOptions,
   ClipboardCutOk,
@@ -46,14 +46,14 @@ export type {
   ClipboardReadResult,
   ClipboardState,
   ClipboardWriteOptions,
-} from "./application/document/clipboardTypes.js";
+} from "./application/document/clipboard/types.js";
 export type {
   EntriesResult,
   EntryKind,
   QueryResult,
   ReadEntry,
   ReadResult,
-} from "./application/document/read.js";
+} from "./application/document/read/core.js";
 export type {
   SchemaDescription,
   SchemaDescriptionResult,
@@ -64,11 +64,11 @@ export type {
   SchemaPathMode,
   SchemaQueryResult,
   SchemaState,
-} from "./application/document/schema.js";
+} from "./application/document/schema/core.js";
 export type {
   SelectionState,
-} from "./application/document/selection.js";
-export type { UseSelectionOptions } from "./application/document/selectionPlan.js";
+} from "./application/document/selection/core.js";
+export type { UseSelectionOptions } from "./application/document/selection/plan.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/json-patch/applyPublic.js";
@@ -136,7 +136,7 @@ export type {
   SelectionSpanOptions,
   SelectionSnap,
   SelectionType,
-} from "./domain/selection/selectionTypes.js";
+} from "./domain/selection/types.js";
 export type {
   ReplaceSelectionTextResult,
   SelectionTextEdit,

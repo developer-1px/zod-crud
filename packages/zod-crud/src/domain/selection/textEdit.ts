@@ -1,4 +1,4 @@
-import { cloneJson } from "../../foundation/jsonClone.js";
+import { cloneJson } from "../../foundation/json/clone.js";
 import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
@@ -8,8 +8,8 @@ import {
 } from "./traversal.js";
 import {
   orderSelectionRanges,
-} from "./selectionOrder.js";
-import { selectionSpansForPointer } from "./selectionSpans.js";
+} from "./order.js";
+import { selectionSpansForPointer } from "./spans.js";
 import type {
   JSONPoint,
   JSONPointObject,
@@ -19,8 +19,8 @@ import type {
   SelectionRange,
   SelectionSnap,
   SelectionSpanOptions,
-} from "./selectionTypes.js";
-import { clonePoint, pointPath } from "./selectionPoint.js";
+} from "./types.js";
+import { clonePoint, pointPath } from "./point.js";
 
 export interface SelectionTextEditOptions extends SelectionSpanOptions {
   /** Optional affinity attached to final carets produced by text replacement helpers. */

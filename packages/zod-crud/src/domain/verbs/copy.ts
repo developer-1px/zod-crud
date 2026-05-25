@@ -3,8 +3,8 @@
 // system clipboard write 는 hooks 또는 사용자 코드에서 수행 (boundary: ADR-0002 §0.4).
 
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
-import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
-import { cloneTrustedPlainJson } from "../../foundation/jsonTrustedClone.js";
+import { jsonSerializableError } from "../../foundation/json/serializable.js";
+import { cloneTrustedPlainJson } from "../../foundation/json/trustedClone.js";
 import { readAt, tryParsePointer } from "../../foundation/json-pointer/pointerCore.js";
 import { normalizePointerSources, type PointerSource, type PointerSourceError } from "../../foundation/json-pointer/pointerSource.js";
 

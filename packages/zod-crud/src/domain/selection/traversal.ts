@@ -1,13 +1,13 @@
 import { queryMatches } from "../../foundation/jsonpath/index.js";
 import { JSONPathSyntaxError } from "../../foundation/jsonpath/tokenizer.js";
 import { appendSegment, readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
-import { clonePoint, pointPath, samePoint } from "./selectionPoint.js";
+import { clonePoint, pointPath, samePoint } from "./point.js";
 import type {
   JSONPoint,
   SelectionCursorOptions,
   SelectionOrderOptions,
   SelectionScopeOptions,
-} from "./selectionTypes.js";
+} from "./types.js";
 
 type TraversalPointsResult =
   | { ok: true; points: JSONPoint[] }

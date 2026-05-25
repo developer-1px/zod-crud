@@ -1,4 +1,4 @@
-import { jsonSerializableError } from "../jsonSerializable.js";
+import { jsonSerializableError } from "../json/serializable.js";
 import { appendSegment, type Pointer } from "../json-pointer/pointerCore.js";
 import { deepCloneTrusted, getValueAt, parseSafe } from "./internal.js";
 import { appendArrayIndexPath, arrayLocation, arrayRemoveLocation } from "./path.js";

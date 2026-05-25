@@ -3,8 +3,8 @@
 // payload + remove 가 atomic. patchPreflight 거부 시 둘 다 안 일어남 — history 오염 0.
 
 import type * as z from "zod";
-import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
-import { cloneTrustedPlainJson } from "../../foundation/jsonTrustedClone.js";
+import { jsonSerializableError } from "../../foundation/json/serializable.js";
+import { cloneTrustedPlainJson } from "../../foundation/json/trustedClone.js";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";

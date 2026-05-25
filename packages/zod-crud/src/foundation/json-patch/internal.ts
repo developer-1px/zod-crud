@@ -1,8 +1,8 @@
 // patch.ts 내부 헬퍼 — public API 아님. SPEC.md §3 의 RFC 6902 구현 디테일.
 
 import { parsePointer, readAt, type Pointer, PointerSyntaxError } from "../json-pointer/pointerCore.js";
-import { cloneJson } from "../jsonClone.js";
-import { cloneTrustedJson } from "../jsonTrustedClone.js";
+import { cloneJson } from "../json/clone.js";
+import { cloneTrustedJson } from "../json/trustedClone.js";
 import type { ErrorCode, JSONPatchOperation } from "./types.js";
 
 // RFC 6902 §4.1: `/-` 는 array append marker. 적용 시점의 array 길이로 concrete index 정규화.

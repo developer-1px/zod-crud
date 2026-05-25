@@ -1,4 +1,4 @@
-import { jsonSerializableError } from "../jsonSerializable.js";
+import { jsonSerializableError } from "../json/serializable.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeOp } from "./internal.js";
 import { applyAcceptedFastPatch, applyTrustedFastPatch } from "./fastStrategies.js";

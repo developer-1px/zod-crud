@@ -2,7 +2,7 @@
 // RFC 9535 §2 의 normalized 의미. Pointer 는 RFC 6901.
 
 import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./types.js";
-import { jsonEqual } from "../jsonEqual.js";
+import { jsonEqual } from "../json/equal.js";
 import { evaluateArrayRegexFilter, evaluateArrayWildcardField } from "./evaluateFastPath.js";
 import { evaluateSimpleQuery, evaluateSinglePathQuery } from "./evaluateSimple.js";
 import { compiledRegex, escapeSeg, normalizeSliceIndex, objectHasOwn } from "./evaluateShared.js";

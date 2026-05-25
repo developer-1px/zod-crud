@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { trackPointer, type JSONPatchOperation } from "../../../src/index.js";
-import { pickAutoTargetsInfo } from "../../../src/domain/selection/selectionAutoRules.js";
+import { pickAutoTargetsInfo } from "../../../src/domain/selection/autoRules.js";
 
 describe("trackPointer — add", () => {
   it("shifts later siblings on insert", () => {

@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { planDocumentSelectionRuntime } from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
+import { planDocumentSelectionRuntime } from "../../../src/application/document/plan/interaction.js";
 import {
   planInitialSelection,
   planSelectionPatchUpdate,
@@ -9,9 +9,9 @@ import {
   selectionRemoveRangeAction,
   selectionSelectRangesAction,
   selectionToggleRangeAction,
-} from "../../../src/application/document/selectionPlan.js";
+} from "../../../src/application/document/selection/plan.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
-import type { SelectionSnap } from "../../../src/domain/selection/selectionTypes.js";
+import type { SelectionSnap } from "../../../src/domain/selection/types.js";
 
 const emptySelection: SelectionSnap = {
   selectedPointers: [],

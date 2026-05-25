@@ -20,10 +20,10 @@ import {
   planSameArrayNestedReplacePatch,
   planSingleArrayFieldReplace,
   replaceArrayField,
-} from "../../../src/domain/schema/localSchemaArrayReplace.js";
+} from "../../../src/domain/schema/local/arrayReplace.js";
 import {
   acceptsKnownJsonValue,
-} from "../../../src/domain/schema/localSchemaKnownJson.js";
+} from "../../../src/domain/schema/local/knownJson.js";
 import {
   applySequentialLocalOperation,
   applySequentialLocalOperationPatch,
@@ -34,7 +34,7 @@ import {
   planSameArrayPatch,
   planSameArrayPatchOperations,
   planSequentialPatch,
-} from "../../../src/domain/schema/localSchemaValidationCore.js";
+} from "../../../src/domain/schema/local/validation.js";
 import {
   applyArrayAddPlan,
   applyValidatedArrayAddPlanAtSegments,
@@ -43,7 +43,7 @@ import {
   planAppendOnlyArrayAddValues,
   planIncreasingArrayAddPatch,
   planIncreasingArrayAddValues,
-} from "../../../src/domain/schema/localSchemaArrayAdd.js";
+} from "../../../src/domain/schema/local/arrayAdd.js";
 import {
   applyReplaceOperations,
   applySingleReplaceOperation,
@@ -53,7 +53,7 @@ import {
   planIndependentReplacePatch,
   planKnownJsonReplaceOperations,
   planSingleReplacePatch,
-} from "../../../src/domain/schema/localSchemaReplace.js";
+} from "../../../src/domain/schema/local/replace.js";
 import {
   applyRootObjectReplacePlan,
   applySingleRootObjectReplacePlan,
@@ -64,7 +64,7 @@ import {
   planRootObjectReplaceValueValidation,
   planSingleRootObjectReplacePatch,
   readRootRecordForLocalSchemaValidation,
-} from "../../../src/domain/schema/localSchemaRootReplace.js";
+} from "../../../src/domain/schema/local/rootReplace.js";
 import {
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
@@ -74,12 +74,12 @@ import {
   planRootRecordAddValueValidation,
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
-} from "../../../src/domain/schema/localSchemaRootRecord.js";
+} from "../../../src/domain/schema/local/rootRecord.js";
 import {
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
   prefixIssues,
-} from "../../../src/domain/schema/localSchemaInfo.js";
+} from "../../../src/domain/schema/local/info.js";
 import {
   arrayIndexInParent,
   arrayIndexPathLocation,
@@ -87,7 +87,7 @@ import {
   planIndependentReplacePaths,
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
-} from "../../../src/domain/schema/localSchemaPath.js";
+} from "../../../src/domain/schema/local/path.js";
 import {
   appendArrayIndexPath,
   numericSegment,
@@ -100,17 +100,17 @@ import {
   replaceObjectDataValue,
   writeObjectDataValue,
   writeRootRecordValue,
-} from "../../../src/domain/schema/localSchemaObject.js";
+} from "../../../src/domain/schema/local/object.js";
 import {
   failedLocalSchemaValidation,
   okLocalSchemaValidation,
-} from "../../../src/domain/schema/localSchemaResult.js";
+} from "../../../src/domain/schema/local/result.js";
 import {
   rootRecordValueSchemaForLocalSchemaValidation,
-} from "../../../src/domain/schema/localSchemaRootRecord.js";
+} from "../../../src/domain/schema/local/rootRecord.js";
 import {
   rootObjectReplaceValueSourceForLocalSchemaValidation,
-} from "../../../src/domain/schema/localSchemaRootReplace.js";
+} from "../../../src/domain/schema/local/rootReplace.js";
 import {
   toAppliedAddOperations,
   toAppliedRemoveOperations,
@@ -121,7 +121,7 @@ import {
   evaluateLocalSchemaValidationValueValidationPlan,
   planArrayAddAppliedOperations,
   planLocalSchemaValidationValueValidation,
-} from "../../../src/domain/schema/localSchemaValueValidation.js";
+} from "../../../src/domain/schema/local/valueValidation.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 describe("local patch value validation planning", () => {

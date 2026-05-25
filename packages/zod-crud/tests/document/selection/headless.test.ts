@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import { createJSONDocument } from "../../../src/index.js";
-import { expandRange } from "../../../src/domain/selection/selectionSnap.js";
+import { expandRange } from "../../../src/domain/selection/snap.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),

@@ -1,15 +1,15 @@
-import { cloneJson } from "../../foundation/jsonClone.js";
-import { orderSelectionRanges } from "./selectionOrder.js";
+import { cloneJson } from "../../foundation/json/clone.js";
+import { orderSelectionRanges } from "./order.js";
 import type {
   JSONPoint,
   SelectionRange,
   SelectionSnap,
-} from "./selectionTypes.js";
+} from "./types.js";
 import {
   clonePoint,
   cloneRange,
   pointPath,
-} from "./selectionPoint.js";
+} from "./point.js";
 import {
   readStringForTextEdit,
   replaceSelectionText,

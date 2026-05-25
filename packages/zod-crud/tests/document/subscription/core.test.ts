@@ -3,8 +3,8 @@ import { describe, expect, test } from "vitest";
 import {
   planDocumentSubscriptionChange,
   planDocumentSubscriptionMetadata,
-} from "../../../src/application/document/createJSONDocumentChangePlan.js";
-import type { SelectionSnap } from "../../../src/domain/selection/selectionTypes.js";
+} from "../../../src/application/document/plan/change.js";
+import type { SelectionSnap } from "../../../src/domain/selection/types.js";
 
 const emptySelection: SelectionSnap = {
   selectedPointers: [],

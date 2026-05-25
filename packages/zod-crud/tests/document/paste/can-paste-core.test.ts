@@ -3,8 +3,8 @@ import * as z from "zod";
 
 import {
   planDocumentCanPaste,
-} from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
-import type { ClipboardPeekResult } from "../../../src/application/document/clipboardTypes.js";
+} from "../../../src/application/document/plan/interaction.js";
+import type { ClipboardPeekResult } from "../../../src/application/document/clipboard/types.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
