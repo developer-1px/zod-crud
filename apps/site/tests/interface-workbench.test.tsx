@@ -23,7 +23,7 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByLabelText("insert target")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
-    expect(screen.getByText(/외부 payload 붙여넣기/)).toBeTruthy();
+    expect(screen.getByText(/실행 전 검증/)).toBeTruthy();
     for (const title of [
       "doc.patch",
       "document actions",
@@ -38,13 +38,13 @@ describe("InterfaceWorkbench", () => {
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
-    expect(screen.getByText(/Zod schema로 보호되는 JSON 편집 엔진/)).toBeTruthy();
+    expect(screen.getByText(/앱 코드에서 직접 쓰는 API/)).toBeTruthy();
     expect(screen.getByRole("heading", { name: "기준" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "clipboard" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "can*" })).toBeTruthy();
     expect(screen.getByText(/query: JSONPath -> Pointer/)).toBeTruthy();
-    expect(screen.getByText(/JSONPath는 변경 언어가 아닙니다/)).toBeTruthy();
-    expect(screen.getByText(/doc\.query\("\$\.lists\[\*\]\.cards\[\*\]"\)/)).toBeTruthy();
+    expect(screen.getAllByText(/JSONPath는 변경 언어가 아닙니다/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/doc\.query\("\$\.\.cards/).length).toBeGreaterThan(0);
     expect(screen.getByText(/source를 생략하면 현재 selection을 사용합니다/)).toBeTruthy();
     expect(screen.getByText(/blocked\.violations/)).toBeTruthy();
     expect(screen.getAllByText(/createJSONDocument/).length).toBeGreaterThan(0);

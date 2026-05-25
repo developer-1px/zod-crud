@@ -33,26 +33,6 @@ npm install zod-crud zod
 `zod` is a peer dependency. `react >=18` is optional and only needed for
 `zod-crud/react`.
 
-## Source Layout
-
-Public entrypoints are intentionally at the package source root:
-
-```txt
-src/
-├─ index.ts      zod-crud
-├─ react.ts      zod-crud/react
-├─ application/  document facade assembly
-├─ domain/       editing, selection, schema, tracking rules
-└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
-```
-
-In source references, write these entrypoints as `src/index.ts` and
-`src/react.ts`.
-
-Only `zod-crud` and `zod-crud/react` are package API. Do not import
-`zod-crud/src/*`, `zod-crud/dist/*`, `application/*`, `domain/*`, or
-`foundation/*` subpaths.
-
 ## Task Entrypoints
 
 | Task | API |
@@ -505,6 +485,29 @@ fetch("/api/save", {
   body: JSON.stringify(operations),
 });
 ```
+
+## Maintainer Notes
+
+This section is not required for package use. It exists to keep source
+references and release checks aligned.
+
+Public entrypoints are intentionally at the package source root:
+
+```txt
+src/
+├─ index.ts      zod-crud
+├─ react.ts      zod-crud/react
+├─ application/  document facade assembly
+├─ domain/       editing, selection, schema, tracking rules
+└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+```
+
+In source references, write these entrypoints as `src/index.ts` and
+`src/react.ts`.
+
+Only `zod-crud` and `zod-crud/react` are package API. Do not import
+`zod-crud/src/*`, `zod-crud/dist/*`, `application/*`, `domain/*`, or
+`foundation/*` subpaths.
 
 ## Verification
 

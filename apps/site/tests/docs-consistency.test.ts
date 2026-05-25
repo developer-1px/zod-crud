@@ -8,14 +8,15 @@ function read(path: string): string {
   return readFileSync(join(root, path), "utf8");
 }
 
+const siteDocs = {
+  concepts: read("apps/site/src/docs/zod-crud-concepts.md"),
+  tutorial: read("apps/site/src/docs/zod-crud-tutorial.md"),
+  api: read("apps/site/src/docs/zod-crud-api.md"),
+};
 const docs = {
   readme: read("packages/zod-crud/README.md"),
   spec: read("packages/zod-crud/SPEC.md"),
-  site: [
-    read("apps/site/src/docs/zod-crud-concepts.md"),
-    read("apps/site/src/docs/zod-crud-tutorial.md"),
-    read("apps/site/src/docs/zod-crud-api.md"),
-  ].join("\n\n"),
+  site: Object.values(siteDocs).join("\n\n"),
   llms: read("llms.txt"),
 };
 const releaseNotes = read("docs/release-notes.md");
@@ -63,6 +64,29 @@ describe("public docs consistency", () => {
     expect(docs.site).toMatch(/검색: JSONPath -> Pointer\[\]/);
     expect(docs.readme).toMatch(/왜 zod-crud인가/);
     expect(docs.llms).toMatch(/Why \/ Core \/ Tutorial Context/);
+  });
+
+  test("keeps user-facing docs ahead of maintainer internals", () => {
+    const conceptMaintainer = siteDocs.concepts.indexOf("## Maintainer notes");
+    const apiMaintainer = siteDocs.api.indexOf("## Maintainer notes");
+    const readmeMaintainer = docs.readme.indexOf("## Maintainer Notes");
+
+    expect(conceptMaintainer).toBeGreaterThan(siteDocs.concepts.indexOf("앱에서 하려는 일"));
+    expect(siteDocs.concepts.indexOf("## 기본 사용 흐름")).toBeLessThan(conceptMaintainer);
+    expect(siteDocs.api.indexOf("## 작업별 진입점")).toBeLessThan(apiMaintainer);
+    expect(siteDocs.api.indexOf("Source layout SSOT")).toBeGreaterThan(apiMaintainer);
+    expect(docs.readme.indexOf("## Task Entrypoints")).toBeLessThan(readmeMaintainer);
+    expect(docs.readme.indexOf("src/index.ts")).toBeGreaterThan(readmeMaintainer);
+    expect(siteDocs.tutorial).not.toMatch(/application\/document|domain\/schema|foundation\/patch/);
+
+    for (const token of [
+      "application/document/can",
+      "application/document/runtime",
+      "domain/schema/shared",
+      "foundation/patch/fast",
+    ]) {
+      expect(siteDocs.concepts.indexOf(token), `${token} appears before maintainer notes`).toBeGreaterThan(conceptMaintainer);
+    }
   });
 
   test("list the public root exports in human docs", () => {

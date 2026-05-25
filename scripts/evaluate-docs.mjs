@@ -29,14 +29,15 @@ if (/pending verification/i.test(ledger)) {
   fail("Ledger still contains pending verification.");
 }
 
+const siteDocs = {
+  concepts: read("apps/site/src/docs/zod-crud-concepts.md"),
+  tutorial: read("apps/site/src/docs/zod-crud-tutorial.md"),
+  api: read("apps/site/src/docs/zod-crud-api.md"),
+};
 const surfaces = {
   readme: read("packages/zod-crud/README.md"),
   spec: read("packages/zod-crud/SPEC.md"),
-  site: [
-    read("apps/site/src/docs/zod-crud-concepts.md"),
-    read("apps/site/src/docs/zod-crud-tutorial.md"),
-    read("apps/site/src/docs/zod-crud-api.md"),
-  ].join("\n\n"),
+  site: Object.values(siteDocs).join("\n\n"),
   llms: read("llms.txt"),
 };
 const releaseNotes = read("docs/release-notes.md");
@@ -82,7 +83,7 @@ const required = [
   ["readme", /왜 zod-crud인가/],
   ["llms", /Why \/ Core \/ Tutorial Context/],
   ["site", /작업별 진입점/],
-  ["site", /작업 레이어 예시/],
+  ["site", /앱 액션 예시/],
   ["site", /JSONPath는 변경 언어가 아닙니다/],
   ["site", /결과 객체/],
   ["site", /Pointer 배열을 copy하면 clipboard payload도 배열/],
@@ -122,6 +123,48 @@ const required = [
 
 for (const [name, pattern] of required) {
   if (!pattern.test(surfaces[name])) fail(`${name}: missing ${pattern}.`);
+}
+
+const conceptMaintainer = siteDocs.concepts.indexOf("## Maintainer notes");
+const apiMaintainer = siteDocs.api.indexOf("## Maintainer notes");
+const readmeMaintainer = surfaces.readme.indexOf("## Maintainer Notes");
+const conceptWorkflow = siteDocs.concepts.indexOf("앱에서 하려는 일");
+const conceptUsage = siteDocs.concepts.indexOf("## 기본 사용 흐름");
+const apiEntrypoints = siteDocs.api.indexOf("## 작업별 진입점");
+const readmeEntrypoints = surfaces.readme.indexOf("## Task Entrypoints");
+const readmeSourceLayout = surfaces.readme.indexOf("src/index.ts");
+if (conceptMaintainer < 0 || apiMaintainer < 0 || readmeMaintainer < 0) {
+  fail("site docs: maintainer notes section is missing.");
+}
+if (
+  conceptWorkflow < 0
+  || conceptUsage < 0
+  || apiEntrypoints < 0
+  || readmeEntrypoints < 0
+  || readmeSourceLayout < 0
+  || conceptWorkflow > conceptMaintainer
+  || conceptUsage > conceptMaintainer
+  || apiEntrypoints > apiMaintainer
+  || readmeEntrypoints > readmeMaintainer
+  || readmeSourceLayout < readmeMaintainer
+) {
+  fail("human docs: user-facing workflow must appear before maintainer internals.");
+}
+if (siteDocs.api.indexOf("Source layout SSOT") < apiMaintainer) {
+  fail("site docs: source layout SSOT must stay in maintainer notes.");
+}
+if (/application\/document|domain\/schema|foundation\/patch/.test(siteDocs.tutorial)) {
+  fail("tutorial: internal source paths must not appear in user walkthrough.");
+}
+for (const token of [
+  "application/document/can",
+  "application/document/runtime",
+  "domain/schema/shared",
+  "foundation/patch/fast",
+]) {
+  if (siteDocs.concepts.indexOf(token) < conceptMaintainer) {
+    fail(`site docs: ${token} appears before maintainer notes.`);
+  }
 }
 
 for (const [name, source] of Object.entries(surfaces)) {
@@ -277,9 +320,9 @@ if (!/<svg/.test(siteFavicon) || !/zod-crud/.test(siteManifest)) {
 
 for (const route of [
   ["/", "zod-crud - Headless JSON editing", "zod-crud is a Zod-guarded headless JSON editing engine for JSON Patch, JSON Pointer, JSONPath, selection, clipboard, and history."],
-  ["/docs", "zod-crud Docs - zod-crud", "Conceptual guide to zod-crud's why, core editing model, tutorial path, and document API boundaries."],
+  ["/docs", "zod-crud Docs - zod-crud", "User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and history."],
   ["/docs/tutorial", "Tutorial - zod-crud", "Step-by-step zod-crud tutorial for building a small card editor with schema checks, selection, clipboard, and history."],
-  ["/docs/api", "zod-crud API - zod-crud", "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath."],
+  ["/docs/api", "zod-crud API - zod-crud", "Public zod-crud API reference for document changes, can* checks, selection, clipboard, history, Pointer, and JSONPath."],
   ["/playground", "Workbench - zod-crud", "Interactive zod-crud workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search."],
   ["/playground/outliner", "Outliner demo - zod-crud", "Keyboard-first outliner demo showing zod-crud selection, clipboard, history, structure edits, and JSON document movement."],
   ["/playground/mobile-cms", "Mobile CMS demo - zod-crud", "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history."],

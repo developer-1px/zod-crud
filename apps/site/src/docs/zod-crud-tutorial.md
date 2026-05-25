@@ -1,17 +1,6 @@
 # 튜토리얼: 작은 카드 편집기 만들기
 
-작은 board state를 만들고, 추가, 변경, 검색, 선택, 붙여넣기, 검증, undo를 한 번씩 연결합니다. 앱 코드는 public entrypoint만 import합니다.
-
-```txt
-app
-└─ zod-crud / zod-crud/react
-   └─ application/document
-      ├─ domain
-      │  └─ foundation
-      └─ foundation
-```
-
-내부 `application`, `domain`, `foundation` 폴더는 동작을 이해하기 위한 구조입니다. 사용 코드는 `src/index.ts`가 내보내는 `zod-crud`와 `src/react.ts`가 내보내는 `zod-crud/react`에만 의존합니다.
+작은 board state를 만들고, 추가, 변경, 검색, 선택, 붙여넣기, 검증, undo를 한 번씩 연결합니다. 앱 코드는 `zod-crud` 또는 `zod-crud/react`만 import합니다.
 
 ## 1. schema와 document 만들기
 
@@ -47,19 +36,44 @@ const doc = createJSONDocument(Board, {
 });
 ```
 
-`createJSONDocument`는 `application/document/create.ts`에서 document facade를 만들고, schema 검증과 JSON Patch 처리는 `domain`과 `foundation`에 위임합니다.
+여기서 알아야 할 것은 세 가지입니다. schema가 허용 구조이고, document가 현재 value와 변경 API를 들고 있으며, path는 JSON Pointer입니다.
 
-## 2. patch로 값 바꾸기
+## 2. 변경 전에 확인하기
+
+사용자 action은 실행 전에 `can*`로 확인합니다.
+
+```ts
+const patch = [{
+  op: "add",
+  path: "/lists/0/cards/-",
+  value: { id: "c2", title: "Review API", status: "todo" },
+}] as const;
+
+const canAdd = doc.canPatch(patch);
+
+if (canAdd.ok) {
+  doc.commit(patch, { label: "add card" });
+}
+```
+
+실패하면 결과 객체에서 UI 메시지를 만들 수 있습니다.
+
+```ts
+const candidate = { id: "c3", title: "", status: "todo" };
+const canPaste = doc.canPastePayload("/lists/0/cards/-", candidate);
+
+if (!canPaste.ok) {
+  canPaste.code;
+  canPaste.reason;
+  canPaste.violations;
+}
+```
+
+## 3. patch로 값 바꾸기
 
 값을 바꿀 때는 JSON Patch를 적용합니다. `path`는 JSON Pointer입니다.
 
 ```ts
-doc.patch({
-  op: "add",
-  path: "/lists/0/cards/-",
-  value: { id: "c2", title: "Review API", status: "todo" },
-});
-
 doc.patch({
   op: "replace",
   path: "/lists/0/cards/0/status",
@@ -78,7 +92,7 @@ doc.commit([
 
 `doc.commit(...)`과 `doc.canPatch(...)`는 operation arrays를 받습니다.
 
-## 3. JSONPath로 찾고 Pointer로 바꾸기
+## 4. JSONPath로 찾고 Pointer로 바꾸기
 
 여러 위치를 찾을 때는 JSONPath로 검색하고, 반환된 Pointer로 patch를 만듭니다.
 
@@ -98,7 +112,7 @@ if (todos.ok) {
 
 JSONPath는 변경 언어가 아닙니다. `doc.query(...)` 결과의 Pointer를 JSON Patch `path`로 사용합니다.
 
-## 4. selection과 clipboard 연결하기
+## 5. selection과 clipboard 연결하기
 
 Selection은 무엇이 선택됐는지 보관하고, clipboard가 payload 흐름을 맡습니다.
 
@@ -117,27 +131,6 @@ doc.clipboard.paste("/lists/0/cards/-", {
 `selectedPointers`는 JSON-safe selection snapshot에서 읽습니다. Pointer 배열을 copy하면 clipboard payload도 배열입니다. 한 항목만 복사해도 붙여넣을 때 sibling으로 펼치려면 `spread: true`를 넘깁니다.
 
 이미 `/cards/-` 같은 삽입 위치가 있으면 pointer를 그대로 넘깁니다. 기존 항목을 기준으로 붙일 때는 `{ after: "/lists/0/cards/0" }`처럼 씁니다.
-
-## 5. 실행 전에 can* 확인하기
-
-사용자 action을 실행하기 전에는 `can*`로 같은 조건을 미리 확인할 수 있습니다.
-
-```ts
-const candidate = { id: "c3", title: "", status: "todo" };
-const canPaste = doc.canPastePayload("/lists/0/cards/-", candidate);
-
-if (!canPaste.ok) {
-  canPaste.code;
-  canPaste.reason;
-  canPaste.violations;
-}
-```
-
-`canFind`는 JSONPath 검색 가능 여부를 확인합니다.
-
-```ts
-const canFindTodo = doc.canFind("$..cards[?(@.status=='todo')]");
-```
 
 ## 6. history로 되돌리기
 
@@ -174,7 +167,7 @@ const doc = useJSONDocument(Board, initialBoard, {
 });
 ```
 
-React hook은 `src/react.ts`의 별도 entrypoint입니다. Root package는 React-free입니다.
+Root package는 React-free입니다. React 앱에서만 `zod-crud/react`를 import합니다.
 
 ## 8. 배포 전 확인
 

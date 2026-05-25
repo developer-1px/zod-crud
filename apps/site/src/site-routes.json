@@ -10,7 +10,7 @@
     "path": "/docs",
     "label": "Docs",
     "title": "zod-crud Docs - zod-crud",
-    "description": "Conceptual guide to zod-crud's why, core editing model, tutorial path, and document API boundaries.",
+    "description": "User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and history.",
     "group": "Start"
   },
   {
@@ -24,7 +24,7 @@
     "path": "/docs/api",
     "label": "API reference",
     "title": "zod-crud API - zod-crud",
-    "description": "Complete zod-crud API reference for document operations, selection, clipboard, history, schema checks, JSON Pointer, and JSONPath.",
+    "description": "Public zod-crud API reference for document changes, can* checks, selection, clipboard, history, Pointer, and JSONPath.",
     "group": "Start"
   },
   {
