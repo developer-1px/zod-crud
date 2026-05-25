@@ -28,6 +28,8 @@ import {
 } from "../../../src/domain/schema/localSchemaKnownJson.js";
 import {
   applyPatchWithLocalSchemaValidation,
+  planSameArrayPatch,
+  planSameArrayPatchOperations,
 } from "../../../src/domain/schema/localSchemaValidationCore.js";
 import {
   applyArrayAddPlan,
@@ -38,10 +40,6 @@ import {
   planIncreasingArrayAddPatch,
   planIncreasingArrayAddValues,
 } from "../../../src/domain/schema/localSchemaArrayAdd.js";
-import {
-  planSameArrayPatch,
-  planSameArrayPatchOperations,
-} from "../../../src/domain/schema/localSchemaSameArray.js";
 import {
   applyReplaceOperations,
   applySingleReplaceOperation,

@@ -1,9 +1,14 @@
-import { applyAppendOnlyAddPatch, applyTailRemovePatch } from "./fastArrayAppendRemove.js";
-import { applySameArrayElementReplacePatch } from "./fastArrayElementReplace.js";
-import { applySameArrayFieldReplacePatch } from "./fastArrayFieldReplace.js";
-import { applySameArrayNestedReplacePatch } from "./fastArrayNestedReplace.js";
-import { applySameArrayStructuralPatch } from "./fastArrayStructural.js";
-import { applyIndependentReplacePatch } from "./fastIndependentReplace.js";
+import {
+  applyAppendOnlyAddPatch,
+  applySameArrayStructuralPatch,
+  applyTailRemovePatch,
+} from "./fastArrayStructural.js";
+import {
+  applyIndependentReplacePatch,
+  applySameArrayElementReplacePatch,
+  applySameArrayFieldReplacePatch,
+  applySameArrayNestedReplacePatch,
+} from "./fastReplace.js";
 import {
   applyRootObjectAddPatch,
   applyRootObjectRemovePatch,
