@@ -9,7 +9,7 @@ import type {
   ClipboardReadOptions,
   ClipboardReadResult,
   ClipboardWriteOptions,
-} from "./clipboard.js";
+} from "./clipboardTypes.js";
 
 export const EMPTY_CLIPBOARD: ClipboardEmpty = {
   ok: false,

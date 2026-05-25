@@ -12,15 +12,13 @@ import {
 } from "./localSchemaPath.js";
 import { okLocalSchemaValidation } from "./localSchemaResult.js";
 import {
-  type AppliedReplaceValueValidationOperation,
   evaluateAppliedReplaceValueValidationPlan,
   toAppliedReplaceOperations,
 } from "./localSchemaValueValidation.js";
 import { planSingleArrayFieldReplace } from "./localSchemaArrayReplacePlan.js";
+import type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
 
-export interface IndexedReplaceValueValidationOperation extends AppliedReplaceValueValidationOperation {
-  index: number;
-}
+export type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
 
 export interface ArrayIndexReplacement {
   index: number;

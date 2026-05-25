@@ -2,6 +2,7 @@
 // React hook and JSONDocument use this same implementation.
 
 import type { JSONStateOps } from "./stateOps.js";
+import type { UseSelectionOptions } from "./selectionOptions.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import {
   anchorPointer,
@@ -71,11 +72,7 @@ import {
   selectionToggleRangeAction,
 } from "./selectionPlan.js";
 
-export interface UseSelectionOptions {
-  mode?: SelectionMode;
-  initial?: ReadonlyArray<SelectionRangeInput>;
-  context?: SelectionContext;
-}
+export type { UseSelectionOptions } from "./selectionOptions.js";
 
 interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;

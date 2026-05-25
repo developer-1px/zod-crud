@@ -16,7 +16,7 @@ import {
   type SelectionRangeInput,
   type SelectionSnap,
 } from "../../domain/selection/index.js";
-import type { UseSelectionOptions } from "./selection.js";
+import type { UseSelectionOptions } from "./selectionOptions.js";
 
 export type SelectionStateUpdatePlan =
   | { snap: SelectionSnap; emit: false }

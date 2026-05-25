@@ -4,9 +4,13 @@ import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundati
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import type { JSONStateOps } from "./stateOps.js";
 import type { SelectionSource } from "../../domain/selection/index.js";
-import type { ClipboardSource, CopyError, CopyOk } from "../../domain/verbs/copy.js";
-import type { CutError } from "../../domain/verbs/cut.js";
-import type { PasteDuMismatch, PasteError, PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
+import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
+import type {
+  ClipboardBuffer,
+  ClipboardPasteResult,
+  ClipboardPeekResult,
+  ClipboardState,
+} from "./clipboardTypes.js";
 import {
   EMPTY_CLIPBOARD,
   planClipboardPeekBuffer,
@@ -25,93 +29,14 @@ import {
 
 export { EMPTY_CLIPBOARD, isClipboardSchemaTrustedPayload, planClipboardPeekBuffer, planClipboardReadBuffer, planClipboardWriteBuffer, planClipboardWritePayload, planClipboardWriteSources } from "./clipboardBufferPlan.js";
 export { planClipboardCopy, planClipboardCut, planClipboardCutApplyResult, planClipboardPaste, planClipboardPasteApplyResult, planClipboardPastePreview, planClipboardSchemaTrustedSourceBuffer, planClipboardSource } from "./clipboardPlan.js";
+export type { ClipboardBuffer, ClipboardCopyOptions, ClipboardCutOk, ClipboardCutOptions, ClipboardCutResult, ClipboardEmpty, ClipboardMutationOk, ClipboardPasteResult, ClipboardPeekResult, ClipboardReadOk, ClipboardReadOptions, ClipboardReadResult, ClipboardState, ClipboardWriteOptions } from "./clipboardTypes.js";
 export type { ClipboardSchemaTrustedPayloadInput, ClipboardWriteBufferInput, ClipboardWriteBufferPlan, ClipboardWritePayloadInput, ClipboardWritePayloadPlan, ClipboardWriteSourcesResult } from "./clipboardBufferPlan.js";
 export type { ClipboardCopyPlanContext, ClipboardCopySourcePlan, ClipboardCutApplyResultInput, ClipboardCutPlanContext, ClipboardCutPlanResult, ClipboardCutSourcePlan, ClipboardPasteApplyResultInput, ClipboardPastePlanContext, ClipboardPastePlanResult, ClipboardPastePreviewInput, ClipboardPastePreviewPlan, ClipboardSchemaTrustedSourceBufferInput, ClipboardSourceOperation, ClipboardSourcePlanInput } from "./clipboardPlan.js";
 
 export const INTERNAL_CLIPBOARD_PEEK: unique symbol = Symbol("zod-crud.internal.clipboard.peek");
 
-export interface ClipboardWriteOptions {
-  source?: Pointer | null;
-  sources?: ReadonlyArray<Pointer> | null;
-  /** Skip JSON-serializability validation when the caller already owns that boundary. */
-  trustedPayload?: boolean;
-  /** Store the payload reference directly. Use only when the caller owns its immutability boundary. */
-  clonePayload?: boolean;
-}
-
-export interface ClipboardReadOptions {
-  /** Return the buffered payload reference directly. Use only when the caller owns its mutation boundary. */
-  clonePayload?: boolean;
-}
-
-export interface ClipboardCopyOptions {
-  /** Store and return the copied source reference directly. Use only when the caller owns its mutation boundary. */
-  clonePayload?: boolean;
-}
-
-export interface ClipboardCutOptions {
-  /** Store and return the cut source reference directly. Use only when the caller owns its mutation boundary. */
-  clonePayload?: boolean;
-}
-
-export interface ClipboardReadOk {
-  ok: true;
-  payload: unknown;
-  source: Pointer | null;
-  sources: ReadonlyArray<Pointer> | null;
-}
-
-interface ClipboardPeekOk extends ClipboardReadOk {
-  schemaTrusted: boolean;
-}
-
-export interface ClipboardEmpty {
-  ok: false;
-  code: "empty_clipboard";
-  message: string;
-}
-
-export type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
-export type ClipboardPeekResult = ClipboardPeekOk | ClipboardEmpty;
-
-export interface ClipboardMutationOk<T> {
-  ok: true;
-  value: T;
-  applied: ReadonlyArray<JSONPatchOperation>;
-}
-
-export interface ClipboardCutOk<T> extends ClipboardMutationOk<T> {
-  payload: unknown;
-  source: Pointer;
-  sources: ReadonlyArray<Pointer>;
-}
-
-export type ClipboardCutResult<T> = ClipboardCutOk<T> | CutError;
-export type ClipboardPasteResult<T> = ClipboardMutationOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
-
-export interface ClipboardState<T> {
-  readonly hasData: boolean;
-  readonly source: Pointer | null;
-  readonly sources: ReadonlyArray<Pointer> | null;
-  read(options?: ClipboardReadOptions): ClipboardReadResult;
-  write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
-  clear(): void;
-
-  copy(source?: ClipboardSource, options?: ClipboardCopyOptions): CopyOk | CopyError;
-  cut(source?: ClipboardSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
-  paste(target?: PasteTarget, options?: PasteOptions): ClipboardPasteResult<T>;
-  pastePayload(target: PasteTarget, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
-}
-
 interface InternalClipboardState<T> extends ClipboardState<T> {
   [INTERNAL_CLIPBOARD_PEEK](): ClipboardPeekResult;
-}
-
-export interface ClipboardBuffer {
-  payload: unknown;
-  source: Pointer | null;
-  sources: ReadonlyArray<Pointer> | null;
-  schemaTrusted: boolean;
 }
 
 interface CreateClipboardOptions<S extends z.ZodType> {

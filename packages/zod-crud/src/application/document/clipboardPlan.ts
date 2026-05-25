@@ -23,7 +23,7 @@ import type {
   ClipboardBuffer,
   ClipboardCutResult,
   ClipboardMutationOk,
-} from "./clipboard.js";
+} from "./clipboardTypes.js";
 
 export interface ClipboardCutPlanContext<S extends z.ZodType> {
   schema: S;

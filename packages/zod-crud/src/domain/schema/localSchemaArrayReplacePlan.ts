@@ -12,7 +12,7 @@ import {
   readFirstArrayNestedPath,
   type ArrayFieldText,
 } from "./localSchemaPath.js";
-import type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceApply.js";
+import type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
 
 export interface SingleArrayFieldReplacePlan {
   arrayPath: Pointer;

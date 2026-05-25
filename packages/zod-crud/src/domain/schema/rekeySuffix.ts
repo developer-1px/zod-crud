@@ -1,4 +1,4 @@
-import type { RekeyField } from "./rekey.js";
+import type { RekeyField } from "./rekeyTypes.js";
 import { scalarText, walk, walkSingleFieldText } from "./rekeyTraversal.js";
 
 const COPY_SUFFIX = "-copy";
