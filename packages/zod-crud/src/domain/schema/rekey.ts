@@ -10,8 +10,6 @@ import type {
   RekeyStrategy,
 } from "./rekeyTypes.js";
 
-export type { RekeyContext, RekeyErrorCode, RekeyExecutionOptions, RekeyField, RekeyOptions, RekeyResult, RekeyStrategy } from "./rekeyTypes.js";
-
 interface SuffixAttemptField extends RekeyField {
   nextAttempts: Map<string, number>;
 }

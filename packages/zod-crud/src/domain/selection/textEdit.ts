@@ -21,7 +21,6 @@ import type {
   SelectionSpanOptions,
 } from "./selectionTypes.js";
 import { clonePoint, pointPath } from "./selectionPoint.js";
-export { clonePoint, cloneRange, pointPath } from "./selectionPoint.js";
 
 export interface SelectionTextEditOptions extends SelectionSpanOptions {
   /** Optional affinity attached to final carets produced by text replacement helpers. */

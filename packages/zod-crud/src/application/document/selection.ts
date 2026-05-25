@@ -72,8 +72,6 @@ import {
   selectionToggleRangeAction,
 } from "./selectionPlan.js";
 
-export type { UseSelectionOptions } from "./selectionOptions.js";
-
 interface CreateSelectionOptions extends UseSelectionOptions {
   onChange?: () => void;
 }

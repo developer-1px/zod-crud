@@ -6,8 +6,6 @@ import { evaluateArrayRegexFilter, evaluateArrayWildcardField } from "./evaluate
 import { evaluateSimpleQuery, evaluateSinglePathQuery } from "./evaluateSimple.js";
 import { compiledRegex, escapeSeg, normalizeSliceIndex, objectHasOwn } from "./evaluateShared.js";
 
-export { matchPointersForSimpleQuery } from "./evaluateSimple.js";
-
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {
   const arrayFieldMatches = evaluateArrayWildcardField(query, root);

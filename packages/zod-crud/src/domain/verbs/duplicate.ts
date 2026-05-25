@@ -8,7 +8,8 @@ import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patc
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../../foundation/json-pointer/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
-import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
+import { tryRekeyPayload } from "../schema/rekey.js";
+import type { RekeyOptions } from "../schema/rekeyTypes.js";
 
 export interface DuplicateOpts {
   /** object key 복제 시 새 key. 배열에서는 무시됨. */

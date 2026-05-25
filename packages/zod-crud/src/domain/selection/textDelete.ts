@@ -9,6 +9,8 @@ import {
   clonePoint,
   cloneRange,
   pointPath,
+} from "./selectionPoint.js";
+import {
   readStringForTextEdit,
   replaceSelectionText,
   uniquePointers,

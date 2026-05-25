@@ -18,8 +18,6 @@ import {
 import { planSingleArrayFieldReplace } from "./localSchemaArrayReplacePlan.js";
 import type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
 
-export type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
-
 export interface ArrayIndexReplacement {
   index: number;
   value: unknown;

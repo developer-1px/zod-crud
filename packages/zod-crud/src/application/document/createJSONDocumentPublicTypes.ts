@@ -7,7 +7,8 @@ import type { SelectionAction, SelectionMode, SelectionSource, SelectionSnap } f
 import type { ClipboardPeekResult, ClipboardState } from "./clipboardTypes.js";
 import type { EntriesResult, QueryResult, ReadResult } from "./read.js";
 import type { SchemaState } from "./schema.js";
-import type { SelectionState, UseSelectionOptions } from "./selection.js";
+import type { SelectionState } from "./selection.js";
+import type { UseSelectionOptions } from "./selectionOptions.js";
 import type { DuplicateError, DuplicateOpts } from "../../domain/verbs/duplicate.js";
 import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
 import type { JSONCrudError } from "../../foundation/errors.js";

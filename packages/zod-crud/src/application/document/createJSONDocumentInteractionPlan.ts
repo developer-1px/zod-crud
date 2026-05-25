@@ -26,7 +26,7 @@ import type {
   PlanDocumentPatchCallInput,
   PlanDocumentSelectionRuntimeInput,
 } from "./createJSONDocumentPublicTypes.js";
-import type { UseSelectionOptions } from "./selection.js";
+import type { UseSelectionOptions } from "./selectionOptions.js";
 import { buildChangeMetadata, compactHistoryMetadata } from "./createJSONDocumentMetadataPlan.js";
 
 export function planDocumentCanPaste<S extends z.ZodType>(

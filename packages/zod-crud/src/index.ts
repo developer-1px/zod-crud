@@ -12,7 +12,7 @@ export type {
 } from "./application/document/stateOps.js";
 
 // === Headless document facade ===
-export { createJSONDocument } from "./application/document/createJSONDocument.js";
+export { createJSONDocument } from "./application/document/createJSONDocumentCore.js";
 export type {
   JSONCapabilityResult,
   JSONDocumentCommitOptions,
@@ -24,7 +24,7 @@ export type {
   JSONDocument,
   JSONPatchInput,
   UseJSONDocumentOptions,
-} from "./application/document/createJSONDocument.js";
+} from "./application/document/createJSONDocumentPublicTypes.js";
 export type {
   ClipboardCopyOptions,
   ClipboardCutOk,
@@ -59,8 +59,8 @@ export type {
 } from "./application/document/schema.js";
 export type {
   SelectionState,
-  UseSelectionOptions,
 } from "./application/document/selection.js";
+export type { UseSelectionOptions } from "./application/document/selectionOptions.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/json-patch/index.js";
