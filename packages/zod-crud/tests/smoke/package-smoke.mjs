@@ -761,7 +761,7 @@ try {
     "src/application/document/createJSONDocument.js",
     "src/domain/verbs",
     "src/domain/verbs/duplicate.js",
-    "src/domain/verbs/move.js",
+    "src/domain/verbs/paste.js",
     "src/foundation/json-patch",
   ];
   for (const privateSubpath of privateSubpaths) {

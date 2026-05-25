@@ -7,24 +7,18 @@ import {
   canDocumentPatch,
   canDocumentRemove,
   canDocumentReplace,
-} from "../../../src/application/document/capabilityChecks.js";
-import {
+  planDocumentCapabilityResult,
   planDocumentCopyCapability,
   planDocumentCutCapability,
-  planDocumentPasteCapability,
-} from "../../../src/application/document/capabilityClipboardPlan.js";
-import {
   planDocumentDeleteTextCapability,
   planDocumentDuplicateCapability,
   planDocumentMoveCapability,
   planDocumentPatchCapability,
+  planDocumentPasteCapability,
   planDocumentRemoveCapability,
   planDocumentReplaceCapability,
   planDocumentReplaceTextCapability,
-} from "../../../src/application/document/capabilityMutationPlan.js";
-import {
-  planDocumentCapabilityResult,
-} from "../../../src/application/document/capabilityResultPlan.js";
+} from "../../../src/application/document/capabilityChecks.js";
 import type {
   DocumentCapabilityContext,
 } from "../../../src/application/document/capabilityFacadeTypes.js";
