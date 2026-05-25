@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
+import "./mobile-cms.css";
 
 type AtomKind = "text" | "button" | "image";
 type MoleculeKind = "mediaCard" | "ctaRow";
@@ -427,13 +428,13 @@ export function App() {
   };
 
   return (
-    <main className="app-shell">
-      <aside className="panel palette-panel">
-        <div className="panel-heading">
-          <p className="eyebrow">Design system</p>
+    <main className="zc-cms-shell">
+      <aside className="zc-cms-panel zc-cms-palette-panel">
+        <div className="zc-cms-panel-heading">
+          <p className="zc-cms-eyebrow">Design system</p>
           <h1>Mobile CMS</h1>
         </div>
-        <div className="palette-list">
+        <div className="zc-cms-palette-list">
           {palette.map((item) => (
             <div
               key={item.id}
@@ -441,7 +442,7 @@ export function App() {
               aria-label={`${item.name} ${label(item.kind)}`}
               aria-selected={paletteSelection?.node.id === item.id}
               tabIndex={0}
-              className={`palette-item ${paletteSelection?.node.id === item.id ? "selected" : ""}`}
+              className={`zc-cms-palette-item ${paletteSelection?.node.id === item.id ? "is-selected" : ""}`}
               onClick={() => selectPaletteNode(item)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
@@ -457,16 +458,16 @@ export function App() {
         </div>
       </aside>
 
-      <section className="phone-zone">
-        <div className="topbar">
+      <section className="zc-cms-phone-zone">
+        <div className="zc-cms-topbar">
           <div>
             <strong>{page.name}</strong>
             <span role="status" aria-live="polite">{message}</span>
           </div>
           <kbd>R reset</kbd>
         </div>
-        <div className="phone-frame" aria-label="Mobile page preview">
-          <div className="phone-screen">
+        <div className="zc-cms-phone-frame" aria-label="Mobile page preview">
+          <div className="zc-cms-phone-screen">
             {page.children.map((section) => (
               <SectionView
                 key={section.id}
@@ -481,14 +482,14 @@ export function App() {
         </div>
       </section>
 
-      <aside className="panel inspector-panel">
-        <div className="panel-heading">
-          <p className="eyebrow">Inspector</p>
+      <aside className="zc-cms-panel zc-cms-inspector-panel">
+        <div className="zc-cms-panel-heading">
+          <p className="zc-cms-eyebrow">Inspector</p>
           <h2>{selected?.name ?? "Nothing selected"}</h2>
         </div>
         {selected && (
           <>
-            <div className="meta-grid">
+            <div className="zc-cms-meta-grid">
               <span>Kind</span><strong>{label(selected.kind)}</strong>
               {"sectionKind" in selected && <><span>Slot</span><strong>{label(selected.sectionKind)}</strong></>}
               <span>Clipboard</span><strong>{clipboard ? label(clipboard.node.kind) : "empty"}</strong>
@@ -515,10 +516,10 @@ function SectionView(props: {
   const verdict = props.clipboard ? canAccept(props.section, props.clipboard.node) : null;
   return (
     <section
-      className={`page-section ${props.section.id === props.selectedId ? "selected" : ""} ${verdict?.ok ? "accepts" : verdict ? "rejects" : ""}`}
+      className={`zc-cms-page-section ${props.section.id === props.selectedId ? "is-selected" : ""} ${verdict?.ok ? "is-accepted" : verdict ? "is-rejected" : ""}`}
       onClick={(e) => { e.stopPropagation(); props.onSelect(props.section.id); }}
     >
-      <div className="section-label">
+      <div className="zc-cms-section-label">
         <span>{props.section.name}</span>
         <kbd>{verdict?.ok ? "Cmd+V" : verdict ? "blocked" : "slot"}</kbd>
       </div>
@@ -547,16 +548,16 @@ function BlockView(props: {
   const verdict = props.clipboard ? canAccept(node, props.clipboard.node) : null;
   return (
     <article
-      className={`block block-${node.kind} ${node.id === props.selectedId ? "selected" : ""} ${verdict?.ok ? "accepts" : verdict ? "rejects" : ""}`}
+      className={`zc-cms-block zc-cms-block-${node.kind} block-${node.kind} ${node.id === props.selectedId ? "is-selected" : ""} ${verdict?.ok ? "is-accepted" : verdict ? "is-rejected" : ""}`}
       onClick={(e) => { e.stopPropagation(); props.onSelect(node.id); }}
     >
-      <div className="block-toolbar">
+      <div className="zc-cms-block-toolbar">
         <span>{node.name}</span>
         <kbd>{verdict?.ok ? "Cmd+V" : "Cmd+C"}</kbd>
       </div>
       <BlockContent node={node} onTextChange={props.onTextChange} />
       {node.children && node.children.length > 0 && (
-        <div className="child-slot">
+        <div className="zc-cms-child-slot">
           {node.children.map((child) => (
             <BlockView
               key={child.id}
@@ -581,20 +582,20 @@ function BlockContent({ node, onTextChange }: { node: BlockNode; onTextChange: (
       onChange={(value) => onTextChange({ nodeId: node.id, propKey }, value)}
     />
   );
-  if (node.kind === "hero") return <div className="hero-copy"><h2>{edit("title")}</h2>{edit("body", "body-copy")}</div>;
-  if (node.kind === "mediaCard") return <div className="media-card"><div className="thumb" />{edit("title", "title-copy")}{edit("body", "body-copy")}</div>;
-  if (node.kind === "ctaRow") return <div className="cta-row">{edit("label")}</div>;
-  if (node.kind === "productGrid") return <div className="grid-title">{edit("title")}</div>;
-  if (node.kind === "articleList") return <div className="article-title">{edit("title")}</div>;
-  if (node.kind === "button") return <div className="preview-button">{edit("label")}</div>;
-  if (node.kind === "image") return <div className="image-block" aria-label={node.props.alt} />;
-  return edit("text", "text-block");
+  if (node.kind === "hero") return <div className="zc-cms-hero-copy"><h2>{edit("title")}</h2>{edit("body", "zc-cms-body-copy")}</div>;
+  if (node.kind === "mediaCard") return <div className="zc-cms-media-card"><div className="zc-cms-thumb" />{edit("title", "zc-cms-title-copy")}{edit("body", "zc-cms-body-copy")}</div>;
+  if (node.kind === "ctaRow") return <div className="zc-cms-cta-row">{edit("label")}</div>;
+  if (node.kind === "productGrid") return <div className="zc-cms-grid-title">{edit("title")}</div>;
+  if (node.kind === "articleList") return <div className="zc-cms-article-title">{edit("title")}</div>;
+  if (node.kind === "button") return <div className="zc-cms-preview-button preview-button">{edit("label")}</div>;
+  if (node.kind === "image") return <div className="zc-cms-image-block" aria-label={node.props.alt} />;
+  return edit("text", "zc-cms-text-block text-block");
 }
 
 function EditableText({ value, className, onChange }: { value: string; className?: string | undefined; onChange: (value: string) => void }) {
   return (
     <span
-      className={`editable-text ${className ?? ""}`}
+      className={`zc-cms-editable-text ${className ?? ""}`}
       contentEditable
       suppressContentEditableWarning
       spellCheck
@@ -608,7 +609,7 @@ function EditableText({ value, className, onChange }: { value: string; className
 
 function PropEditor({ node, onChange }: { node: BlockNode; onChange: (props: Record<string, string>) => void }) {
   return (
-    <div className="prop-editor">
+    <div className="zc-cms-prop-editor">
       <h3>Content</h3>
       {Object.entries(node.props).map(([key, value]) => (
         <label key={key}>
@@ -622,7 +623,7 @@ function PropEditor({ node, onChange }: { node: BlockNode; onChange: (props: Rec
 
 function ShortcutList() {
   return (
-    <div className="shortcut-card">
+    <div className="zc-cms-shortcut-card">
       <h3>Keys</h3>
       <div><kbd>Cmd/Ctrl+C</kbd></div>
       <div><kbd>Cmd/Ctrl+X</kbd></div>
@@ -637,10 +638,10 @@ function AllowedList({ selected, clipboard }: { selected: CmsNode; clipboard: Cl
   const allowed = selected.kind === "section" ? sectionAllows[selected.sectionKind] : selected.kind === "page" ? [] : blockAllows[selected.kind] ?? [];
   const verdict = clipboard ? canAccept(selected, clipboard.node) : null;
   return (
-    <div className="rules-card">
+    <div className="zc-cms-rules-card">
       <h3>Slot</h3>
       <p>{allowed.length > 0 ? allowed.map(label).join(", ") : "—"}</p>
-      {clipboard && <strong className={verdict?.ok ? "ok" : "no"}>{verdict?.ok ? "OK" : verdict?.reason}</strong>}
+      {clipboard && <strong className={verdict?.ok ? "zc-cms-ok" : "zc-cms-no"}>{verdict?.ok ? "OK" : verdict?.reason}</strong>}
     </div>
   );
 }

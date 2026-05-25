@@ -4,35 +4,35 @@ import remarkGfm from "remark-gfm";
 
 export type MarkdownHeading = { id: string; level: number; text: string };
 
-export function MarkdownViewer({ source }: { source: string }) {
+export function MarkdownViewer({ source, hideTitle = false }: { source: string; hideTitle?: boolean }) {
   return (
-    <article className="grid gap-4 text-sm text-stone-700">
+    <article className="grid gap-4 text-[15px] text-stone-700">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[rehypeSlug]}
         components={{
-          h1: ({ children, id }) => (
-            <h2 id={id} className="mb-0 mt-0 text-base font-semibold text-stone-900">{children}</h2>
-          ),
+          h1: ({ children, id }) => hideTitle
+            ? null
+            : <h2 id={id} className="mb-0 mt-0 text-lg font-semibold text-stone-950">{children}</h2>,
           h2: ({ children, id }) => (
-            <h3 id={id} className="mb-0 mt-2 border-t border-stone-200 pt-4 text-sm font-semibold text-stone-900">
+            <h3 id={id} className="mb-0 mt-6 border-t border-stone-200 pt-5 text-base font-semibold text-stone-950 first:mt-0">
               {children}
             </h3>
           ),
           h3: ({ children, id }) => (
-            <h4 id={id} className="mb-0 mt-1 text-xs font-semibold uppercase tracking-wide text-stone-500">
+            <h4 id={id} className="mb-0 mt-2 text-sm font-medium text-stone-900">
               {children}
             </h4>
           ),
           p: ({ children }) => (
-            <p className="m-0 max-w-3xl leading-6 text-stone-600">{children}</p>
+            <p className="m-0 leading-7 text-stone-600">{children}</p>
           ),
           ul: ({ children }) => (
-            <ul className="m-0 max-w-3xl list-disc pl-5 text-sm leading-6 text-stone-600">{children}</ul>
+            <ul className="m-0 list-disc pl-5 leading-7 text-stone-600">{children}</ul>
           ),
           table: ({ children }) => (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[28rem] border-collapse text-left text-xs">{children}</table>
+              <table className="w-full min-w-[28rem] border-collapse text-left text-sm">{children}</table>
             </div>
           ),
           th: ({ children }) => (
@@ -44,13 +44,13 @@ export function MarkdownViewer({ source }: { source: string }) {
           code: ({ children, className }) => {
             if (className) return <code>{children}</code>;
             return (
-              <code className="rounded bg-stone-100 px-1 py-0.5 font-mono text-[0.85em] text-stone-800">
+              <code className="rounded-sm bg-stone-100 px-1 py-0.5 font-mono text-[0.85em] text-stone-800">
                 {children}
               </code>
             );
           },
           pre: ({ children }) => (
-            <pre className="m-0 overflow-x-auto rounded bg-stone-950 p-3 text-[11px] leading-relaxed text-stone-100">
+            <pre className="m-0 overflow-x-auto rounded-sm border border-stone-200 bg-stone-50 p-3 text-[12px] leading-relaxed text-stone-800">
               {children}
             </pre>
           ),

@@ -154,7 +154,7 @@ export function App() {
   }, [route]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-stone-50 text-stone-900 md:flex-row">
+    <div className="flex min-h-screen flex-col bg-white text-stone-900 md:flex-row">
       <a
         href="#main-content"
         className="sr-only z-50 rounded bg-stone-950 px-3 py-2 text-sm font-medium text-white focus:not-sr-only focus:fixed focus:left-3 focus:top-3"
@@ -163,15 +163,15 @@ export function App() {
       </a>
       <nav
         aria-label="Site navigation"
-        className="shrink-0 border-b border-stone-200 bg-white text-sm md:sticky md:top-0 md:h-screen md:w-56 md:self-start md:overflow-y-auto md:border-b-0 md:border-r"
+        className="shrink-0 border-b border-stone-200 bg-white text-sm md:sticky md:top-0 md:h-screen md:w-52 md:self-start md:overflow-y-auto md:border-b-0 md:border-r"
       >
-        <NavLink to="/" className="block px-4 py-3 font-mono text-stone-950 no-underline hover:bg-stone-100">
+        <NavLink to="/" className="flex px-4 py-3 font-mono text-stone-950 no-underline hover:text-stone-600 md:border-b md:border-stone-200">
           zod-crud
         </NavLink>
-        <div className="grid gap-3 px-2 pb-3">
+        <div className="flex gap-4 overflow-x-auto px-3 pb-3 md:grid md:gap-4 md:px-2">
           {Object.entries(groupedRoutes).map(([group, routes]) => (
-            <div key={group}>
-              <div className="px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">
+            <div key={group} className="flex shrink-0 gap-1 md:grid">
+              <div className="hidden border-0 bg-transparent px-2 py-1 text-[10px] font-medium text-stone-400 md:flex">
                 {group}
               </div>
               {routes.map((item) => (
@@ -179,7 +179,7 @@ export function App() {
                   key={item.path}
                   to={item.path}
                   activePath={route.path}
-                  className="block rounded px-2 py-1 text-stone-700 no-underline hover:bg-stone-100 hover:text-stone-900 aria-[current=page]:bg-stone-950 aria-[current=page]:text-stone-50"
+                  className="flex border-b border-transparent px-2 py-1 text-stone-500 no-underline hover:text-stone-950 aria-[current=page]:border-stone-950 aria-[current=page]:font-medium aria-[current=page]:text-stone-950 md:border-b-0 md:border-l md:px-3"
                 >
                   {item.label}
                 </NavLink>

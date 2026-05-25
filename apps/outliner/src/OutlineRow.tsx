@@ -48,18 +48,18 @@ export function OutlineRow(props: RowProps) {
   return (
     <>
       {isRoot ? (
-        <li role="presentation" className="root-title">
-          <input value={node.text} onChange={handleChange} className="text root-text" />
+        <li role="presentation" className="zc-outliner-root-title">
+          <input value={node.text} onChange={handleChange} className="zc-outliner-text zc-outliner-root-text" />
         </li>
       ) : (
         <li
           role="treeitem"
           aria-selected={isSelected || isFocused}
           aria-level={depth}
-          className={`row ${isSelected ? "selected" : ""} ${isFocused ? "focused" : ""} ${isEditing ? "editing" : ""}`}
+          className={`zc-outliner-row row ${isSelected ? "is-selected selected" : ""} ${isFocused ? "is-focused focused" : ""} ${isEditing ? "is-editing editing" : ""}`}
           style={{ paddingLeft: `${depth * 1.25}rem` }}
         >
-          <span aria-hidden className="marker" onMouseDown={(e) => onClickBullet(e, pointer)}>
+          <span aria-hidden className="zc-outliner-marker marker" onMouseDown={(e) => onClickBullet(e, pointer)}>
             {node.children.length > 0 ? "▾" : "•"}
           </span>
           <input
@@ -70,7 +70,7 @@ export function OutlineRow(props: RowProps) {
             onKeyDown={onKeyDown}
             onMouseDown={(e) => onClickText(e, pointer)}
             placeholder="(empty)"
-            className="text"
+            className="zc-outliner-text"
           />
         </li>
       )}

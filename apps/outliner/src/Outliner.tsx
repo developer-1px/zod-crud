@@ -12,6 +12,7 @@ import { useTextEditCoalesce } from "./hooks/useTextEditCoalesce.js";
 import { useDispatch } from "./hooks/useDispatch.js";
 import { useGlobalKey } from "./hooks/useGlobalKey.js";
 import { useClickPolicy } from "./hooks/useClickPolicy.js";
+import "./outliner.css";
 
 export function Outliner() {
   const [mode, setMode] = useState<Mode>("select");
@@ -44,24 +45,24 @@ export function Outliner() {
   const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
 
   return (
-    <div className="app">
+    <div className="zc-outliner">
       <header>
         <h1>zod-crud outliner</h1>
       </header>
 
-      <div className="toolbar">
+      <div className="zc-outliner-toolbar">
         <button onClick={() => doc.history.undo()} disabled={!doc.history.canUndo}>undo</button>
         <button onClick={() => doc.history.redo()} disabled={!doc.history.canRedo}>redo</button>
         <button onClick={() => { doc.reset(); setMode("select"); }}>reset</button>
-        <span className="status">
-          mode = <code className={`mode mode-${mode}`}>{mode}</code>
+        <span className="zc-outliner-status status">
+          mode = <code className={`zc-outliner-mode zc-outliner-mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focusPointer ?? "—"}</code>
           {" · "}selection = <code>{doc.selection?.selectedPointers.length ?? 0}</code>
           {" · "}clipboard = <code>{clipboard.mode === "empty" ? "—" : `${clipboard.mode} ${clipboard.values.length}`}</code>
         </span>
       </div>
 
-      <ul role="tree" aria-label="outline" aria-multiselectable className="tree" onKeyDown={onKeyDown} tabIndex={-1}>
+      <ul role="tree" aria-label="outline" aria-multiselectable className="zc-outliner-tree" onKeyDown={onKeyDown} tabIndex={-1}>
         <OutlineRow
           node={doc.value} pointer="" depth={0}
           focus={doc.selection?.focusPointer ?? null}
@@ -72,9 +73,9 @@ export function Outliner() {
         />
       </ul>
 
-      <div className="toasts" role="status" aria-live="polite">
+      <div className="zc-outliner-toasts" role="status" aria-live="polite">
         {errors.map((m) => (
-          <div key={m.id} className={`toast toast-${m.level}`} onClick={() => dismissToast(m.id)} title="클릭해서 닫기">
+          <div key={m.id} className={`zc-outliner-toast zc-outliner-toast-${m.level} toast toast-${m.level}`} onClick={() => dismissToast(m.id)} title="클릭해서 닫기">
             {m.text}
           </div>
         ))}

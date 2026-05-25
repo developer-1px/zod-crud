@@ -1,0 +1,203 @@
+.zc-cms-shell {
+    @apply grid min-h-screen grid-cols-1 bg-stone-50 text-stone-900 md:grid-cols-[14rem_minmax(22rem,1fr)_16rem];
+  }
+
+  .zc-cms-panel {
+    @apply border-stone-200 bg-white p-4;
+  }
+
+  .zc-cms-palette-panel {
+    @apply border-b md:border-b-0 md:border-r;
+  }
+
+  .zc-cms-inspector-panel {
+    @apply border-t md:border-l md:border-t-0;
+  }
+
+  .zc-cms-panel-heading {
+    @apply mb-4;
+  }
+
+  .zc-cms-eyebrow {
+    @apply mb-1 text-[10px] font-semibold uppercase tracking-wider text-stone-400;
+  }
+
+  .zc-cms-panel-heading h1,
+  .zc-cms-panel-heading h2 {
+    @apply m-0 text-lg font-semibold;
+  }
+
+  .zc-cms-palette-list {
+    @apply flex flex-col gap-1;
+  }
+
+  .zc-cms-palette-item {
+    @apply flex cursor-default items-center justify-between rounded border border-transparent px-2 py-2 text-sm outline-none hover:bg-stone-100 aria-selected:border-sky-300 aria-selected:bg-sky-50;
+  }
+
+  .zc-cms-palette-item small {
+    @apply text-xs text-stone-400;
+  }
+
+  .zc-cms-phone-zone {
+    @apply flex min-h-[42rem] flex-col gap-3 p-4;
+  }
+
+  .zc-cms-topbar {
+    @apply flex items-center justify-between gap-3 text-sm;
+  }
+
+  .zc-cms-topbar > div {
+    @apply flex min-w-0 flex-col;
+  }
+
+  .zc-cms-topbar span {
+    @apply truncate text-xs text-stone-500;
+  }
+
+  .zc-cms-shell kbd {
+    @apply rounded border border-stone-300 bg-white px-1.5 py-0.5 font-mono text-[11px] font-medium text-stone-500;
+  }
+
+  .zc-cms-phone-frame {
+    @apply mx-auto flex w-full max-w-[23rem] flex-1 rounded border border-stone-300 bg-stone-950 p-2 shadow-sm;
+  }
+
+  .zc-cms-phone-screen {
+    @apply min-h-[38rem] w-full overflow-y-auto rounded bg-white p-3;
+  }
+
+  .zc-cms-page-section {
+    @apply mb-3 rounded border border-stone-200 p-2;
+  }
+
+  .zc-cms-page-section.is-selected,
+  .zc-cms-block.is-selected {
+    @apply border-sky-400 ring-1 ring-sky-200;
+  }
+
+  .zc-cms-page-section.is-accepted,
+  .zc-cms-block.is-accepted {
+    @apply border-emerald-400;
+  }
+
+  .zc-cms-page-section.is-rejected,
+  .zc-cms-block.is-rejected {
+    @apply border-rose-300;
+  }
+
+  .zc-cms-section-label,
+  .zc-cms-block-toolbar {
+    @apply mb-2 flex items-center justify-between gap-2 text-[11px] font-medium uppercase tracking-wide text-stone-400;
+  }
+
+  .zc-cms-block {
+    @apply mb-2 rounded border border-stone-200 bg-white p-2;
+  }
+
+  .zc-cms-child-slot {
+    @apply mt-2 border-l border-stone-200 pl-2;
+  }
+
+  .zc-cms-hero-copy h2 {
+    @apply m-0 text-2xl font-semibold leading-tight;
+  }
+
+  .zc-cms-body-copy {
+    @apply mt-1 flex text-sm text-stone-500;
+  }
+
+  .zc-cms-media-card {
+    @apply grid grid-cols-[3rem_1fr] gap-x-2 gap-y-1;
+  }
+
+  .zc-cms-thumb,
+  .zc-cms-image-block {
+    @apply rounded bg-stone-200;
+  }
+
+  .zc-cms-thumb {
+    @apply row-span-2 h-12;
+  }
+
+  .zc-cms-image-block {
+    @apply h-28;
+  }
+
+  .zc-cms-title-copy,
+  .zc-cms-grid-title,
+  .zc-cms-article-title {
+    @apply font-medium;
+  }
+
+  .zc-cms-cta-row {
+    @apply rounded bg-stone-900 px-3 py-2 text-center text-sm font-medium text-white;
+  }
+
+  .zc-cms-preview-button {
+    @apply inline-flex rounded bg-stone-900 px-3 py-1.5 text-sm font-medium text-white;
+  }
+
+  .zc-cms-text-block {
+    @apply flex text-sm text-stone-700;
+  }
+
+  .zc-cms-editable-text {
+    @apply min-w-0 outline-none focus:bg-sky-50;
+  }
+
+  .zc-cms-meta-grid {
+    @apply grid grid-cols-[5rem_1fr] gap-x-2 gap-y-1 text-xs;
+  }
+
+  .zc-cms-meta-grid span {
+    @apply text-stone-400;
+  }
+
+  .zc-cms-meta-grid strong {
+    @apply font-medium text-stone-700;
+  }
+
+  .zc-cms-shortcut-card,
+  .zc-cms-rules-card,
+  .zc-cms-prop-editor {
+    @apply mt-4 border-t border-stone-200 pt-3 text-xs;
+  }
+
+  .zc-cms-shortcut-card h3,
+  .zc-cms-rules-card h3,
+  .zc-cms-prop-editor h3 {
+    @apply mb-2 mt-0 text-[10px] font-semibold uppercase tracking-wider text-stone-400;
+  }
+
+  .zc-cms-shortcut-card {
+    @apply grid grid-cols-2 gap-1;
+  }
+
+  .zc-cms-shortcut-card h3 {
+    @apply col-span-2;
+  }
+
+  .zc-cms-prop-editor label {
+    @apply mb-2 flex flex-col gap-1;
+  }
+
+  .zc-cms-prop-editor span {
+    @apply text-stone-400;
+  }
+
+  .zc-cms-prop-editor input {
+    @apply rounded border border-stone-300 px-2 py-1 text-sm outline-none focus:border-sky-400;
+  }
+
+  .zc-cms-rules-card p {
+    @apply my-0 text-stone-600;
+  }
+
+  .zc-cms-ok {
+    @apply mt-2 flex text-emerald-700;
+  }
+
+.zc-cms-no {
+    @apply mt-2 flex text-rose-700;
+}
