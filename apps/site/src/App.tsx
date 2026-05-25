@@ -189,7 +189,7 @@ export function App() {
         </div>
       </nav>
       <div id="main-content" className="min-w-0 flex-1">
-        <Suspense fallback={<div className="p-4 text-sm text-stone-500">Loading</div>}>
+        <Suspense fallback={<div aria-hidden="true" />}>
           <Page />
         </Suspense>
       </div>
