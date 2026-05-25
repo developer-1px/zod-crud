@@ -12,9 +12,6 @@ import {
   applyValidatedArrayIndexReplacements,
   applyValidatedArrayNestedValueReplacementsAtSegments,
   evaluateArrayIndexReplaceValues,
-  replaceArrayField,
-} from "../../../src/domain/schema/localSchemaArrayReplaceApply.js";
-import {
   planSameArrayElementReplaceOperations,
   planSameArrayFieldReplaceOperations,
   planSameArrayNestedReplaceOperations,
@@ -22,7 +19,8 @@ import {
   planSameArrayFieldReplacePatch,
   planSameArrayNestedReplacePatch,
   planSingleArrayFieldReplace,
-} from "../../../src/domain/schema/localSchemaArrayReplacePlan.js";
+  replaceArrayField,
+} from "../../../src/domain/schema/localSchemaArrayReplace.js";
 import {
   acceptsKnownJsonValue,
 } from "../../../src/domain/schema/localSchemaKnownJson.js";

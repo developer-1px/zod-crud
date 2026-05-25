@@ -22,84 +22,50 @@ import type { FastPatchResult, JSONPatchOperation } from "./types.js";
 
 type FastPatchSuccess = Extract<FastPatchResult, { handled: true }>;
 
-interface FastPatchStrategyOptions {
-  valuesTrusted: boolean;
-}
-
 type FastPatchStrategy = (
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
-  options: FastPatchStrategyOptions,
+  valuesTrusted: boolean,
 ) => FastPatchResult;
 
-const appendOnlyAdd: FastPatchStrategy = (state, ops, options) =>
-  applyAppendOnlyAddPatch(state, ops, options.valuesTrusted);
-
-const tailRemove: FastPatchStrategy = (state, ops) =>
-  applyTailRemovePatch(state, ops);
-
-const rootObjectRemove: FastPatchStrategy = (state, ops) =>
-  applyRootObjectRemovePatch(state, ops);
-
-const rootObjectAdd: FastPatchStrategy = (state, ops, options) =>
-  applyRootObjectAddPatch(state, ops, options.valuesTrusted);
-
-const rootObjectReplace: FastPatchStrategy = (state, ops, options) =>
-  applyRootObjectReplacePatch(state, ops, options.valuesTrusted);
-
-const rootObjectReplaceWhenValuesTrusted: FastPatchStrategy = (state, ops, options) =>
-  options.valuesTrusted
+const rootObjectReplaceWhenValuesTrusted: FastPatchStrategy = (state, ops, valuesTrusted) =>
+  valuesTrusted
     ? applyRootObjectReplacePatch(state, ops, true)
     : { handled: false };
 
-const arrayFieldReplace: FastPatchStrategy = (state, ops, options) =>
-  applySameArrayFieldReplacePatch(state, ops, options.valuesTrusted);
-
-const arrayNestedReplace: FastPatchStrategy = (state, ops, options) =>
-  applySameArrayNestedReplacePatch(state, ops, options.valuesTrusted);
-
-const arrayElementReplace: FastPatchStrategy = (state, ops, options) =>
-  applySameArrayElementReplacePatch(state, ops, options.valuesTrusted);
-
-const independentReplace: FastPatchStrategy = (state, ops, options) =>
-  applyIndependentReplacePatch(state, ops, options.valuesTrusted);
-
-const arrayStructural: FastPatchStrategy = (state, ops, options) =>
-  applySameArrayStructuralPatch(state, ops, options.valuesTrusted);
-
 const publicTrustedStateStrategies: readonly FastPatchStrategy[] = [
-  appendOnlyAdd,
-  tailRemove,
-  rootObjectRemove,
-  rootObjectAdd,
-  rootObjectReplace,
-  arrayFieldReplace,
-  arrayNestedReplace,
-  arrayElementReplace,
-  independentReplace,
-  arrayStructural,
+  applyAppendOnlyAddPatch,
+  applyTailRemovePatch,
+  applyRootObjectRemovePatch,
+  applyRootObjectAddPatch,
+  applyRootObjectReplacePatch,
+  applySameArrayFieldReplacePatch,
+  applySameArrayNestedReplacePatch,
+  applySameArrayElementReplacePatch,
+  applyIndependentReplacePatch,
+  applySameArrayStructuralPatch,
 ];
 
 const trustedStrategies: readonly FastPatchStrategy[] = [
-  appendOnlyAdd,
-  tailRemove,
-  rootObjectRemove,
-  rootObjectAdd,
-  arrayFieldReplace,
-  arrayNestedReplace,
+  applyAppendOnlyAddPatch,
+  applyTailRemovePatch,
+  applyRootObjectRemovePatch,
+  applyRootObjectAddPatch,
+  applySameArrayFieldReplacePatch,
+  applySameArrayNestedReplacePatch,
   rootObjectReplaceWhenValuesTrusted,
-  arrayElementReplace,
-  independentReplace,
-  arrayStructural,
+  applySameArrayElementReplacePatch,
+  applyIndependentReplacePatch,
+  applySameArrayStructuralPatch,
 ];
 
 const acceptedStrategies: readonly FastPatchStrategy[] = [
-  rootObjectRemove,
-  rootObjectAdd,
-  rootObjectReplace,
-  arrayFieldReplace,
-  arrayNestedReplace,
-  arrayElementReplace,
+  applyRootObjectRemovePatch,
+  applyRootObjectAddPatch,
+  applyRootObjectReplacePatch,
+  applySameArrayFieldReplacePatch,
+  applySameArrayNestedReplacePatch,
+  applySameArrayElementReplacePatch,
 ];
 
 export function applyPublicTrustedStateFastPatch(
@@ -130,9 +96,8 @@ function applyFastPatchStrategies(
   strategies: readonly FastPatchStrategy[],
   valuesTrusted: boolean,
 ): FastPatchSuccess | null {
-  const options: FastPatchStrategyOptions = { valuesTrusted };
   for (const strategy of strategies) {
-    const candidate = strategy(state, ops, options);
+    const candidate = strategy(state, ops, valuesTrusted);
     if (candidate.handled) return candidate;
   }
   return null;
