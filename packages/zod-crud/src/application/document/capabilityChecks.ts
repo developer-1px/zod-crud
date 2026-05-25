@@ -25,13 +25,11 @@ import { resolveMoveArgs } from "../../domain/verbs/move.js";
 import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
 import type { HistoryTransactionOptions } from "./stateOps.js";
 import {
-  type CapabilityPasteExecutionOptions,
-} from "./capabilityClipboardTypes.js";
-import {
   OK,
   type CapabilityResult,
 } from "./capabilityResultTypes.js";
 import {
+  type CapabilityPasteExecutionOptions,
   type DocumentCapabilityContext,
 } from "./capabilityFacadeTypes.js";
 import {

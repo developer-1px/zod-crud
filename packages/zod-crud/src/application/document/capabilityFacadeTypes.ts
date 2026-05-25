@@ -14,9 +14,12 @@ import type { SelectionTextEditOptions } from "../../domain/selection/textEdit.j
 import type { ClipboardSource } from "../../domain/verbs/copy.js";
 import type { DuplicateOpts } from "../../domain/verbs/duplicate.js";
 import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
-import type { CapabilityPasteExecutionOptions } from "./capabilityClipboardTypes.js";
 import type { CapabilityResult } from "./capabilityResultTypes.js";
 import type { HistoryTransactionOptions, JSONStateOps } from "./stateOps.js";
+
+export interface CapabilityPasteExecutionOptions {
+  trustedPayload?: boolean;
+}
 
 export interface DocumentCapabilities {
   selectScope(options?: SelectionScopeOptions): CapabilityResult;

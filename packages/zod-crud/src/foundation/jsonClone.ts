@@ -1,7 +1,10 @@
 import { buildPointer } from "./json-pointer/pointerCore.js";
-import type { CloneJsonResult } from "./jsonTypes.js";
 import { cloneTrustedPlainJson } from "./jsonTrustedClone.js";
 import { jsonSerializableErrorFast } from "./jsonSerializable.js";
+
+type CloneJsonResult<T> =
+  | { ok: true; value: T }
+  | { ok: false; reason: string };
 
 const LARGE_ARRAY_CLONE_THRESHOLD = 128;
 const LARGE_ARRAY_OBJECT_HEAD_SCAN_LIMIT = 128;

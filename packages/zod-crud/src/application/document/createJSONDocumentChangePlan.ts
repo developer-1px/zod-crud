@@ -1,24 +1,110 @@
 import { EMPTY_SELECTION, type SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
-import type {
-  DocumentChangeApplyResultPlan,
-  DocumentChangeCapturePlan,
-  DocumentChangeHistoryRecord,
-  DocumentLifecycleChangePlan,
-  DocumentSubscriptionChangePlan,
-  DocumentChangeMetadataCaptureInput,
-  PlanDocumentChangeApplyResultInput,
-  PlanDocumentChangeCaptureInput,
-  PlanDocumentChangeHistoryRecordInput,
-  PlanDocumentChangeMetadataInput,
-  PlanDocumentChangeSelectionInput,
-  PlanDocumentLastPatchInput,
-  PlanDocumentLifecycleChangeInput,
-  PlanDocumentSubscriptionChangeInput,
-  PlanDocumentSubscriptionMetadataInput,
-} from "./createJSONDocumentChangeTypes.js";
 import { buildChangeMetadata } from "./createJSONDocumentMetadataPlan.js";
+
+interface DocumentChangeMetadataCaptureInput {
+  shouldRecordHistory: boolean;
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: JSONChangeMetadata | undefined;
+  selectionEnabled: boolean;
+  documentSubscriberCount: number;
+}
+
+interface PlanDocumentChangeCaptureInput {
+  historyLimit: number;
+  isRestoring: boolean;
+  operationCount: number;
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: JSONChangeMetadata | undefined;
+  selectionEnabled: boolean;
+  documentSubscriberCount: number;
+}
+
+interface DocumentChangeCapturePlan {
+  shouldRecordHistory: boolean;
+  shouldCaptureMetadata: boolean;
+}
+
+interface DocumentChangeHistoryRecord {
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata?: JSONChangeMetadata;
+  operationsOwned: boolean;
+}
+
+interface PlanDocumentChangeHistoryRecordInput {
+  shouldRecordHistory: boolean;
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata: JSONChangeMetadata | undefined;
+  operationsOwned?: boolean;
+}
+
+interface PlanDocumentChangeApplyResultInput {
+  result: JSONResult;
+  lastPatchOperationCount: number;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  history: DocumentChangeHistoryRecord | null;
+}
+
+export interface DocumentChangeApplyResultPlan {
+  lastPatch: ReadonlyArray<JSONPatchOperation> | null;
+  history: DocumentChangeHistoryRecord | null;
+}
+
+interface PlanDocumentChangeMetadataInput {
+  shouldCaptureMetadata: boolean;
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: JSONChangeMetadata | undefined;
+  selectionBefore: SelectionSnap;
+  selectionEnabled: boolean;
+}
+
+interface PlanDocumentChangeSelectionInput {
+  shouldCaptureMetadata: boolean;
+  snapshot: () => SelectionSnap;
+}
+
+interface PlanDocumentLifecycleChangeInput {
+  result: JSONResult;
+  preserveHistory: boolean;
+}
+
+interface DocumentLifecycleChangePlan {
+  syncLastPatch: boolean;
+  clearHistory: boolean;
+}
+
+interface PlanDocumentLastPatchInput {
+  operationCount: number;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
+type DocumentSubscriptionEvent = "subscribe" | "unsubscribe";
+
+interface PlanDocumentSubscriptionChangeInput {
+  event: DocumentSubscriptionEvent;
+  subscriberCount: number;
+  subscribed: boolean;
+}
+
+interface DocumentSubscriptionChangePlan {
+  subscriberCount: number;
+  subscribed: boolean;
+  shouldCallUnderlyingUnsubscribe: boolean;
+}
+
+interface PlanDocumentSubscriptionMetadataInput {
+  metadata: JSONChangeMetadata | undefined;
+  selectionAfter: SelectionSnap;
+}
 
 function shouldCaptureDocumentChangeMetadata(
   input: DocumentChangeMetadataCaptureInput,

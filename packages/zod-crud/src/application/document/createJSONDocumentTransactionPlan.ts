@@ -1,22 +1,65 @@
 import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { HistoryTransactionOptions } from "./stateOps.js";
-import type {
-  DocumentTransactionAppendFastPathPlan,
-  DocumentTransactionMergeRange,
-  DocumentTransactionMergeWritePlan,
-  PlanDocumentTransactionAppendCompactInput,
-  PlanDocumentTransactionAppendFastPathInput,
-  PlanDocumentTransactionMergeInput,
-  PlanDocumentTransactionMergeRangeInput,
-  PlanDocumentTransactionMergeWriteInput,
-} from "./createJSONDocumentTransactionTypes.js";
 import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
 import {
   mergeGeneralTransactionMetadata,
   mergeRepeatedReplaceTransactionMetadata,
   mergeTransactionMetadataRange,
 } from "./createJSONDocumentMetadataPlan.js";
+
+interface PlanDocumentTransactionMergeInput {
+  entries: ReadonlyArray<DocumentHistoryEntry>;
+  start: number;
+  end: number;
+}
+
+interface PlanDocumentTransactionMergeRangeInput {
+  undoStart: number;
+  undoLength: number;
+  depthBefore: number;
+  currentDepth: number;
+}
+
+interface DocumentTransactionMergeRange {
+  start: number;
+  end: number;
+}
+
+interface PlanDocumentTransactionMergeWriteInput {
+  range: DocumentTransactionMergeRange | null;
+  merged: DocumentHistoryEntry | null;
+}
+
+type DocumentTransactionMergeWritePlan =
+  | { kind: "skip" }
+  | {
+      kind: "replaceRange";
+      index: number;
+      length: number;
+      entry: DocumentHistoryEntry;
+    };
+
+interface PlanDocumentTransactionAppendCompactInput {
+  previous: DocumentHistoryEntry;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionAfter: SelectionSnap;
+  metadata: HistoryTransactionOptions | undefined;
+}
+
+interface PlanDocumentTransactionAppendFastPathInput {
+  activeTransactionStartDepth: number | undefined;
+  currentDepth: number;
+  previous: DocumentHistoryEntry | undefined;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionAfter: SelectionSnap;
+  metadata: HistoryTransactionOptions | undefined;
+}
+
+type DocumentTransactionAppendFastPathPlan =
+  | { kind: "skip" }
+  | { kind: "replaceLast"; entry: DocumentHistoryEntry };
 
 export function planDocumentTransactionMerge(
   input: PlanDocumentTransactionMergeInput,

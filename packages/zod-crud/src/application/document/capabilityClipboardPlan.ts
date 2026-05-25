@@ -1,18 +1,45 @@
 import type * as z from "zod";
 
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { ClipboardSource } from "../../domain/verbs/copy.js";
 import { copy } from "../../domain/verbs/copy.js";
 import { cut } from "../../domain/verbs/cut.js";
+import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
 import { paste, rekeyProducesTrustedPayload, resolvePasteArgs } from "../../domain/verbs/paste.js";
-import type {
-  PlanDocumentCopyCapabilityInput,
-  PlanDocumentCutCapabilityInput,
-  PlanDocumentPasteCapabilityInput,
-} from "./capabilityClipboardTypes.js";
 import type { CapabilityResult } from "./capabilityResultTypes.js";
 import {
   emptySelectionCapability,
   planDocumentCapabilityResult,
 } from "./capabilityResultPlan.js";
+
+interface PlanDocumentCopyCapabilityInput {
+  state: unknown;
+  source?: ClipboardSource;
+  selectionSource?: ClipboardSource | null;
+  stateJsonTrusted?: boolean;
+}
+
+interface PlanDocumentCutCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source?: ClipboardSource;
+  selectionSource?: ClipboardSource | null;
+  stateJsonTrusted?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentPasteCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  payload: unknown;
+  selectionTarget?: Pointer | null;
+  target?: PasteTarget;
+  options?: PasteOptions;
+  trustedPayload?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
 
 export function planDocumentCutCapability<S extends z.ZodType>(
   input: PlanDocumentCutCapabilityInput<S>,

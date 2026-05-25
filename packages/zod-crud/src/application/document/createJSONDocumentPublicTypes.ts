@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { CapabilityPasteExecutionOptions } from "./capabilityClipboardTypes.js";
+import type { CapabilityPasteExecutionOptions } from "./capabilityFacadeTypes.js";
 import type { CapabilityResult } from "./capabilityResultTypes.js";
 import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";

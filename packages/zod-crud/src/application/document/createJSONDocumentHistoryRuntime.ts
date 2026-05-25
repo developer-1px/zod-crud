@@ -15,6 +15,7 @@ import {
   planDocumentHistoryMergeLastWrite,
   planDocumentTransactionCall,
   planDocumentTransactionScope,
+  type DocumentTransactionCallPlan,
 } from "./createJSONDocumentMetadataPlan.js";
 import {
   planDocumentTransactionMerge,
@@ -30,9 +31,6 @@ import {
 import type {
   DocumentHistoryRestoreCompletionPlan,
 } from "./createJSONDocumentHistoryTypes.js";
-import type {
-  DocumentTransactionCallPlan,
-} from "./createJSONDocumentMetadataTypes.js";
 import type {
   DocumentHistoryRuntimeState,
   SelectionRuntimeAccess,

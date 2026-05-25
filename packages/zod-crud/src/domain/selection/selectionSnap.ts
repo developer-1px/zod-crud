@@ -1,7 +1,11 @@
 import { cloneJson } from "../../foundation/jsonClone.js";
 import { jsonEqual } from "../../foundation/jsonEqual.js";
-import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
-import { expandRange } from "./range.js";
+import {
+  escapeSegment,
+  readAt,
+  tryParsePointer,
+  type Pointer,
+} from "../../foundation/json-pointer/pointerCore.js";
 import {
   EMPTY_SELECTION,
   type JSONPoint,
@@ -19,6 +23,48 @@ import {
   samePoint,
   sameRange,
 } from "./selectionPoint.js";
+
+type ValueKind = "null" | "object" | "array" | "string" | "number" | "boolean" | "undefined";
+
+function kindOf(v: unknown): ValueKind {
+  if (v === null) return "null";
+  if (Array.isArray(v)) return "array";
+  return typeof v as ValueKind;
+}
+
+function* walkSameKind(state: unknown, refKind: ValueKind, base: Pointer = ""): Generator<Pointer> {
+  if (kindOf(state) === refKind) yield base;
+  if (state && typeof state === "object") {
+    if (Array.isArray(state)) {
+      for (let i = 0; i < state.length; i++) {
+        yield* walkSameKind(state[i], refKind, `${base}/${i}`);
+      }
+    } else {
+      for (const k of Object.keys(state as Record<string, unknown>)) {
+        yield* walkSameKind((state as Record<string, unknown>)[k], refKind, `${base}/${escapeSegment(k)}`);
+      }
+    }
+  }
+}
+
+export function expandRange(anchor: Pointer, focus: Pointer, state?: unknown): Pointer[] {
+  if (anchor === focus) return [anchor];
+  if (state !== undefined) {
+    const segments = tryParsePointer(anchor);
+    const a: ReturnType<typeof readAt> = segments === null ? { ok: false } : readAt(state, segments);
+    if (a.ok) {
+      const refKind = kindOf(a.value);
+      const arr = [...walkSameKind(state, refKind)];
+      const ia = arr.indexOf(anchor);
+      const ib = arr.indexOf(focus);
+      if (ia >= 0 && ib >= 0) {
+        const [lo, hi] = ia <= ib ? [ia, ib] : [ib, ia];
+        return arr.slice(lo, hi + 1);
+      }
+    }
+  }
+  return anchor === focus ? [anchor] : [anchor, focus];
+}
 
 export function selectionSnapshot(s: SelectionSnap): SelectionSnap {
   const snapshot = {

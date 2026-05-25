@@ -1,5 +1,6 @@
 import type * as z from "zod";
 
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { removeSourcesPatch } from "../../foundation/json-patch/removeSources.js";
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
@@ -7,27 +8,93 @@ import {
   patchPreflightFromApplyResult,
 } from "../../domain/schema/patchPreflight.js";
 import { duplicate } from "../../domain/verbs/duplicate.js";
+import type { DuplicateOpts } from "../../domain/verbs/duplicate.js";
 import { move as moveVerb } from "../../domain/verbs/move.js";
 import { replace as replaceVerb } from "../../domain/verbs/replace.js";
-import { replaceSelectionText } from "../../domain/selection/textEdit.js";
-import { deleteSelectionText } from "../../domain/selection/textDelete.js";
-import type {
-  DocumentReplaceArgsPlan,
-  PlanDocumentDeleteTextCapabilityInput,
-  PlanDocumentDuplicateCapabilityInput,
-  PlanDocumentMoveCapabilityInput,
-  PlanDocumentPatchCapabilityInput,
-  PlanDocumentRemoveCapabilityInput,
-  PlanDocumentReplaceArgsInput,
-  PlanDocumentReplaceCapabilityInput,
-  PlanDocumentReplaceTextCapabilityInput,
-} from "./capabilityMutationTypes.js";
+import type { SelectionSource, SelectionSnap } from "../../domain/selection/selectionTypes.js";
+import {
+  replaceSelectionText,
+  type SelectionTextEditOptions,
+} from "../../domain/selection/textEdit.js";
+import {
+  deleteSelectionText,
+  type SelectionTextDeleteOptions,
+} from "../../domain/selection/textDelete.js";
+import type { HistoryTransactionOptions } from "./stateOps.js";
 import type { CapabilityResult } from "./capabilityResultTypes.js";
 import {
   emptySelectionCapability,
   planDocumentCapabilityResult,
   pointerSourceCapabilityError,
 } from "./capabilityResultPlan.js";
+
+interface PlanDocumentPatchCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentRemoveCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source?: SelectionSource;
+  selectionSource?: SelectionSource | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentReplaceCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  value: unknown;
+  target?: Pointer;
+  selectionTarget?: Pointer | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentReplaceArgsInput {
+  pathOrValue: Pointer | unknown;
+  value: unknown;
+  hasValueArg: boolean;
+}
+
+type DocumentReplaceArgsPlan = { target?: Pointer; value: unknown };
+
+interface PlanDocumentReplaceTextCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  selection: SelectionSnap;
+  replacement: string;
+  options?: SelectionTextEditOptions & HistoryTransactionOptions;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentDeleteTextCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  selection: SelectionSnap;
+  options?: SelectionTextDeleteOptions & HistoryTransactionOptions;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentMoveCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  target: Pointer;
+  source?: Pointer;
+  selectionSource?: Pointer | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentDuplicateCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  source?: Pointer;
+  selectionSource?: Pointer | null;
+  options?: DuplicateOpts;
+  stateJsonTrusted?: boolean;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
 
 export function planDocumentMoveCapability<S extends z.ZodType>(
   input: PlanDocumentMoveCapabilityInput<S>,

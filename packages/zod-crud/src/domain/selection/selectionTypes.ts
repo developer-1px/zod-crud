@@ -1,5 +1,11 @@
-import type { JSONValue } from "../../foundation/jsonTypes.js";
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+
+type JSONPrimitive = string | number | boolean | null;
+
+type JSONValue =
+  | JSONPrimitive
+  | { readonly [key: string]: JSONValue }
+  | ReadonlyArray<JSONValue>;
 
 export type SelectionMode = "single" | "multiple" | "extended";
 export type SelectionType = "None" | "Caret" | "Range";

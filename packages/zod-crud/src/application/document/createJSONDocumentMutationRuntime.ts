@@ -5,7 +5,7 @@ import { commitMutable, historyDepth } from "../../foundation/history.js";
 import { duplicate as duplicateVerb } from "../../domain/verbs/duplicate.js";
 import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { JSONDocumentCommitOptions, JSONDocumentDuplicateOptions, JSONDocumentDuplicateResult, JSONPatchInput } from "./createJSONDocumentPublicTypes.js";
-import type { DocumentChangeApplyResultPlan } from "./createJSONDocumentChangeTypes.js";
+import type { DocumentChangeApplyResultPlan } from "./createJSONDocumentChangePlan.js";
 import {
   planDocumentCommitPreview,
   planDocumentCommitRoute,

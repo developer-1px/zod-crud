@@ -1,17 +1,62 @@
 import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
-import type {
-  DocumentHistoryMergeLastWritePlan,
-  DocumentTransactionCallPlan,
-  DocumentTransactionScopePlan,
-  PlanDocumentActiveHistoryMetadataInput,
-  PlanDocumentHistoryMergeLastInput,
-  PlanDocumentHistoryMergeLastWriteInput,
-  PlanDocumentHistoryMergeMetadataInput,
-  PlanDocumentTransactionCallInput,
-  PlanDocumentTransactionScopeInput,
-} from "./createJSONDocumentMetadataTypes.js";
 import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
+
+interface PlanDocumentHistoryMergeMetadataInput {
+  previous: HistoryTransactionOptions | undefined;
+  next: HistoryTransactionOptions | undefined;
+  options?: { mergeKey?: string };
+}
+
+interface PlanDocumentHistoryMergeLastInput {
+  isRestoring: boolean;
+  historyDepth: number;
+  previous: DocumentHistoryEntry | undefined;
+  top: DocumentHistoryEntry | undefined;
+  options?: { mergeKey?: string };
+}
+
+interface PlanDocumentHistoryMergeLastWriteInput {
+  undoLength: number;
+  merged: DocumentHistoryEntry | null;
+}
+
+type DocumentHistoryMergeLastWritePlan =
+  | { kind: "skip" }
+  | {
+      kind: "replaceLastPair";
+      index: number;
+      length: number;
+      entry: DocumentHistoryEntry;
+    };
+
+interface PlanDocumentActiveHistoryMetadataInput {
+  active: HistoryTransactionOptions | undefined;
+  next: HistoryTransactionOptions | undefined;
+}
+
+interface PlanDocumentTransactionScopeInput {
+  activeTransactionStartDepth: number | undefined;
+  depthBefore: number;
+}
+
+interface DocumentTransactionScopePlan {
+  activeTransactionStartDepth: number;
+  restoreTransactionStartDepth: number | undefined;
+}
+
+interface PlanDocumentTransactionCallInput {
+  optionsOrFn: HistoryTransactionOptions | (() => void);
+  maybeFn: (() => void) | undefined;
+}
+
+export type DocumentTransactionCallPlan =
+  | { kind: "skip" }
+  | {
+      kind: "run";
+      metadata: HistoryTransactionOptions | undefined;
+      fn: () => void;
+    };
 
 export function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,
