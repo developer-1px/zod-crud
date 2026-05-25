@@ -2,19 +2,17 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  planClipboardPeekBuffer,
-  planClipboardReadBuffer,
-  planClipboardWriteBuffer,
-} from "../../../src/application/document/clipboardBufferPlan.js";
-import {
   planClipboardCopy,
   planClipboardCutApplyResult,
-  planClipboardPasteApplyResult,
-  planClipboardSchemaTrustedSourceBuffer,
-  planClipboardSource,
   planClipboardCut,
   planClipboardPaste,
-} from "../../../src/application/document/clipboardPlan.js";
+  planClipboardPasteApplyResult,
+  planClipboardPeekBuffer,
+  planClipboardReadBuffer,
+  planClipboardSchemaTrustedSourceBuffer,
+  planClipboardSource,
+  planClipboardWriteBuffer,
+} from "../../../src/application/document/clipboard.js";
 import type { ClipboardBuffer } from "../../../src/application/document/clipboardTypes.js";
 import type { ApplyResult, JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 

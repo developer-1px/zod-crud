@@ -1,7 +1,9 @@
 import { cloneJson } from "../../foundation/jsonClone.js";
 import { cloneTrustedJson } from "../../foundation/jsonTrustedClone.js";
-import { collectSuffixExistingValues } from "./rekeySuffix.js";
-import { scalarText, walk, walkSingleFieldText } from "./rekeyTraversal.js";
+
+const hasOwn = Object.prototype.hasOwnProperty;
+const COPY_SUFFIX = "-copy";
+const COPY_NESTED_SUFFIX = "-copy-";
 
 export type RekeyStrategy = "suffix" | "uuid" | ((value: unknown, ctx: RekeyContext) => string);
 
@@ -30,6 +32,10 @@ export interface RekeyField {
 
 interface SuffixAttemptField extends RekeyField {
   nextAttempts: Map<string, number>;
+}
+
+interface SuffixRekeyField extends RekeyField {
+  bases: Set<string>;
 }
 
 export function rekeyPayload(
@@ -84,6 +90,75 @@ function uniqueFields(fields: ReadonlyArray<string>): string[] {
   return [...new Set(fields)];
 }
 
+function walk(value: unknown, visit: (value: Record<string, unknown>) => void): void {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const item = value[index];
+      if (item !== null && typeof item === "object") walk(item, visit);
+    }
+    return;
+  }
+  if (isRecord(value)) {
+    visit(value);
+    for (const key in value) {
+      if (hasOwn.call(value, key)) {
+        const item = value[key];
+        if (item !== null && typeof item === "object") walk(item, visit);
+      }
+    }
+  }
+}
+
+function walkSingleFieldText(
+  value: unknown,
+  field: string,
+  visit: (text: string) => void,
+): void {
+  if (Array.isArray(value)) {
+    for (let index = 0; index < value.length; index += 1) {
+      const item = value[index];
+      if (item !== null && typeof item === "object") {
+        walkSingleFieldText(item, field, visit);
+      }
+    }
+    return;
+  }
+  if (!isRecord(value)) return;
+
+  const text = scalarText(value[field]);
+  if (text !== null) visit(text);
+
+  for (const key in value) {
+    if (!hasOwn.call(value, key)) continue;
+    const item = value[key];
+    if (item !== null && typeof item === "object" && mayContainField(item, field)) {
+      walkSingleFieldText(item, field, visit);
+    }
+  }
+}
+
+function mayContainField(value: object, field: string): boolean {
+  if (Array.isArray(value)) return value.length > 0;
+  if (!isRecord(value)) return false;
+  if (hasOwn.call(value, field)) return true;
+  for (const key in value) {
+    if (!hasOwn.call(value, key)) continue;
+    const child = value[key];
+    if (child !== null && typeof child === "object") return true;
+  }
+  return false;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function scalarText(value: unknown): string | null {
+  if (typeof value === "string") return value;
+  if (typeof value === "number" || typeof value === "boolean") return String(value);
+  return null;
+}
+
 function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): RekeyField[] {
   if (fields.length === 1) {
     const field = fields[0]!;
@@ -107,6 +182,159 @@ function collectExistingValues(value: unknown, fields: ReadonlyArray<string>): R
 
 function collectSingleExistingField(value: unknown, field: string, existing: Set<string>): void {
   walkSingleFieldText(value, field, (text) => existing.add(text));
+}
+
+function collectSuffixExistingValues(
+  state: unknown,
+  payload: unknown,
+  fields: ReadonlyArray<string>,
+  payloadEntries: Array<Record<string, unknown>>,
+): RekeyField[] {
+  if (fields.length === 1) {
+    return collectSingleSuffixExistingValues(state, payload, fields[0]!, payloadEntries);
+  }
+
+  const suffixFields = fields.map((field): SuffixRekeyField => ({
+    field,
+    existing: new Set(),
+    bases: new Set(),
+  }));
+
+  walk(payload, (entry) => {
+    let hasRekeyValue = false;
+    for (let index = 0; index < suffixFields.length; index += 1) {
+      const { field, bases } = suffixFields[index]!;
+      const current = scalarText(entry[field]);
+      if (current === null) continue;
+      bases.add(current);
+      hasRekeyValue = true;
+    }
+    if (hasRekeyValue) payloadEntries.push(entry);
+  });
+
+  let hasBases = false;
+  for (const field of suffixFields) {
+    if (field.bases.size === 0) continue;
+    hasBases = true;
+  }
+  if (!hasBases) return suffixFields;
+
+  if (suffixFields.length === 1) {
+    const suffixField = suffixFields[0]!;
+    if (suffixField.bases.size === 1) {
+      collectSingleSuffixField(state, suffixField);
+      return suffixFields;
+    }
+    walk(state, (entry) => {
+      const text = scalarText(entry[suffixField.field]);
+      if (text === null) return;
+      if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
+    });
+    return suffixFields;
+  }
+
+  walk(state, (entry) => {
+    for (let index = 0; index < suffixFields.length; index += 1) {
+      const suffixField = suffixFields[index]!;
+      const text = scalarText(entry[suffixField.field]);
+      if (text === null) continue;
+      if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
+    }
+  });
+
+  return suffixFields;
+}
+
+function collectSingleSuffixExistingValues(
+  state: unknown,
+  payload: unknown,
+  field: string,
+  payloadEntries: Array<Record<string, unknown>>,
+): RekeyField[] {
+  const suffixField: SuffixRekeyField = {
+    field,
+    existing: new Set(),
+    bases: new Set(),
+  };
+  let hasDuplicateBase = false;
+
+  walk(payload, (entry) => {
+    const current = scalarText(entry[field]);
+    if (current === null) return;
+    payloadEntries.push(entry);
+    if (suffixField.bases.has(current)) {
+      hasDuplicateBase = true;
+      return;
+    }
+    suffixField.bases.add(current);
+  });
+
+  if (suffixField.bases.size === 0) return [suffixField];
+  if (suffixField.bases.size === 1) {
+    collectSingleSuffixField(state, suffixField);
+    return [suffixField];
+  }
+
+  if (!hasDuplicateBase && !collectExactSuffixFieldConflicts(state, suffixField)) {
+    return [suffixField];
+  }
+
+  walk(state, (entry) => {
+    const text = scalarText(entry[suffixField.field]);
+    if (text === null) return;
+    if (matchesSuffixCandidate(text, suffixField)) suffixField.existing.add(text);
+  });
+  return [suffixField];
+}
+
+function collectExactSuffixFieldConflicts(state: unknown, suffixField: SuffixRekeyField): boolean {
+  let hasConflict = false;
+  walkSingleFieldText(state, suffixField.field, (text) => {
+    if (!suffixField.bases.has(text)) return;
+    suffixField.existing.add(text);
+    hasConflict = true;
+  });
+  return hasConflict;
+}
+
+function collectSingleSuffixField(state: unknown, suffixField: SuffixRekeyField): void {
+  const base = suffixField.bases.values().next().value as string;
+  const exact = `${base}-copy`;
+  const nested = `${exact}-`;
+  scanSingleSuffixField(state, suffixField.field, suffixField.existing, base, exact, nested);
+}
+
+function scanSingleSuffixField(
+  value: unknown,
+  field: string,
+  existing: Set<string>,
+  base: string,
+  exact: string,
+  nested: string,
+): void {
+  walkSingleFieldText(value, field, (text) => {
+    if (text === base || text === exact || (text.length >= nested.length && text.startsWith(nested))) {
+      existing.add(text);
+    }
+  });
+}
+
+function matchesSuffixCandidate(value: string, field: SuffixRekeyField): boolean {
+  if (field.bases.has(value)) return true;
+
+  if (
+    value.endsWith(COPY_SUFFIX)
+    && field.bases.has(value.slice(0, -COPY_SUFFIX.length))
+  ) {
+    return true;
+  }
+
+  let marker = value.indexOf(COPY_NESTED_SUFFIX);
+  while (marker !== -1) {
+    if (field.bases.has(value.slice(0, marker))) return true;
+    marker = value.indexOf(COPY_NESTED_SUFFIX, marker + 1);
+  }
+  return false;
 }
 
 function rekeyValue(

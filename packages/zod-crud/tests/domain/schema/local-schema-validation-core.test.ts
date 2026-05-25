@@ -27,9 +27,15 @@ import {
   acceptsKnownJsonValue,
 } from "../../../src/domain/schema/localSchemaKnownJson.js";
 import {
+  applySequentialLocalOperation,
+  applySequentialLocalOperationPatch,
+  applySequentialLocalOperations,
   applyPatchWithLocalSchemaValidation,
+  evaluateAppliedLocalOpValidationPlan,
+  planAppliedLocalOpValidation,
   planSameArrayPatch,
   planSameArrayPatchOperations,
+  planSequentialPatch,
 } from "../../../src/domain/schema/localSchemaValidationCore.js";
 import {
   applyArrayAddPlan,
@@ -71,13 +77,6 @@ import {
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
 } from "../../../src/domain/schema/localSchemaRootRecord.js";
-import {
-  applySequentialLocalOperation,
-  applySequentialLocalOperationPatch,
-  applySequentialLocalOperations,
-  planAppliedLocalOpValidation,
-  planSequentialPatch,
-} from "../../../src/domain/schema/localSchemaSequential.js";
 import {
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -125,9 +124,6 @@ import {
   planArrayAddAppliedOperations,
   planLocalSchemaValidationValueValidation,
 } from "../../../src/domain/schema/localSchemaValueValidation.js";
-import {
-  evaluateAppliedLocalOpValidationPlan,
-} from "../../../src/domain/schema/localSchemaSequential.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 describe("local patch value validation planning", () => {

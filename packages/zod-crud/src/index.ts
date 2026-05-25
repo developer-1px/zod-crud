@@ -4,6 +4,14 @@
 // Headless entrypoint. React APIs live under `zod-crud/react` so the optional
 // React peer is not required for pure JSON Patch / Pointer consumers.
 
+import type * as z from "zod";
+import { applyPatchWithLocalSchemaValidation } from "./domain/schema/localSchemaValidationCore.js";
+import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "./foundation/json-patch/applyPublic.js";
+import type {
+  ApplyResult,
+  JSONPatchOperation,
+} from "./foundation/json-patch/types.js";
+
 // === Boundary error + document metadata ===
 export { JSONCrudError } from "./foundation/errors.js";
 export type {
@@ -64,11 +72,19 @@ export type { UseSelectionOptions } from "./application/document/selectionPlan.j
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/json-patch/applyPublic.js";
-export { applyPatchToTrustedState } from "./application/trustedStatePatch.js";
 export type {
   JSONPatchOperation,
   JSONResult,
 } from "./foundation/json-patch/types.js";
+
+export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): ApplyResult<S> {
+  return applyPatchWithLocalSchemaValidation(schema, state, ops)
+    ?? applyPatchToTrustedStateCore(schema, state, ops);
+}
 
 // === RFC 6901 — JSON Pointer ===
 export {
