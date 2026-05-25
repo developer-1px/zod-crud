@@ -1,35 +1,126 @@
 import type * as z from "zod";
-import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
+import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import { readAt, tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
 import { reduceSelection } from "../../../domain/selection/reducer.js";
 import { restoreSelection } from "../../../domain/selection/snap.js";
-import type { SelectionAction, SelectionSnap } from "../../../domain/selection/types.js";
+import type { SelectionAction, SelectionMode, SelectionSnap } from "../../../domain/selection/types.js";
 import { isPlainStructuralSchemaForLocalValidation } from "../../../domain/schema/validation/schema.js";
 import type { ClipboardPeekResult } from "../clipboard/types.js";
-import type { HistoryTransactionOptions, JSONChangeMetadata } from "./types.js";
+import type { CapabilityResult } from "../can/result.js";
+import type { CapabilityPasteExecutionOptions } from "../can/types.js";
 import type {
-  DocumentCanPastePlan,
-  DocumentCommitHistoryInput,
-  DocumentCommitPreviewPlan,
-  DocumentCommitRoutePlan,
-  DocumentCommitSelectionPlan,
-  DocumentPatchCallPlan,
-  DocumentSelectionRuntimePlan,
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
+  JSONDocumentCommitOptions,
   JSONDocumentDuplicateResult,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONPatchInput,
-  PlanDocumentCanPasteInput,
-  PlanDocumentCommitPreviewInput,
-  PlanDocumentCommitRouteInput,
-  PlanDocumentCommitSelectionAfterInput,
-  PlanDocumentCommitSelectionInput,
-  PlanDocumentDuplicateApplyResultInput,
-  PlanDocumentPatchCallInput,
-  PlanDocumentSelectionRuntimeInput,
-} from "../types.js";
-import type { UseSelectionOptions } from "../selection/action.js";
+  UseSelectionOptions,
+} from "../runtime/types.js";
 import { buildChangeMetadata, compactHistoryMetadata } from "../history/metadata.js";
+
+interface PlanDocumentCanPasteInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  clipboard: ClipboardPeekResult;
+  target: JSONDocumentPasteTarget;
+  options?: JSONDocumentPasteOptions;
+}
+
+type DocumentCanPastePlan =
+  | { kind: "result"; result: CapabilityResult }
+  | {
+      kind: "capability";
+      payload: unknown;
+      target: JSONDocumentPasteTarget;
+      options: JSONDocumentPasteOptions;
+      executionOptions: CapabilityPasteExecutionOptions;
+    };
+
+interface PlanDocumentSelectionRuntimeInput {
+  selection: boolean | UseSelectionOptions | undefined;
+  onChange: (() => void) | undefined;
+}
+
+interface DocumentSelectionRuntimePlan {
+  selectionEnabled: boolean;
+  selectionMode: SelectionMode;
+  createSelectionOptions: UseSelectionOptions & {
+    onChange?: () => void;
+    applyMetadataSelectionAfter: true;
+  };
+}
+
+interface PlanDocumentPatchCallInput {
+  operations: JSONPatchInput;
+}
+
+export interface DocumentPatchCallPlan {
+  operations: ReadonlyArray<JSONPatchOperation>;
+  operationsOwned: boolean;
+}
+
+interface PlanDocumentCommitRouteInput {
+  options: JSONDocumentCommitOptions | undefined;
+}
+
+type DocumentCommitRoutePlan =
+  | { kind: "patch"; metadata: HistoryTransactionOptions | undefined }
+  | {
+      kind: "selection";
+      metadata: HistoryTransactionOptions | undefined;
+      selection: SelectionAction | SelectionSnap;
+    };
+
+interface PlanDocumentCommitSelectionInput {
+  activeHistoryMetadata: HistoryTransactionOptions | undefined;
+  metadata: HistoryTransactionOptions | undefined;
+  selection: SelectionAction | SelectionSnap;
+  selectionBefore: SelectionSnap;
+  state: unknown;
+  selectionMode: SelectionMode;
+  selectionEnabled: boolean;
+}
+
+interface PlanDocumentCommitSelectionAfterInput {
+  current: SelectionSnap;
+  selection: SelectionAction | SelectionSnap;
+  state: unknown;
+  mode: SelectionMode;
+}
+
+interface DocumentCommitSelectionPlan {
+  selectionAfter: SelectionSnap;
+  changeMetadata: JSONChangeMetadata | undefined;
+}
+
+interface PlanDocumentCommitPreviewInput {
+  result: JSONResult;
+  state: unknown;
+  applied: ReadonlyArray<JSONPatchOperation>;
+}
+
+type DocumentCommitPreviewPlan =
+  | { kind: "fallbackPatch" }
+  | {
+      kind: "trustedApply";
+      state: unknown;
+      applied: ReadonlyArray<JSONPatchOperation>;
+    };
+
+interface DocumentCommitHistoryInput {
+  historyLimit: number;
+  isRestoring: boolean;
+  operationCount: number;
+}
+
+interface PlanDocumentDuplicateApplyResultInput<T> {
+  result: JSONResult;
+  state: T;
+  applied: ReadonlyArray<JSONPatchOperation>;
+  duplicatedTo: Pointer;
+}
 
 export function planDocumentCanPaste<S extends z.ZodType>(
   input: PlanDocumentCanPasteInput<S>,

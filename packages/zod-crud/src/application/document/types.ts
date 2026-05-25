@@ -1,18 +1,36 @@
-import type * as z from "zod";
-import type { CapabilityPasteExecutionOptions } from "./can/types.js";
 import type { CapabilityResult } from "./can/result.js";
 import type { JSONPatchOperation, JSONResult } from "../../foundation/patch/types.js";
 import type { Pointer } from "../../foundation/pointer/index.js";
-import type { SelectionAction, SelectionMode, SelectionSource, SelectionSnap } from "../../domain/selection/types.js";
-import type { ClipboardPeekResult, ClipboardState } from "./clipboard/types.js";
+import type { SelectionSource } from "../../domain/selection/types.js";
+import type { ClipboardState } from "./clipboard/types.js";
 import type { EntriesResult, QueryResult, ReadResult } from "./read.js";
 import type { SchemaState } from "./schema.js";
 import type { SelectionState } from "./selection/create.js";
-import type { UseSelectionOptions } from "./selection/action.js";
-import type { DuplicateError, DuplicateOpts } from "../../domain/duplicate.js";
-import type { PasteOptions, PasteTarget } from "../../domain/paste.js";
 import type { JSONCrudError } from "../../foundation/error.js";
-import type { HistoryTransactionOptions, JSONChangeMetadata } from "./state/types.js";
+import type { JSONDocumentHistory } from "./history/types.js";
+import type {
+  JSONChangeMetadata,
+  JSONDocumentCommitOptions,
+  JSONDocumentDuplicateOptions,
+  JSONDocumentDuplicateResult,
+  JSONDocumentPasteOptions,
+  JSONDocumentPasteTarget,
+  JSONPatchInput,
+  UseSelectionOptions,
+} from "./runtime/types.js";
+
+export type { JSONDocumentHistory } from "./history/types.js";
+export type {
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
+  JSONDocumentCommitOptions,
+  JSONDocumentDuplicateOptions,
+  JSONDocumentDuplicateResult,
+  JSONDocumentPasteOptions,
+  JSONDocumentPasteTarget,
+  JSONPatchInput,
+  UseSelectionOptions,
+} from "./runtime/types.js";
 
 export interface UseJSONDocumentOptions {
   strict?: boolean | undefined;
@@ -26,146 +44,7 @@ export interface UseJSONDocumentOptions {
   selection?: boolean | UseSelectionOptions;
   onChange?: () => void;
 }
-
-export interface PlanDocumentSelectionRuntimeInput {
-  selection: UseJSONDocumentOptions["selection"];
-  onChange: UseJSONDocumentOptions["onChange"];
-}
-
-export interface DocumentSelectionRuntimePlan {
-  selectionEnabled: boolean;
-  selectionMode: SelectionMode;
-  createSelectionOptions: UseSelectionOptions & {
-    onChange?: () => void;
-    applyMetadataSelectionAfter: true;
-  };
-}
-
-type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
-type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };
-
-export interface JSONDocumentHistory {
-  readonly canUndo: boolean;
-  readonly canRedo: boolean;
-  readonly undoDepth: number;
-  readonly redoDepth: number;
-  undo(): boolean;
-  redo(): boolean;
-  mergeLast(options?: { mergeKey?: string }): boolean;
-  transaction(fn: () => void): void;
-  transaction(options: HistoryTransactionOptions, fn: () => void): void;
-}
-
-export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
-  /**
-   * Final model selection for this edit. When present, it overrides mutation
-   * auto-selection and is recorded in the same history entry as the patch.
-   */
-  selection?: SelectionAction | SelectionSnap;
-}
-
-export interface PlanDocumentCommitRouteInput {
-  options: JSONDocumentCommitOptions | undefined;
-}
-
-export type DocumentCommitRoutePlan =
-  | { kind: "patch"; metadata: HistoryTransactionOptions | undefined }
-  | {
-      kind: "selection";
-      metadata: HistoryTransactionOptions | undefined;
-      selection: SelectionAction | SelectionSnap;
-    };
-
-export interface PlanDocumentCommitSelectionInput {
-  activeHistoryMetadata: HistoryTransactionOptions | undefined;
-  metadata: HistoryTransactionOptions | undefined;
-  selection: SelectionAction | SelectionSnap;
-  selectionBefore: SelectionSnap;
-  state: unknown;
-  selectionMode: SelectionMode;
-  selectionEnabled: boolean;
-}
-
-export interface PlanDocumentCommitSelectionAfterInput {
-  current: SelectionSnap;
-  selection: SelectionAction | SelectionSnap;
-  state: unknown;
-  mode: SelectionMode;
-}
-
-export interface DocumentCommitSelectionPlan {
-  selectionAfter: SelectionSnap;
-  changeMetadata: JSONChangeMetadata | undefined;
-}
-
-export interface PlanDocumentCommitPreviewInput {
-  result: JSONResult;
-  state: unknown;
-  applied: ReadonlyArray<JSONPatchOperation>;
-}
-
-export type DocumentCommitPreviewPlan =
-  | { kind: "fallbackPatch" }
-  | {
-      kind: "trustedApply";
-      state: unknown;
-      applied: ReadonlyArray<JSONPatchOperation>;
-    };
-
-export interface DocumentCommitHistoryInput {
-  historyLimit: number;
-  isRestoring: boolean;
-  operationCount: number;
-}
-
-export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 export type JSONCapabilityResult = CapabilityResult;
-export type JSONDocumentDuplicateOptions = DuplicateOpts;
-export type JSONDocumentDuplicateResult<T> =
-  | {
-      ok: true;
-      value: T;
-      applied: ReadonlyArray<JSONPatchOperation>;
-      duplicatedTo: Pointer;
-    }
-  | DuplicateError
-  | Extract<JSONResult, { ok: false }>;
-export type JSONDocumentPasteOptions = PasteOptions;
-export type JSONDocumentPasteTarget = PasteTarget;
-
-export interface PlanDocumentDuplicateApplyResultInput<T> {
-  result: JSONResult;
-  state: T;
-  applied: ReadonlyArray<JSONPatchOperation>;
-  duplicatedTo: Pointer;
-}
-
-export interface PlanDocumentCanPasteInput<S extends z.ZodType> {
-  schema: S;
-  state: z.output<S>;
-  clipboard: ClipboardPeekResult;
-  target: JSONDocumentPasteTarget;
-  options?: JSONDocumentPasteOptions;
-}
-
-export type DocumentCanPastePlan =
-  | { kind: "result"; result: JSONCapabilityResult }
-  | {
-      kind: "capability";
-      payload: unknown;
-      target: JSONDocumentPasteTarget;
-      options: JSONDocumentPasteOptions;
-      executionOptions: CapabilityPasteExecutionOptions;
-    };
-
-export interface PlanDocumentPatchCallInput {
-  operations: JSONPatchInput;
-}
-
-export interface DocumentPatchCallPlan {
-  operations: ReadonlyArray<JSONPatchOperation>;
-  operationsOwned: boolean;
-}
 
 export interface JSONDocument<T> {
   readonly value: T;

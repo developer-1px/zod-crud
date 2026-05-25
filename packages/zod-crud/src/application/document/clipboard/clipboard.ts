@@ -6,7 +6,7 @@ import { cloneTrustedPlainJson } from "../../../foundation/json/trustedClone.js"
 import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import { readAt, tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
 import { normalizePointerSources } from "../../../foundation/pointer/source.js";
-import type { JSONStateOps } from "../state/types.js";
+import type { JSONStateOps } from "../runtime/types.js";
 import type { SelectionSource } from "../../../domain/selection/types.js";
 import {
   paste,

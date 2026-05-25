@@ -1,6 +1,6 @@
 import { EMPTY_SELECTION, type SelectionSnap } from "../../../domain/selection/types.js";
 import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
-import type { HistoryTransactionOptions, JSONChangeMetadata } from "./types.js";
+import type { HistoryTransactionOptions, JSONChangeMetadata } from "../runtime/types.js";
 import { buildChangeMetadata } from "../history/metadata.js";
 
 interface DocumentChangeMetadataCaptureInput {

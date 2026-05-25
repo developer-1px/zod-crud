@@ -4,7 +4,14 @@ import type { Pointer } from "../../../foundation/pointer/index.js";
 import { commitMutable, historyDepth } from "../../../foundation/history.js";
 import { duplicate as duplicateVerb } from "../../../domain/duplicate.js";
 import type { SelectionSnap } from "../../../domain/selection/types.js";
-import type { JSONDocumentCommitOptions, JSONDocumentDuplicateOptions, JSONDocumentDuplicateResult, JSONPatchInput } from "../types.js";
+import type {
+  HistoryTransactionOptions,
+  JSONChangeMetadata,
+  JSONDocumentCommitOptions,
+  JSONDocumentDuplicateOptions,
+  JSONDocumentDuplicateResult,
+  JSONPatchInput,
+} from "../runtime/types.js";
 import type { DocumentChangeApplyResultPlan } from "./change.js";
 import {
   planDocumentCommitPreview,
@@ -24,11 +31,12 @@ import { shouldRecordDocumentCommitHistory } from "./commit.js";
 import { planDocumentHistoryRecord } from "../history/restore.js";
 import type {
   DocumentHistoryRuntimeState,
+} from "../history/types.js";
+import type {
   DocumentPatchRuntimeState,
   SelectionRuntimeAccess,
   TrustedDocumentStateOps,
-} from "./document.js";
-import type { HistoryTransactionOptions, JSONChangeMetadata } from "./types.js";
+} from "../runtime/types.js";
 
 export interface CreateDocumentMutationRuntimeInput<S extends z.ZodType> {
   schema: S;

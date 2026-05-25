@@ -5,21 +5,21 @@ import { replaceValueAtSegments } from "../../../foundation/patch/replaceValue.j
 import { parsePointer, type Pointer } from "../../../foundation/pointer/index.js";
 import {
   arrayElementSchemaAtParent,
-} from "../validation/schema.js";
+} from "../shared/schema.js";
 import {
   acceptsKnownJsonValueWithValidator,
   knownJsonValueValidatorForSchema,
-} from "../validation/knownJson.js";
+} from "../shared/knownJson.js";
 import {
   arrayIndexInParent,
   arrayIndexPathLocation,
   readArrayAtSegments,
 } from "./path.js";
-import { okLocalSchemaValidation } from "../validation/result.js";
+import { okLocalSchemaValidation } from "../shared/result.js";
 import {
   evaluateAppliedAddValueValidationPlan,
   planArrayAddAppliedOperations,
-} from "../validation/value.js";
+} from "../shared/value.js";
 
 export interface IncreasingArrayAddPatchPlan {
   parent: Pointer;

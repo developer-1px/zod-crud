@@ -8,7 +8,6 @@ import {
   moveForward,
   redoDepth,
 } from "../../../foundation/history.js";
-import type { JSONDocumentHistory } from "../types.js";
 import {
   planDocumentActiveHistoryMetadata,
   planDocumentHistoryMergeLast,
@@ -29,14 +28,15 @@ import {
   planDocumentHistoryRestoreFlow,
 } from "./restore.js";
 import type {
+  DocumentHistoryRuntimeState,
   DocumentHistoryRestoreCompletionPlan,
+  JSONDocumentHistory,
 } from "./types.js";
 import type {
-  DocumentHistoryRuntimeState,
   SelectionRuntimeAccess,
   TrustedDocumentStateOps,
-} from "../state/document.js";
-import type { HistoryTransactionOptions } from "../state/types.js";
+} from "../runtime/types.js";
+import type { HistoryTransactionOptions } from "../runtime/types.js";
 
 export interface CreateDocumentHistoryRuntimeInput<T> {
   rawOps: TrustedDocumentStateOps<T>;

@@ -111,6 +111,7 @@ describe("public docs consistency", () => {
   test("site docs describe the current nested source layout", () => {
     for (const path of [
       "application/document/can",
+      "application/document/runtime",
       "application/document/state",
       "application/document/history",
       "application/document/clipboard",
@@ -118,6 +119,7 @@ describe("public docs consistency", () => {
       "domain/pointer",
       "domain/schema/array",
       "domain/schema/object",
+      "domain/schema/shared",
       "domain/schema/validation",
       "domain/selection",
       "foundation/json",

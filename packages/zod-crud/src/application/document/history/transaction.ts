@@ -1,7 +1,7 @@
 import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import type { SelectionSnap } from "../../../domain/selection/types.js";
-import type { HistoryTransactionOptions } from "../state/types.js";
+import type { HistoryTransactionOptions } from "../runtime/types.js";
 import type { DocumentHistoryEntry } from "./types.js";
 import {
   mergeGeneralTransactionMetadata,

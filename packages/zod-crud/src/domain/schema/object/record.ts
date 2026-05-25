@@ -5,7 +5,7 @@ import {
   acceptsKnownJsonValueWithValidator,
   isPlainStringKeySchema,
   knownJsonValueValidatorForSchema,
-} from "../validation/knownJson.js";
+} from "../shared/knownJson.js";
 import {
   copyRootRecord,
   copyRootRecordKeyPrefix,
@@ -15,7 +15,7 @@ import {
   removedRootKeysMatchSuffix,
   writeRootRecordValue,
 } from "./value.js";
-import { okLocalSchemaValidation } from "../validation/result.js";
+import { okLocalSchemaValidation } from "../shared/result.js";
 import { readRootRecordForLocalSchemaValidation } from "./replace.js";
 import {
   evaluateLocalSchemaValidationValueValidationPlan,
@@ -24,7 +24,7 @@ import {
   toAppliedRemoveOperations,
   type AppliedAddValueValidationOperation,
   type AppliedRemoveOperation,
-} from "../validation/value.js";
+} from "../shared/value.js";
 import { getDef } from "../zod.js";
 
 export type RootRecordRemovePatchStrategy = "clear" | "copyPrefix" | "copyDelete" | "rebuild";

@@ -52,10 +52,12 @@ import { createDocumentMutationRuntime } from "./state/patch.js";
 import { createDocumentHistoryRuntime } from "./history/undoRedo.js";
 import type {
   DocumentHistoryRuntimeState,
+} from "./history/types.js";
+import type {
   DocumentPatchRuntimeState,
+  JSONStateOps,
   TrustedDocumentStateOps,
-} from "./state/document.js";
-import type { HistoryTransactionOptions, JSONChangeMetadata, JSONStateOps } from "./state/types.js";
+} from "./runtime/types.js";
 
 type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
 type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };

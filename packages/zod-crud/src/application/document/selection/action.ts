@@ -1,4 +1,4 @@
-import type { JSONChangeMetadata } from "../state/types.js";
+import type { JSONChangeMetadata, UseSelectionOptions } from "../runtime/types.js";
 import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { jsonEqual } from "../../../foundation/json/equal.js";
@@ -18,12 +18,6 @@ import {
   restoreSelection,
   selectionSnapshot,
 } from "../../../domain/selection/snap.js";
-
-export interface UseSelectionOptions {
-  mode?: SelectionMode;
-  initial?: ReadonlyArray<SelectionRangeInput>;
-  context?: SelectionContext;
-}
 
 export type SelectionStateUpdatePlan =
   | { snap: SelectionSnap; emit: false }

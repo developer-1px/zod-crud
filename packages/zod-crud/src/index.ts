@@ -17,7 +17,7 @@ export { JSONCrudError } from "./foundation/error.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "./application/document/state/types.js";
+} from "./application/document/runtime/types.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./application/document/create.js";
@@ -68,7 +68,7 @@ export type {
 export type {
   SelectionState,
 } from "./application/document/selection/create.js";
-export type { UseSelectionOptions } from "./application/document/selection/action.js";
+export type { UseSelectionOptions } from "./application/document/runtime/types.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/patch/schema.js";

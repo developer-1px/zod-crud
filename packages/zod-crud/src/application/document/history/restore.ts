@@ -1,7 +1,7 @@
 import { computeInverses } from "../../../foundation/patch/inverse.js";
 import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
 import { readAt, tryParsePointer } from "../../../foundation/pointer/index.js";
-import type { HistoryTransactionOptions } from "../state/types.js";
+import type { HistoryTransactionOptions } from "../runtime/types.js";
 import type {
   CompactedRepeatedReplaceBatchHistoryPlan,
   DocumentHistoryAppendPlan,

@@ -1,7 +1,7 @@
 // Headless selection state facade.
 // React hook and JSONDocument use this same implementation.
 
-import type { JSONStateOps } from "../state/types.js";
+import type { JSONStateOps, UseSelectionOptions } from "../runtime/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import {
   anchorPointer,
@@ -77,7 +77,6 @@ import {
   selectionRemoveRangeAction,
   selectionSelectRangesAction,
   selectionToggleRangeAction,
-  type UseSelectionOptions,
 } from "./action.js";
 
 interface CreateSelectionOptions extends UseSelectionOptions {

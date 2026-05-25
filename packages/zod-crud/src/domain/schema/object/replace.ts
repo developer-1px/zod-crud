@@ -5,7 +5,7 @@ import {
   acceptsKnownJsonValue,
   acceptsKnownJsonValueWithValidator,
   knownJsonValueValidatorForSchema,
-} from "../validation/knownJson.js";
+} from "../shared/knownJson.js";
 import {
   copyRootRecord,
   copyRootRecordKeys,
@@ -13,14 +13,14 @@ import {
   objectHasOwn,
   writeRootRecordValue,
 } from "./value.js";
-import { okLocalSchemaValidation } from "../validation/result.js";
+import { okLocalSchemaValidation } from "../shared/result.js";
 import {
   evaluateLocalSchemaValidationValueValidationPlan,
   planLocalSchemaValidationValueValidation,
   toAppliedReplaceOperations,
   type AppliedReplaceValueValidationOperation,
   type LocalSchemaValidationValueValidationPlan,
-} from "../validation/value.js";
+} from "../shared/value.js";
 import { getDef, getObjectShape } from "../zod.js";
 
 export type RootObjectReplacePatchStrategy = "orderedReplace" | "copyWrite";

@@ -63,6 +63,8 @@ src/
 │     ├─ types.ts
 │     ├─ read.ts
 │     ├─ schema.ts
+│     ├─ runtime/
+│     │  └─ types.ts
 │     ├─ can/
 │     │  ├─ check.ts
 │     │  ├─ result.ts
@@ -71,9 +73,7 @@ src/
 │     │  ├─ json.ts
 │     │  ├─ patch.ts
 │     │  ├─ commit.ts
-│     │  ├─ change.ts
-│     │  ├─ document.ts
-│     │  └─ types.ts
+│     │  └─ change.ts
 │     ├─ history/
 │     │  ├─ undoRedo.ts
 │     │  ├─ transaction.ts
@@ -98,6 +98,7 @@ src/
 │  │  ├─ array/
 │  │  ├─ object/
 │  │  ├─ validation/
+│  │  ├─ shared/
 │  │  ├─ introspection.ts
 │  │  ├─ patch.ts
 │  │  ├─ rekey.ts

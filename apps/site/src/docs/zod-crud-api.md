@@ -40,6 +40,7 @@ src/
 │     ├─ types.ts
 │     ├─ read.ts
 │     ├─ schema.ts
+│     ├─ runtime/
 │     ├─ can/
 │     ├─ state/
 │     ├─ history/
@@ -54,6 +55,7 @@ src/
 │  ├─ schema/
 │  │  ├─ array/
 │  │  ├─ object/
+│  │  ├─ shared/
 │  │  └─ validation/
 │  └─ selection/
 └─ foundation/
@@ -91,6 +93,7 @@ Site 문서에서 기준으로 삼는 내부 path:
 
 ```txt
 application/document/can
+application/document/runtime
 application/document/state
 application/document/history
 application/document/clipboard
@@ -98,6 +101,7 @@ application/document/selection
 domain/pointer
 domain/schema/array
 domain/schema/object
+domain/schema/shared
 domain/schema/validation
 domain/selection
 foundation/json
@@ -111,7 +115,7 @@ foundation/pointer
 | Public surface | 내부 위치 | 책임 |
 | --- | --- | --- |
 | `createJSONDocument` | `application/document/create.ts` | document facade 조립 |
-| `JSONDocument`, option/result types | `application/document/types.ts` | public document 계약 |
+| `JSONDocument`, option/result types | `application/document/types.ts`, `application/document/runtime/types.ts` | public document 계약과 내부 runtime 계약 |
 | `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` | `application/document/state/` | document state 변경과 subscriber 알림 |
 | `doc.at`, `doc.exists`, `doc.query`, `doc.entries` | `application/document/read.ts` | read/query 결과 객체 |
 | `doc.schema.*` | `application/document/schema.ts` | pointer별 schema 조회 |
@@ -120,7 +124,7 @@ foundation/pointer
 | `doc.clipboard` | `application/document/clipboard/`, `domain/copy.ts`, `domain/cut.ts`, `domain/paste.ts` | clipboard buffer와 payload mutation |
 | `doc.duplicate` | `domain/duplicate.ts` | sibling 복제와 rekey |
 | `doc.history` | `application/document/history/`, `foundation/history.ts` | undo/redo와 metadata |
-| `applyPatch`, `applyOperation`, `applyPatchToTrustedState` | `foundation/patch/`, `domain/schema/validation/` | JSON Patch 실행과 schema 검증 경계 |
+| `applyPatch`, `applyOperation`, `applyPatchToTrustedState` | `foundation/patch/`, `domain/schema/validation/`, `domain/schema/shared/` | JSON Patch 실행과 schema 검증 경계 |
 | Pointer helpers | `foundation/pointer/` | RFC 6901 parsing/building |
 | `trackPointer` | `domain/pointer/track.ts` | patch 이후 pointer 추적 |
 

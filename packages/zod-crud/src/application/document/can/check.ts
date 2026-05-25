@@ -43,7 +43,7 @@ import {
   type PasteOptions,
   type PasteTarget,
 } from "../../../domain/paste.js";
-import type { HistoryTransactionOptions } from "../state/types.js";
+import type { HistoryTransactionOptions } from "../runtime/types.js";
 import {
   OK,
   type CapabilityResult,

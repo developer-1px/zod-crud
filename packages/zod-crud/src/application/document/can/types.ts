@@ -15,7 +15,7 @@ import type { ClipboardSource } from "../../../domain/copy.js";
 import type { DuplicateOpts } from "../../../domain/duplicate.js";
 import type { PasteOptions, PasteTarget } from "../../../domain/paste.js";
 import type { CapabilityResult } from "./result.js";
-import type { HistoryTransactionOptions, JSONStateOps } from "../state/types.js";
+import type { HistoryTransactionOptions, JSONStateOps } from "../runtime/types.js";
 
 export interface CapabilityPasteExecutionOptions {
   trustedPayload?: boolean;
