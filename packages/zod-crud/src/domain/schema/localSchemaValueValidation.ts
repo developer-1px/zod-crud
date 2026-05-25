@@ -2,7 +2,7 @@ import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
-import { appendArrayIndexPath } from "./localSchemaPath.js";
+import { appendArrayIndexPath } from "../../foundation/json-patch/path.js";
 import { operationFailure, schemaViolation } from "./localSchemaResult.js";
 
 export interface PlanLocalSchemaValidationValueValidationInput {
@@ -29,6 +29,10 @@ export interface AppliedAddValueValidationOperation extends AppliedValueValidati
 
 export interface AppliedReplaceValueValidationOperation extends AppliedValueValidationOperation {
   op: "replace";
+}
+
+export interface IndexedReplaceValueValidationOperation extends AppliedReplaceValueValidationOperation {
+  index: number;
 }
 
 export interface AppliedRemoveOperation {

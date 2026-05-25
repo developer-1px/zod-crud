@@ -4,8 +4,8 @@
 // JSONStateOps<T>: low-level JSON operation 표면. RFC 6902 6 op + lifecycle + pub/sub.
 
 import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
+import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import type { SelectionSnap } from "../../domain/selection/selectionTypes.js";
-import type { PointerOf, ValueAt } from "../../foundation/json-pointer/types.js";
 
 export interface HistoryTransactionOptions {
   label?: string;
@@ -19,12 +19,12 @@ export interface JSONChangeMetadata extends HistoryTransactionOptions {
 }
 
 export interface JSONStateOps<T> {
-  add<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
-  remove<P extends PointerOf<T>>(path: P): JSONResult;
-  replace<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
-  move<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JSONResult;
-  copy<F extends PointerOf<T>, P extends PointerOf<T>>(from: F, path: P): JSONResult;
-  test<P extends PointerOf<T>>(path: P, value: ValueAt<T, P>): JSONResult;
+  add(path: Pointer, value: unknown): JSONResult;
+  remove(path: Pointer): JSONResult;
+  replace(path: Pointer, value: unknown): JSONResult;
+  move(from: Pointer, path: Pointer): JSONResult;
+  copy(from: Pointer, path: Pointer): JSONResult;
+  test(path: Pointer, value: unknown): JSONResult;
 
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 

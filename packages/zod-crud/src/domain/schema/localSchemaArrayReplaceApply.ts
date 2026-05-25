@@ -1,5 +1,6 @@
 import type * as z from "zod";
 import type { ApplyResult } from "../../foundation/json-patch/types.js";
+import { replaceValueAtSegments } from "../../foundation/json-patch/replaceValueAtSegments.js";
 import { parsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   acceptsKnownJsonValueWithValidator,
@@ -8,15 +9,14 @@ import {
 import { replaceObjectDataValue } from "./localSchemaObject.js";
 import {
   readArrayAtSegments,
-  replaceValueAtSegments,
 } from "./localSchemaPath.js";
 import { okLocalSchemaValidation } from "./localSchemaResult.js";
 import {
   evaluateAppliedReplaceValueValidationPlan,
   toAppliedReplaceOperations,
+  type IndexedReplaceValueValidationOperation,
 } from "./localSchemaValueValidation.js";
 import { planSingleArrayFieldReplace } from "./localSchemaArrayReplacePlan.js";
-import type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
 
 export interface ArrayIndexReplacement {
   index: number;

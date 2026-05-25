@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { parse, queryMatches } from "../../../src/foundation/jsonpath/index.js";
+import { queryMatches } from "../../../src/foundation/jsonpath/index.js";
+import { parse } from "../../../src/foundation/jsonpath/parser.js";
 
 describe("JSONPath fast paths", () => {
   test("simple ASCII paths parse to the normal query AST", () => {

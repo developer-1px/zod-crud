@@ -8,7 +8,7 @@ import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 // note: verbs/* 끼리 import 금지 (lint rule). 여기서는 jsonpath 의 query 를 직접 호출.
 import { query as jsonpathQuery } from "../../foundation/jsonpath/index.js";
-import { JSONPathSyntaxError } from "../../foundation/jsonpath/index.js";
+import { JSONPathSyntaxError } from "../../foundation/jsonpath/tokenizer.js";
 
 export interface ReplaceOk<T> {
   ok: true;

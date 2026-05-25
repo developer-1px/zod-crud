@@ -1,7 +1,8 @@
 import type * as z from "zod";
 import { parsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { numericSegment } from "../../foundation/json-patch/path.js";
 import { schemaAtPointer } from "./introspection.js";
-import { arrayIndexPathLocation, numericSegment } from "./localSchemaPath.js";
+import { arrayIndexPathLocation } from "./localSchemaPath.js";
 import { isJsonPrimitive, isPlainStringKeySchema } from "./localSchemaKnownJson.js";
 import { getArrayElement, getDef, getObjectShape } from "./zodIntrospectionAdapter.js";
 

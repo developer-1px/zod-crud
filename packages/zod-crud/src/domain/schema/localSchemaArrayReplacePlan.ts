@@ -1,18 +1,20 @@
 import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
+import {
+  arrayFieldText,
+  parseArrayFieldPath,
+  parseFirstArrayNestedPath,
+  parseKnownArrayFieldIndex,
+  parseKnownArrayNestedIndex,
+} from "../../foundation/json-patch/path.js";
+import type { ArrayFieldText } from "../../foundation/json-patch/types.js";
 import { parsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import {
   arrayElementIndexPrefix,
   arrayElementReplaceLocation,
-  arrayFieldText,
-  parseArrayFieldPath,
   parseKnownArrayElementReplaceIndex,
-  parseKnownArrayFieldIndex,
-  parseKnownArrayNestedIndex,
-  readFirstArrayNestedPath,
-  type ArrayFieldText,
 } from "./localSchemaPath.js";
-import type { IndexedReplaceValueValidationOperation } from "./localSchemaArrayReplaceTypes.js";
+import type { IndexedReplaceValueValidationOperation } from "./localSchemaValueValidation.js";
 
 export interface SingleArrayFieldReplacePlan {
   arrayPath: Pointer;
@@ -151,7 +153,7 @@ export function planSameArrayNestedReplacePatch(input: {
   const first = ops[0]!;
   if (!isReplacePatchOperationCandidate(first) || first.path === "") return null;
 
-  const firstLocation = readFirstArrayNestedPath(input.state, first.path);
+  const firstLocation = parseFirstArrayNestedPath(input.state, first.path);
   if (firstLocation === null) return null;
   const operations = planSameArrayNestedReplaceOperations(
     ops,

@@ -1,7 +1,8 @@
 import { appendSegment, parsePointer, readAt } from "../json-pointer/pointerCore.js";
 import type { JSONPatchOperation } from "./types.js";
 import { deepCloneTrusted } from "./internal.js";
-import { arrayLocation, readValueAtPointer } from "./inversePath.js";
+import { arrayLocation } from "./path.js";
+import { readValueAtPointer } from "./inversePath.js";
 
 type SameArrayStructuralOp =
   | { op: "add"; path: string; index: number | "-"; value: unknown }

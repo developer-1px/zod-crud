@@ -14,7 +14,6 @@ import type {
   JSONPatchOperation,
   JSONResult,
 } from "../../foundation/json-patch/types.js";
-import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { jsonSerializableError } from "../../foundation/jsonSerializable.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
 import { schemaOutputIsKnownJson } from "../../domain/schema/localSchemaInfo.js";
@@ -189,22 +188,22 @@ export function createJSONState<S extends z.ZodType>(
 
   const ops: TrustedJSONStateOps<z.output<S>> = {
     add(path, value) {
-      return single({ op: "add", path: path as Pointer, value });
+      return single({ op: "add", path, value });
     },
     remove(path) {
-      return single({ op: "remove", path: path as Pointer });
+      return single({ op: "remove", path });
     },
     replace(path, value) {
-      return single({ op: "replace", path: path as Pointer, value });
+      return single({ op: "replace", path, value });
     },
     move(from, path) {
-      return single({ op: "move", from: from as Pointer, path: path as Pointer });
+      return single({ op: "move", from, path });
     },
     copy(from, path) {
-      return single({ op: "copy", from: from as Pointer, path: path as Pointer });
+      return single({ op: "copy", from, path });
     },
     test(path, value) {
-      const op: JSONPatchOperation = { op: "test", path: path as Pointer, value };
+      const op: JSONPatchOperation = { op: "test", path, value };
       const result = applyOperation(schema, state, op);
       return handleResult(policy, op, result.result);
     },

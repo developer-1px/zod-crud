@@ -1,7 +1,6 @@
 import type * as z from "zod";
 import { buildDocumentCapabilities } from "./capability.js";
 import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/types.js";
-import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { EMPTY_SELECTION } from "../../domain/selection/selectionTypes.js";
 import { emptyMutableHistory } from "../../foundation/history.js";
 import { INTERNAL_CLIPBOARD_PEEK, createClipboard } from "./clipboard.js";
@@ -93,11 +92,11 @@ export function createJSONDocument<S extends z.ZodType>(
   });
 
   const ops: JSONStateOps<z.output<S>> = {
-    add: (path, value) => mutation.applyDocumentPatch([{ op: "add", path: path as Pointer, value }], undefined, true),
-    remove: (path) => mutation.applyDocumentPatch([{ op: "remove", path: path as Pointer }], undefined, true),
-    replace: (path, value) => mutation.applyDocumentPatch([{ op: "replace", path: path as Pointer, value }], undefined, true),
-    move: (from, path) => mutation.applyDocumentPatch([{ op: "move", from: from as Pointer, path: path as Pointer }], undefined, true),
-    copy: (from, path) => mutation.applyDocumentPatch([{ op: "copy", from: from as Pointer, path: path as Pointer }], undefined, true),
+    add: (path, value) => mutation.applyDocumentPatch([{ op: "add", path, value }], undefined, true),
+    remove: (path) => mutation.applyDocumentPatch([{ op: "remove", path }], undefined, true),
+    replace: (path, value) => mutation.applyDocumentPatch([{ op: "replace", path, value }], undefined, true),
+    move: (from, path) => mutation.applyDocumentPatch([{ op: "move", from, path }], undefined, true),
+    copy: (from, path) => mutation.applyDocumentPatch([{ op: "copy", from, path }], undefined, true),
     test: rawOps.test,
     patch: mutation.applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {

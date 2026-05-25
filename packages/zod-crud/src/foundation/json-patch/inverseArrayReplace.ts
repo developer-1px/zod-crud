@@ -1,18 +1,22 @@
 import type { JSONPatchOperation } from "./types.js";
 import { getValueAt } from "./internal.js";
+import { objectHasOwn } from "./object.js";
 import {
+  arrayRemoveLocation,
   arrayFieldText,
-  objectHasOwn,
   parseArrayFieldPath,
   parseFirstArrayNestedPath,
   parseKnownArrayFieldIndex,
   parseKnownArrayNestedIndex,
-  parseSimpleArrayElementPath,
+} from "./path.js";
+import type {
+  ArrayFieldPath,
+  ArrayFieldText,
+  ArrayNestedPath,
+} from "./types.js";
+import {
   readValueAtPointer,
   seedSimpleArrayNestedReplaceIndexes,
-  type ArrayFieldPath,
-  type ArrayFieldText,
-  type ArrayNestedPath,
 } from "./inversePath.js";
 
 export function computeSameArrayFieldReplaceInverses(
@@ -97,7 +101,7 @@ export function computeSameArrayElementReplaceInverses(
     if (!(opIndex in ops)) return null;
     const op = ops[opIndex]!;
     if (op.op !== "replace" || typeof op.path !== "string" || op.path === "") return null;
-    const location = parseSimpleArrayElementPath(op.path);
+    const location = arrayRemoveLocation(op.path);
     if (location === null) return null;
 
     if (parent === null) {
@@ -156,7 +160,13 @@ export function computeSameArrayNestedReplaceInverses(
       if (!array.ok || !Array.isArray(array.value)) return null;
       arrayValue = array.value;
     } else {
-      index = parseKnownArrayNestedIndex(op.path, location);
+      index = parseKnownArrayNestedIndex(
+        op.path,
+        location.arrayPath,
+        location.suffixSegments,
+        location.prefixText,
+        location.suffixText,
+      );
       if (index === null) return null;
     }
 
@@ -191,7 +201,7 @@ function seedArrayFieldReplaceIndexes(inverses: ReadonlyArray<JSONPatchOperation
 function seedArrayElementReplaceIndexes(inverses: ReadonlyArray<JSONPatchOperation>): Set<number> {
   const seen = new Set<number>();
   for (const inverse of inverses) {
-    const location = parseSimpleArrayElementPath(inverse.path);
+    const location = arrayRemoveLocation(inverse.path);
     if (location !== null) seen.add(location.index);
   }
   return seen;

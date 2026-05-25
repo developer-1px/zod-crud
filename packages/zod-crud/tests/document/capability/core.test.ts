@@ -3,15 +3,11 @@ import * as z from "zod";
 
 import {
   canDocumentCopy,
-} from "../../../src/application/document/capabilityClipboardChecks.js";
-import {
   canDocumentFind,
-} from "../../../src/application/document/capabilityQueryChecks.js";
-import {
   canDocumentPatch,
   canDocumentRemove,
   canDocumentReplace,
-} from "../../../src/application/document/capabilityMutationChecks.js";
+} from "../../../src/application/document/capabilityChecks.js";
 import {
   planDocumentCopyCapability,
   planDocumentCutCapability,

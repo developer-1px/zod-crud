@@ -2,6 +2,7 @@
 // RFC 9535 §2 의 normalized 의미. Pointer 는 RFC 6901.
 
 import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./types.js";
+import { jsonEqual } from "../jsonEqual.js";
 import { evaluateArrayRegexFilter, evaluateArrayWildcardField } from "./evaluateFastPath.js";
 import { evaluateSimpleQuery, evaluateSinglePathQuery } from "./evaluateSimple.js";
 import { compiledRegex, escapeSeg, normalizeSliceIndex, objectHasOwn } from "./evaluateShared.js";
@@ -238,26 +239,6 @@ function compareOrdered(left: unknown, right: unknown, compare: (left: number | 
   if (typeof left === "number" && typeof right === "number") return compare(left, right);
   if (typeof left === "string" && typeof right === "string") return compare(left, right);
   return false;
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  if (left === NOTHING || right === NOTHING) return left === right;
-  if (typeof left === "number" && typeof right === "number") return left === right;
-  if (Object.is(left, right)) return true;
-  if (Array.isArray(left) && Array.isArray(right)) {
-    return left.length === right.length && left.every((value, index) => jsonEqual(value, right[index]));
-  }
-  if (isRecord(left) && isRecord(right)) {
-    const leftKeys = Object.keys(left);
-    const rightKeys = Object.keys(right);
-    return leftKeys.length === rightKeys.length
-      && leftKeys.every((key) => objectHasOwn.call(right, key) && jsonEqual(left[key], right[key]));
-  }
-  return false;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /** 외부 helper — Match[] -> Pointer[]. */

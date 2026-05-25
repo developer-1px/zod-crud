@@ -1,5 +1,5 @@
 import type { JSONPatchOperation } from "./types.js";
-import { objectHasOwn } from "./inversePath.js";
+import { objectHasOwn } from "./object.js";
 
 type SeenRootKeys = Record<string, true>;
 

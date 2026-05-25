@@ -1,8 +1,12 @@
-import type { RekeyField } from "./rekeyTypes.js";
 import { scalarText, walk, walkSingleFieldText } from "./rekeyTraversal.js";
 
 const COPY_SUFFIX = "-copy";
 const COPY_NESTED_SUFFIX = "-copy-";
+
+interface RekeyField {
+  field: string;
+  existing: Set<string>;
+}
 
 interface SuffixRekeyField extends RekeyField {
   bases: Set<string>;

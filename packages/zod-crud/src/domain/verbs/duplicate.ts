@@ -9,7 +9,7 @@ import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, 
 import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import { tryRekeyPayload } from "../schema/rekey.js";
-import type { RekeyOptions } from "../schema/rekeyTypes.js";
+import type { RekeyOptions } from "../schema/rekey.js";
 
 export interface DuplicateOpts {
   /** object key 복제 시 새 key. 배열에서는 무시됨. */

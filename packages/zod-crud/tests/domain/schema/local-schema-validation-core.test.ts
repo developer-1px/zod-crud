@@ -86,17 +86,19 @@ import {
   prefixIssues,
 } from "../../../src/domain/schema/localSchemaInfo.js";
 import {
-  appendArrayIndexPath,
   arrayIndexInParent,
   arrayIndexPathLocation,
   haveIndependentReplacePaths,
-  numericSegment,
   planIndependentReplacePaths,
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
-  readFirstArrayNestedPath,
-  replaceValueAtSegments,
 } from "../../../src/domain/schema/localSchemaPath.js";
+import {
+  appendArrayIndexPath,
+  numericSegment,
+  parseFirstArrayNestedPath as readFirstArrayNestedPath,
+} from "../../../src/foundation/json-patch/path.js";
+import { replaceValueAtSegments } from "../../../src/foundation/json-patch/replaceValueAtSegments.js";
 import {
   createDataKeySet,
   copyRootRecordKeyPrefix,

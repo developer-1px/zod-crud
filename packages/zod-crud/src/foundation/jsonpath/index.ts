@@ -6,9 +6,8 @@
 //   ✓ RFC 9535 function extensions — length/count/match/search/value
 //
 // API:
-//   parse(query) → Query AST
-//   evaluate(query, root) → Match[]    // pointer + value 쌍
 //   query(query, root) → Pointer[]      // shorthand
+//   queryMatches(query, root) → Match[] // pointer + value 쌍
 //
 // SPEC §0.3 (2) 표준 Path: RFC 6901 + RFC 9535. JSONPath query → Pointer[] 환원.
 
@@ -17,10 +16,6 @@ import { evaluate, matchPointers } from "./evaluate.js";
 import { matchPointersForSimpleQuery } from "./evaluateSimple.js";
 import type { Pointer } from "../json-pointer/pointerCore.js";
 import type { Match, Query } from "./types.js";
-
-export { parseJsonPath as parse, evaluate, matchPointers, matchPointersForSimpleQuery };
-export { JSONPathSyntaxError } from "./tokenizer.js";
-export type { Query, Match } from "./types.js";
 
 const QUERY_CACHE_LIMIT = 128;
 const queryCache = new Map<string, Query>();

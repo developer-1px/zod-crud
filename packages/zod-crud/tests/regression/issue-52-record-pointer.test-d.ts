@@ -1,6 +1,5 @@
-// 회귀: GH #52 — z.record 스키마의 dynamic key 가 PointerOf<T> 에 의해 거부되는지.
-// 결론: PointerOf 의 mapped type 이 keyof string index 를 그대로 흘려보내므로
-// `/${string}` 패턴이 자연스럽게 union 에 포함된다. `as never` 캐스팅 불필요.
+// 회귀: GH #52 — z.record 스키마의 dynamic key patch path 가 거부되지 않는지.
+// public JSONPatchOperation path 는 Pointer(string) 이므로 dynamic key 에 `as never` 캐스팅이 필요 없다.
 
 import * as z from "zod";
 import type { JSONDocument } from "../../src/index.js";

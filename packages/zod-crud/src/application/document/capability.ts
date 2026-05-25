@@ -1,25 +1,21 @@
 import type * as z from "zod";
 
 import {
-  canDocumentExtendCursor,
-  canDocumentMoveCursor,
-  canDocumentSelectScope,
-} from "./capabilitySelectionChecks.js";
-import { canDocumentFind } from "./capabilityQueryChecks.js";
-import {
+  canDocumentCopy,
+  canDocumentCut,
   canDocumentDeleteText,
   canDocumentDuplicate,
+  canDocumentExtendCursor,
+  canDocumentFind,
   canDocumentMove,
+  canDocumentMoveCursor,
   canDocumentPatch,
+  canDocumentPaste,
   canDocumentRemove,
   canDocumentReplace,
   canDocumentReplaceText,
-} from "./capabilityMutationChecks.js";
-import {
-  canDocumentCopy,
-  canDocumentCut,
-  canDocumentPaste,
-} from "./capabilityClipboardChecks.js";
+  canDocumentSelectScope,
+} from "./capabilityChecks.js";
 import {
   OK,
   type CapabilityResult,

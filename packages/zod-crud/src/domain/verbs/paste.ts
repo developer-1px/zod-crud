@@ -7,7 +7,7 @@ import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-poi
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
 import { getDiscriminatedUnionInfo, schemaAtPointer } from "../schema/introspection.js";
 import { tryRekeyPayload } from "../schema/rekey.js";
-import type { RekeyOptions } from "../schema/rekeyTypes.js";
+import type { RekeyOptions } from "../schema/rekey.js";
 import { getDef, getObjectShape } from "../schema/zodIntrospectionAdapter.js";
 
 type PasteMode = "before" | "after" | "into" | "replace";
