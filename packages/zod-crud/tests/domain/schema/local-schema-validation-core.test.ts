@@ -10,9 +10,11 @@ import {
   applyValidatedArrayFieldReplacementsAtSegments,
   applyValidatedArrayIndexReplacements,
   applyValidatedArrayNestedValueReplacementsAtSegments,
-  planSingleArrayFieldReplace,
   replaceArrayField,
-} from "../../../src/domain/schema/localSchemaArray.js";
+} from "../../../src/domain/schema/localSchemaArrayReplaceApply.js";
+import {
+  planSingleArrayFieldReplace,
+} from "../../../src/domain/schema/localSchemaArrayReplacePlan.js";
 import {
   acceptsKnownJsonValue,
 } from "../../../src/domain/schema/localSchemaKnownJson.js";
@@ -21,40 +23,51 @@ import {
 } from "../../../src/domain/schema/localSchemaCore.js";
 import {
   applyArrayAddPlan,
-  applyKnownJsonArrayIndexReplacements,
-  applyKnownJsonArrayIndexReplacementsAtSegments,
-  applyKnownJsonReplaceOperations,
-  applyReplaceOperations,
-  applyRootObjectReplacePlan,
-  applyRootRecordAddPlan,
-  applyRootRecordRemovePlan,
-  applySequentialLocalOperation,
-  applySequentialLocalOperationPatch,
-  applySequentialLocalOperations,
-  applySingleReplaceOperation,
-  applySingleRootObjectReplacePlan,
   applyValidatedArrayAddPlan,
   applyValidatedArrayAddPlanAtSegments,
+  evaluateArrayAddElementValues,
+  planAppendOnlyArrayAddPatch,
+  planAppendOnlyArrayAddValues,
+  planIncreasingArrayAddPatch,
+  planIncreasingArrayAddValues,
+} from "../../../src/domain/schema/localSchemaCompatArrayAdd.js";
+import {
+  applyKnownJsonArrayIndexReplacements,
+  applyKnownJsonArrayIndexReplacementsAtSegments,
   applyValidatedArrayFieldReplacements,
   applyValidatedArrayNestedReplacements,
   applyValidatedArrayNestedValueReplacements,
   buildKnownJsonArrayIndexReplacements,
   buildValidatedArrayIndexReplacements,
+  readSingleRootArrayFieldTarget,
+} from "../../../src/domain/schema/localSchemaCompatArrayReplace.js";
+import {
+  planSameArrayElementReplaceOperations,
+  planSameArrayFieldReplaceOperations,
+  planSameArrayNestedReplaceOperations,
+  planSameArrayPatch,
+  planSameArrayPatchOperations,
+} from "../../../src/domain/schema/localSchemaCompatPlans.js";
+import {
+  applyKnownJsonReplaceOperations,
+  applyReplaceOperations,
+  applySingleReplaceOperation,
   evaluateAppliedReplaceOperations,
-  evaluateArrayAddElementValues,
   evaluateKnownJsonReplaceValues,
-  evaluateRootObjectReplaceValues,
-  evaluateRootRecordAddValues,
-  planAppliedLocalOpValidation,
   planAppliedReplaceValueValidation,
-  planAppendOnlyArrayAddPatch,
-  planAppendOnlyArrayAddValues,
-  planIncreasingArrayAddPatch,
-  planIncreasingArrayAddValues,
   planIndependentReplacePatch,
   planIndependentReplacePaths,
   planKnownJsonReplaceOperations,
   planKnownJsonReplacePatch,
+  planSingleReplacePatch,
+} from "../../../src/domain/schema/localSchemaCompatReplace.js";
+import {
+  applyRootObjectReplacePlan,
+  applyRootRecordAddPlan,
+  applyRootRecordRemovePlan,
+  applySingleRootObjectReplacePlan,
+  evaluateRootObjectReplaceValues,
+  evaluateRootRecordAddValues,
   planRootObjectReplaceOperations,
   planRootObjectReplacePatch,
   planRootObjectReplaceStrategy,
@@ -65,20 +78,19 @@ import {
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
   planRootRecordRemoveStrategy,
-  planSameArrayElementReplaceOperations,
-  planSameArrayFieldReplaceOperations,
-  planSameArrayNestedReplaceOperations,
-  planSameArrayPatch,
-  planSameArrayPatchOperations,
-  planSequentialPatch,
-  planSingleReplacePatch,
   planSingleRootObjectReplacePatch,
+  readRootRecordForLocalSchemaValidation,
+} from "../../../src/domain/schema/localSchemaCompatRoot.js";
+import {
+  applySequentialLocalOperation,
+  applySequentialLocalOperationPatch,
+  applySequentialLocalOperations,
+  planAppliedLocalOpValidation,
+  planSequentialPatch,
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
   readFirstArrayNestedPath,
-  readRootRecordForLocalSchemaValidation,
-  readSingleRootArrayFieldTarget,
-} from "../../../src/domain/schema/localSchemaCompat.js";
+} from "../../../src/domain/schema/localSchemaCompatSequential.js";
 import {
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,

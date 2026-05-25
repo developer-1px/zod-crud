@@ -1,21 +1,25 @@
 import type * as z from "zod";
 
 import {
-  canDocumentCopy,
-  canDocumentCut,
+  canDocumentExtendCursor,
+  canDocumentMoveCursor,
+  canDocumentSelectScope,
+} from "./capabilitySelectionChecks.js";
+import { canDocumentFind } from "./capabilityQueryChecks.js";
+import {
   canDocumentDeleteText,
   canDocumentDuplicate,
-  canDocumentExtendCursor,
-  canDocumentFind,
   canDocumentMove,
-  canDocumentMoveCursor,
-  canDocumentPaste,
   canDocumentPatch,
   canDocumentRemove,
   canDocumentReplace,
   canDocumentReplaceText,
-  canDocumentSelectScope,
-} from "./capabilityChecks.js";
+} from "./capabilityMutationChecks.js";
+import {
+  canDocumentCopy,
+  canDocumentCut,
+  canDocumentPaste,
+} from "./capabilityClipboardChecks.js";
 import {
   OK,
   type CapabilityResult,
@@ -27,36 +31,42 @@ import type {
 } from "./capabilityFacadeTypes.js";
 
 export {
-  canDocumentCopy,
-  canDocumentCut,
+  canDocumentExtendCursor,
+  canDocumentMoveCursor,
+  canDocumentSelectScope,
+} from "./capabilitySelectionChecks.js";
+export { canDocumentFind } from "./capabilityQueryChecks.js";
+export {
   canDocumentDeleteText,
   canDocumentDuplicate,
-  canDocumentExtendCursor,
-  canDocumentFind,
   canDocumentMove,
-  canDocumentMoveCursor,
-  canDocumentPaste,
   canDocumentPatch,
   canDocumentRemove,
   canDocumentReplace,
   canDocumentReplaceText,
-  canDocumentSelectScope,
-} from "./capabilityChecks.js";
+} from "./capabilityMutationChecks.js";
+export {
+  canDocumentCopy,
+  canDocumentCut,
+  canDocumentPaste,
+} from "./capabilityClipboardChecks.js";
 export {
   isDocumentJSONPathTarget,
-  planDocumentCapabilityResult,
-  planDocumentCopyCapability,
-  planDocumentCutCapability,
   planDocumentDeleteTextCapability,
   planDocumentDuplicateCapability,
   planDocumentMoveCapability,
-  planDocumentPasteCapability,
   planDocumentPatchCapability,
   planDocumentRemoveCapability,
   planDocumentReplaceArgs,
   planDocumentReplaceCapability,
   planDocumentReplaceTextCapability,
-} from "./capabilityPlan.js";
+} from "./capabilityMutationPlan.js";
+export {
+  planDocumentCopyCapability,
+  planDocumentCutCapability,
+  planDocumentPasteCapability,
+} from "./capabilityClipboardPlan.js";
+export { planDocumentCapabilityResult } from "./capabilityResultPlan.js";
 export type {
   CapabilityErrorCode,
   CapabilityResult,
