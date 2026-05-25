@@ -18,7 +18,12 @@ import {
   restoreSelection,
   selectionSnapshot,
 } from "../../domain/selection/selectionSnap.js";
-import type { UseSelectionOptions } from "./selectionOptions.js";
+
+export interface UseSelectionOptions {
+  mode?: SelectionMode;
+  initial?: ReadonlyArray<SelectionRangeInput>;
+  context?: SelectionContext;
+}
 
 export type SelectionStateUpdatePlan =
   | { snap: SelectionSnap; emit: false }

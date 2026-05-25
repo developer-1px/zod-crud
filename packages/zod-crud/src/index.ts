@@ -60,7 +60,7 @@ export type {
 export type {
   SelectionState,
 } from "./application/document/selection.js";
-export type { UseSelectionOptions } from "./application/document/selectionOptions.js";
+export type { UseSelectionOptions } from "./application/document/selectionPlan.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/json-patch/applyPublic.js";

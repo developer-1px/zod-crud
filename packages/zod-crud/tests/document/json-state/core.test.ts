@@ -5,7 +5,7 @@ import {
   planJSONNotification,
   planJSONRootReplacementParse,
   planJSONStateCommit,
-} from "../../../src/application/document/jsonStatePlan.js";
+} from "../../../src/application/document/jsonState.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
 
 describe("document JSON state core functions", () => {
