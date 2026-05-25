@@ -20,7 +20,7 @@ import type {
 } from "./createJSONDocumentChangeTypes.js";
 import { buildChangeMetadata } from "./createJSONDocumentMetadataPlan.js";
 
-export function shouldCaptureDocumentChangeMetadata(
+function shouldCaptureDocumentChangeMetadata(
   input: DocumentChangeMetadataCaptureInput,
 ): boolean {
   return input.shouldRecordHistory
@@ -112,7 +112,7 @@ export function planDocumentLifecycleChange(
   };
 }
 
-export function planDocumentLastPatch(
+function planDocumentLastPatch(
   input: PlanDocumentLastPatchInput,
 ): ReadonlyArray<JSONPatchOperation> {
   return input.operationCount === 0 ? [] : input.applied;

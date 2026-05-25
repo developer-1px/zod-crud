@@ -38,7 +38,7 @@ export type {
   ClipboardReadResult,
   ClipboardState,
   ClipboardWriteOptions,
-} from "./application/document/clipboard.js";
+} from "./application/document/clipboardTypes.js";
 export type {
   EntriesResult,
   EntryKind,

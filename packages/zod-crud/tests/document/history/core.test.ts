@@ -6,7 +6,6 @@ import {
   planDocumentChangeHistoryRecord,
   planDocumentChangeMetadata,
   planDocumentChangeSelection,
-  shouldCaptureDocumentChangeMetadata,
 } from "../../../src/application/document/createJSONDocumentChangePlan.js";
 import {
   planCompactedRepeatedReplaceBatchHistory,
@@ -58,32 +57,6 @@ const titleSelection: SelectionSnap = {
 };
 
 describe("document history core functions", () => {
-  test("decides when change metadata must be captured without a document shell", () => {
-    expect(shouldCaptureDocumentChangeMetadata({
-      shouldRecordHistory: false,
-      activeHistoryMetadata: undefined,
-      metadata: undefined,
-      selectionEnabled: false,
-      documentSubscriberCount: 0,
-    })).toBe(false);
-
-    expect(shouldCaptureDocumentChangeMetadata({
-      shouldRecordHistory: true,
-      activeHistoryMetadata: undefined,
-      metadata: undefined,
-      selectionEnabled: false,
-      documentSubscriberCount: 0,
-    })).toBe(true);
-
-    expect(shouldCaptureDocumentChangeMetadata({
-      shouldRecordHistory: false,
-      activeHistoryMetadata: undefined,
-      metadata: undefined,
-      selectionEnabled: true,
-      documentSubscriberCount: 1,
-    })).toBe(true);
-  });
-
   test("plans history recording and metadata capture from document change inputs", () => {
     expect(planDocumentChangeCapture({
       historyLimit: 10,

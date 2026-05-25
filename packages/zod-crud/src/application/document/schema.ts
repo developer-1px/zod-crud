@@ -1,6 +1,6 @@
 import { toJSONSchema, type z } from "zod";
 
-import type { CapabilityResult } from "./capability.js";
+import type { CapabilityResult } from "./capabilityResultTypes.js";
 import {
   getDiscriminatedUnionInfo,
   schemaAtPointer,
@@ -98,12 +98,12 @@ export type DocumentSchemaParseResult =
       };
     };
 
-export interface PlanDocumentSchemaAcceptsResultInput {
+interface PlanDocumentSchemaAcceptsResultInput {
   path: Pointer;
   result: DocumentSchemaParseResult;
 }
 
-export interface PlanDocumentSchemaResolutionInput {
+interface PlanDocumentSchemaResolutionInput {
   schema: z.ZodType;
   path: Pointer;
   mode: SchemaPathMode;
@@ -113,16 +113,16 @@ interface CreateSchemaOptions<S extends z.ZodType> {
   schema: S;
 }
 
-export interface DocumentSchemaContext<S extends z.ZodType> {
+interface DocumentSchemaContext<S extends z.ZodType> {
   schema: S;
 }
 
-export interface DocumentSchemaResolutionOk {
+interface DocumentSchemaResolutionOk {
   ok: true;
   schema: z.ZodType;
 }
 
-export type DocumentSchemaResolutionResult = DocumentSchemaResolutionOk | SchemaErrorResult;
+type DocumentSchemaResolutionResult = DocumentSchemaResolutionOk | SchemaErrorResult;
 
 export function createSchemaState<S extends z.ZodType>(
   args: CreateSchemaOptions<S>,
@@ -147,7 +147,7 @@ export function createSchemaState<S extends z.ZodType>(
   };
 }
 
-export function queryDocumentSchema<S extends z.ZodType>(
+function queryDocumentSchema<S extends z.ZodType>(
   context: DocumentSchemaContext<S>,
   path: Pointer,
   mode: SchemaPathMode = "value",
@@ -168,7 +168,7 @@ export function queryDocumentSchema<S extends z.ZodType>(
   };
 }
 
-export function readDocumentSchemaKind<S extends z.ZodType>(
+function readDocumentSchemaKind<S extends z.ZodType>(
   context: DocumentSchemaContext<S>,
   path: Pointer,
   mode: SchemaPathMode = "value",
@@ -178,7 +178,7 @@ export function readDocumentSchemaKind<S extends z.ZodType>(
   return { ok: true, path, mode, kind: result.kind };
 }
 
-export function canDocumentSchemaAccepts<S extends z.ZodType>(
+function canDocumentSchemaAccepts<S extends z.ZodType>(
   context: DocumentSchemaContext<S>,
   path: Pointer,
   value: unknown,
@@ -203,7 +203,7 @@ export function canDocumentSchemaAccepts<S extends z.ZodType>(
   return planDocumentSchemaAcceptsResult({ path, result: parsed });
 }
 
-export function describeDocumentSchema<S extends z.ZodType>(
+function describeDocumentSchema<S extends z.ZodType>(
   context: DocumentSchemaContext<S>,
   path: Pointer,
   mode: SchemaPathMode = "value",
@@ -218,7 +218,7 @@ export function describeDocumentSchema<S extends z.ZodType>(
   };
 }
 
-export function planDocumentSchemaAcceptsResult(
+function planDocumentSchemaAcceptsResult(
   input: PlanDocumentSchemaAcceptsResultInput,
 ): CapabilityResult {
   if (input.result.success) return { ok: true };
@@ -233,7 +233,7 @@ export function planDocumentSchemaAcceptsResult(
   };
 }
 
-export function planDocumentSchemaResolution(
+function planDocumentSchemaResolution(
   input: PlanDocumentSchemaResolutionInput,
 ): DocumentSchemaResolutionResult {
   const { schema, path, mode } = input;

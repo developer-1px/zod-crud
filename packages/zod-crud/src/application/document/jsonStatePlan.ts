@@ -89,7 +89,7 @@ export function planJSONNotification(
     : { lastApplied: input.applied };
 }
 
-export function planJSONRootReplacement<T>(
+function planJSONRootReplacement<T>(
   input: JSONRootReplacementInput<T>,
 ): JSONRootReplacementPlan<T> {
   return {

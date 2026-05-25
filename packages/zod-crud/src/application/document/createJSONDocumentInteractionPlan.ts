@@ -3,7 +3,7 @@ import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import { reduceSelection, restoreSelection, type SelectionAction, type SelectionSnap } from "../../domain/selection/index.js";
 import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/localSchemaCore.js";
-import type { ClipboardPeekResult } from "./clipboard.js";
+import type { ClipboardPeekResult } from "./clipboardTypes.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
 import type {
   DocumentCanPastePlan,
@@ -68,7 +68,7 @@ export function planDocumentDuplicateApplyResult<T>(
   };
 }
 
-export function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
+function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,
   read: Extract<ClipboardPeekResult, { ok: true }>,
@@ -86,7 +86,7 @@ export function canTrustSameSourceReplaceCanPaste<S extends z.ZodType>(
   return segments !== null && readAt(state, segments).ok;
 }
 
-export function planDocumentPasteReplaceTarget(target: JSONDocumentPasteTarget): Pointer | null {
+function planDocumentPasteReplaceTarget(target: JSONDocumentPasteTarget): Pointer | null {
   return typeof target === "object" && target !== null && "replace" in target
     ? target.replace
     : null;
@@ -171,7 +171,7 @@ export function planDocumentCommitSelection(
   };
 }
 
-export function planDocumentCommitSelectionAfter(
+function planDocumentCommitSelectionAfter(
   input: PlanDocumentCommitSelectionAfterInput,
 ): SelectionSnap {
   return isDocumentSelectionSnapshot(input.selection)
@@ -198,7 +198,7 @@ export function shouldRecordDocumentCommitHistory(
     && input.operationCount > 0;
 }
 
-export function isDocumentSelectionSnapshot(selection: SelectionAction | SelectionSnap): selection is SelectionSnap {
+function isDocumentSelectionSnapshot(selection: SelectionAction | SelectionSnap): selection is SelectionSnap {
   return typeof selection === "object"
     && selection !== null
     && "selectionRanges" in selection

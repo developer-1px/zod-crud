@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 
 import { trackPointer, type JSONPatchOperation } from "../../../src/index.js";
-import { pickAutoTargets } from "../../../src/domain/tracking/autoTarget.js";
+import { pickAutoTargetsInfo } from "../../../src/domain/tracking/autoTarget.js";
 
 describe("trackPointer — add", () => {
   it("shifts later siblings on insert", () => {
@@ -111,7 +111,7 @@ describe("trackPointer — sequence", () => {
   });
 });
 
-describe("pickAutoTargets", () => {
+describe("pickAutoTargetsInfo", () => {
   it("tracks same-array batch targets without changing suffix semantics", () => {
     const ops: JSONPatchOperation[] = [
       { op: "copy", from: "/items/0", path: "/items/3" },
@@ -121,7 +121,7 @@ describe("pickAutoTargets", () => {
       { op: "remove", path: "/items/5" },
     ];
 
-    expect(pickAutoTargets(ops, null)).toEqual([
+    expect(pickAutoTargetsInfo(ops).targets).toEqual([
       "/items/1",
       "/items/1",
       "/items/4",

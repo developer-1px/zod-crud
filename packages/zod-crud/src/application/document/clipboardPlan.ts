@@ -47,14 +47,14 @@ export interface ClipboardPastePlanContext<S extends z.ZodType> {
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface ClipboardPastePreviewInput<S extends z.ZodType> {
+interface ClipboardPastePreviewInput<S extends z.ZodType> {
   trustedPayload: boolean;
   options: PasteOptions;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
   previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-export interface ClipboardPastePreviewPlan<S extends z.ZodType> {
+interface ClipboardPastePreviewPlan<S extends z.ZodType> {
   trustedPayload: boolean;
   patchValuesTrusted: boolean;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
@@ -178,7 +178,7 @@ export function planClipboardPaste<S extends z.ZodType>(
   });
 }
 
-export function planClipboardPastePreview<S extends z.ZodType>(
+function planClipboardPastePreview<S extends z.ZodType>(
   input: ClipboardPastePreviewInput<S>,
 ): ClipboardPastePreviewPlan<S> {
   const trustedPayload = input.trustedPayload || input.options.trustedPayload === true;

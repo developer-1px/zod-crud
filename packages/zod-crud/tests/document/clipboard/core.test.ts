@@ -2,22 +2,20 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  isClipboardSchemaTrustedPayload,
+  planClipboardPeekBuffer,
+  planClipboardReadBuffer,
+  planClipboardWriteBuffer,
+} from "../../../src/application/document/clipboardBufferPlan.js";
+import {
   planClipboardCopy,
   planClipboardCutApplyResult,
   planClipboardPasteApplyResult,
-  planClipboardPeekBuffer,
-  planClipboardReadBuffer,
   planClipboardSchemaTrustedSourceBuffer,
   planClipboardSource,
   planClipboardCut,
   planClipboardPaste,
-  planClipboardWriteBuffer,
-  planClipboardWritePayload,
-  planClipboardWriteSources,
-  planClipboardPastePreview,
-  type ClipboardBuffer,
-} from "../../../src/application/document/clipboard.js";
+} from "../../../src/application/document/clipboardPlan.js";
+import type { ClipboardBuffer } from "../../../src/application/document/clipboardTypes.js";
 import type { ApplyResult, JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
 
 const Schema = z.object({
@@ -74,12 +72,26 @@ describe("document clipboard core functions", () => {
   });
 
   test("plans write source normalization without a clipboard shell", () => {
-    expect(planClipboardWriteSources({})).toEqual({ ok: true, sources: null });
-    expect(planClipboardWriteSources({
-      source: "/items/0",
-      sources: ["/items/0/name", "/items/0"],
-    })).toEqual({ ok: true, sources: ["/items/0"] });
-    expect(planClipboardWriteSources({ source: "items/0" })).toEqual({
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: initial,
+    })).toMatchObject({ ok: true, buffer: { sources: null } });
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: initial.items[0],
+      options: {
+        source: "/items/0",
+        sources: ["/items/0/name", "/items/0"],
+      },
+    })).toMatchObject({ ok: true, buffer: { sources: ["/items/0"] } });
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
+      payload: initial,
+      options: { source: "items/0" },
+    })).toEqual({
       ok: false,
       result: {
         ok: false,
@@ -92,67 +104,62 @@ describe("document clipboard core functions", () => {
 
   test("checks schema-trusted clipboard payloads from explicit state and sources", () => {
     const sourcePayload = initial.items[0];
+    const schemaTrusted = (
+      payload: unknown,
+      stateJsonTrusted: boolean,
+      options = {},
+    ): boolean => {
+      const result = planClipboardWriteBuffer({
+        state: initial,
+        stateJsonTrusted,
+        payload,
+        options,
+      });
+      if (!result.ok) throw new Error("expected write buffer plan to succeed");
+      return result.buffer.schemaTrusted;
+    };
 
-    expect(isClipboardSchemaTrustedPayload({
-      state: initial,
-      stateJsonTrusted: false,
-      payload: initial,
-      sources: null,
-    })).toBe(false);
-    expect(isClipboardSchemaTrustedPayload({
-      state: initial,
-      stateJsonTrusted: true,
-      payload: initial,
-      sources: null,
-    })).toBe(true);
-    expect(isClipboardSchemaTrustedPayload({
-      state: initial,
-      stateJsonTrusted: true,
-      payload: sourcePayload,
-      sources: ["/items/0"],
-    })).toBe(true);
-    expect(isClipboardSchemaTrustedPayload({
-      state: initial,
-      stateJsonTrusted: true,
-      payload: initial.items,
-      sources: null,
-    })).toBe(true);
-    expect(isClipboardSchemaTrustedPayload({
-      state: initial,
-      stateJsonTrusted: true,
-      payload: { id: "a", name: "A" },
-      sources: ["/items/0"],
-    })).toBe(false);
+    expect(schemaTrusted(initial, false)).toBe(false);
+    expect(schemaTrusted(initial, true)).toBe(true);
+    expect(schemaTrusted(sourcePayload, true, { source: "/items/0" })).toBe(true);
+    expect(schemaTrusted(initial.items, true)).toBe(true);
+    expect(schemaTrusted({ id: "a", name: "A" }, true, { source: "/items/0" })).toBe(false);
   });
 
   test("plans write payload cloning and JSON guard decisions", () => {
     const payload = { id: "a", nested: { name: "A" } };
-    const cloned = planClipboardWritePayload({
+    const cloned = planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
       payload,
-      trustedPayload: false,
-      clonePayload: true,
+      options: { clonePayload: true },
     });
 
-    expect(cloned).toEqual({ ok: true, value: payload });
-    if (cloned.ok) expect(cloned.value).not.toBe(payload);
+    expect(cloned).toMatchObject({ ok: true, buffer: { payload } });
+    if (cloned.ok) expect(cloned.buffer.payload).not.toBe(payload);
 
-    expect(planClipboardWritePayload({
+    const direct = planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: true,
       payload,
-      trustedPayload: false,
-      clonePayload: false,
-    })).toEqual({ ok: true, value: payload });
+      options: { clonePayload: false },
+    });
+    expect(direct).toMatchObject({ ok: true, buffer: { payload } });
+    if (direct.ok) expect(direct.buffer.payload).toBe(payload);
 
     const bad = () => "bad";
-    expect(planClipboardWritePayload({
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: false,
       payload: bad,
-      trustedPayload: false,
-      clonePayload: true,
+      options: { clonePayload: true },
     })).toMatchObject({ ok: false });
-    expect(planClipboardWritePayload({
+    expect(planClipboardWriteBuffer({
+      state: initial,
+      stateJsonTrusted: false,
       payload: bad,
-      trustedPayload: true,
-      clonePayload: false,
-    })).toEqual({ ok: true, value: bad });
+      options: { trustedPayload: true, clonePayload: false },
+    })).toMatchObject({ ok: true, buffer: { payload: bad } });
   });
 
   test("plans write buffers from state trust, sources, and payload guards", () => {
@@ -432,74 +439,6 @@ describe("document clipboard core functions", () => {
       code: "path_not_found",
       message: "missing target",
     });
-  });
-
-  test("plans paste preview trust decisions without running paste", () => {
-    const plainPreview = ((operations: ReadonlyArray<JSONPatchOperation>) => ({
-      state: initial,
-      result: { ok: true },
-      applied: operations,
-    })) satisfies (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<typeof Schema>;
-    const trustedPreview = ((operations: ReadonlyArray<JSONPatchOperation>) => ({
-      state: initial,
-      result: { ok: true },
-      applied: operations,
-    })) satisfies (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<typeof Schema>;
-
-    const plain = planClipboardPastePreview({
-      trustedPayload: false,
-      options: {},
-      previewPatch: plainPreview,
-      previewTrustedValuesPatch: trustedPreview,
-    });
-    expect(plain).toMatchObject({
-      trustedPayload: false,
-      patchValuesTrusted: false,
-    });
-    expect(plain.previewPatch).toBe(plainPreview);
-
-    const trustedByInput = planClipboardPastePreview({
-      trustedPayload: true,
-      options: {},
-      previewPatch: plainPreview,
-      previewTrustedValuesPatch: trustedPreview,
-    });
-    expect(trustedByInput).toMatchObject({
-      trustedPayload: true,
-      patchValuesTrusted: true,
-    });
-    expect(trustedByInput.previewPatch).toBe(trustedPreview);
-
-    const trustedByOption = planClipboardPastePreview({
-      trustedPayload: false,
-      options: { trustedPayload: true },
-      previewPatch: plainPreview,
-      previewTrustedValuesPatch: trustedPreview,
-    });
-    expect(trustedByOption).toMatchObject({
-      trustedPayload: true,
-      patchValuesTrusted: true,
-    });
-    expect(trustedByOption.previewPatch).toBe(trustedPreview);
-
-    const trustedByRekey = planClipboardPastePreview({
-      trustedPayload: false,
-      options: { rekey: { fields: ["id"], strategy: "suffix" } },
-      previewPatch: plainPreview,
-      previewTrustedValuesPatch: trustedPreview,
-    });
-    expect(trustedByRekey).toMatchObject({
-      trustedPayload: false,
-      patchValuesTrusted: true,
-    });
-    expect(trustedByRekey.previewPatch).toBe(trustedPreview);
-
-    const trustedWithoutTrustedPreview = planClipboardPastePreview({
-      trustedPayload: true,
-      options: {},
-      previewPatch: plainPreview,
-    });
-    expect(trustedWithoutTrustedPreview.previewPatch).toBe(plainPreview);
   });
 
   test("uses trusted preview when the payload boundary is already owned", () => {

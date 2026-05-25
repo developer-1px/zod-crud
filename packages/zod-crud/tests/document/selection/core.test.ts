@@ -5,7 +5,6 @@ import {
   planInitialSelection,
   planSelectionPatchUpdate,
   planSelectionStateUpdate,
-  sameSelectionSnapshot,
   selectionAddRangeAction,
   selectionRemoveRangeAction,
   selectionSelectRangesAction,
@@ -68,7 +67,7 @@ describe("document selection core functions", () => {
       context: { source: "keyboard", nested: { depth: 1 } },
     };
 
-    expect(sameSelectionSnapshot(textSelection, {
+    expect(planSelectionStateUpdate(textSelection, {
       selectedPointers: ["/items/0/name"],
       selectionRanges: [
         {
@@ -80,22 +79,22 @@ describe("document selection core functions", () => {
       anchor: { path: "/items/0/name", offset: 1, edge: "before", affinity: "forward" },
       focus: { path: "/items/0/name", offset: 4, edge: "after", affinity: "backward" },
       context: { source: "keyboard", nested: { depth: 1 } },
-    })).toBe(true);
+    }, true).emit).toBe(false);
 
-    expect(sameSelectionSnapshot(textSelection, {
+    expect(planSelectionStateUpdate(textSelection, {
       ...textSelection,
       focus: { path: "/items/0/name", offset: 4, edge: "before", affinity: "forward" },
-    })).toBe(false);
+    }, true).emit).toBe(true);
 
-    expect(sameSelectionSnapshot(textSelection, {
+    expect(planSelectionStateUpdate(textSelection, {
       ...textSelection,
       selectedPointers: ["/items/1/name"],
-    })).toBe(false);
+    }, true).emit).toBe(true);
 
-    expect(sameSelectionSnapshot(textSelection, {
+    expect(planSelectionStateUpdate(textSelection, {
       ...textSelection,
       context: { source: "mouse", nested: { depth: 1 } },
-    })).toBe(false);
+    }, true).emit).toBe(true);
   });
 
   test("plans observer emits with a defensive previous snapshot", () => {

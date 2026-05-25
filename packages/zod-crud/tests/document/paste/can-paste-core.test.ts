@@ -2,11 +2,9 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  canTrustSameSourceReplaceCanPaste,
   planDocumentCanPaste,
-  planDocumentPasteReplaceTarget,
 } from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
-import type { ClipboardPeekResult } from "../../../src/application/document/clipboard.js";
+import type { ClipboardPeekResult } from "../../../src/application/document/clipboardTypes.js";
 
 const Schema = z.object({
   items: z.array(z.object({ id: z.string(), name: z.string() })),
@@ -39,13 +37,6 @@ function clipboardWithData(
 }
 
 describe("document canPaste core planning", () => {
-  test("plans replace targets from paste target shapes", () => {
-    expect(planDocumentPasteReplaceTarget({ replace: "/items/0" })).toBe("/items/0");
-    expect(planDocumentPasteReplaceTarget("/items/0")).toBeNull();
-    expect(planDocumentPasteReplaceTarget({ before: "/items/0" })).toBeNull();
-    expect(planDocumentPasteReplaceTarget({ after: "/items/0" })).toBeNull();
-  });
-
   test("returns the empty clipboard capability result without a document facade", () => {
     expect(planDocumentCanPaste({
       schema: Schema,
@@ -65,12 +56,6 @@ describe("document canPaste core planning", () => {
   test("accepts trusted same-source replace capabilities without schema preview work", () => {
     const clipboard = clipboardWithData();
 
-    expect(canTrustSameSourceReplaceCanPaste(
-      Schema,
-      initial,
-      clipboard,
-      { replace: "/items/0" },
-    )).toBe(true);
     expect(planDocumentCanPaste({
       schema: Schema,
       state: initial,

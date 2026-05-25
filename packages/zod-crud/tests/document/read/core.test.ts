@@ -2,11 +2,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import {
-  planDocumentEntries,
-  queryDocumentPointers,
-  readDocumentEntries,
-  readDocumentPointer,
-  type DocumentReadContext,
+  buildReadFacade,
 } from "../../../src/application/document/read.js";
 
 const Schema = z.object({
@@ -31,18 +27,20 @@ const initial: z.output<typeof Schema> = {
 
 describe("document read core functions", () => {
   test("reads pointers from plain state without a document facade", () => {
-    expect(readDocumentPointer(initial, "")).toEqual({ ok: true, path: "", value: initial });
-    expect(readDocumentPointer(initial, "/tasks/0/name")).toEqual({
+    const read = buildReadFacade({ schema: Schema, getState: () => initial });
+
+    expect(read.at("")).toEqual({ ok: true, path: "", value: initial });
+    expect(read.at("/tasks/0/name")).toEqual({
       ok: true,
       path: "/tasks/0/name",
       value: "A",
     });
-    expect(readDocumentPointer(initial, "tasks/0")).toMatchObject({
+    expect(read.at("tasks/0")).toMatchObject({
       ok: false,
       code: "invalid_pointer",
       pointer: "tasks/0",
     });
-    expect(readDocumentPointer(initial, "/tasks/9")).toEqual({
+    expect(read.at("/tasks/9")).toEqual({
       ok: false,
       code: "path_not_found",
       reason: "path not found: /tasks/9",
@@ -51,26 +49,28 @@ describe("document read core functions", () => {
   });
 
   test("queries JSONPath pointers from plain state", () => {
-    expect(queryDocumentPointers(initial, "$.tasks[*].id")).toEqual({
+    const read = buildReadFacade({ schema: Schema, getState: () => initial });
+
+    expect(read.query("$.tasks[*].id")).toEqual({
       ok: true,
       query: "$.tasks[*].id",
       pointers: ["/tasks/0/id", "/tasks/1/id"],
     });
-    expect(queryDocumentPointers(initial, "$..label")).toEqual({
+    expect(read.query("$..label")).toEqual({
       ok: true,
       query: "$..label",
       pointers: ["/meta/primary/label", "/meta/secondary/label"],
     });
-    expect(queryDocumentPointers(initial, "$.tasks[")).toMatchObject({
+    expect(read.query("$.tasks[")).toMatchObject({
       ok: false,
       code: "invalid_query",
     });
   });
 
   test("lists root, object, array, record, and primitive entries", () => {
-    const context: DocumentReadContext<typeof Schema> = { schema: Schema, state: initial };
+    const read = buildReadFacade({ schema: Schema, getState: () => initial });
 
-    expect(readDocumentEntries(context, "")).toMatchObject({
+    expect(read.entries("")).toMatchObject({
       ok: true,
       path: "",
       kind: "root",
@@ -81,13 +81,13 @@ describe("document read core functions", () => {
         { key: "nested", path: "/nested", value: { flag: true } },
       ],
     });
-    expect(readDocumentEntries(context, "/nested")).toEqual({
+    expect(read.entries("/nested")).toEqual({
       ok: true,
       path: "/nested",
       kind: "object",
       entries: [{ key: "flag", path: "/nested/flag", value: true }],
     });
-    expect(readDocumentEntries(context, "/tasks")).toMatchObject({
+    expect(read.entries("/tasks")).toMatchObject({
       ok: true,
       path: "/tasks",
       kind: "array",
@@ -96,7 +96,7 @@ describe("document read core functions", () => {
         { key: "1", path: "/tasks/1", value: { id: "b", name: "B" } },
       ],
     });
-    expect(readDocumentEntries(context, "/meta")).toMatchObject({
+    expect(read.entries("/meta")).toMatchObject({
       ok: true,
       path: "/meta",
       kind: "record",
@@ -105,55 +105,9 @@ describe("document read core functions", () => {
         { key: "secondary", path: "/meta/secondary", value: { label: "Secondary" } },
       ],
     });
-    expect(readDocumentEntries(context, "/title")).toEqual({
+    expect(read.entries("/title")).toEqual({
       ok: true,
       path: "/title",
-      kind: "primitive",
-      entries: [],
-    });
-  });
-
-  test("plans entry kind and child entries without reading from document state", () => {
-    expect(planDocumentEntries({
-      schema: Schema,
-      path: "",
-      value: initial,
-    })).toMatchObject({
-      kind: "root",
-      entries: [
-        { key: "title", path: "/title" },
-        { key: "tasks", path: "/tasks" },
-        { key: "meta", path: "/meta" },
-        { key: "nested", path: "/nested" },
-      ],
-    });
-
-    expect(planDocumentEntries({
-      schema: Schema,
-      path: "/meta",
-      value: initial.meta,
-    })).toMatchObject({
-      kind: "record",
-      entries: [
-        { key: "primary", path: "/meta/primary", value: { label: "Primary" } },
-        { key: "secondary", path: "/meta/secondary", value: { label: "Secondary" } },
-      ],
-    });
-
-    expect(planDocumentEntries({
-      schema: Schema,
-      path: "/nested",
-      value: initial.nested,
-    })).toEqual({
-      kind: "object",
-      entries: [{ key: "flag", path: "/nested/flag", value: true }],
-    });
-
-    expect(planDocumentEntries({
-      schema: Schema,
-      path: "/title",
-      value: initial.title,
-    })).toEqual({
       kind: "primitive",
       entries: [],
     });
@@ -169,8 +123,9 @@ describe("document read core functions", () => {
         "tilde~key": "tilde",
       },
     };
+    const read = buildReadFacade({ schema: EscapedSchema, getState: () => state });
 
-    expect(readDocumentEntries({ schema: EscapedSchema, state }, "/meta")).toEqual({
+    expect(read.entries("/meta")).toEqual({
       ok: true,
       path: "/meta",
       kind: "record",

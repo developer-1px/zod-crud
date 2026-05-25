@@ -3,7 +3,6 @@ import * as z from "zod";
 
 import {
   planJSONNotification,
-  planJSONRootReplacement,
   planJSONRootReplacementParse,
   planJSONStateCommit,
 } from "../../../src/application/document/jsonStatePlan.js";
@@ -21,37 +20,6 @@ describe("document JSON state core functions", () => {
     });
     expect(planJSONNotification({ applied, disposed: true })).toEqual({
       lastApplied: null,
-    });
-  });
-
-  test("plans root replacement state, trust, and notification patch", () => {
-    const next = { title: "loaded" };
-
-    expect(planJSONRootReplacement({
-      next,
-      schemaOutputJsonTrusted: false,
-    })).toEqual({
-      result: { ok: true },
-      state: next,
-      stateJsonTrusted: true,
-      notifyApplied: [{ op: "replace", path: "", value: next }],
-    });
-
-    const nonSerializable = () => "bad";
-    expect(planJSONRootReplacement({
-      next: nonSerializable,
-      schemaOutputJsonTrusted: false,
-    })).toEqual({
-      result: { ok: true },
-      state: nonSerializable,
-      stateJsonTrusted: false,
-      notifyApplied: [{ op: "replace", path: "", value: nonSerializable }],
-    });
-    expect(planJSONRootReplacement({
-      next: nonSerializable,
-      schemaOutputJsonTrusted: true,
-    })).toMatchObject({
-      stateJsonTrusted: true,
     });
   });
 
@@ -79,6 +47,25 @@ describe("document JSON state core functions", () => {
         ok: false,
         code: "schema_violation",
       },
+    });
+
+    const nonSerializable = () => "bad";
+    expect(planJSONRootReplacementParse({
+      result: z.any().safeParse(nonSerializable),
+      schemaOutputJsonTrusted: false,
+    })).toEqual({
+      kind: "replace",
+      result: { ok: true },
+      state: nonSerializable,
+      stateJsonTrusted: false,
+      notifyApplied: [{ op: "replace", path: "", value: nonSerializable }],
+    });
+    expect(planJSONRootReplacementParse({
+      result: z.any().safeParse(nonSerializable),
+      schemaOutputJsonTrusted: true,
+    })).toMatchObject({
+      kind: "replace",
+      stateJsonTrusted: true,
     });
   });
 

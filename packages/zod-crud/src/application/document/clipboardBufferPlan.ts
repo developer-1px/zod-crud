@@ -17,22 +17,22 @@ export const EMPTY_CLIPBOARD: ClipboardEmpty = {
   message: "clipboard is empty",
 };
 
-export type ClipboardWriteSourcesResult =
+type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
 
-export type ClipboardWritePayloadPlan =
+type ClipboardWritePayloadPlan =
   | { ok: true; value: unknown }
   | { ok: false; reason: string };
 
-export interface ClipboardSchemaTrustedPayloadInput {
+interface ClipboardSchemaTrustedPayloadInput {
   state: unknown;
   stateJsonTrusted: boolean;
   payload: unknown;
   sources: ReadonlyArray<Pointer> | null;
 }
 
-export interface ClipboardWritePayloadInput {
+interface ClipboardWritePayloadInput {
   payload: unknown;
   trustedPayload: boolean;
   clonePayload: boolean;
@@ -77,7 +77,7 @@ export function planClipboardPeekBuffer(
   };
 }
 
-export function planClipboardWriteSources(
+function planClipboardWriteSources(
   options: ClipboardWriteOptions,
 ): ClipboardWriteSourcesResult {
   const candidates: Pointer[] = [];
@@ -101,7 +101,7 @@ export function planClipboardWriteSources(
   };
 }
 
-export function isClipboardSchemaTrustedPayload(
+function isClipboardSchemaTrustedPayload(
   input: ClipboardSchemaTrustedPayloadInput,
 ): boolean {
   if (!input.stateJsonTrusted) return false;
@@ -127,7 +127,7 @@ export function isClipboardSchemaTrustedPayload(
   return false;
 }
 
-export function planClipboardWritePayload(
+function planClipboardWritePayload(
   input: ClipboardWritePayloadInput,
 ): ClipboardWritePayloadPlan {
   if (input.clonePayload) {

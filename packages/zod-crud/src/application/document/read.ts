@@ -21,13 +21,13 @@ export interface ReadEntry {
   value: unknown;
 }
 
-export interface PlanDocumentEntriesInput {
+interface PlanDocumentEntriesInput {
   schema: z.ZodType;
   path: Pointer;
   value: unknown;
 }
 
-export interface DocumentEntriesPlan {
+interface DocumentEntriesPlan {
   kind: EntryKind;
   entries: ReadonlyArray<ReadEntry>;
 }
@@ -53,7 +53,7 @@ interface BuildReadFacadeArgs<S extends z.ZodType> {
   getState(): z.output<S>;
 }
 
-export interface DocumentReadContext<S extends z.ZodType> {
+interface DocumentReadContext<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
 }
@@ -84,7 +84,7 @@ export function buildReadFacade<S extends z.ZodType>(
   };
 }
 
-export function readDocumentPointer(state: unknown, path: Pointer): ReadResult {
+function readDocumentPointer(state: unknown, path: Pointer): ReadResult {
   let segments: string[];
   try {
     segments = parsePointer(path);
@@ -109,7 +109,7 @@ export function readDocumentPointer(state: unknown, path: Pointer): ReadResult {
   return { ok: true, path, value: result.value };
 }
 
-export function queryDocumentPointers(state: unknown, jsonpath: string): QueryResult {
+function queryDocumentPointers(state: unknown, jsonpath: string): QueryResult {
   try {
     return { ok: true, query: jsonpath, pointers: jsonpathQuery(jsonpath, state) };
   } catch (error) {
@@ -120,7 +120,7 @@ export function queryDocumentPointers(state: unknown, jsonpath: string): QueryRe
   }
 }
 
-export function readDocumentEntries<S extends z.ZodType>(
+function readDocumentEntries<S extends z.ZodType>(
   context: DocumentReadContext<S>,
   path: Pointer,
 ): EntriesResult {
@@ -140,7 +140,7 @@ export function readDocumentEntries<S extends z.ZodType>(
   };
 }
 
-export function planDocumentEntries(
+function planDocumentEntries(
   input: PlanDocumentEntriesInput,
 ): DocumentEntriesPlan {
   return {

@@ -132,6 +132,6 @@ export function planDocumentReplaceArgs(
     : { value: input.pathOrValue };
 }
 
-export function isDocumentJSONPathTarget(value: Pointer): boolean {
+function isDocumentJSONPathTarget(value: Pointer): boolean {
   return value.startsWith("$");
 }

@@ -3,25 +3,35 @@ import * as z from "zod";
 
 import {
   canDocumentCopy,
+} from "../../../src/application/document/capabilityClipboardChecks.js";
+import {
   canDocumentFind,
+} from "../../../src/application/document/capabilityQueryChecks.js";
+import {
   canDocumentPatch,
   canDocumentRemove,
   canDocumentReplace,
-  isDocumentJSONPathTarget,
+} from "../../../src/application/document/capabilityMutationChecks.js";
+import {
   planDocumentCopyCapability,
-  planDocumentCapabilityResult,
   planDocumentCutCapability,
+  planDocumentPasteCapability,
+} from "../../../src/application/document/capabilityClipboardPlan.js";
+import {
   planDocumentDeleteTextCapability,
   planDocumentDuplicateCapability,
   planDocumentMoveCapability,
   planDocumentPatchCapability,
-  planDocumentPasteCapability,
-  planDocumentReplaceArgs,
   planDocumentRemoveCapability,
   planDocumentReplaceCapability,
   planDocumentReplaceTextCapability,
-  type DocumentCapabilityContext,
-} from "../../../src/application/document/capability.js";
+} from "../../../src/application/document/capabilityMutationPlan.js";
+import {
+  planDocumentCapabilityResult,
+} from "../../../src/application/document/capabilityResultPlan.js";
+import type {
+  DocumentCapabilityContext,
+} from "../../../src/application/document/capabilityFacadeTypes.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
 import type { SelectionSnap } from "../../../src/domain/selection/index.js";
 
@@ -144,27 +154,15 @@ describe("document capability core functions", () => {
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
   });
 
-  test("plans replace overload arguments and JSONPath target detection", () => {
-    expect(planDocumentReplaceArgs({
-      pathOrValue: "/items/0/name",
-      value: "Alpha",
-      hasValueArg: true,
-    })).toEqual({
-      target: "/items/0/name",
-      value: "Alpha",
-    });
+  test("evaluates replace overload arguments through capability checks", () => {
+    const context: DocumentCapabilityContext<typeof Schema> = {
+      schema: Schema,
+      state: initial,
+      selection: selectedFirstItem,
+    };
 
-    const replacement = { id: "a1", name: "Alpha" };
-    expect(planDocumentReplaceArgs({
-      pathOrValue: replacement,
-      value: undefined,
-      hasValueArg: false,
-    })).toEqual({ value: replacement });
-
-    expect(isDocumentJSONPathTarget("$.items[*].name")).toBe(true);
-    expect(isDocumentJSONPathTarget("$")).toBe(true);
-    expect(isDocumentJSONPathTarget("/items/$")).toBe(false);
-    expect(isDocumentJSONPathTarget("/items/0/name")).toBe(false);
+    expect(canDocumentReplace(context, "/items/0/name", "Alpha")).toEqual({ ok: true });
+    expect(canDocumentReplace(context, { id: "a1", name: "Alpha" })).toEqual({ ok: true });
   });
 
   test("plans remove capabilities from explicit state and selection source", () => {

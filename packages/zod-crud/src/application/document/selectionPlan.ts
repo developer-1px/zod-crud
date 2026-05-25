@@ -88,7 +88,7 @@ export function selectionSelectRangesAction(
   };
 }
 
-export function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boolean {
+function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boolean {
   return left.primaryIndex === right.primaryIndex
     && samePointOrNull(left.anchor, right.anchor)
     && samePointOrNull(left.focus, right.focus)

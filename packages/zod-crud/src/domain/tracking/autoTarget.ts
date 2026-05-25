@@ -13,13 +13,6 @@ export interface AutoTargetResult {
 // SPEC §5.7 rule 1 / §5.8 rule 1 — applied ops 의 add/copy/move destination 모두 수집.
 // 단일 표준 모델: applyPatch 가 `/-` 를 concrete index 로 이미 정규화했으므로
 // 모든 op.path 는 적용 시점의 실제 위치. 이후 ops 의 index shift 는 trackPointer 가 처리.
-export function pickAutoTargets(
-  applied: ReadonlyArray<JSONPatchOperation>,
-  _after?: unknown,
-): Pointer[] {
-  return pickAutoTargetsInfo(applied).targets;
-}
-
 export function pickAutoTargetsInfo(
   applied: ReadonlyArray<JSONPatchOperation>,
 ): AutoTargetResult {
