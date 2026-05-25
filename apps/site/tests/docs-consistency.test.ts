@@ -108,6 +108,27 @@ describe("public docs consistency", () => {
     }
   });
 
+  test("site docs describe the current nested source layout", () => {
+    for (const path of [
+      "application/document/can",
+      "application/document/state",
+      "application/document/history",
+      "application/document/clipboard",
+      "application/document/selection",
+      "domain/pointer",
+      "domain/schema/array",
+      "domain/schema/object",
+      "domain/schema/validation",
+      "domain/selection",
+      "foundation/json",
+      "foundation/jsonpath",
+      "foundation/patch/fast",
+      "foundation/pointer",
+    ]) {
+      expect(docs.site, `site docs missing ${path}`).toContain(path);
+    }
+  });
+
   test("document selection and history detail surfaces", () => {
     for (const [name, source] of Object.entries({ readme: docs.readme, site: docs.site, spec: docs.spec })) {
       expect(source, `${name} missing selection detail`).toMatch(/selectedPointers/);

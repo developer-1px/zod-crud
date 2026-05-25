@@ -41,7 +41,7 @@ const surfaces = {
 };
 const releaseNotes = read("docs/release-notes.md");
 const apiUsageGaps = read("docs/api-usage-gaps.md");
-const smoke = read("packages/zod-crud/test/package-smoke.mjs");
+const smoke = read("packages/zod-crud/tests/smoke/package-smoke.mjs");
 const markdownViewer = read("apps/site/src/components/MarkdownViewer.tsx");
 const workbenchPlayground = read("apps/site/src/playgrounds/InterfaceWorkbench.playground.tsx");
 const workbenchTest = read("apps/site/tests/interface-workbench.test.tsx");

@@ -1,6 +1,6 @@
 # zod-crud Docs
 
-zod-crud는 Zod schema로 보호되는 JSON 편집 엔진입니다. 중심 API는 JSON 표준과 FE 편집 도구에서 이미 쓰이는 이름을 분리해서 씁니다.
+zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진입니다. 앱은 `zod-crud` 또는 `zod-crud/react`만 import하고, 내부는 document facade, 편집 규칙, JSON 표준 primitive로 나뉩니다.
 
 ```txt
 document
@@ -24,7 +24,7 @@ zod-crud는 UI component가 아닙니다. JSON 편집의 공통 규칙을 headle
 
 ## Core concept
 
-핵심은 역할을 섞지 않는 것입니다.
+핵심은 표준 이름과 제품 이름을 섞지 않는 것입니다.
 
 | 개념 | 맡는 일 |
 | --- | --- |
@@ -49,20 +49,112 @@ zod-crud는 UI component가 아닙니다. JSON 편집의 공통 규칙을 headle
 
 ## 소스 구조
 
-공개 진입점은 루트에 둡니다.
+현재 source layout의 기준은 public entrypoint와 내부 단방향 레이어입니다.
 
 ```txt
 src/
-├─ index.ts      zod-crud
-├─ react.ts      zod-crud/react
-├─ application/  document facade 조립
-├─ domain/       editing, selection, schema, tracking 규칙
-└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+├─ index.ts
+│  └─ public root entrypoint: zod-crud
+├─ react.ts
+│  └─ public React entrypoint: zod-crud/react
+├─ application/
+│  └─ document/
+│     ├─ create.ts
+│     ├─ types.ts
+│     ├─ read.ts
+│     ├─ schema.ts
+│     ├─ can/
+│     │  ├─ check.ts
+│     │  ├─ result.ts
+│     │  └─ types.ts
+│     ├─ state/
+│     │  ├─ json.ts
+│     │  ├─ patch.ts
+│     │  ├─ commit.ts
+│     │  ├─ change.ts
+│     │  ├─ document.ts
+│     │  └─ types.ts
+│     ├─ history/
+│     │  ├─ undoRedo.ts
+│     │  ├─ transaction.ts
+│     │  ├─ metadata.ts
+│     │  ├─ restore.ts
+│     │  └─ types.ts
+│     ├─ clipboard/
+│     │  ├─ clipboard.ts
+│     │  └─ types.ts
+│     └─ selection/
+│        ├─ action.ts
+│        └─ create.ts
+├─ domain/
+│  ├─ copy.ts
+│  ├─ cut.ts
+│  ├─ paste.ts
+│  ├─ duplicate.ts
+│  ├─ pointer/
+│  │  ├─ array.ts
+│  │  └─ track.ts
+│  ├─ schema/
+│  │  ├─ array/
+│  │  ├─ object/
+│  │  ├─ validation/
+│  │  ├─ introspection.ts
+│  │  ├─ patch.ts
+│  │  ├─ rekey.ts
+│  │  └─ zod.ts
+│  └─ selection/
+│     ├─ autoRules.ts
+│     ├─ order.ts
+│     ├─ point.ts
+│     ├─ read.ts
+│     ├─ reducer.ts
+│     ├─ snap.ts
+│     ├─ spans.ts
+│     ├─ textDelete.ts
+│     ├─ textEdit.ts
+│     ├─ traversal.ts
+│     └─ types.ts
+└─ foundation/
+   ├─ error.ts
+   ├─ history.ts
+   ├─ json/
+   ├─ jsonpath/
+   ├─ patch/
+   │  └─ fast/
+   └─ pointer/
 ```
 
-앱은 `zod-crud`와 `zod-crud/react`만 import합니다. `application`,
-`domain`, `foundation`은 내부 구조입니다.
-소스 경로를 말할 때는 공개 진입점을 `src/index.ts`, `src/react.ts`로 씁니다.
+의존 방향은 아래처럼 읽습니다.
+
+```txt
+src/index.ts, src/react.ts
+└─ application/document
+   ├─ domain
+   │  └─ foundation
+   └─ foundation
+```
+
+`application/document`는 public document 표면을 조립합니다. `domain`은 copy, cut, paste, duplicate, schema validation, selection 같은 순수 편집 규칙입니다. `foundation`은 JSON Patch, JSON Pointer, JSONPath, JSON clone/equal, history entry, error 같은 표준 primitive입니다.
+
+앱은 `zod-crud`와 `zod-crud/react`만 import합니다. `application`, `domain`, `foundation`은 package subpath가 아닙니다. 소스 경로를 말할 때는 공개 진입점을 `src/index.ts`, `src/react.ts`로 씁니다.
+
+## Public API 경계
+
+High-level mutation인 `doc.duplicate(...)`, `doc.clipboard.cut(...)`, `doc.clipboard.paste(...)`, `doc.clipboard.pastePayload(...)`는 성공하면 document에 즉시 적용됩니다. 성공 결과의 `applied`는 이미 applied patch 기록이므로 다시 `commit`하지 않습니다.
+
+`doc.commit(...)`과 `doc.canPatch(...)`는 operation arrays를 받습니다. 반복 편집은 가능하면 배열 하나로 묶습니다. `history.transaction`은 history entry를 묶지만 반복 `doc.patch(...)` 호출을 한 번의 schema validation pass로 바꾸지는 않습니다.
+
+`doc.at(pointer)`와 `doc.query(jsonPath)`는 raw value가 아니라 `ReadResult` 같은 결과 객체를 반환합니다. JSONPath는 변경 언어가 아닙니다. `doc.query(...)`로 Pointer를 찾은 뒤 그 Pointer로 patch를 만듭니다.
+
+## 성능 경계
+
+Public `applyPatch`는 외부 JSON boundary입니다. 입력 state 전체가 JSON-safe인지 확인한 뒤 patch를 적용합니다.
+
+Document 내부 state는 trusted document state입니다. schema가 plain structural Zod schema이고 edit가 independent non-root `replace`, array edit, same-array `add`/`remove` batch에 해당하면 document path는 더 좁은 검증 경로를 씁니다. refinement, transform, check가 있는 schema는 full root schema validation으로 돌아갑니다.
+
+```sh
+npm run perf:core
+```
 
 ## 이걸로 할 수 있는 것들
 
@@ -76,3 +168,4 @@ src/
 
 - 작은 카드 편집기를 처음부터 따라 만들려면 Tutorial을 봅니다.
 - 이미 모델을 이해했고 메서드가 필요하면 API reference를 봅니다.
+- release 전 문서 계약은 `npm run docs:evaluate`와 `npm run release:check`로 확인합니다.

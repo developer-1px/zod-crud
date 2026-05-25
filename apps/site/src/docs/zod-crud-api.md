@@ -16,7 +16,8 @@ document
 
 ## 기준
 
-- JSON Patch는 변경 형식입니다. 실행 진입점은 `doc.patch(...)`입니다.
+- Public import는 `zod-crud`와 `zod-crud/react`입니다.
+- JSON Patch는 변경 형식입니다. 실행 진입점은 `doc.patch(...)`와 `doc.commit(...)`입니다.
 - Duplicate는 JSON Patch `copy`보다 의도가 높은 sibling 복제입니다. 실행 진입점은 `doc.duplicate(...)`입니다.
 - JSON Pointer는 정확한 주소입니다. patch, selection, clipboard target은 Pointer를 씁니다.
 - JSONPath는 검색입니다. `doc.query(...)`는 여러 match를 찾고 Pointer 목록을 돌려줍니다.
@@ -29,27 +30,111 @@ Source layout SSOT:
 
 ```txt
 src/
-├─ index.ts      zod-crud
-├─ react.ts      zod-crud/react
-├─ application/  document facade assembly
-├─ domain/       editing, selection, schema, tracking rules
-└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
+├─ index.ts
+│  └─ public root entrypoint: zod-crud
+├─ react.ts
+│  └─ public React entrypoint: zod-crud/react
+├─ application/
+│  └─ document/
+│     ├─ create.ts
+│     ├─ types.ts
+│     ├─ read.ts
+│     ├─ schema.ts
+│     ├─ can/
+│     ├─ state/
+│     ├─ history/
+│     ├─ clipboard/
+│     └─ selection/
+├─ domain/
+│  ├─ copy.ts
+│  ├─ cut.ts
+│  ├─ paste.ts
+│  ├─ duplicate.ts
+│  ├─ pointer/
+│  ├─ schema/
+│  │  ├─ array/
+│  │  ├─ object/
+│  │  └─ validation/
+│  └─ selection/
+└─ foundation/
+   ├─ error.ts
+   ├─ history.ts
+   ├─ json/
+   ├─ jsonpath/
+   ├─ patch/
+   │  └─ fast/
+   └─ pointer/
 ```
 
-`application`, `domain`, `foundation`은 package subpath가 아닙니다.
-공개 진입점 소스 경로는 `src/index.ts`, `src/react.ts`입니다.
+`application`, `domain`, `foundation`은 package subpath가 아닙니다. 공개 진입점 소스 경로는 `src/index.ts`, `src/react.ts`입니다.
+
+내부 의존 방향:
+
+```txt
+src/index.ts
+├─ application/document
+├─ domain
+└─ foundation
+
+src/react.ts
+└─ application/document
+
+application/document
+├─ domain
+└─ foundation
+
+domain
+└─ foundation
+```
+
+Site 문서에서 기준으로 삼는 내부 path:
+
+```txt
+application/document/can
+application/document/state
+application/document/history
+application/document/clipboard
+application/document/selection
+domain/pointer
+domain/schema/array
+domain/schema/object
+domain/schema/validation
+domain/selection
+foundation/json
+foundation/jsonpath
+foundation/patch/fast
+foundation/pointer
+```
+
+## Public 표면과 내부 위치
+
+| Public surface | 내부 위치 | 책임 |
+| --- | --- | --- |
+| `createJSONDocument` | `application/document/create.ts` | document facade 조립 |
+| `JSONDocument`, option/result types | `application/document/types.ts` | public document 계약 |
+| `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` | `application/document/state/` | document state 변경과 subscriber 알림 |
+| `doc.at`, `doc.exists`, `doc.query`, `doc.entries` | `application/document/read.ts` | read/query 결과 객체 |
+| `doc.schema.*` | `application/document/schema.ts` | pointer별 schema 조회 |
+| `doc.can*` | `application/document/can/` | 실행 전 가능 여부와 실패 이유 |
+| `doc.selection` | `application/document/selection/`, `domain/selection/` | selection facade와 순수 selection 규칙 |
+| `doc.clipboard` | `application/document/clipboard/`, `domain/copy.ts`, `domain/cut.ts`, `domain/paste.ts` | clipboard buffer와 payload mutation |
+| `doc.duplicate` | `domain/duplicate.ts` | sibling 복제와 rekey |
+| `doc.history` | `application/document/history/`, `foundation/history.ts` | undo/redo와 metadata |
+| `applyPatch`, `applyOperation`, `applyPatchToTrustedState` | `foundation/patch/`, `domain/schema/validation/` | JSON Patch 실행과 schema 검증 경계 |
+| Pointer helpers | `foundation/pointer/` | RFC 6901 parsing/building |
+| `trackPointer` | `domain/pointer/track.ts` | patch 이후 pointer 추적 |
 
 ## 작업별 진입점
 
-| 작업 | 진입점 |
-| --- | --- |
-| 값 추가, 변경, 제거, 이동 | `doc.patch(...)` |
-| sibling 복제 | `doc.duplicate(pointer, options)` |
-| 여러 위치 찾기 | `doc.query(jsonPath)` 후 반환 Pointer로 patch |
-| 멀티셀렉 복사/이동 | `doc.selection?.selectedPointers`를 `doc.clipboard.copy/cut`에 전달 |
-| 외부 payload 붙여넣기 | `doc.clipboard.pastePayload(target, payload, options)` |
-| 실행 전 검증 | `doc.can*` |
-| 되돌리기/다시하기 | `doc.canUndo()` 확인 후 `doc.history.undo()` |
+| 작업 | 진입점 | 내부 구조 |
+| --- | --- | --- |
+| 값 추가, 변경, 제거, 이동 | `doc.patch(...)`, `doc.commit(...)` | `application/document/state` -> `foundation/patch` |
+| sibling 복제 | `doc.duplicate(pointer, options)` | `domain/duplicate.ts` |
+| 여러 위치 찾기 | `doc.query(jsonPath)` 후 반환 Pointer로 patch | `foundation/jsonpath` -> Pointer |
+| 멀티셀렉 복사/이동 | `doc.selection?.selectedPointers`를 `doc.clipboard.copy/cut`에 전달 | `application/document/selection`, `application/document/clipboard` |
+| 외부 payload 붙여넣기 | `doc.clipboard.pastePayload(target, payload, options)` | `domain/paste.ts`, `domain/schema/validation` |
+| 실행 전 검증 | `doc.can*` | `application/document/can` |
+| 되돌리기/다시하기 | `doc.canUndo()` 확인 후 `doc.history.undo()` | `application/document/history` |
 
 ## 시작
 
