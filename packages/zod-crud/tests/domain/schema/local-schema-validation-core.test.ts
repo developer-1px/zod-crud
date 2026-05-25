@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
 import {
+  applyKnownJsonArrayIndexReplacementsAtSegments,
   applyArrayFieldReplaceAtPointer,
   applyArrayIndexReplacements,
   applyArrayNestedReplacements,
@@ -10,9 +11,16 @@ import {
   applyValidatedArrayFieldReplacementsAtSegments,
   applyValidatedArrayIndexReplacements,
   applyValidatedArrayNestedValueReplacementsAtSegments,
+  evaluateArrayIndexReplaceValues,
   replaceArrayField,
 } from "../../../src/domain/schema/localSchemaArrayReplaceApply.js";
 import {
+  planSameArrayElementReplaceOperations,
+  planSameArrayFieldReplaceOperations,
+  planSameArrayNestedReplaceOperations,
+  planSameArrayElementReplacePatch,
+  planSameArrayFieldReplacePatch,
+  planSameArrayNestedReplacePatch,
   planSingleArrayFieldReplace,
 } from "../../../src/domain/schema/localSchemaArrayReplacePlan.js";
 import {
@@ -23,74 +31,55 @@ import {
 } from "../../../src/domain/schema/localSchemaCore.js";
 import {
   applyArrayAddPlan,
-  applyValidatedArrayAddPlan,
   applyValidatedArrayAddPlanAtSegments,
   evaluateArrayAddElementValues,
   planAppendOnlyArrayAddPatch,
   planAppendOnlyArrayAddValues,
   planIncreasingArrayAddPatch,
   planIncreasingArrayAddValues,
-} from "../../../src/domain/schema/localSchemaCompatArrayAdd.js";
+} from "../../../src/domain/schema/localSchemaArrayAdd.js";
 import {
-  applyKnownJsonArrayIndexReplacements,
-  applyKnownJsonArrayIndexReplacementsAtSegments,
-  applyValidatedArrayFieldReplacements,
-  applyValidatedArrayNestedReplacements,
-  applyValidatedArrayNestedValueReplacements,
-  buildKnownJsonArrayIndexReplacements,
-  buildValidatedArrayIndexReplacements,
-  readSingleRootArrayFieldTarget,
-} from "../../../src/domain/schema/localSchemaCompatArrayReplace.js";
-import {
-  planSameArrayElementReplaceOperations,
-  planSameArrayFieldReplaceOperations,
-  planSameArrayNestedReplaceOperations,
   planSameArrayPatch,
   planSameArrayPatchOperations,
-} from "../../../src/domain/schema/localSchemaCompatPlans.js";
+} from "../../../src/domain/schema/localSchemaSameArray.js";
 import {
-  applyKnownJsonReplaceOperations,
   applyReplaceOperations,
   applySingleReplaceOperation,
   evaluateAppliedReplaceOperations,
   evaluateKnownJsonReplaceValues,
   planAppliedReplaceValueValidation,
   planIndependentReplacePatch,
-  planIndependentReplacePaths,
   planKnownJsonReplaceOperations,
-  planKnownJsonReplacePatch,
   planSingleReplacePatch,
-} from "../../../src/domain/schema/localSchemaCompatReplace.js";
+} from "../../../src/domain/schema/localSchemaReplace.js";
 import {
   applyRootObjectReplacePlan,
-  applyRootRecordAddPlan,
-  applyRootRecordRemovePlan,
   applySingleRootObjectReplacePlan,
   evaluateRootObjectReplaceValues,
-  evaluateRootRecordAddValues,
   planRootObjectReplaceOperations,
   planRootObjectReplacePatch,
   planRootObjectReplaceStrategy,
   planRootObjectReplaceValueValidation,
+  planSingleRootObjectReplacePatch,
+  readRootRecordForLocalSchemaValidation,
+} from "../../../src/domain/schema/localSchemaRootReplace.js";
+import {
+  applyRootRecordAddPlan,
+  applyRootRecordRemovePlan,
+  evaluateRootRecordAddValues,
   planRootRecordAddOperations,
   planRootRecordAddPatch,
   planRootRecordAddValueValidation,
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
-  planRootRecordRemoveStrategy,
-  planSingleRootObjectReplacePatch,
-  readRootRecordForLocalSchemaValidation,
-} from "../../../src/domain/schema/localSchemaCompatRoot.js";
+} from "../../../src/domain/schema/localSchemaRootRecord.js";
 import {
   applySequentialLocalOperation,
   applySequentialLocalOperationPatch,
   applySequentialLocalOperations,
   planAppliedLocalOpValidation,
   planSequentialPatch,
-  readAppliedLocalOpSourceValue,
-  readArrayAtSegments,
-  readFirstArrayNestedPath,
-} from "../../../src/domain/schema/localSchemaCompatSequential.js";
+} from "../../../src/domain/schema/localSchemaSequential.js";
 import {
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
@@ -102,6 +91,10 @@ import {
   arrayIndexPathLocation,
   haveIndependentReplacePaths,
   numericSegment,
+  planIndependentReplacePaths,
+  readAppliedLocalOpSourceValue,
+  readArrayAtSegments,
+  readFirstArrayNestedPath,
   replaceValueAtSegments,
 } from "../../../src/domain/schema/localSchemaPath.js";
 import {
@@ -121,11 +114,6 @@ import {
 import {
   rootObjectReplaceValueSourceForLocalSchemaValidation,
 } from "../../../src/domain/schema/localSchemaRootReplace.js";
-import {
-  planSameArrayElementReplacePatch,
-  planSameArrayFieldReplacePatch,
-  planSameArrayNestedReplacePatch,
-} from "../../../src/domain/schema/localSchemaArrayReplacePlan.js";
 import {
   toAppliedAddOperations,
   toAppliedRemoveOperations,
@@ -260,32 +248,14 @@ describe("array add applied operation validation", () => {
   test("validates applied array add values through parent element schemas", () => {
     const state = { items: [] as string[] };
 
-    expect(evaluateArrayAddElementValues({
-      schema: z.object({ items: z.array(z.string()) }),
-      state,
-      parent: "/items",
-      operations: [{ op: "add", path: "/items/0", value: "A" }],
-      valuesTrusted: false,
-    })).toEqual({ ok: true });
+    expect(evaluateArrayAddElementValues(z.object({ items: z.array(z.string()) }), state, "/items", [{ op: "add", path: "/items/0", value: "A" }], false)).toEqual({ ok: true });
 
-    expect(evaluateArrayAddElementValues({
-      schema: z.object({ title: z.string() }),
-      state: { title: "Draft" },
-      parent: "/title",
-      operations: [{ op: "add", path: "/title/0", value: "A" }],
-      valuesTrusted: false,
-    })).toEqual({ ok: false, result: null });
+    expect(evaluateArrayAddElementValues(z.object({ title: z.string() }), { title: "Draft" }, "/title", [{ op: "add", path: "/title/0", value: "A" }], false)).toEqual({ ok: false, result: null });
   });
 
   test("returns applied array add value validation failures", () => {
     const state = { items: [] as string[] };
-    const result = evaluateArrayAddElementValues({
-      schema: z.object({ items: z.array(z.string()) }),
-      state,
-      parent: "/items",
-      operations: [{ op: "add", path: "/items/0", value: 1 }],
-      valuesTrusted: false,
-    });
+    const result = evaluateArrayAddElementValues(z.object({ items: z.array(z.string()) }), state, "/items", [{ op: "add", path: "/items/0", value: 1 }], false);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected validation failure");
@@ -331,19 +301,19 @@ describe("array state reads", () => {
   test("reads root and nested arrays by parsed segments", () => {
     const state = { items: ["A"], nested: { items: [1] } };
 
-    const root = readArrayAtSegments({ state: state.items, segments: [] });
+    const root = readArrayAtSegments(state.items, []);
     expect(root.ok && root.array).toBe(state.items);
 
-    const nested = readArrayAtSegments({ state, segments: ["nested", "items"] });
+    const nested = readArrayAtSegments(state, ["nested", "items"]);
     expect(nested.ok && nested.array).toBe(state.nested.items);
   });
 
   test("rejects missing and non-array paths", () => {
     const state = { items: ["A"], title: "Draft" };
 
-    expect(readArrayAtSegments({ state, segments: ["missing"] })).toEqual({ ok: false });
-    expect(readArrayAtSegments({ state, segments: ["title"] })).toEqual({ ok: false });
-    expect(readArrayAtSegments({ state: null, segments: [] })).toEqual({ ok: false });
+    expect(readArrayAtSegments(state, ["missing"])).toEqual({ ok: false });
+    expect(readArrayAtSegments(state, ["title"])).toEqual({ ok: false });
+    expect(readArrayAtSegments(null, [])).toEqual({ ok: false });
   });
 });
 
@@ -352,15 +322,7 @@ describe("array add state materialization", () => {
     const schema = z.object({ items: z.array(z.string()) });
     const state = { items: ["A", "D"], meta: true };
 
-    expect(applyValidatedArrayAddPlanAtSegments({
-      schema,
-      state,
-      parent: "/items",
-      parentSegments: ["items"],
-      start: 1,
-      values: ["B", "C"],
-      valuesTrusted: false,
-    })).toEqual({
+    expect(applyValidatedArrayAddPlanAtSegments(schema, state, "/items", ["items"], 1, ["B", "C"], false)).toEqual({
       state: { items: ["A", "B", "C", "D"], meta: true },
       result: { ok: true },
       applied: [
@@ -370,15 +332,7 @@ describe("array add state materialization", () => {
     });
     expect(state.items).toEqual(["A", "D"]);
 
-    expect(applyValidatedArrayAddPlanAtSegments({
-      schema,
-      state,
-      parent: "/items",
-      parentSegments: ["items"],
-      start: "append",
-      values: ["E"],
-      valuesTrusted: false,
-    })).toMatchObject({
+    expect(applyValidatedArrayAddPlanAtSegments(schema, state, "/items", ["items"], "append", ["E"], false)).toMatchObject({
       state: { items: ["A", "D", "E"], meta: true },
       applied: [{ op: "add", path: "/items/2", value: "E" }],
     });
@@ -388,148 +342,37 @@ describe("array add state materialization", () => {
     const schema = z.object({ items: z.array(z.string()), text: z.string() });
     const state = { items: ["A"], text: "old" };
 
-    expect(applyValidatedArrayAddPlanAtSegments({
-      schema,
-      state,
-      parent: "/missing",
-      parentSegments: ["missing"],
-      start: 0,
-      values: ["B"],
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(applyValidatedArrayAddPlanAtSegments(schema, state, "/missing", ["missing"], 0, ["B"], false)).toBeNull();
 
-    expect(applyValidatedArrayAddPlanAtSegments({
-      schema,
-      state,
-      parent: "/text",
-      parentSegments: ["text"],
-      start: 0,
-      values: ["B"],
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(applyValidatedArrayAddPlanAtSegments(schema, state, "/text", ["text"], 0, ["B"], false)).toBeNull();
 
-    const result = applyValidatedArrayAddPlanAtSegments({
-      schema,
-      state,
-      parent: "/items",
-      parentSegments: ["items"],
-      start: "append",
-      values: [1],
-      valuesTrusted: true,
-    });
+    const result = applyValidatedArrayAddPlanAtSegments(schema, state, "/items", ["items"], "append", [1], true);
 
     expect(result).toMatchObject({
       state,
       result: { ok: false, code: "schema_violation" },
       applied: [],
     });
-    expect(state.items).toEqual(["A"]);
-  });
-
-  test("validates and applies array add plans with applied operations", () => {
-    const schema = z.object({ items: z.array(z.string()) });
-    const state = { items: ["A"], meta: true };
-
-    expect(applyValidatedArrayAddPlan({
-      schema,
-      state,
-      parent: "/items",
-      parentSegments: ["items"],
-      array: state.items,
-      start: 1,
-      values: ["B", "C"],
-      valuesTrusted: false,
-    })).toEqual({
-      state: { items: ["A", "B", "C"], meta: true },
-      result: { ok: true },
-      applied: [
-        { op: "add", path: "/items/1", value: "B" },
-        { op: "add", path: "/items/2", value: "C" },
-      ],
-    });
-    expect(state.items).toEqual(["A"]);
-  });
-
-  test("returns array add validation failures before materialization", () => {
-    const schema = z.object({ items: z.array(z.string()) });
-    const state = { items: ["A"] };
-    const result = applyValidatedArrayAddPlan({
-      schema,
-      state,
-      parent: "/items",
-      parentSegments: ["items"],
-      array: state.items,
-      start: 1,
-      values: [1],
-      valuesTrusted: true,
-    });
-
-    expect(result).toMatchObject({
-      state,
-      result: { ok: false, code: "schema_violation" },
-      applied: [],
-    });
-    expect(state.items).toEqual(["A"]);
-  });
-
-  test("rejects validated array add plans outside the current array bounds", () => {
-    const schema = z.object({ items: z.array(z.string()) });
-    const state = { items: ["A"] };
-
-    expect(applyValidatedArrayAddPlan({
-      schema,
-      state,
-      parent: "/items",
-      parentSegments: ["items"],
-      array: state.items,
-      start: 2,
-      values: ["B"],
-      valuesTrusted: false,
-    })).toBeNull();
     expect(state.items).toEqual(["A"]);
   });
 
   test("applies array add plans to root and nested arrays without mutating the source", () => {
     const state = { items: ["A", "D"], meta: { keep: true } };
 
-    expect(applyArrayAddPlan({
-      state,
-      parentSegments: ["items"],
-      array: state.items,
-      start: 1,
-      values: ["B", "C"],
-    })).toEqual({ items: ["A", "B", "C", "D"], meta: { keep: true } });
+    expect(applyArrayAddPlan(state, ["items"], state.items, 1, ["B", "C"])).toEqual({ items: ["A", "B", "C", "D"], meta: { keep: true } });
     expect(state.items).toEqual(["A", "D"]);
 
     const root = ["A"];
-    expect(applyArrayAddPlan({
-      state: root,
-      parentSegments: [],
-      array: root,
-      start: 1,
-      values: ["B"],
-    })).toEqual(["A", "B"]);
+    expect(applyArrayAddPlan(root, [], root, 1, ["B"])).toEqual(["A", "B"]);
     expect(root).toEqual(["A"]);
   });
 
   test("rejects array add plans outside the current array bounds", () => {
     const state = { items: ["A"] };
 
-    expect(applyArrayAddPlan({
-      state,
-      parentSegments: ["items"],
-      array: state.items,
-      start: -1,
-      values: ["B"],
-    })).toBeNull();
+    expect(applyArrayAddPlan(state, ["items"], state.items, -1, ["B"])).toBeNull();
 
-    expect(applyArrayAddPlan({
-      state,
-      parentSegments: ["items"],
-      array: state.items,
-      start: 2,
-      values: ["B"],
-    })).toBeNull();
+    expect(applyArrayAddPlan(state, ["items"], state.items, 2, ["B"])).toBeNull();
   });
 });
 
@@ -653,77 +496,6 @@ describe("validated array index replacement planning", () => {
     expect(state.items).toEqual([{ name: "old" }]);
   });
 
-  test("validates and applies array field replacements with applied operations", () => {
-    const state = {
-      items: [
-        { name: "old-a", done: false },
-        { name: "old-b", done: true },
-      ],
-      meta: true,
-    };
-
-    expect(applyValidatedArrayFieldReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      field: "name",
-      operations: [
-        { op: "replace", path: "/items/0/name", index: 0, value: "A" },
-        { op: "replace", path: "/items/1/name", index: 1, value: "B" },
-      ],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-    })).toEqual({
-      state: {
-        items: [
-          { name: "A", done: false },
-          { name: "B", done: true },
-        ],
-        meta: true,
-      },
-      result: { ok: true },
-      applied: [
-        { op: "replace", path: "/items/0/name", value: "A" },
-        { op: "replace", path: "/items/1/name", value: "B" },
-      ],
-    });
-    expect(state.items).toEqual([
-      { name: "old-a", done: false },
-      { name: "old-b", done: true },
-    ]);
-  });
-
-  test("rejects validated array field replacements before materialization", () => {
-    const state = { items: [{ name: "old" }] };
-
-    expect(applyValidatedArrayFieldReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      field: "missing",
-      operations: [{ op: "replace", path: "/items/0/missing", index: 0, value: "A" }],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-    })).toBeNull();
-
-    const result = applyValidatedArrayFieldReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      field: "name",
-      operations: [{ op: "replace", path: "/items/0/name", index: 0, value: 1 }],
-      valueSchema: z.string(),
-      valuesTrusted: true,
-    });
-
-    expect(result).toMatchObject({
-      state,
-      result: { ok: false, code: "schema_violation" },
-      applied: [],
-    });
-    expect(state.items).toEqual([{ name: "old" }]);
-  });
-
   test("validates and applies array index replacements with applied operations", () => {
     const state = { items: [{ name: "A" }, { name: "B" }], meta: true };
 
@@ -795,7 +567,7 @@ describe("validated array index replacement planning", () => {
 
   test("builds replacements after index, materialization, and value validation", () => {
     const state = { items: [{ name: "old-a" }, { name: "old-b" }] };
-    const result = buildValidatedArrayIndexReplacements({
+    const result = evaluateArrayIndexReplaceValues({
       state,
       array: state.items,
       operations: [
@@ -823,7 +595,7 @@ describe("validated array index replacement planning", () => {
   test("returns null results for invalid indexes and replacement values", () => {
     const state = { items: [{ name: "old" }] };
 
-    expect(buildValidatedArrayIndexReplacements({
+    expect(evaluateArrayIndexReplaceValues({
       state,
       array: state.items,
       operations: [{ op: "replace", path: "/items/1/name", index: 1, value: "A" }],
@@ -832,7 +604,7 @@ describe("validated array index replacement planning", () => {
       replacementValue: (op) => ({ ok: true, value: op.value }),
     })).toEqual({ ok: false, result: null });
 
-    expect(buildValidatedArrayIndexReplacements({
+    expect(evaluateArrayIndexReplaceValues({
       state,
       array: [1],
       operations: [{ op: "replace", path: "/items/0/name", index: 0, value: "A" }],
@@ -847,7 +619,7 @@ describe("validated array index replacement planning", () => {
 
   test("returns replace value validation failures", () => {
     const state = { items: [{ name: "old" }] };
-    const result = buildValidatedArrayIndexReplacements({
+    const result = evaluateArrayIndexReplaceValues({
       state,
       array: state.items,
       operations: [{ op: "replace", path: "/items/0/name", index: 0, value: 1 }],
@@ -915,80 +687,6 @@ describe("known-json array index replacement planning", () => {
     expect(state.items).toEqual(["old"]);
   });
 
-  test("applies known-json array index replacements with applied operations", () => {
-    const state = { items: ["old-a", "old-b"], keep: true };
-
-    expect(applyKnownJsonArrayIndexReplacements({
-      state,
-      schema: z.string(),
-      arraySegments: ["items"],
-      array: state.items,
-      operations: [
-        { op: "replace", path: "/items/0", index: 0, value: "A" },
-        { op: "replace", path: "/items/1", index: 1, value: "B" },
-      ],
-    })).toEqual({
-      state: { items: ["A", "B"], keep: true },
-      result: { ok: true },
-      applied: [
-        { op: "replace", path: "/items/0", value: "A" },
-        { op: "replace", path: "/items/1", value: "B" },
-      ],
-    });
-    expect(state.items).toEqual(["old-a", "old-b"]);
-  });
-
-  test("rejects known-json array index replacement plans before materialization", () => {
-    const state = { items: ["old"] };
-
-    expect(applyKnownJsonArrayIndexReplacements({
-      state,
-      schema: z.string(),
-      arraySegments: ["items"],
-      array: state.items,
-      operations: [{ op: "replace", path: "/items/1", index: 1, value: "A" }],
-    })).toBeNull();
-
-    expect(applyKnownJsonArrayIndexReplacements({
-      state,
-      schema: z.string(),
-      arraySegments: ["items"],
-      array: state.items,
-      operations: [{ op: "replace", path: "/items/0", index: 0, value: 1 }],
-    })).toBeNull();
-    expect(state.items).toEqual(["old"]);
-  });
-
-  test("builds replacements from schema-accepted known-json values", () => {
-    const array = ["old-a", "old-b"];
-
-    expect(buildKnownJsonArrayIndexReplacements({
-      schema: z.string(),
-      array,
-      operations: [
-        { op: "replace", path: "/items/0", index: 0, value: "A" },
-        { op: "replace", path: "/items/1", index: 1, value: "B" },
-      ],
-    })).toEqual([
-      { index: 0, value: "A" },
-      { index: 1, value: "B" },
-    ]);
-    expect(array).toEqual(["old-a", "old-b"]);
-  });
-
-  test("rejects out-of-bounds indexes and values outside known-json schemas", () => {
-    expect(buildKnownJsonArrayIndexReplacements({
-      schema: z.string(),
-      array: ["old"],
-      operations: [{ op: "replace", path: "/items/1", index: 1, value: "A" }],
-    })).toBeNull();
-
-    expect(buildKnownJsonArrayIndexReplacements({
-      schema: z.string(),
-      array: ["old"],
-      operations: [{ op: "replace", path: "/items/0", index: 0, value: 1 }],
-    })).toBeNull();
-  });
 });
 
 describe("array nested replacement state materialization", () => {
@@ -1064,160 +762,6 @@ describe("array nested replacement state materialization", () => {
     expect(state.items[0]?.meta.title).toBe("old");
   });
 
-  test("validates and applies array nested value replacements with applied operations", () => {
-    const state = {
-      items: [
-        { meta: { title: "old-a" } },
-        { meta: { title: "old-b" } },
-      ],
-      keep: true,
-    };
-
-    expect(applyValidatedArrayNestedValueReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["meta", "title"],
-      operations: [
-        { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
-        { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
-      ],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-    })).toEqual({
-      state: {
-        items: [
-          { meta: { title: "A" } },
-          { meta: { title: "B" } },
-        ],
-        keep: true,
-      },
-      result: { ok: true },
-      applied: [
-        { op: "replace", path: "/items/0/meta/title", value: "A" },
-        { op: "replace", path: "/items/1/meta/title", value: "B" },
-      ],
-    });
-    expect(state.items[0]?.meta.title).toBe("old-a");
-  });
-
-  test("rejects array nested value replacements before materialization", () => {
-    const state = { items: [{ meta: { title: "old" } }] };
-
-    expect(applyValidatedArrayNestedValueReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["meta", "title"],
-      operations: [{ op: "replace", path: "/items/1/meta/title", index: 1, value: "B" }],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-    })).toBeNull();
-
-    const result = applyValidatedArrayNestedValueReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["meta", "title"],
-      operations: [{ op: "replace", path: "/items/0/meta/title", index: 0, value: 1 }],
-      valueSchema: z.string(),
-      valuesTrusted: true,
-    });
-
-    expect(result).toMatchObject({
-      state,
-      result: { ok: false, code: "schema_violation" },
-      applied: [],
-    });
-    expect(state.items[0]?.meta.title).toBe("old");
-  });
-
-  test("validates and applies array nested replacements with applied operations", () => {
-    const state = {
-      items: [
-        { meta: { title: "old-a" } },
-        { meta: { title: "old-b" } },
-      ],
-      keep: true,
-    };
-
-    expect(applyValidatedArrayNestedReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["meta", "title"],
-      operations: [
-        { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
-        { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
-      ],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-      replacementValue: (operation) => ({ ok: true, value: operation.value }),
-    })).toEqual({
-      state: {
-        items: [
-          { meta: { title: "A" } },
-          { meta: { title: "B" } },
-        ],
-        keep: true,
-      },
-      result: { ok: true },
-      applied: [
-        { op: "replace", path: "/items/0/meta/title", value: "A" },
-        { op: "replace", path: "/items/1/meta/title", value: "B" },
-      ],
-    });
-    expect(state.items[0]?.meta.title).toBe("old-a");
-  });
-
-  test("returns array nested replacement validation failures before materialization", () => {
-    const state = { items: [{ meta: { title: "old" } }] };
-    const result = applyValidatedArrayNestedReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["meta", "title"],
-      operations: [{ op: "replace", path: "/items/0/meta/title", index: 0, value: 1 }],
-      valueSchema: z.string(),
-      valuesTrusted: true,
-      replacementValue: (operation) => ({ ok: true, value: operation.value }),
-    });
-
-    expect(result).toMatchObject({
-      state,
-      result: { ok: false, code: "schema_violation" },
-      applied: [],
-    });
-    expect(state.items[0]?.meta.title).toBe("old");
-  });
-
-  test("rejects validated array nested replacements outside the current array or suffix path", () => {
-    const state = { items: [{ meta: { title: "old" } }] };
-
-    expect(applyValidatedArrayNestedReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["meta", "title"],
-      operations: [{ op: "replace", path: "/items/1/meta/title", index: 1, value: "B" }],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-      replacementValue: (operation) => ({ ok: true, value: operation.value }),
-    })).toBeNull();
-
-    expect(applyValidatedArrayNestedReplacements({
-      state,
-      arraySegments: ["items"],
-      array: state.items,
-      suffixSegments: ["missing", "title"],
-      operations: [{ op: "replace", path: "/items/0/missing/title", index: 0, value: "B" }],
-      valueSchema: z.string(),
-      valuesTrusted: false,
-      replacementValue: (operation) => ({ ok: true, value: operation.value }),
-    })).toBeNull();
-    expect(state.items[0]?.meta.title).toBe("old");
-  });
-
   test("applies nested replacements to root and nested arrays without mutating the source", () => {
     const state = {
       items: [
@@ -1281,14 +825,10 @@ describe("replace applied operation validation", () => {
   test("applies replace operations and preserves applied order", () => {
     const state = { title: "Draft", meta: { owner: "core" } };
 
-    expect(applyReplaceOperations({
-      state,
-      operations: [
+    expect(applyReplaceOperations(state, [
         { op: "replace", path: "/title", value: "Final" },
         { op: "replace", path: "/meta/owner", value: "docs" },
-      ],
-      valuesTrusted: false,
-    })).toEqual({
+      ], false)).toEqual({
       state: { title: "Final", meta: { owner: "docs" } },
       result: { ok: true },
       applied: [
@@ -1301,11 +841,7 @@ describe("replace applied operation validation", () => {
 
   test("returns replace operation failures against the original state", () => {
     const state = { title: "Draft" };
-    const result = applyReplaceOperations({
-      state,
-      operations: [{ op: "replace", path: "/missing", value: "Final" }],
-      valuesTrusted: false,
-    });
+    const result = applyReplaceOperations(state, [{ op: "replace", path: "/missing", value: "Final" }], false);
 
     expect(result).toMatchObject({
       state,
@@ -1320,21 +856,13 @@ describe("replace applied operation validation", () => {
     const state = { handler: null as unknown };
     const operation = { op: "replace" as const, path: "/handler", value: handler };
 
-    expect(applyReplaceOperations({
-      state,
-      operations: [operation],
-      valuesTrusted: false,
-    })).toMatchObject({
+    expect(applyReplaceOperations(state, [operation], false)).toMatchObject({
       state,
       result: { ok: false, code: "not_serializable" },
       applied: [],
     });
 
-    expect(applyReplaceOperations({
-      state,
-      operations: [operation],
-      valuesTrusted: true,
-    })).toEqual({
+    expect(applyReplaceOperations(state, [operation], true)).toEqual({
       state: { handler },
       result: { ok: true },
       applied: [operation],
@@ -1344,73 +872,38 @@ describe("replace applied operation validation", () => {
   test("accepts applied replace operation lists that satisfy local schemas", () => {
     const state = { title: "Final" };
 
-    expect(evaluateAppliedReplaceOperations({
-      schema: z.object({ title: z.string() }),
-      state,
-      operations: [{ op: "replace", path: "/title", value: "Final" }],
-      valuesTrusted: false,
-    })).toEqual({ ok: true });
+    expect(evaluateAppliedReplaceOperations(z.object({ title: z.string() }), state, [{ op: "replace", path: "/title", value: "Final" }], false)).toEqual({ ok: true });
   });
 
   test("plans applied replace value validation from local schemas", () => {
-    expect(planAppliedReplaceValueValidation({
-      schema: z.object({ title: z.string() }),
-      operation: { op: "replace", path: "/title", value: "Final" },
-      valuesTrusted: false,
-    })).toEqual({ kind: "accepted" });
+    expect(planAppliedReplaceValueValidation(z.object({ title: z.string() }), { op: "replace", path: "/title", value: "Final" }, false)).toEqual({ kind: "accepted" });
 
-    const parsePlan = planAppliedReplaceValueValidation({
-      schema: z.object({ title: z.string() }),
-      operation: { op: "replace", path: "/title", value: 1 },
-      valuesTrusted: true,
-    });
+    const parsePlan = planAppliedReplaceValueValidation(z.object({ title: z.string() }), { op: "replace", path: "/title", value: 1 }, true);
 
     expect(parsePlan).toMatchObject({ kind: "parse", path: "/title", value: 1 });
     expect(parsePlan?.kind === "parse" && parsePlan.schema.safeParse(parsePlan.value).success).toBe(false);
 
-    expect(planAppliedReplaceValueValidation({
-      schema: z.object({ title: z.string() }),
-      operation: { op: "replace", path: "/title", value: () => "not json" },
-      valuesTrusted: false,
-    })).toMatchObject({
+    expect(planAppliedReplaceValueValidation(z.object({ title: z.string() }), { op: "replace", path: "/title", value: () => "not json" }, false)).toMatchObject({
       kind: "notSerializable",
       reason: expect.stringContaining("function"),
     });
   });
 
   test("rejects applied replace value validation plans without replace schemas", () => {
-    expect(planAppliedReplaceValueValidation({
-      schema: z.object({ items: z.array(z.string()) }),
-      operation: { op: "add", path: "/items/0", value: "A" },
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(planAppliedReplaceValueValidation(z.object({ items: z.array(z.string()) }), { op: "add", path: "/items/0", value: "A" }, false)).toBeNull();
 
-    expect(planAppliedReplaceValueValidation({
-      schema: z.object({ title: z.string() }),
-      operation: { op: "replace", path: "/missing", value: "Final" },
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(planAppliedReplaceValueValidation(z.object({ title: z.string() }), { op: "replace", path: "/missing", value: "Final" }, false)).toBeNull();
   });
 
   test("rejects applied replace operation lists with unsupported operations", () => {
     const state = { title: "Draft", items: [] as string[] };
 
-    expect(evaluateAppliedReplaceOperations({
-      schema: z.object({ title: z.string(), items: z.array(z.string()) }),
-      state,
-      operations: [{ op: "add", path: "/items/0", value: "A" }],
-      valuesTrusted: false,
-    })).toEqual({ ok: false, result: null });
+    expect(evaluateAppliedReplaceOperations(z.object({ title: z.string(), items: z.array(z.string()) }), state, [{ op: "add", path: "/items/0", value: "A" }], false)).toEqual({ ok: false, result: null });
   });
 
   test("returns validation failures for applied replace values", () => {
     const state = { title: "Draft" };
-    const result = evaluateAppliedReplaceOperations({
-      schema: z.object({ title: z.string() }),
-      state,
-      operations: [{ op: "replace", path: "/title", value: 1 }],
-      valuesTrusted: false,
-    });
+    const result = evaluateAppliedReplaceOperations(z.object({ title: z.string() }), state, [{ op: "replace", path: "/title", value: 1 }], false);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected validation failure");
@@ -1666,7 +1159,7 @@ describe("root record copy and write helpers", () => {
       writable: true,
     });
 
-    const result = readRootRecordForLocalSchemaValidation({ state: source });
+    const result = readRootRecordForLocalSchemaValidation(source);
 
     expect(result).toEqual({
       ok: true,
@@ -1674,9 +1167,9 @@ describe("root record copy and write helpers", () => {
       sourceKeys: ["alpha", "__proto__"],
     });
     expect(result.ok && result.source).toBe(source);
-    expect(readRootRecordForLocalSchemaValidation({ state: [] })).toEqual({ ok: false });
-    expect(readRootRecordForLocalSchemaValidation({ state: null })).toEqual({ ok: false });
-    expect(readRootRecordForLocalSchemaValidation({ state: "text" })).toEqual({ ok: false });
+    expect(readRootRecordForLocalSchemaValidation([])).toEqual({ ok: false });
+    expect(readRootRecordForLocalSchemaValidation(null)).toEqual({ ok: false });
+    expect(readRootRecordForLocalSchemaValidation("text")).toEqual({ ok: false });
   });
 
   test("copies root record key prefixes with structural data keys", () => {
@@ -1763,44 +1256,6 @@ describe("root record copy and write helpers", () => {
     expect(replaceArrayField([{ name: "Draft" }], 1, "name", "Final")).toBeNull();
     expect(replaceArrayField([{ name: "Draft" }], 0, "missing", "Final")).toBeNull();
     expect(replaceArrayField(["Draft"], 0, "name", "Final")).toBeNull();
-  });
-
-  test("reads single root array field targets from root arrays and shallow object arrays", () => {
-    const root = [{ name: "Draft" }];
-    const rootTarget = readSingleRootArrayFieldTarget({ state: root, arrayPath: "" });
-
-    expect(rootTarget).toEqual({ kind: "root", array: root });
-    expect(rootTarget?.array).toBe(root);
-
-    const state = { items: [{ name: "Draft" }], meta: { keep: true } };
-    const propertyTarget = readSingleRootArrayFieldTarget({ state, arrayPath: "/items" });
-
-    expect(propertyTarget).toEqual({
-      kind: "property",
-      source: state,
-      key: "items",
-      array: state.items,
-    });
-    if (propertyTarget?.kind !== "property") throw new Error("expected property target");
-    expect(propertyTarget.source).toBe(state);
-    expect(propertyTarget.array).toBe(state.items);
-  });
-
-  test("rejects unsupported single root array field targets", () => {
-    const state = {
-      items: [{ name: "Draft" }],
-      nested: { items: [{ name: "Draft" }] },
-      "a/b": [{ name: "Draft" }],
-      text: "Draft",
-    };
-
-    expect(readSingleRootArrayFieldTarget({ state: {}, arrayPath: "" })).toBeNull();
-    expect(readSingleRootArrayFieldTarget({ state: [], arrayPath: "/items" })).toBeNull();
-    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/missing" })).toBeNull();
-    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/nested/items" })).toBeNull();
-    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/a~1b" })).toBeNull();
-    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/__proto__" })).toBeNull();
-    expect(readSingleRootArrayFieldTarget({ state, arrayPath: "/text" })).toBeNull();
   });
 
   test("applies array field replacements at pointer paths", () => {
@@ -2029,64 +1484,41 @@ describe("root record copy and write helpers", () => {
 
 describe("single replace patch planning", () => {
   test("plans one non-root replace operation", () => {
-    expect(planSingleReplacePatch({
-      operations: [{ op: "replace", path: "/title", value: "Final" }],
-    })).toEqual({
-      operation: { op: "replace", path: "/title", value: "Final" },
-    });
+    expect(planSingleReplacePatch([{ op: "replace", path: "/title", value: "Final" }])).toEqual({ op: "replace", path: "/title", value: "Final" });
 
-    expect(planSingleReplacePatch({
-      operations: [{ op: "replace", path: "/a~1b", value: 1 }],
-    })).toEqual({
-      operation: { op: "replace", path: "/a~1b", value: 1 },
-    });
+    expect(planSingleReplacePatch([{ op: "replace", path: "/a~1b", value: 1 }])).toEqual({ op: "replace", path: "/a~1b", value: 1 });
   });
 
   test("rejects patches that are not one non-root replace operation", () => {
-    expect(planSingleReplacePatch({ operations: [] })).toBeNull();
+    expect(planSingleReplacePatch([])).toBeNull();
 
-    expect(planSingleReplacePatch({
-      operations: [
+    expect(planSingleReplacePatch([
         { op: "replace", path: "/title", value: "A" },
         { op: "replace", path: "/owner", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planSingleReplacePatch({
-      operations: [{ op: "replace", path: "", value: { title: "root" } }],
-    })).toBeNull();
+    expect(planSingleReplacePatch([{ op: "replace", path: "", value: { title: "root" } }])).toBeNull();
 
-    expect(planSingleReplacePatch({
-      operations: [{ op: "add", path: "/title", value: "Final" }],
-    })).toBeNull();
+    expect(planSingleReplacePatch([{ op: "add", path: "/title", value: "Final" }])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(1);
-    expect(planSingleReplacePatch({ operations: sparse })).toBeNull();
+    expect(planSingleReplacePatch(sparse)).toBeNull();
   });
 
   test("applies single replace operations through fast paths and fallback patching", () => {
-    expect(applySingleReplaceOperation({
-      state: { items: [{ name: "old" }] },
-      operation: { op: "replace", path: "/items/0/name", value: "new" },
-    })).toEqual({
+    expect(applySingleReplaceOperation({ items: [{ name: "old" }] }, { op: "replace", path: "/items/0/name", value: "new" })).toEqual({
       state: { items: [{ name: "new" }] },
       result: { ok: true },
       applied: [{ op: "replace", path: "/items/0/name", value: "new" }],
     });
 
-    expect(applySingleReplaceOperation({
-      state: { title: "Draft", owner: "core" },
-      operation: { op: "replace", path: "/title", value: "Final" },
-    })).toEqual({
+    expect(applySingleReplaceOperation({ title: "Draft", owner: "core" }, { op: "replace", path: "/title", value: "Final" })).toEqual({
       state: { title: "Final", owner: "core" },
       result: { ok: true },
       applied: [{ op: "replace", path: "/title", value: "Final" }],
     });
 
-    expect(applySingleReplaceOperation({
-      state: { nested: { title: "Draft" } },
-      operation: { op: "replace", path: "/nested/title", value: "Final" },
-    })).toEqual({
+    expect(applySingleReplaceOperation({ nested: { title: "Draft" } }, { op: "replace", path: "/nested/title", value: "Final" })).toEqual({
       state: { nested: { title: "Final" } },
       result: { ok: true },
       applied: [{ op: "replace", path: "/nested/title", value: "Final" }],
@@ -2095,10 +1527,7 @@ describe("single replace patch planning", () => {
 
   test("returns single replace patch failures against the original state", () => {
     const state = { title: "Draft" };
-    const result = applySingleReplaceOperation({
-      state,
-      operation: { op: "replace", path: "/missing", value: "Final" },
-    });
+    const result = applySingleReplaceOperation(state, { op: "replace", path: "/missing", value: "Final" });
 
     expect(result).toMatchObject({
       state,
@@ -2153,50 +1582,32 @@ describe("single root object replace patch planning", () => {
   test("plans one existing plain root key replacement", () => {
     const operation = { op: "replace", path: "/title", value: "Final" } as const;
 
-    expect(planSingleRootObjectReplacePatch({
-      sourceKeys: ["title", "owner"],
-      operation,
-    })).toEqual({
+    expect(planSingleRootObjectReplacePatch(operation, ["title", "owner"])).toEqual({
       operation,
       key: "title",
     });
   });
 
   test("rejects replacements outside existing plain root keys", () => {
-    expect(planSingleRootObjectReplacePatch({
-      sourceKeys: ["title"],
-      operation: { op: "replace", path: "/missing", value: "Final" },
-    })).toBeNull();
+    expect(planSingleRootObjectReplacePatch({ op: "replace", path: "/missing", value: "Final" }, ["title"])).toBeNull();
 
-    expect(planSingleRootObjectReplacePatch({
-      sourceKeys: [""],
-      operation: { op: "replace", path: "/", value: "Final" },
-    })).toBeNull();
+    expect(planSingleRootObjectReplacePatch({ op: "replace", path: "/", value: "Final" }, [""])).toBeNull();
 
-    expect(planSingleRootObjectReplacePatch({
-      sourceKeys: ["title"],
-      operation: { op: "replace", path: "/title/nested", value: "Final" },
-    })).toBeNull();
+    expect(planSingleRootObjectReplacePatch({ op: "replace", path: "/title/nested", value: "Final" }, ["title"])).toBeNull();
 
-    expect(planSingleRootObjectReplacePatch({
-      sourceKeys: ["a/b"],
-      operation: { op: "replace", path: "/a~1b", value: "Final" },
-    })).toBeNull();
+    expect(planSingleRootObjectReplacePatch({ op: "replace", path: "/a~1b", value: "Final" }, ["a/b"])).toBeNull();
 
-    expect(planSingleRootObjectReplacePatch({
-      sourceKeys: ["title"],
-      operation: { op: "add", path: "/title", value: "Final" },
-    })).toBeNull();
+    expect(planSingleRootObjectReplacePatch(
+      { op: "add", path: "/title", value: "Final" } as unknown as Extract<JSONPatchOperation, { op: "replace" }>,
+      ["title"],
+    )).toBeNull();
   });
 
   test("applies one root object replacement without mutating the source", () => {
     const source: Record<string, unknown> = { title: "Draft", owner: "core" };
     const operation = { op: "replace", path: "/title", value: "Final" } as const;
 
-    expect(applySingleRootObjectReplacePlan({
-      source,
-      plan: { operation, key: "title" },
-    })).toEqual({ title: "Final", owner: "core" });
+    expect(applySingleRootObjectReplacePlan(source, { operation, key: "title" })).toEqual({ title: "Final", owner: "core" });
     expect(source).toEqual({ title: "Draft", owner: "core" });
   });
 
@@ -2210,10 +1621,7 @@ describe("single root object replace patch planning", () => {
     });
     const operation = { op: "replace", path: "/__proto__", value: { safe: true } } as const;
 
-    const next = applySingleRootObjectReplacePlan({
-      source,
-      plan: { operation, key: "__proto__" },
-    });
+    const next = applySingleRootObjectReplacePlan(source, { operation, key: "__proto__" });
 
     expect(next.title).toBe("Draft");
     expect(Object.getPrototypeOf(next)).toBe(Object.prototype);
@@ -2236,107 +1644,24 @@ describe("single root object replace patch planning", () => {
 
 describe("known-json replace patch planning", () => {
   test("plans known-json replace operations before schema-specific checks", () => {
-    expect(planKnownJsonReplaceOperations({
-      operations: [
+    expect(planKnownJsonReplaceOperations([
         { op: "replace", path: "/title", value: "Final" },
         { op: "replace", path: "", value: { title: "root" } },
-      ],
-    })).toEqual([
+      ])).toEqual([
       { op: "replace", path: "/title", value: "Final" },
       { op: "replace", path: "", value: { title: "root" } },
     ]);
   });
 
   test("rejects invalid known-json replace operation plans", () => {
-    expect(planKnownJsonReplaceOperations({ operations: [] })).toBeNull();
-    expect(planKnownJsonReplaceOperations({
-      operations: [{ op: "add", path: "/title", value: "Final" }],
-    })).toBeNull();
-    expect(planKnownJsonReplaceOperations({
-      operations: [{ op: "replace", path: "/title" } as JSONPatchOperation],
-    })).toBeNull();
-    expect(planKnownJsonReplaceOperations({
-      operations: [{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation],
-    })).toBeNull();
+    expect(planKnownJsonReplaceOperations([])).toBeNull();
+    expect(planKnownJsonReplaceOperations([{ op: "add", path: "/title", value: "Final" }])).toBeNull();
+    expect(planKnownJsonReplaceOperations([{ op: "replace", path: "/title" } as JSONPatchOperation])).toBeNull();
+    expect(planKnownJsonReplaceOperations([{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
-    expect(planKnownJsonReplaceOperations({ operations: sparse })).toBeNull();
-  });
-
-  test("plans replace operations before schema-specific known-json checks", () => {
-    expect(planKnownJsonReplacePatch({
-      operations: [
-        { op: "replace", path: "/title", value: "Final" },
-        { op: "replace", path: "/meta/owner", value: "core" },
-      ],
-    })).toEqual({
-      operations: [
-        { op: "replace", path: "/title", value: "Final" },
-        { op: "replace", path: "/meta/owner", value: "core" },
-      ],
-    });
-
-    expect(planKnownJsonReplacePatch({
-      operations: [{ op: "replace", path: "", value: { title: "root" } }],
-    })).toEqual({
-      operations: [{ op: "replace", path: "", value: { title: "root" } }],
-    });
-  });
-
-  test("rejects patches that are not replace-only operation lists", () => {
-    expect(planKnownJsonReplacePatch({ operations: [] })).toBeNull();
-
-    expect(planKnownJsonReplacePatch({
-      operations: [{ op: "add", path: "/title", value: "Final" }],
-    })).toBeNull();
-
-    expect(planKnownJsonReplacePatch({
-      operations: [{ op: "replace", path: "/title" } as JSONPatchOperation],
-    })).toBeNull();
-
-    expect(planKnownJsonReplacePatch({
-      operations: [{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation],
-    })).toBeNull();
-
-    const sparse = new Array<JSONPatchOperation>(2);
-    sparse[1] = { op: "replace", path: "/title", value: "Final" };
-    expect(planKnownJsonReplacePatch({ operations: sparse })).toBeNull();
-  });
-
-  test("applies known-json replace operations without mutating the source", () => {
-    const state = { title: "Draft", meta: { owner: "core" } };
-
-    expect(applyKnownJsonReplaceOperations({
-      state,
-      operations: [
-        { op: "replace", path: "/title", value: "Final" },
-        { op: "replace", path: "/meta/owner", value: "docs" },
-      ],
-    })).toEqual({
-      state: { title: "Final", meta: { owner: "docs" } },
-      result: { ok: true },
-      applied: [
-        { op: "replace", path: "/title", value: "Final" },
-        { op: "replace", path: "/meta/owner", value: "docs" },
-      ],
-    });
-    expect(state).toEqual({ title: "Draft", meta: { owner: "core" } });
-  });
-
-  test("returns known-json replace failures against the original state", () => {
-    const state = { title: "Draft" };
-    const result = applyKnownJsonReplaceOperations({
-      state,
-      operations: [{ op: "replace", path: "/missing", value: "Final" }],
-    });
-
-    expect(result).toMatchObject({
-      state,
-      result: { ok: false },
-      applied: [],
-    });
-    expect(result.state).toBe(state);
+    expect(planKnownJsonReplaceOperations(sparse)).toBeNull();
   });
 
   test("evaluates known-json replace values through local schemas", () => {
@@ -2345,23 +1670,14 @@ describe("known-json replace patch planning", () => {
       meta: z.object({ owner: z.string() }),
     });
 
-    expect(evaluateKnownJsonReplaceValues({
-      schema,
-      operations: [
+    expect(evaluateKnownJsonReplaceValues(schema, [
         { op: "replace", path: "/title", value: "Final" },
         { op: "replace", path: "/meta/owner", value: "core" },
-      ],
-    })).toBe(true);
+      ])).toBe(true);
 
-    expect(evaluateKnownJsonReplaceValues({
-      schema,
-      operations: [{ op: "replace", path: "/missing", value: "Final" }],
-    })).toBe(false);
+    expect(evaluateKnownJsonReplaceValues(schema, [{ op: "replace", path: "/missing", value: "Final" }])).toBe(false);
 
-    expect(evaluateKnownJsonReplaceValues({
-      schema,
-      operations: [{ op: "replace", path: "/title", value: 1 }],
-    })).toBe(false);
+    expect(evaluateKnownJsonReplaceValues(schema, [{ op: "replace", path: "/title", value: 1 }])).toBe(false);
   });
 });
 
@@ -2375,31 +1691,23 @@ describe("sequential patch planning", () => {
       { op: "remove", path: "/items/0" },
     ];
 
-    expect(planSequentialPatch({ operations })).toEqual({ operations });
+    expect(planSequentialPatch(operations)).toEqual({ operations });
   });
 
   test("rejects unsupported or malformed sequential candidates", () => {
-    expect(planSequentialPatch({ operations: [] })).toBeNull();
+    expect(planSequentialPatch([])).toBeNull();
 
-    expect(planSequentialPatch({
-      operations: [{ op: "test", path: "/title", value: "Draft" }],
-    })).toBeNull();
+    expect(planSequentialPatch([{ op: "test", path: "/title", value: "Draft" }])).toBeNull();
 
-    expect(planSequentialPatch({
-      operations: [{ op: "add", path: "/title" } as JSONPatchOperation],
-    })).toBeNull();
+    expect(planSequentialPatch([{ op: "add", path: "/title" } as JSONPatchOperation])).toBeNull();
 
-    expect(planSequentialPatch({
-      operations: [{ op: "copy", path: "/title" } as JSONPatchOperation],
-    })).toBeNull();
+    expect(planSequentialPatch([{ op: "copy", path: "/title" } as JSONPatchOperation])).toBeNull();
 
-    expect(planSequentialPatch({
-      operations: [{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation],
-    })).toBeNull();
+    expect(planSequentialPatch([{ op: "replace", path: 1, value: "Final" } as unknown as JSONPatchOperation])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
-    expect(planSequentialPatch({ operations: sparse })).toBeNull();
+    expect(planSequentialPatch(sparse)).toBeNull();
   });
 
   test("keeps mixed sequential fallback applied operations in order", () => {
@@ -2429,11 +1737,7 @@ describe("sequential local operation application", () => {
   test("applies one sequential operation patch and returns the applied operation", () => {
     const state = { title: "Draft", items: [] as string[] };
 
-    expect(applySequentialLocalOperationPatch({
-      current: state,
-      operation: { op: "add", path: "/items/0", value: "A" },
-      valuesTrusted: false,
-    })).toEqual({
+    expect(applySequentialLocalOperationPatch(state, { op: "add", path: "/items/0", value: "A" }, false)).toEqual({
       state: { title: "Draft", items: ["A"] },
       result: { ok: true },
       applied: [{ op: "add", path: "/items/0", value: "A" }],
@@ -2442,11 +1746,7 @@ describe("sequential local operation application", () => {
 
   test("returns sequential operation patch failures against the current state", () => {
     const state = { title: "Draft", items: [] as string[] };
-    const result = applySequentialLocalOperationPatch({
-      current: state,
-      operation: { op: "remove", path: "/items/0" },
-      valuesTrusted: false,
-    });
+    const result = applySequentialLocalOperationPatch(state, { op: "remove", path: "/items/0" }, false);
 
     expect(result).toMatchObject({
       state,
@@ -2461,21 +1761,13 @@ describe("sequential local operation application", () => {
     const state = { value: null as unknown };
     const operation = { op: "replace" as const, path: "/value", value: handler };
 
-    expect(applySequentialLocalOperationPatch({
-      current: state,
-      operation,
-      valuesTrusted: false,
-    })).toMatchObject({
+    expect(applySequentialLocalOperationPatch(state, operation, false)).toMatchObject({
       state,
       result: { ok: false, code: "not_serializable" },
       applied: [],
     });
 
-    expect(applySequentialLocalOperationPatch({
-      current: state,
-      operation,
-      valuesTrusted: true,
-    })).toEqual({
+    expect(applySequentialLocalOperationPatch(state, operation, true)).toEqual({
       state: { value: handler },
       result: { ok: true },
       applied: [operation],
@@ -2485,15 +1777,10 @@ describe("sequential local operation application", () => {
   test("applies sequential operations and preserves applied order", () => {
     const state = { title: "Draft", items: [] as string[] };
 
-    expect(applySequentialLocalOperations({
-      schema,
-      state,
-      operations: [
+    expect(applySequentialLocalOperations(schema, state, [
         { op: "add", path: "/items/0", value: "A" },
         { op: "replace", path: "/title", value: "Final" },
-      ],
-      valuesTrusted: false,
-    })).toEqual({
+      ], false)).toEqual({
       ok: true,
       state: { title: "Final", items: ["A"] },
       applied: [
@@ -2505,16 +1792,11 @@ describe("sequential local operation application", () => {
 
   test("stops sequential operations at the first local operation failure", () => {
     const state = { title: "Draft", items: [] as string[] };
-    const result = applySequentialLocalOperations({
-      schema,
-      state,
-      operations: [
+    const result = applySequentialLocalOperations(schema, state, [
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/items/1", value: 1 },
         { op: "replace", path: "/title", value: "Final" },
-      ],
-      valuesTrusted: true,
-    });
+      ], true);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected sequential failure");
@@ -2528,13 +1810,7 @@ describe("sequential local operation application", () => {
   test("applies one operation and returns the applied operation", () => {
     const state = { title: "Draft", items: [] as string[] };
 
-    expect(applySequentialLocalOperation({
-      schema,
-      state,
-      current: state,
-      operation: { op: "add", path: "/items/0", value: "A" },
-      valuesTrusted: false,
-    })).toEqual({
+    expect(applySequentialLocalOperation(schema, state, state, { op: "add", path: "/items/0", value: "A" }, false)).toEqual({
       ok: true,
       state: { title: "Draft", items: ["A"] },
       applied: { op: "add", path: "/items/0", value: "A" },
@@ -2543,13 +1819,7 @@ describe("sequential local operation application", () => {
 
   test("returns patch failures against the original state", () => {
     const state = { title: "Draft", items: [] as string[] };
-    const result = applySequentialLocalOperation({
-      schema,
-      state,
-      current: state,
-      operation: { op: "remove", path: "/items/0" },
-      valuesTrusted: false,
-    });
+    const result = applySequentialLocalOperation(schema, state, state, { op: "remove", path: "/items/0" }, false);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected patch failure");
@@ -2562,13 +1832,7 @@ describe("sequential local operation application", () => {
 
   test("returns schema validation failures after successful patch application", () => {
     const state = { title: "Draft", items: [] as string[] };
-    const result = applySequentialLocalOperation({
-      schema,
-      state,
-      current: state,
-      operation: { op: "add", path: "/items/0", value: 1 },
-      valuesTrusted: true,
-    });
+    const result = applySequentialLocalOperation(schema, state, state, { op: "add", path: "/items/0", value: 1 }, true);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected validation failure");
@@ -2587,34 +1851,19 @@ describe("applied local op source value reading", () => {
       "a/b": ["escaped"],
     };
 
-    expect(readAppliedLocalOpSourceValue({
-      state,
-      operation: { op: "copy", from: "/items/0", path: "/items/1" },
-    })).toEqual({ ok: true, value: "A" });
+    expect(readAppliedLocalOpSourceValue(state, { op: "copy", from: "/items/0", path: "/items/1" })).toEqual({ ok: true, value: "A" });
 
-    expect(readAppliedLocalOpSourceValue({
-      state,
-      operation: { op: "move", from: "/a~1b/0", path: "/items/0" },
-    })).toEqual({ ok: true, value: "escaped" });
+    expect(readAppliedLocalOpSourceValue(state, { op: "move", from: "/a~1b/0", path: "/items/0" })).toEqual({ ok: true, value: "escaped" });
   });
 
   test("returns no source value for non-source and unreadable operations", () => {
     const state = { items: ["A"] };
 
-    expect(readAppliedLocalOpSourceValue({
-      state,
-      operation: { op: "replace", path: "/items/0", value: "B" },
-    })).toEqual({ ok: false });
+    expect(readAppliedLocalOpSourceValue(state, { op: "replace", path: "/items/0", value: "B" })).toEqual({ ok: false });
 
-    expect(readAppliedLocalOpSourceValue({
-      state,
-      operation: { op: "copy", from: "/missing/0", path: "/items/1" },
-    })).toEqual({ ok: false });
+    expect(readAppliedLocalOpSourceValue(state, { op: "copy", from: "/missing/0", path: "/items/1" })).toEqual({ ok: false });
 
-    expect(readAppliedLocalOpSourceValue({
-      state,
-      operation: { op: "move", from: "items/0", path: "/items/1" },
-    })).toEqual({ ok: false });
+    expect(readAppliedLocalOpSourceValue(state, { op: "move", from: "items/0", path: "/items/1" })).toEqual({ ok: false });
   });
 });
 
@@ -2767,81 +2016,41 @@ describe("applied local op validation planning", () => {
   });
 
   test("plans parse validation for replace and add operations", () => {
-    const replace = planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "replace", path: "/title", value: "Final" },
-      sourceValue: { ok: false },
-    });
+    const replace = planAppliedLocalOpValidation(schema, { op: "replace", path: "/title", value: "Final" }, { ok: false });
 
     expect(replace).toMatchObject({ kind: "parse", path: "/title", value: "Final" });
     expect(replace?.kind === "parse" && replace.schema.safeParse(replace.value).success).toBe(true);
 
-    const add = planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "add", path: "/items/0", value: "A" },
-      sourceValue: { ok: false },
-    });
+    const add = planAppliedLocalOpValidation(schema, { op: "add", path: "/items/0", value: "A" }, { ok: false });
 
     expect(add).toMatchObject({ kind: "parse", path: "/items/0", value: "A" });
     expect(add?.kind === "parse" && add.schema.safeParse(add.value).success).toBe(true);
   });
 
   test("plans source-value validation for copy and move operations", () => {
-    const copy = planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "copy", from: "/items/0", path: "/items/1" },
-      sourceValue: { ok: true, value: "A" },
-    });
+    const copy = planAppliedLocalOpValidation(schema, { op: "copy", from: "/items/0", path: "/items/1" }, { ok: true, value: "A" });
 
     expect(copy).toMatchObject({ kind: "parse", path: "/items/1", value: "A" });
 
-    const move = planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "move", from: "/items/0", path: "/items/1" },
-      sourceValue: { ok: true, value: "B" },
-    });
+    const move = planAppliedLocalOpValidation(schema, { op: "move", from: "/items/0", path: "/items/1" }, { ok: true, value: "B" });
 
     expect(move).toMatchObject({ kind: "parse", path: "/items/1", value: "B" });
   });
 
   test("plans presence validation for remove operations", () => {
-    expect(planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "remove", path: "/items/0" },
-      sourceValue: { ok: false },
-    })).toEqual({ kind: "presence" });
+    expect(planAppliedLocalOpValidation(schema, { op: "remove", path: "/items/0" }, { ok: false })).toEqual({ kind: "presence" });
   });
 
   test("rejects applied operations without a local schema validation target", () => {
-    expect(planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "replace", path: "", value: { title: "root" } },
-      sourceValue: { ok: false },
-    })).toBeNull();
+    expect(planAppliedLocalOpValidation(schema, { op: "replace", path: "", value: { title: "root" } }, { ok: false })).toBeNull();
 
-    expect(planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "add", path: "/title", value: "A" },
-      sourceValue: { ok: false },
-    })).toBeNull();
+    expect(planAppliedLocalOpValidation(schema, { op: "add", path: "/title", value: "A" }, { ok: false })).toBeNull();
 
-    expect(planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "copy", from: "/items/0", path: "/items/1" },
-      sourceValue: { ok: false },
-    })).toBeNull();
+    expect(planAppliedLocalOpValidation(schema, { op: "copy", from: "/items/0", path: "/items/1" }, { ok: false })).toBeNull();
 
-    expect(planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "move", from: "/missing/0", path: "/items/1" },
-      sourceValue: { ok: true, value: "A" },
-    })).toBeNull();
+    expect(planAppliedLocalOpValidation(schema, { op: "move", from: "/missing/0", path: "/items/1" }, { ok: true, value: "A" })).toBeNull();
 
-    expect(planAppliedLocalOpValidation({
-      schema,
-      operation: { op: "test", path: "/title", value: "Draft" },
-      sourceValue: { ok: false },
-    })).toBeNull();
+    expect(planAppliedLocalOpValidation(schema, { op: "test", path: "/title", value: "Draft" }, { ok: false })).toBeNull();
   });
 });
 
@@ -2895,32 +2104,22 @@ describe("applied local op validation evaluation", () => {
 
 describe("local patch core functions", () => {
   test("plans independent replace paths without schema work", () => {
-    expect(planIndependentReplacePaths({
-      operations: [
+    expect(planIndependentReplacePaths([
         { op: "replace", path: "/title", value: "Final" },
         { op: "replace", path: "/meta/owner", value: "core" },
-      ],
-    })).toEqual(["/title", "/meta/owner"]);
+      ])).toEqual(["/title", "/meta/owner"]);
   });
 
   test("rejects invalid independent replace path plans", () => {
-    expect(planIndependentReplacePaths({ operations: [] })).toBeNull();
-    expect(planIndependentReplacePaths({
-      operations: [{ op: "replace", path: "", value: { title: "root" } }],
-    })).toBeNull();
-    expect(planIndependentReplacePaths({
-      operations: [{ op: "add", path: "/title", value: "Final" }],
-    })).toBeNull();
-    expect(planIndependentReplacePaths({
-      operations: [{ op: "replace", path: "title", value: "Final" }],
-    })).toBeNull();
-    expect(planIndependentReplacePaths({
-      operations: [{ op: "replace", path: "/items/-/name", value: "Final" }],
-    })).toBeNull();
+    expect(planIndependentReplacePaths([])).toBeNull();
+    expect(planIndependentReplacePaths([{ op: "replace", path: "", value: { title: "root" } }])).toBeNull();
+    expect(planIndependentReplacePaths([{ op: "add", path: "/title", value: "Final" }])).toBeNull();
+    expect(planIndependentReplacePaths([{ op: "replace", path: "title", value: "Final" }])).toBeNull();
+    expect(planIndependentReplacePaths([{ op: "replace", path: "/items/-/name", value: "Final" }])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
-    expect(planIndependentReplacePaths({ operations: sparse })).toBeNull();
+    expect(planIndependentReplacePaths(sparse)).toBeNull();
   });
 
   test("detects independent replace path sets", () => {
@@ -2931,125 +2130,86 @@ describe("local patch core functions", () => {
   });
 
   test("plans independent replace batches without schema work", () => {
-    expect(planIndependentReplacePatch({
-      operations: [
+    expect(planIndependentReplacePatch([
         { op: "replace", path: "/title", value: "Final" },
         { op: "replace", path: "/meta/owner", value: "core" },
-      ],
-    })).toBe(true);
+      ])).toBe(true);
   });
 
   test("rejects patches that must keep the slower validation path", () => {
-    expect(planIndependentReplacePatch({ operations: [] })).toBe(false);
+    expect(planIndependentReplacePatch([])).toBe(false);
 
-    expect(planIndependentReplacePatch({
-      operations: [{ op: "replace", path: "", value: { title: "root" } }],
-    })).toBe(false);
+    expect(planIndependentReplacePatch([{ op: "replace", path: "", value: { title: "root" } }])).toBe(false);
 
-    expect(planIndependentReplacePatch({
-      operations: [{ op: "add", path: "/title", value: "Final" }],
-    })).toBe(false);
+    expect(planIndependentReplacePatch([{ op: "add", path: "/title", value: "Final" }])).toBe(false);
 
-    expect(planIndependentReplacePatch({
-      operations: [{ op: "replace", path: "title", value: "Final" }],
-    })).toBe(false);
+    expect(planIndependentReplacePatch([{ op: "replace", path: "title", value: "Final" }])).toBe(false);
 
-    expect(planIndependentReplacePatch({
-      operations: [{ op: "replace", path: "/items/-/name", value: "Final" }],
-    })).toBe(false);
+    expect(planIndependentReplacePatch([{ op: "replace", path: "/items/-/name", value: "Final" }])).toBe(false);
 
-    expect(planIndependentReplacePatch({
-      operations: [
+    expect(planIndependentReplacePatch([
         { op: "replace", path: "/items/0", value: { name: "A" } },
         { op: "replace", path: "/items/0/name", value: "A" },
-      ],
-    })).toBe(false);
+      ])).toBe(false);
 
-    expect(planIndependentReplacePatch({
-      operations: [
+    expect(planIndependentReplacePatch([
         { op: "replace", path: "/title", value: "A" },
         { op: "replace", path: "/title", value: "B" },
-      ],
-    })).toBe(false);
+      ])).toBe(false);
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/title", value: "Final" };
-    expect(planIndependentReplacePatch({ operations: sparse })).toBe(false);
+    expect(planIndependentReplacePatch(sparse)).toBe(false);
   });
 });
 
 describe("append-only array add patch planning", () => {
   test("plans append-only add values for a known append path", () => {
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/items/-",
-      operations: [
+    expect(planAppendOnlyArrayAddValues([
         { op: "add", path: "/items/-", value: "A" },
         { op: "add", path: "/items/-", value: "B" },
-      ],
-    })).toEqual(["A", "B"]);
+      ], "/items/-")).toEqual(["A", "B"]);
 
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/-",
-      operations: [
+    expect(planAppendOnlyArrayAddValues([
         { op: "add", path: "/-", value: 1 },
         { op: "add", path: "/-", value: 2 },
-      ],
-    })).toEqual([1, 2]);
+      ], "/-")).toEqual([1, 2]);
   });
 
   test("rejects append-only value plans outside a known append path", () => {
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/items/-",
-      operations: [{ op: "add", path: "/items/-", value: "A" }],
-    })).toBeNull();
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/items/-",
-      operations: [
+    expect(planAppendOnlyArrayAddValues([{ op: "add", path: "/items/-", value: "A" }], "/items/-")).toBeNull();
+    expect(planAppendOnlyArrayAddValues([
         { op: "add", path: "/items/-", value: "A" },
         { op: "add", path: "/other/-", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/items/-",
-      operations: [
+      ], "/items/-")).toBeNull();
+    expect(planAppendOnlyArrayAddValues([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/items/1", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/items/-",
-      operations: [
+      ], "/items/-")).toBeNull();
+    expect(planAppendOnlyArrayAddValues([
         { op: "replace", path: "/items/-", value: "A" },
         { op: "add", path: "/items/-", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planAppendOnlyArrayAddValues({
-      appendPath: "/items/0",
-      operations: [
+      ], "/items/-")).toBeNull();
+    expect(planAppendOnlyArrayAddValues([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/items/0", value: "B" },
-      ],
-    })).toBeNull();
+      ], "/items/0")).toBeNull();
   });
 
   test("plans repeated append operations for one array target", () => {
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [
+    expect(planAppendOnlyArrayAddPatch([
         { op: "add", path: "/items/-", value: "A" },
         { op: "add", path: "/items/-", value: "B" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "/items",
       parentSegments: ["items"],
       values: ["A", "B"],
     });
 
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [
+    expect(planAppendOnlyArrayAddPatch([
         { op: "add", path: "/-", value: 1 },
         { op: "add", path: "/-", value: 2 },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "",
       parentSegments: [],
       values: [1, 2],
@@ -3057,41 +2217,31 @@ describe("append-only array add patch planning", () => {
   });
 
   test("rejects append batches that need a slower local validation path", () => {
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [{ op: "add", path: "/items/-", value: "A" }],
-    })).toBeNull();
+    expect(planAppendOnlyArrayAddPatch([{ op: "add", path: "/items/-", value: "A" }])).toBeNull();
 
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [
+    expect(planAppendOnlyArrayAddPatch([
         { op: "add", path: "/items/-", value: "A" },
         { op: "add", path: "/other/-", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [
+    expect(planAppendOnlyArrayAddPatch([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/items/1", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [
+    expect(planAppendOnlyArrayAddPatch([
         { op: "replace", path: "/items/-", value: "A" },
         { op: "add", path: "/items/-", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planAppendOnlyArrayAddPatch({
-      operations: [
+    expect(planAppendOnlyArrayAddPatch([
         { op: "add", path: "items/-", value: "A" },
         { op: "add", path: "items/-", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/items/-", value: "B" };
-    expect(planAppendOnlyArrayAddPatch({ operations: sparse })).toBeNull();
+    expect(planAppendOnlyArrayAddPatch(sparse)).toBeNull();
   });
 
   test("keeps append-only array add JSON guard before schema parsing", () => {
@@ -3115,96 +2265,62 @@ describe("append-only array add patch planning", () => {
 
 describe("increasing array add patch planning", () => {
   test("plans contiguous indexed add values within a known parent and start", () => {
-    expect(planIncreasingArrayAddValues({
-      parent: "/items",
-      start: 1,
-      operations: [
+    expect(planIncreasingArrayAddValues([
         { op: "add", path: "/items/1", value: "A" },
         { op: "add", path: "/items/2", value: "B" },
-      ],
-    })).toEqual(["A", "B"]);
+      ], "/items", 1)).toEqual(["A", "B"]);
 
-    expect(planIncreasingArrayAddValues({
-      parent: "/a~1b",
-      start: 0,
-      operations: [
+    expect(planIncreasingArrayAddValues([
         { op: "add", path: "/a~1b/0", value: "A" },
         { op: "add", path: "/a~1b/1", value: "B" },
-      ],
-    })).toEqual(["A", "B"]);
+      ], "/a~1b", 0)).toEqual(["A", "B"]);
   });
 
   test("rejects indexed add value plans that are not contiguous in one parent", () => {
-    expect(planIncreasingArrayAddValues({
-      parent: "/items",
-      start: 0,
-      operations: [{ op: "add", path: "/items/0", value: "A" }],
-    })).toBeNull();
-    expect(planIncreasingArrayAddValues({
-      parent: "/items",
-      start: 0,
-      operations: [
+    expect(planIncreasingArrayAddValues([{ op: "add", path: "/items/0", value: "A" }], "/items", 0)).toBeNull();
+    expect(planIncreasingArrayAddValues([
         { op: "add", path: "/items/-", value: "A" },
         { op: "add", path: "/items/-", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planIncreasingArrayAddValues({
-      parent: "/items",
-      start: 0,
-      operations: [
+      ], "/items", 0)).toBeNull();
+    expect(planIncreasingArrayAddValues([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/items/2", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planIncreasingArrayAddValues({
-      parent: "/items",
-      start: 0,
-      operations: [
+      ], "/items", 0)).toBeNull();
+    expect(planIncreasingArrayAddValues([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/other/1", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planIncreasingArrayAddValues({
-      parent: "/items",
-      start: 0,
-      operations: [
+      ], "/items", 0)).toBeNull();
+    expect(planIncreasingArrayAddValues([
         { op: "replace", path: "/items/0", value: "A" },
         { op: "add", path: "/items/1", value: "B" },
-      ],
-    })).toBeNull();
+      ], "/items", 0)).toBeNull();
   });
 
   test("plans contiguous indexed add operations for one array target", () => {
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/items/1", value: "A" },
         { op: "add", path: "/items/2", value: "B" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "/items",
       parentSegments: ["items"],
       start: 1,
       values: ["A", "B"],
     });
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/0", value: 1 },
         { op: "add", path: "/1", value: 2 },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "",
       parentSegments: [],
       start: 0,
       values: [1, 2],
     });
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/a~1b/0", value: "A" },
         { op: "add", path: "/a~1b/1", value: "B" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "/a~1b",
       parentSegments: ["a/b"],
       start: 0,
@@ -3213,55 +2329,41 @@ describe("increasing array add patch planning", () => {
   });
 
   test("rejects indexed add batches that are not contiguous in one parent", () => {
-    expect(planIncreasingArrayAddPatch({
-      operations: [{ op: "add", path: "/items/0", value: "A" }],
-    })).toBeNull();
+    expect(planIncreasingArrayAddPatch([{ op: "add", path: "/items/0", value: "A" }])).toBeNull();
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/items/-", value: "A" },
         { op: "add", path: "/items/-", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/items/2", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/items/1", value: "A" },
         { op: "add", path: "/items/0", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/items/0", value: "A" },
         { op: "add", path: "/other/1", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "add", path: "/items/01", value: "A" },
         { op: "add", path: "/items/2", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planIncreasingArrayAddPatch({
-      operations: [
+    expect(planIncreasingArrayAddPatch([
         { op: "replace", path: "/items/0", value: "A" },
         { op: "add", path: "/items/1", value: "B" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/items/1", value: "B" };
-    expect(planIncreasingArrayAddPatch({ operations: sparse })).toBeNull();
+    expect(planIncreasingArrayAddPatch(sparse)).toBeNull();
   });
 
   test("keeps increasing array add JSON guard before schema parsing", () => {
@@ -3285,15 +2387,12 @@ describe("increasing array add patch planning", () => {
 
 describe("same array patch planning", () => {
   test("plans same-array operations within a known parent", () => {
-    expect(planSameArrayPatchOperations({
-      parent: "/items",
-      operations: [
+    expect(planSameArrayPatchOperations([
         { op: "remove", path: "/items/1" },
         { op: "add", path: "/items/-", value: "A" },
         { op: "copy", from: "/items/0", path: "/items/2" },
         { op: "move", from: "/items/2", path: "/items/0" },
-      ],
-    })).toEqual([
+      ], "/items")).toEqual([
       { op: "remove", path: "/items/1", index: 1 },
       { op: "add", path: "/items/-", index: "-", value: "A" },
       { op: "copy", from: "/items/0", path: "/items/2", fromIndex: 0, index: 2 },
@@ -3302,37 +2401,20 @@ describe("same array patch planning", () => {
   });
 
   test("rejects same-array operation plans outside a known parent", () => {
-    expect(planSameArrayPatchOperations({
-      parent: "/items",
-      operations: [],
-    })).toBeNull();
-    expect(planSameArrayPatchOperations({
-      parent: "/items",
-      operations: [{ op: "replace", path: "/items/0", value: "A" }],
-    })).toBeNull();
-    expect(planSameArrayPatchOperations({
-      parent: "/items",
-      operations: [{ op: "remove", path: "/other/0" }],
-    })).toBeNull();
-    expect(planSameArrayPatchOperations({
-      parent: "/items",
-      operations: [{ op: "remove", path: "/items/-" }],
-    })).toBeNull();
-    expect(planSameArrayPatchOperations({
-      parent: "/items",
-      operations: [{ op: "copy", from: "/items/-", path: "/items/0" }],
-    })).toBeNull();
+    expect(planSameArrayPatchOperations([], "/items")).toBeNull();
+    expect(planSameArrayPatchOperations([{ op: "replace", path: "/items/0", value: "A" }], "/items")).toBeNull();
+    expect(planSameArrayPatchOperations([{ op: "remove", path: "/other/0" }], "/items")).toBeNull();
+    expect(planSameArrayPatchOperations([{ op: "remove", path: "/items/-" }], "/items")).toBeNull();
+    expect(planSameArrayPatchOperations([{ op: "copy", from: "/items/-", path: "/items/0" }], "/items")).toBeNull();
   });
 
   test("plans add, remove, copy, and move operations in one array parent", () => {
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "remove", path: "/items/1" },
         { op: "add", path: "/items/-", value: "A" },
         { op: "copy", from: "/items/0", path: "/items/2" },
         { op: "move", from: "/items/2", path: "/items/0" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "/items",
       parentSegments: ["items"],
       operations: [
@@ -3345,11 +2427,9 @@ describe("same array patch planning", () => {
   });
 
   test("plans root and escaped parent array operations", () => {
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "copy", from: "/0", path: "/-" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "",
       parentSegments: [],
       operations: [
@@ -3357,11 +2437,9 @@ describe("same array patch planning", () => {
       ],
     });
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "move", from: "/a~1b/0", path: "/a~1b/-" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       parent: "/a~1b",
       parentSegments: ["a/b"],
       operations: [
@@ -3371,48 +2449,36 @@ describe("same array patch planning", () => {
   });
 
   test("rejects operations outside one array parent", () => {
-    expect(planSameArrayPatch({ operations: [] })).toBeNull();
+    expect(planSameArrayPatch([])).toBeNull();
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "replace", path: "/items/0", value: "A" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "add", path: "/items/0", value: "A" },
         { op: "remove", path: "/other/0" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "remove", path: "/items/-" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "copy", from: "/other/0", path: "/items/0" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "move", from: "/items/-", path: "/items/0" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
-    expect(planSameArrayPatch({
-      operations: [
+    expect(planSameArrayPatch([
         { op: "add", path: "/items/01", value: "A" },
-      ],
-    })).toBeNull();
+      ])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "remove", path: "/items/1" };
-    expect(planSameArrayPatch({ operations: sparse })).toBeNull();
+    expect(planSameArrayPatch(sparse)).toBeNull();
   });
 
   test("keeps same-array structural add JSON guard before schema parsing", () => {
@@ -3436,13 +2502,11 @@ describe("same array patch planning", () => {
 
 describe("root record add patch planning", () => {
   test("plans root record add operations from plain root keys", () => {
-    expect(planRootRecordAddOperations({
-      operations: [
+    expect(planRootRecordAddOperations([
         { op: "add", path: "/alpha", value: 1 },
         { op: "add", path: "/", value: "empty-key" },
         { op: "add", path: "/__proto__", value: "data-key" },
-      ],
-    })).toEqual([
+      ])).toEqual([
       { op: "add", path: "/alpha", key: "alpha", value: 1 },
       { op: "add", path: "/", key: "", value: "empty-key" },
       { op: "add", path: "/__proto__", key: "__proto__", value: "data-key" },
@@ -3450,29 +2514,19 @@ describe("root record add patch planning", () => {
   });
 
   test("rejects invalid root record add operation plans", () => {
-    expect(planRootRecordAddOperations({ operations: [] })).toBeNull();
-    expect(planRootRecordAddOperations({
-      operations: [{ op: "add", path: "", value: "root" }],
-    })).toBeNull();
-    expect(planRootRecordAddOperations({
-      operations: [{ op: "replace", path: "/alpha", value: 1 }],
-    })).toBeNull();
-    expect(planRootRecordAddOperations({
-      operations: [{ op: "add", path: "/alpha/nested", value: 1 }],
-    })).toBeNull();
-    expect(planRootRecordAddOperations({
-      operations: [{ op: "add", path: "/a~1b", value: 1 }],
-    })).toBeNull();
+    expect(planRootRecordAddOperations([])).toBeNull();
+    expect(planRootRecordAddOperations([{ op: "add", path: "", value: "root" }])).toBeNull();
+    expect(planRootRecordAddOperations([{ op: "replace", path: "/alpha", value: 1 }])).toBeNull();
+    expect(planRootRecordAddOperations([{ op: "add", path: "/alpha/nested", value: 1 }])).toBeNull();
+    expect(planRootRecordAddOperations([{ op: "add", path: "/a~1b", value: 1 }])).toBeNull();
   });
 
   test("plans root-level record add operations", () => {
-    expect(planRootRecordAddPatch({
-      operations: [
+    expect(planRootRecordAddPatch([
         { op: "add", path: "/alpha", value: 1 },
         { op: "add", path: "/", value: "empty-key" },
         { op: "add", path: "/__proto__", value: "data-key" },
-      ],
-    })).toEqual({
+      ])).toEqual({
       operations: [
         { op: "add", path: "/alpha", key: "alpha", value: 1 },
         { op: "add", path: "/", key: "", value: "empty-key" },
@@ -3482,89 +2536,49 @@ describe("root record add patch planning", () => {
   });
 
   test("rejects adds that are not plain root record keys", () => {
-    expect(planRootRecordAddPatch({ operations: [] })).toBeNull();
+    expect(planRootRecordAddPatch([])).toBeNull();
 
-    expect(planRootRecordAddPatch({
-      operations: [{ op: "add", path: "", value: "root" }],
-    })).toBeNull();
+    expect(planRootRecordAddPatch([{ op: "add", path: "", value: "root" }])).toBeNull();
 
-    expect(planRootRecordAddPatch({
-      operations: [{ op: "replace", path: "/alpha", value: 1 }],
-    })).toBeNull();
+    expect(planRootRecordAddPatch([{ op: "replace", path: "/alpha", value: 1 }])).toBeNull();
 
-    expect(planRootRecordAddPatch({
-      operations: [{ op: "add", path: "/alpha/nested", value: 1 }],
-    })).toBeNull();
+    expect(planRootRecordAddPatch([{ op: "add", path: "/alpha/nested", value: 1 }])).toBeNull();
 
-    expect(planRootRecordAddPatch({
-      operations: [{ op: "add", path: "/a~1b", value: 1 }],
-    })).toBeNull();
+    expect(planRootRecordAddPatch([{ op: "add", path: "/a~1b", value: 1 }])).toBeNull();
 
-    expect(planRootRecordAddPatch({
-      operations: [{ op: "add", path: "alpha", value: 1 }],
-    })).toBeNull();
+    expect(planRootRecordAddPatch([{ op: "add", path: "alpha", value: 1 }])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "add", path: "/alpha", value: 1 };
-    expect(planRootRecordAddPatch({ operations: sparse })).toBeNull();
+    expect(planRootRecordAddPatch(sparse)).toBeNull();
   });
 
   test("validates root record add values through record schemas", () => {
     const state = {};
 
-    expect(evaluateRootRecordAddValues({
-      schema: z.record(z.string(), z.number()),
-      state,
-      operations: [{ op: "add", path: "/alpha", key: "alpha", value: 1 }],
-      valuesTrusted: false,
-    })).toEqual({ ok: true });
+    expect(evaluateRootRecordAddValues(z.record(z.string(), z.number()), state, [{ op: "add", path: "/alpha", key: "alpha", value: 1 }], false)).toEqual({ ok: true });
 
-    expect(evaluateRootRecordAddValues({
-      schema: z.object({ alpha: z.number() }),
-      state: { alpha: 0 },
-      operations: [{ op: "add", path: "/alpha", key: "alpha", value: 1 }],
-      valuesTrusted: false,
-    })).toEqual({ ok: false, result: null });
+    expect(evaluateRootRecordAddValues(z.object({ alpha: z.number() }), { alpha: 0 }, [{ op: "add", path: "/alpha", key: "alpha", value: 1 }], false)).toEqual({ ok: false, result: null });
   });
 
   test("plans root record add value validation through record schemas", () => {
-    expect(planRootRecordAddValueValidation({
-      schema: z.record(z.string(), z.number()),
-      operation: { op: "add", path: "/alpha", value: 1 },
-      valuesTrusted: false,
-    })).toEqual({ kind: "accepted" });
+    expect(planRootRecordAddValueValidation(z.record(z.string(), z.number()), { op: "add", path: "/alpha", key: "alpha", value: 1 }, false)).toEqual({ kind: "accepted" });
 
-    const parsePlan = planRootRecordAddValueValidation({
-      schema: z.record(z.string(), z.number()),
-      operation: { op: "add", path: "/alpha", value: "bad" },
-      valuesTrusted: true,
-    });
+    const parsePlan = planRootRecordAddValueValidation(z.record(z.string(), z.number()), { op: "add", path: "/alpha", key: "alpha", value: "bad" }, true);
 
     expect(parsePlan).toMatchObject({ kind: "parse", path: "/alpha", value: "bad" });
     expect(parsePlan?.kind === "parse" && parsePlan.schema.safeParse(parsePlan.value).success).toBe(false);
 
-    expect(planRootRecordAddValueValidation({
-      schema: z.record(z.string(), z.unknown()),
-      operation: { op: "add", path: "/alpha", value: () => "not json" },
-      valuesTrusted: false,
-    })).toMatchObject({
+    expect(planRootRecordAddValueValidation(z.record(z.string(), z.unknown()), { op: "add", path: "/alpha", key: "alpha", value: () => "not json" }, false)).toMatchObject({
       kind: "notSerializable",
       reason: expect.stringContaining("function"),
     });
   });
 
   test("rejects root record add value validation without a record value schema", () => {
-    expect(planRootRecordAddValueValidation({
-      schema: z.object({ alpha: z.number() }),
-      operation: { op: "add", path: "/alpha", value: 1 },
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(planRootRecordAddValueValidation(z.object({ alpha: z.number() }), { op: "add", path: "/alpha", key: "alpha", value: 1 }, false)).toBeNull();
 
-    expect(planRootRecordAddValueValidation({
-      schema: z.record(z.string().min(1), z.number()),
-      operation: { op: "add", path: "/alpha", value: 1 },
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(planRootRecordAddValueValidation(z.record(z.string().min(1), z.number()), { op: "add", path: "/alpha", key: "alpha", value: 1 }, false)).toBeNull();
   });
 
   test("finds local root record value schemas only for plain string-key records", () => {
@@ -3578,12 +2592,7 @@ describe("root record add patch planning", () => {
 
   test("returns root record add value validation failures", () => {
     const state = {};
-    const result = evaluateRootRecordAddValues({
-      schema: z.record(z.string(), z.number()),
-      state,
-      operations: [{ op: "add", path: "/alpha", key: "alpha", value: "bad" }],
-      valuesTrusted: false,
-    });
+    const result = evaluateRootRecordAddValues(z.record(z.string(), z.number()), state, [{ op: "add", path: "/alpha", key: "alpha", value: "bad" }], false);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected validation failure");
@@ -3597,15 +2606,12 @@ describe("root record add patch planning", () => {
   test("applies planned root record adds without mutating the source", () => {
     const source = { alpha: 1, beta: 2 };
 
-    const result = applyRootRecordAddPlan({
-      source,
-      plan: {
+    const result = applyRootRecordAddPlan(source, {
         operations: [
           { op: "add", path: "/beta", key: "beta", value: 20 },
           { op: "add", path: "/gamma", key: "gamma", value: 3 },
         ],
-      },
-    });
+      });
 
     expect(result).toEqual({ alpha: 1, beta: 20, gamma: 3 });
     expect(result).not.toBe(source);
@@ -3615,14 +2621,11 @@ describe("root record add patch planning", () => {
   test("keeps __proto__ as a data key when applying root record adds", () => {
     const source: Record<string, unknown> = { alpha: 1 };
 
-    const result = applyRootRecordAddPlan({
-      source,
-      plan: {
+    const result = applyRootRecordAddPlan(source, {
         operations: [
           { op: "add", path: "/__proto__", key: "__proto__", value: { safe: true } },
         ],
-      },
-    });
+      });
 
     expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
@@ -3633,14 +2636,11 @@ describe("root record add patch planning", () => {
 
 describe("root record remove patch planning", () => {
   test("plans root record remove operations from plain existing keys", () => {
-    expect(planRootRecordRemoveOperations({
-      sourceKeys: ["a", "", "__proto__"],
-      operations: [
+    expect(planRootRecordRemoveOperations([
         { op: "remove", path: "/a" },
         { op: "remove", path: "/" },
         { op: "remove", path: "/__proto__" },
-      ],
-    })).toEqual([
+      ], ["a", "", "__proto__"])).toEqual([
       { op: "remove", path: "/a", key: "a" },
       { op: "remove", path: "/", key: "" },
       { op: "remove", path: "/__proto__", key: "__proto__" },
@@ -3648,82 +2648,61 @@ describe("root record remove patch planning", () => {
   });
 
   test("rejects invalid root record remove operation plans", () => {
-    expect(planRootRecordRemoveOperations({ sourceKeys: ["a"], operations: [] })).toBeNull();
-    expect(planRootRecordRemoveOperations({
-      sourceKeys: ["a"],
-      operations: [{ op: "remove", path: "/missing" }],
-    })).toBeNull();
-    expect(planRootRecordRemoveOperations({
-      sourceKeys: ["a"],
-      operations: [
+    expect(planRootRecordRemoveOperations([], ["a"])).toBeNull();
+    expect(planRootRecordRemoveOperations([{ op: "remove", path: "/missing" }], ["a"])).toBeNull();
+    expect(planRootRecordRemoveOperations([
         { op: "remove", path: "/a" },
         { op: "remove", path: "/a" },
-      ],
-    })).toBeNull();
-    expect(planRootRecordRemoveOperations({
-      sourceKeys: ["a"],
-      operations: [{ op: "remove", path: "/a/nested" }],
-    })).toBeNull();
-    expect(planRootRecordRemoveOperations({
-      sourceKeys: ["a/b"],
-      operations: [{ op: "remove", path: "/a~1b" }],
-    })).toBeNull();
+      ], ["a"])).toBeNull();
+    expect(planRootRecordRemoveOperations([{ op: "remove", path: "/a/nested" }], ["a"])).toBeNull();
+    expect(planRootRecordRemoveOperations([{ op: "remove", path: "/a~1b" }], ["a/b"])).toBeNull();
   });
 
   test("plans root record remove strategies from parsed operations", () => {
-    expect(planRootRecordRemoveStrategy({
-      sourceKeys: ["a", "b", "c"],
-      operations: [{ op: "remove", path: "/c", key: "c" }],
-    })).toEqual({ strategy: "copyPrefix", keepCount: 2 });
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/c" }], ["a", "b", "c"])).toMatchObject({
+      strategy: "copyPrefix",
+      keepCount: 2,
+    });
 
-    expect(planRootRecordRemoveStrategy({
-      sourceKeys: ["a", "b", "c"],
-      operations: [{ op: "remove", path: "/b", key: "b" }],
-    })).toEqual({ strategy: "copyDelete", keepCount: 2 });
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/b" }], ["a", "b", "c"])).toMatchObject({
+      strategy: "copyDelete",
+      keepCount: 2,
+    });
 
-    expect(planRootRecordRemoveStrategy({
-      sourceKeys: ["a", "b", "c", "d"],
-      operations: [
-        { op: "remove", path: "/a", key: "a" },
-        { op: "remove", path: "/c", key: "c" },
+    expect(planRootRecordRemovePatch(
+      [
+        { op: "remove", path: "/a" },
+        { op: "remove", path: "/c" },
       ],
-    })).toEqual({ strategy: "rebuild", keepCount: 2 });
+      ["a", "b", "c", "d"],
+    )).toMatchObject({ strategy: "rebuild", keepCount: 2 });
 
-    expect(planRootRecordRemoveStrategy({
-      sourceKeys: ["a", "b"],
-      operations: [
-        { op: "remove", path: "/b", key: "b" },
-        { op: "remove", path: "/a", key: "a" },
+    expect(planRootRecordRemovePatch(
+      [
+        { op: "remove", path: "/b" },
+        { op: "remove", path: "/a" },
       ],
-    })).toEqual({ strategy: "clear", keepCount: 0 });
+      ["a", "b"],
+    )).toMatchObject({ strategy: "clear", keepCount: 0 });
   });
 
   test("plans removal strategies from source key order", () => {
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a", "b", "c"],
-      operations: [{ op: "remove", path: "/b" }],
-    })).toEqual({
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/b" }], ["a", "b", "c"])).toEqual({
       operations: [{ op: "remove", path: "/b", key: "b" }],
       strategy: "copyDelete",
       keepCount: 2,
     });
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a", "b", "c"],
-      operations: [{ op: "remove", path: "/c" }],
-    })).toEqual({
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/c" }], ["a", "b", "c"])).toEqual({
       operations: [{ op: "remove", path: "/c", key: "c" }],
       strategy: "copyPrefix",
       keepCount: 2,
     });
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a", "b", "c"],
-      operations: [
+    expect(planRootRecordRemovePatch([
         { op: "remove", path: "/b" },
         { op: "remove", path: "/c" },
-      ],
-    })).toEqual({
+      ], ["a", "b", "c"])).toEqual({
       operations: [
         { op: "remove", path: "/b", key: "b" },
         { op: "remove", path: "/c", key: "c" },
@@ -3732,13 +2711,10 @@ describe("root record remove patch planning", () => {
       keepCount: 1,
     });
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a", "b", "c", "d"],
-      operations: [
+    expect(planRootRecordRemovePatch([
         { op: "remove", path: "/a" },
         { op: "remove", path: "/c" },
-      ],
-    })).toEqual({
+      ], ["a", "b", "c", "d"])).toEqual({
       operations: [
         { op: "remove", path: "/a", key: "a" },
         { op: "remove", path: "/c", key: "c" },
@@ -3747,13 +2723,10 @@ describe("root record remove patch planning", () => {
       keepCount: 2,
     });
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a", "b"],
-      operations: [
+    expect(planRootRecordRemovePatch([
         { op: "remove", path: "/b" },
         { op: "remove", path: "/a" },
-      ],
-    })).toEqual({
+      ], ["a", "b"])).toEqual({
       operations: [
         { op: "remove", path: "/b", key: "b" },
         { op: "remove", path: "/a", key: "a" },
@@ -3764,87 +2737,57 @@ describe("root record remove patch planning", () => {
   });
 
   test("rejects remove batches that are not plain existing root keys", () => {
-    expect(planRootRecordRemovePatch({ sourceKeys: ["a"], operations: [] })).toBeNull();
+    expect(planRootRecordRemovePatch([], ["a"])).toBeNull();
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a"],
-      operations: [{ op: "remove", path: "/missing" }],
-    })).toBeNull();
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/missing" }], ["a"])).toBeNull();
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a"],
-      operations: [
+    expect(planRootRecordRemovePatch([
         { op: "remove", path: "/a" },
         { op: "remove", path: "/a" },
-      ],
-    })).toBeNull();
+      ], ["a"])).toBeNull();
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a"],
-      operations: [{ op: "remove", path: "/a/nested" }],
-    })).toBeNull();
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/a/nested" }], ["a"])).toBeNull();
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a/b"],
-      operations: [{ op: "remove", path: "/a~1b" }],
-    })).toBeNull();
+    expect(planRootRecordRemovePatch([{ op: "remove", path: "/a~1b" }], ["a/b"])).toBeNull();
 
-    expect(planRootRecordRemovePatch({
-      sourceKeys: ["a"],
-      operations: [{ op: "add", path: "/a", value: 1 }],
-    })).toBeNull();
+    expect(planRootRecordRemovePatch([{ op: "add", path: "/a", value: 1 }], ["a"])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "remove", path: "/a" };
-    expect(planRootRecordRemovePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+    expect(planRootRecordRemovePatch(sparse, ["a"])).toBeNull();
   });
 
   test("applies planned root record remove strategies to data records", () => {
     const source = { a: 1, b: 2, c: 3, d: 4 };
 
-    expect(applyRootRecordRemovePlan({
-      source,
-      sourceKeys: ["a", "b", "c", "d"],
-      plan: {
+    expect(applyRootRecordRemovePlan(source, ["a", "b", "c", "d"], {
         operations: [
           { op: "remove", path: "/b", key: "b" },
           { op: "remove", path: "/d", key: "d" },
         ],
         strategy: "copyDelete",
         keepCount: 2,
-      },
-    })).toEqual({ a: 1, c: 3 });
+      })).toEqual({ a: 1, c: 3 });
 
-    expect(applyRootRecordRemovePlan({
-      source,
-      sourceKeys: ["a", "b", "c", "d"],
-      plan: {
+    expect(applyRootRecordRemovePlan(source, ["a", "b", "c", "d"], {
         operations: [
           { op: "remove", path: "/c", key: "c" },
           { op: "remove", path: "/d", key: "d" },
         ],
         strategy: "copyPrefix",
         keepCount: 2,
-      },
-    })).toEqual({ a: 1, b: 2 });
+      })).toEqual({ a: 1, b: 2 });
 
-    expect(applyRootRecordRemovePlan({
-      source,
-      sourceKeys: ["a", "b", "c", "d"],
-      plan: {
+    expect(applyRootRecordRemovePlan(source, ["a", "b", "c", "d"], {
         operations: [
           { op: "remove", path: "/a", key: "a" },
           { op: "remove", path: "/c", key: "c" },
         ],
         strategy: "rebuild",
         keepCount: 2,
-      },
-    })).toEqual({ b: 2, d: 4 });
+      })).toEqual({ b: 2, d: 4 });
 
-    expect(applyRootRecordRemovePlan({
-      source,
-      sourceKeys: ["a", "b", "c", "d"],
-      plan: {
+    expect(applyRootRecordRemovePlan(source, ["a", "b", "c", "d"], {
         operations: [
           { op: "remove", path: "/a", key: "a" },
           { op: "remove", path: "/b", key: "b" },
@@ -3853,8 +2796,7 @@ describe("root record remove patch planning", () => {
         ],
         strategy: "clear",
         keepCount: 0,
-      },
-    })).toEqual({});
+      })).toEqual({});
   });
 
   test("keeps __proto__ as data through rebuild remove strategy", () => {
@@ -3921,72 +2863,48 @@ describe("root record remove patch planning", () => {
 
 describe("root object replace patch planning", () => {
   test("plans root object replacement operations from existing plain keys", () => {
-    expect(planRootObjectReplaceOperations({
-      sourceKeys: ["a", "b"],
-      operations: [
+    expect(planRootObjectReplaceOperations([
         { op: "replace", path: "/b", value: 2 },
         { op: "replace", path: "/a", value: 1 },
-      ],
-    })).toEqual([
+      ], ["a", "b"])).toEqual([
       { op: "replace", path: "/b", key: "b", value: 2 },
       { op: "replace", path: "/a", key: "a", value: 1 },
     ]);
   });
 
   test("rejects invalid root object replacement operation plans", () => {
-    expect(planRootObjectReplaceOperations({
-      sourceKeys: ["a"],
-      operations: [{ op: "replace", path: "/a", value: 1 }],
-    })).toBeNull();
-    expect(planRootObjectReplaceOperations({
-      sourceKeys: ["a"],
-      operations: [
+    expect(planRootObjectReplaceOperations([{ op: "replace", path: "/a", value: 1 }], ["a"])).toBeNull();
+    expect(planRootObjectReplaceOperations([
         { op: "replace", path: "/a", value: 1 },
         { op: "replace", path: "/missing", value: 2 },
-      ],
-    })).toBeNull();
-    expect(planRootObjectReplaceOperations({
-      sourceKeys: ["a"],
-      operations: [
+      ], ["a"])).toBeNull();
+    expect(planRootObjectReplaceOperations([
         { op: "replace", path: "/a/nested", value: 1 },
         { op: "replace", path: "/a", value: 2 },
-      ],
-    })).toBeNull();
-    expect(planRootObjectReplaceOperations({
-      sourceKeys: ["a/b"],
-      operations: [
+      ], ["a"])).toBeNull();
+    expect(planRootObjectReplaceOperations([
         { op: "replace", path: "/a~1b", value: 1 },
         { op: "replace", path: "/a~1b", value: 2 },
-      ],
-    })).toBeNull();
+      ], ["a/b"])).toBeNull();
   });
 
   test("plans root object replacement strategies from parsed operations", () => {
-    expect(planRootObjectReplaceStrategy({
-      sourceKeys: ["a", "b"],
-      operations: [
+    expect(planRootObjectReplaceStrategy([
         { op: "replace", path: "/a", key: "a", value: 1 },
         { op: "replace", path: "/b", key: "b", value: 2 },
-      ],
-    })).toBe("orderedReplace");
+      ], ["a", "b"])).toBe("orderedReplace");
 
-    expect(planRootObjectReplaceStrategy({
-      sourceKeys: ["a", "b"],
-      operations: [
+    expect(planRootObjectReplaceStrategy([
         { op: "replace", path: "/b", key: "b", value: 2 },
         { op: "replace", path: "/a", key: "a", value: 1 },
-      ],
-    })).toBe("copyWrite");
+      ], ["a", "b"])).toBe("copyWrite");
   });
 
   test("plans ordered full-root replacement and copy-write replacement", () => {
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a", "b"],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "replace", path: "/a", value: 1 },
         { op: "replace", path: "/b", value: 2 },
-      ],
-    })).toEqual({
+      ], ["a", "b"])).toEqual({
       operations: [
         { op: "replace", path: "/a", key: "a", value: 1 },
         { op: "replace", path: "/b", key: "b", value: 2 },
@@ -3994,13 +2912,10 @@ describe("root object replace patch planning", () => {
       strategy: "orderedReplace",
     });
 
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a", "b", "c"],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "replace", path: "/b", value: 2 },
         { op: "replace", path: "/a", value: 1 },
-      ],
-    })).toEqual({
+      ], ["a", "b", "c"])).toEqual({
       operations: [
         { op: "replace", path: "/b", key: "b", value: 2 },
         { op: "replace", path: "/a", key: "a", value: 1 },
@@ -4010,54 +2925,36 @@ describe("root object replace patch planning", () => {
   });
 
   test("rejects replacements outside existing plain root keys", () => {
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a"],
-      operations: [{ op: "replace", path: "/a", value: 1 }],
-    })).toBeNull();
+    expect(planRootObjectReplacePatch([{ op: "replace", path: "/a", value: 1 }], ["a"])).toBeNull();
 
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a"],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "replace", path: "/a", value: 1 },
         { op: "replace", path: "/missing", value: 2 },
-      ],
-    })).toBeNull();
+      ], ["a"])).toBeNull();
 
-    expect(planRootObjectReplacePatch({
-      sourceKeys: [""],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "replace", path: "/", value: 1 },
         { op: "replace", path: "/", value: 2 },
-      ],
-    })).toBeNull();
+      ], [""])).toBeNull();
 
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a"],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "replace", path: "/a", value: 1 },
         { op: "replace", path: "/a/nested", value: 2 },
-      ],
-    })).toBeNull();
+      ], ["a"])).toBeNull();
 
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a/b"],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "replace", path: "/a~1b", value: 1 },
         { op: "replace", path: "/a~1b", value: 2 },
-      ],
-    })).toBeNull();
+      ], ["a/b"])).toBeNull();
 
-    expect(planRootObjectReplacePatch({
-      sourceKeys: ["a"],
-      operations: [
+    expect(planRootObjectReplacePatch([
         { op: "add", path: "/a", value: 1 },
         { op: "replace", path: "/a", value: 2 },
-      ],
-    })).toBeNull();
+      ], ["a"])).toBeNull();
 
     const sparse = new Array<JSONPatchOperation>(2);
     sparse[1] = { op: "replace", path: "/a", value: 1 };
-    expect(planRootObjectReplacePatch({ sourceKeys: ["a"], operations: sparse })).toBeNull();
+    expect(planRootObjectReplacePatch(sparse, ["a"])).toBeNull();
   });
 
   test("plans root object replacement value sources from object and record schemas", () => {
@@ -4077,75 +2974,40 @@ describe("root object replace patch planning", () => {
   });
 
   test("plans root object replacement value validation through object and record sources", () => {
-    expect(planRootObjectReplaceValueValidation({
-      source: { kind: "object", shape: { a: z.number() } },
-      operation: { op: "replace", path: "/a", key: "a", value: 1 },
-      valuesTrusted: false,
-    })).toEqual({ kind: "accepted" });
+    expect(planRootObjectReplaceValueValidation({ kind: "object", shape: { a: z.number() } }, { op: "replace", path: "/a", key: "a", value: 1 }, false)).toEqual({ kind: "accepted" });
 
-    const parsePlan = planRootObjectReplaceValueValidation({
-      source: { kind: "object", shape: { a: z.number() } },
-      operation: { op: "replace", path: "/a", key: "a", value: "bad" },
-      valuesTrusted: true,
-    });
+    const parsePlan = planRootObjectReplaceValueValidation({ kind: "object", shape: { a: z.number() } }, { op: "replace", path: "/a", key: "a", value: "bad" }, true);
 
     expect(parsePlan).toMatchObject({ kind: "parse", path: "/a", value: "bad" });
     expect(parsePlan?.kind === "parse" && parsePlan.schema.safeParse(parsePlan.value).success).toBe(false);
 
-    expect(planRootObjectReplaceValueValidation({
-      source: { kind: "record", schema: z.string(), acceptsKnownJson: (value) => typeof value === "string" },
-      operation: { op: "replace", path: "/dynamic", key: "dynamic", value: "ok" },
-      valuesTrusted: false,
-    })).toEqual({ kind: "accepted" });
+    expect(planRootObjectReplaceValueValidation({ kind: "record", schema: z.string(), acceptsKnownJson: (value) => typeof value === "string" }, { op: "replace", path: "/dynamic", key: "dynamic", value: "ok" }, false)).toEqual({ kind: "accepted" });
   });
 
   test("rejects root object replacement value validation without a value schema", () => {
-    expect(planRootObjectReplaceValueValidation({
-      source: { kind: "object", shape: { a: z.number() } },
-      operation: { op: "replace", path: "/missing", key: "missing", value: 1 },
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(planRootObjectReplaceValueValidation({ kind: "object", shape: { a: z.number() } }, { op: "replace", path: "/missing", key: "missing", value: 1 }, false)).toBeNull();
 
-    expect(planRootObjectReplaceValueValidation({
-      source: { kind: "object", shape: { a: undefined } },
-      operation: { op: "replace", path: "/a", key: "a", value: 1 },
-      valuesTrusted: false,
-    })).toBeNull();
+    expect(planRootObjectReplaceValueValidation({ kind: "object", shape: { a: undefined } }, { op: "replace", path: "/a", key: "a", value: 1 }, false)).toBeNull();
   });
 
   test("validates root object replacement values through object shape schemas", () => {
     const state = { a: 0, b: 0 };
 
-    expect(evaluateRootObjectReplaceValues({
-      state,
-      operations: [
+    expect(evaluateRootObjectReplaceValues(state, [
         { op: "replace", path: "/a", key: "a", value: 1 },
         { op: "replace", path: "/b", key: "b", value: 2 },
-      ],
-      source: { kind: "object", shape: { a: z.number(), b: z.number() } },
-      valuesTrusted: false,
-    })).toEqual({ ok: true });
+      ], { kind: "object", shape: { a: z.number(), b: z.number() } }, false)).toEqual({ ok: true });
 
-    expect(evaluateRootObjectReplaceValues({
-      state,
-      operations: [{ op: "replace", path: "/missing", key: "missing", value: 1 }],
-      source: { kind: "object", shape: { a: z.number() } },
-      valuesTrusted: false,
-    })).toEqual({ ok: false, result: null });
+    expect(evaluateRootObjectReplaceValues(state, [{ op: "replace", path: "/missing", key: "missing", value: 1 }], { kind: "object", shape: { a: z.number() } }, false)).toEqual({ ok: false, result: null });
   });
 
   test("validates root record replacement values through one record value schema", () => {
     const state = { a: 0 };
-    const result = evaluateRootObjectReplaceValues({
-      state,
-      operations: [{ op: "replace", path: "/a", key: "a", value: "bad" }],
-      source: {
+    const result = evaluateRootObjectReplaceValues(state, [{ op: "replace", path: "/a", key: "a", value: "bad" }], {
         kind: "record",
         schema: z.number(),
         acceptsKnownJson: () => false,
-      },
-      valuesTrusted: false,
-    });
+      }, false);
 
     expect(result.ok).toBe(false);
     if (result.ok) throw new Error("expected validation failure");
@@ -4159,30 +3021,22 @@ describe("root object replace patch planning", () => {
   test("applies planned root object replace strategies to data records", () => {
     const source = { a: 0, b: 0, c: 0 };
 
-    expect(applyRootObjectReplacePlan({
-      source,
-      sourceKeys: ["a", "b", "c"],
-      plan: {
+    expect(applyRootObjectReplacePlan(source, ["a", "b", "c"], {
         operations: [
           { op: "replace", path: "/a", key: "a", value: 1 },
           { op: "replace", path: "/b", key: "b", value: 2 },
           { op: "replace", path: "/c", key: "c", value: 3 },
         ],
         strategy: "orderedReplace",
-      },
-    })).toEqual({ a: 1, b: 2, c: 3 });
+      })).toEqual({ a: 1, b: 2, c: 3 });
 
-    expect(applyRootObjectReplacePlan({
-      source,
-      sourceKeys: ["a", "b", "c"],
-      plan: {
+    expect(applyRootObjectReplacePlan(source, ["a", "b", "c"], {
         operations: [
           { op: "replace", path: "/b", key: "b", value: 2 },
           { op: "replace", path: "/a", key: "a", value: 1 },
         ],
         strategy: "copyWrite",
-      },
-    })).toEqual({ a: 1, b: 2, c: 0 });
+      })).toEqual({ a: 1, b: 2, c: 0 });
   });
 
   test("keeps __proto__ as a data key when applying root object replacements", () => {
@@ -4194,14 +3048,10 @@ describe("root object replace patch planning", () => {
       writable: true,
     });
 
-    const result = applyRootObjectReplacePlan({
-      source,
-      sourceKeys: Object.keys(source),
-      plan: {
+    const result = applyRootObjectReplacePlan(source, Object.keys(source), {
         operations: [{ op: "replace", path: "/__proto__", key: "__proto__", value: { safe: true } }],
         strategy: "copyWrite",
-      },
-    });
+      });
 
     expect(Object.getPrototypeOf(result)).toBe(Object.prototype);
     expect(Object.prototype.hasOwnProperty.call(result, "__proto__")).toBe(true);
@@ -4262,76 +3112,41 @@ describe("root object replace patch planning", () => {
 
 describe("same array field replace patch planning", () => {
   test("plans same-field replacement operations within a known array and field", () => {
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/items",
-      field: "name",
-      fieldText: { prefixText: "/items/", suffixText: "/name" },
-      operations: [
+    expect(planSameArrayFieldReplaceOperations([
         { op: "replace", path: "/items/0/name", value: "A" },
         { op: "replace", path: "/items/2/name", value: "B" },
-      ],
-    })).toEqual([
+      ], "/items", "name", { prefixText: "/items/", suffixText: "/name" })).toEqual([
       { op: "replace", path: "/items/0/name", index: 0, value: "A" },
       { op: "replace", path: "/items/2/name", index: 2, value: "B" },
     ]);
 
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/a~1b",
-      field: "x/y",
-      fieldText: { prefixText: "/a~1b/", suffixText: "/x~1y" },
-      operations: [
+    expect(planSameArrayFieldReplaceOperations([
         { op: "replace", path: "/a~1b/0/x~1y", value: "A" },
         { op: "replace", path: "/a~1b/1/x~1y", value: "B" },
-      ],
-    })).toEqual([
+      ], "/a~1b", "x/y", { prefixText: "/a~1b/", suffixText: "/x~1y" })).toEqual([
       { op: "replace", path: "/a~1b/0/x~1y", index: 0, value: "A" },
       { op: "replace", path: "/a~1b/1/x~1y", index: 1, value: "B" },
     ]);
   });
 
   test("rejects same-field replacement operations outside a known array and field", () => {
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/items",
-      field: "name",
-      fieldText: { prefixText: "/items/", suffixText: "/name" },
-      operations: [{ op: "replace", path: "/items/0/name", value: "A" }],
-    })).toBeNull();
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/items",
-      field: "name",
-      fieldText: { prefixText: "/items/", suffixText: "/name" },
-      operations: [
+    expect(planSameArrayFieldReplaceOperations([{ op: "replace", path: "/items/0/name", value: "A" }], "/items", "name", { prefixText: "/items/", suffixText: "/name" })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations([
         { op: "replace", path: "/items/0/name", value: "A" },
         { op: "replace", path: "/items/1/title", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/items",
-      field: "name",
-      fieldText: { prefixText: "/items/", suffixText: "/name" },
-      operations: [
+      ], "/items", "name", { prefixText: "/items/", suffixText: "/name" })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations([
         { op: "replace", path: "/items/0/name", value: "A" },
         { op: "replace", path: "/other/1/name", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/items",
-      field: "name",
-      fieldText: { prefixText: "/items/", suffixText: "/name" },
-      operations: [
+      ], "/items", "name", { prefixText: "/items/", suffixText: "/name" })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations([
         { op: "replace", path: "/items/01/name", value: "A" },
         { op: "replace", path: "/items/2/name", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planSameArrayFieldReplaceOperations({
-      arrayPath: "/items",
-      field: "name",
-      fieldText: { prefixText: "/items/", suffixText: "/name" },
-      operations: [
+      ], "/items", "name", { prefixText: "/items/", suffixText: "/name" })).toBeNull();
+    expect(planSameArrayFieldReplaceOperations([
         { op: "replace", path: "/items/0/name", value: "A" },
         { op: "replace", path: "/items/1/name/first", value: "B" },
-      ],
-    })).toBeNull();
+      ], "/items", "name", { prefixText: "/items/", suffixText: "/name" })).toBeNull();
   });
 
   test("plans same-field replacements across one array", () => {
@@ -4464,50 +3279,29 @@ describe("same array field replace patch planning", () => {
 
 describe("same array element replace patch planning", () => {
   test("plans element replacement operations within a known parent", () => {
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/items",
-      operations: [
+    expect(planSameArrayElementReplaceOperations([
         { op: "replace", path: "/items/0", value: "A" },
         { op: "replace", path: "/items/2", value: "B" },
-      ],
-    })).toEqual([
+      ], "/items")).toEqual([
       { op: "replace", path: "/items/0", index: 0, value: "A" },
       { op: "replace", path: "/items/2", index: 2, value: "B" },
     ]);
 
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/a~1b",
-      operations: [
+    expect(planSameArrayElementReplaceOperations([
         { op: "replace", path: "/a~1b/0", value: "A" },
         { op: "replace", path: "/a~1b/1", value: "B" },
-      ],
-    })).toEqual([
+      ], "/a~1b")).toEqual([
       { op: "replace", path: "/a~1b/0", index: 0, value: "A" },
       { op: "replace", path: "/a~1b/1", index: 1, value: "B" },
     ]);
   });
 
   test("rejects element replacement operations outside a known parent", () => {
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/items",
-      operations: [],
-    })).toBeNull();
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/items",
-      operations: [{ op: "add", path: "/items/0", value: "A" }],
-    })).toBeNull();
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/items",
-      operations: [{ op: "replace", path: "/items/0/name", value: "A" }],
-    })).toBeNull();
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/items",
-      operations: [{ op: "replace", path: "/other/0", value: "A" }],
-    })).toBeNull();
-    expect(planSameArrayElementReplaceOperations({
-      parent: "/items",
-      operations: [{ op: "replace", path: "/items/01", value: "A" }],
-    })).toBeNull();
+    expect(planSameArrayElementReplaceOperations([], "/items")).toBeNull();
+    expect(planSameArrayElementReplaceOperations([{ op: "add", path: "/items/0", value: "A" }], "/items")).toBeNull();
+    expect(planSameArrayElementReplaceOperations([{ op: "replace", path: "/items/0/name", value: "A" }], "/items")).toBeNull();
+    expect(planSameArrayElementReplaceOperations([{ op: "replace", path: "/other/0", value: "A" }], "/items")).toBeNull();
+    expect(planSameArrayElementReplaceOperations([{ op: "replace", path: "/items/01", value: "A" }], "/items")).toBeNull();
   });
 
   test("plans element replacements across one array", () => {
@@ -4601,10 +3395,7 @@ describe("same array element replace patch planning", () => {
 
 describe("same array nested replace patch planning", () => {
   test("reads first array nested paths from state and pointer paths", () => {
-    expect(readFirstArrayNestedPath({
-      state: { items: [{ meta: { title: "old" } }] },
-      path: "/items/0/meta/title",
-    })).toEqual({
+    expect(readFirstArrayNestedPath({ items: [{ meta: { title: "old" } }] }, "/items/0/meta/title")).toEqual({
       arrayPath: "/items",
       arraySegments: ["items"],
       index: 0,
@@ -4613,10 +3404,7 @@ describe("same array nested replace patch planning", () => {
       suffixSegments: ["meta", "title"],
     });
 
-    expect(readFirstArrayNestedPath({
-      state: [{ meta: { title: "old" } }],
-      path: "/0/meta/title",
-    })).toEqual({
+    expect(readFirstArrayNestedPath([{ meta: { title: "old" } }], "/0/meta/title")).toEqual({
       arrayPath: "",
       arraySegments: [],
       index: 0,
@@ -4625,10 +3413,7 @@ describe("same array nested replace patch planning", () => {
       suffixSegments: ["meta", "title"],
     });
 
-    expect(readFirstArrayNestedPath({
-      state: { "a/b": [{ "x/y": { value: 0 } }] },
-      path: "/a~1b/0/x~1y/value",
-    })).toEqual({
+    expect(readFirstArrayNestedPath({ "a/b": [{ "x/y": { value: 0 } }] }, "/a~1b/0/x~1y/value")).toEqual({
       arrayPath: "/a~1b",
       arraySegments: ["a/b"],
       index: 0,
@@ -4639,105 +3424,51 @@ describe("same array nested replace patch planning", () => {
   });
 
   test("rejects first array nested paths without a state-backed array target", () => {
-    expect(readFirstArrayNestedPath({
-      state: { items: [{ meta: { title: "old" } }] },
-      path: "/items/0",
-    })).toBeNull();
+    expect(readFirstArrayNestedPath({ items: [{ meta: { title: "old" } }] }, "/items/0")).toBeNull();
 
-    expect(readFirstArrayNestedPath({
-      state: { items: [{ meta: { title: "old" } }] },
-      path: "/items/01/meta/title",
-    })).toBeNull();
+    expect(readFirstArrayNestedPath({ items: [{ meta: { title: "old" } }] }, "/items/01/meta/title")).toBeNull();
 
-    expect(readFirstArrayNestedPath({
-      state: { items: { 0: { meta: { title: "old" } } } },
-      path: "/items/0/meta/title",
-    })).toBeNull();
+    expect(readFirstArrayNestedPath({ items: { 0: { meta: { title: "old" } } } }, "/items/0/meta/title")).toBeNull();
 
-    expect(readFirstArrayNestedPath({
-      state: null,
-      path: "/0/meta/title",
-    })).toBeNull();
+    expect(readFirstArrayNestedPath(null, "/0/meta/title")).toBeNull();
   });
 
   test("plans nested replacement operations within a known array and suffix", () => {
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/items",
-      suffixSegments: ["meta", "title"],
-      prefixText: "/items/",
-      suffixText: "/meta/title",
-      operations: [
+    expect(planSameArrayNestedReplaceOperations([
         { op: "replace", path: "/items/0/meta/title", value: "A" },
         { op: "replace", path: "/items/1/meta/title", value: "B" },
-      ],
-    })).toEqual([
+      ], "/items", ["meta", "title"], "/items/", "/meta/title")).toEqual([
       { op: "replace", path: "/items/0/meta/title", index: 0, value: "A" },
       { op: "replace", path: "/items/1/meta/title", index: 1, value: "B" },
     ]);
 
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/a~1b",
-      suffixSegments: ["x/y", "value"],
-      prefixText: "/a~1b/",
-      suffixText: "/x~1y/value",
-      operations: [
+    expect(planSameArrayNestedReplaceOperations([
         { op: "replace", path: "/a~1b/0/x~1y/value", value: 10 },
         { op: "replace", path: "/a~1b/1/x~1y/value", value: 11 },
-      ],
-    })).toEqual([
+      ], "/a~1b", ["x/y", "value"], "/a~1b/", "/x~1y/value")).toEqual([
       { op: "replace", path: "/a~1b/0/x~1y/value", index: 0, value: 10 },
       { op: "replace", path: "/a~1b/1/x~1y/value", index: 1, value: 11 },
     ]);
   });
 
   test("rejects nested replacement operations outside a known array and suffix", () => {
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/items",
-      suffixSegments: ["meta", "title"],
-      prefixText: "/items/",
-      suffixText: "/meta/title",
-      operations: [{ op: "replace", path: "/items/0/meta/title", value: "A" }],
-    })).toBeNull();
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/items",
-      suffixSegments: ["meta", "title"],
-      prefixText: "/items/",
-      suffixText: "/meta/title",
-      operations: [
+    expect(planSameArrayNestedReplaceOperations([{ op: "replace", path: "/items/0/meta/title", value: "A" }], "/items", ["meta", "title"], "/items/", "/meta/title")).toBeNull();
+    expect(planSameArrayNestedReplaceOperations([
         { op: "replace", path: "/items/0/meta/title", value: "A" },
         { op: "replace", path: "/items/1/meta/label", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/items",
-      suffixSegments: ["meta", "title"],
-      prefixText: "/items/",
-      suffixText: "/meta/title",
-      operations: [
+      ], "/items", ["meta", "title"], "/items/", "/meta/title")).toBeNull();
+    expect(planSameArrayNestedReplaceOperations([
         { op: "replace", path: "/items/0/meta/title", value: "A" },
         { op: "replace", path: "/other/1/meta/title", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/items",
-      suffixSegments: ["meta", "title"],
-      prefixText: "/items/",
-      suffixText: "/meta/title",
-      operations: [
+      ], "/items", ["meta", "title"], "/items/", "/meta/title")).toBeNull();
+    expect(planSameArrayNestedReplaceOperations([
         { op: "add", path: "/items/0/meta/title", value: "A" },
         { op: "replace", path: "/items/1/meta/title", value: "B" },
-      ],
-    })).toBeNull();
-    expect(planSameArrayNestedReplaceOperations({
-      arrayPath: "/items",
-      suffixSegments: ["meta", "title"],
-      prefixText: "/items/",
-      suffixText: "/meta/title",
-      operations: [
+      ], "/items", ["meta", "title"], "/items/", "/meta/title")).toBeNull();
+    expect(planSameArrayNestedReplaceOperations([
         { op: "replace", path: "/items/01/meta/title", value: "A" },
         { op: "replace", path: "/items/2/meta/title", value: "B" },
-      ],
-    })).toBeNull();
+      ], "/items", ["meta", "title"], "/items/", "/meta/title")).toBeNull();
   });
 
   test("plans nested replacements across one array", () => {
