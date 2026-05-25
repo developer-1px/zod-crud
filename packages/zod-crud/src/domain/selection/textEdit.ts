@@ -1,6 +1,6 @@
 import { cloneJson } from "../../foundation/json/clone.js";
-import type { JSONPatchOperation } from "../../foundation/json-patch/types.js";
-import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { JSONPatchOperation } from "../../foundation/patch/types.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import {
   cursorPoints,
   emptyTraversalPointer,

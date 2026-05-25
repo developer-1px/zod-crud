@@ -3,7 +3,7 @@ import * as z from "zod";
 
 import {
   createSchemaState,
-} from "../../../src/application/document/schema/core.js";
+} from "../../../src/application/document/schema.js";
 
 const Schema = z.object({
   title: z.string().min(1),

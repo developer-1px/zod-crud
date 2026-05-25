@@ -1,4 +1,4 @@
-import type { Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import type { Pointer } from "../../foundation/pointer/index.js";
 
 type JSONPrimitive = string | number | boolean | null;
 

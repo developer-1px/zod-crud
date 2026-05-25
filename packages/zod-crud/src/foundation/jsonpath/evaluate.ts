@@ -3,9 +3,9 @@
 
 import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./types.js";
 import { jsonEqual } from "../json/equal.js";
-import { evaluateArrayRegexFilter, evaluateArrayWildcardField } from "./evaluateFastPath.js";
-import { evaluateSimpleQuery, evaluateSinglePathQuery } from "./evaluateSimple.js";
-import { compiledRegex, escapeSeg, normalizeSliceIndex, objectHasOwn } from "./evaluateShared.js";
+import { evaluateArrayRegexFilter, evaluateArrayWildcardField } from "./fast.js";
+import { evaluateSimpleQuery, evaluateSinglePathQuery } from "./simple.js";
+import { compiledRegex, escapeSeg, normalizeSliceIndex, objectHasOwn } from "./support.js";
 
 /** root JSON 입력에 query 적용 → matches. 결과 순서: RFC 9535 정합 (DFS). */
 export function evaluate(query: Query, root: unknown): Match[] {

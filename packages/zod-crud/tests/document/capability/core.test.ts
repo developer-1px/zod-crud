@@ -18,11 +18,11 @@ import {
   planDocumentRemoveCapability,
   planDocumentReplaceCapability,
   planDocumentReplaceTextCapability,
-} from "../../../src/application/document/capability/checks.js";
+} from "../../../src/application/document/can/check.js";
 import type {
   DocumentCapabilityContext,
-} from "../../../src/application/document/capability/facadeTypes.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
+} from "../../../src/application/document/can/types.js";
+import type { JSONPatchOperation } from "../../../src/foundation/patch/types.js";
 import type { SelectionSnap } from "../../../src/domain/selection/types.js";
 
 const Item = z.object({ id: z.string(), name: z.string() });

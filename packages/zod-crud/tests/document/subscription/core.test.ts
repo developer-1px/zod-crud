@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   planDocumentSubscriptionChange,
   planDocumentSubscriptionMetadata,
-} from "../../../src/application/document/plan/change.js";
+} from "../../../src/application/document/state/change.js";
 import type { SelectionSnap } from "../../../src/domain/selection/types.js";
 
 const emptySelection: SelectionSnap = {

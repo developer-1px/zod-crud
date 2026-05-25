@@ -3,7 +3,7 @@ import * as z from "zod";
 
 import {
   planDocumentCanPaste,
-} from "../../../src/application/document/plan/interaction.js";
+} from "../../../src/application/document/state/commit.js";
 import type { ClipboardPeekResult } from "../../../src/application/document/clipboard/types.js";
 
 const Schema = z.object({

@@ -5,22 +5,22 @@
 // React peer is not required for pure JSON Patch / Pointer consumers.
 
 import type * as z from "zod";
-import { applyPatchWithLocalSchemaValidation } from "./domain/schema/local/validation.js";
-import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "./foundation/json-patch/applyPublic.js";
+import { applyPatchWithLocalSchemaValidation } from "./domain/schema/validation/patch.js";
+import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "./foundation/patch/schema.js";
 import type {
   ApplyResult,
   JSONPatchOperation,
-} from "./foundation/json-patch/types.js";
+} from "./foundation/patch/types.js";
 
 // === Boundary error + document metadata ===
-export { JSONCrudError } from "./foundation/errors.js";
+export { JSONCrudError } from "./foundation/error.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "./application/document/runtime/stateOps.js";
+} from "./application/document/state/types.js";
 
 // === Headless document facade ===
-export { createJSONDocument } from "./application/document/createJSONDocument.js";
+export { createJSONDocument } from "./application/document/create.js";
 export type {
   JSONCapabilityResult,
   JSONDocumentCommitOptions,
@@ -32,7 +32,7 @@ export type {
   JSONDocument,
   JSONPatchInput,
   UseJSONDocumentOptions,
-} from "./application/document/publicTypes.js";
+} from "./application/document/types.js";
 export type {
   ClipboardCopyOptions,
   ClipboardCutOk,
@@ -53,7 +53,7 @@ export type {
   QueryResult,
   ReadEntry,
   ReadResult,
-} from "./application/document/read/core.js";
+} from "./application/document/read.js";
 export type {
   SchemaDescription,
   SchemaDescriptionResult,
@@ -64,18 +64,18 @@ export type {
   SchemaPathMode,
   SchemaQueryResult,
   SchemaState,
-} from "./application/document/schema/core.js";
+} from "./application/document/schema.js";
 export type {
   SelectionState,
-} from "./application/document/selection/core.js";
-export type { UseSelectionOptions } from "./application/document/selection/plan.js";
+} from "./application/document/selection/create.js";
+export type { UseSelectionOptions } from "./application/document/selection/action.js";
 
 // === RFC 6902 — JSON Patch ===
-export { applyOperation, applyPatch } from "./foundation/json-patch/applyPublic.js";
+export { applyOperation, applyPatch } from "./foundation/patch/schema.js";
 export type {
   JSONPatchOperation,
   JSONResult,
-} from "./foundation/json-patch/types.js";
+} from "./foundation/patch/types.js";
 
 export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   schema: S,
@@ -99,8 +99,8 @@ export {
   lastSegmentIndex,
   appendSegment,
   withLastSegment,
-} from "./foundation/json-pointer/pointerCore.js";
-export type { Pointer } from "./foundation/json-pointer/pointerCore.js";
+} from "./foundation/pointer/index.js";
+export type { Pointer } from "./foundation/pointer/index.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
@@ -153,19 +153,19 @@ export type {
   ClipboardSource,
   CopyError,
   CopyOk,
-} from "./domain/verbs/copy.js";
+} from "./domain/copy.js";
 export type {
   CutError,
   CutOk,
-} from "./domain/verbs/cut.js";
+} from "./domain/cut.js";
 export type {
   DuplicateError,
   DuplicateOk,
-} from "./domain/verbs/duplicate.js";
+} from "./domain/duplicate.js";
 export type {
   PasteDuMismatch,
   PasteError,
   PasteOptions,
   PasteTarget,
-} from "./domain/verbs/paste.js";
-export { trackPointer } from "./domain/tracking/pointer.js";
+} from "./domain/paste.js";
+export { trackPointer } from "./domain/pointer/track.js";

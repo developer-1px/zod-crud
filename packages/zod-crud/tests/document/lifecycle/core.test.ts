@@ -2,7 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import {
   planDocumentLifecycleChange,
-} from "../../../src/application/document/plan/change.js";
+} from "../../../src/application/document/state/change.js";
 
 describe("document lifecycle core functions", () => {
   test("syncs lastPatch and clears history after successful replacement by default", () => {

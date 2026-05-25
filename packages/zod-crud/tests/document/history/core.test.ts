@@ -6,7 +6,7 @@ import {
   planDocumentChangeHistoryRecord,
   planDocumentChangeMetadata,
   planDocumentChangeSelection,
-} from "../../../src/application/document/plan/change.js";
+} from "../../../src/application/document/state/change.js";
 import {
   planCompactedRepeatedReplaceBatchHistory,
   planDocumentHistoryAppend,
@@ -17,7 +17,7 @@ import {
   planDocumentHistoryRestoreCompletion,
   planDocumentHistoryRestoreFlow,
   planRootBulkHistorySnapshot,
-} from "../../../src/application/document/plan/history.js";
+} from "../../../src/application/document/history/restore.js";
 import {
   buildChangeMetadata,
   compactHistoryMetadata,
@@ -29,15 +29,15 @@ import {
   planDocumentTransactionCall,
   planDocumentTransactionScope,
   planMergedDocumentHistoryEntry,
-} from "../../../src/application/document/plan/metadata.js";
+} from "../../../src/application/document/history/metadata.js";
 import {
   planDocumentTransactionAppendCompact,
   planDocumentTransactionAppendFastPath,
   planDocumentTransactionMerge,
   planDocumentTransactionMergeRange,
   planDocumentTransactionMergeWrite,
-} from "../../../src/application/document/plan/transaction.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
+} from "../../../src/application/document/history/transaction.js";
+import type { JSONPatchOperation } from "../../../src/foundation/patch/types.js";
 import type { SelectionSnap } from "../../../src/domain/selection/types.js";
 
 const emptySelection: SelectionSnap = {

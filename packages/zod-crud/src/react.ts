@@ -3,11 +3,11 @@
 import { useMemo, useReducer, useRef } from "react";
 import type * as z from "zod";
 
-import { createJSONDocument } from "./application/document/createJSONDocument.js";
+import { createJSONDocument } from "./application/document/create.js";
 import type {
   JSONDocument,
   UseJSONDocumentOptions,
-} from "./application/document/publicTypes.js";
+} from "./application/document/types.js";
 
 type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
 type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };

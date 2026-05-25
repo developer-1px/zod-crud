@@ -20,10 +20,10 @@ import {
   planSameArrayNestedReplacePatch,
   planSingleArrayFieldReplace,
   replaceArrayField,
-} from "../../../src/domain/schema/local/arrayReplace.js";
+} from "../../../src/domain/schema/array/replace.js";
 import {
   acceptsKnownJsonValue,
-} from "../../../src/domain/schema/local/knownJson.js";
+} from "../../../src/domain/schema/validation/knownJson.js";
 import {
   applySequentialLocalOperation,
   applySequentialLocalOperationPatch,
@@ -34,7 +34,7 @@ import {
   planSameArrayPatch,
   planSameArrayPatchOperations,
   planSequentialPatch,
-} from "../../../src/domain/schema/local/validation.js";
+} from "../../../src/domain/schema/validation/patch.js";
 import {
   applyArrayAddPlan,
   applyValidatedArrayAddPlanAtSegments,
@@ -43,7 +43,7 @@ import {
   planAppendOnlyArrayAddValues,
   planIncreasingArrayAddPatch,
   planIncreasingArrayAddValues,
-} from "../../../src/domain/schema/local/arrayAdd.js";
+} from "../../../src/domain/schema/array/add.js";
 import {
   applyReplaceOperations,
   applySingleReplaceOperation,
@@ -53,7 +53,7 @@ import {
   planIndependentReplacePatch,
   planKnownJsonReplaceOperations,
   planSingleReplacePatch,
-} from "../../../src/domain/schema/local/replace.js";
+} from "../../../src/domain/schema/validation/replace.js";
 import {
   applyRootObjectReplacePlan,
   applySingleRootObjectReplacePlan,
@@ -64,7 +64,7 @@ import {
   planRootObjectReplaceValueValidation,
   planSingleRootObjectReplacePatch,
   readRootRecordForLocalSchemaValidation,
-} from "../../../src/domain/schema/local/rootReplace.js";
+} from "../../../src/domain/schema/object/replace.js";
 import {
   applyRootRecordAddPlan,
   applyRootRecordRemovePlan,
@@ -74,12 +74,12 @@ import {
   planRootRecordAddValueValidation,
   planRootRecordRemoveOperations,
   planRootRecordRemovePatch,
-} from "../../../src/domain/schema/local/rootRecord.js";
+} from "../../../src/domain/schema/object/record.js";
 import {
   arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
   prefixIssues,
-} from "../../../src/domain/schema/local/info.js";
+} from "../../../src/domain/schema/validation/schema.js";
 import {
   arrayIndexInParent,
   arrayIndexPathLocation,
@@ -87,30 +87,30 @@ import {
   planIndependentReplacePaths,
   readAppliedLocalOpSourceValue,
   readArrayAtSegments,
-} from "../../../src/domain/schema/local/path.js";
+} from "../../../src/domain/schema/array/path.js";
 import {
   appendArrayIndexPath,
   numericSegment,
   parseFirstArrayNestedPath as readFirstArrayNestedPath,
-} from "../../../src/foundation/json-patch/path.js";
-import { replaceValueAtSegments } from "../../../src/foundation/json-patch/replaceValueAtSegments.js";
+} from "../../../src/foundation/patch/path.js";
+import { replaceValueAtSegments } from "../../../src/foundation/patch/replaceValue.js";
 import {
   createDataKeySet,
   copyRootRecordKeyPrefix,
   replaceObjectDataValue,
   writeObjectDataValue,
   writeRootRecordValue,
-} from "../../../src/domain/schema/local/object.js";
+} from "../../../src/domain/schema/object/value.js";
 import {
   failedLocalSchemaValidation,
   okLocalSchemaValidation,
-} from "../../../src/domain/schema/local/result.js";
+} from "../../../src/domain/schema/validation/result.js";
 import {
   rootRecordValueSchemaForLocalSchemaValidation,
-} from "../../../src/domain/schema/local/rootRecord.js";
+} from "../../../src/domain/schema/object/record.js";
 import {
   rootObjectReplaceValueSourceForLocalSchemaValidation,
-} from "../../../src/domain/schema/local/rootReplace.js";
+} from "../../../src/domain/schema/object/replace.js";
 import {
   toAppliedAddOperations,
   toAppliedRemoveOperations,
@@ -121,8 +121,8 @@ import {
   evaluateLocalSchemaValidationValueValidationPlan,
   planArrayAddAppliedOperations,
   planLocalSchemaValidationValueValidation,
-} from "../../../src/domain/schema/local/valueValidation.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
+} from "../../../src/domain/schema/validation/value.js";
+import type { JSONPatchOperation } from "../../../src/foundation/patch/types.js";
 
 describe("local patch value validation planning", () => {
   test("accepts known-json values without schema parsing", () => {

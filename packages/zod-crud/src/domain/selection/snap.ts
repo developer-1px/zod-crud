@@ -5,7 +5,7 @@ import {
   readAt,
   tryParsePointer,
   type Pointer,
-} from "../../foundation/json-pointer/pointerCore.js";
+} from "../../foundation/pointer/index.js";
 import {
   EMPTY_SELECTION,
   type JSONPoint,

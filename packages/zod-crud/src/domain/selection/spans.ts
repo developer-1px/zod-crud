@@ -1,4 +1,4 @@
-import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/pointerCore.js";
+import { readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import { cursorPoints } from "./traversal.js";
 import type {
   JSONPoint,

@@ -11,10 +11,10 @@
 //
 // SPEC §0.3 (2) 표준 Path: RFC 6901 + RFC 9535. JSONPath query → Pointer[] 환원.
 
-import { parse as parseJsonPath } from "./parser.js";
+import { parse as parseJsonPath } from "./parse.js";
 import { evaluate, matchPointers } from "./evaluate.js";
-import { matchPointersForSimpleQuery } from "./evaluateSimple.js";
-import type { Pointer } from "../json-pointer/pointerCore.js";
+import { matchPointersForSimpleQuery } from "./simple.js";
+import type { Pointer } from "../pointer/index.js";
 import type { Match, Query } from "./types.js";
 
 const QUERY_CACHE_LIMIT = 128;

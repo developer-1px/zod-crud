@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 
-import { planDocumentPatchCall } from "../../../src/application/document/plan/interaction.js";
-import type { JSONPatchOperation } from "../../../src/foundation/json-patch/types.js";
+import { planDocumentPatchCall } from "../../../src/application/document/state/commit.js";
+import type { JSONPatchOperation } from "../../../src/foundation/patch/types.js";
 
 describe("document patch core functions", () => {
   test("plans single patch operations as owned one-item arrays", () => {

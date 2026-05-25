@@ -3,7 +3,7 @@ import * as z from "zod";
 
 import {
   buildReadFacade,
-} from "../../../src/application/document/read/core.js";
+} from "../../../src/application/document/read.js";
 
 const Schema = z.object({
   title: z.string(),
