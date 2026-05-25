@@ -3,7 +3,7 @@ import { describe, expect, test } from "vitest";
 import {
   planDocumentLastPatch,
   planDocumentLifecycleChange,
-} from "../../../src/application/document/createJSONDocument.js";
+} from "../../../src/application/document/createJSONDocumentChangePlan.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
 
 describe("document lifecycle core functions", () => {

@@ -2,7 +2,7 @@ import { JSONPathSyntaxError, parse as parseJSONPath } from "../../foundation/js
 import {
   OK,
   type CapabilityResult,
-} from "./capabilityTypes.js";
+} from "./capabilityResultTypes.js";
 
 export function canDocumentFind(jsonpath: string): CapabilityResult {
   try {

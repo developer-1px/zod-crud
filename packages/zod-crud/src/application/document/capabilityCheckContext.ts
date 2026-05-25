@@ -4,7 +4,7 @@ import {
   EMPTY_SELECTION,
   type SelectionSnap,
 } from "../../domain/selection/index.js";
-import type { DocumentCapabilityContext } from "./capabilityTypes.js";
+import type { DocumentCapabilityContext } from "./capabilityFacadeTypes.js";
 
 export function documentSelectionState<S extends z.ZodType>(
   context: DocumentCapabilityContext<S>,

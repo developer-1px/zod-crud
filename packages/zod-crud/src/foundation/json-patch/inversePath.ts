@@ -1,5 +1,5 @@
 import { buildPointer, parentPointer, parsePointer, readAt } from "../json-pointer/index.js";
-import type { JSONPatchOperation } from "./index.js";
+import type { JSONPatchOperation } from "./types.js";
 import { getValueAt } from "./internal.js";
 
 export const objectHasOwn = Object.prototype.hasOwnProperty;

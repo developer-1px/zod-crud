@@ -5,8 +5,9 @@ import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patchPreflight.js";
-import { getDef, getDiscriminatedUnionInfo, getObjectShape, schemaAtPointer } from "../schema/introspection.js";
+import { getDiscriminatedUnionInfo, schemaAtPointer } from "../schema/introspection.js";
 import { tryRekeyPayload, type RekeyOptions } from "../schema/rekey.js";
+import { getDef, getObjectShape } from "../schema/zodIntrospectionAdapter.js";
 
 type PasteMode = "before" | "after" | "into" | "replace";
 export type PasteTarget =

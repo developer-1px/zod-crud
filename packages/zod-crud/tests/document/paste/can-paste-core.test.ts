@@ -5,7 +5,7 @@ import {
   canTrustSameSourceReplaceCanPaste,
   planDocumentCanPaste,
   planDocumentPasteReplaceTarget,
-} from "../../../src/application/document/createJSONDocument.js";
+} from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
 import type { ClipboardPeekResult } from "../../../src/application/document/clipboard.js";
 
 const Schema = z.object({

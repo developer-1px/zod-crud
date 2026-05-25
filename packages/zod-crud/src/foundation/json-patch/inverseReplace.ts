@@ -1,5 +1,5 @@
 import { parsePointer } from "../json-pointer/index.js";
-import type { JSONPatchOperation } from "./index.js";
+import type { JSONPatchOperation } from "./types.js";
 import { getValueAt } from "./internal.js";
 
 export function computeIndependentReplaceInverses(

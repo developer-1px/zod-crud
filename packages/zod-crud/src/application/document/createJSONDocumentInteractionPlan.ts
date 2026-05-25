@@ -2,7 +2,7 @@ import type * as z from "zod";
 import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 import { reduceSelection, restoreSelection, type SelectionAction, type SelectionSnap } from "../../domain/selection/index.js";
-import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/localSchemaValidation.js";
+import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/localSchemaCore.js";
 import type { ClipboardPeekResult } from "./clipboard.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
 import type {

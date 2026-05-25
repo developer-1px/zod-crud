@@ -18,11 +18,13 @@ import {
 } from "./capabilityChecks.js";
 import {
   OK,
-  type BuildDocumentCapabilitiesArgs,
   type CapabilityResult,
-  type DocumentCapabilities,
-  type DocumentCapabilityContext,
-} from "./capabilityTypes.js";
+} from "./capabilityResultTypes.js";
+import type {
+  BuildDocumentCapabilitiesArgs,
+  DocumentCapabilities,
+  DocumentCapabilityContext,
+} from "./capabilityFacadeTypes.js";
 
 export {
   canDocumentCopy,
@@ -56,28 +58,34 @@ export {
   planDocumentReplaceTextCapability,
 } from "./capabilityPlan.js";
 export type {
-  BuildDocumentCapabilitiesArgs,
   CapabilityErrorCode,
-  CapabilityHistoryControls,
-  CapabilityPasteExecutionOptions,
   CapabilityResult,
   CapabilityViolation,
-  DocumentCapabilities,
-  DocumentCapabilityContext,
   DocumentCapabilitySourceResult,
-  DocumentReplaceArgsPlan,
+} from "./capabilityResultTypes.js";
+export type {
+  CapabilityPasteExecutionOptions,
   PlanDocumentCopyCapabilityInput,
   PlanDocumentCutCapabilityInput,
+  PlanDocumentPasteCapabilityInput,
+} from "./capabilityClipboardTypes.js";
+export type {
+  BuildDocumentCapabilitiesArgs,
+  CapabilityHistoryControls,
+  DocumentCapabilities,
+  DocumentCapabilityContext,
+} from "./capabilityFacadeTypes.js";
+export type {
+  DocumentReplaceArgsPlan,
   PlanDocumentDeleteTextCapabilityInput,
   PlanDocumentDuplicateCapabilityInput,
   PlanDocumentMoveCapabilityInput,
-  PlanDocumentPasteCapabilityInput,
   PlanDocumentPatchCapabilityInput,
   PlanDocumentRemoveCapabilityInput,
   PlanDocumentReplaceArgsInput,
   PlanDocumentReplaceCapabilityInput,
   PlanDocumentReplaceTextCapabilityInput,
-} from "./capabilityTypes.js";
+} from "./capabilityMutationTypes.js";
 
 export function buildDocumentCapabilities<S extends z.ZodType>(
   args: BuildDocumentCapabilitiesArgs<S>,

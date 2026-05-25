@@ -7,7 +7,7 @@ import {
   planDocumentCommitRoute,
   planDocumentCommitSelection,
   shouldRecordDocumentCommitHistory,
-} from "../../../src/application/document/createJSONDocument.js";
+} from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
 import type { SelectionSnap } from "../../../src/domain/selection/index.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
 

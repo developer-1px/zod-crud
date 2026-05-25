@@ -1,6 +1,6 @@
 import type * as z from "zod";
 
-import { applyPatchWithLocalSchemaValidation } from "../domain/schema/localSchemaValidation.js";
+import { applyPatchWithLocalSchemaValidation } from "../domain/schema/localSchemaCore.js";
 import {
   applyPatchToTrustedState as applyPatchToTrustedStateCore,
   type ApplyResult,

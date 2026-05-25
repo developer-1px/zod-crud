@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 
-import { planDocumentSelectionRuntime } from "../../../src/application/document/createJSONDocument.js";
+import { planDocumentSelectionRuntime } from "../../../src/application/document/createJSONDocumentInteractionPlan.js";
 import {
   planInitialSelection,
   planSelectionPatchUpdate,

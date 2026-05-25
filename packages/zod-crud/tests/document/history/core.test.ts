@@ -1,37 +1,43 @@
 import { describe, expect, test } from "vitest";
 
 import {
-  buildChangeMetadata,
-  compactHistoryMetadata,
-  planDocumentActiveHistoryMetadata,
   planDocumentChangeApplyResult,
   planDocumentChangeCapture,
   planDocumentChangeHistoryRecord,
   planDocumentChangeMetadata,
   planDocumentChangeSelection,
+  shouldCaptureDocumentChangeMetadata,
+} from "../../../src/application/document/createJSONDocumentChangePlan.js";
+import {
   planCompactedRepeatedReplaceBatchHistory,
-  planCompactedRepeatedReplaceHistory,
   planDocumentHistoryAppend,
   planDocumentHistoryEntry,
-  planDocumentHistoryMergeLast,
-  planDocumentHistoryMergeMetadata,
-  planDocumentHistoryMergeLastWrite,
   planDocumentHistoryRecord,
   planDocumentHistoryRestore,
   planDocumentHistoryRestoreApply,
   planDocumentHistoryRestoreCompletion,
   planDocumentHistoryRestoreFlow,
+  planRootBulkHistorySnapshot,
+} from "../../../src/application/document/createJSONDocumentHistoryPlan.js";
+import {
+  buildChangeMetadata,
+  compactHistoryMetadata,
+  planCompactedRepeatedReplaceHistory,
+  planDocumentActiveHistoryMetadata,
+  planDocumentHistoryMergeLast,
+  planDocumentHistoryMergeLastWrite,
+  planDocumentHistoryMergeMetadata,
+  planDocumentTransactionCall,
+  planDocumentTransactionScope,
+  planMergedDocumentHistoryEntry,
+} from "../../../src/application/document/createJSONDocumentMetadataPlan.js";
+import {
   planDocumentTransactionAppendCompact,
   planDocumentTransactionAppendFastPath,
-  planDocumentTransactionCall,
   planDocumentTransactionMerge,
   planDocumentTransactionMergeRange,
   planDocumentTransactionMergeWrite,
-  planDocumentTransactionScope,
-  planMergedDocumentHistoryEntry,
-  planRootBulkHistorySnapshot,
-  shouldCaptureDocumentChangeMetadata,
-} from "../../../src/application/document/createJSONDocument.js";
+} from "../../../src/application/document/createJSONDocumentTransactionPlan.js";
 import type { JSONPatchOperation } from "../../../src/foundation/json-patch/index.js";
 import type { SelectionSnap } from "../../../src/domain/selection/index.js";
 

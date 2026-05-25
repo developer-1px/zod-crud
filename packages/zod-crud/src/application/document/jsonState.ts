@@ -15,7 +15,7 @@ import {
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { jsonSerializableError } from "../../foundation/json.js";
 import { handleResult, type ErrorPolicy } from "../../foundation/errors.js";
-import { applyPatchWithLocalSchemaValidation, schemaOutputIsKnownJson } from "../../domain/schema/localSchemaValidation.js";
+import { applyPatchWithLocalSchemaValidation, schemaOutputIsKnownJson } from "../../domain/schema/localSchemaCore.js";
 import type {
   JSONChangeMetadata,
   JSONStateOps,

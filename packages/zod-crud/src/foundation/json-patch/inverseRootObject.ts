@@ -1,4 +1,4 @@
-import type { JSONPatchOperation } from "./index.js";
+import type { JSONPatchOperation } from "./types.js";
 import { objectHasOwn } from "./inversePath.js";
 
 type SeenRootKeys = Record<string, true>;

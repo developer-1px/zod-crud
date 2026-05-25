@@ -1,12 +1,9 @@
 import type * as z from "zod";
 import { parsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
-import { getArrayElement, getDef, getObjectShape, schemaAtPointer } from "./introspection.js";
+import { schemaAtPointer } from "./introspection.js";
 import { arrayIndexPathLocation, numericSegment } from "./localSchemaPath.js";
-import {
-  type ExtendedDef,
-  isJsonPrimitive,
-  isPlainStringKeySchema,
-} from "./localSchemaKnownJson.js";
+import { isJsonPrimitive, isPlainStringKeySchema } from "./localSchemaKnownJson.js";
+import { getArrayElement, getDef, getObjectShape } from "./zodIntrospectionAdapter.js";
 
 interface LocalSchemaCache {
   pointerSchemas: Map<string, z.ZodType | null>;
@@ -60,7 +57,7 @@ export function isPlainStructuralSchema(schema: z.ZodType, seen?: WeakSet<object
   if (activeSeen.has(schema as object)) return true;
   activeSeen.add(schema as object);
 
-  const def = getDef(schema) as ExtendedDef;
+  const def = getDef(schema);
   if (Array.isArray(def.checks) && def.checks.length > 0) return cachePlainStructuralSchema(schema, false);
 
   switch (def.type) {
@@ -115,7 +112,7 @@ export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSe
   if (activeSeen.has(schema as object)) return true;
   activeSeen.add(schema as object);
 
-  const def = getDef(schema) as ExtendedDef;
+  const def = getDef(schema);
   if (def.coerce) return finish(false);
 
   switch (def.type) {
@@ -138,7 +135,7 @@ export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSe
       return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
     case "nonoptional": {
       if (!def.innerType) return finish(false);
-      const innerDef = getDef(def.innerType) as ExtendedDef;
+      const innerDef = getDef(def.innerType);
       const outputSchema = innerDef.type === "optional" ? innerDef.innerType : def.innerType;
       return finish(!!outputSchema && schemaOutputIsKnownJsonInternal(outputSchema, activeSeen));
     }

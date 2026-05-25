@@ -5,17 +5,21 @@ import {
   cursorPoints,
   emptyTraversalPointer,
   emptyTraversalReason,
+} from "./traversal.js";
+import {
   orderSelectionRanges,
-  selectionSpansForPointer,
-  type JSONPoint,
-  type JSONPointObject,
-  type SelectionAffinity,
-  type SelectionOrderErrorCode,
-  type SelectionPointerSpan,
-  type SelectionRange,
-  type SelectionSnap,
-  type SelectionSpanOptions,
-} from "./index.js";
+} from "./selectionOrder.js";
+import { selectionSpansForPointer } from "./selectionSpans.js";
+import type {
+  JSONPoint,
+  JSONPointObject,
+  SelectionAffinity,
+  SelectionOrderErrorCode,
+  SelectionPointerSpan,
+  SelectionRange,
+  SelectionSnap,
+  SelectionSpanOptions,
+} from "./selectionTypes.js";
 import { clonePoint, pointPath } from "./selectionPoint.js";
 export { clonePoint, cloneRange, pointPath } from "./selectionPoint.js";
 

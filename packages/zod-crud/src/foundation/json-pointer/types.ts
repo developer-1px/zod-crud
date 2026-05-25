@@ -2,7 +2,7 @@
 // schema 타입 → 가능한 RFC 6901 Pointer 문자열 union을 제한적으로 도출한다.
 // 깊이 한계: 5단. 그 이상은 string fallback.
 
-import type { Pointer } from "./index.js";
+import type { Pointer } from "./pointerCore.js";
 
 type Prev = [never, 0, 1, 2, 3, 4, 5];
 

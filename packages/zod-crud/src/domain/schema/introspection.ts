@@ -1,16 +1,7 @@
 import type * as z from "zod";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { tryParsePointer } from "../../foundation/json-pointer/index.js";
-
-type ZodDef = {
-  type?: string;
-  shape?: unknown;
-  element?: z.ZodType;
-  valueType?: z.ZodType;
-  options?: z.ZodType[];
-  discriminator?: string;
-  values?: unknown[];
-};
+import { getArrayElement, getDef, getObjectShape } from "./zodIntrospectionAdapter.js";
 
 export interface DiscriminatedUnionInfo {
   discriminator: string;
@@ -22,27 +13,6 @@ interface SchemaPointerCache {
 }
 
 const schemaPointerCaches = new WeakMap<object, SchemaPointerCache>();
-
-export function getDef(schema: z.ZodType): ZodDef {
-  return ((schema as { def?: ZodDef; _def?: ZodDef }).def ?? (schema as { _def?: ZodDef })._def ?? {}) as ZodDef;
-}
-
-export function getObjectShape(schema: z.ZodType): Record<string, z.ZodType> | null {
-  const shape = getDef(schema).shape ?? (schema as { shape?: unknown }).shape;
-  const resolved = typeof shape === "function" ? shape() : shape;
-  if (!resolved || typeof resolved !== "object") return null;
-  return resolved as Record<string, z.ZodType>;
-}
-
-export function getObjectKeys(schema: z.ZodType): string[] | null {
-  const shape = getObjectShape(schema);
-  return shape ? Object.keys(shape) : null;
-}
-
-export function getArrayElement(schema: z.ZodType): z.ZodType | null {
-  const def = getDef(schema);
-  return def.type === "array" && def.element ? def.element : null;
-}
 
 export function getDiscriminatedUnionInfo(schema: z.ZodType): DiscriminatedUnionInfo | null {
   const def = getDef(schema);

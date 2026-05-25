@@ -1,4 +1,4 @@
-import { isPrefix, tryParsePointer, type Pointer } from "./index.js";
+import { isPrefix, tryParsePointer, type Pointer } from "./pointerCore.js";
 
 export type PointerSource = Pointer | ReadonlyArray<Pointer>;
 

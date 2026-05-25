@@ -8,9 +8,13 @@ import type { ClipboardSource } from "../../domain/verbs/copy.js";
 import type { PasteOptions, PasteTarget } from "../../domain/verbs/paste.js";
 import {
   type CapabilityPasteExecutionOptions,
+} from "./capabilityClipboardTypes.js";
+import {
   type CapabilityResult,
+} from "./capabilityResultTypes.js";
+import {
   type DocumentCapabilityContext,
-} from "./capabilityTypes.js";
+} from "./capabilityFacadeTypes.js";
 import {
   documentSelectionState,
   documentTrustedState,
@@ -19,7 +23,7 @@ import {
   planDocumentCopyCapability,
   planDocumentCutCapability,
   planDocumentPasteCapability,
-} from "./capabilityPlan.js";
+} from "./capabilityClipboardPlan.js";
 
 export function canDocumentCut<S extends z.ZodType>(
   context: DocumentCapabilityContext<S>,

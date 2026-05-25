@@ -1,25 +1,5 @@
 import type * as z from "zod";
-import { getArrayElement, getDef, getObjectShape } from "./introspection.js";
-
-export interface ExtendedDef {
-  type?: string;
-  coerce?: boolean;
-  checks?: unknown[];
-  innerType?: z.ZodType;
-  catchall?: z.ZodType;
-  keyType?: z.ZodType;
-  valueType?: z.ZodType;
-  options?: z.ZodType[];
-  items?: z.ZodType[];
-  rest?: z.ZodType | null;
-  getter?: () => z.ZodType;
-  in?: z.ZodType;
-  out?: z.ZodType;
-  left?: z.ZodType;
-  right?: z.ZodType;
-  values?: unknown[];
-  entries?: Record<string, unknown>;
-}
+import { getArrayElement, getDef, getObjectShape, type ZodInternalDef } from "./zodIntrospectionAdapter.js";
 
 export type KnownJsonValueValidator = (value: unknown, seen: WeakSet<object>) => boolean;
 
@@ -64,7 +44,7 @@ function buildKnownJsonValueValidatorUnchecked(
   schema: z.ZodType,
   seenSchemas: WeakSet<object>,
 ): KnownJsonValueValidator | null {
-  const def = getDef(schema) as ExtendedDef;
+  const def = getDef(schema);
   if (def.coerce || (Array.isArray(def.checks) && def.checks.length > 0)) return null;
 
   switch (def.type) {
@@ -101,7 +81,7 @@ function buildKnownJsonValueValidatorUnchecked(
 
 function buildObjectValueValidator(
   schema: z.ZodType,
-  def: ExtendedDef,
+  def: ZodInternalDef,
   seenSchemas: WeakSet<object>,
 ): KnownJsonValueValidator | null {
   if (def.catchall) return null;
@@ -168,7 +148,7 @@ function buildArrayValueValidator(
 }
 
 function buildRecordValueValidator(
-  def: ExtendedDef,
+  def: ZodInternalDef,
   seenSchemas: WeakSet<object>,
 ): KnownJsonValueValidator | null {
   if (def.keyType && !isPlainStringKeySchema(def.keyType)) return null;
@@ -192,12 +172,12 @@ function buildRecordValueValidator(
   };
 }
 
-function buildLiteralValueValidator(def: ExtendedDef): KnownJsonValueValidator | null {
+function buildLiteralValueValidator(def: ZodInternalDef): KnownJsonValueValidator | null {
   if (!Array.isArray(def.values) || !def.values.every(isJsonPrimitive)) return null;
   return (value) => def.values!.some((item) => Object.is(item, value));
 }
 
-function buildEnumValueValidator(def: ExtendedDef): KnownJsonValueValidator | null {
+function buildEnumValueValidator(def: ZodInternalDef): KnownJsonValueValidator | null {
   const values = Array.isArray(def.values)
     ? def.values
     : def.entries && typeof def.entries === "object"
@@ -208,14 +188,14 @@ function buildEnumValueValidator(def: ExtendedDef): KnownJsonValueValidator | nu
 }
 
 export function isPlainStringKeySchema(schema: z.ZodType): boolean {
-  const def = getDef(schema) as ExtendedDef;
+  const def = getDef(schema);
   return def.type === "string"
     && !def.coerce
     && (!Array.isArray(def.checks) || def.checks.length === 0);
 }
 
 function isOptionalSchema(schema: z.ZodType): boolean {
-  return (getDef(schema) as ExtendedDef).type === "optional";
+  return getDef(schema).type === "optional";
 }
 
 export function isJsonPrimitive(value: unknown): boolean {

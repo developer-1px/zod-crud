@@ -1,11 +1,9 @@
 import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
-import { getDef, getObjectShape } from "./introspection.js";
 import {
   acceptsKnownJsonValue,
   acceptsKnownJsonValueWithValidator,
-  type ExtendedDef,
   knownJsonValueValidatorForSchema,
 } from "./localSchemaKnownJson.js";
 import {
@@ -23,6 +21,7 @@ import {
   type AppliedReplaceValueValidationOperation,
   type LocalSchemaValidationValueValidationPlan,
 } from "./localSchemaValueValidation.js";
+import { getDef, getObjectShape } from "./zodIntrospectionAdapter.js";
 
 export type RootObjectReplacePatchStrategy = "orderedReplace" | "copyWrite";
 
@@ -67,7 +66,7 @@ export function applyRootObjectReplacePatchWithLocalSchemaValidation<S extends z
 export function rootObjectReplaceValueSourceForLocalSchemaValidation(schema: z.ZodType): RootObjectReplaceValueSource | null {
   const shape = getObjectShape(schema);
   if (shape !== null) return { kind: "object", shape };
-  const rootDef = getDef(schema) as ExtendedDef;
+  const rootDef = getDef(schema);
   const recordValueSchema = rootDef.type === "record" ? (rootDef.valueType ?? null) : null;
   if (recordValueSchema === null) return null;
   const recordValueValidator = knownJsonValueValidatorForSchema(recordValueSchema);

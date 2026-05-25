@@ -14,8 +14,10 @@ import { resolveMoveArgs } from "../../domain/verbs/move.js";
 import type { HistoryTransactionOptions } from "./stateOps.js";
 import {
   type CapabilityResult,
+} from "./capabilityResultTypes.js";
+import {
   type DocumentCapabilityContext,
-} from "./capabilityTypes.js";
+} from "./capabilityFacadeTypes.js";
 import {
   documentSelectionState,
   documentTrustedState,
@@ -29,7 +31,7 @@ import {
   planDocumentReplaceArgs,
   planDocumentReplaceCapability,
   planDocumentReplaceTextCapability,
-} from "./capabilityPlan.js";
+} from "./capabilityMutationPlan.js";
 
 export function canDocumentMove<S extends z.ZodType>(
   context: DocumentCapabilityContext<S>,

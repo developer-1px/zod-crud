@@ -1,10 +1,10 @@
 import { cloneJson } from "../../foundation/json.js";
-import {
-  orderSelectionRanges,
-  type JSONPoint,
-  type SelectionRange,
-  type SelectionSnap,
-} from "./index.js";
+import { orderSelectionRanges } from "./selectionOrder.js";
+import type {
+  JSONPoint,
+  SelectionRange,
+  SelectionSnap,
+} from "./selectionTypes.js";
 import {
   clonePoint,
   cloneRange,

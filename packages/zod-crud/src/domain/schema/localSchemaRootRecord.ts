@@ -1,10 +1,8 @@
 import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import { validateOperationShape } from "../../foundation/json-patch/apply.js";
-import { getDef } from "./introspection.js";
 import {
   acceptsKnownJsonValueWithValidator,
-  type ExtendedDef,
   isPlainStringKeySchema,
   knownJsonValueValidatorForSchema,
 } from "./localSchemaKnownJson.js";
@@ -27,6 +25,7 @@ import {
   type AppliedAddValueValidationOperation,
   type AppliedRemoveOperation,
 } from "./localSchemaValueValidation.js";
+import { getDef } from "./zodIntrospectionAdapter.js";
 
 export type RootRecordRemovePatchStrategy = "clear" | "copyPrefix" | "copyDelete" | "rebuild";
 
@@ -111,7 +110,7 @@ export function planRootRecordAddValueValidation(schema: z.ZodType, operation: R
 }
 
 export function rootRecordValueSchemaForLocalSchemaValidation(schema: z.ZodType): z.ZodType | null {
-  const rootDef = getDef(schema) as ExtendedDef;
+  const rootDef = getDef(schema);
   if (rootDef.type !== "record" || (rootDef.keyType && !isPlainStringKeySchema(rootDef.keyType)) || !rootDef.valueType) return null;
   return rootDef.valueType;
 }

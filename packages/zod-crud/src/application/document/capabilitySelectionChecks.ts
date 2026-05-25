@@ -9,10 +9,12 @@ import {
 } from "../../domain/selection/index.js";
 import {
   type CapabilityResult,
+} from "./capabilityResultTypes.js";
+import {
   type DocumentCapabilityContext,
-} from "./capabilityTypes.js";
+} from "./capabilityFacadeTypes.js";
 import { documentSelectionState } from "./capabilityCheckContext.js";
-import { planDocumentCapabilityResult } from "./capabilityPlan.js";
+import { planDocumentCapabilityResult } from "./capabilityResultPlan.js";
 
 export function canDocumentSelectScope<S extends z.ZodType>(
   context: DocumentCapabilityContext<S>,

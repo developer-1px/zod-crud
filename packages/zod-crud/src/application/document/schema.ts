@@ -2,13 +2,15 @@ import { toJSONSchema, type z } from "zod";
 
 import type { CapabilityResult } from "./capability.js";
 import {
-  getArrayElement,
-  getDef,
   getDiscriminatedUnionInfo,
-  getObjectKeys,
-  getObjectShape,
   schemaAtPointer,
 } from "../../domain/schema/introspection.js";
+import {
+  getArrayElement,
+  getDef,
+  getObjectKeys,
+  getObjectShape,
+} from "../../domain/schema/zodIntrospectionAdapter.js";
 import { appendSegment, tryParsePointer, type Pointer } from "../../foundation/json-pointer/index.js";
 
 export type SchemaPathMode = "value" | "insert";
