@@ -29,8 +29,10 @@ import {
 } from "./createJSONDocumentHistoryPlan.js";
 import type {
   DocumentHistoryRestoreCompletionPlan,
+} from "./createJSONDocumentHistoryTypes.js";
+import type {
   DocumentTransactionCallPlan,
-} from "./createJSONDocumentPlanTypes.js";
+} from "./createJSONDocumentMetadataTypes.js";
 import type {
   DocumentHistoryRuntimeState,
   SelectionRuntimeAccess,

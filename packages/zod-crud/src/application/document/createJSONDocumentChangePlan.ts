@@ -17,7 +17,7 @@ import type {
   PlanDocumentLifecycleChangeInput,
   PlanDocumentSubscriptionChangeInput,
   PlanDocumentSubscriptionMetadataInput,
-} from "./createJSONDocumentPlanTypes.js";
+} from "./createJSONDocumentChangeTypes.js";
 import { buildChangeMetadata } from "./createJSONDocumentMetadataPlan.js";
 
 export function shouldCaptureDocumentChangeMetadata(

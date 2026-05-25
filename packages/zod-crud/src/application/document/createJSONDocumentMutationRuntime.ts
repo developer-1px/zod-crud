@@ -4,7 +4,7 @@ import type { Pointer } from "../../foundation/json-pointer/index.js";
 import { commitMutable, historyDepth } from "../../foundation/history.js";
 import { duplicate as duplicateVerb } from "../../domain/verbs/duplicate.js";
 import type { JSONDocumentCommitOptions, JSONDocumentDuplicateOptions, JSONDocumentDuplicateResult, JSONPatchInput } from "./createJSONDocumentPublicTypes.js";
-import type { DocumentChangeApplyResultPlan } from "./createJSONDocumentPlanTypes.js";
+import type { DocumentChangeApplyResultPlan } from "./createJSONDocumentChangeTypes.js";
 import {
   planDocumentCommitPreview,
   planDocumentCommitRoute,

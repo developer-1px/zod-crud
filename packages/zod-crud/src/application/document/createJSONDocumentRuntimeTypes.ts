@@ -1,7 +1,7 @@
 import type { JSONPatchOperation, JSONResult } from "../../foundation/json-patch/index.js";
 import type { SelectionSnap } from "../../domain/selection/index.js";
 import type { MutableHistoryStack } from "../../foundation/history.js";
-import type { DocumentHistoryEntry } from "./createJSONDocumentPlanTypes.js";
+import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
 import type { JSONChangeMetadata, JSONStateOps } from "./stateOps.js";
 
 export type HistoryEntry = DocumentHistoryEntry;

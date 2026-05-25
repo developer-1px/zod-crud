@@ -2,7 +2,6 @@ import type { JSONPatchOperation } from "../../foundation/json-patch/index.js";
 import type { Pointer } from "../../foundation/json-pointer/index.js";
 import type { HistoryTransactionOptions } from "./stateOps.js";
 import type {
-  DocumentHistoryEntry,
   DocumentTransactionAppendFastPathPlan,
   DocumentTransactionMergeRange,
   DocumentTransactionMergeWritePlan,
@@ -11,7 +10,8 @@ import type {
   PlanDocumentTransactionMergeInput,
   PlanDocumentTransactionMergeRangeInput,
   PlanDocumentTransactionMergeWriteInput,
-} from "./createJSONDocumentPlanTypes.js";
+} from "./createJSONDocumentTransactionTypes.js";
+import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
 import {
   mergeGeneralTransactionMetadata,
   mergeRepeatedReplaceTransactionMetadata,
@@ -188,4 +188,3 @@ export function planDocumentTransactionAppendFastPath(
     ? { kind: "skip" }
     : { kind: "replaceLast", entry: compact };
 }
-

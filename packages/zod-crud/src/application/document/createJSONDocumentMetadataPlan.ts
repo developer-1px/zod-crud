@@ -1,7 +1,6 @@
 import type { SelectionSnap } from "../../domain/selection/index.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "./stateOps.js";
 import type {
-  DocumentHistoryEntry,
   DocumentHistoryMergeLastWritePlan,
   DocumentTransactionCallPlan,
   DocumentTransactionScopePlan,
@@ -11,7 +10,8 @@ import type {
   PlanDocumentHistoryMergeMetadataInput,
   PlanDocumentTransactionCallInput,
   PlanDocumentTransactionScopeInput,
-} from "./createJSONDocumentPlanTypes.js";
+} from "./createJSONDocumentMetadataTypes.js";
+import type { DocumentHistoryEntry } from "./createJSONDocumentHistoryTypes.js";
 
 export function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,

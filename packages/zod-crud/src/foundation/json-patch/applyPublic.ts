@@ -2,17 +2,7 @@ import type * as z from "zod";
 import { jsonSerializableError } from "../json.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeOp } from "./internal.js";
-import { applyAppendOnlyAddPatch, applyTailRemovePatch } from "./fastArrayAppendRemove.js";
-import { applySameArrayElementReplacePatch } from "./fastArrayElementReplace.js";
-import { applySameArrayFieldReplacePatch } from "./fastArrayFieldReplace.js";
-import { applySameArrayNestedReplacePatch } from "./fastArrayNestedReplace.js";
-import { applySameArrayStructuralPatch } from "./fastArrayStructural.js";
-import { applyIndependentReplacePatch } from "./fastIndependentReplace.js";
-import {
-  applyRootObjectAddPatch,
-  applyRootObjectRemovePatch,
-  applyRootObjectReplacePatch,
-} from "./fastRootObject.js";
+import { applyPublicTrustedStateFastPatch } from "./fastStrategies.js";
 import { fail, ok, zodIssuesReason } from "./result.js";
 import { applyTrustedValueMutation } from "./trustedValueMutation.js";
 import type { ApplyResult, JSONPatchOperation } from "./types.js";
@@ -51,7 +41,7 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   ops: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S> {
   if (!Array.isArray(ops)) return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
-  const fast = applyTrustedStateFastPatch(state, ops);
+  const fast = applyPublicTrustedStateFastPatch(state, ops);
   if (fast !== null) {
     const parsed = schema.safeParse(fast.state);
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
@@ -102,31 +92,4 @@ export function applySingleTrustedValuePatchToTrustedState<S extends z.ZodTypeAn
   const parsed = schema.safeParse(applied.state);
   if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
   return { state: applied.state as z.output<S>, result: ok, applied: [normalized] };
-}
-
-function applyTrustedStateFastPatch(
-  state: unknown,
-  ops: ReadonlyArray<JSONPatchOperation>,
-): { state: unknown; applied: ReadonlyArray<JSONPatchOperation> } | null {
-  let candidate = applyAppendOnlyAddPatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applyTailRemovePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applyRootObjectRemovePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applyRootObjectAddPatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applyRootObjectReplacePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applySameArrayFieldReplacePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applySameArrayNestedReplacePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applySameArrayElementReplacePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applyIndependentReplacePatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  candidate = applySameArrayStructuralPatch(state, ops);
-  if (candidate.handled) return { state: candidate.state, applied: candidate.applied };
-  return null;
 }

@@ -20,7 +20,7 @@ import type {
   PlanDocumentHistoryRestoreInput,
   PlanRootBulkHistorySnapshotInput,
   RootBulkHistorySnapshotPlan,
-} from "./createJSONDocumentPlanTypes.js";
+} from "./createJSONDocumentHistoryTypes.js";
 import { compactHistoryMetadata, mergeRepeatedReplaceTransactionMetadata, planCompactedRepeatedReplaceHistory } from "./createJSONDocumentMetadataPlan.js";
 import { planDocumentTransactionAppendFastPath } from "./createJSONDocumentTransactionPlan.js";
 
