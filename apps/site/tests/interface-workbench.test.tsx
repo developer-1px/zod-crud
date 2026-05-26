@@ -51,22 +51,24 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByRole("heading", { name: "Todo" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Doing" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Done" })).toBeTruthy();
-    expect(screen.getByLabelText("value target")).toBeTruthy();
-    expect(screen.getByLabelText("insert target")).toBeTruthy();
-    expect(screen.getByLabelText("payload")).toBeTruthy();
+    expect(screen.getByLabelText("add target")).toBeTruthy();
+    expect(screen.getByLabelText("add payload")).toBeTruthy();
+    expect(screen.getByLabelText("search query")).toBeTruthy();
+    expect(screen.getByLabelText("rename target")).toBeTruthy();
 
     for (const title of [
       "Create board",
       "Add card to column",
       "Validate card draft",
-      "Search and select",
-      "Edit card",
+      "Search cards",
+      "Select search results",
+      "Rename card",
       "Move card",
       "Duplicate card",
-      "Copy / cut / paste after",
+      "Copy card",
       "Build selection",
       "Remove selected",
-      "Copy / cut selected",
+      "Copy selected",
       "Paste selected into column",
     ]) {
       expect(commandRow(title)).toBeTruthy();
@@ -210,29 +212,27 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
 
-    await user.selectOptions(screen.getByLabelText("value target"), "/title");
+    await user.selectOptions(screen.getByLabelText("rename target"), "/title");
 
-    const edit = within(commandRow("Edit card"));
-    const patch = edit.getByRole("button", { name: "patch" });
-    expect((patch as HTMLButtonElement).disabled).toBe(true);
-    expect(patch.title).toContain("can:");
-    expect(within(patch).getByText("cannot path_not_found")).toBeTruthy();
-
-    const canPatch = edit.getByRole("button", { name: "canPatch" });
-    expect((canPatch as HTMLButtonElement).disabled).toBe(false);
-    await user.click(canPatch);
-    expect(screen.getAllByText(/doc\.canPatch/).length).toBeGreaterThan(0);
+    const rename = within(commandRow("Rename card"));
+    const action = rename.getByRole("button", { name: "Rename" });
+    expect((action as HTMLButtonElement).disabled).toBe(true);
+    expect(action.title).toContain("can:");
+    expect(within(commandRow("Rename card")).getByText("can path_not_found")).toBeTruthy();
+    expect(rename.queryByRole("button", { name: "canPatch" })).toBeNull();
 
     await user.click(within(commandRow("Build selection")).getByRole("button", { name: "select 0" }));
-    expect((patch as HTMLButtonElement).disabled).toBe(true);
-    expect(patch.title).toContain("select_one_card");
+    const emptySelectionRename = within(commandRow("Rename card")).getByRole("button", { name: "Rename" });
+    expect((emptySelectionRename as HTMLButtonElement).disabled).toBe(true);
+    expect(emptySelectionRename.title).toContain("select_one_card");
+    expect(within(commandRow("Rename card")).getByText("state select_one_card")).toBeTruthy();
   });
 
   test("keeps duplicate focused on the newly duplicated card", async () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
-    const target = screen.getByLabelText("value target") as HTMLSelectElement;
-    const duplicate = within(commandRow("Duplicate card")).getByRole("button", { name: "duplicate" });
+    const target = screen.getByLabelText("duplicate source") as HTMLSelectElement;
+    const duplicate = within(commandRow("Duplicate card")).getByRole("button", { name: "Duplicate" });
 
     await user.click(duplicate);
     expect(target.value).toBe("/lists/0/cards/1");
@@ -249,23 +249,23 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
 
-    await user.click(within(commandRow("Add card to column")).getByRole("button", { name: "doc.patch" }));
+    await user.click(within(commandRow("Add card to column")).getByRole("button", { name: "Add" }));
     expect(screen.getByText("Inserted card")).toBeTruthy();
 
-    await user.click(within(commandRow("Search and select")).getByRole("button", { name: "select results" }));
+    await user.click(within(commandRow("Select search results")).getByRole("button", { name: "Select" }));
     expect(screen.getAllByText("selected 3").length).toBeGreaterThan(0);
 
-    await user.click(within(commandRow("Copy / cut selected")).getByRole("button", { name: "copy" }));
+    await user.click(within(commandRow("Copy selected")).getByRole("button", { name: "Copy" }));
     expect(screen.getAllByText("clipboard set").length).toBeGreaterThan(0);
 
-    await user.click(within(commandRow("Paste selected into column")).getByRole("button", { name: "paste" }));
+    await user.click(within(commandRow("Paste selected into column")).getByRole("button", { name: "Paste" }));
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
 
-    await user.click(within(commandRow("Validate card draft")).getByRole("button", { name: "schema.accepts invalid" }));
+    await user.click(within(commandRow("Validate invalid draft")).getByRole("button", { name: "Validate invalid" }));
     expect(screen.getAllByText(/doc\.schema\.accepts/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/schema_violation/).length).toBeGreaterThan(0);
 
-    await user.click(within(commandRow("External patch sync")).getByRole("button", { name: "applyPatch" }));
+    await user.click(within(commandRow("Apply external patch")).getByRole("button", { name: "Apply" }));
     expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
   });
 });
