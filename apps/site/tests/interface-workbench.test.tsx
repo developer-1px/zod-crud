@@ -44,6 +44,7 @@ describe("InterfaceWorkbench", () => {
       "Bulk cards",
       "Undo and redo",
       "Read schema",
+      "Board plumbing",
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
@@ -187,7 +188,7 @@ describe("InterfaceWorkbench", () => {
     const patch = edit.getByRole("button", { name: "doc.patch" });
     expect((patch as HTMLButtonElement).disabled).toBe(true);
     expect(patch.title).toContain("can:");
-    expect(within(patch).getByText("can")).toBeTruthy();
+    expect(within(patch).getByText("cannot path_not_found")).toBeTruthy();
 
     const canPatch = edit.getByRole("button", { name: "doc.canPatch" });
     expect((canPatch as HTMLButtonElement).disabled).toBe(false);

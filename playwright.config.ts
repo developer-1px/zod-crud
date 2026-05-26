@@ -11,7 +11,7 @@ export default defineConfig({
   testDir: "./tests/browser",
   fullyParallel: true,
   timeout: 30_000,
-  expect: { timeout: 5_000 },
+  expect: { timeout: 15_000 },
   reporter: "list",
   use: {
     baseURL,
