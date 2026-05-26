@@ -258,6 +258,15 @@ export function InterfaceWorkbench() {
     { rekey: cardRekey() },
   );
 
+  const duplicateTarget = (): unknown => {
+    const duplicated = doc.duplicate(valueTarget, { rekey: cardRekey() });
+    if (duplicated.ok) {
+      setValueTarget(duplicated.duplicatedTo);
+      doc.selection?.collapse(duplicated.duplicatedTo);
+    }
+    return duplicated;
+  };
+
   const copySelectionToInsertTarget = (): unknown => {
     const source = selectedPointers.length > 0 ? selectedPointers : valueTarget;
     const copied = doc.clipboard.copy(source);
@@ -503,7 +512,7 @@ export function InterfaceWorkbench() {
         </ActionGroup>
 
         <ActionGroup title="document actions">
-          <ActionButton disabledReason={canDisabledReason(canDuplicateTarget)} onClick={() => run(`doc.duplicate("${valueTarget}", { rekey })`, () => doc.duplicate(valueTarget, { rekey: cardRekey() }))}>duplicate</ActionButton>
+          <ActionButton disabledReason={canDisabledReason(canDuplicateTarget)} onClick={() => run(`doc.duplicate("${valueTarget}", { rekey })`, duplicateTarget)}>duplicate</ActionButton>
           <ActionButton disabledReason={canDisabledReason(canMoveTarget)} onClick={() => run(`doc.patch({ op: "move", from: "${valueTarget}", path: "${insertTarget}" })`, () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }))}>move</ActionButton>
           <ActionButton disabledReason={canDisabledReason(canReplacePrimaryTitle)} onClick={() => run(`doc.patch({ op: "replace", path: "${primaryTitlePath}", value: textPayload })`, replaceSelectedTitle)}>replace</ActionButton>
           <ActionButton disabledReason={canDisabledReason(canPastePayloadAfterTarget)} onClick={() => run(`doc.clipboard.pastePayload({ after: "${valueTarget}" }, payload, { rekey })`, pastePayloadAfterTarget)}>paste payload after</ActionButton>

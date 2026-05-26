@@ -84,6 +84,23 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getAllByText(/doc\.canReplace/).length).toBeGreaterThan(0);
   });
 
+  test("keeps duplicate focused on the newly duplicated card", async () => {
+    render(<InterfaceWorkbench />);
+    const user = userEvent.setup();
+    const target = screen.getByLabelText("value target") as HTMLSelectElement;
+    const duplicate = within(group("document actions")).getByRole("button", { name: "duplicate" });
+
+    await user.click(duplicate);
+    expect(target.value).toBe("/lists/0/cards/1");
+
+    await user.click(duplicate);
+    expect(target.value).toBe("/lists/0/cards/2");
+    const selectedCards = screen.getAllByRole("button")
+      .filter((button) => button.getAttribute("aria-selected") === "true");
+    expect(selectedCards).toHaveLength(1);
+    expect(selectedCards[0]?.textContent).toContain("/lists/0/cards/2");
+  });
+
   test("runs representative ops, selection, clipboard, and schema actions", async () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
