@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { InterfaceWorkbench } from "../src/playgrounds/InterfaceWorkbench.playground.js";
@@ -21,7 +21,7 @@ function commandList(): HTMLElement {
 }
 
 function commandRow(title: string): HTMLElement {
-  const titleNode = within(commandList()).getByText(title);
+  const titleNode = within(commandList()).getByRole("heading", { name: title });
   const element = titleNode.closest("[data-command-row]");
   if (!(element instanceof HTMLElement)) throw new Error(`Missing command row: ${title}`);
   return element;
@@ -243,6 +243,30 @@ describe("InterfaceWorkbench", () => {
       .filter((button) => button.getAttribute("aria-selected") === "true");
     expect(selectedCards).toHaveLength(1);
     expect(selectedCards[0]?.textContent).toContain("/lists/0/cards/2");
+  });
+
+  test("connects basic key bindings to command actions", () => {
+    render(<InterfaceWorkbench />);
+
+    const target = screen.getByLabelText("duplicate source") as HTMLSelectElement;
+    expect(within(commandRow("Duplicate card")).getByText("D")).toBeTruthy();
+    expect(within(commandRow("Add card to column")).getByText("N")).toBeTruthy();
+    expect(within(commandRow("Undo")).getByText("Cmd/Ctrl Z")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "d" });
+    expect(target.value).toBe("/lists/0/cards/1");
+
+    fireEvent.keyDown(window, { key: "n" });
+    expect(screen.getByText("Inserted card")).toBeTruthy();
+
+    fireEvent.keyDown(window, { key: "z", metaKey: true });
+    expect(screen.queryByText("Inserted card")).toBeNull();
+
+    fireEvent.keyDown(window, { key: "z", metaKey: true, shiftKey: true });
+    expect(screen.getByText("Inserted card")).toBeTruthy();
+
+    fireEvent.keyDown(screen.getByLabelText("rename title"), { key: "d" });
+    expect(target.value).toBe("/lists/0/cards/1");
   });
 
   test("runs representative Kanban feature flows", async () => {
