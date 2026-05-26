@@ -936,333 +936,244 @@ export function InterfaceWorkbench() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <section className="grid gap-4 xl:grid-cols-[minmax(38rem,1fr)_22rem]">
-        <div className="min-w-0">
+      <section className="grid gap-4 xl:grid-cols-[30rem_minmax(0,1fr)]">
+        <aside data-command-list="" className="self-start rounded border border-stone-200 bg-white p-3 xl:sticky xl:top-3 xl:max-h-[calc(100vh-1.5rem)] xl:overflow-auto">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <strong className="text-sm text-stone-950">Interface bench</strong>
             <Badge>selected {selectedCount}</Badge>
             <Badge>undo {doc.history.undoDepth}</Badge>
             <Badge>redo {doc.history.redoDepth}</Badge>
             <Badge>clipboard {doc.clipboard.hasData ? "set" : "empty"}</Badge>
-            <ActionButton onClick={() => run("doc.selection?.empty()", selectNoCards, "Selection set")}>select 0</ActionButton>
-            <ActionButton onClick={() => run(`doc.selection?.collapse("${cardPointer(0, 0)}")`, selectFirstCard, "Selection set")}>select 1</ActionButton>
-            <ActionButton onClick={() => run("doc.selection?.selectRanges(todoPointers)", selectTodoCards, "Selection set")}>select N</ActionButton>
           </div>
-          <div className="grid gap-3 lg:grid-cols-3">
-            {doc.value.lists.map((list, listIndex) => (
-              <div key={list.id} className={`flex min-h-80 flex-col rounded border p-2 ${columnClass(list.id)}`}>
-                <div className="mb-2 flex items-center justify-between gap-2 px-1">
-                  <h2 className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-500">{list.name}</h2>
-                  <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-medium text-stone-500">{list.cards.length}</span>
-                </div>
-                <div className="flex flex-1 flex-col gap-2">
-                  {list.cards.map((card, cardIndex) => {
-                    const pointer = cardPointer(listIndex, cardIndex);
-                    const selected = selectedPointers.includes(pointer);
-                    return (
-                      <button
-                        key={pointer}
-                        aria-selected={selected}
-                        onClick={(event) => {
-                          setValueTarget(pointer);
-                          if (event.shiftKey && primaryPointer) doc.selection?.setBaseAndExtent(primaryPointer, pointer);
-                          else if (event.metaKey || event.ctrlKey) doc.selection?.togglePointer(pointer);
-                          else doc.selection?.collapse(pointer);
-                        }}
-                        className="flex min-h-24 flex-col items-stretch justify-between gap-3 rounded-md border border-stone-200 bg-white p-3 text-left text-sm shadow-sm hover:border-stone-300 hover:bg-stone-50 aria-selected:border-sky-500 aria-selected:bg-sky-50 aria-selected:ring-2 aria-selected:ring-sky-200"
-                      >
-                        <span className="min-w-0 text-sm font-medium text-stone-950">{card.title}</span>
-                        <span className="flex items-center justify-between gap-2">
-                          <span className="min-w-0 truncate text-[11px] text-stone-500">{pointer}</span>
-                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase ${statusClass(card.status)}`}>
-                            {card.status}
-                          </span>
-                        </span>
-                        <span className="flex flex-wrap items-center gap-1">
-                          <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-600">{card.points}pt</span>
-                          {card.tags.map((tag) => (
-                            <span key={tag} className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">{tag}</span>
-                          ))}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
 
-        <aside className="self-start rounded border border-stone-200 bg-white p-3 xl:sticky xl:top-3">
-          <Field label="value target">
-            <select
-              value={valueTarget}
-              onChange={(event) => setValueTarget(event.target.value as Pointer)}
-              className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs"
-            >
-              {pointers.map((item) => (
-                <option key={item.pointer} value={item.pointer}>{item.pointer}</option>
-              ))}
-              <option value="/title">/title</option>
-              <option value="/settings/archived">/settings/archived</option>
-            </select>
-          </Field>
-          <Field label="insert target">
-            <select
-              value={insertTarget}
-              onChange={(event) => changeInsertTarget(event.target.value as Pointer)}
-              className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs"
-            >
-              {insertPointers.map((item) => (
-                <option key={item.pointer} value={item.pointer}>{item.label}</option>
-              ))}
-            </select>
-          </Field>
-          <Field label="jsonpath">
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              className="w-full rounded border border-stone-300 px-2 py-1 font-mono text-xs"
-            />
-          </Field>
-          <Field label="text payload">
-            <input
-              value={textPayload}
-              onChange={(event) => setTextPayload(event.target.value)}
-              className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-2">
-            <Field label="points">
-              <input
-                type="number"
-                value={pointsPayload}
-                onChange={(event) => setPointsPayload(event.target.value)}
-                className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
-              />
-            </Field>
-            <Field label="bad points">
-              <input
-                type="number"
-                value={badPointsPayload}
-                onChange={(event) => setBadPointsPayload(event.target.value)}
-                className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
-              />
-            </Field>
-          </div>
-          <Field label="payload">
-            <textarea
-              value={payload}
-              onChange={(event) => setPayload(event.target.value)}
-              className="h-32 w-full resize-none rounded border border-stone-300 px-2 py-1 font-mono text-xs"
-              spellCheck={false}
-            />
-          </Field>
+          <CommandSection title="Selection = 0" active={selectedCount === 0}>
+            <CommandRow title="Create board" api="useJSONDocument / createJSONDocument" result={featureResult("Create board")}>
+              <ActionButton onClick={() => run("useJSONDocument(schema, initial, options)", inspectReactFacade, "Create board")}>useJSONDocument</ActionButton>
+              <ActionButton onClick={() => run("createJSONDocument(schema, initial, options)", inspectCreateJSONDocument, "Create board")}>createJSONDocument</ActionButton>
+            </CommandRow>
+            <CommandRow title="Load / reset board" api="doc.load / doc.reset" result={featureResult("Board plumbing")}>
+              <ActionButton onClick={() => run("doc.load(nextBoard)", loadFixture, "Board plumbing")}>doc.load</ActionButton>
+              <ActionButton onClick={() => run("doc.reset()", resetBoard, "Board plumbing")}>doc.reset</ActionButton>
+            </CommandRow>
+            <CommandRow title="Add card to column" api="canPatch -> patch" result={featureResult("Add card")}>
+              <ActionButton onClick={() => run(`doc.canPatch([{ op: "add", path: "${insertTarget}", value: payload }])`, () => canAddPayload, "Add card")}>doc.canPatch</ActionButton>
+              <ActionButton disabledReason={canDisabledReason(canAddPayload)} onClick={() => run(`doc.patch([{ op: "add", path: "${insertTarget}", value: payload }])`, addCardToTodo, "Add card")}>doc.patch</ActionButton>
+            </CommandRow>
+            <CommandRow title="Validate card draft" api="schema.accepts / schema.describe" result={featureResult("Read schema")}>
+              <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", payload, "insert")`, () => doc.schema.accepts(insertTarget, parsedPayload(), "insert"), "Read schema")}>schema.accepts</ActionButton>
+              <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", invalidCard, "insert")`, () => doc.schema.accepts(insertTarget, invalidCard, "insert"), "Read schema")}>schema.accepts invalid</ActionButton>
+              <ActionButton onClick={() => run(`doc.schema.describe("${insertTarget}", "insert")`, () => doc.schema.describe(insertTarget, "insert"), "Read schema")}>schema.describe</ActionButton>
+            </CommandRow>
+            <CommandRow title="Search and select" api="canFind -> query -> selectRanges" result={featureResult("Find and select")}>
+              <ActionButton onClick={() => run(`doc.canFind(${JSON.stringify(query)})`, () => doc.canFind(query), "Find and select")}>doc.canFind</ActionButton>
+              <ActionButton onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers, "Find and select")}>doc.query</ActionButton>
+              <ActionButton onClick={() => run("doc.selection?.selectRanges(todoPointers)", selectTodoCards, "Find and select")}>select results</ActionButton>
+            </CommandRow>
+            <CommandRow title="Clipboard buffer" api="clipboard.read/write/clear" result={featureResult("Clipboard buffer")}>
+              <ActionButton onClick={() => run("doc.clipboard.read()", () => doc.clipboard.read(), "Clipboard buffer")}>read</ActionButton>
+              <ActionButton onClick={() => run(`doc.clipboard.write(payload, { source: "${valueTarget}" })`, () => { doc.clipboard.write(parsedPayload(), { source: valueTarget }); return doc.clipboard.read(); }, "Clipboard buffer")}>write</ActionButton>
+              <ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return { cleared: true, hasData: doc.clipboard.hasData }; }, "Clipboard buffer")}>clear</ActionButton>
+            </CommandRow>
+            <CommandRow title="History" api="canUndo/canRedo -> history" result={featureResult("Undo and redo")}>
+              <ActionButton onClick={() => run("doc.canUndo()", () => doc.canUndo(), "Undo and redo")}>doc.canUndo</ActionButton>
+              <ActionButton disabledReason={canDisabledReason(doc.canUndo())} onClick={() => run("doc.history.undo()", () => doc.history.undo(), "Undo and redo")}>undo</ActionButton>
+              <ActionButton disabledReason={canDisabledReason(doc.canRedo())} onClick={() => run("doc.history.redo()", () => doc.history.redo(), "Undo and redo")}>redo</ActionButton>
+            </CommandRow>
+            <CommandRow title="External patch sync" api="subscribe / applyPatch / trackPointer" result={featureResult("Board plumbing")}>
+              <ActionButton onClick={() => run("doc.subscribe(listener)", inspectSubscribe, "Board plumbing")}>subscribe</ActionButton>
+              <ActionButton onClick={() => run("applyPatch(schema, board, patch)", inspectApplyPatch, "Board plumbing")}>applyPatch</ActionButton>
+              <ActionButton onClick={() => run("trackPointer(pointer, patch)", inspectTrackPointer, "Board plumbing")}>trackPointer</ActionButton>
+            </CommandRow>
+          </CommandSection>
+
+          <CommandSection title="Selection = 1" active={selectedCount === 1}>
+            <CommandRow title="Select card" api="selection.collapse / togglePointer" result={featureResult("Selection set")}>
+              <ActionButton onClick={() => run(`doc.selection?.collapse("${cardPointer(0, 0)}")`, selectFirstCard, "Selection set")}>select 1</ActionButton>
+              <ActionButton onClick={() => run(`doc.selection?.togglePointer("${valueTarget}")`, () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); }, "Selection set")}>toggle</ActionButton>
+            </CommandRow>
+            <CommandRow title="Read card" api="at / exists / schema.kind" result={featureResult("Read schema")}>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.at("${valueTarget}")`, () => doc.at(valueTarget), "Read schema")}>doc.at</ActionButton>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.exists("${valueTarget}")`, () => doc.exists(valueTarget), "Read schema")}>doc.exists</ActionButton>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.schema.kind("${valueTarget}")`, () => doc.schema.kind(valueTarget), "Read schema")}>schema.kind</ActionButton>
+            </CommandRow>
+            <CommandRow title="Edit card" api="canReplace / canPatch / patch / commit" result={featureResult("Edit card")}>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canReplace("${targetTitlePath}", textPayload)`, () => canReplaceTargetTitle, "Edit card")}>canReplace</ActionButton>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canPatch([{ op: "replace", path: "${targetTitlePath}", value: textPayload }])`, () => canPatchReplaceTitle, "Edit card")}>canPatch</ActionButton>
+              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchReplaceTitle)} onClick={() => run(`doc.patch([{ op: "replace", path: "${targetTitlePath}", value: textPayload }])`, () => doc.patch([{ op: "replace", path: targetTitlePath, value: textPayload }]), "Edit card")}>patch</ActionButton>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.commit([{ op: "replace", path: "${targetTitlePath}", value }], { selection })`, commitReplaceTitle, "Edit card")}>commit</ActionButton>
+            </CommandRow>
+            <CommandRow title="Move card" api="canMove -> patch(move)" result={featureResult("Move card")}>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canMove("${valueTarget}", "${insertTarget}")`, () => canMoveTarget, "Move card")}>canMove</ActionButton>
+              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canMoveTarget)} onClick={() => run(`doc.patch({ op: "move", from: "${valueTarget}", path: "${insertTarget}" })`, () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }), "Move card")}>move</ActionButton>
+            </CommandRow>
+            <CommandRow title="Duplicate card" api="canDuplicate -> duplicate" result={featureResult("Duplicate card")}>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canDuplicate("${valueTarget}", { rekey })`, () => canDuplicateTarget, "Duplicate card")}>canDuplicate</ActionButton>
+              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canDuplicateTarget)} onClick={() => run(`doc.duplicate("${valueTarget}", { rekey })`, duplicateTarget, "Duplicate card")}>duplicate</ActionButton>
+            </CommandRow>
+            <CommandRow title="Copy / cut / paste after" api="canCopy/canCut/canPaste -> clipboard" result={featureResult("Copy and paste")}>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canCopy("${primarySource}")`, () => canCopyPrimary, "Copy and paste")}>canCopy</ActionButton>
+              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canCopyPrimary)} onClick={() => run(`doc.clipboard.copy("${primarySource}")`, copyPrimaryCard, "Copy and paste")}>copy</ActionButton>
+              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canCutSource)} onClick={() => run("doc.clipboard.cut(source)", () => doc.clipboard.cut(selectedSource), "Copy and paste")}>cut</ActionButton>
+              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPasteClipboardAfterTarget)} onClick={() => run(`doc.clipboard.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget, "Copy and paste")}>paste after</ActionButton>
+            </CommandRow>
+            <CommandRow title="Text edit" api="textPatch / deleteText / commit" result={featureResult("Board plumbing")}>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run("doc.selection?.textPatch(textPayload)", replaceTitleText, "Board plumbing")}>textPatch</ActionButton>
+              <ActionButton disabledReason={selectedCardReason} onClick={() => run("doc.selection?.deleteText()", () => doc.selection?.deleteText(), "Board plumbing")}>deleteText</ActionButton>
+            </CommandRow>
+          </CommandSection>
+
+          <CommandSection title="Selection = N" active={selectedCount > 1}>
+            <CommandRow title="Build selection" api="empty / collapse / selectRanges" result={featureResult("Selection set")}>
+              <ActionButton onClick={() => run("doc.selection?.empty()", selectNoCards, "Selection set")}>select 0</ActionButton>
+              <ActionButton onClick={() => run(`doc.selection?.collapse("${cardPointer(0, 0)}")`, selectFirstCard, "Selection set")}>select 1</ActionButton>
+              <ActionButton onClick={() => run("doc.selection?.selectRanges(todoPointers)", selectTodoCards, "Selection set")}>select N</ActionButton>
+            </CommandRow>
+            <CommandRow title="Inspect selection" api="selection properties / orderRanges" result={featureResult("Selection set")}>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("selection read properties", inspectSelectionReads, "Selection set")}>properties</ActionButton>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.orderRanges()", () => doc.selection?.orderRanges(), "Selection set")}>orderRanges</ActionButton>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.restore(snapshot)", selectionRestoreRoundtrip, "Selection set")}>restore</ActionButton>
+            </CommandRow>
+            <CommandRow title="Remove selected" api="canRemove -> patch(remove[])" result={featureResult("Bulk cards")}>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.canRemove(source)", () => canRemoveSource, "Bulk cards")}>canRemove</ActionButton>
+              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canRemoveSource)} onClick={() => run("doc.patch(selectedPointers.map((path) => ({ op: \"remove\", path })))", removeTargets, "Bulk cards")}>remove</ActionButton>
+            </CommandRow>
+            <CommandRow title="Copy / cut selected" api="canCopy/canCut -> clipboard" result={featureResult("Bulk cards")}>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.canCopy(source)", () => canCopySource, "Bulk cards")}>canCopy</ActionButton>
+              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCopySource)} onClick={() => run("doc.clipboard.copy(source)", copySelection, "Bulk cards")}>copy</ActionButton>
+              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCutSource)} onClick={() => run("doc.clipboard.cut(source)", () => doc.clipboard.cut(selectedSource), "Bulk cards")}>cut</ActionButton>
+            </CommandRow>
+            <CommandRow title="Paste selected into column" api="canPaste -> clipboard.paste" result={featureResult("Bulk cards")}>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run(`doc.canPaste("${insertTarget}", { spread: true, rekey })`, () => canPasteClipboardToInsertTarget, "Bulk cards")}>canPaste</ActionButton>
+              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPasteClipboardToInsertTarget)} onClick={() => run(`doc.clipboard.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget, "Bulk cards")}>paste</ActionButton>
+            </CommandRow>
+            <CommandRow title="Bulk transaction" api="history.transaction" result={featureResult("Undo and redo")}>
+              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.history.transaction(options, fn)", transactionRename, "Undo and redo")}>transaction</ActionButton>
+              <ActionButton onClick={() => run("doc.history.mergeLast({ mergeKey: \"manual\" })", () => doc.history.mergeLast({ mergeKey: "manual" }), "Undo and redo")}>mergeLast</ActionButton>
+            </CommandRow>
+          </CommandSection>
         </aside>
+
+        <div className="grid min-w-0 gap-3">
+          <section className="rounded border border-stone-200 bg-white p-3">
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+              <h2 className="m-0 text-sm font-semibold text-stone-950">Board</h2>
+              <Badge>value {valueTarget}</Badge>
+              <Badge>insert {insertTarget}</Badge>
+            </div>
+            <div className="grid gap-2 lg:grid-cols-3">
+              {doc.value.lists.map((list, listIndex) => (
+                <div key={list.id} className={`flex min-h-52 flex-col rounded border p-2 ${columnClass(list.id)}`}>
+                  <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                    <h2 className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-500">{list.name}</h2>
+                    <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-medium text-stone-500">{list.cards.length}</span>
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1.5">
+                    {list.cards.map((card, cardIndex) => {
+                      const pointer = cardPointer(listIndex, cardIndex);
+                      const selected = selectedPointers.includes(pointer);
+                      return (
+                        <button
+                          key={pointer}
+                          aria-selected={selected}
+                          onClick={(event) => {
+                            setValueTarget(pointer);
+                            if (event.shiftKey && primaryPointer) doc.selection?.setBaseAndExtent(primaryPointer, pointer);
+                            else if (event.metaKey || event.ctrlKey) doc.selection?.togglePointer(pointer);
+                            else doc.selection?.collapse(pointer);
+                          }}
+                          className="flex min-h-16 flex-col items-stretch justify-between gap-1.5 rounded-md border border-stone-200 bg-white p-2 text-left text-xs shadow-sm hover:border-stone-300 hover:bg-stone-50 aria-selected:border-sky-500 aria-selected:bg-sky-50 aria-selected:ring-2 aria-selected:ring-sky-200"
+                        >
+                          <span className="min-w-0 font-medium text-stone-950">{card.title}</span>
+                          <span className="flex items-center justify-between gap-2">
+                            <span className="min-w-0 truncate text-[10px] text-stone-500">{pointer}</span>
+                            <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase ${statusClass(card.status)}`}>
+                              {card.status}
+                            </span>
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
+
+          <section className="grid gap-3 lg:grid-cols-[18rem_minmax(0,1fr)]">
+            <aside className="rounded border border-stone-200 bg-white p-3">
+              <Field label="value target">
+                <select
+                  value={valueTarget}
+                  onChange={(event) => setValueTarget(event.target.value as Pointer)}
+                  className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs"
+                >
+                  {pointers.map((item) => (
+                    <option key={item.pointer} value={item.pointer}>{item.pointer}</option>
+                  ))}
+                  <option value="/title">/title</option>
+                  <option value="/settings/archived">/settings/archived</option>
+                </select>
+              </Field>
+              <Field label="insert target">
+                <select
+                  value={insertTarget}
+                  onChange={(event) => changeInsertTarget(event.target.value as Pointer)}
+                  className="w-full rounded border border-stone-300 bg-white px-2 py-1 text-xs"
+                >
+                  {insertPointers.map((item) => (
+                    <option key={item.pointer} value={item.pointer}>{item.label}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="jsonpath">
+                <input
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                  className="w-full rounded border border-stone-300 px-2 py-1 font-mono text-xs"
+                />
+              </Field>
+              <Field label="text payload">
+                <input
+                  value={textPayload}
+                  onChange={(event) => setTextPayload(event.target.value)}
+                  className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-2">
+                <Field label="points">
+                  <input
+                    type="number"
+                    value={pointsPayload}
+                    onChange={(event) => setPointsPayload(event.target.value)}
+                    className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
+                  />
+                </Field>
+                <Field label="bad points">
+                  <input
+                    type="number"
+                    value={badPointsPayload}
+                    onChange={(event) => setBadPointsPayload(event.target.value)}
+                    className="w-full rounded border border-stone-300 px-2 py-1 text-xs"
+                  />
+                </Field>
+              </div>
+              <Field label="payload">
+                <textarea
+                  value={payload}
+                  onChange={(event) => setPayload(event.target.value)}
+                  className="h-28 w-full resize-none rounded border border-stone-300 px-2 py-1 font-mono text-xs"
+                  spellCheck={false}
+                />
+              </Field>
+            </aside>
+            <Inspect title="result" value={result} />
+          </section>
+        </div>
       </section>
 
-      <section className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
-        <FeaturePanel
-          title="Create board"
-          api="useJSONDocument / createJSONDocument"
-          code={["const doc = useJSONDocument(BoardSchema, initialBoard, { history, selection })"]}
-          result={featureResult("Create board")}
-          meta={[
-            "history 100",
-            "selection extended",
-            `selected ${selectedPointers.length}`,
-            "types JSONDocument",
-          ]}
-        >
-          <ApiRow action={<ActionButton onClick={() => run("useJSONDocument(schema, initial, options)", inspectReactFacade, "Create board")}>useJSONDocument</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("createJSONDocument(schema, initial, options)", inspectCreateJSONDocument, "Create board")}>createJSONDocument</ActionButton>} />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Add card"
-          api="canPatch -> patch"
-          code={[
-            `doc.canPatch([{ op: "add", path: "${insertTarget}", value }])`,
-            `doc.patch([{ op: "add", path: "${insertTarget}", value }]) -> JSONResult`,
-          ]}
-          result={featureResult("Add card")}
-          meta={[
-            `target ${insertTarget}`,
-            `schema ${capabilityStatus(doc.schema.accepts(insertTarget, parsedPayload(), "insert"))}`,
-            `can ${capabilityStatus(canAddPayload)}`,
-            "types JSONPatchInput -> JSONResult",
-          ]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canPatch([{ op: "add", path: "${insertTarget}", value: payload }])`, () => canAddPayload, "Add card")}>doc.canPatch</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canAddPayload)} onClick={() => run(`doc.patch([{ op: "add", path: "${insertTarget}", value: payload }])`, addCardToTodo, "Add card")}>doc.patch</ActionButton>}
-          />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Edit card"
-          api="canReplace -> patch / commit"
-          code={['doc.canReplace(path, value)', 'doc.patch([{ op: "replace", path, value }])']}
-          result={featureResult("Edit card")}
-          meta={[`field ${targetTitlePath}`, `can ${capabilityStatus(canPatchReplaceTitle)}`, "types JSONPatchInput -> JSONResult"]}
-        >
-          <ApiRow action={<ActionButton onClick={() => run(`doc.canReplace("${targetTitlePath}", textPayload)`, () => canReplaceTargetTitle, "Edit card")}>doc.canReplace</ActionButton>} />
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canPatch([{ op: "replace", path: "${targetTitlePath}", value: textPayload }])`, () => canPatchReplaceTitle, "Edit card")}>doc.canPatch</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canPatchReplaceTitle)} onClick={() => run(`doc.patch([{ op: "replace", path: "${targetTitlePath}", value: textPayload }])`, () => doc.patch([{ op: "replace", path: targetTitlePath, value: textPayload }]), "Edit card")}>doc.patch</ActionButton>}
-          />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.commit([{ op: "replace", path: "${targetTitlePath}", value }], { selection })`, commitReplaceTitle, "Edit card")}>doc.commit</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run('doc.patch([{ op: "replace", path: "/lists/0/cards/0/points", value: badPoints }])', invalidPatch, "Edit card")}>invalid patch</ActionButton>} />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Move card"
-          api="canMove -> patch(move)"
-          code={['doc.canMove(source, target)', 'doc.patch({ op: "move", from: source, path: target })']}
-          result={featureResult("Move card")}
-          meta={[`from ${valueTarget}`, `to ${insertTarget}`, `can ${capabilityStatus(canMoveTarget)}`, "types JSONCapabilityResult"]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canMove("${valueTarget}", "${insertTarget}")`, () => canMoveTarget, "Move card")}>doc.canMove</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canMoveTarget)} onClick={() => run(`doc.patch({ op: "move", from: "${valueTarget}", path: "${insertTarget}" })`, () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }), "Move card")}>doc.patch move</ActionButton>}
-          />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Duplicate card"
-          api="canDuplicate -> duplicate"
-          code={["doc.canDuplicate(source, { rekey })", "doc.duplicate(source, { rekey })"]}
-          result={featureResult("Duplicate card")}
-          meta={[`source ${valueTarget}`, "rekey id:suffix", `can ${capabilityStatus(canDuplicateTarget)}`, "types JSONDocumentDuplicateResult"]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canDuplicate("${valueTarget}", { rekey })`, () => canDuplicateTarget, "Duplicate card")}>doc.canDuplicate</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canDuplicateTarget)} onClick={() => run(`doc.duplicate("${valueTarget}", { rekey })`, duplicateTarget, "Duplicate card")}>doc.duplicate</ActionButton>}
-          />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Find and select"
-          api="canFind -> query -> selection.selectRanges"
-          code={["doc.canFind(jsonpath)", "doc.query(jsonpath); doc.selection?.selectRanges(pointers)"]}
-          result={featureResult("Find and select")}
-          meta={[`query ${query}`, `selected ${selectedPointers.length}`, "types QueryResult / SelectionRange"]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canFind(${JSON.stringify(query)})`, () => doc.canFind(query), "Find and select")}>doc.canFind</ActionButton>}
-            can={<ActionButton onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers, "Find and select")}>doc.query</ActionButton>}
-          />
-          <ApiRow action={<ActionButton onClick={() => run("doc.selection?.selectRanges(todoPointers)", selectTodoCards, "Find and select")}>selection.selectRanges</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.selection?.collapse("${valueTarget}")`, () => { doc.selection?.collapse(valueTarget); return doc.selection?.snapshot(); }, "Find and select")}>selection.collapse</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.selection?.togglePointer("${valueTarget}")`, () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); }, "Find and select")}>selection.togglePointer</ActionButton>} />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Copy and paste"
-          api="canCopy -> copy -> canPaste -> paste"
-          code={["doc.clipboard.copy(source)", "doc.clipboard.paste(insertTarget, { spread, rekey })", "doc.clipboard.paste({ after: valueTarget })"]}
-          result={featureResult("Copy and paste")}
-          meta={[
-            `source ${primarySource}`,
-            `target ${insertTarget}`,
-            `clipboard ${hasClipboard ? "set" : "empty"}`,
-            "types ClipboardState / PasteTarget",
-          ]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canCopy("${primarySource}")`, () => canCopyPrimary, "Copy and paste")}>doc.canCopy</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canCopyPrimary)} onClick={() => run(`doc.clipboard.copy("${primarySource}")`, copyPrimaryCard, "Copy and paste")}>clipboard.copy</ActionButton>}
-          />
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canPaste("${insertTarget}", { spread: true, rekey })`, () => canPasteClipboardToInsertTarget, "Copy and paste")}>doc.canPaste</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canPasteClipboardToInsertTarget)} onClick={() => run(`doc.clipboard.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget, "Copy and paste")}>clipboard.paste</ActionButton>}
-          />
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canPaste({ after: "${valueTarget}" })`, () => canPasteClipboardAfterTarget, "Copy and paste")}>doc.canPaste after</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canPasteClipboardAfterTarget)} onClick={() => run(`doc.clipboard.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget, "Copy and paste")}>clipboard.paste after</ActionButton>}
-          />
-          <ApiRow
-            action={<ActionButton onClick={() => run(`doc.canPastePayload("${insertTarget}", payload, { rekey })`, () => canPastePayloadToInsertTarget, "Copy and paste")}>doc.canPastePayload</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canPastePayloadToInsertTarget)} onClick={() => run(`doc.clipboard.pastePayload("${insertTarget}", payload, { rekey })`, pastePayloadToInsertTarget, "Copy and paste")}>pastePayload</ActionButton>}
-          />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Bulk cards"
-          api="selection -> canRemove/canCut -> patch/cut"
-          code={["doc.canRemove(selection.selectedSource)", "doc.clipboard.cut(selection.selectedSource)"]}
-          result={featureResult("Bulk cards")}
-          meta={[`source ${selectedLabel(Array.isArray(selectedSource) ? selectedSource : [selectedSource])}`, `canRemove ${capabilityStatus(canRemoveSource)}`, "types SelectionSource / ClipboardCutResult"]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run("doc.canRemove(source)", () => canRemoveSource, "Bulk cards")}>doc.canRemove</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canRemoveSource)} onClick={() => run("doc.patch(selectedPointers.map((path) => ({ op: \"remove\", path })))", removeTargets, "Bulk cards")}>remove selected</ActionButton>}
-          />
-          <ApiRow
-            action={<ActionButton onClick={() => run("doc.canCut(source)", () => canCutSource, "Bulk cards")}>doc.canCut</ActionButton>}
-            can={<ActionButton disabledReason={canDisabledReason(canCutSource)} onClick={() => run("doc.clipboard.cut(source)", () => doc.clipboard.cut(selectedSource), "Bulk cards")}>clipboard.cut</ActionButton>}
-          />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Undo and redo"
-          api="canUndo/canRedo -> history"
-          code={["doc.canUndo(); doc.history.undo()", "doc.canRedo(); doc.history.redo()"]}
-          result={featureResult("Undo and redo")}
-          meta={[`undo ${doc.history.undoDepth}`, `redo ${doc.history.redoDepth}`, "types JSONDocumentHistory"]}
-        >
-          <ApiRow
-            action={<ActionButton onClick={() => run("doc.canUndo()", () => doc.canUndo(), "Undo and redo")}>doc.canUndo</ActionButton>}
-            can={<ActionButton onClick={() => run("doc.history.undo()", () => doc.history.undo(), "Undo and redo")} disabledReason={canDisabledReason(doc.canUndo())}>history.undo</ActionButton>}
-          />
-          <ApiRow
-            action={<ActionButton onClick={() => run("doc.canRedo()", () => doc.canRedo(), "Undo and redo")}>doc.canRedo</ActionButton>}
-            can={<ActionButton onClick={() => run("doc.history.redo()", () => doc.history.redo(), "Undo and redo")} disabledReason={canDisabledReason(doc.canRedo())}>history.redo</ActionButton>}
-          />
-          <ApiRow action={<ActionButton onClick={() => run("doc.history.transaction(options, fn)", transactionRename, "Undo and redo")}>history.transaction</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run('doc.history.mergeLast({ mergeKey: "manual" })', () => doc.history.mergeLast({ mergeKey: "manual" }), "Undo and redo")}>history.mergeLast</ActionButton>} />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Read schema"
-          api="at/exists/entries/query + schema"
-          code={["doc.at(pointer); doc.entries(pointer)", "doc.schema.describe(pointer, mode)"]}
-          result={featureResult("Read schema")}
-          meta={[`value ${valueTarget}`, `insert ${insertTarget}`, "types ReadResult / SchemaDescription"]}
-        >
-          <ApiRow action={<ActionButton onClick={() => run(`doc.at("${valueTarget}")`, () => doc.at(valueTarget), "Read schema")}>doc.at</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.exists("${valueTarget}")`, () => doc.exists(valueTarget), "Read schema")}>doc.exists</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run('doc.entries("/lists/0/cards")', () => doc.entries("/lists/0/cards" as Pointer), "Read schema")}>doc.entries</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.schema.describe("${insertTarget}", "insert")`, () => doc.schema.describe(insertTarget, "insert"), "Read schema")}>schema.describe</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", invalidCard, "insert")`, () => doc.schema.accepts(insertTarget, invalidCard, "insert"), "Read schema")}>schema.accepts invalid</ActionButton>} />
-        </FeaturePanel>
-
-        <FeaturePanel
-          title="Board plumbing"
-          api="public API behind board integrations"
-          code={["doc.load/reset/subscribe", "applyPatch + trackPointer + clipboard.write + textPatch"]}
-          result={featureResult("Board plumbing")}
-          meta={["import/export", "external patches", "subscription", "text edit", "types Pointer / JSONChangeMetadata"]}
-        >
-          <ApiSectionLabel>Import and reset</ApiSectionLabel>
-          <ApiRow action={<ActionButton onClick={() => run("doc.load(nextBoard)", loadFixture, "Board plumbing")}>doc.load</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.reset()", resetBoard, "Board plumbing")}>doc.reset</ActionButton>} />
-          <ApiSectionLabel>External patch sync</ApiSectionLabel>
-          <ApiRow action={<ActionButton onClick={() => run("doc.subscribe(listener)", inspectSubscribe, "Board plumbing")}>doc.subscribe</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("applyPatch(schema, board, patch)", inspectApplyPatch, "Board plumbing")}>applyPatch</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("trackPointer(pointer, patch)", inspectTrackPointer, "Board plumbing")}>trackPointer</ActionButton>} />
-          <ApiSectionLabel>Path helpers</ApiSectionLabel>
-          <ApiRow action={<ActionButton onClick={() => run("pointer helpers", inspectPointerHelpers, "Board plumbing")}>pointer helpers</ActionButton>} />
-          <ApiSectionLabel>Clipboard and text</ApiSectionLabel>
-          <ApiRow action={<ActionButton onClick={() => run(`doc.clipboard.write(payload, { source: "${valueTarget}" })`, () => { doc.clipboard.write(parsedPayload(), { source: valueTarget }); return doc.clipboard.read(); }, "Board plumbing")}>clipboard.write</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return { cleared: true, hasData: doc.clipboard.hasData }; }, "Board plumbing")}>clipboard.clear</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.selection?.textPatch(textPayload)", replaceTitleText, "Board plumbing")}>selection.textPatch</ActionButton>} />
-          <ApiSectionLabel>Schema probe</ApiSectionLabel>
-          <ApiRow action={<ActionButton onClick={() => run(`doc.schema.kind("${valueTarget}")`, () => doc.schema.kind(valueTarget), "Board plumbing")}>schema.kind</ActionButton>} />
-        </FeaturePanel>
-      </section>
-
-      <section className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
+      <details data-api-coverage="" className="rounded border border-stone-200 bg-white p-3">
+        <summary className="cursor-pointer text-sm font-semibold text-stone-700">API coverage index</summary>
+        <section className="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
         <ActionGroup title="root API">
           <ApiRow action={<ActionButton onClick={() => run("JSONCrudError / PointerSyntaxError", inspectBoundaryErrors)}>JSONCrudError</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("PointerSyntaxError", inspectBoundaryErrors)}>PointerSyntaxError</ActionButton>} />
@@ -1386,12 +1297,12 @@ export function InterfaceWorkbench() {
         <ActionGroup title="type API">
           <ApiTokenGroups groups={publicTypeGroups} fallbackItems={publicTypeExports} />
         </ActionGroup>
-      </section>
+        </section>
+      </details>
 
       <section className="grid gap-3 lg:grid-cols-3">
         <Inspect title="selection state" value={{ selected: selectedLabel(selectedPointers), primary: primaryPointer, snapshot: doc.selection?.snapshot() }} />
         <Inspect title="clipboard buffer" value={clipboardSnapshot} />
-        <Inspect title="result" value={result} />
         <Inspect title="state" value={{ valueTarget, insertTarget, value: doc.value, lastPatch: doc.lastPatch }} />
       </section>
     </div>
@@ -1411,56 +1322,55 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-function FeaturePanel(props: {
+function CommandSection(props: {
+  title: string;
+  active: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="mb-4 last:mb-0">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-500">{props.title}</h2>
+        {props.active ? <Badge>active</Badge> : null}
+      </div>
+      <div className="grid gap-1.5">{props.children}</div>
+    </section>
+  );
+}
+
+function CommandRow(props: {
   title: string;
   api: string;
-  meta: readonly string[];
-  code?: readonly string[];
   result?: BenchResult;
   children: ReactNode;
 }) {
   return (
-    <div data-api-group="" className="rounded border border-stone-200 bg-white p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-500">{props.title}</h2>
-        <code className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-600">{props.api}</code>
-      </div>
-      <div className="mb-2 flex flex-wrap gap-1">
-        {props.meta.map((item) => (
-          <span key={item} className="rounded bg-stone-50 px-1.5 py-0.5 text-[10px] text-stone-500">{item}</span>
-        ))}
-      </div>
-      {props.code ? (
-        <div className="mb-2 grid gap-1">
-          {props.code.map((item) => (
-            <code key={item} className="overflow-hidden text-ellipsis whitespace-nowrap rounded bg-stone-950 px-2 py-1 text-[10px] text-stone-100">{item}</code>
-          ))}
+    <div data-command-row="" className="rounded border border-stone-200 bg-stone-50 p-2">
+      <div className="mb-1 flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h3 className="m-0 text-xs font-semibold text-stone-900">{props.title}</h3>
+          <code className="block truncate text-[10px] text-stone-500">{props.api}</code>
         </div>
-      ) : null}
-      <div className="grid gap-1.5">{props.children}</div>
-      {props.result ? (
-        <div className="mt-2 rounded border border-stone-200 bg-stone-50 p-2 text-[10px] text-stone-700">
-          <div className="mb-1 truncate font-mono text-stone-950">{props.result.call}</div>
-          {props.result.bindings && props.result.bindings.length > 0 ? (
-            <div className="mb-1 text-[10px] font-medium uppercase tracking-wide text-stone-400">Clicked with</div>
-          ) : null}
-          <div className="mb-1 flex flex-wrap gap-1">
-            {props.result.bindings?.map((item) => (
-              <span key={item} className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-700">{item}</span>
-            ))}
-            {props.result.effect?.map((item) => (
-              <span key={item} className="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-700">{item}</span>
-            ))}
-            {resultSummary(props.result.value, props.result.call).map((item) => (
-              <span key={item} className="rounded bg-white px-1.5 py-0.5">{item}</span>
-            ))}
-          </div>
-          <details>
-            <summary className="cursor-pointer text-stone-500">raw</summary>
-            <pre className="mt-1 max-h-36 overflow-auto whitespace-pre-wrap leading-relaxed">{stringify(props.result.value)}</pre>
-          </details>
-        </div>
-      ) : null}
+      </div>
+      <div className="flex flex-wrap gap-1.5">{props.children}</div>
+      {props.result ? <CommandResult result={props.result} /> : null}
+    </div>
+  );
+}
+
+function CommandResult({ result }: { result: BenchResult }) {
+  return (
+    <div className="mt-1 flex flex-wrap gap-1 text-[10px] text-stone-600">
+      <code className="max-w-full truncate rounded bg-white px-1.5 py-0.5">{result.call}</code>
+      {result.bindings?.map((item) => (
+        <span key={item} className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-700">{item}</span>
+      ))}
+      {result.effect?.map((item) => (
+        <span key={item} className="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-700">{item}</span>
+      ))}
+      {resultSummary(result.value, result.call).map((item) => (
+        <span key={item} className="rounded bg-white px-1.5 py-0.5">{item}</span>
+      ))}
     </div>
   );
 }
@@ -1481,10 +1391,6 @@ function ApiRow({ action, can }: { action: ReactNode; can?: ReactNode }) {
       {can}
     </div>
   );
-}
-
-function ApiSectionLabel({ children }: { children: ReactNode }) {
-  return <div className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400 first:mt-0">{children}</div>;
 }
 
 function ApiTokenGroups(props: {

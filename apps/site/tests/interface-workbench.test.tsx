@@ -14,6 +14,24 @@ function group(title: string): HTMLElement {
   return element;
 }
 
+function commandList(): HTMLElement {
+  const element = document.querySelector("[data-command-list]");
+  if (!(element instanceof HTMLElement)) throw new Error("Missing command list");
+  return element;
+}
+
+function commandRow(title: string): HTMLElement {
+  const titleNode = within(commandList()).getByText(title);
+  const element = titleNode.closest("[data-command-row]");
+  if (!(element instanceof HTMLElement)) throw new Error(`Missing command row: ${title}`);
+  return element;
+}
+
+async function openApiCoverage(user: ReturnType<typeof userEvent.setup>): Promise<void> {
+  const summary = screen.getByText("API coverage index");
+  if (summary.closest("details")?.hasAttribute("open") !== true) await user.click(summary);
+}
+
 function expectButtons(groupName: string, controls: readonly string[]): void {
   const text = group(groupName).textContent ?? "";
   for (const control of controls) {
@@ -22,10 +40,14 @@ function expectButtons(groupName: string, controls: readonly string[]): void {
 }
 
 describe("InterfaceWorkbench", () => {
-  test("uses Kanban features as the primary API lab surface", () => {
+  test("uses a left command list as the primary API lab surface", () => {
     render(<InterfaceWorkbench />);
 
     expect(screen.getByText("Interface bench")).toBeTruthy();
+    expect(commandList()).toBeTruthy();
+    expect(within(commandList()).getByRole("heading", { name: "Selection = 0" })).toBeTruthy();
+    expect(within(commandList()).getByRole("heading", { name: "Selection = 1" })).toBeTruthy();
+    expect(within(commandList()).getByRole("heading", { name: "Selection = N" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Todo" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Doing" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Done" })).toBeTruthy();
@@ -35,24 +57,28 @@ describe("InterfaceWorkbench", () => {
 
     for (const title of [
       "Create board",
-      "Add card",
+      "Add card to column",
+      "Validate card draft",
+      "Search and select",
       "Edit card",
       "Move card",
       "Duplicate card",
-      "Find and select",
-      "Copy and paste",
-      "Bulk cards",
-      "Undo and redo",
-      "Read schema",
-      "Board plumbing",
+      "Copy / cut / paste after",
+      "Build selection",
+      "Remove selected",
+      "Copy / cut selected",
+      "Paste selected into column",
     ]) {
-      expect(screen.getByRole("heading", { name: title })).toBeTruthy();
+      expect(commandRow(title)).toBeTruthy();
     }
+    expect(screen.getByText("API coverage index")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "zod-crud API" })).toBeNull();
   });
 
-  test("exposes every public runtime API surface", () => {
+  test("exposes every public runtime API surface", async () => {
     render(<InterfaceWorkbench />);
+    const user = userEvent.setup();
+    await openApiCoverage(user);
 
     expectButtons("root API", [
       "JSONCrudError",
@@ -161,8 +187,10 @@ describe("InterfaceWorkbench", () => {
     expectButtons("schema API", ["schema.at", "schema.kind", "schema.accepts", "schema.accepts invalid", "schema.describe"]);
   });
 
-  test("keeps public type exports visible", () => {
+  test("keeps public type exports visible", async () => {
     render(<InterfaceWorkbench />);
+    const user = userEvent.setup();
+    await openApiCoverage(user);
     const typeGroup = within(group("type API"));
 
     for (const typeName of [
@@ -184,23 +212,27 @@ describe("InterfaceWorkbench", () => {
 
     await user.selectOptions(screen.getByLabelText("value target"), "/title");
 
-    const edit = within(group("Edit card"));
-    const patch = edit.getByRole("button", { name: "doc.patch" });
+    const edit = within(commandRow("Edit card"));
+    const patch = edit.getByRole("button", { name: "patch" });
     expect((patch as HTMLButtonElement).disabled).toBe(true);
     expect(patch.title).toContain("can:");
     expect(within(patch).getByText("cannot path_not_found")).toBeTruthy();
 
-    const canPatch = edit.getByRole("button", { name: "doc.canPatch" });
+    const canPatch = edit.getByRole("button", { name: "canPatch" });
     expect((canPatch as HTMLButtonElement).disabled).toBe(false);
     await user.click(canPatch);
     expect(screen.getAllByText(/doc\.canPatch/).length).toBeGreaterThan(0);
+
+    await user.click(within(commandRow("Build selection")).getByRole("button", { name: "select 0" }));
+    expect((patch as HTMLButtonElement).disabled).toBe(true);
+    expect(patch.title).toContain("select_one_card");
   });
 
   test("keeps duplicate focused on the newly duplicated card", async () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
     const target = screen.getByLabelText("value target") as HTMLSelectElement;
-    const duplicate = within(group("Duplicate card")).getByRole("button", { name: "doc.duplicate" });
+    const duplicate = within(commandRow("Duplicate card")).getByRole("button", { name: "duplicate" });
 
     await user.click(duplicate);
     expect(target.value).toBe("/lists/0/cards/1");
@@ -217,26 +249,23 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
 
-    await user.click(within(group("Add card")).getByRole("button", { name: "doc.patch" }));
+    await user.click(within(commandRow("Add card to column")).getByRole("button", { name: "doc.patch" }));
     expect(screen.getByText("Inserted card")).toBeTruthy();
 
-    await user.click(within(group("Find and select")).getByRole("button", { name: "selection.selectRanges" }));
+    await user.click(within(commandRow("Search and select")).getByRole("button", { name: "select results" }));
     expect(screen.getAllByText("selected 3").length).toBeGreaterThan(0);
 
-    await user.click(within(group("Copy and paste")).getByRole("button", { name: "clipboard.copy" }));
+    await user.click(within(commandRow("Copy / cut selected")).getByRole("button", { name: "copy" }));
     expect(screen.getAllByText("clipboard set").length).toBeGreaterThan(0);
 
-    await user.click(within(group("Copy and paste")).getByRole("button", { name: "clipboard.paste after" }));
+    await user.click(within(commandRow("Paste selected into column")).getByRole("button", { name: "paste" }));
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
 
-    await user.click(within(group("document API")).getByRole("button", { name: "doc.canMove" }));
-    expect(screen.getAllByText(/doc\.canMove/).length).toBeGreaterThan(0);
-
-    await user.click(within(group("schema API")).getByRole("button", { name: "schema.accepts invalid" }));
+    await user.click(within(commandRow("Validate card draft")).getByRole("button", { name: "schema.accepts invalid" }));
     expect(screen.getAllByText(/doc\.schema\.accepts/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/schema_violation/).length).toBeGreaterThan(0);
 
-    await user.click(within(group("root API")).getByRole("button", { name: "applyPatch" }));
+    await user.click(within(commandRow("External patch sync")).getByRole("button", { name: "applyPatch" }));
     expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
   });
 });
