@@ -19,15 +19,15 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
 
     expect(screen.getByText("Interface bench")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Todo" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Doing" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Done" })).toBeTruthy();
     expect(screen.getByLabelText("value target")).toBeTruthy();
     expect(screen.getByLabelText("insert target")).toBeTruthy();
     expect(screen.getByLabelText("text payload")).toBeTruthy();
     expect(screen.getByLabelText("points")).toBeTruthy();
     expect(screen.getByLabelText("bad points")).toBeTruthy();
     expect(screen.getByLabelText("payload")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
-    expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
-    expect(screen.getByText(/실행 전 검증/)).toBeTruthy();
     for (const title of [
       "doc.patch",
       "document actions",
@@ -38,22 +38,10 @@ describe("InterfaceWorkbench", () => {
       "doc.can*",
       "doc.schema",
       "pure exports",
-      "zod-crud API",
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
-    expect(screen.getByText(/앱 코드에서 직접 쓰는 API/)).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "기준" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "clipboard" })).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "can*" })).toBeTruthy();
-    expect(screen.getByText(/query: JSONPath -> Pointer/)).toBeTruthy();
-    expect(screen.getAllByText(/JSONPath는 변경 언어가 아닙니다/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/doc\.query\("\$\.\.cards/).length).toBeGreaterThan(0);
-    expect(screen.getByText(/source를 생략하면 현재 selection을 사용합니다/)).toBeTruthy();
-    expect(screen.getByText(/blocked\.violations/)).toBeTruthy();
-    expect(screen.getAllByText(/createJSONDocument/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/SelectionState/).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/useJSONDocument/).length).toBeGreaterThan(0);
+    expect(screen.queryByRole("heading", { name: "zod-crud API" })).toBeNull();
   });
 
   test("keeps the public document controls discoverable", () => {
@@ -104,10 +92,10 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByText("Inserted card")).toBeTruthy();
 
     await user.click(within(group("doc.selection")).getByRole("button", { name: "select todo" }));
-    expect(screen.getByText("selected: 3")).toBeTruthy();
+    expect(screen.getByText("selected 3")).toBeTruthy();
 
     await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy" }));
-    expect(screen.getByText("clipboard: set")).toBeTruthy();
+    expect(screen.getByText("clipboard set")).toBeTruthy();
 
     await user.click(within(group("doc.clipboard")).getByRole("button", { name: "paste after" }));
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
@@ -128,10 +116,10 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getAllByText(/doc\.canPaste/).length).toBeGreaterThan(0);
 
     await user.click(within(group("doc.schema")).getByRole("button", { name: "rejects" }));
-    expect(screen.getAllByText(/doc\.schema\.accepts/).length).toBeGreaterThan(1);
-    expect(screen.getAllByText(/schema_violation/).length).toBeGreaterThan(1);
+    expect(screen.getAllByText(/doc\.schema\.accepts/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/schema_violation/).length).toBeGreaterThan(0);
 
     await user.click(within(group("pure exports")).getByRole("button", { name: "inspect" }));
-    expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(1);
+    expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
   });
 });

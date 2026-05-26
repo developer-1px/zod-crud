@@ -59,12 +59,13 @@ describe("official site shell", () => {
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud API" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeTruthy();
+    expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
     const mobileSections = within(screen.getByRole("navigation", { name: "Documentation sections" }));
     expect(mobileSections.getByRole("link", { name: "작업별 진입점" }).getAttribute("href")).toBe("#작업별-진입점");
 
     await user.click(nav.getByRole("link", { name: "Workbench" }));
     expect(await screen.findByText("Interface bench")).toBeTruthy();
-    expect(screen.getByRole("heading", { name: "zod-crud API" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "zod-crud API" })).toBeNull();
   });
 
   test("supports direct route entry for static-hosting fallbacks", async () => {

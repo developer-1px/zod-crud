@@ -16,8 +16,6 @@ import {
   type Pointer,
 } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
-import { MarkdownViewer } from "../components/MarkdownViewer";
-import apiReferenceMarkdown from "../docs/zod-crud-api.md?raw";
 
 const Card = z.object({
   id: z.string(),
@@ -60,6 +58,13 @@ const initialBoard: Board = {
       name: "Doing",
       cards: [
         { id: "c3", title: "Clipboard API", status: "doing", points: 5, tags: ["clipboard"] },
+      ],
+    },
+    {
+      id: "done",
+      name: "Done",
+      cards: [
+        { id: "c4", title: "History API", status: "done", points: 8, tags: ["history"] },
       ],
     },
   ],
@@ -119,6 +124,18 @@ function selectedLabel(selected: readonly string[]): string {
 
 function cardRekey() {
   return { fields: ["id"], strategy: "suffix" as const };
+}
+
+function columnClass(id: string): string {
+  if (id === "doing") return "border-amber-200 bg-amber-50/70";
+  if (id === "done") return "border-emerald-200 bg-emerald-50/70";
+  return "border-stone-200 bg-stone-50";
+}
+
+function statusClass(status: Board["lists"][number]["cards"][number]["status"]): string {
+  if (status === "doing") return "bg-amber-100 text-amber-800";
+  if (status === "done") return "bg-emerald-100 text-emerald-800";
+  return "bg-sky-100 text-sky-800";
 }
 
 export function InterfaceWorkbench() {
@@ -352,20 +369,23 @@ export function InterfaceWorkbench() {
 
   return (
     <div className="flex w-full flex-col gap-4">
-      <section className="grid gap-4 lg:grid-cols-[minmax(20rem,1fr)_20rem]">
-        <div className="rounded border border-stone-200 bg-white p-3">
+      <section className="grid gap-4 xl:grid-cols-[minmax(38rem,1fr)_22rem]">
+        <div className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center gap-2">
-            <strong className="text-sm">Interface bench</strong>
-            <Badge>selected: {selectedPointers.length}</Badge>
-            <Badge>undo: {doc.history.undoDepth}</Badge>
-            <Badge>redo: {doc.history.redoDepth}</Badge>
-            <Badge>clipboard: {doc.clipboard.hasData ? "set" : "empty"}</Badge>
+            <strong className="text-sm text-stone-950">Interface bench</strong>
+            <Badge>selected {selectedPointers.length}</Badge>
+            <Badge>undo {doc.history.undoDepth}</Badge>
+            <Badge>redo {doc.history.redoDepth}</Badge>
+            <Badge>clipboard {doc.clipboard.hasData ? "set" : "empty"}</Badge>
           </div>
-          <div className="grid gap-2 md:grid-cols-2">
+          <div className="grid gap-3 lg:grid-cols-3">
             {doc.value.lists.map((list, listIndex) => (
-              <div key={list.id} className="rounded border border-stone-200 p-2">
-                <div className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone-400">{list.name}</div>
-                <div className="flex flex-col gap-1">
+              <div key={list.id} className={`flex min-h-80 flex-col rounded border p-2 ${columnClass(list.id)}`}>
+                <div className="mb-2 flex items-center justify-between gap-2 px-1">
+                  <h2 className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-500">{list.name}</h2>
+                  <span className="rounded bg-white px-1.5 py-0.5 text-[10px] font-medium text-stone-500">{list.cards.length}</span>
+                </div>
+                <div className="flex flex-1 flex-col gap-2">
                   {list.cards.map((card, cardIndex) => {
                     const pointer = cardPointer(listIndex, cardIndex);
                     const selected = selectedPointers.includes(pointer);
@@ -379,11 +399,20 @@ export function InterfaceWorkbench() {
                           else if (event.metaKey || event.ctrlKey) doc.selection?.togglePointer(pointer);
                           else doc.selection?.collapse(pointer);
                         }}
-                        className="flex items-center justify-between gap-2 rounded px-2 py-2 text-left text-sm hover:bg-stone-100 aria-selected:bg-sky-100 aria-selected:text-sky-950"
+                        className="flex min-h-24 flex-col items-stretch justify-between gap-3 rounded-md border border-stone-200 bg-white p-3 text-left text-sm shadow-sm hover:border-stone-300 hover:bg-stone-50 aria-selected:border-sky-500 aria-selected:bg-sky-50 aria-selected:ring-2 aria-selected:ring-sky-200"
                       >
-                        <span className="min-w-0 truncate">{card.title}</span>
-                        <span className="shrink-0 rounded bg-stone-100 px-1.5 py-0.5 text-[10px] uppercase text-stone-500">
-                          {card.status}
+                        <span className="min-w-0 text-sm font-medium text-stone-950">{card.title}</span>
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="min-w-0 truncate text-[11px] text-stone-500">{pointer}</span>
+                          <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] uppercase ${statusClass(card.status)}`}>
+                            {card.status}
+                          </span>
+                        </span>
+                        <span className="flex flex-wrap items-center gap-1">
+                          <span className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-600">{card.points}pt</span>
+                          {card.tags.map((tag) => (
+                            <span key={tag} className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-500">{tag}</span>
+                          ))}
                         </span>
                       </button>
                     );
@@ -394,7 +423,7 @@ export function InterfaceWorkbench() {
           </div>
         </div>
 
-        <aside className="rounded border border-stone-200 bg-white p-3">
+        <aside className="self-start rounded border border-stone-200 bg-white p-3 xl:sticky xl:top-3">
           <Field label="value target">
             <select
               value={valueTarget}
@@ -462,7 +491,7 @@ export function InterfaceWorkbench() {
         </aside>
       </section>
 
-      <section className="grid gap-3 xl:grid-cols-4">
+      <section className="grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
         <ActionGroup title="doc.patch">
           <ActionButton disabledReason={canDisabledReason(canAddPayload)} onClick={() => run('doc.patch([{ op: "add", path: "/lists/0/cards/-", value: payload }])', addCardToTodo)}>add</ActionButton>
           <ActionButton disabledReason={canDisabledReason(canPatchReplaceTitle)} onClick={() => run(`doc.patch([{ op: "replace", path: "${targetTitlePath}", value: textPayload }])`, () => doc.patch([{ op: "replace", path: targetTitlePath, value: textPayload }]))}>replace</ActionButton>
@@ -550,8 +579,6 @@ export function InterfaceWorkbench() {
         </ActionGroup>
       </section>
 
-      <ApiReference />
-
       <section className="grid gap-3 lg:grid-cols-3">
         <Inspect title="selection" value={{ selected: selectedLabel(selectedPointers), primary: primaryPointer, snapshot: doc.selection?.snapshot() }} />
         <Inspect title="clipboard buffer" value={clipboardSnapshot} />
@@ -559,14 +586,6 @@ export function InterfaceWorkbench() {
         <Inspect title="state" value={{ valueTarget, insertTarget, value: doc.value, lastPatch: doc.lastPatch }} />
       </section>
     </div>
-  );
-}
-
-function ApiReference() {
-  return (
-    <section className="rounded border border-stone-200 bg-white p-3">
-      <MarkdownViewer source={apiReferenceMarkdown} />
-    </section>
   );
 }
 
@@ -587,7 +606,7 @@ function ActionGroup({ title, children }: { title: string; children: ReactNode }
   return (
     <div className="rounded border border-stone-200 bg-white p-3">
       <h2 className="mb-2 mt-0 text-xs font-semibold uppercase tracking-wide text-stone-400">{title}</h2>
-      <div className="grid grid-cols-2 gap-1.5">{children}</div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(7rem,1fr))] gap-2">{children}</div>
     </div>
   );
 }
@@ -607,7 +626,7 @@ function ActionButton(props: {
       disabled={disabled}
       aria-label={label}
       title={props.disabledReason}
-      className="inline-flex min-h-7 items-center justify-center gap-1 rounded border border-stone-300 bg-white px-2 py-1 text-xs font-medium text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex min-h-9 items-center justify-center gap-1 whitespace-normal rounded border border-stone-300 bg-white px-3 py-2 text-center text-xs font-medium leading-tight text-stone-700 hover:bg-stone-100 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {props.children}
       {props.disabledReason ? (

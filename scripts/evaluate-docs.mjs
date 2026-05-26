@@ -294,8 +294,8 @@ if (/max-h-96/.test(workbenchPlayground)) {
   fail("workbench playground: JSON code output must not pin a max height.");
 }
 
-if (!/getAllByRole\("table"\)/.test(workbenchTest)) {
-  fail("workbench test: Markdown table rendering assertion missing.");
+if (!/getAllByRole\("table"\)/.test(siteShellTest)) {
+  fail("site shell test: Markdown table rendering assertion missing.");
 }
 
 for (const pattern of [
