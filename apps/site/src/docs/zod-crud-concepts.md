@@ -14,7 +14,7 @@ zod-crud는 Zod schema를 기준으로 JSON 데이터를 안전하게 읽고 바
 
 ## 배경
 
-프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. 폼, CMS block, kanban card, outliner, API collection은 UI는 달라도 결국 값 추가, 변경, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
+프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. 폼, CMS block, kanban card, outliner는 UI는 달라도 결국 값 추가, 변경, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
 
 문제는 이 규칙을 앱마다 다시 만들 때 생깁니다. patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 서로 다른 코드에 흩어지면 같은 편집 동작을 테스트하기 어렵고, UI 코드가 상태 변경 규칙까지 떠안게 됩니다.
 
@@ -137,7 +137,6 @@ npm run perf:core
 - CMS block editor: block 추가, 이동, 복제, schema-safe paste.
 - Kanban/card editor: card 검색, multi-select, duplicate, list 간 paste.
 - Outliner/tree editor: indent/outdent를 JSON Pointer와 JSON Patch로 번역.
-- API collection editor: request/response JSON 검색, batch replace, clipboard flow.
 - Settings editor: schema validation, reasoned `can*` 결과, undo/redo.
 
 ## 다음에 볼 문서

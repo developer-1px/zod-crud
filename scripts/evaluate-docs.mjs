@@ -326,7 +326,6 @@ for (const route of [
   ["/playground", "Workbench - zod-crud", "Interactive zod-crud workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search."],
   ["/playground/outliner", "Outliner demo - zod-crud", "Keyboard-first outliner demo showing zod-crud selection, clipboard, history, structure edits, and JSON document movement."],
   ["/playground/mobile-cms", "Mobile CMS demo - zod-crud", "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history."],
-  ["/playground/api-collection", "API collection demo - zod-crud", "API collection demo showing request and response JSON editing, search, duplication, selection, and clipboard flows with zod-crud."],
 ]) {
   if (!siteRoutes.some((item) => item.path === route[0] && item.title === route[1] && item.description === route[2])) {
     fail(`site routes: missing ${route[0]} ${route[1]} metadata.`);
@@ -360,7 +359,6 @@ if (
   || !/lazy\(\(\) => import\("\.\/routes\/Playground"\)/.test(siteApp)
   || !/lazy\(\(\) => import\("@zod-crud\/outliner"\)/.test(siteApp)
   || !/lazy\(\(\) => import\("@zod-crud\/mobile-cms"\)/.test(siteApp)
-  || !/lazy\(\(\) => import\("@zod-crud\/api-collection"\)/.test(siteApp)
 ) {
   fail("site app: route docs and demos must be lazy-loaded from the overview page.");
 }

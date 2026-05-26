@@ -19,7 +19,6 @@ const DocsApiReference = lazy(() => import("./routes/Docs").then((module) => ({ 
 const Playground = lazy(() => import("./routes/Playground").then((module) => ({ default: module.Playground })));
 const Outliner = lazy(() => import("@zod-crud/outliner").then((module) => ({ default: module.Outliner })));
 const MobileCms = lazy(() => import("@zod-crud/mobile-cms").then((module) => ({ default: module.App })));
-const ApiCollection = lazy(() => import("@zod-crud/api-collection").then((module) => ({ default: module.ApiCollection })));
 const routeComponents: Record<string, ComponentType> = {
   "/": Home,
   "/docs": Docs,
@@ -28,7 +27,6 @@ const routeComponents: Record<string, ComponentType> = {
   "/playground": Playground,
   "/playground/outliner": Outliner,
   "/playground/mobile-cms": MobileCms,
-  "/playground/api-collection": ApiCollection,
 };
 const ROUTES: Route[] = (siteRoutes as SiteRoute[]).map((route) => ({
   ...route,

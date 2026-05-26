@@ -53,7 +53,6 @@ function isDemoOrEngineRequest(url: string): boolean {
     "/src/playgrounds/InterfaceWorkbench.playground",
     "/apps/outliner/src/",
     "/apps/mobile-cms/src/",
-    "/apps/api-collection/src/",
     "/packages/zod-crud/src/index.ts",
     "/packages/zod-crud/src/react.ts",
   ].some((part) => url.includes(part));

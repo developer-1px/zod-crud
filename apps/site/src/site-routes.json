@@ -47,12 +47,5 @@
     "title": "Mobile CMS demo - zod-crud",
     "description": "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history.",
     "group": "Demos"
-  },
-  {
-    "path": "/playground/api-collection",
-    "label": "API collection",
-    "title": "API collection demo - zod-crud",
-    "description": "API collection demo showing request and response JSON editing, search, duplication, selection, and clipboard flows with zod-crud.",
-    "group": "Demos"
   }
 ]

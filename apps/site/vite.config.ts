@@ -132,7 +132,6 @@ export default defineConfig({
           if (id.includes("/packages/zod-crud/src/")) return "zod-crud";
           if (id.includes("/apps/outliner/src/")) return "playground-outliner";
           if (id.includes("/apps/mobile-cms/src/")) return "playground-mobile-cms";
-          if (id.includes("/apps/api-collection/src/")) return "playground-api-collection";
         },
       },
     },
