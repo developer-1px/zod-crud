@@ -142,6 +142,21 @@ describe("RFC 6902 — move", () => {
     expect(r.state).toEqual({ b: 2, c: 1 });
   });
 
+  it("moves an array item to /- after removing the source", () => {
+    const first = { id: "a" };
+    const second = { id: "b" };
+    const initial = { items: [first, second] };
+
+    const single = applyOperation(Any, initial, { op: "move", from: "/items/0", path: "/items/-" });
+    expect(single.result.ok).toBe(true);
+    expect((single.state as typeof initial).items).toEqual([second, first]);
+
+    const patch = applyPatch(Any, initial, [{ op: "move", from: "/items/0", path: "/items/-" }]);
+    expect(patch.result.ok).toBe(true);
+    expect(patch.applied).toEqual([{ op: "move", from: "/items/0", path: "/items/1" }]);
+    expect((patch.state as typeof initial).items).toEqual([second, first]);
+  });
+
   it("rejects move into own descendant", () => {
     const r = applyOperation(Any, { a: { b: 1 } }, { op: "move", from: "/a", path: "/a/b/c" });
     expect(r.result.ok).toBe(false);

@@ -21,6 +21,7 @@ export function normalizeOp(op: JSONPatchOperation, before: unknown): JSONPatchO
   if (op === null || typeof op !== "object") return op;
   if (op.op === "test" || op.op === "remove") return op;
   if (typeof (op as { path?: unknown }).path !== "string") return op;
+  if (op.op === "move" && op.path.endsWith("/-")) return op;
   const path = resolveAppendPath(op.path, before);
   if (path === op.path) return op;
   if (op.op === "move" || op.op === "copy") return { op: op.op, from: op.from, path };

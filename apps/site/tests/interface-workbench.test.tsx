@@ -21,6 +21,10 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByText("Interface bench")).toBeTruthy();
     expect(screen.getByLabelText("value target")).toBeTruthy();
     expect(screen.getByLabelText("insert target")).toBeTruthy();
+    expect(screen.getByLabelText("text payload")).toBeTruthy();
+    expect(screen.getByLabelText("points")).toBeTruthy();
+    expect(screen.getByLabelText("bad points")).toBeTruthy();
+    expect(screen.getByLabelText("payload")).toBeTruthy();
     expect(screen.getByRole("heading", { name: "작업별 진입점" })).toBeTruthy();
     expect(screen.getAllByRole("table").length).toBeGreaterThan(0);
     expect(screen.getByText(/실행 전 검증/)).toBeTruthy();
@@ -75,12 +79,29 @@ describe("InterfaceWorkbench", () => {
     }
   });
 
+  test("marks can-disabled actions without hiding can checks", async () => {
+    render(<InterfaceWorkbench />);
+    const user = userEvent.setup();
+
+    await user.selectOptions(screen.getByLabelText("value target"), "/title");
+
+    const patchReplace = within(group("doc.patch")).getByRole("button", { name: "replace" });
+    expect((patchReplace as HTMLButtonElement).disabled).toBe(true);
+    expect(patchReplace.title).toContain("can:");
+    expect(within(patchReplace).getByText("can")).toBeTruthy();
+
+    const canReplace = within(group("doc.can*")).getByRole("button", { name: "replace ok" });
+    expect((canReplace as HTMLButtonElement).disabled).toBe(false);
+    await user.click(canReplace);
+    expect(screen.getAllByText(/doc\.canReplace/).length).toBeGreaterThan(0);
+  });
+
   test("runs representative ops, selection, clipboard, and schema actions", async () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
 
     await user.click(within(group("doc.patch")).getByRole("button", { name: "add" }));
-    expect(screen.getByText("Card c4")).toBeTruthy();
+    expect(screen.getByText("Inserted card")).toBeTruthy();
 
     await user.click(within(group("doc.selection")).getByRole("button", { name: "select todo" }));
     expect(screen.getByText("selected: 3")).toBeTruthy();

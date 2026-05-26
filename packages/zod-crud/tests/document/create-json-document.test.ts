@@ -55,6 +55,14 @@ describe("createJSONDocument public interface", () => {
     expect(doc.value.meta).toEqual({ editor: "core" });
   });
 
+  test("moves an item to the same array append target through patch and canMove", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+
+    expect(doc.canMove("/items/0", "/items/-")).toEqual({ ok: true });
+    expect(doc.patch({ op: "move", from: "/items/0", path: "/items/-" })).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a"]);
+  });
+
   test("trustedInitial skips initial schema parsing for already-validated output", () => {
     const originalSafeParse = Schema.safeParse.bind(Schema);
     let rootParses = 0;

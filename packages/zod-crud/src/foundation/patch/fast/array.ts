@@ -260,9 +260,9 @@ export function applySameArrayStructuralPatch(
       continue;
     }
 
-    if (item.fromIndex < 0 || item.fromIndex >= next.length) return { handled: false };
-    const index = item.index === "-" ? next.length : item.index;
     if (item.op === "copy") {
+      if (item.fromIndex < 0 || item.fromIndex >= next.length) return { handled: false };
+      const index = item.index === "-" ? next.length : item.index;
       if (index < 0 || index > next.length) return { handled: false };
       const value = deepCloneTrusted(next[item.fromIndex]);
       if (index === next.length) next.push(value);
@@ -271,6 +271,16 @@ export function applySameArrayStructuralPatch(
       continue;
     }
 
+    if (item.fromIndex < 0 || item.fromIndex >= next.length) return { handled: false };
+    if (item.index === "-") {
+      const [value] = next.splice(item.fromIndex, 1);
+      const index = next.length;
+      next.push(value);
+      applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
+      continue;
+    }
+
+    const index = item.index;
     if (index < 0 || index >= next.length) return { handled: false };
     if (item.fromIndex === index) {
       applied.push({ op: "move", from: item.from, path: appendSegment(parent, index) });
