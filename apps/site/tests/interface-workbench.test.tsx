@@ -29,15 +29,15 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByLabelText("bad points")).toBeTruthy();
     expect(screen.getByLabelText("payload")).toBeTruthy();
     for (const title of [
-      "doc.patch",
-      "document actions",
-      "doc.selection",
-      "doc.clipboard",
-      "doc.history",
-      "doc.query",
-      "doc.can*",
-      "doc.schema",
-      "pure exports",
+      "root exports",
+      "react",
+      "document",
+      "read",
+      "can",
+      "selection",
+      "clipboard",
+      "history",
+      "schema",
     ]) {
       expect(screen.getByRole("heading", { name: title })).toBeTruthy();
     }
@@ -48,15 +48,78 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
 
     const expectedControls = {
-      "doc.patch": ["add", "replace", "remove", "batch", "invalid", "load", "reset"],
-      "document actions": ["duplicate", "move", "replace", "paste payload after", "remove", "select query", "replaceText"],
-      "doc.selection": ["collapse", "toggle target", "select todo", "next", "extend", "scope", "text point", "empty"],
-      "doc.clipboard": ["copy", "cut", "paste after", "paste insert", "payload insert", "copy to insert", "write", "read", "clear"],
-      "doc.history": ["undo", "redo", "transaction", "mergeLast", "commit"],
-      "doc.query": ["at", "exists", "entries", "query"],
-      "doc.can*": ["patch", "find", "replace ok", "replace bad", "remove", "move", "duplicate", "copy", "cut", "paste buffer", "paste after", "paste insert", "stacks"],
-      "doc.schema": ["kind", "at", "describe insert", "accepts", "rejects"],
-      "pure exports": ["inspect"],
+      "root exports": ["createJSONDocument", "applyOperation", "applyPatch", "applyPatchToTrustedState", "pointer helpers", "trackPointer"],
+      react: ["useJSONDocument"],
+      document: [
+        "doc.value",
+        "doc.lastPatch",
+        "doc.patch add",
+        "canPatch add",
+        "doc.patch replace",
+        "canPatch replace",
+        "doc.patch remove",
+        "canPatch remove",
+        "doc.patch batch",
+        "doc.patch invalid",
+        "doc.patch move",
+        "canMove",
+        "doc.patch replace selected",
+        "canReplace",
+        "doc.patch remove selected",
+        "canRemove",
+        "doc.commit",
+        "doc.duplicate",
+        "canDuplicate",
+        "doc.load",
+        "doc.reset",
+        "doc.subscribe",
+      ],
+      read: ["doc.at", "doc.exists", "doc.entries", "doc.query", "canFind"],
+      can: [
+        "doc.canPatch",
+        "doc.canFind",
+        "doc.canReplace ok",
+        "doc.canReplace bad",
+        "doc.canRemove",
+        "doc.canMove",
+        "doc.canDuplicate",
+        "doc.canCopy",
+        "doc.canCut",
+        "doc.canPaste",
+        "doc.canPastePayload after",
+        "doc.canPastePayload insert",
+        "doc.canUndo/Redo",
+      ],
+      selection: [
+        "selection.collapse",
+        "selection.togglePointer",
+        "selection.selectRanges",
+        "selection.moveCursor",
+        "selection.extendCursor",
+        "selection.selectScope",
+        "selection.textPoint",
+        "selection.textPatch",
+        "selection.empty",
+      ],
+      clipboard: [
+        "clipboard.copy",
+        "canCopy",
+        "clipboard.cut",
+        "canCut",
+        "clipboard.paste after",
+        "canPaste after",
+        "clipboard.paste insert",
+        "canPaste insert",
+        "clipboard.pastePayload after",
+        "canPastePayload after",
+        "clipboard.pastePayload insert",
+        "canPastePayload insert",
+        "clipboard.write",
+        "clipboard.read",
+        "clipboard.clear",
+      ],
+      history: ["history.undo", "canUndo", "history.redo", "canRedo", "history.transaction", "history.mergeLast"],
+      schema: ["schema.kind", "schema.at", "schema.describe", "schema.accepts valid", "schema.accepts invalid"],
     } as const;
 
     for (const [groupName, controls] of Object.entries(expectedControls)) {
@@ -73,22 +136,22 @@ describe("InterfaceWorkbench", () => {
 
     await user.selectOptions(screen.getByLabelText("value target"), "/title");
 
-    const patchReplace = within(group("doc.patch")).getByRole("button", { name: "replace" });
+    const patchReplace = within(group("document")).getByRole("button", { name: "doc.patch replace" });
     expect((patchReplace as HTMLButtonElement).disabled).toBe(true);
     expect(patchReplace.title).toContain("can:");
     expect(within(patchReplace).getByText("can")).toBeTruthy();
 
-    const canReplace = within(group("doc.can*")).getByRole("button", { name: "replace ok" });
-    expect((canReplace as HTMLButtonElement).disabled).toBe(false);
-    await user.click(canReplace);
-    expect(screen.getAllByText(/doc\.canReplace/).length).toBeGreaterThan(0);
+    const canPatch = within(group("document")).getByRole("button", { name: "canPatch replace" });
+    expect((canPatch as HTMLButtonElement).disabled).toBe(false);
+    await user.click(canPatch);
+    expect(screen.getAllByText(/doc\.canPatch/).length).toBeGreaterThan(0);
   });
 
   test("keeps duplicate focused on the newly duplicated card", async () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
     const target = screen.getByLabelText("value target") as HTMLSelectElement;
-    const duplicate = within(group("document actions")).getByRole("button", { name: "duplicate" });
+    const duplicate = within(group("document")).getByRole("button", { name: "doc.duplicate" });
 
     await user.click(duplicate);
     expect(target.value).toBe("/lists/0/cards/1");
@@ -105,38 +168,35 @@ describe("InterfaceWorkbench", () => {
     render(<InterfaceWorkbench />);
     const user = userEvent.setup();
 
-    await user.click(within(group("doc.patch")).getByRole("button", { name: "add" }));
+    await user.click(within(group("document")).getByRole("button", { name: "doc.patch add" }));
     expect(screen.getByText("Inserted card")).toBeTruthy();
 
-    await user.click(within(group("doc.selection")).getByRole("button", { name: "select todo" }));
+    await user.click(within(group("selection")).getByRole("button", { name: "selection.selectRanges" }));
     expect(screen.getByText("selected 3")).toBeTruthy();
 
-    await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy" }));
+    await user.click(within(group("clipboard")).getByRole("button", { name: "clipboard.copy" }));
     expect(screen.getByText("clipboard set")).toBeTruthy();
 
-    await user.click(within(group("doc.clipboard")).getByRole("button", { name: "paste after" }));
+    await user.click(within(group("clipboard")).getByRole("button", { name: "clipboard.paste after" }));
     expect(screen.getAllByText("Patch API").length).toBeGreaterThan(1);
 
-    await user.click(within(group("doc.clipboard")).getByRole("button", { name: "copy to insert" }));
-    expect(screen.getAllByText(/doc\.clipboard\.copy\(source\); doc\.clipboard\.paste/).length).toBeGreaterThan(0);
-
-    await user.click(within(group("doc.can*")).getByRole("button", { name: "patch" }));
+    await user.click(within(group("can")).getByRole("button", { name: "doc.canPatch" }));
     expect(screen.getAllByText(/doc\.canPatch/).length).toBeGreaterThan(0);
 
-    await user.click(within(group("doc.can*")).getByRole("button", { name: "find" }));
+    await user.click(within(group("can")).getByRole("button", { name: "doc.canFind" }));
     expect(screen.getAllByText(/doc\.canFind/).length).toBeGreaterThan(0);
 
-    await user.click(within(group("doc.can*")).getByRole("button", { name: "move" }));
+    await user.click(within(group("can")).getByRole("button", { name: "doc.canMove" }));
     expect(screen.getAllByText(/doc\.canMove/).length).toBeGreaterThan(0);
 
-    await user.click(within(group("doc.can*")).getByRole("button", { name: "paste buffer" }));
+    await user.click(within(group("can")).getByRole("button", { name: "doc.canPaste" }));
     expect(screen.getAllByText(/doc\.canPaste/).length).toBeGreaterThan(0);
 
-    await user.click(within(group("doc.schema")).getByRole("button", { name: "rejects" }));
+    await user.click(within(group("schema")).getByRole("button", { name: "schema.accepts invalid" }));
     expect(screen.getAllByText(/doc\.schema\.accepts/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/schema_violation/).length).toBeGreaterThan(0);
 
-    await user.click(within(group("pure exports")).getByRole("button", { name: "inspect" }));
+    await user.click(within(group("root exports")).getByRole("button", { name: "applyPatch" }));
     expect(screen.getAllByText(/applyPatch/).length).toBeGreaterThan(0);
   });
 });
