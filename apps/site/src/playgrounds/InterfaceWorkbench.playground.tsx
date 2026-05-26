@@ -573,7 +573,13 @@ export function InterfaceWorkbench() {
   const canPasteClipboardAfterTarget = doc.canPaste({ after: valueTarget });
   const canPasteClipboardToInsertTarget = doc.canPaste(insertTarget, { spread: true, rekey: cardRekey() });
   const canPastePayloadToInsertTarget = doc.canPastePayload(insertTarget, payloadValue, { rekey: cardRekey() });
-  const clipboardEmptyReason = hasClipboard ? undefined : "state: empty_clipboard";
+  const selectedCount = selectedPointers.length;
+  const selectedCardReason = selectedCount === 1
+    ? undefined
+    : selectedCount === 0
+      ? "state: select_one_card"
+      : "state: single_card_only";
+  const bulkSelectionReason = selectedCount > 1 ? undefined : "state: select_multiple_cards";
 
   const run = (call: string, action: () => unknown, feature?: string): void => {
     const before = doc.value;
@@ -624,6 +630,18 @@ export function InterfaceWorkbench() {
     if (status) setPayload((current) => payloadWithStatus(current, status));
   };
 
+  const selectNoCards = (): unknown => {
+    doc.selection?.empty();
+    return doc.selection?.snapshot();
+  };
+
+  const selectFirstCard = (): unknown => {
+    const pointer = cardPointer(0, 0);
+    setValueTarget(pointer);
+    doc.selection?.collapse(pointer);
+    return doc.selection?.snapshot();
+  };
+
   const featureBindings = (feature: string, call: string, board: Board): string[] => {
     const title = cardTitleAt(board, valueTarget);
     if (feature === "Add card") {
@@ -644,6 +662,7 @@ export function InterfaceWorkbench() {
       return [`target ${insertTarget}`];
     }
     if (feature === "Bulk cards") return [`source ${selectedLabel(Array.isArray(selectedSource) ? selectedSource : [selectedSource])}`];
+    if (feature === "Selection set") return [`selected ${selectedCount}`];
     if (feature === "Undo and redo") return [`undo ${doc.history.undoDepth}`, `redo ${doc.history.redoDepth}`];
     if (feature === "Read schema") {
       if (call.includes("schema.")) return [`schema target ${insertTarget}`];
@@ -921,10 +940,13 @@ export function InterfaceWorkbench() {
         <div className="min-w-0">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <strong className="text-sm text-stone-950">Interface bench</strong>
-            <Badge>selected {selectedPointers.length}</Badge>
+            <Badge>selected {selectedCount}</Badge>
             <Badge>undo {doc.history.undoDepth}</Badge>
             <Badge>redo {doc.history.redoDepth}</Badge>
             <Badge>clipboard {doc.clipboard.hasData ? "set" : "empty"}</Badge>
+            <ActionButton onClick={() => run("doc.selection?.empty()", selectNoCards, "Selection set")}>select 0</ActionButton>
+            <ActionButton onClick={() => run(`doc.selection?.collapse("${cardPointer(0, 0)}")`, selectFirstCard, "Selection set")}>select 1</ActionButton>
+            <ActionButton onClick={() => run("doc.selection?.selectRanges(todoPointers)", selectTodoCards, "Selection set")}>select N</ActionButton>
           </div>
           <div className="grid gap-3 lg:grid-cols-3">
             {doc.value.lists.map((list, listIndex) => (
