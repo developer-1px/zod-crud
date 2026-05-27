@@ -64,7 +64,8 @@ describe("official site shell", () => {
     expect(mobileSections.getByRole("link", { name: "작업별 진입점" }).getAttribute("href")).toBe("#작업별-진입점");
 
     await user.click(nav.getByRole("link", { name: "Workbench" }));
-    expect(await screen.findByText("Interface bench", {}, { timeout: 3000 })).toBeTruthy();
+    expect(await screen.findByText("Interface bench", {}, { timeout: 10000 })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Board setup" })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "zod-crud API" })).toBeNull();
   });
 

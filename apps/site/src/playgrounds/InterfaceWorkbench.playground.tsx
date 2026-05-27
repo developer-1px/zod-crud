@@ -53,6 +53,34 @@ type BenchResult = {
   bindings?: readonly string[];
   effect?: readonly string[];
 };
+type FeatureStageId =
+  | "board-setup"
+  | "card-intake"
+  | "card-edit"
+  | "flow-columns"
+  | "selection-bulk"
+  | "clipboard-reuse"
+  | "find-filter"
+  | "recovery-history"
+  | "integration";
+
+type FeatureStage = {
+  id: FeatureStageId;
+  title: string;
+  apis: readonly string[];
+};
+
+const featureStages: readonly FeatureStage[] = [
+  { id: "board-setup", title: "Board setup", apis: ["useJSONDocument", "createJSONDocument", "doc.load", "doc.reset", "doc.subscribe"] },
+  { id: "card-intake", title: "Card intake", apis: ["schema.accepts", "schema.describe", "canPatch", "patch(add)"] },
+  { id: "card-edit", title: "Card edit", apis: ["at", "exists", "schema.kind", "canReplace", "canPatch", "patch", "commit", "canRemove"] },
+  { id: "flow-columns", title: "Flow across columns", apis: ["canMove", "patch(move)", "canDuplicate", "duplicate"] },
+  { id: "selection-bulk", title: "Selection and bulk work", apis: ["selection.*", "canRemove", "patch(remove[])"] },
+  { id: "clipboard-reuse", title: "Reuse via clipboard", apis: ["clipboard.*", "canCopy", "canCut", "canPaste", "canPastePayload"] },
+  { id: "find-filter", title: "Find and filter", apis: ["canFind", "query", "selection.selectRanges"] },
+  { id: "recovery-history", title: "Recovery and history", apis: ["canUndo", "canRedo", "history.*"] },
+  { id: "integration", title: "Integration and helpers", apis: ["applyOperation", "applyPatch", "applyPatchToTrustedState", "trackPointer", "pointer helpers"] },
+];
 
 const initialBoard: Board = {
   title: "Workbench board",
@@ -546,6 +574,7 @@ export function InterfaceWorkbench() {
   const [result, setResult] = useState<BenchResult>({ call: "ready", value: doc.value });
   const [featureResults, setFeatureResults] = useState<Record<string, BenchResult>>({});
   const [apiCoverageOpen, setApiCoverageOpen] = useState(false);
+  const [activeStageId, setActiveStageId] = useState<FeatureStageId>("board-setup");
 
   const pointers = useMemo(
     () => doc.value.lists.flatMap((list, listIndex) =>
@@ -584,8 +613,6 @@ export function InterfaceWorkbench() {
   const canDuplicateTarget = doc.canDuplicate(valueTarget, { rekey: cardRekey() });
   const canMoveTarget = doc.canMove(valueTarget, insertTarget);
   const canReplaceTargetTitle = doc.canReplace(targetTitlePath, textPayload);
-  const canReplaceTargetPoints = doc.canReplace(targetPointsPath, pointsValue);
-  const canPastePayloadAfterTarget = doc.canPastePayload({ after: valueTarget }, payloadValue, { rekey: cardRekey() });
   const canRemoveSource = doc.canRemove(selectedSource);
   const canCopySource = doc.canCopy(selectedSource);
   const canCopyPrimary = doc.canCopy(primarySource);
@@ -597,6 +624,7 @@ export function InterfaceWorkbench() {
   const canUndo = doc.canUndo();
   const canRedo = doc.canRedo();
   const selectedCount = selectedPointers.length;
+  const activeStage = featureStages.find((stage) => stage.id === activeStageId) ?? featureStages[0]!;
   const selectedCardReason = selectedCount === 1
     ? undefined
     : selectedCount === 0
@@ -717,22 +745,6 @@ export function InterfaceWorkbench() {
     ]);
   };
 
-  const replaceSelectedTitle = (): unknown => {
-    return doc.patch({ op: "replace", path: targetTitlePath, value: textPayload });
-  };
-
-  const patchTwoFields = (): unknown => {
-    const operations: JSONPatchOperation[] = [
-      { op: "replace", path: "/settings/owner", value: "playground" },
-      { op: "replace", path: "/lists/0/name", value: "Backlog" },
-    ];
-    return doc.patch(operations, { label: "doc.patch" });
-  };
-
-  const invalidPatch = (): unknown => doc.patch([
-    { op: "replace", path: "/lists/0/cards/0/points", value: badPointsValue },
-  ]);
-
   const copySelection = (): unknown => doc.clipboard.copy(selectedSource);
 
   const copyPrimaryCard = (): unknown => doc.clipboard.copy(primarySource);
@@ -770,11 +782,6 @@ export function InterfaceWorkbench() {
     if (!matches.ok) return matches;
     doc.selection?.selectRanges(matches.pointers, undefined, undefined, Math.max(0, matches.pointers.length - 1));
     return matches;
-  };
-
-  const selectTitleText = (): unknown => {
-    doc.selection?.collapse({ path: "/title", offset: 0 });
-    return doc.selection?.snapshot();
   };
 
   const replaceTitleText = (): unknown => {
@@ -1194,10 +1201,296 @@ export function InterfaceWorkbench() {
     </CommandArg>
   );
 
+  const stageContent: Record<FeatureStageId, ReactNode> = {
+    "board-setup": (
+      <>
+        <CommandRow title="Create board" api="useJSONDocument / createJSONDocument" result={featureResult("Create board")}>
+          <ActionButton onClick={() => run("useJSONDocument(schema, initial, options)", inspectReactFacade, "Create board")}>useJSONDocument</ActionButton>
+          <ActionButton onClick={() => run("createJSONDocument(schema, initial, options)", inspectCreateJSONDocument, "Create board")}>createJSONDocument</ActionButton>
+        </CommandRow>
+        <CommandRow title="Load board" api="doc.load(nextBoard)" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("doc.load(nextBoard)", loadFixture, "Board plumbing")}>Load</ActionButton>
+        </CommandRow>
+        <CommandRow title="Reset board" api="doc.reset()" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("doc.reset()", resetBoard, "Board plumbing")}>Reset</ActionButton>
+        </CommandRow>
+        <CommandRow title="Subscribe to patch" api="doc.subscribe(listener)" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("doc.subscribe(listener)", inspectSubscribe, "Board plumbing")}>Subscribe</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "card-intake": (
+      <>
+        <CommandRow
+          title="Add card to column"
+          api="doc.patch(add)"
+          status={<CommandState capability={canAddPayload} />}
+          args={<>{insertTargetInput("add target")}{payloadInput("add payload")}</>}
+          shortcut="N"
+          result={featureResult("Add card")}
+        >
+          <ActionButton disabledReason={canDisabledReason(canAddPayload)} onClick={executeAddCard}>Add</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Validate card draft"
+          api="doc.schema.accepts(insert)"
+          args={<>{insertTargetInput("validate target")}{payloadInput("validate payload")}</>}
+          result={featureResult("Read schema")}
+        >
+          <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", payload, "insert")`, () => doc.schema.accepts(insertTarget, parsedPayload(), "insert"), "Read schema")}>Validate</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Validate invalid draft"
+          api="doc.schema.accepts(insert)"
+          args={insertTargetInput("invalid target")}
+          result={featureResult("Read schema")}
+        >
+          <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", invalidCard, "insert")`, () => doc.schema.accepts(insertTarget, invalidCard, "insert"), "Read schema")}>Validate invalid</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Describe card slot"
+          api="doc.schema.describe(insert)"
+          args={insertTargetInput("describe target")}
+          result={featureResult("Read schema")}
+        >
+          <ActionButton onClick={() => run(`doc.schema.describe("${insertTarget}", "insert")`, () => doc.schema.describe(insertTarget, "insert"), "Read schema")}>Describe</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "card-edit": (
+      <>
+        <CommandRow title="Select card" api="selection.collapse / togglePointer" shortcut="1" result={featureResult("Selection set")}>
+          <ActionButton onClick={executeSelectOne}>select 1</ActionButton>
+          <ActionButton onClick={() => run(`doc.selection?.togglePointer("${valueTarget}")`, () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); }, "Selection set")}>toggle</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Read card"
+          api="doc.at(pointer)"
+          status={<CommandState reason={selectedCardReason} />}
+          args={valueTargetInput("read target")}
+          result={featureResult("Read schema")}
+        >
+          <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.at("${valueTarget}")`, () => doc.at(valueTarget), "Read schema")}>Read</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Check card exists"
+          api="doc.exists(pointer)"
+          status={<CommandState reason={selectedCardReason} />}
+          args={valueTargetInput("exists target")}
+          result={featureResult("Read schema")}
+        >
+          <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.exists("${valueTarget}")`, () => doc.exists(valueTarget), "Read schema")}>Check</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Read card schema"
+          api="doc.schema.kind(pointer)"
+          status={<CommandState reason={selectedCardReason} />}
+          args={valueTargetInput("kind target")}
+          result={featureResult("Read schema")}
+        >
+          <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.schema.kind("${valueTarget}")`, () => doc.schema.kind(valueTarget), "Read schema")}>Kind</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Rename card"
+          api="doc.patch(replace title)"
+          status={<CommandState reason={selectedCardReason} capability={canPatchReplaceTitle} />}
+          args={<>{valueTargetInput("rename target")}{textInput("rename title")}</>}
+          shortcut="E"
+          result={featureResult("Edit card")}
+        >
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchReplaceTitle)} onClick={executeRenameCard}>Rename</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Commit rename"
+          api="doc.commit(replace title, selection)"
+          status={<CommandState reason={selectedCardReason} capability={canReplaceTargetTitle} />}
+          args={<>{valueTargetInput("commit target")}{textInput("commit title")}</>}
+          result={featureResult("Edit card")}
+        >
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canReplaceTargetTitle)} onClick={() => run(`doc.commit([{ op: "replace", path: "${targetTitlePath}", value }], { selection })`, commitReplaceTitle, "Edit card")}>Commit</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Replace points"
+          api="doc.patch(replace points)"
+          status={<CommandState reason={selectedCardReason} capability={canPatchReplacePoints} />}
+          args={<>{valueTargetInput("points target")}{numberInput("points value", pointsPayload, setPointsPayload)}</>}
+          result={featureResult("Edit card")}
+        >
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchReplacePoints)} onClick={() => run(`doc.patch([{ op: "replace", path: "${targetPointsPath}", value: points }])`, () => doc.patch([{ op: "replace", path: targetPointsPath, value: pointsValue }]), "Edit card")}>Replace points</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Check invalid points"
+          api="doc.canPatch(replace invalid points)"
+          status={<CommandState reason={selectedCardReason} capability={canPatchBadPoints} />}
+          args={<>{valueTargetInput("invalid points target")}{numberInput("invalid points value", badPointsPayload, setBadPointsPayload)}</>}
+          result={featureResult("Edit card")}
+        >
+          <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canPatch([{ op: "replace", path: "${targetPointsPath}", value: badPoints }])`, () => canPatchBadPoints, "Edit card")}>Check invalid</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Remove card"
+          api="doc.patch(remove)"
+          status={<CommandState reason={selectedCardReason} capability={canPatchRemoveTarget} />}
+          args={valueTargetInput("remove target")}
+          shortcut="Del"
+          result={featureResult("Remove card")}
+        >
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchRemoveTarget)} onClick={executeRemoveCommand}>Remove</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "flow-columns": (
+      <>
+        <CommandRow
+          title="Move card"
+          api="doc.patch(move)"
+          status={<CommandState reason={selectedCardReason} capability={canMoveTarget} />}
+          args={<>{valueTargetInput("move source")}{insertTargetInput("move target")}</>}
+          shortcut="M"
+          result={featureResult("Move card")}
+        >
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canMoveTarget)} onClick={executeMoveCard}>Move</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Duplicate card"
+          api="doc.duplicate(source)"
+          status={<CommandState reason={selectedCardReason} capability={canDuplicateTarget} />}
+          args={valueTargetInput("duplicate source")}
+          shortcut="D"
+          result={featureResult("Duplicate card")}
+        >
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canDuplicateTarget)} onClick={executeDuplicateCard}>Duplicate</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "selection-bulk": (
+      <>
+        <CommandRow title="Build selection" api="empty / collapse / selectRanges" shortcut="0 / 1 / 2" result={featureResult("Selection set")}>
+          <ActionButton onClick={executeSelectNone}>select 0</ActionButton>
+          <ActionButton onClick={executeSelectOne}>select 1</ActionButton>
+          <ActionButton onClick={executeSelectMany}>select N</ActionButton>
+        </CommandRow>
+        <CommandRow title="Inspect selection" api="selection properties" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
+          <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("selection read properties", inspectSelectionReads, "Selection set")}>Inspect</ActionButton>
+        </CommandRow>
+        <CommandRow title="Order selection" api="selection.orderRanges()" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
+          <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.orderRanges()", () => doc.selection?.orderRanges(), "Selection set")}>Order</ActionButton>
+        </CommandRow>
+        <CommandRow title="Restore selection" api="selection.restore(snapshot)" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
+          <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.restore(snapshot)", selectionRestoreRoundtrip, "Selection set")}>Restore</ActionButton>
+        </CommandRow>
+        <CommandRow title="Remove selected" api="doc.patch(remove[])" status={<CommandState reason={bulkSelectionReason} capability={canRemoveSource} />} shortcut="Del" result={featureResult("Bulk cards")}>
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canRemoveSource)} onClick={executeRemoveCommand}>Remove</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "clipboard-reuse": (
+      <>
+        <CommandRow title="Read clipboard" api="doc.clipboard.read()" result={featureResult("Clipboard buffer")}>
+          <ActionButton onClick={() => run("doc.clipboard.read()", () => doc.clipboard.read(), "Clipboard buffer")}>Read</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Write clipboard"
+          api="doc.clipboard.write(payload)"
+          args={<>{valueTargetInput("clipboard source")}{payloadInput("clipboard payload")}</>}
+          result={featureResult("Clipboard buffer")}
+        >
+          <ActionButton onClick={() => run(`doc.clipboard.write(payload, { source: "${valueTarget}" })`, () => { doc.clipboard.write(parsedPayload(), { source: valueTarget }); return doc.clipboard.read(); }, "Clipboard buffer")}>Write</ActionButton>
+        </CommandRow>
+        <CommandRow title="Clear clipboard" api="doc.clipboard.clear()" result={featureResult("Clipboard buffer")}>
+          <ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return { cleared: true, hasData: doc.clipboard.hasData }; }, "Clipboard buffer")}>Clear</ActionButton>
+        </CommandRow>
+        <CommandRow title="Copy selected" api="doc.clipboard.copy(source)" status={<CommandState reason={bulkSelectionReason} capability={canCopySource} />} shortcut="C" result={featureResult("Bulk cards")}>
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCopySource)} onClick={executeCopyCommand}>Copy</ActionButton>
+        </CommandRow>
+        <CommandRow title="Cut selected" api="doc.clipboard.cut(source)" status={<CommandState reason={bulkSelectionReason} capability={canCutSource} />} shortcut="X" result={featureResult("Bulk cards")}>
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCutSource)} onClick={executeCutCommand}>Cut</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Paste selected into column"
+          api="doc.clipboard.paste(target)"
+          status={<CommandState reason={bulkSelectionReason} capability={canPasteClipboardToInsertTarget} />}
+          args={insertTargetInput("paste target")}
+          shortcut="V"
+          result={featureResult("Bulk cards")}
+        >
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPasteClipboardToInsertTarget)} onClick={executePasteCommand}>Paste</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Paste payload into column"
+          api="doc.clipboard.pastePayload(target, payload)"
+          status={<CommandState reason={bulkSelectionReason} capability={canPastePayloadToInsertTarget} />}
+          args={<>{insertTargetInput("payload target")}{payloadInput("column payload")}</>}
+          result={featureResult("Bulk cards")}
+        >
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPastePayloadToInsertTarget)} onClick={() => run(`doc.clipboard.pastePayload("${insertTarget}", payload, { rekey })`, pastePayloadToInsertTarget, "Bulk cards")}>Paste payload</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "find-filter": (
+      <>
+        <CommandRow
+          title="Search cards"
+          api="doc.query(jsonpath)"
+          status={<CommandState capability={canFindQuery} />}
+          args={queryInput("search query")}
+          result={featureResult("Find and select")}
+        >
+          <ActionButton disabledReason={canDisabledReason(canFindQuery)} onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers, "Find and select")}>Search</ActionButton>
+        </CommandRow>
+        <CommandRow
+          title="Select search results"
+          api="selection.selectRanges(query.pointers)"
+          status={<CommandState capability={canFindQuery} />}
+          args={queryInput("select query")}
+          shortcut="F"
+          result={featureResult("Find and select")}
+        >
+          <ActionButton disabledReason={canDisabledReason(canFindQuery)} onClick={executeSelectSearchResults}>Select</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    "recovery-history": (
+      <>
+        <CommandRow title="Undo" api="doc.history.undo()" status={<CommandState capability={canUndo} />} shortcut="Cmd/Ctrl Z" result={featureResult("Undo and redo")}>
+          <ActionButton disabledReason={canDisabledReason(canUndo)} onClick={executeUndo}>Undo</ActionButton>
+        </CommandRow>
+        <CommandRow title="Redo" api="doc.history.redo()" status={<CommandState capability={canRedo} />} shortcut="Cmd/Ctrl Shift Z" result={featureResult("Undo and redo")}>
+          <ActionButton disabledReason={canDisabledReason(canRedo)} onClick={executeRedo}>Redo</ActionButton>
+        </CommandRow>
+        <CommandRow title="Bulk transaction" api="history.transaction" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Undo and redo")}>
+          <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.history.transaction(options, fn)", transactionRename, "Undo and redo")}>Transaction</ActionButton>
+        </CommandRow>
+        <CommandRow title="Merge last history" api="history.mergeLast" result={featureResult("Undo and redo")}>
+          <ActionButton onClick={() => run("doc.history.mergeLast({ mergeKey: \"manual\" })", () => doc.history.mergeLast({ mergeKey: "manual" }), "Undo and redo")}>Merge</ActionButton>
+        </CommandRow>
+      </>
+    ),
+    integration: (
+      <>
+        <CommandRow title="Apply operation" api="applyOperation(schema, board, operation)" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("applyOperation(schema, board, operation)", inspectApplyOperation, "Board plumbing")}>Apply op</ActionButton>
+        </CommandRow>
+        <CommandRow title="Apply external patch" api="applyPatch(schema, board, patch)" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("applyPatch(schema, board, patch)", inspectApplyPatch, "Board plumbing")}>Apply</ActionButton>
+        </CommandRow>
+        <CommandRow title="Apply trusted patch" api="applyPatchToTrustedState(schema, board, patch)" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("applyPatchToTrustedState(schema, board, patch)", inspectApplyPatchToTrustedState, "Board plumbing")}>Trusted</ActionButton>
+        </CommandRow>
+        <CommandRow title="Track pointer through patch" api="trackPointer(pointer, patch)" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("trackPointer(pointer, patch)", inspectTrackPointer, "Board plumbing")}>Track</ActionButton>
+        </CommandRow>
+        <CommandRow title="Pointer helpers" api="parse/build/segment helpers" result={featureResult("Board plumbing")}>
+          <ActionButton onClick={() => run("pointer helpers", inspectPointerHelpers, "Board plumbing")}>Inspect</ActionButton>
+        </CommandRow>
+      </>
+    ),
+  };
+
   return (
     <div className="flex w-full flex-col gap-4">
-      <section className="grid gap-4 xl:grid-cols-[30rem_minmax(0,1fr)]">
-        <aside data-command-list="" className="self-start rounded border border-stone-200 bg-white p-3 xl:sticky xl:top-3 xl:max-h-[calc(100vh-1.5rem)] xl:overflow-auto">
+      <section className="grid gap-4 xl:grid-cols-[15rem_minmax(0,1fr)]">
+        <aside data-flow-rail="" className="self-start rounded border border-stone-200 bg-white p-3 xl:sticky xl:top-3 xl:max-h-[calc(100vh-1.5rem)] xl:overflow-auto">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <strong className="text-sm text-stone-950">Interface bench</strong>
             <Badge>selected {selectedCount}</Badge>
@@ -1206,312 +1499,27 @@ export function InterfaceWorkbench() {
             <Badge>clipboard {doc.clipboard.hasData ? "set" : "empty"}</Badge>
           </div>
 
-          <CommandSection title="Selection = 0" active={selectedCount === 0}>
-            <CommandRow title="Create board" api="useJSONDocument / createJSONDocument" result={featureResult("Create board")}>
-              <ActionButton onClick={() => run("useJSONDocument(schema, initial, options)", inspectReactFacade, "Create board")}>useJSONDocument</ActionButton>
-              <ActionButton onClick={() => run("createJSONDocument(schema, initial, options)", inspectCreateJSONDocument, "Create board")}>createJSONDocument</ActionButton>
-            </CommandRow>
-            <CommandRow title="Load board" api="doc.load(nextBoard)" result={featureResult("Board plumbing")}>
-              <ActionButton onClick={() => run("doc.load(nextBoard)", loadFixture, "Board plumbing")}>Load</ActionButton>
-            </CommandRow>
-            <CommandRow title="Reset board" api="doc.reset()" result={featureResult("Board plumbing")}>
-              <ActionButton onClick={() => run("doc.reset()", resetBoard, "Board plumbing")}>Reset</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Add card to column"
-              api="doc.patch(add)"
-              status={<CommandState capability={canAddPayload} />}
-              args={<>{insertTargetInput("add target")}{payloadInput("add payload")}</>}
-              shortcut="N"
-              result={featureResult("Add card")}
-            >
-              <ActionButton disabledReason={canDisabledReason(canAddPayload)} onClick={executeAddCard}>Add</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Validate card draft"
-              api="doc.schema.accepts(insert)"
-              args={<>{insertTargetInput("validate target")}{payloadInput("validate payload")}</>}
-              result={featureResult("Read schema")}
-            >
-              <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", payload, "insert")`, () => doc.schema.accepts(insertTarget, parsedPayload(), "insert"), "Read schema")}>Validate</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Validate invalid draft"
-              api="doc.schema.accepts(insert)"
-              args={insertTargetInput("invalid target")}
-              result={featureResult("Read schema")}
-            >
-              <ActionButton onClick={() => run(`doc.schema.accepts("${insertTarget}", invalidCard, "insert")`, () => doc.schema.accepts(insertTarget, invalidCard, "insert"), "Read schema")}>Validate invalid</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Describe card slot"
-              api="doc.schema.describe(insert)"
-              args={insertTargetInput("describe target")}
-              result={featureResult("Read schema")}
-            >
-              <ActionButton onClick={() => run(`doc.schema.describe("${insertTarget}", "insert")`, () => doc.schema.describe(insertTarget, "insert"), "Read schema")}>Describe</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Search cards"
-              api="doc.query(jsonpath)"
-              status={<CommandState capability={canFindQuery} />}
-              args={queryInput("search query")}
-              result={featureResult("Find and select")}
-            >
-              <ActionButton disabledReason={canDisabledReason(canFindQuery)} onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers, "Find and select")}>Search</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Select search results"
-              api="selection.selectRanges(query.pointers)"
-              status={<CommandState capability={canFindQuery} />}
-              args={queryInput("select query")}
-              shortcut="F"
-              result={featureResult("Find and select")}
-            >
-              <ActionButton disabledReason={canDisabledReason(canFindQuery)} onClick={executeSelectSearchResults}>Select</ActionButton>
-            </CommandRow>
-            <CommandRow title="Read clipboard" api="doc.clipboard.read()" result={featureResult("Clipboard buffer")}>
-              <ActionButton onClick={() => run("doc.clipboard.read()", () => doc.clipboard.read(), "Clipboard buffer")}>Read</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Write clipboard"
-              api="doc.clipboard.write(payload)"
-              args={<>{valueTargetInput("clipboard source")}{payloadInput("clipboard payload")}</>}
-              result={featureResult("Clipboard buffer")}
-            >
-              <ActionButton onClick={() => run(`doc.clipboard.write(payload, { source: "${valueTarget}" })`, () => { doc.clipboard.write(parsedPayload(), { source: valueTarget }); return doc.clipboard.read(); }, "Clipboard buffer")}>Write</ActionButton>
-            </CommandRow>
-            <CommandRow title="Clear clipboard" api="doc.clipboard.clear()" result={featureResult("Clipboard buffer")}>
-              <ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return { cleared: true, hasData: doc.clipboard.hasData }; }, "Clipboard buffer")}>Clear</ActionButton>
-            </CommandRow>
-            <CommandRow title="Undo" api="doc.history.undo()" status={<CommandState capability={canUndo} />} shortcut="Cmd/Ctrl Z" result={featureResult("Undo and redo")}>
-              <ActionButton disabledReason={canDisabledReason(canUndo)} onClick={executeUndo}>Undo</ActionButton>
-            </CommandRow>
-            <CommandRow title="Redo" api="doc.history.redo()" status={<CommandState capability={canRedo} />} shortcut="Cmd/Ctrl Shift Z" result={featureResult("Undo and redo")}>
-              <ActionButton disabledReason={canDisabledReason(canRedo)} onClick={executeRedo}>Redo</ActionButton>
-            </CommandRow>
-            <CommandRow title="Subscribe to patch" api="doc.subscribe(listener)" result={featureResult("Board plumbing")}>
-              <ActionButton onClick={() => run("doc.subscribe(listener)", inspectSubscribe, "Board plumbing")}>Subscribe</ActionButton>
-            </CommandRow>
-            <CommandRow title="Apply external patch" api="applyPatch(schema, board, patch)" result={featureResult("Board plumbing")}>
-              <ActionButton onClick={() => run("applyPatch(schema, board, patch)", inspectApplyPatch, "Board plumbing")}>Apply</ActionButton>
-            </CommandRow>
-            <CommandRow title="Track pointer through patch" api="trackPointer(pointer, patch)" result={featureResult("Board plumbing")}>
-              <ActionButton onClick={() => run("trackPointer(pointer, patch)", inspectTrackPointer, "Board plumbing")}>Track</ActionButton>
-            </CommandRow>
-          </CommandSection>
+          <nav aria-label="Kanban feature flow" className="grid gap-1">
+            {featureStages.map((stage, index) => {
+              const active = stage.id === activeStageId;
+              return (
+                <button
+                  key={stage.id}
+                  type="button"
+                  aria-current={active ? "step" : undefined}
+                  aria-label={stage.title}
+                  onClick={() => setActiveStageId(stage.id)}
+                  className={`grid grid-cols-[1.75rem_minmax(0,1fr)] items-center gap-2 rounded border px-2 py-2 text-left text-xs ${active ? "border-stone-900 bg-stone-950 text-white" : "border-stone-200 bg-white text-stone-700 hover:border-stone-300 hover:bg-stone-50"}`}
+                >
+                  <span className={`font-mono text-[10px] ${active ? "text-stone-300" : "text-stone-400"}`}>
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0 truncate">{stage.title}</span>
+                </button>
+              );
+            })}
+          </nav>
 
-          <CommandSection title="Selection = 1" active={selectedCount === 1}>
-            <CommandRow title="Select card" api="selection.collapse / togglePointer" shortcut="1" result={featureResult("Selection set")}>
-              <ActionButton onClick={executeSelectOne}>select 1</ActionButton>
-              <ActionButton onClick={() => run(`doc.selection?.togglePointer("${valueTarget}")`, () => { doc.selection?.togglePointer(valueTarget); return doc.selection?.snapshot(); }, "Selection set")}>toggle</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Read card"
-              api="doc.at(pointer)"
-              status={<CommandState reason={selectedCardReason} />}
-              args={valueTargetInput("read target")}
-              result={featureResult("Read schema")}
-            >
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.at("${valueTarget}")`, () => doc.at(valueTarget), "Read schema")}>Read</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Check card exists"
-              api="doc.exists(pointer)"
-              status={<CommandState reason={selectedCardReason} />}
-              args={valueTargetInput("exists target")}
-              result={featureResult("Read schema")}
-            >
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.exists("${valueTarget}")`, () => doc.exists(valueTarget), "Read schema")}>Check</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Read card schema"
-              api="doc.schema.kind(pointer)"
-              status={<CommandState reason={selectedCardReason} />}
-              args={valueTargetInput("kind target")}
-              result={featureResult("Read schema")}
-            >
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.schema.kind("${valueTarget}")`, () => doc.schema.kind(valueTarget), "Read schema")}>Kind</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Rename card"
-              api="doc.patch(replace title)"
-              status={<CommandState reason={selectedCardReason} capability={canPatchReplaceTitle} />}
-              args={<>{valueTargetInput("rename target")}{textInput("rename title")}</>}
-              shortcut="E"
-              result={featureResult("Edit card")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchReplaceTitle)} onClick={executeRenameCard}>Rename</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Commit rename"
-              api="doc.commit(replace title, selection)"
-              status={<CommandState reason={selectedCardReason} capability={canReplaceTargetTitle} />}
-              args={<>{valueTargetInput("commit target")}{textInput("commit title")}</>}
-              result={featureResult("Edit card")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canReplaceTargetTitle)} onClick={() => run(`doc.commit([{ op: "replace", path: "${targetTitlePath}", value }], { selection })`, commitReplaceTitle, "Edit card")}>Commit</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Replace points"
-              api="doc.patch(replace points)"
-              status={<CommandState reason={selectedCardReason} capability={canPatchReplacePoints} />}
-              args={<>{valueTargetInput("points target")}{numberInput("points value", pointsPayload, setPointsPayload)}</>}
-              result={featureResult("Edit card")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchReplacePoints)} onClick={() => run(`doc.patch([{ op: "replace", path: "${targetPointsPath}", value: points }])`, () => doc.patch([{ op: "replace", path: targetPointsPath, value: pointsValue }]), "Edit card")}>Replace points</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Check points replace"
-              api="doc.canReplace(points)"
-              status={<CommandState reason={selectedCardReason} capability={canReplaceTargetPoints} />}
-              args={<>{valueTargetInput("check points target")}{numberInput("check points value", pointsPayload, setPointsPayload)}</>}
-              result={featureResult("Edit card")}
-            >
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canReplace("${targetPointsPath}", points)`, () => canReplaceTargetPoints, "Edit card")}>Check</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Check invalid points"
-              api="doc.canPatch(replace invalid points)"
-              status={<CommandState reason={selectedCardReason} capability={canPatchBadPoints} />}
-              args={<>{valueTargetInput("invalid points target")}{numberInput("invalid points value", badPointsPayload, setBadPointsPayload)}</>}
-              result={featureResult("Edit card")}
-            >
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canPatch([{ op: "replace", path: "${targetPointsPath}", value: badPoints }])`, () => canPatchBadPoints, "Edit card")}>Check invalid</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Move card"
-              api="doc.patch(move)"
-              status={<CommandState reason={selectedCardReason} capability={canMoveTarget} />}
-              args={<>{valueTargetInput("move source")}{insertTargetInput("move target")}</>}
-              shortcut="M"
-              result={featureResult("Move card")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canMoveTarget)} onClick={executeMoveCard}>Move</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Duplicate card"
-              api="doc.duplicate(source)"
-              status={<CommandState reason={selectedCardReason} capability={canDuplicateTarget} />}
-              args={valueTargetInput("duplicate source")}
-              shortcut="D"
-              result={featureResult("Duplicate card")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canDuplicateTarget)} onClick={executeDuplicateCard}>Duplicate</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Copy card"
-              api="doc.clipboard.copy(source)"
-              status={<CommandState reason={selectedCardReason} capability={canCopyPrimary} />}
-              args={valueTargetInput("copy source")}
-              shortcut="C"
-              result={featureResult("Copy and paste")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canCopyPrimary)} onClick={executeCopyCommand}>Copy</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Cut card"
-              api="doc.clipboard.cut(source)"
-              status={<CommandState reason={selectedCardReason} capability={canCutSource} />}
-              args={valueTargetInput("cut source")}
-              shortcut="X"
-              result={featureResult("Copy and paste")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canCutSource)} onClick={executeCutCommand}>Cut</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Paste after card"
-              api="doc.clipboard.paste({ after })"
-              status={<CommandState reason={selectedCardReason} capability={canPasteClipboardAfterTarget} />}
-              args={valueTargetInput("paste after")}
-              shortcut="V"
-              result={featureResult("Copy and paste")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPasteClipboardAfterTarget)} onClick={executePasteCommand}>Paste</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Remove card"
-              api="doc.patch(remove)"
-              status={<CommandState reason={selectedCardReason} capability={canPatchRemoveTarget} />}
-              args={valueTargetInput("remove target")}
-              shortcut="Del"
-              result={featureResult("Remove card")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchRemoveTarget)} onClick={executeRemoveCommand}>Remove</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Paste payload after card"
-              api="doc.clipboard.pastePayload({ after }, payload)"
-              status={<CommandState reason={selectedCardReason} capability={canPastePayloadAfterTarget} />}
-              args={<>{valueTargetInput("payload after")}{payloadInput("after payload")}</>}
-              result={featureResult("Copy and paste")}
-            >
-              <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPastePayloadAfterTarget)} onClick={() => run(`doc.clipboard.pastePayload({ after: "${valueTarget}" }, payload, { rekey })`, pastePayloadAfterTarget, "Copy and paste")}>Paste payload</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Patch selected text"
-              api="selection.textPatch(text)"
-              status={<CommandState reason={selectedCardReason} />}
-              args={textInput("text patch")}
-              result={featureResult("Board plumbing")}
-            >
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run("doc.selection?.textPatch(textPayload)", replaceTitleText, "Board plumbing")}>Patch text</ActionButton>
-            </CommandRow>
-            <CommandRow title="Delete selected text" api="selection.deleteText()" status={<CommandState reason={selectedCardReason} />} result={featureResult("Board plumbing")}>
-              <ActionButton disabledReason={selectedCardReason} onClick={() => run("doc.selection?.deleteText()", () => doc.selection?.deleteText(), "Board plumbing")}>Delete text</ActionButton>
-            </CommandRow>
-          </CommandSection>
-
-          <CommandSection title="Selection = N" active={selectedCount > 1}>
-            <CommandRow title="Build selection" api="empty / collapse / selectRanges" shortcut="0 / 1 / 2" result={featureResult("Selection set")}>
-              <ActionButton onClick={executeSelectNone}>select 0</ActionButton>
-              <ActionButton onClick={executeSelectOne}>select 1</ActionButton>
-              <ActionButton onClick={executeSelectMany}>select N</ActionButton>
-            </CommandRow>
-            <CommandRow title="Inspect selection" api="selection properties" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
-              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("selection read properties", inspectSelectionReads, "Selection set")}>Inspect</ActionButton>
-            </CommandRow>
-            <CommandRow title="Order selection" api="selection.orderRanges()" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
-              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.orderRanges()", () => doc.selection?.orderRanges(), "Selection set")}>Order</ActionButton>
-            </CommandRow>
-            <CommandRow title="Restore selection" api="selection.restore(snapshot)" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
-              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.restore(snapshot)", selectionRestoreRoundtrip, "Selection set")}>Restore</ActionButton>
-            </CommandRow>
-            <CommandRow title="Remove selected" api="doc.patch(remove[])" status={<CommandState reason={bulkSelectionReason} capability={canRemoveSource} />} shortcut="Del" result={featureResult("Bulk cards")}>
-              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canRemoveSource)} onClick={executeRemoveCommand}>Remove</ActionButton>
-            </CommandRow>
-            <CommandRow title="Copy selected" api="doc.clipboard.copy(source)" status={<CommandState reason={bulkSelectionReason} capability={canCopySource} />} shortcut="C" result={featureResult("Bulk cards")}>
-              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCopySource)} onClick={executeCopyCommand}>Copy</ActionButton>
-            </CommandRow>
-            <CommandRow title="Cut selected" api="doc.clipboard.cut(source)" status={<CommandState reason={bulkSelectionReason} capability={canCutSource} />} shortcut="X" result={featureResult("Bulk cards")}>
-              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCutSource)} onClick={executeCutCommand}>Cut</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Paste selected into column"
-              api="doc.clipboard.paste(target)"
-              status={<CommandState reason={bulkSelectionReason} capability={canPasteClipboardToInsertTarget} />}
-              args={insertTargetInput("paste target")}
-              shortcut="V"
-              result={featureResult("Bulk cards")}
-            >
-              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPasteClipboardToInsertTarget)} onClick={executePasteCommand}>Paste</ActionButton>
-            </CommandRow>
-            <CommandRow
-              title="Paste payload into column"
-              api="doc.clipboard.pastePayload(target, payload)"
-              status={<CommandState reason={bulkSelectionReason} capability={canPastePayloadToInsertTarget} />}
-              args={<>{insertTargetInput("payload target")}{payloadInput("column payload")}</>}
-              result={featureResult("Bulk cards")}
-            >
-              <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPastePayloadToInsertTarget)} onClick={() => run(`doc.clipboard.pastePayload("${insertTarget}", payload, { rekey })`, pastePayloadToInsertTarget, "Bulk cards")}>Paste payload</ActionButton>
-            </CommandRow>
-            <CommandRow title="Bulk transaction" api="history.transaction" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Undo and redo")}>
-              <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.history.transaction(options, fn)", transactionRename, "Undo and redo")}>Transaction</ActionButton>
-            </CommandRow>
-            <CommandRow title="Merge last history" api="history.mergeLast" result={featureResult("Undo and redo")}>
-              <ActionButton onClick={() => run("doc.history.mergeLast({ mergeKey: \"manual\" })", () => doc.history.mergeLast({ mergeKey: "manual" }), "Undo and redo")}>Merge</ActionButton>
-            </CommandRow>
-          </CommandSection>
         </aside>
 
         <div className="grid min-w-0 gap-3">
@@ -1557,6 +1565,21 @@ export function InterfaceWorkbench() {
                   </div>
                 </div>
               ))}
+            </div>
+          </section>
+
+          <section data-stage-detail="" className="rounded border border-stone-200 bg-white p-3">
+            <div className="mb-2 flex flex-wrap items-center gap-2">
+              <h2 className="m-0 text-sm font-semibold text-stone-950">{activeStage.title}</h2>
+              <Badge>{String(featureStages.findIndex((stage) => stage.id === activeStage.id) + 1).padStart(2, "0")}</Badge>
+            </div>
+            <div className="mb-3 flex flex-wrap gap-1">
+              {activeStage.apis.map((api) => (
+                <code key={api} className="rounded bg-stone-100 px-1.5 py-0.5 text-[10px] text-stone-600">{api}</code>
+              ))}
+            </div>
+            <div className="grid gap-1.5">
+              {stageContent[activeStage.id]}
             </div>
           </section>
 
@@ -1711,22 +1734,6 @@ export function InterfaceWorkbench() {
 
 function Badge({ children }: { children: ReactNode }) {
   return <span className="rounded bg-stone-100 px-2 py-1 text-xs text-stone-600">{children}</span>;
-}
-
-function CommandSection(props: {
-  title: string;
-  active: boolean;
-  children: ReactNode;
-}) {
-  return (
-    <section className="mb-4 last:mb-0">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <h2 className="m-0 text-xs font-semibold uppercase tracking-wide text-stone-500">{props.title}</h2>
-        {props.active ? <Badge>active</Badge> : null}
-      </div>
-      <div className="grid gap-1.5">{props.children}</div>
-    </section>
-  );
 }
 
 function CommandRow(props: {
