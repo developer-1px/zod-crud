@@ -1839,7 +1839,7 @@ function ApiTokenGroups(props: {
     ? [...props.groups, { label: "Other exported contracts", note: "shared helper contracts", items: leftovers }]
     : props.groups;
   return (
-    <div className="grid max-h-96 gap-3 overflow-auto">
+    <div className="grid gap-3 overflow-auto">
       {groups.map((group) => (
         <div key={group.label}>
           <div className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-stone-400">{group.label}</div>

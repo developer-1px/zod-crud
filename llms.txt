@@ -1,7 +1,10 @@
 # zod-crud
 
-All frontend editing is JSON editing. zod-crud is a Zod-guarded headless JSON
-editing engine over JSON standards, not a UI component library.
+zod-crud is a headless JSON editing engine guarded by Zod schemas. It is not a
+UI component library. Apps own rendering, focus, buttons, shortcuts, drag/drop,
+and product-specific feature names. zod-crud owns JSON Pointer addressing, JSON
+Patch mutation, JSONPath search, schema validation, selection state, clipboard
+payload flow, and undo/redo history.
 
 Official site and demos: https://developer-1px.github.io/zod-crud/
 
@@ -9,137 +12,370 @@ Official site and demos: https://developer-1px.github.io/zod-crud/
 
 - Root `zod-crud` is React-free.
 - React lives only under `zod-crud/react`.
-- State, operations, selection, clipboard, history metadata, and wire payloads
-  are serializable JSON.
-- The stable substrate is JSON Pointer (RFC 6901), JSON Patch (RFC 6902),
-  JSONPath (RFC 9535), JSON values (RFC 8259), W3C-shaped selection
-  vocabulary, and Zod-backed schema validation.
-
-## Why / Core / Tutorial Context
-
-- Why: frontend editors usually mutate JSON state. zod-crud keeps patch,
-  pointer, selection, clipboard, history, and schema validation out of UI
-  component code.
-- How: keep roles separate. JSON Pointer addresses values, JSONPath finds
-  values, JSON Patch mutates values, Zod validates values, selection stores
-  selected pointers, clipboard owns payload flow, and history owns undo/redo.
-- Tutorial: the official Korean docs introduce a small card-board editor before
-  the API reference. Preserve that path when expanding onboarding docs.
+- Public package imports are `zod-crud` and `zod-crud/react`.
+- State, operations, selection snapshots, clipboard payloads, history entries,
+  and wire payloads are JSON-serializable.
+- Standards vocabulary is intentional: JSON values (RFC 8259), JSON Pointer
+  (RFC 6901), JSON Patch (RFC 6902), JSONPath (RFC 9535), Zod validation, and
+  W3C-shaped selection naming.
 
 ## Import Boundary
 
-Only import package exports:
+Use only package entrypoints:
 
 ```ts
 import { createJSONDocument } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
 ```
 
-Do not import `zod-crud/src/*`, `zod-crud/dist/*`, or source-layout subpaths.
+Do not import `zod-crud/src/*`, `zod-crud/dist/*`, `application/*`,
+`domain/*`, or `foundation/*` subpaths.
 
-## Main Facades
+## Why / Core / Tutorial Context
 
-- `createJSONDocument(schema, initial, options?)` is the headless document
-  facade.
-- `useJSONDocument(schema, initial, options?)` is the React facade and must
-  match the headless document surface.
-- React owns render lifecycle only. Core owns JSON editing.
+Frontend editors usually mutate JSON state. Forms, CMS blocks, kanban boards,
+outliners, and settings screens share the same underlying actions: add,
+replace, remove, move, duplicate, select, copy, paste, undo, and redo.
 
-The document surface centers on:
+zod-crud keeps those editing rules out of UI components. New users do not need
+the source layout. They need this flow:
 
-- `value`, `lastPatch`
-- `patch`, `commit`, `duplicate`
-- `selection`, `clipboard`, `history`
-- `schema`
-- `canPatch`, `canFind`, `canReplace`, `canMove`, `canDuplicate`,
-  `canCopy`, `canCut`, `canPaste`, `canPastePayload`, `canUndo`, `canRedo`
-- `at`, `exists`, `query`, `entries`
+```txt
+schema -> document -> pointer/query -> can* -> change -> result
+```
 
-`doc.at(pointer)` returns a `ReadResult`; check `result.ok` before reading
-`result.value`.
+Official onboarding should stay outside-in:
+
+1. Concepts: schema, JSON value, Pointer, JSONPath, Patch, can*, Result.
+2. Tutorial: build a small card-board editor.
+3. API reference: exact methods and types.
+4. Maintainer notes: source layout and release checks.
+
+## Task Entrypoints
+
+Prefer the document facade for application code.
+
+| Task | API |
+| --- | --- |
+| Create a headless document | `createJSONDocument(schema, initial, options?)` |
+| Use the same surface in React | `useJSONDocument(schema, initial, options?)` |
+| Read current state | `doc.value`, `doc.lastPatch` |
+| Read one location | `doc.at(pointer)` |
+| List children | `doc.entries(pointer)` |
+| Search many locations | `doc.query(jsonPath)` |
+| Add, replace, remove, copy, or move values | `doc.patch(...)`, `doc.commit(...)` |
+| Check before executing | `doc.canPatch`, `doc.canFind`, `doc.canReplace`, `doc.canRemove`, `doc.canMove`, `doc.canDuplicate`, `doc.canCopy`, `doc.canCut`, `doc.canPaste`, `doc.canPastePayload`, `doc.canUndo`, `doc.canRedo` |
+| Duplicate a sibling | `doc.duplicate(pointer, options)` |
+| Store selected pointers | `doc.selection` |
+| Copy, cut, paste, or paste direct payloads | `doc.clipboard` |
+| Undo, redo, merge, or group history | `doc.history` |
+| Ask what schema a location accepts | `doc.schema.kind`, `doc.schema.describe`, `doc.schema.accepts` |
+
+`createJSONDocument` and `useJSONDocument` expose the same document surface.
+React owns render lifecycle only.
+
+## Minimal Example
+
+```ts
+import { z } from "zod";
+import { createJSONDocument } from "zod-crud";
+
+const Card = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  status: z.enum(["todo", "doing", "done"]),
+});
+
+const doc = createJSONDocument(Card, {
+  id: "c1",
+  title: "Write docs",
+  status: "todo",
+}, {
+  history: 100,
+  selection: true,
+});
+
+const patch = [{ op: "replace", path: "/status", value: "doing" }] as const;
+
+if (doc.canPatch(patch).ok) {
+  doc.commit(patch, { label: "change status" });
+}
+```
+
+## Patch, Pointer, JSONPath
+
+Patch paths and selection/clipboard targets are JSON Pointers.
+
+```ts
+doc.patch({ op: "replace", path: "/title", value: "Ready" });
+doc.patch([
+  { op: "replace", path: "/settings/owner", value: "editor" },
+  { op: "add", path: "/lists/0/cards/-", value: card },
+]);
+```
+
+JSONPath is for search only. Use `doc.query(jsonPath)` to get JSON Pointers,
+then use those pointers in `doc.patch(...)`.
+
+```ts
+const result = doc.query("$..cards[?(@.status=='todo')]");
+if (result.ok) {
+  doc.patch(result.pointers.map((path) => ({
+    op: "replace",
+    path: `${path}/status`,
+    value: "done",
+  })));
+}
+```
+
+`doc.at(pointer)` returns a `ReadResult`, not the raw value.
+
+```ts
+const result = doc.at("/lists/0/cards/0/title");
+if (result.ok) result.value;
+```
 
 `doc.patch(...)` accepts one operation or an operation array. `doc.commit(...)`
-and `doc.canPatch(...)` take operation arrays.
+and `doc.canPatch(...)` take operation arrays because they plan or record a
+batch.
 
 For burst edits, build one operation array and call `doc.patch(...)` or
 `doc.commit(...)` once. `history.transaction` groups history entries, but
 repeated `doc.patch(...)` calls still validate repeatedly.
 
-For large documents, prefer the document facade (`doc.patch`, `doc.commit`,
-`doc.canPatch`) on hot UI paths. Public `applyPatch` is an external JSON
-boundary and checks the whole input state for JSON safety. Use
-`applyPatchToTrustedState` only when the caller already owns that state JSON
-boundary; it can use the same trusted plain-schema fast paths as the document
-facade.
+## can* Results
+
+`can*` methods are not booleans. They return reasoned capability results so UI,
+tests, and command palettes can share the same disabled reason.
+
+```ts
+const can = doc.canPastePayload("/lists/0/cards/-", candidateCard);
+
+if (!can.ok) {
+  can.code;
+  can.reason;
+  can.violations;
+}
+```
+
+Use the same options in `canPaste(...)` that you will use in
+`clipboard.paste(...)`.
+
+## Duplicate
+
+Use `doc.duplicate(pointer, options)` when the intent is sibling duplication,
+not raw RFC 6902 `copy`.
+
+```ts
+const duplicated = doc.duplicate("/lists/0/cards/0", {
+  rekey: { fields: ["id", "slug"], strategy: "suffix" },
+});
+
+if (duplicated.ok) {
+  duplicated.value;
+  duplicated.applied;
+}
+```
+
+`duplicate`, `clipboard.cut`, `clipboard.paste`, and
+`clipboard.pastePayload` mutate immediately. Their `applied` records are for
+inspection; do not pass `applied` to `commit` again.
+
+## Selection
+
+Selection is JSON-safe state, not DOM focus. Use selected pointers as explicit
+sources for bulk work.
+
+```ts
+doc.selection?.selectRanges([
+  "/lists/0/cards/0",
+  "/lists/0/cards/1",
+]);
+
+const source = doc.selection?.selectedPointers ?? [];
+doc.clipboard.copy(source);
+```
+
+Common surface:
+
+- `selectedPointers`, `primaryPointer`, `anchorPointer`, `focusPointer`, `caret`
+- `collapse`, `setBaseAndExtent`, `extend`
+- `addRange`, `removeRange`, `toggleRange`, `togglePointer`, `selectRanges`
+- `moveCursor`, `extendCursor`, `resolveCursor`
+- `textPatch`, `deleteText`
+- `snapshot`, `toJSON`, `restore`, `subscribe`
+
+Object members are unordered by the JSON RFC. Prefer explicit pointer lists
+over object-member range semantics.
+
+## Clipboard
+
+Clipboard owns copy/cut/paste payload flow. Selection only records what is
+selected.
+
+```ts
+const copied = doc.clipboard.copy(["/lists/0/cards/0"]);
+if (copied.ok) {
+  doc.clipboard.paste("/lists/1/cards/-");
+}
+```
+
+Use a pointer for an insertion position, such as `/items/-` or
+`/lists/1/cards/-`. Use `{ before: pointer }`, `{ after: pointer }`, or
+`{ replace: pointer }` when the target is an existing value.
+
+```ts
+doc.clipboard.pastePayload("/lists/0/cards/-", candidateCard);
+doc.clipboard.paste({ after: "/lists/0/cards/0" });
+```
+
+Pointer-array copy/cut stores an array payload. If paste should insert each
+copied item as a separate array element, pass `{ spread: true, rekey }` to both
+`canPaste(...)` and `clipboard.paste(...)`.
+
+## History
+
+History records document patch entries and inverse patches.
+
+```ts
+doc.patch({ op: "replace", path: "/title", value: "Final" });
+doc.history.undo();
+doc.history.redo();
+```
+
+For known multi-step changes, prefer one `doc.commit([...])` call with metadata.
+
+```ts
+doc.commit(patch, {
+  label: "typing",
+  origin: "keyboard",
+  mergeKey: "title",
+  selection: nextSelection,
+});
+
+doc.history.mergeLast({ mergeKey: "title" });
+```
+
+Use `history.transaction` only when each step must read intermediate document
+state.
+
+## Schema Helpers
+
+Use schema helpers to ask what a pointer accepts.
+
+```ts
+doc.schema.kind("/lists/0/cards/-", "insert");
+doc.schema.describe("/lists/0/cards/-", "insert");
+doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
+```
+
+## Pure Root Helpers
+
+Root helpers are React-free and useful at external JSON boundaries.
+
+```ts
+import { applyOperation, applyPatch, applyPatchToTrustedState } from "zod-crud";
+```
+
+`applyOperation` and `applyPatch` are pure: same input, same output.
+`applyPatch` is an external JSON boundary and checks the whole input state for
+JSON safety. Use `applyPatchToTrustedState` only when the caller already owns
+that state JSON boundary.
+
+Pointer helpers include `parsePointer`, `tryParsePointer`, `buildPointer`,
+`escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`,
+`lastSegmentIndex`, `appendSegment`, `withLastSegment`, and `trackPointer`.
+
+## Performance Boundary
+
+For large documents, keep hot UI paths on the document facade: `doc.patch`,
+`doc.commit`, and `doc.canPatch`.
 
 Fast document paths apply only for trusted document state plus a plain
 structural Zod schema: objects, arrays, records, and scalar validators without
-refinements, transforms, or checks. Covered edits are independent non-root
-`replace`, array `add`/`remove`/`copy`/`move`, and same-array `add`/`remove`
-batches. Schemas with `refine`, `superRefine`, transforms, or other checks
-intentionally use full root schema validation. Measure with `npm run perf:core`.
+refinements, transforms, or checks. Covered edits include independent non-root
+`replace`, root object edits, same-array field, nested-field, and element
+`replace` batches, array `add`/`remove`/`copy`/`move`, and same-array `add`/`remove`
+batches.
 
-Public mutating methods mutate immediately. `duplicate`, `clipboard.cut`,
-`clipboard.paste`, and `clipboard.pastePayload` return `value` plus `applied`
-records for inspection; do not pass `applied` to `commit` again.
+Schemas with `refine`, `superRefine`, transforms, or other checks
+intentionally use full root schema validation.
 
-Clipboard paste targets are explicit. Use a pointer for an insertion position
-such as `/items/-`; use `{ before: pointer }`, `{ after: pointer }`, or
-`{ replace: pointer }` when the target is an existing value.
+Measure core workloads with:
 
-Pointer-array copy/cut stores an array payload. If paste should insert each
-copied item as a separate array element, pass the same `{ spread: true, rekey }`
-options to both `canPaste(...)` and `clipboard.paste(...)`.
+```sh
+npm run perf:core
+```
 
-JSONPath is for search only. Use `doc.query(jsonPath)` to get JSON Pointers,
-then use those pointers in `doc.patch(...)`.
+## Tree Editing
 
-Tree semantics are app-owned. For outliners, tree flattening, visible-row
-focus, indent, outdent, and toolbar commands should be translated by the app
-into JSON Pointers and JSON Patch operations such as `add` and `move`.
+Tree semantics are app-owned. zod-crud validates and mutates JSON; apps
+translate indent, outdent, visible-row focus, and toolbar commands into JSON
+Pointers and JSON Patch operations.
 
-For exact fields, types, and examples, read `packages/zod-crud/README.md`.
-For behavior rules, read `packages/zod-crud/SPEC.md`.
+```txt
+/nodes/0
+/nodes/0/children/0
+/nodes/0/children/0/children/0
+```
 
-## Design Rules
+```ts
+doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });
+doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0/children/-" });
+doc.patch({ op: "move", from: "/nodes/0/children/1", path: "/nodes/1" });
+```
 
-- Keep public API changes in `packages/zod-crud/src/index.ts` and
-  `packages/zod-crud/src/react.ts`.
-- Keep root `zod-crud` importable without React.
-- Keep the source layout SSOT stable:
-  `src/index.ts`, `src/react.ts`, `src/application`, `src/domain`,
-  `src/foundation`.
-- Do not create a second public `api/` source layer. Public entrypoints live at
-  the source root.
-- Keep UI, transport, DOM clipboard calls, app keymaps, and visual policy
-  outside the package core.
-- Prefer document facade commands over app-local reimplementations of
-  selection, clipboard, undo, and JSONPath replace behavior.
-- Add no convenience verb unless it preserves the small JSON editing vocabulary
-  rather than adding product-specific behavior.
+For same-array moves, RFC 6902 removes the source first and then adds at the
+destination path.
 
-## Source Of Truth
+## Public Type Orientation
 
-- Code behavior is first source of truth.
-- RFC conflicts override current code and docs.
-- `packages/zod-crud/SPEC.md` records current behavior.
-- `packages/zod-crud/README.md` records published package usage.
-- `docs/release-notes.md` records final release-facing source-layout changes.
-- Root `llms.txt` is emitted to the site build as `/llms.txt`.
+Important public types include `JSONDocument`, `JSONPatchOperation`,
+`JSONPatchInput`, `JSONCapabilityResult`, `JSONResult`, `ReadResult`,
+`QueryResult`, `EntriesResult`, `Pointer`, `SelectionState`, `ClipboardState`,
+`PasteTarget`, `SchemaState`, `JSONDocumentHistory`,
+`JSONDocumentCommitOptions`, `JSONDocumentDuplicateOptions`,
+`JSONDocumentPasteOptions`, and `UseJSONDocumentOptions`.
+
+For the complete export list, use `packages/zod-crud/public-contract.json` and
+the API reference.
+
+## Maintainer Notes
+
+This section is not required to use the package.
+
+Public source entrypoints:
+
+```txt
+src/index.ts   -> zod-crud
+src/react.ts   -> zod-crud/react
+```
+
+Source layout SSOT:
+
+```txt
+src/
+├─ index.ts
+├─ react.ts
+├─ application/
+├─ domain/
+└─ foundation/
+```
+
+Do not create a second public `api/` source layer. Keep public entrypoints at
+`src/index.ts` and `src/react.ts`.
+
+Package `prepublishOnly` delegates to the root `release:check`. The root
+`release:check` runs `verify`, `perf:core`, and `pack:library`. The root
+`verify` includes `docs:evaluate`, which guards README, SPEC, site docs,
+`llms.txt`, release notes, public exports, source-layout SSOT, and drift
+ledgers.
 
 ## Verification
 
 ```sh
-npm run release:check
-npm run verify
 npm run docs:evaluate
-npm run perf:core
-npm run playground:typecheck
-npm run playground:build
+npm run release:check
 ```
 
-Use `npm run release:check` as the final local gate before publishing. It runs
-root `verify`, `perf:core`, and `pack:library`. The package `prepublishOnly`
-hook delegates to the same root `release:check`. The root `verify` script also
-runs `docs:evaluate` so docs drift, release notes, source-layout SSOT, and the
-100-loop ledger are release-gated.
+Use `npm run release:check` as the final local gate before publishing.
