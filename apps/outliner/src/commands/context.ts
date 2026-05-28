@@ -7,7 +7,7 @@ import { comparePointer } from "../pointer-utils.js";
 
 export interface CommandContext {
   state: OutlineNode;
-  document: Pick<JSONDocument<OutlineNode>, "delete" | "duplicate" | "insert" | "move" | "paste" | "patch" | "schema">;
+  document: JSONDocument<OutlineNode>;
   selection: SelectionState;
   clipboard: ClipboardApi;
 }

@@ -1,11 +1,14 @@
 // 구조 변경 commands — insert/demote/promote/move/delete.
 // 모든 mutation 후 focus·selection 은 zod-crud 자동 규칙 (SPEC §5.7 / §5.8) 에 맡긴다.
 
-import { trackPointer, type JSONCapabilityResult, type JSONPatchOperation, type JSONResult, type Pointer } from "zod-crud";
+import { trackPointer, type JSONPatchOperation, type JSONResult, type Pointer } from "zod-crud";
+import { createCollection } from "@zod-crud/collection";
 import { parentOf, lastIndex, siblingAt, readChildren } from "../pointer-utils.js";
 import { focusOf, type CommandContext, targetsOf, sortDfs } from "./context.js";
 
-type CommandResult = JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+type CommandResult =
+  | JSONResult
+  | { ok: false; code?: string; reason?: string; message?: string; pointer?: Pointer };
 
 export function insertSibling(ctx: CommandContext): CommandResult {
   const p = focusOf(ctx);
@@ -17,10 +20,10 @@ export function insertSibling(ctx: CommandContext): CommandResult {
   return ctx.document.insert(`${parent}/${idx + 1}`, { text: "", children: [] });
 }
 
-export function duplicateRow(ctx: CommandContext): { ok: boolean; code?: string; reason?: string } {
+export function duplicateRow(ctx: CommandContext): CommandResult {
   const p = focusOf(ctx);
   if (p === null) return { ok: false, code: "path_not_found", reason: "no focus" };
-  return ctx.document.duplicate(p);
+  return createCollection(ctx.document).duplicateAfter(p);
 }
 
 // 선택된 ROW 들을 DFS 정렬 후, 직전 ops 를 통과한 현재 위치를 trackPointer 로 따라가며
@@ -93,27 +96,17 @@ export function deleteRows(ctx: CommandContext): CommandResult {
   const targets = targetsOf(ctx);
   if (targets.length === 0) return { ok: false, code: "path_not_found", reason: "no target" };
   if (targets.includes("")) return { ok: false, code: "path_not_found", reason: "cannot delete root" };
-  return ctx.document.delete(sortDfs(ctx, targets));
+  return createCollection(ctx.document).deleteItems(sortDfs(ctx, targets));
 }
 
 export function moveUp(ctx: CommandContext): CommandResult {
   const p = focusOf(ctx);
   if (p === null) return { ok: false, code: "path_not_found" };
-  const idx = lastIndex(p);
-  if (idx === null || idx === 0) return { ok: false, code: "path_not_found", reason: "already first" };
-  return ctx.document.move(p, siblingAt(p, idx - 1));
+  return createCollection(ctx.document).moveUp(p);
 }
 
 export function moveDown(ctx: CommandContext): CommandResult {
   const p = focusOf(ctx);
   if (p === null) return { ok: false, code: "path_not_found" };
-  const idx = lastIndex(p);
-  if (idx === null) return { ok: false, code: "path_not_found" };
-  const segs = p.slice(1).split("/");
-  const ownerPath = "/" + segs.slice(0, -2).join("/");
-  const owner = ownerPath === "/" ? "" : ownerPath;
-  if (idx >= readChildren(ctx.state, owner).length - 1) {
-    return { ok: false, code: "path_not_found", reason: "already last" };
-  }
-  return ctx.document.move(p, siblingAt(p, idx + 1));
+  return createCollection(ctx.document).moveDown(p);
 }

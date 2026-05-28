@@ -106,6 +106,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: "@zod-crud/collection",
+        replacement: fileURLToPath(new URL("../../packages/collection/src/index.ts", import.meta.url)),
+      },
+      {
         find: "zod-crud/react",
         replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
       },
