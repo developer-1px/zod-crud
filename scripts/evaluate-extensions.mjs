@@ -68,6 +68,50 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/dirty-state",
+    name: "@zod-crud/dirty-state",
+    description: /dirty state tracking extension functions/,
+    readme: [
+      /createDirtyState\(doc\)/,
+      /draft editors, document\s*workbenches, generated admin forms, slide editors, spreadsheet tabs, or CMS\s*resource editors/,
+      /No storage, save button, autosave, sync, conflict resolution, or UI policy/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
+  {
+    root: "packages/bulk-edit",
+    name: "@zod-crud/bulk-edit",
+    description: /JSONPath bulk editing extension functions/,
+    readme: [
+      /createBulkEdit\(doc\)/,
+      /find\/replace panels,\s*batch cleanup tools, generated admin actions, CMS\s*moderation queues, spreadsheet\s*normalizers, or kanban maintenance commands/,
+      /`canReplaceAll` \/ `replaceAll`/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
+  {
+    root: "packages/patch-log",
+    name: "@zod-crud/patch-log",
+    description: /patch log and replay extension functions/,
+    readme: [
+      /createPatchLog\(doc\)/,
+      /audit mirrors,\s*replay fixtures, support repro scripts,\s*command debugging panels,\s*import dry runs, or synchronization adapters/,
+      /No undo\/redo history inspection/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
+  {
+    root: "packages/persist-web",
+    name: "@zod-crud/persist-web",
+    description: /web persistence extension functions/,
+    readme: [
+      /createDocumentPersistence\(doc/,
+      /browser drafts,\s*settings editors,\s*generated admin forms,\s*CMS\s*resource editors,\s*slide editors,\s*spreadsheet tabs, or embedded workbenches/,
+      /No server persistence, sync protocol, offline queue, CRDT, OT, merge, or\s*conflict resolution/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 
 function read(path) {

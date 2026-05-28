@@ -21,11 +21,14 @@ Promotion path:
 
 Current labs:
 
-- `bulk-edit`: JSONPath batch replace/delete command pressure.
-- `dirty-state`: saved baseline, dirty tracking, discard pressure.
-- `persist-web`: storage host save/restore/watch pressure.
+- `bulk-edit`: predecessor pressure for the official `@zod-crud/bulk-edit` package.
+- `dirty-state`: predecessor pressure for the official `@zod-crud/dirty-state` package.
+- `document-outline`: document structure outline and target picker pressure.
+- `patch-preview`: dry-run patch preview and confirmation pressure.
+- `persist-web`: predecessor pressure for the official `@zod-crud/persist-web` package.
+- `pointer-bookmarks`: patch-stream Pointer bookmark tracking pressure.
 - `list-ops`: predecessor pressure for the official `@zod-crud/collection` package.
-- `patch-log`: audit log and patch replay pressure.
+- `patch-log`: predecessor pressure for the official `@zod-crud/patch-log` package.
 - `query-watch`: predecessor pressure for the official `@zod-crud/query-watch` package.
 - `record-index`: predecessor pressure for the official `@zod-crud/record-index` package.
 - `schema-form`: predecessor pressure for the official `@zod-crud/schema-form` package.

@@ -9,7 +9,7 @@ zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진이다. UI com
 - Root `zod-crud`는 React-free다.
 - React hook은 `zod-crud/react`에만 있다.
 - Core package import는 `zod-crud`와 `zod-crud/react`뿐이다.
-- Optional extension은 별도 package로 import한다. 공식 extension은 `@zod-crud/clipboard-web`, `@zod-crud/collection`, `@zod-crud/record-index`, `@zod-crud/selection-model`, `@zod-crud/schema-form`, `@zod-crud/query-watch`처럼 core 밖에서 조립한다.
+- Optional extension은 별도 package로 import한다. 공식 extension은 `@zod-crud/clipboard-web`, `@zod-crud/collection`, `@zod-crud/record-index`, `@zod-crud/selection-model`, `@zod-crud/schema-form`, `@zod-crud/query-watch`, `@zod-crud/dirty-state`, `@zod-crud/bulk-edit`, `@zod-crud/patch-log`, `@zod-crud/persist-web`처럼 core 밖에서 조립한다.
 - State, operation, selection snapshot, clipboard payload, history entry, wire payload는 JSON-serializable이다.
 - 표준 어휘는 의도적이다: JSON value, JSON Pointer, JSON Patch, JSONPath, Zod validation, W3C selection naming.
 
@@ -34,6 +34,10 @@ import { createRecordIndex } from "@zod-crud/record-index";
 import { createSelectionModel } from "@zod-crud/selection-model";
 import { createSchemaForm } from "@zod-crud/schema-form";
 import { createQueryWatch } from "@zod-crud/query-watch";
+import { createDirtyState } from "@zod-crud/dirty-state";
+import { createBulkEdit } from "@zod-crud/bulk-edit";
+import { createPatchLog } from "@zod-crud/patch-log";
+import { createDocumentPersistence } from "@zod-crud/persist-web";
 ```
 
 ## 왜 / 핵심 / 튜토리얼 맥락
@@ -281,6 +285,52 @@ const watch = createQueryWatch(doc, "$.items[*].title");
 const stop = watch.subscribe((snapshot) => {
   if (snapshot.ok) snapshot.matches;
 });
+```
+
+저장된 기준선 대비 변경 여부가 필요하면 `@zod-crud/dirty-state`를 조립한다. Draft editor, document workbench, generated admin form, slide editor, spreadsheet tab, CMS resource editor처럼 저장/동기화 UI는 host가 갖고 clean baseline 비교만 필요할 때 쓴다.
+
+```ts
+import { createDirtyState } from "@zod-crud/dirty-state";
+
+const dirty = createDirtyState(doc);
+
+if (dirty.isDirty()) {
+  dirty.current();
+}
+```
+
+JSONPath match 전체를 한 번에 바꾸거나 지워야 하면 `@zod-crud/bulk-edit`를 조립한다. Find/replace panel, batch cleanup tool, generated admin action, CMS moderation queue, spreadsheet normalizer, kanban maintenance command처럼 UI는 host가 갖고 replace-all/delete-all command만 필요할 때 쓴다.
+
+```ts
+import { createBulkEdit } from "@zod-crud/bulk-edit";
+
+const bulk = createBulkEdit(doc);
+
+if (bulk.canReplaceAll("$.items[*].done", true).ok) {
+  bulk.replaceAll("$.items[*].done", true);
+}
+```
+
+적용된 patch stream을 외부에 복사해 두거나 replay해야 하면 `@zod-crud/patch-log`를 조립한다. Audit mirror, replay fixture, support repro script, command debugging panel, import dry run, synchronization adapter처럼 core history를 열지 않고 applied patch stream만 필요할 때 쓴다.
+
+```ts
+import { createPatchLog } from "@zod-crud/patch-log";
+
+const log = createPatchLog(doc);
+
+doc.replace("/title", "Next");
+log.replayInto(otherDoc);
+```
+
+브라우저 draft 저장/복원이 필요하면 `@zod-crud/persist-web`을 조립한다. Browser draft, settings editor, generated admin form, CMS resource editor, slide editor, spreadsheet tab, embedded workbench처럼 storage host I/O와 save/restore orchestration만 필요할 때 쓴다.
+
+```ts
+import { createDocumentPersistence } from "@zod-crud/persist-web";
+
+const persistence = createDocumentPersistence(doc, { key: "draft" });
+
+await persistence.save();
+await persistence.restore({ restoreSelection: true });
 ```
 
 ## 히스토리

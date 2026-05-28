@@ -17,8 +17,9 @@ All notable changes to this project are documented here.
   `JSONDocument` surface.
 - Added extension-lab packages to test whether core concepts can support
   clipboard, persistence, dirty state, query watching, schema forms, selection
-  models, record indexes, patch logs, list operations, and bulk editing without
-  expanding the core API.
+  models, record indexes, patch logs, list operations, bulk editing, document
+  outlines, patch previews, and Pointer bookmarks without expanding the core
+  API.
 - Added `@zod-crud/clipboard-web` as a browser clipboard extension boundary.
 - Added `@zod-crud/collection` as the first official collection editing
   extension for ordered JSON arrays.
@@ -29,6 +30,14 @@ All notable changes to this project are documented here.
   extension.
 - Added `@zod-crud/query-watch` as an official JSONPath projection subscription
   extension.
+- Added `@zod-crud/dirty-state` as an official clean-baseline dirty tracking
+  extension.
+- Added `@zod-crud/bulk-edit` as an official JSONPath replace-all/delete-all
+  extension.
+- Added `@zod-crud/patch-log` as an official applied-patch recording and replay
+  extension.
+- Added `@zod-crud/persist-web` as an official local document persistence
+  extension for browser storage-like hosts.
 - Added standardization checks, public conformance tests, and API Lab coverage
   for the public facade.
 
