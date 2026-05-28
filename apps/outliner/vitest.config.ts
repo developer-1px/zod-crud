@@ -11,6 +11,10 @@ export default defineConfig({
         replacement: fileURLToPath(new URL("../../packages/collection/src/index.ts", import.meta.url)),
       },
       {
+        find: "@zod-crud/outline",
+        replacement: fileURLToPath(new URL("../../packages/outline/src/index.ts", import.meta.url)),
+      },
+      {
         find: "zod-crud/react",
         replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
       },
