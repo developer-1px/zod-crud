@@ -33,6 +33,7 @@ Current labs:
 - `document-diff`: target value diff/apply pressure.
 - `document-outline`: document structure outline and target picker pressure.
 - `drop-intent`: headless drag/drop move and payload pressure.
+- `expansion-state`: outline/tree expanded-state pressure.
 - `field-draft`: temporary invalid field input pressure.
 - `patch-preview`: dry-run patch preview and confirmation pressure.
 - `persist-web`: predecessor pressure for the official `@zod-crud/persist-web` package.
