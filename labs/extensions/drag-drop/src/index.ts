@@ -2,6 +2,7 @@ import {
   appendSegment,
   lastSegmentIndex,
   parentPointer,
+  type ReadResult,
   type JSONCapabilityResult,
   type JSONDocument,
   type JSONDocumentPasteOptions,
@@ -9,9 +10,12 @@ import {
   type Pointer,
 } from "zod-crud";
 
+export type DragDropPayloadOptions = Omit<JSONDocumentPasteOptions, "payload">;
+
 export type DragDropSource =
   | { kind: "move"; pointer: Pointer }
-  | { kind: "payload"; value: unknown; options?: JSONDocumentPasteOptions };
+  | { kind: "copy"; pointer: Pointer; options?: DragDropPayloadOptions }
+  | { kind: "payload"; value: unknown; options?: DragDropPayloadOptions };
 
 export type DragDropTarget =
   | Pointer
@@ -102,11 +106,23 @@ export function canDrop<TDocument>(
 
   const target = pasteTarget(input.target);
   if (!target.ok) return target;
+  if (input.source.kind === "copy") {
+    const payload = readCopyPayload(doc, input.source.pointer);
+    return {
+      ok: true,
+      kind: "copy",
+      target: target.target,
+      capability: payload.ok
+        ? doc.canPaste(target.target, pasteOptions(input.source, payload.value))
+        : payload.capability,
+    };
+  }
+
   return {
     ok: true,
     kind: "payload",
     target: target.target,
-    capability: doc.canPaste(target.target, pasteOptions(input.source)),
+    capability: doc.canPaste(target.target, pasteOptions(input.source, input.source.value)),
   };
 }
 
@@ -127,9 +143,7 @@ export function performDrop<TDocument>(
     return error;
   }
 
-  const result = input.source.kind === "move"
-    ? doc.move(input.source.pointer, plan.target as Pointer)
-    : doc.paste(plan.target as JSONDocumentPasteTarget, pasteOptions(input.source));
+  const result = performPlannedDrop(doc, input, plan.target);
   if (isFailure(result)) {
     return {
       ok: false,
@@ -149,6 +163,25 @@ export function performDrop<TDocument>(
     target: plan.target,
     result,
   };
+}
+
+function performPlannedDrop<TDocument>(
+  doc: JSONDocument<TDocument>,
+  input: DragDropInput,
+  target: Pointer | JSONDocumentPasteTarget,
+): unknown {
+  switch (input.source.kind) {
+    case "move":
+      return doc.move(input.source.pointer, target as Pointer);
+    case "copy": {
+      const payload = readCopyPayload(doc, input.source.pointer);
+      return payload.ok
+        ? doc.paste(target as JSONDocumentPasteTarget, pasteOptions(input.source, payload.value))
+        : payload.capability;
+    }
+    case "payload":
+      return doc.paste(target as JSONDocumentPasteTarget, pasteOptions(input.source, input.source.value));
+  }
 }
 
 function moveTarget(source: Pointer, target: DragDropTarget): { ok: true; pointer: Pointer } | DragDropError {
@@ -211,10 +244,32 @@ function arrayItemLocation(pointer: Pointer):
   return { ok: true, parent, index };
 }
 
-function pasteOptions(source: Extract<DragDropSource, { kind: "payload" }>): JSONDocumentPasteOptions {
+function pasteOptions(
+  source: Extract<DragDropSource, { kind: "copy" | "payload" }>,
+  payload: unknown,
+): JSONDocumentPasteOptions {
   return source.options === undefined
-    ? { payload: source.value }
-    : { ...source.options, payload: source.value };
+    ? { payload }
+    : { ...source.options, payload };
+}
+
+function readCopyPayload<TDocument>(
+  doc: JSONDocument<TDocument>,
+  pointer: Pointer,
+): { ok: true; value: unknown } | { ok: false; capability: JSONCapabilityResult } {
+  const result = doc.at(pointer);
+  if (result.ok) return { ok: true, value: result.value };
+  return { ok: false, capability: readFailureCapability(result) };
+}
+
+function readFailureCapability(result: Extract<ReadResult, { ok: false }>): JSONCapabilityResult {
+  const capability: JSONCapabilityResult = {
+    ok: false,
+    code: result.code,
+    pointer: result.pointer,
+  };
+  if (result.reason !== undefined) capability.reason = result.reason;
+  return capability;
 }
 
 function isFailure(value: unknown): value is { ok: false; reason?: string; message?: string } {

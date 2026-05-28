@@ -87,6 +87,31 @@ describe("@zod-crud/drag-drop", () => {
     ]);
   });
 
+  test("performs a copy drop through direct payload paste", () => {
+    const doc = createDoc();
+    const drop = createDragDrop(doc);
+
+    expect(drop.canDrop({
+      source: { kind: "copy", pointer: "/cards/0" },
+      target: { after: "/cards/1" },
+    })).toEqual({
+      ok: true,
+      kind: "copy",
+      target: { after: "/cards/1" },
+      capability: { ok: true },
+    });
+    expect(drop.perform({
+      source: { kind: "copy", pointer: "/cards/0" },
+      target: { after: "/cards/1" },
+    })).toMatchObject({
+      ok: true,
+      kind: "copy",
+      target: { after: "/cards/1" },
+      result: { ok: true },
+    });
+    expect(doc.value.cards.map((card) => card.id)).toEqual(["a", "b", "a", "c"]);
+  });
+
   test("supports before and replace payload targets", () => {
     const doc = createDoc();
     const drop = createDragDrop(doc);
@@ -124,6 +149,37 @@ describe("@zod-crud/drag-drop", () => {
       capability: {
         ok: false,
         code: "schema_violation",
+      },
+    });
+    expect(doc.value.archive).toEqual([]);
+  });
+
+  test("preserves disabled reasons from copy source reads", () => {
+    const doc = createDoc();
+    const drop = createDragDrop(doc);
+
+    expect(drop.canDrop({
+      source: { kind: "copy", pointer: "/missing" },
+      target: "/archive/-",
+    })).toMatchObject({
+      ok: true,
+      kind: "copy",
+      capability: {
+        ok: false,
+        code: "path_not_found",
+        pointer: "/missing",
+      },
+    });
+    expect(drop.perform({
+      source: { kind: "copy", pointer: "/missing" },
+      target: "/archive/-",
+    })).toMatchObject({
+      ok: false,
+      code: "disabled",
+      capability: {
+        ok: false,
+        code: "path_not_found",
+        pointer: "/missing",
       },
     });
     expect(doc.value.archive).toEqual([]);
