@@ -53,11 +53,11 @@ describe("JSONCrudError", () => {
       ok: false,
       code: "schema_violation",
     });
-    expect(doc.load({ name: 1 } as never)).toMatchObject({
+    expect(doc.load({ name: 1 })).toMatchObject({
       ok: false,
       code: "schema_violation",
     });
-    expect(doc.reset({ name: 1 } as never)).toMatchObject({
+    expect(doc.reset({ name: 1 })).toMatchObject({
       ok: false,
       code: "schema_violation",
     });

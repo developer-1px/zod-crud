@@ -180,8 +180,8 @@ interface JSONDocument<T> {
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: readonly JSONPatchOperation[], options?: JSONDocumentCommitOptions): JSONResult;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
-  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
-  reset(value?: T): JSONResult;
+  load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
+  reset(value?: unknown): JSONResult;
   subscribe(listener: (applied: readonly JSONPatchOperation[], metadata?: JSONChangeMetadata) => void): () => void;
 
   at(path: Pointer): ReadResult;

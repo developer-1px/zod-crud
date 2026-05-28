@@ -8,7 +8,8 @@ zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진이다. UI com
 
 - Root `zod-crud`는 React-free다.
 - React hook은 `zod-crud/react`에만 있다.
-- 공개 package import는 `zod-crud`와 `zod-crud/react`뿐이다.
+- Core package import는 `zod-crud`와 `zod-crud/react`뿐이다.
+- Optional extension은 별도 package로 import한다. 첫 reference extension은 `@zod-crud/clipboard-web`이다.
 - State, operation, selection snapshot, clipboard payload, history entry, wire payload는 JSON-serializable이다.
 - 표준 어휘는 의도적이다: JSON value, JSON Pointer, JSON Patch, JSONPath, Zod validation, W3C selection naming.
 
@@ -22,6 +23,13 @@ import { useJSONDocument } from "zod-crud/react";
 ```
 
 `zod-crud/react` 외의 package subpath는 import하지 않는다.
+Core 내부 경로도 import하지 않는다.
+
+Optional extension은 core에 plugin 등록하지 않고 함수로 조립한다.
+
+```ts
+import { createWebClipboard } from "@zod-crud/clipboard-web";
+```
 
 ## 왜 / 핵심 / 튜토리얼 맥락
 
@@ -189,6 +197,23 @@ if (copied.ok) {
 삽입 위치에는 `/items/-`나 `/lists/1/cards/-` 같은 Pointer를 사용한다. 기존 value를 기준으로 붙일 때는 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 사용한다.
 
 Pointer array copy/cut은 array payload를 저장한다. Multi-source buffer를 array insertion target에 paste하면 기본적으로 spread된다. Array payload 자체를 하나의 값으로 넣어야 할 때만 `{ spread: false }`를 넘긴다. Direct array payload를 item별 sibling으로 넣으려면 `{ spread: true, rekey }`를 `canPaste(...)`와 `clipboard.pastePayload(...)`에 같이 넘긴다.
+
+## Web Clipboard extension
+
+`zod-crud` core는 `navigator.clipboard`를 호출하지 않는다. Web system clipboard가 필요하면 `@zod-crud/clipboard-web`을 조립한다.
+
+```ts
+import { createWebClipboard } from "@zod-crud/clipboard-web";
+
+const webClipboard = createWebClipboard(doc);
+
+await webClipboard.copy("/lists/0/cards/0");
+await webClipboard.paste("/lists/1/cards/-", {
+  rekey: { fields: ["id"], strategy: "suffix" },
+});
+```
+
+Extension은 public `JSONDocument` surface만 사용한다. 내부 경로, plugin registry, `doc.use(...)`가 필요 없다. Browser가 아닌 test/runtime에서는 `{ readText, writeText }` host를 주입한다.
 
 ## 히스토리
 

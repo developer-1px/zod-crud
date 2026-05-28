@@ -51,7 +51,7 @@ describe("useJSONDocument doc.load history", () => {
 
     let result: ReturnType<typeof hook.current.load> | undefined;
     act(() => {
-      result = hook.current.load({ name: 1 } as unknown as { name: string });
+      result = hook.current.load({ name: 1 });
     });
 
     expect(result?.ok).toBe(false);

@@ -104,3 +104,8 @@ if (!rootPackage.scripts?.["standard:check"]) {
 if (!rootPackage.scripts?.["release:check"]?.includes("standard:check")) {
   fail("package scripts: release:check must include standard:check.");
 }
+
+const libraryPackage = JSON.parse(read("packages/zod-crud/package.json"));
+if (!libraryPackage.files?.includes("public-contract.json")) {
+  fail("zod-crud package: public-contract.json must be published with the package.");
+}

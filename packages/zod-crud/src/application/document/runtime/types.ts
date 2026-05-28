@@ -57,8 +57,8 @@ export interface JSONStateOps<T> {
 
   patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
 
-  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
-  reset(value?: T): JSONResult;
+  load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
+  reset(value?: unknown): JSONResult;
 
   subscribe(listener: (
     applied: ReadonlyArray<JSONPatchOperation>,

@@ -58,8 +58,8 @@ export interface JSONDocument<T> {
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
-  load(value: T, options?: { preserveHistory?: boolean }): JSONResult;
-  reset(value?: T): JSONResult;
+  load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
+  reset(value?: unknown): JSONResult;
   subscribe(listener: (
     applied: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
