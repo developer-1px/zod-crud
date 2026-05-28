@@ -12,7 +12,9 @@ docs
 |   `-- foundation-gate.md      # RFC급 파운데이션 판정 기준
 |-- review
 |   |-- public-api-foundation-protocol.md
-|   `-- public-api-foundation-report.md
+|   |-- public-api-foundation-report.md
+|   |-- extension-package-doubt-audit.md
+|   `-- sibling-product-extension-map.md
 |-- release
 |   |-- notes.md
 |   `-- evaluation-loop.md
@@ -31,6 +33,8 @@ docs
 
 `review/extension-package-doubt-audit.md`는 extension package를 concept
 extension과 convenience wrapper로 재분류한 제거 판단 기록이다.
+`review/sibling-product-extension-map.md`는 sibling repo 제품 요구를
+zod-crud core, feature extension, app 책임으로 다시 분류한 기록이다.
 
 ## 작성 원칙
 
