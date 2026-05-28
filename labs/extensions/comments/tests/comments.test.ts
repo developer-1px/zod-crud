@@ -2,7 +2,7 @@ import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
 import { createJSONDocument } from "zod-crud";
-import { createAnnotations } from "../src/index.js";
+import { createComments } from "../src/index.js";
 
 const Item = z.object({
   id: z.string(),
@@ -30,25 +30,25 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/annotations", () => {
-  test("adds annotations only for valid live pointers", () => {
+describe("@zod-crud/comments", () => {
+  test("adds comments only for valid live pointers", () => {
     const doc = createDoc();
-    const annotations = createAnnotations(doc);
+    const comments = createComments(doc);
 
-    expect(annotations.canAdd({
+    expect(comments.canAdd({
       id: "review-1",
       pointer: "/items/0/title",
       text: "Needs a clearer title",
     })).toEqual({ ok: true });
 
-    expect(annotations.add({
+    expect(comments.add({
       id: "review-1",
       pointer: "/items/0/title",
       text: "Needs a clearer title",
       data: { author: "Ada" },
     })).toEqual({
       ok: true,
-      annotation: {
+      comment: {
         id: "review-1",
         pointer: "/items/0/title",
         text: "Needs a clearer title",
@@ -58,16 +58,16 @@ describe("@zod-crud/annotations", () => {
       },
     });
 
-    expect(annotations.add({
+    expect(comments.add({
       id: "review-1",
       pointer: "/items/1/title",
       text: "Duplicate",
     })).toEqual({ ok: false, code: "duplicate_id", id: "review-1" });
-    expect(annotations.add({
+    expect(comments.add({
       pointer: "/items/1/title",
       text: "   ",
     })).toEqual({ ok: false, code: "empty_text" });
-    expect(annotations.add({
+    expect(comments.add({
       pointer: "/items/9/title",
       text: "Missing",
     })).toMatchObject({
@@ -77,47 +77,47 @@ describe("@zod-crud/annotations", () => {
     });
   });
 
-  test("tracks annotation anchors across structural edits", () => {
+  test("tracks comment anchors across structural edits", () => {
     const doc = createDoc();
-    const annotations = createAnnotations(doc);
+    const comments = createComments(doc);
 
-    annotations.add({
+    comments.add({
       id: "b-title",
       pointer: "/items/1/title",
       text: "Review B",
     });
 
     expect(doc.insert("/items/0", { id: "x", title: "X", done: false })).toEqual({ ok: true });
-    expect(annotations.byId("b-title")).toMatchObject({
+    expect(comments.byId("b-title")).toMatchObject({
       pointer: "/items/2/title",
       lost: false,
     });
 
     expect(doc.delete("/items/0")).toEqual({ ok: true });
-    expect(annotations.byId("b-title")).toMatchObject({
+    expect(comments.byId("b-title")).toMatchObject({
       pointer: "/items/1/title",
       lost: false,
     });
 
     expect(doc.move("/items/1", "/items/-")).toEqual({ ok: true });
-    expect(annotations.byId("b-title")).toMatchObject({
+    expect(comments.byId("b-title")).toMatchObject({
       pointer: "/items/2/title",
       lost: false,
     });
   });
 
-  test("marks annotations as lost when the anchor is removed", () => {
+  test("marks comments as lost when the anchor is removed", () => {
     const doc = createDoc();
-    const annotations = createAnnotations(doc);
+    const comments = createComments(doc);
     const listener = vi.fn();
 
-    annotations.subscribe(listener);
-    annotations.add({
+    comments.subscribe(listener);
+    comments.add({
       id: "title",
       pointer: "/items/1/title",
       text: "Review B title",
     });
-    annotations.add({
+    comments.add({
       id: "meta",
       pointer: "/meta/title",
       text: "Review document title",
@@ -125,8 +125,8 @@ describe("@zod-crud/annotations", () => {
 
     expect(doc.delete("/items/1")).toEqual({ ok: true });
 
-    expect(annotations.current()).toEqual({
-      annotations: [
+    expect(comments.current()).toEqual({
+      comments: [
         {
           id: "meta",
           pointer: "/meta/title",
@@ -149,30 +149,30 @@ describe("@zod-crud/annotations", () => {
     expect(listener).toHaveBeenCalledTimes(3);
   });
 
-  test("filters annotations by pointer, status, and lost state", () => {
+  test("filters comments by pointer, status, and lost state", () => {
     const doc = createDoc();
-    const annotations = createAnnotations(doc);
+    const comments = createComments(doc);
 
-    annotations.add({
+    comments.add({
       id: "item",
       pointer: "/items/0",
       text: "Review item",
     });
-    annotations.add({
+    comments.add({
       id: "title",
       pointer: "/items/0/title",
       text: "Review title",
     });
-    annotations.add({
+    comments.add({
       id: "done",
       pointer: "/items/0/done",
       text: "Review checkbox",
       status: "resolved",
     });
 
-    expect(annotations.forPointer("/items/0", { includeDescendants: true })).toEqual({
+    expect(comments.forPointer("/items/0", { includeDescendants: true })).toEqual({
       ok: true,
-      annotations: [
+      comments: [
         {
           id: "item",
           pointer: "/items/0",
@@ -190,46 +190,46 @@ describe("@zod-crud/annotations", () => {
       ],
     });
 
-    expect(annotations.forPointer("/items/0", {
+    expect(comments.forPointer("/items/0", {
       includeDescendants: true,
       includeResolved: true,
     })).toMatchObject({
       ok: true,
-      annotations: [
+      comments: [
         { id: "done" },
         { id: "item" },
         { id: "title" },
       ],
     });
 
-    expect(annotations.resolve("title")).toMatchObject({
+    expect(comments.resolve("title")).toMatchObject({
       ok: true,
-      annotation: { id: "title", status: "resolved" },
+      comment: { id: "title", status: "resolved" },
     });
-    expect(annotations.current({ status: "open" }).annotations.map((annotation) => annotation.id)).toEqual([
+    expect(comments.current({ status: "open" }).comments.map((comment) => comment.id)).toEqual([
       "item",
     ]);
   });
 
   test("updates text, status, data, and anchor without mutating core state", () => {
     const doc = createDoc();
-    const annotations = createAnnotations(doc);
+    const comments = createComments(doc);
 
-    annotations.add({
+    comments.add({
       id: "note",
       pointer: "/items/0/title",
       text: "Old",
       data: { author: "Ada" },
     });
 
-    expect(annotations.update("note", {
+    expect(comments.update("note", {
       pointer: "/items/2/title",
       text: "New",
       status: "resolved",
       data: { author: "Grace", severity: "low" },
     })).toEqual({
       ok: true,
-      annotation: {
+      comment: {
         id: "note",
         pointer: "/items/2/title",
         text: "New",
@@ -239,9 +239,9 @@ describe("@zod-crud/annotations", () => {
       },
     });
 
-    expect(annotations.update("note", { data: null })).toEqual({
+    expect(comments.update("note", { data: null })).toEqual({
       ok: true,
-      annotation: {
+      comment: {
         id: "note",
         pointer: "/items/2/title",
         text: "New",
@@ -258,23 +258,23 @@ describe("@zod-crud/annotations", () => {
 
   test("can be disposed independently from the document", () => {
     const doc = createDoc();
-    const annotations = createAnnotations(doc);
+    const comments = createComments(doc);
     const listener = vi.fn();
 
-    annotations.add({
+    comments.add({
       id: "note",
       pointer: "/items/1/title",
       text: "Review",
     });
-    annotations.subscribe(listener);
-    annotations.dispose();
+    comments.subscribe(listener);
+    comments.dispose();
 
     expect(doc.insert("/items/0", { id: "x", title: "X", done: false })).toEqual({ ok: true });
-    expect(annotations.byId("note")).toMatchObject({
+    expect(comments.byId("note")).toMatchObject({
       pointer: "/items/1/title",
       lost: false,
     });
     expect(listener).not.toHaveBeenCalled();
-    expect(annotations.subscribe(listener)).toEqual(expect.any(Function));
+    expect(comments.subscribe(listener)).toEqual(expect.any(Function));
   });
 });

@@ -6,6 +6,7 @@ const root = new URL("..", import.meta.url).pathname;
 const labRoot = "labs/extensions";
 const verify = process.argv.includes("--verify");
 const retiredLabNames = new Set([
+  "annotations",
   "document-outline",
   "drop-intent",
   "field-draft",

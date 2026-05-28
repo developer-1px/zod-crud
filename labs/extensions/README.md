@@ -19,7 +19,7 @@ capability obvious before someone reads the source.
 Naming test:
 
 - The package must fit: `Use @zod-crud/<name> to <buildable capability>.`
-- Prefer standard or de-facto editor terms: clipboard, selection, annotation,
+- Prefer standard or de-facto editor terms: clipboard, selection, comment,
   presence, history, search, outline, form, persistence.
 - Avoid names that only describe an internal mechanism or pressure test.
 - If the name cannot explain what a downstream editor can build with it, keep it
@@ -48,7 +48,7 @@ Promotion path:
 
 Current labs:
 
-- `annotations`: build comment/review annotations anchored to document
+- `comments`: build review comments anchored to document
   structure.
 - `autosave`: schedule host-owned saves from document changes.
 - `checkpoints`: name and restore document snapshots.
