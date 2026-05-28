@@ -335,6 +335,38 @@ const snapshot = selection.current();
 
 Selection model extension도 public `JSONDocument` surface만 사용합니다. Stable id lookup은 `record-index`, 순서 변경은 `collection`, clipboard/delete command는 host command layer 책임으로 둡니다.
 
+## Schema form extension
+
+Schema-backed field descriptor가 필요하면 `@zod-crud/schema-form`을 조립합니다. Settings form, generated admin resource form, document property panel, slide metadata panel, spreadsheet tab settings처럼 UI는 host가 만들고 field path/value/schema kind/canSet/set만 필요할 때 씁니다.
+
+```ts
+import { createSchemaForm } from "@zod-crud/schema-form";
+
+const form = createSchemaForm(doc, "/settings");
+
+if (form.ok) {
+  const title = form.fields.find((field) => field.key === "title");
+  title?.set("Published");
+}
+```
+
+Schema form extension도 public `JSONDocument` surface만 사용합니다. Rendered inputs, labels, layout, validation UI, focus, and keyboard policy는 host 책임으로 둡니다.
+
+## Query watch extension
+
+JSONPath projection을 구독해야 하면 `@zod-crud/query-watch`를 조립합니다. Inspector, filtered side panel, search result list, preview summary, validation panel, generated admin dashboard처럼 mutation 없이 derived read model만 필요할 때 씁니다.
+
+```ts
+import { createQueryWatch } from "@zod-crud/query-watch";
+
+const watch = createQueryWatch(doc, "$.items[*].title");
+const stop = watch.subscribe((snapshot) => {
+  if (snapshot.ok) snapshot.matches;
+});
+```
+
+Query watch extension도 public `JSONDocument` surface만 사용합니다. Core는 JSONPath search를 소유하고, extension은 projection snapshot과 change notification을 소유합니다.
+
 ## 히스토리
 
 History는 document patch와 inverse patch를 기록합니다.

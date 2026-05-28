@@ -26,7 +26,7 @@ Current labs:
 - `persist-web`: storage host save/restore/watch pressure.
 - `list-ops`: predecessor pressure for the official `@zod-crud/collection` package.
 - `patch-log`: audit log and patch replay pressure.
-- `query-watch`: JSONPath projection subscription pressure.
+- `query-watch`: predecessor pressure for the official `@zod-crud/query-watch` package.
 - `record-index`: predecessor pressure for the official `@zod-crud/record-index` package.
-- `schema-form`: schema-driven field descriptor and setter pressure.
+- `schema-form`: predecessor pressure for the official `@zod-crud/schema-form` package.
 - `selection-model`: predecessor pressure for the official `@zod-crud/selection-model` package.

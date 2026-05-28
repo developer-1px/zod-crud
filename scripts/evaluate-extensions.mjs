@@ -46,6 +46,28 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/schema-form",
+    name: "@zod-crud/schema-form",
+    description: /schema-backed field descriptor extension functions/,
+    readme: [
+      /createSchemaForm\(doc/,
+      /settings forms, generated admin resource forms,\s*document property panels, slide metadata panels, or spreadsheet tab settings/,
+      /No rendered inputs, labels, layout, validation UI, focus, or keyboard policy/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
+  {
+    root: "packages/query-watch",
+    name: "@zod-crud/query-watch",
+    description: /JSONPath projection subscription extension functions/,
+    readme: [
+      /createQueryWatch\(doc/,
+      /inspectors, filtered side panels, search result lists,\s*preview summaries,\s*validation panels, or generated admin dashboards/,
+      /No UI, rendering, filters panel, search box, virtual list, or data grid/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 
 function read(path) {

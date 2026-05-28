@@ -25,6 +25,10 @@ All notable changes to this project are documented here.
 - Added `@zod-crud/record-index` as an official stable id-to-pointer extension.
 - Added `@zod-crud/selection-model` as an official pointer selection projection
   extension.
+- Added `@zod-crud/schema-form` as an official schema-backed field descriptor
+  extension.
+- Added `@zod-crud/query-watch` as an official JSONPath projection subscription
+  extension.
 - Added standardization checks, public conformance tests, and API Lab coverage
   for the public facade.
 
