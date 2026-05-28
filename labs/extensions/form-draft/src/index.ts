@@ -1,6 +1,7 @@
 import type {
   JSONCapabilityResult,
   JSONDocument,
+  JSONPatchOperation,
   JSONResult,
   Pointer,
   SchemaKind,
@@ -63,13 +64,31 @@ export type FormDraftCommitResult<TInput = unknown> =
   | { ok: true; snapshot: FormDraftSnapshot<TInput>; result: JSONResult }
   | FormDraftError;
 
+export interface FormDraftBatchChange<TInput = unknown> {
+  ok: true;
+  root: Pointer;
+  snapshots: ReadonlyArray<FormDraftSnapshot<TInput>>;
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
+export type FormDraftBatchResult<TInput = unknown> =
+  | FormDraftBatchChange<TInput>
+  | FormDraftError;
+
+export type FormDraftBatchCommitResult<TInput = unknown> =
+  | (FormDraftBatchChange<TInput> & { result: JSONResult })
+  | FormDraftError;
+
 export type FormDraftListener<TInput = unknown> = (snapshot: FormDraftSnapshot<TInput>) => void;
 
 export interface FormDrafts<TDocument, TInput = unknown> {
   current(path: Pointer): FormDraftSnapshot<TInput> | null;
+  currentAll(root?: Pointer): ReadonlyArray<FormDraftSnapshot<TInput>>;
   set(path: Pointer, input: TInput): FormDraftSetResult<TInput>;
   canCommit(path: Pointer): JSONCapabilityResult | FormDraftError;
   commit(path: Pointer): FormDraftCommitResult<TInput>;
+  canCommitAll(root?: Pointer): FormDraftBatchResult<TInput>;
+  commitAll(root?: Pointer): FormDraftBatchCommitResult<TInput>;
   reset(path: Pointer): boolean;
   clear(): void;
   subscribe(listener: FormDraftListener<TInput>): () => void;
@@ -100,6 +119,10 @@ export function createFormDraft<TDocument, TInput = unknown>(
       if (draft === undefined) return null;
       const snapshot = readSnapshot(doc, draft, parse);
       return snapshot.ok ? snapshot.snapshot : null;
+    },
+    currentAll(root = "") {
+      const batch = readBatch(doc, drafts, parse, root);
+      return batch.ok ? batch.snapshots.map(copySnapshot) : [];
     },
     set(path, input) {
       const readable = doc.at(path);
@@ -140,6 +163,34 @@ export function createFormDraft<TDocument, TInput = unknown>(
         result,
       };
     },
+    canCommitAll(root = "") {
+      return canCommitBatch(doc, drafts, parse, root);
+    },
+    commitAll(root = "") {
+      const change = canCommitBatch(doc, drafts, parse, root);
+      if (!change.ok) return change;
+
+      const result: JSONResult = change.operations.length === 0
+        ? { ok: true }
+        : doc.patch(change.operations);
+      if (!result.ok) return commitFailed(root, result);
+
+      const committed = change.snapshots.map((snapshot) => {
+        drafts.delete(snapshot.pointer);
+        return readCommittedSnapshot(doc, snapshot.pointer, snapshot.input);
+      });
+      for (const snapshot of committed) {
+        emitSnapshot(snapshot);
+      }
+
+      return {
+        ok: true,
+        root,
+        snapshots: committed.map(copySnapshot),
+        operations: change.operations,
+        result,
+      };
+    },
     reset(path) {
       const removed = drafts.delete(path);
       if (!removed) return false;
@@ -165,6 +216,59 @@ export function createFormDraft<TDocument, TInput = unknown>(
       listeners.clear();
     },
   };
+}
+
+function canCommitBatch<TDocument, TInput>(
+  doc: JSONDocument<TDocument>,
+  drafts: ReadonlyMap<Pointer, StoredDraft<TInput>>,
+  parse: FormDraftParser<TInput>,
+  root: Pointer,
+): FormDraftBatchResult<TInput> {
+  const batch = readBatch(doc, drafts, parse, root);
+  if (!batch.ok) return batch;
+
+  for (const snapshot of batch.snapshots) {
+    if (snapshot.error !== null) return snapshot.error;
+  }
+
+  const operations = batch.snapshots
+    .filter((snapshot) => snapshot.dirty)
+    .map((snapshot): JSONPatchOperation => ({
+      op: "replace",
+      path: snapshot.pointer,
+      value: cloneJson(snapshot.parsed),
+    }));
+  if (operations.length > 0) {
+    const capability = doc.canPatch(operations);
+    if (!capability.ok) return capabilityError("commit_rejected", root, capability);
+  }
+
+  return {
+    ok: true,
+    root,
+    snapshots: batch.snapshots.map(copySnapshot),
+    operations,
+  };
+}
+
+function readBatch<TDocument, TInput>(
+  doc: JSONDocument<TDocument>,
+  drafts: ReadonlyMap<Pointer, StoredDraft<TInput>>,
+  parse: FormDraftParser<TInput>,
+  root: Pointer,
+): { ok: true; snapshots: ReadonlyArray<FormDraftSnapshot<TInput>> } | FormDraftError {
+  const readable = doc.at(root);
+  if (!readable.ok) return readError(readable.code, readable.pointer, readable.reason);
+
+  const snapshots: FormDraftSnapshot<TInput>[] = [];
+  for (const draft of [...drafts.values()].sort((left, right) => left.pointer.localeCompare(right.pointer))) {
+    if (!isInScope(draft.pointer, readable.path)) continue;
+    const snapshot = readSnapshot(doc, draft, parse);
+    if (!snapshot.ok) return snapshot;
+    snapshots.push(snapshot.snapshot);
+  }
+
+  return { ok: true, snapshots };
 }
 
 function readSnapshot<TDocument, TInput>(
@@ -327,6 +431,10 @@ function readError(
     reason: reason ?? `field path not found: ${pointer}`,
     pointer,
   };
+}
+
+function isInScope(pointer: Pointer, root: Pointer): boolean {
+  return root === "" || pointer === root || pointer.startsWith(`${root}/`);
 }
 
 function emit<TInput>(

@@ -5,6 +5,7 @@ import { createJSONDocument } from "zod-crud";
 import {
   createFormDraft,
   type FormDraftParser,
+  type FormDraftParseResult,
 } from "../src/index.js";
 
 const Schema = z.object({
@@ -16,15 +17,24 @@ function createDoc() {
   return createJSONDocument(Schema, {
     title: "Draft",
     count: 1,
-  });
+  }, { history: 20 });
 }
 
 const parseNumber: FormDraftParser<string> = ({ input }) => {
+  return parseNumberInput(input);
+};
+
+function parseNumberInput(input: string): FormDraftParseResult {
   if (input.trim() === "") return { ok: false, reason: "empty number" };
   const value = Number(input);
   return Number.isFinite(value)
     ? { ok: true, value }
     : { ok: false, reason: "not a number" };
+}
+
+const parseFormInput: FormDraftParser<string> = ({ input, kind }) => {
+  if (kind !== "number") return { ok: true, value: input };
+  return parseNumberInput(input);
 };
 
 describe("@zod-crud/form-draft", () => {
@@ -112,6 +122,66 @@ describe("@zod-crud/form-draft", () => {
     });
     expect(doc.value.count).toBe(3);
     expect(drafts.current("/count")).toBeNull();
+  });
+
+  test("commits multiple form drafts as one patch batch", () => {
+    const doc = createDoc();
+    const drafts = createFormDraft(doc, { parse: parseFormInput });
+
+    drafts.set("/title", "Final");
+    drafts.set("/count", "4");
+
+    expect(drafts.currentAll().map((snapshot) => snapshot.pointer)).toEqual(["/count", "/title"]);
+    expect(drafts.canCommitAll()).toMatchObject({
+      ok: true,
+      root: "",
+      operations: [
+        { op: "replace", path: "/count", value: 4 },
+        { op: "replace", path: "/title", value: "Final" },
+      ],
+    });
+    expect(doc.value).toEqual({ title: "Draft", count: 1 });
+
+    expect(drafts.commitAll()).toMatchObject({
+      ok: true,
+      root: "",
+      result: { ok: true },
+      snapshots: [
+        { pointer: "/count", currentValue: 4, dirty: false },
+        { pointer: "/title", currentValue: "Final", dirty: false },
+      ],
+    });
+    expect(doc.lastPatch).toEqual([
+      { op: "replace", path: "/count", value: 4 },
+      { op: "replace", path: "/title", value: "Final" },
+    ]);
+    expect(doc.history.undoDepth).toBe(1);
+    expect(drafts.currentAll()).toEqual([]);
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.value).toEqual({ title: "Draft", count: 1 });
+  });
+
+  test("blocks form batch commit when any draft is invalid", () => {
+    const doc = createDoc();
+    const drafts = createFormDraft(doc, { parse: parseFormInput });
+
+    drafts.set("/title", "Final");
+    drafts.set("/count", "bad");
+
+    expect(drafts.currentAll()).toHaveLength(2);
+    expect(drafts.canCommitAll()).toMatchObject({
+      ok: false,
+      code: "parse_failed",
+      pointer: "/count",
+    });
+    expect(drafts.commitAll()).toMatchObject({
+      ok: false,
+      code: "parse_failed",
+      pointer: "/count",
+    });
+    expect(doc.value).toEqual({ title: "Draft", count: 1 });
+    expect(doc.lastPatch).toEqual([]);
   });
 
   test("uses identity parser by default", () => {

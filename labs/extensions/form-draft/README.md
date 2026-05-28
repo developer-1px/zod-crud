@@ -18,7 +18,8 @@ const drafts = createFormDraft(doc, {
 });
 
 drafts.set("/settings/count", "12");
-drafts.commit("/settings/count");
+drafts.set("/settings/title", "Next");
+drafts.commitAll("/settings");
 ```
 
 ## Scope
@@ -28,6 +29,7 @@ drafts.commit("/settings/count");
 - Validate parsed values with `doc.schema.accepts`.
 - Preflight commits with `doc.canReplace`.
 - Commit valid drafts with `doc.replace`.
+- Preflight and commit a form/subtree through `doc.canPatch` and `doc.patch`.
 
 ## Non-goals
 
@@ -43,7 +45,8 @@ drafts.commit("/settings/count");
 
 The public facade is enough for form drafts. The extension keeps temporary
 invalid input outside `doc.value`, asks host code to parse, checks schema
-acceptance, then commits through the normal replace verb.
+acceptance, then commits one field through `replace` or a whole form/subtree as
+one JSON Patch batch.
 
 This keeps core document state schema-valid at all times. Partial input,
 formatting, parsing, and validation message presentation remain host concerns.
