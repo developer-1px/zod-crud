@@ -4,6 +4,27 @@ This directory is a pressure suite for `zod-crud` extensions.
 
 Lab packages are not official public packages. They exist to test whether new product needs can be implemented by composing the public `zod-crud` document facade without adding core concepts.
 
+Concept:
+
+```text
+app feature
+└─ extension capability
+   └─ zod-crud public primitives
+```
+
+An extension is a reusable headless editor capability. It is not the complete app
+feature, and it is not a core primitive. The name should make the user-facing
+capability obvious before someone reads the source.
+
+Naming test:
+
+- The package must fit: `Use @zod-crud/<name> to <buildable capability>.`
+- Prefer standard or de-facto editor terms: clipboard, selection, annotation,
+  presence, history, search, outline, form, persistence.
+- Avoid names that only describe an internal mechanism or pressure test.
+- If the name cannot explain what a downstream editor can build with it, keep it
+  lab-only or rename it before promotion.
+
 Rules:
 
 - Import `zod-crud` only through the public package entrypoint.
@@ -16,34 +37,45 @@ Promotion path:
 
 1. A lab package proves a distinct responsibility.
 2. Its source passes `npm run labs:extensions:verify`.
-3. The friction report shows no missing core concept, or the missing concept is accepted as a core contract change.
-4. Only then move it from `labs/extensions/*` to `packages/*`.
+3. Its name passes the capability promise test without relying on implementation
+   details.
+4. The friction report shows no missing core concept, or the missing concept is
+   accepted as a core contract change.
+5. Only then move it from `labs/extensions/*` to `packages/*`.
 
 Current labs:
 
-- `annotations`: headless comment/review anchors pressure.
-- `active-pointer`: active row/card/block pointer state pressure.
-- `autosave`: host-owned autosave orchestration pressure.
-- `bulk-edit`: predecessor pressure for the official `@zod-crud/bulk-edit` package.
-- `checkpoints`: named snapshot and restore point pressure.
-- `command-state`: headless command enabled/disabled state pressure.
-- `computed-fields`: host-owned computed/formula field sync pressure.
-- `collection-sort`: ordered collection sort/reverse pressure.
-- `dirty-state`: predecessor pressure for the official `@zod-crud/dirty-state` package.
-- `document-diff`: target value diff/apply pressure.
-- `document-outline`: document structure outline and target picker pressure.
-- `drop-intent`: headless drag/drop move and payload pressure.
-- `expansion-state`: outline/tree expanded-state pressure.
-- `field-draft`: temporary invalid field input pressure.
-- `patch-preview`: dry-run patch preview and confirmation pressure.
-- `persist-web`: predecessor pressure for the official `@zod-crud/persist-web` package.
-- `presence-cursors`: remote collaborator cursor/selection pressure.
-- `pointer-bookmarks`: patch-stream Pointer bookmark tracking pressure.
-- `list-ops`: predecessor pressure for the official `@zod-crud/collection` package.
-- `patch-log`: predecessor pressure for the official `@zod-crud/patch-log` package.
-- `query-watch`: predecessor pressure for the official `@zod-crud/query-watch` package.
-- `record-index`: predecessor pressure for the official `@zod-crud/record-index` package.
-- `schema-form`: predecessor pressure for the official `@zod-crud/schema-form` package.
-- `selection-model`: predecessor pressure for the official `@zod-crud/selection-model` package.
-- `text-search`: document-wide string search and replace pressure.
-- `value-factory`: host-owned schema-checked new value factory pressure.
+- `annotations`: build comment/review annotations anchored to document
+  structure.
+- `active-pointer`: keep one active document target stable across edits.
+- `autosave`: schedule host-owned saves from document changes.
+- `bulk-edit`: run JSONPath-backed multi-target replace/delete operations.
+- `checkpoints`: name and restore document snapshots.
+- `command-state`: derive enabled/disabled command state from public `can*`
+  probes.
+- `computed-fields`: sync host-computed formula/derived fields.
+- `collection-sort`: sort or reverse ordered JSON arrays.
+- `dirty-state`: compare the document with a clean baseline.
+- `document-diff`: produce and apply patch changes toward a target document.
+- `document-outline`: build a navigable document tree.
+- `drop-intent`: convert drag/drop input into move or paste operations.
+- `expansion-state`: keep outline/tree expanded paths stable across edits.
+- `field-draft`: hold temporary invalid field input before committing valid JSON.
+- `patch-preview`: preview patch effects before confirmation.
+- `persist-web`: save and load documents through browser storage-like hosts.
+- `presence-cursors`: track remote collaborator cursors and selections.
+- `pointer-bookmarks`: keep named document locations stable across edits.
+- `list-ops`: predecessor pressure for the official `@zod-crud/collection`
+  package.
+- `patch-log`: predecessor pressure for the official `@zod-crud/patch-log`
+  package.
+- `query-watch`: predecessor pressure for the official `@zod-crud/query-watch`
+  package.
+- `record-index`: predecessor pressure for the official `@zod-crud/record-index`
+  package.
+- `schema-form`: predecessor pressure for the official `@zod-crud/schema-form`
+  package.
+- `selection-model`: predecessor pressure for the official
+  `@zod-crud/selection-model` package.
+- `text-search`: find and replace text across document string fields.
+- `value-factory`: create host-owned, schema-checked new values.
