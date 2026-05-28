@@ -55,10 +55,10 @@ Current labs:
 - `collection-sort`: sort or reverse ordered JSON arrays.
 - `computed-fields`: sync host-computed formula/derived fields.
 - `document-diff`: produce and apply patch changes toward a target document.
-- `document-outline`: build a navigable document tree.
-- `drop-intent`: convert drag/drop input into move or paste operations.
-- `field-draft`: hold temporary invalid field input before committing valid JSON.
+- `outline`: build a navigable document tree.
+- `drag-drop`: convert drag/drop input into move or paste operations.
+- `form-draft`: hold temporary form input before committing valid JSON.
 - `patch-preview`: preview patch effects before confirmation.
 - `presence-cursors`: track remote collaborator cursors and selections.
-- `pointer-bookmarks`: keep named document locations stable across edits.
-- `text-search`: find and replace text across document string fields.
+- `bookmarks`: keep named document locations stable across edits.
+- `search-replace`: find and replace text across document string fields.
