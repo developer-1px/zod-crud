@@ -11,6 +11,12 @@ import { createSearchReplace } from "@zod-crud/search-replace";
 const text = createSearchReplace(doc);
 
 const matches = text.find("draft", { root: "/pages" });
+if (matches.ok) {
+  text.replaceMatch({
+    pointer: matches.matches[0].pointer,
+    range: matches.matches[0].ranges[0],
+  }, "published");
+}
 text.replaceAll("draft", "published");
 ```
 
@@ -18,9 +24,9 @@ text.replaceAll("draft", "published");
 
 - Traverse a document or subtree through `doc.entries`.
 - Find occurrences inside string values.
-- Plan replacement patches for matched string values.
+- Plan replacement patches for one current match or all matched string values.
 - Preflight replacement with `doc.canPatch`.
-- Apply replacement with `doc.patch`.
+- Apply replacement with `doc.replace` or `doc.patch`.
 
 ## Non-goals
 
@@ -36,9 +42,9 @@ text.replaceAll("draft", "published");
 ## Friction report
 
 The public facade is enough for simple document-wide search and replace:
-`entries` gives structural traversal, `at` gives values, and replacement is a
-normal JSON Patch batch.
+`entries` gives structural traversal, `at` gives values, one-match replacement
+uses `canReplace`/`replace`, and replace-all is a normal JSON Patch batch.
 
 This extension intentionally does not ask core for text indexing or UI
 highlighting. Those are product policies. The useful core contract is stable
-Pointer addressing plus batch patch preflight.
+Pointer addressing plus mutation preflight.

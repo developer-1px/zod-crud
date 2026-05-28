@@ -4,6 +4,7 @@ import * as z from "zod";
 import { createJSONDocument } from "zod-crud";
 import {
   canReplaceAllText,
+  canReplaceTextMatch,
   createSearchReplace,
   findText,
 } from "../src/index.js";
@@ -42,6 +43,16 @@ function createDoc() {
       label: "draft-hidden",
     },
   });
+}
+
+function firstRange(doc: ReturnType<typeof createDoc>, pointer: string) {
+  const found = findText(doc, "draft");
+  if (!found.ok) throw new Error(found.reason);
+  const match = found.matches.find((candidate) => candidate.pointer === pointer);
+  if (match === undefined) throw new Error(`missing match: ${pointer}`);
+  const range = match.ranges[0];
+  if (range === undefined) throw new Error(`missing range: ${pointer}`);
+  return { pointer: match.pointer, range };
 }
 
 describe("@zod-crud/search-replace", () => {
@@ -145,6 +156,81 @@ describe("@zod-crud/search-replace", () => {
       notes: ["first final", "DONE"],
     });
     expect(doc.value.hidden.label).toBe("draft-hidden");
+  });
+
+  test("plans and replaces a single current match", () => {
+    const doc = createDoc();
+    const text = createSearchReplace(doc);
+    const target = firstRange(doc, "/pages/0/body");
+
+    expect(canReplaceTextMatch(doc, target, "final")).toMatchObject({
+      ok: true,
+      pointer: "/pages/0/body",
+      nextValue: "final body draft",
+      operations: [
+        { op: "replace", path: "/pages/0/body", value: "final body draft" },
+      ],
+    });
+    expect(doc.value.pages[0]?.body).toBe("draft body draft");
+
+    expect(text.replaceMatch(target, "final")).toMatchObject({
+      ok: true,
+      pointer: "/pages/0/body",
+      nextValue: "final body draft",
+    });
+    expect(doc.value.pages[0]?.body).toBe("final body draft");
+    expect(doc.lastPatch).toEqual([
+      { op: "replace", path: "/pages/0/body", value: "final body draft" },
+    ]);
+  });
+
+  test("rejects stale single-match replacement", () => {
+    const doc = createDoc();
+    const text = createSearchReplace(doc);
+    const target = firstRange(doc, "/pages/0/body");
+
+    expect(doc.replace("/pages/0/body", "changed body")).toEqual({ ok: true });
+
+    expect(text.replaceMatch(target, "final")).toMatchObject({
+      ok: false,
+      code: "stale_match",
+      pointer: "/pages/0/body",
+    });
+    expect(doc.value.pages[0]?.body).toBe("changed body");
+  });
+
+  test("returns no-op single-match replacement without patching", () => {
+    const doc = createDoc();
+    const text = createSearchReplace(doc);
+    const target = firstRange(doc, "/pages/0/body");
+
+    expect(text.replaceMatch(target, target.range.text)).toMatchObject({
+      ok: true,
+      operations: [],
+      nextValue: "draft body draft",
+    });
+    expect(doc.lastPatch).toEqual([]);
+  });
+
+  test("reports invalid single-match targets", () => {
+    const doc = createDoc();
+    const text = createSearchReplace(doc);
+
+    expect(text.replaceMatch({
+      pointer: "/pages/0",
+      range: { start: 0, end: 5, text: "draft" },
+    }, "final")).toMatchObject({
+      ok: false,
+      code: "not_text",
+      pointer: "/pages/0",
+    });
+    expect(text.replaceMatch({
+      pointer: "/pages/0/body",
+      range: { start: 3, end: 1, text: "" },
+    }, "final")).toMatchObject({
+      ok: false,
+      code: "invalid_match",
+    });
   });
 
   test("reports empty search and missing roots", () => {

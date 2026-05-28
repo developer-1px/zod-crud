@@ -9,9 +9,12 @@ import {
 export type SearchReplaceErrorCode =
   | "empty_search"
   | "invalid_pointer"
+  | "invalid_match"
+  | "not_text"
   | "path_not_found"
   | "patch_rejected"
-  | "patch_failed";
+  | "patch_failed"
+  | "stale_match";
 
 export interface SearchReplaceError {
   ok: false;
@@ -19,7 +22,7 @@ export interface SearchReplaceError {
   reason: string;
   pointer?: Pointer;
   capability?: Exclude<JSONCapabilityResult, { ok: true }>;
-  patch?: Extract<JSONResult, { ok: false }>;
+  patch?: Extract<JSONResult | JSONCapabilityResult, { ok: false }>;
 }
 
 export interface SearchReplaceOptions {
@@ -37,6 +40,11 @@ export interface SearchReplaceMatch {
   pointer: Pointer;
   value: string;
   ranges: ReadonlyArray<TextMatchRange>;
+}
+
+export interface SearchReplaceMatchTarget {
+  pointer: Pointer;
+  range: TextMatchRange;
 }
 
 export interface SearchReplaceSnapshot {
@@ -59,12 +67,26 @@ export interface SearchReplaceChange {
   operations: ReadonlyArray<JSONPatchOperation>;
 }
 
+export interface SearchReplaceMatchChange {
+  ok: true;
+  pointer: Pointer;
+  range: TextMatchRange;
+  replacement: string;
+  currentValue: string;
+  nextValue: string;
+  operations: ReadonlyArray<JSONPatchOperation>;
+}
+
 export type SearchReplaceResult = SearchReplaceSnapshot | SearchReplaceError;
+export type SearchReplaceMatchChangeResult = SearchReplaceMatchChange | SearchReplaceError;
+export type SearchReplaceMatchApplyResult = SearchReplaceMatchChange | SearchReplaceError;
 export type SearchReplaceChangeResult = SearchReplaceChange | SearchReplaceError;
 export type SearchReplaceApplyResult = SearchReplaceChange | SearchReplaceError;
 
 export interface SearchReplace<TDocument> {
   find(search: string, options?: SearchReplaceOptions): SearchReplaceResult;
+  canReplaceMatch(target: SearchReplaceMatchTarget, replacement: string): SearchReplaceMatchChangeResult;
+  replaceMatch(target: SearchReplaceMatchTarget, replacement: string): SearchReplaceMatchApplyResult;
   canReplaceAll(search: string, replacement: string, options?: SearchReplaceOptions): SearchReplaceChangeResult;
   replaceAll(search: string, replacement: string, options?: SearchReplaceOptions): SearchReplaceApplyResult;
 }
@@ -81,6 +103,12 @@ export function createSearchReplace<TDocument>(
     find(search, options) {
       return findText(doc, search, options);
     },
+    canReplaceMatch(target, replacement) {
+      return canReplaceTextMatch(doc, target, replacement);
+    },
+    replaceMatch(target, replacement) {
+      return replaceTextMatch(doc, target, replacement);
+    },
     canReplaceAll(search, replacement, options) {
       return canReplaceAllText(doc, search, replacement, options);
     },
@@ -88,6 +116,60 @@ export function createSearchReplace<TDocument>(
       return replaceAllText(doc, search, replacement, options);
     },
   };
+}
+
+export function canReplaceTextMatch<TDocument>(
+  doc: JSONDocument<TDocument>,
+  target: SearchReplaceMatchTarget,
+  replacement: string,
+): SearchReplaceMatchChangeResult {
+  const read = doc.at(target.pointer);
+  if (!read.ok) {
+    return searchReplaceError(read.code, read.reason ?? `path not found: ${target.pointer}`, read.pointer);
+  }
+  if (typeof read.value !== "string") {
+    return searchReplaceError("not_text", `replace match target is not a string: ${read.path}`, read.path);
+  }
+  const validRange = validateRange(target.range, read.value);
+  if (!validRange.ok) return validRange;
+
+  const currentText = read.value.slice(target.range.start, target.range.end);
+  if (currentText !== target.range.text) {
+    return searchReplaceError("stale_match", `match no longer exists at ${read.path}`, read.path);
+  }
+
+  const nextValue = read.value.slice(0, target.range.start) + replacement + read.value.slice(target.range.end);
+  const operations: JSONPatchOperation[] = nextValue === read.value
+    ? []
+    : [{ op: "replace", path: read.path, value: nextValue }];
+  if (operations.length > 0) {
+    const capability = doc.canReplace(read.path, nextValue);
+    if (!capability.ok) return capabilityError(read.path, capability);
+  }
+
+  return {
+    ok: true,
+    pointer: read.path,
+    range: { ...target.range },
+    replacement,
+    currentValue: read.value,
+    nextValue,
+    operations,
+  };
+}
+
+export function replaceTextMatch<TDocument>(
+  doc: JSONDocument<TDocument>,
+  target: SearchReplaceMatchTarget,
+  replacement: string,
+): SearchReplaceMatchApplyResult {
+  const change = canReplaceTextMatch(doc, target, replacement);
+  if (!change.ok) return change;
+  if (change.operations.length === 0) return change;
+
+  const patched = doc.replace(change.pointer, change.nextValue);
+  if (!patched.ok) return patchError(change.pointer, patched);
+  return change;
 }
 
 export function findText<TDocument>(
@@ -257,6 +339,16 @@ function replaceOccurrences(
   return next + value.slice(cursor);
 }
 
+function validateRange(range: TextMatchRange, value: string): { ok: true } | SearchReplaceError {
+  if (!Number.isInteger(range.start) || !Number.isInteger(range.end) || range.start < 0 || range.end < range.start || range.end > value.length) {
+    return searchReplaceError("invalid_match", "match range is outside the target string");
+  }
+  if (range.text.length !== range.end - range.start) {
+    return searchReplaceError("invalid_match", "match text length does not match its range");
+  }
+  return { ok: true };
+}
+
 function countRanges(matches: ReadonlyArray<SearchReplaceMatch>): number {
   return matches.reduce((count, match) => count + match.ranges.length, 0);
 }
@@ -285,7 +377,7 @@ function capabilityError(
 
 function patchError(
   root: Pointer,
-  patch: Extract<JSONResult, { ok: false }>,
+  patch: Extract<JSONResult | JSONCapabilityResult, { ok: false }>,
 ): SearchReplaceError {
   const error: SearchReplaceError = {
     ok: false,
