@@ -1,4 +1,5 @@
 import type {
+  SchemaDescription,
   EntryKind,
   JSONCapabilityResult,
   JSONDocument,
@@ -27,9 +28,15 @@ export interface SchemaFormField {
   path: Pointer;
   value: unknown;
   kind: SchemaKind;
+  description?: SchemaDescription;
   canReplace: JSONCapabilityResult;
   canSet(value: unknown): JSONCapabilityResult;
   set(value: unknown): JSONResult | Exclude<JSONCapabilityResult, { ok: true }>;
+}
+
+export interface SchemaFormTreeField extends SchemaFormField {
+  containerKind?: SchemaFormContainerKind;
+  fields?: ReadonlyArray<SchemaFormTreeField>;
 }
 
 export type SchemaFormResult =
@@ -38,6 +45,15 @@ export type SchemaFormResult =
       path: Pointer;
       kind: SchemaFormContainerKind;
       fields: ReadonlyArray<SchemaFormField>;
+    }
+  | SchemaFormError;
+
+export type SchemaFormTreeResult =
+  | {
+      ok: true;
+      path: Pointer;
+      kind: SchemaFormContainerKind;
+      fields: ReadonlyArray<SchemaFormTreeField>;
     }
   | SchemaFormError;
 
@@ -55,21 +71,13 @@ export function createSchemaForm<T>(
   }
 
   const rootKind = doc.schema.kind(rootPointer);
-  if (!rootKind.ok) {
-    return schemaFormError(
-      rootKind.code,
-      rootKind.reason ?? `schema path not found: ${rootPointer}`,
-      rootKind.pointer,
-    );
-  }
-
-  const kind = containerKind(entries.kind, rootKind.kind);
+  const kind = containerKind(entries.kind, rootKind.ok ? rootKind.kind : "unknown");
   if (kind === null) {
     return schemaFormError(
       "not_container",
       `schema form root must be an object, record, or array: ${rootPointer}`,
       rootPointer,
-      rootKind.kind,
+      rootKind.ok ? rootKind.kind : valueKind(readValue(doc, rootPointer)),
     );
   }
 
@@ -78,25 +86,53 @@ export function createSchemaForm<T>(
     path: rootPointer,
     kind,
     fields: entries.entries.map((entry): SchemaFormField => {
-      const fieldKind = doc.schema.kind(entry.path);
-      const kind = fieldKind.ok ? fieldKind.kind : "unknown";
-
-      return {
+      const described = doc.schema.describe(entry.path);
+      const kind = described.ok ? described.description.kind : valueKind(entry.value);
+      const field: SchemaFormField = {
         key: entry.key,
         path: entry.path,
         value: cloneJson(entry.value),
         kind,
         canReplace: doc.canReplace(entry.path, entry.value),
         canSet(value) {
-          const accepted = doc.schema.accepts(entry.path, value);
-          if (!accepted.ok) return accepted;
           return doc.canReplace(entry.path, value);
         },
         set(value) {
           return doc.replace(entry.path, value);
         },
       };
+      if (described.ok) field.description = described.description;
+      return field;
     }),
+  };
+}
+
+export function createSchemaFormTree<T>(
+  doc: JSONDocument<T>,
+  rootPointer: Pointer = "",
+): SchemaFormTreeResult {
+  const form = createSchemaForm(doc, rootPointer);
+  if (!form.ok) return form;
+
+  return {
+    ok: true,
+    path: form.path,
+    kind: form.kind,
+    fields: form.fields.map((field) => createTreeField(doc, field)),
+  };
+}
+
+function createTreeField<T>(
+  doc: JSONDocument<T>,
+  field: SchemaFormField,
+): SchemaFormTreeField {
+  const childForm = createSchemaForm(doc, field.path);
+  if (!childForm.ok) return field;
+
+  return {
+    ...field,
+    containerKind: childForm.kind,
+    fields: childForm.fields.map((child) => createTreeField(doc, child)),
   };
 }
 
@@ -113,6 +149,28 @@ function containerKind(
   }
 
   return null;
+}
+
+function valueKind(value: unknown): SchemaKind {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  switch (typeof value) {
+    case "string":
+      return "string";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "object":
+      return "object";
+    default:
+      return "unknown";
+  }
+}
+
+function readValue<T>(doc: JSONDocument<T>, path: Pointer): unknown {
+  const result = doc.at(path);
+  return result.ok ? result.value : undefined;
 }
 
 function cloneJson(value: unknown): unknown {

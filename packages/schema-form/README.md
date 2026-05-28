@@ -8,7 +8,7 @@ putting UI policy in core: settings forms, generated admin resource forms,
 document property panels, slide metadata panels, or spreadsheet tab settings.
 
 ```ts
-import { createSchemaForm } from "@zod-crud/schema-form";
+import { createSchemaForm, createSchemaFormTree } from "@zod-crud/schema-form";
 
 const form = createSchemaForm(doc, "/settings");
 
@@ -16,15 +16,19 @@ if (form.ok) {
   const title = form.fields.find((field) => field.key === "title");
   title?.set("Published");
 }
+
+const tree = createSchemaFormTree(doc, "/page");
 ```
 
 ## Scope
 
 - Describe object, record, and array entries as field descriptors.
 - Read each field's key, Pointer path, current value, and schema kind.
+- Describe nested editable field trees without host-owned Pointer traversal.
 - Expose `canSet(value)` and `set(value)` per field.
-- Check both schema acceptance and document replacement capability before
-  reporting that a field can be set.
+- Use document replacement capability as the source of truth for `canSet`, so
+  current discriminated-union branch fields work without app-owned Zod branch
+  introspection.
 
 ## Non-goals
 
