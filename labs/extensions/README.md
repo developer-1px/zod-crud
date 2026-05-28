@@ -21,6 +21,7 @@ Promotion path:
 
 Current labs:
 
+- `annotations`: headless comment/review anchors pressure.
 - `active-pointer`: active row/card/block pointer state pressure.
 - `autosave`: host-owned autosave orchestration pressure.
 - `bulk-edit`: predecessor pressure for the official `@zod-crud/bulk-edit` package.
@@ -35,6 +36,7 @@ Current labs:
 - `field-draft`: temporary invalid field input pressure.
 - `patch-preview`: dry-run patch preview and confirmation pressure.
 - `persist-web`: predecessor pressure for the official `@zod-crud/persist-web` package.
+- `presence-cursors`: remote collaborator cursor/selection pressure.
 - `pointer-bookmarks`: patch-stream Pointer bookmark tracking pressure.
 - `list-ops`: predecessor pressure for the official `@zod-crud/collection` package.
 - `patch-log`: predecessor pressure for the official `@zod-crud/patch-log` package.
