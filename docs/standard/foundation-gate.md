@@ -38,6 +38,7 @@ RFC급 foundation
 | 게이트 | 산출물 | 상태 |
 | --- | --- | --- |
 | 규범 표준 | `docs/standard/core-standard.md` | 초안 추가 |
+| extension 위임 표준 | `docs/standard/extension-delegation-standard.md` | 초안 추가 |
 | export lock | `packages/zod-crud/public-contract.json` | 활성 |
 | 의미론 conformance | `packages/zod-crud/tests/public/standard-conformance.test.ts` | 활성 |
 | 표준화 evaluator | `scripts/evaluate-standardization.mjs` | 활성 |
