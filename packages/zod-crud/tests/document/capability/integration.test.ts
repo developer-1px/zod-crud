@@ -34,10 +34,11 @@ describe("JSONDocument can* interface", () => {
       ok: false,
       code: "schema_violation",
     });
-    expect(doc.canRemove("/items/0")).toEqual({ ok: true });
+    expect(doc.canInsert("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.canDelete("/items/0")).toEqual({ ok: true });
     expect(doc.canCopy("/items/99")).toMatchObject({ ok: false, code: "path_not_found" });
     expect(doc.canCut("/items/0")).toEqual({ ok: true });
-    expect(doc.canPastePayload("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.canPaste("/items/-", { payload: { id: "c", name: "C" } })).toEqual({ ok: true });
   });
 
   test("canFind validates query syntax without traversing the document", () => {
@@ -74,7 +75,7 @@ describe("JSONDocument can* interface", () => {
   test("does not mutate the document while checking capabilities", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
-    expect(doc.canPastePayload("/items/-", { id: 1, name: "C" })).toMatchObject({
+    expect(doc.canPaste("/items/-", { payload: { id: 1, name: "C" } })).toMatchObject({
       ok: false,
       code: "schema_violation",
     });
@@ -98,11 +99,11 @@ describe("JSONDocument can* interface", () => {
       { kind: "video", src: "bad" },
     ];
 
-    expect(doc.canPastePayload("/blocks/-", payload, { spread: true })).toMatchObject({
+    expect(doc.canPaste("/blocks/-", { payload, spread: true })).toMatchObject({
       ok: false,
       code: "discriminator_mismatch",
     });
-    expect(doc.clipboard.pastePayload("/blocks/-", payload, { spread: true })).toMatchObject({
+    expect(doc.clipboard.paste("/blocks/-", { payload, spread: true })).toMatchObject({
       ok: false,
       code: "discriminator_mismatch",
       source: { discriminator: "kind", value: "video" },
@@ -121,9 +122,10 @@ describe("JSONDocument can* interface", () => {
       blocks: [{ kind: "text", text: "hello" }],
     }, { history: 10 });
 
-    expect(doc.clipboard.pastePayload("/blocks/-", [
-      { kind: "image", text: "bad" },
-    ], { spread: true })).toMatchObject({
+    expect(doc.clipboard.paste("/blocks/-", {
+      payload: [{ kind: "image", text: "bad" }],
+      spread: true,
+    })).toMatchObject({
       ok: false,
       code: "discriminator_mismatch",
       source: { discriminator: "kind", value: "image" },

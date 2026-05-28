@@ -179,7 +179,21 @@ interface JSONDocument<T> {
 
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: readonly JSONPatchOperation[], options?: JSONDocumentCommitOptions): JSONResult;
+  find(jsonPath: string): QueryResult;
+  insert(path: Pointer, value: unknown): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+  insert(value: unknown): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+  replace(path: Pointer, value: unknown): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+  replace(value: unknown): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+  delete(source?: SelectionSource): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+  move(source: Pointer, target: Pointer): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
+  move(target: Pointer): JSONResult | Extract<JSONCapabilityResult, { ok: false }>;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
+  duplicate(options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
+  copy(source?: SelectionSource, options?: ClipboardCopyOptions): ClipboardCopyResult;
+  cut(source?: SelectionSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
+  paste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
+  undo(): boolean;
+  redo(): boolean;
   load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: unknown): JSONResult;
   subscribe(listener: (applied: readonly JSONPatchOperation[], metadata?: JSONChangeMetadata) => void): () => void;
@@ -191,14 +205,18 @@ interface JSONDocument<T> {
 
   canPatch(operations: JSONPatchInput): JSONCapabilityResult;
   canFind(jsonPath: string): JSONCapabilityResult;
+  canInsert(value: unknown): JSONCapabilityResult;
+  canInsert(path: Pointer, value: unknown): JSONCapabilityResult;
+  canReplace(value: unknown): JSONCapabilityResult;
   canReplace(path: Pointer, value: unknown): JSONCapabilityResult;
-  canRemove(source: SelectionSource): JSONCapabilityResult;
+  canDelete(source?: SelectionSource): JSONCapabilityResult;
+  canMove(target: Pointer): JSONCapabilityResult;
   canMove(source: Pointer, target: Pointer): JSONCapabilityResult;
   canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
-  canCopy(source: SelectionSource): JSONCapabilityResult;
-  canCut(source: SelectionSource): JSONCapabilityResult;
-  canPaste(target: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
-  canPastePayload(target: JSONDocumentPasteTarget, payload: unknown, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
+  canDuplicate(options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
+  canCopy(source?: SelectionSource): JSONCapabilityResult;
+  canCut(source?: SelectionSource): JSONCapabilityResult;
+  canPaste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
   canUndo(): JSONCapabilityResult;
   canRedo(): JSONCapabilityResult;
 }
@@ -212,9 +230,18 @@ interface JSONDocument<T> {
 
 ## 4. 변경
 
-`patch`는 primary mutation entrypoint다. RFC 6902 operation 하나 또는 배열을 받는다.
+편집 feature verb는 document의 primary mutation surface다. `patch`는 RFC 6902 escape hatch이며 operation 하나 또는 배열을 받는다.
 
 ```ts
+doc.insert("/items/-", item);
+doc.replace("/title", "Ready");
+doc.delete("/items/0");
+doc.move("/items/0", "/items/2");
+doc.copy("/items/0");
+doc.cut("/items/1");
+doc.paste("/items/-");
+doc.undo();
+doc.redo();
 doc.patch({ op: "replace", path: "/title", value: "Ready" });
 doc.patch([
   { op: "add", path: "/items/-", value: item },
@@ -236,7 +263,7 @@ if (planned?.ok) {
 }
 ```
 
-`duplicate(pointer, options)`는 공개 high-level sibling duplication verb다. 배열은 source 뒤에 삽입하고, object member는 `newKey`를 요구할 수 있으며, `rekey`는 id-like field 충돌을 피한다.
+`duplicate(pointer, options)`는 공개 high-level sibling duplication verb다. source를 생략하면 현재 primary selection을 사용한다. 배열은 source 뒤에 삽입하고, object member는 `newKey`를 요구할 수 있으며, `rekey`는 id-like field 충돌을 피한다.
 
 `duplicate`는 즉시 적용된다. 성공 결과의 `value`는 현재 document value이고 `applied`는 이미 적용된 patch record다. `applied`를 다시 `commit`하면 안 된다.
 
@@ -250,13 +277,14 @@ if (planned?.ok) {
 doc.at("/items/0/name");
 doc.exists("/items/0");
 doc.entries("/items");
+doc.find("$.items[*].id");
 doc.query("$.items[*].id");
 ```
 
-JSONPath는 검색 언어다. Mutation input은 JSON Pointer `path`와 `from`을 가진 JSON Patch operation으로 유지한다.
+JSONPath는 검색 언어다. `find`는 편집 feature verb이고, `query`는 같은 JSONPath engine을 노출하는 lower-level read primitive다. Mutation input은 JSON Pointer `path`와 `from`을 가진 JSON Patch operation으로 유지한다.
 
 ```ts
-const found = doc.query("$.items[?(@.done==false)]");
+const found = doc.find("$.items[?(@.done==false)]");
 if (found.ok) {
   doc.patch(found.pointers.map((path) => ({ op: "replace", path: `${path}/done`, value: true })));
 }
@@ -293,20 +321,20 @@ Document patch는 가능한 경우 selection pointer를 추적한다. 사라진 
 Clipboard는 JSON payload flow를 소유한다. Headless buffer이며 `navigator.clipboard`를 호출하지 않는다.
 
 ```ts
-doc.clipboard.copy("/items/0");
-doc.clipboard.cut(["/items/0", "/items/1"]);
-doc.clipboard.paste("/items/-");
-doc.clipboard.paste({ after: "/items/0" });
-doc.clipboard.pastePayload("/items/-", { id: "new", name: "New" });
+doc.copy("/items/0");
+doc.cut(["/items/0", "/items/1"]);
+doc.paste("/items/-");
+doc.paste({ after: "/items/0" });
+doc.paste("/items/-", { payload: { id: "new", name: "New" } });
 doc.clipboard.write(payload, { trustedPayload: true });
 doc.clipboard.clear();
 ```
 
-`copy`와 `cut`은 source를 생략하면 현재 selection source를 사용한다. `paste`는 target을 생략하면 current primary selection pointer를 사용한다. Direct payload paste는 `pastePayload`를 사용하며 먼저 buffer에 write할 필요가 없다.
+Top-level `copy`, `cut`, `paste`는 보편 편집 feature verb다. `doc.clipboard`는 payload buffer state와 lower-level clipboard boundary를 유지한다. `copy`와 `cut`은 source를 생략하면 현재 selection source를 사용한다. `paste`는 target을 생략하면 current primary selection pointer를 사용한다. Direct payload paste는 `paste(target, { payload })`를 사용하며 먼저 buffer에 write할 필요가 없다.
 
 `write(..., { trustedPayload: true })`는 호출자가 JSON-serializability boundary를 이미 소유할 때 payload JSON 검사를 건너뛴다. 기본적으로 payload는 buffer에 저장되기 전에 clone된다.
 
-`cut`, `paste`, `pastePayload`는 즉시 적용된다. 성공 결과의 `value`는 현재 document value이고 `applied`는 이미 적용된 patch record다.
+`cut`, `paste`는 즉시 적용된다. 성공 결과의 `value`는 현재 document value이고 `applied`는 이미 적용된 patch record다.
 
 기존 값 기준 target은 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 쓴다. 삽입 위치가 이미 있으면 `/items/-` 같은 Pointer를 그대로 쓴다.
 
@@ -319,8 +347,8 @@ Multi-source copy/cut은 array payload를 저장한다. 이 buffer를 array inse
 History는 forward patch와 inverse patch, selection metadata를 저장한다.
 
 ```ts
-doc.history.undo();
-doc.history.redo();
+doc.undo();
+doc.redo();
 doc.history.mergeLast({ mergeKey: "typing:title" });
 doc.commit([
   { op: "replace", path: "/items/0/name", value: "A" },
@@ -357,7 +385,7 @@ doc.schema.describe("/items/-", "insert");
 doc.schema.accepts("/items/-", candidate, "insert");
 ```
 
-`violations`가 있는 validation result에서 각 `violation.path`는 RFC 6901 JSON Pointer다. `doc.schema.accepts(path, value, mode)`는 요청한 `path`에 Zod issue path를 붙인 `schema-slot` path를 보고한다. `canPatch`, `canPaste`, `canPastePayload`, `clipboard.paste`, `clipboard.pastePayload`, `canDuplicate`, `duplicate`는 먼저 JSON Patch operation을 plan 또는 preview한 뒤 `document-result` path를 보고한다.
+`violations`가 있는 validation result에서 각 `violation.path`는 RFC 6901 JSON Pointer다. `doc.schema.accepts(path, value, mode)`는 요청한 `path`에 Zod issue path를 붙인 `schema-slot` path를 보고한다. `canPatch`, `canPaste`, `doc.paste`, `canDuplicate`, `duplicate`는 먼저 JSON Patch operation을 plan 또는 preview한 뒤 `document-result` path를 보고한다.
 
 Root validation issue는 empty JSON Pointer `""`를 사용한다. Record value는 `/meta/newKey` 같은 concrete member pointer로 검증한다. `insert` mode는 주로 array insertion slot용이다.
 

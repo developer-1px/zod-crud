@@ -94,10 +94,11 @@ describe("InterfaceWorkbench", () => {
     expect(screen.getByRole("heading", { name: "Done" })).toBeTruthy();
 
     await selectStage(user, "Card intake");
-    expectStageText("patch(add)");
-    expect(commandRow("Add card to column")).toBeTruthy();
-    expect(stageLabel("add target")).toBeTruthy();
-    expect(stageLabel("add payload")).toBeTruthy();
+    expectStageText("canInsert");
+    expectStageText("insert");
+    expect(commandRow("Insert card")).toBeTruthy();
+    expect(stageLabel("insert target")).toBeTruthy();
+    expect(stageLabel("insert payload")).toBeTruthy();
 
     await selectStage(user, "Card edit");
     expectStageText("canReplace");
@@ -113,10 +114,10 @@ describe("InterfaceWorkbench", () => {
     await selectStage(user, "Selection and bulk work");
     expectStageText("selection.*");
     expect(commandRow("Build selection")).toBeTruthy();
-    expect(commandRow("Remove selected")).toBeTruthy();
+    expect(commandRow("Delete selected")).toBeTruthy();
 
     await selectStage(user, "Reuse via clipboard");
-    expectStageText("canPastePayload");
+    expectStageText("canPaste");
     expect(commandRow("Copy selected")).toBeTruthy();
     expect(commandRow("Paste selected into column")).toBeTruthy();
 
@@ -180,18 +181,24 @@ describe("InterfaceWorkbench", () => {
       "doc.subscribe",
       "doc.at",
       "doc.exists",
+      "doc.find",
       "doc.query",
       "doc.entries",
       "doc.canPatch",
       "doc.canFind",
+      "doc.canInsert",
+      "doc.insert",
       "doc.canReplace",
-      "doc.canRemove",
+      "doc.replace",
+      "doc.canDelete",
+      "doc.delete",
       "doc.canMove",
+      "doc.move",
       "doc.canDuplicate",
       "doc.canCopy",
       "doc.canCut",
       "doc.canPaste",
-      "doc.canPastePayload",
+      "doc.canPaste payload",
       "doc.canUndo",
       "doc.canRedo",
     ]);
@@ -232,20 +239,20 @@ describe("InterfaceWorkbench", () => {
       "clipboard.read",
       "clipboard.write",
       "clipboard.clear",
-      "clipboard.copy",
-      "clipboard.cut",
-      "clipboard.paste",
-      "clipboard.pastePayload",
-      "clipboard.paste after",
-      "clipboard.pastePayload after",
+      "doc.copy",
+      "doc.cut",
+      "doc.paste",
+      "doc.paste payload",
+      "doc.paste after",
+      "doc.paste payload after",
     ]);
     expectButtons("history API", [
       "history.canUndo",
       "history.canRedo",
       "history.undoDepth",
       "history.redoDepth",
-      "history.undo",
-      "history.redo",
+      "doc.undo",
+      "doc.redo",
       "history.mergeLast",
       "history.transaction",
     ]);
@@ -323,7 +330,7 @@ describe("InterfaceWorkbench", () => {
     expect(target.value).toBe("/lists/0/cards/1");
 
     await selectStage(user, "Card intake");
-    expect(within(commandRow("Add card to column")).getByText("N")).toBeTruthy();
+    expect(within(commandRow("Insert card")).getByText("N")).toBeTruthy();
     fireEvent.keyDown(window, { key: "n" });
     expect(screen.getByText("Inserted card")).toBeTruthy();
 
@@ -346,7 +353,7 @@ describe("InterfaceWorkbench", () => {
     const user = userEvent.setup();
 
     await selectStage(user, "Card intake");
-    await user.click(within(commandRow("Add card to column")).getByRole("button", { name: "Add" }));
+    await user.click(within(commandRow("Insert card")).getByRole("button", { name: "Insert" }));
     expect(screen.getByText("Inserted card")).toBeTruthy();
 
     await user.click(within(commandRow("Validate invalid draft")).getByRole("button", { name: "Validate invalid" }));

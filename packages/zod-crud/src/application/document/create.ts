@@ -1,7 +1,9 @@
 import type * as z from "zod";
 import type { JSONPatchOperation, JSONResult } from "../../foundation/patch/types.js";
+import type { Pointer } from "../../foundation/pointer/index.js";
 import { EMPTY_SELECTION } from "../../domain/selection/types.js";
 import { emptyMutableHistory } from "../../foundation/history.js";
+import { removeSourcesPatch } from "../../foundation/patch/source.js";
 import { INTERNAL_CLIPBOARD_PEEK, createClipboard } from "./clipboard/clipboard.js";
 import { createJSONState } from "./state/json.js";
 import { buildReadFacade } from "./read.js";
@@ -10,18 +12,21 @@ import { createSelection } from "./selection/create.js";
 import {
   canDocumentCopy,
   canDocumentCut,
+  canDocumentDelete,
   canDocumentDeleteText,
   canDocumentDuplicate,
   canDocumentExtendCursor,
   canDocumentFind,
+  canDocumentInsert,
   canDocumentMove,
   canDocumentMoveCursor,
   canDocumentPatch,
   canDocumentPaste,
-  canDocumentRemove,
   canDocumentReplace,
   canDocumentReplaceText,
   canDocumentSelectScope,
+  planDocumentInsertArgs,
+  planDocumentReplaceArgs,
 } from "./can/check.js";
 import {
   OK,
@@ -61,6 +66,8 @@ import type {
 
 type TrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial: true };
 type UntrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial?: false | undefined };
+type JSONDocumentEditError = Extract<CapabilityResult, { ok: false }>;
+type JSONDocumentEditResult = JSONResult | JSONDocumentEditError;
 
 function buildDocumentCapabilities<S extends z.ZodType>(
   args: BuildDocumentCapabilitiesArgs<S>,
@@ -91,14 +98,17 @@ function buildDocumentCapabilities<S extends z.ZodType>(
     find(jsonpath) {
       return canDocumentFind(jsonpath);
     },
+    insert(pathOrValue, maybeValue) {
+      return canDocumentInsert(context(), pathOrValue, maybeValue, arguments.length >= 2);
+    },
     move(fromOrTo, maybeTo) {
       return canDocumentMove(context(), fromOrTo, maybeTo, arguments.length >= 2);
     },
     duplicate(sourceOrOpts, opts) {
       return canDocumentDuplicate(context(), sourceOrOpts, opts);
     },
-    remove(source) {
-      return canDocumentRemove(context(), source);
+    delete(source) {
+      return canDocumentDelete(context(), source);
     },
     replace(pathOrValue, maybeValue) {
       return canDocumentReplace(context(), pathOrValue, maybeValue, arguments.length >= 2);
@@ -137,6 +147,16 @@ function emptyStack(kind: "undo" | "redo"): CapabilityResult {
     code: "empty_stack",
     reason: `${kind} stack is empty`,
   };
+}
+
+function editError(
+  code: JSONDocumentEditError["code"],
+  reason: string,
+  pointer?: JSONDocumentEditError["pointer"],
+): JSONDocumentEditError {
+  return pointer === undefined
+    ? { ok: false, code, reason }
+    : { ok: false, code, reason, pointer };
 }
 
 export function createJSONDocument<S extends z.ZodType>(
@@ -268,6 +288,75 @@ export function createJSONDocument<S extends z.ZodType>(
   const clipboard = createClipboard(options.onChange === undefined ? clipboardOptions : { ...clipboardOptions, onChange: options.onChange });
   const read = buildReadFacade({ schema, getState: () => rawOps.state });
   const schemaState = createSchemaState({ schema });
+  function insert(pathOrValue: Pointer | unknown, maybeValue?: unknown): JSONDocumentEditResult {
+    const args = planDocumentInsertArgs({
+      pathOrValue,
+      value: maybeValue,
+      hasValueArg: arguments.length >= 2,
+    });
+    const target = args.target ?? selectionState?.primaryPointer ?? null;
+    if (target === null) {
+      return editError("empty_selection", "insert target selection is empty");
+    }
+    return mutation.patch({ op: "add", path: target, value: args.value });
+  }
+  function replace(pathOrValue: Pointer | unknown, maybeValue?: unknown): JSONDocumentEditResult {
+    const args = planDocumentReplaceArgs({
+      pathOrValue,
+      value: maybeValue,
+      hasValueArg: arguments.length >= 2,
+    });
+    const target = args.target ?? selectionState?.primaryPointer ?? null;
+    if (target === null) {
+      return editError("empty_selection", "replace target selection is empty");
+    }
+    if (target.startsWith("$")) {
+      const capability = capabilities.find(target);
+      if (!capability.ok) return capability;
+      const matches = read.query(target);
+      if (!matches.ok) return editError("syntax_error", matches.reason ?? `invalid JSONPath query: ${target}`);
+      if (matches.pointers.length === 0) return editError("empty_match", `no matches for ${target}`);
+      const operations: JSONPatchOperation[] = [...matches.pointers]
+        .sort((a, b) => b.length - a.length)
+        .map((path) => ({ op: "replace", path, value: args.value }));
+      return mutation.patch(operations);
+    }
+    return mutation.patch({ op: "replace", path: target, value: args.value });
+  }
+  const deleteSelection = (source?: Pointer | ReadonlyArray<Pointer>): JSONDocumentEditResult => {
+    const resolved = source ?? selectionState?.selectedSource ?? null;
+    if (resolved === null) return editError("empty_selection", "delete source selection is empty");
+    const planned = removeSourcesPatch(resolved);
+    if (!planned.ok) {
+      return planned.code === "invalid_pointer"
+        ? editError("invalid_pointer", `invalid delete source pointer: ${planned.pointer}`, planned.pointer)
+        : editError("empty_selection", "delete source selection is empty");
+    }
+    return mutation.patch(planned.patch);
+  };
+  const move = (sourceOrTarget: Pointer, maybeTarget?: Pointer): JSONDocumentEditResult => {
+    const source = maybeTarget === undefined ? selectionState?.primaryPointer ?? null : sourceOrTarget;
+    const target = maybeTarget ?? sourceOrTarget;
+    if (source === null) return editError("empty_selection", "move source selection is empty");
+    return mutation.patch({ op: "move", from: source, path: target });
+  };
+  const duplicate = (
+    sourceOrOptions?: Pointer | JSONDocumentDuplicateOptions,
+    maybeOptions?: JSONDocumentDuplicateOptions,
+  ): JSONDocumentDuplicateResult<z.output<S>> => {
+    const source = typeof sourceOrOptions === "string"
+      ? sourceOrOptions
+      : selectionState?.primaryPointer ?? null;
+    const duplicateOptions = typeof sourceOrOptions === "string" ? maybeOptions : sourceOrOptions;
+    if (source === null) {
+      return {
+        ok: false,
+        code: "empty_selection",
+        message: "duplicate source selection is empty",
+      };
+    }
+    return mutation.duplicate(source, duplicateOptions);
+  };
 
   return {
     get value() { return rawOps.state; },
@@ -278,7 +367,17 @@ export function createJSONDocument<S extends z.ZodType>(
     schema: schemaState,
     patch: mutation.patch,
     commit: mutation.commit,
-    duplicate: mutation.duplicate,
+    find: read.query,
+    insert,
+    replace,
+    delete: deleteSelection,
+    move,
+    duplicate,
+    copy: clipboard.copy,
+    cut: clipboard.cut,
+    paste: clipboard.paste,
+    undo: history.undo,
+    redo: history.redo,
     load: ops.load,
     reset: ops.reset,
     subscribe: ops.subscribe,
@@ -288,25 +387,58 @@ export function createJSONDocument<S extends z.ZodType>(
     entries: read.entries,
     canPatch: (operations) => capabilities.patch(planDocumentPatchCall({ operations }).operations),
     canFind: capabilities.find,
+    canInsert: capabilities.insert,
     canReplace: capabilities.replace,
-    canRemove: capabilities.remove,
+    canDelete: capabilities.delete,
     canMove: capabilities.move,
     canDuplicate: capabilities.duplicate,
     canCopy: capabilities.copy,
     canCut: capabilities.cut,
     canPaste: (target, canPasteOptions) => {
+      const pasteOptions = splitPasteOptions(canPasteOptions);
+      if (pasteOptions.kind === "payload") {
+        return capabilities.paste(pasteOptions.payload, target, pasteOptions.options);
+      }
+      if (target === undefined) {
+        const buffered = clipboard[INTERNAL_CLIPBOARD_PEEK]();
+        if (!buffered.ok) {
+          return {
+            ok: false,
+            code: "empty_clipboard",
+            reason: "clipboard is empty",
+          };
+        }
+        const spread = pasteOptions.options?.spread ?? ((buffered.sources?.length ?? 0) > 1);
+        return capabilities.paste(
+          buffered.payload,
+          undefined,
+          { ...pasteOptions.options, spread },
+          { trustedPayload: true },
+        );
+      }
       const plan = planDocumentCanPaste({
         schema,
         state: rawOps.state,
         clipboard: clipboard[INTERNAL_CLIPBOARD_PEEK](),
         target,
-        ...(canPasteOptions !== undefined ? { options: canPasteOptions } : {}),
+        ...(pasteOptions.options !== undefined ? { options: pasteOptions.options } : {}),
       });
       if (plan.kind === "result") return plan.result;
       return capabilities.paste(plan.payload, plan.target, plan.options, plan.executionOptions);
     },
-    canPastePayload: (target, payload, canPasteOptions) => capabilities.paste(payload, target, canPasteOptions),
     canUndo: () => capabilities.undo,
     canRedo: () => capabilities.redo,
   };
+}
+
+function splitPasteOptions(options?: JSONDocumentPasteOptions):
+  | { kind: "clipboard"; options?: JSONDocumentPasteOptions }
+  | { kind: "payload"; payload: unknown; options?: JSONDocumentPasteOptions } {
+  if (!options || !Object.prototype.hasOwnProperty.call(options, "payload")) {
+    return options === undefined ? { kind: "clipboard" } : { kind: "clipboard", options };
+  }
+  const { payload, ...pasteOptions } = options;
+  return Object.keys(pasteOptions).length === 0
+    ? { kind: "payload", payload }
+    : { kind: "payload", payload, options: pasteOptions };
 }

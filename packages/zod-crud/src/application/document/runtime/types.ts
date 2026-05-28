@@ -44,7 +44,13 @@ export type JSONDocumentDuplicateResult<T> =
   | JSONDocumentDuplicateError
   | Extract<JSONResult, { ok: false }>;
 
-export type JSONDocumentPasteOptions = PasteOptions;
+export interface JSONDocumentPasteOptions extends PasteOptions {
+  /**
+   * Paste this payload directly instead of reading the document clipboard buffer.
+   * Use this for external clipboard, drag/drop, and extension-provided payloads.
+   */
+  payload?: unknown;
+}
 export type JSONDocumentPasteTarget = PasteTarget;
 
 export interface JSONStateOps<T> {

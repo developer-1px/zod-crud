@@ -49,7 +49,7 @@ describe("JSONDocument interface", () => {
     });
     expect(doc.canCopy("/items/0")).toEqual({ ok: true });
     expect(doc.canCut("/items/0")).toEqual({ ok: true });
-    expect(doc.canPastePayload("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.canPaste("/items/-", { payload: { id: "c", name: "C" } })).toEqual({ ok: true });
     expect(doc.canUndo()).toEqual({ ok: false, code: "empty_stack", reason: "undo stack is empty" });
 
     expect(doc.patch({ op: "replace", path: "/items/0/name", value: "A1" })).toEqual({ ok: true });
@@ -59,6 +59,51 @@ describe("JSONDocument interface", () => {
 
     expect(doc.history.undo()).toBe(true);
     expect(doc.value.items[0]?.name).toBe("A");
+  });
+
+  test("executes editing feature verbs beside matching can methods", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0/name"] },
+    });
+
+    expect(doc.find("$.items[*].id")).toEqual({
+      ok: true,
+      query: "$.items[*].id",
+      pointers: ["/items/0/id", "/items/1/id"],
+    });
+
+    expect(doc.canInsert("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.insert("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
+
+    expect(doc.canReplace("/items/0/name", "A1")).toEqual({ ok: true });
+    expect(doc.replace("/items/0/name", "A1")).toEqual({ ok: true });
+    expect(doc.value.items[0]?.name).toBe("A1");
+
+    expect(doc.canReplace("$.items[*].name", "Renamed")).toEqual({ ok: true });
+    expect(doc.replace("$.items[*].name", "Renamed")).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.name)).toEqual(["Renamed", "Renamed", "Renamed"]);
+
+    expect(doc.canMove("/items/0", "/items/1")).toEqual({ ok: true });
+    expect(doc.move("/items/0", "/items/1")).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a", "c"]);
+
+    doc.selection?.collapse("/items/0");
+    expect(doc.canDuplicate({ rekey: { fields: ["id"], strategy: "suffix" } })).toEqual({ ok: true });
+    expect(doc.duplicate({ rekey: { fields: ["id"], strategy: "suffix" } })).toMatchObject({ ok: true, duplicatedTo: "/items/1" });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "b-copy", "a", "c"]);
+
+    expect(doc.canDelete("/items/1")).toEqual({ ok: true });
+    expect(doc.delete("/items/1")).toEqual({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a", "c"]);
+
+    expect(doc.canUndo()).toEqual({ ok: true });
+    expect(doc.undo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "b-copy", "a", "c"]);
+    expect(doc.canRedo()).toEqual({ ok: true });
+    expect(doc.redo()).toBe(true);
+    expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a", "c"]);
   });
 
   test("uses explicit selection sources for clipboard and history", () => {
@@ -81,6 +126,29 @@ describe("JSONDocument interface", () => {
     expect(doc.value.items.map((item) => item.name)).toEqual(["A", "B"]);
     expect(doc.history.redo()).toBe(true);
     expect(doc.value.items.map((item) => item.name)).toEqual(["A", "B", "A"]);
+  });
+
+  test("exposes clipboard verbs at the document feature surface", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/items/0"] },
+    });
+
+    expect(doc.canCopy()).toEqual({ ok: true });
+    expect(doc.copy()).toMatchObject({ ok: true, source: "/items/0" });
+    expect(doc.clipboard.hasData).toBe(true);
+
+    expect(doc.canPaste("/items/-")).toEqual({ ok: true });
+    expect(doc.paste("/items/-")).toMatchObject({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a"]);
+
+    expect(doc.canCut("/items/2")).toEqual({ ok: true });
+    expect(doc.cut("/items/2")).toMatchObject({ ok: true, source: "/items/2" });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
+
+    expect(doc.canPaste("/items/-", { payload: { id: "c", name: "C" } })).toEqual({ ok: true });
+    expect(doc.paste("/items/-", { payload: { id: "c", name: "C" } })).toMatchObject({ ok: true });
+    expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "c"]);
   });
 
   test("keeps raw JSON Patch as an explicit escape hatch", () => {

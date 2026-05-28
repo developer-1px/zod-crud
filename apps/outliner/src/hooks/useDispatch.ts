@@ -28,17 +28,17 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
       case "exit-edit":      setMode("select"); return true;
       case "insert-sibling": surface(cmd.insertSibling(ctx)); setMode("edit"); return true;
       case "duplicate":      surface(cmd.duplicateRow(ctx)); return true;
-      // edit 모드 Backspace: 빈 텍스트일 때만 row 제거. 그 외는 DOM 기본 (글자 삭제) 통과.
-      case "remove-if-empty": {
+      // edit 모드 Backspace: 빈 텍스트일 때만 row 삭제. 그 외는 DOM 기본 (글자 삭제) 통과.
+      case "delete-if-empty": {
         const f = focusOf(ctx);
         if (f === null) return false;
         const node = readNode(ctx.state, f);
         if (!node || node.text !== "") return false;
-        cmd.remove(ctx); setMode("select"); return true;
+        cmd.deleteRows(ctx); setMode("select"); return true;
       }
       case "demote":         surface(cmd.demote(ctx)); return true;
       case "promote":        surface(cmd.promote(ctx)); return true;
-      case "remove":         surface(cmd.remove(ctx)); return true;
+      case "delete":         surface(cmd.deleteRows(ctx)); return true;
       case "select-all":     cmd.selectAll(ctx); return true;
       case "focus-prev":     cmd.focusPrev(ctx); return true;
       case "focus-next":     cmd.focusNext(ctx); return true;

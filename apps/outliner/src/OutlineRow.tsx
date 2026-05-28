@@ -16,7 +16,7 @@ export interface RowProps {
   onClickText: (e: React.MouseEvent, p: Pointer) => void;
   onClickBullet: (e: React.MouseEvent, p: Pointer) => void;
   onKeyDown: (e: React.KeyboardEvent) => void;
-  doc: Pick<JSONDocument<OutlineNode>, "patch">;
+  doc: Pick<JSONDocument<OutlineNode>, "replace">;
   onTextEdit: (path: string) => void;
 }
 
@@ -39,7 +39,7 @@ export function OutlineRow(props: RowProps) {
   }, [isFocused, isEditing]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    doc.patch([{ op: "replace", path: textPath, value: e.target.value }]);
+    doc.replace(textPath, e.target.value);
     onTextEdit(textPath);
   };
 

@@ -61,13 +61,30 @@ interface PlanDocumentPatchCapabilityInput<S extends z.ZodType> {
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
 
-interface PlanDocumentRemoveCapabilityInput<S extends z.ZodType> {
+interface PlanDocumentDeleteCapabilityInput<S extends z.ZodType> {
   schema: S;
   state: z.output<S>;
   source?: SelectionSource;
   selectionSource?: SelectionSource | null;
   previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
 }
+
+interface PlanDocumentInsertCapabilityInput<S extends z.ZodType> {
+  schema: S;
+  state: z.output<S>;
+  value: unknown;
+  target?: Pointer;
+  selectionTarget?: Pointer | null;
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+}
+
+interface PlanDocumentInsertArgsInput {
+  pathOrValue: Pointer | unknown;
+  value: unknown;
+  hasValueArg: boolean;
+}
+
+type DocumentInsertArgsPlan = { target?: Pointer; value: unknown };
 
 interface PlanDocumentReplaceCapabilityInput<S extends z.ZodType> {
   schema: S;
@@ -195,11 +212,11 @@ export function planDocumentDuplicateCapability<S extends z.ZodType>(
       }));
 }
 
-export function planDocumentRemoveCapability<S extends z.ZodType>(
-  input: PlanDocumentRemoveCapabilityInput<S>,
+export function planDocumentDeleteCapability<S extends z.ZodType>(
+  input: PlanDocumentDeleteCapabilityInput<S>,
 ): CapabilityResult {
   const resolved = input.source ?? input.selectionSource ?? null;
-  if (resolved === null) return emptySelectionCapability("remove source selection is empty");
+  if (resolved === null) return emptySelectionCapability("delete source selection is empty");
   const planned = removeSourcesPatch(resolved);
   return planned.ok
     ? planDocumentPatchCapability({
@@ -208,7 +225,21 @@ export function planDocumentRemoveCapability<S extends z.ZodType>(
         operations: planned.patch,
         ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
       })
-    : planDocumentCapabilityResult(pointerSourceCapabilityError(planned, "remove"));
+    : planDocumentCapabilityResult(pointerSourceCapabilityError(planned, "delete"));
+}
+
+export function planDocumentInsertCapability<S extends z.ZodType>(
+  input: PlanDocumentInsertCapabilityInput<S>,
+): CapabilityResult {
+  const target = input.target ?? input.selectionTarget ?? null;
+  return target === null
+    ? emptySelectionCapability("insert target selection is empty")
+    : planDocumentPatchCapability({
+        schema: input.schema,
+        state: input.state,
+        operations: [{ op: "add", path: target, value: input.value }],
+        ...(input.previewPatch !== undefined ? { previewPatch: input.previewPatch } : {}),
+      });
 }
 
 export function planDocumentReplaceCapability<S extends z.ZodType>(
@@ -274,6 +305,14 @@ export function planDocumentPatchCapability<S extends z.ZodType>(
 export function planDocumentReplaceArgs(
   input: PlanDocumentReplaceArgsInput,
 ): DocumentReplaceArgsPlan {
+  return input.hasValueArg
+    ? { target: input.pathOrValue as Pointer, value: input.value }
+    : { value: input.pathOrValue };
+}
+
+export function planDocumentInsertArgs(
+  input: PlanDocumentInsertArgsInput,
+): DocumentInsertArgsPlan {
   return input.hasValueArg
     ? { target: input.pathOrValue as Pointer, value: input.value }
     : { value: input.pathOrValue };
@@ -438,6 +477,27 @@ export function canDocumentMove<S extends z.ZodType>(
   });
 }
 
+export function canDocumentInsert<S extends z.ZodType>(
+  context: DocumentCapabilityContext<S>,
+  pathOrValue: Pointer | unknown,
+  maybeValue?: unknown,
+  hasValueArg = arguments.length >= 3,
+): CapabilityResult {
+  const args = planDocumentInsertArgs({
+    pathOrValue,
+    value: maybeValue,
+    hasValueArg,
+  });
+  return planDocumentInsertCapability({
+    schema: context.schema,
+    state: context.state,
+    selectionTarget: primaryPointer(context.selection ?? EMPTY_SELECTION),
+    value: args.value,
+    ...(args.target !== undefined ? { target: args.target } : {}),
+    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
+  });
+}
+
 export function canDocumentDuplicate<S extends z.ZodType>(
   context: DocumentCapabilityContext<S>,
   sourceOrOpts?: Pointer | DuplicateOpts,
@@ -455,11 +515,11 @@ export function canDocumentDuplicate<S extends z.ZodType>(
   });
 }
 
-export function canDocumentRemove<S extends z.ZodType>(
+export function canDocumentDelete<S extends z.ZodType>(
   context: DocumentCapabilityContext<S>,
   source?: SelectionSource,
 ): CapabilityResult {
-  return planDocumentRemoveCapability({
+  return planDocumentDeleteCapability({
     schema: context.schema,
     state: context.state,
     selectionSource: selectedSource(context.selection ?? EMPTY_SELECTION),

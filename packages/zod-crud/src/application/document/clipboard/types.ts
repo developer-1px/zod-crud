@@ -94,7 +94,6 @@ export interface ClipboardState<T> {
   copy(source?: ClipboardSource, options?: ClipboardCopyOptions): ClipboardCopyResult;
   cut(source?: ClipboardSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
   paste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
-  pastePayload(target: JSONDocumentPasteTarget, payload: unknown, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
 }
 
 export interface ClipboardBuffer {

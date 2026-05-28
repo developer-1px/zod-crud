@@ -9,7 +9,7 @@ zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진이다. UI com
 - Root `zod-crud`는 React-free다.
 - React hook은 `zod-crud/react`에만 있다.
 - Core package import는 `zod-crud`와 `zod-crud/react`뿐이다.
-- Optional extension은 별도 package로 import한다. 첫 reference extension은 `@zod-crud/clipboard-web`이다.
+- Optional extension은 별도 package로 import한다. 공식 extension은 `@zod-crud/clipboard-web`, `@zod-crud/collection`, `@zod-crud/record-index`, `@zod-crud/selection-model`처럼 core 밖에서 조립한다.
 - State, operation, selection snapshot, clipboard payload, history entry, wire payload는 JSON-serializable이다.
 - 표준 어휘는 의도적이다: JSON value, JSON Pointer, JSON Patch, JSONPath, Zod validation, W3C selection naming.
 
@@ -29,11 +29,14 @@ Optional extension은 core에 plugin 등록하지 않고 함수로 조립한다.
 
 ```ts
 import { createWebClipboard } from "@zod-crud/clipboard-web";
+import { createCollection } from "@zod-crud/collection";
+import { createRecordIndex } from "@zod-crud/record-index";
+import { createSelectionModel } from "@zod-crud/selection-model";
 ```
 
 ## 왜 / 핵심 / 튜토리얼 맥락
 
-프론트엔드 편집기는 보통 JSON state를 바꾼다. Form, CMS block, kanban board, outliner, settings screen은 모두 add, replace, remove, move, duplicate, select, copy, paste, undo, redo를 다룬다.
+프론트엔드 편집기는 보통 JSON state를 바꾼다. Form, CMS block, kanban board, outliner, settings screen은 모두 insert, replace, delete, move, duplicate, select, copy, paste, undo, redo를 다룬다.
 
 zod-crud는 이 편집 규칙을 UI component 밖에 둔다.
 
@@ -59,13 +62,13 @@ Application code는 document facade를 우선 사용한다.
 | 현재 state 읽기 | `doc.value`, `doc.lastPatch` |
 | 한 위치 읽기 | `doc.at(pointer)` |
 | child 나열 | `doc.entries(pointer)` |
-| 여러 위치 찾기 | `doc.query(jsonPath)` |
-| 값 추가, 교체, 제거, copy, move | `doc.patch(...)`, `doc.commit(...)` |
-| 실행 전 확인 | `doc.canPatch`, `doc.canFind`, `doc.canReplace`, `doc.canRemove`, `doc.canMove`, `doc.canDuplicate`, `doc.canCopy`, `doc.canCut`, `doc.canPaste`, `doc.canPastePayload`, `doc.canUndo`, `doc.canRedo` |
+| 여러 위치 찾기 | `doc.find(jsonPath)`, `doc.query(jsonPath)` |
+| 값 삽입, 교체, 삭제, 이동 | `doc.insert(...)`, `doc.replace(...)`, `doc.delete(...)`, `doc.move(...)` |
+| 실행 전 확인 | `doc.canPatch`, `doc.canFind`, `doc.canInsert`, `doc.canReplace`, `doc.canDelete`, `doc.canMove`, `doc.canDuplicate`, `doc.canCopy`, `doc.canCut`, `doc.canPaste`, `doc.canUndo`, `doc.canRedo` |
 | sibling 복제 | `doc.duplicate(pointer, options)` |
 | selected pointer 저장 | `doc.selection` |
-| copy, cut, paste, direct payload paste | `doc.clipboard` |
-| undo, redo, merge, transaction | `doc.history` |
+| copy, cut, paste, direct payload paste | `doc.copy(...)`, `doc.cut(...)`, `doc.paste(...)`, `doc.paste(target, { payload })` |
+| undo, redo, merge, transaction | `doc.undo()`, `doc.redo()`, `doc.history` |
 | 위치별 schema 확인 | `doc.schema.at`, `doc.schema.kind`, `doc.schema.describe`, `doc.schema.accepts` |
 
 `createJSONDocument`와 `useJSONDocument`는 같은 document surface를 노출한다. React는 render lifecycle만 소유한다.
@@ -110,7 +113,7 @@ doc.patch([
 ]);
 ```
 
-JSONPath는 검색 전용이다. `doc.query(jsonPath)`로 JSON Pointer를 받은 뒤 그 Pointer를 `doc.patch(...)`에 사용한다.
+JSONPath는 검색 전용이다. 편집 feature에서는 `doc.find(jsonPath)`를 쓰고, lower-level read primitive로는 `doc.query(jsonPath)`를 쓴다. 받은 JSON Pointer를 `doc.patch(...)`나 `doc.replace(...)`에 사용한다.
 
 `doc.at(pointer)`는 raw value가 아니라 `ReadResult`를 반환한다.
 
@@ -123,7 +126,7 @@ Burst edit은 operation 배열을 만들고 `doc.patch(...)`나 `doc.commit(...)
 `can*` method는 boolean이 아니다. UI, test, command palette가 같은 disabled reason을 공유할 수 있도록 reasoned capability result를 반환한다.
 
 ```ts
-const can = doc.canPastePayload("/lists/0/cards/-", candidateCard);
+const can = doc.canPaste("/lists/0/cards/-", { payload: candidateCard });
 
 if (!can.ok) {
   can.code;
@@ -132,7 +135,7 @@ if (!can.ok) {
 }
 ```
 
-`violations[].path`는 RFC 6901 JSON Pointer다. `schema.accepts(path, value, mode)`는 요청한 schema 위치 기준인 `schema-slot` path를 보고한다. `canPatch`, `canPastePayload`, `canPaste`, `canDuplicate` 같은 mutation preflight는 patch planning 뒤 실제 document 위치 기준인 `document-result` path를 보고한다.
+`violations[].path`는 RFC 6901 JSON Pointer다. `schema.accepts(path, value, mode)`는 요청한 schema 위치 기준인 `schema-slot` path를 보고한다. `canPatch`, `canPaste`, `canDuplicate` 같은 mutation preflight는 patch planning 뒤 실제 document 위치 기준인 `document-result` path를 보고한다.
 
 `discriminator_mismatch`는 schema violation이 아니며 `violations`를 노출하지 않는다. Capability check는 `code`와 `reason`으로 보고하고, clipboard paste mutation result는 `source`와 `expected` detail을 포함할 수 있다.
 
@@ -144,11 +147,11 @@ if (!can.ok) {
 
 Invalid initial value는 document 생성 전에 Zod parse error를 throw한다. `trustedInitial: true`는 caller가 그 validation boundary를 소유할 때만 사용한다.
 
-`canPaste(...)`에 넘긴 option과 실제 `clipboard.paste(...)` option은 같아야 한다.
+`canPaste(...)`에 넘긴 option과 실제 `doc.paste(...)` option은 같아야 한다.
 
 ## Duplicate
 
-Sibling 복제 의도는 raw RFC 6902 `copy`가 아니라 `doc.duplicate(pointer, options)`로 표현한다.
+Sibling 복제 의도는 raw RFC 6902 `copy`가 아니라 `doc.duplicate(pointer?, options)`로 표현한다.
 
 ```ts
 const duplicated = doc.duplicate("/lists/0/cards/0", {
@@ -156,7 +159,7 @@ const duplicated = doc.duplicate("/lists/0/cards/0", {
 });
 ```
 
-`duplicate`, `clipboard.cut`, `clipboard.paste`, `clipboard.pastePayload`는 즉시 mutate한다. 성공 결과의 `applied`는 이미 적용된 patch record이므로 다시 `commit`하지 않는다.
+`duplicate`, `doc.cut`, `doc.paste`는 즉시 mutate한다. 성공 결과의 `applied`는 이미 적용된 patch record이므로 다시 `commit`하지 않는다.
 
 ## 선택
 
@@ -169,7 +172,7 @@ doc.selection?.selectRanges([
 ]);
 
 const source = doc.selection?.selectedPointers ?? [];
-doc.clipboard.copy(source);
+doc.copy(source);
 ```
 
 공통 surface:
@@ -188,17 +191,17 @@ Object member는 JSON 표준상 unordered다. Object member range 의미보다 e
 Clipboard는 copy/cut/paste payload flow를 소유한다. Selection은 무엇이 선택되었는지만 기록한다.
 
 ```ts
-const copied = doc.clipboard.copy(["/lists/0/cards/0"]);
+const copied = doc.copy(["/lists/0/cards/0"]);
 if (copied.ok) {
-  doc.clipboard.paste("/lists/1/cards/-");
+  doc.paste("/lists/1/cards/-");
 }
 ```
 
 삽입 위치에는 `/items/-`나 `/lists/1/cards/-` 같은 Pointer를 사용한다. 기존 value를 기준으로 붙일 때는 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 사용한다.
 
-Pointer array copy/cut은 array payload를 저장한다. Multi-source buffer를 array insertion target에 paste하면 기본적으로 spread된다. Array payload 자체를 하나의 값으로 넣어야 할 때만 `{ spread: false }`를 넘긴다. Direct array payload를 item별 sibling으로 넣으려면 `{ spread: true, rekey }`를 `canPaste(...)`와 `clipboard.pastePayload(...)`에 같이 넘긴다.
+Pointer array copy/cut은 array payload를 저장한다. Multi-source buffer를 array insertion target에 paste하면 기본적으로 spread된다. Array payload 자체를 하나의 값으로 넣어야 할 때만 `{ spread: false }`를 넘긴다. Direct array payload를 item별 sibling으로 넣으려면 `{ payload, spread: true, rekey }`를 `canPaste(...)`와 `doc.paste(...)`에 같이 넘긴다.
 
-## Web Clipboard extension
+## Official extensions
 
 `zod-crud` core는 `navigator.clipboard`를 호출하지 않는다. Web system clipboard가 필요하면 `@zod-crud/clipboard-web`을 조립한다.
 
@@ -215,14 +218,53 @@ await webClipboard.paste("/lists/1/cards/-", {
 
 Extension은 public `JSONDocument` surface만 사용한다. 내부 경로, plugin registry, `doc.use(...)`가 필요 없다. Browser가 아닌 test/runtime에서는 `{ readText, writeText }` host를 주입한다.
 
+Ordered JSON array item movement가 필요하면 `@zod-crud/collection`을 조립한다. Kanban card, outliner row, slide rail item, layer list item, admin tree section, spreadsheet tab처럼 제품명은 달라도 구조는 collection item이다.
+
+```ts
+import { createCollection } from "@zod-crud/collection";
+
+const collection = createCollection(doc);
+
+collection.moveAfter("/lists/0/cards/0", "/lists/1/cards/0");
+collection.duplicateAfter("/slides/0", {
+  rekey: { fields: ["id"], strategy: "suffix" },
+});
+collection.deleteItems(["/tabs/1", "/tabs/3"]);
+```
+
+Stable id로 현재 Pointer를 찾아야 하면 `@zod-crud/record-index`를 조립한다. Focused row, selected card, slide block, layer item, admin section, spreadsheet tab처럼 UI는 stable id를 기억하고 mutation은 Pointer로 실행하는 경우에 쓴다.
+
+```ts
+import { createRecordIndex } from "@zod-crud/record-index";
+
+const cards = createRecordIndex(doc, {
+  query: "$.cards[*]",
+  key: "id",
+});
+
+const pointer = cards.pointerFor("todo");
+cards.replace("todo", { id: "todo", title: "Todo", done: true });
+```
+
+App-level selection snapshot과 selected values가 필요하면 `@zod-crud/selection-model`을 조립한다. Stable id lookup은 `record-index`, 순서 변경은 `collection`의 책임이다.
+
+```ts
+import { createSelectionModel } from "@zod-crud/selection-model";
+
+const selection = createSelectionModel(doc);
+
+selection.selectMany(["/cards/0", "/cards/1"]);
+const snapshot = selection.current();
+```
+
 ## 히스토리
 
 History는 document patch entry와 inverse patch를 기록한다.
 
 ```ts
 doc.patch({ op: "replace", path: "/title", value: "Final" });
-doc.history.undo();
-doc.history.redo();
+doc.undo();
+doc.redo();
 ```
 
 알려진 multi-step change는 metadata와 함께 하나의 `doc.commit([...])`으로 적용한다.

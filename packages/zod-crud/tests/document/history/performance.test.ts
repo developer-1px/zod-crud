@@ -934,10 +934,10 @@ describe("doc.history performance contract", () => {
       return originalSafeParse(value);
     }) as typeof Schema.safeParse;
 
-    expect(doc.canPastePayload("/items/-", { id: "c" })).toEqual({ ok: true });
+    expect(doc.canPaste("/items/-", { payload: { id: "c" } })).toEqual({ ok: true });
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b"]);
 
-    expect(doc.clipboard.pastePayload("/items/-", { id: "c" })).toMatchObject({
+    expect(doc.clipboard.paste("/items/-", { payload: { id: "c" } })).toMatchObject({
       ok: true,
       applied: [{ op: "add", path: "/items/2", value: { id: "c" } }],
     });
@@ -968,40 +968,40 @@ describe("doc.history performance contract", () => {
     const bad = () => "bad";
     const doc = createJSONDocument(Schema, { items: [bad] }, { strict: false });
 
-    expect(doc.canPastePayload("/items/-", 1)).toMatchObject({ ok: false, code: "not_serializable" });
-    expect(doc.clipboard.pastePayload("/items/-", 1)).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.canPaste("/items/-", { payload: 1 })).toMatchObject({ ok: false, code: "not_serializable" });
+    expect(doc.clipboard.paste("/items/-", { payload: 1 })).toMatchObject({ ok: false, code: "not_serializable" });
     expect(doc.value).toEqual({ items: [bad] });
   });
 
-  test("document pastePayload rekey keeps the JSON guard for external payloads", () => {
+  test("document paste rekey keeps the JSON guard for external payloads", () => {
     const Schema = z.object({ items: z.array(z.unknown()) });
     const badPayload = { id: "a", run: () => "bad" };
     const doc = createJSONDocument(Schema, { items: [] }, { strict: false });
     const rekey = { fields: ["id"], strategy: "suffix" as const };
 
-    expect(doc.canPastePayload("/items/-", badPayload, { rekey })).toMatchObject({
+    expect(doc.canPaste("/items/-", { payload: badPayload, rekey })).toMatchObject({
       ok: false,
       code: "not_serializable",
     });
-    expect(doc.clipboard.pastePayload("/items/-", badPayload, { rekey })).toMatchObject({
+    expect(doc.clipboard.paste("/items/-", { payload: badPayload, rekey })).toMatchObject({
       ok: false,
       code: "not_serializable",
     });
     expect(doc.value).toEqual({ items: [] });
   });
 
-  test("document pastePayload trustedPayload delegates the JSON boundary to the caller", () => {
+  test("document paste trustedPayload delegates the JSON boundary to the caller", () => {
     const Schema = z.object({ items: z.array(z.unknown()) });
     const payload = { id: "trusted", run: () => "trusted" };
     const doc = createJSONDocument(Schema, { items: [] }, { strict: false });
 
-    expect(doc.canPastePayload("/items/-", payload)).toMatchObject({
+    expect(doc.canPaste("/items/-", { payload })).toMatchObject({
       ok: false,
       code: "not_serializable",
     });
-    expect(doc.canPastePayload("/items/-", payload, { trustedPayload: true })).toEqual({ ok: true });
+    expect(doc.canPaste("/items/-", { payload, trustedPayload: true })).toEqual({ ok: true });
 
-    expect(doc.clipboard.pastePayload("/items/-", payload, { trustedPayload: true })).toMatchObject({
+    expect(doc.clipboard.paste("/items/-", { payload, trustedPayload: true })).toMatchObject({
       ok: true,
       applied: [{ op: "add", path: "/items/0", value: payload }],
     });

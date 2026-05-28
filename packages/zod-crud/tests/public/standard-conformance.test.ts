@@ -62,6 +62,16 @@ describe("zod-crud core standard conformance", () => {
   test("uses JSONPath for query results and JSON Pointer for mutation", () => {
     const doc = createBoardDocument();
 
+    expect(doc.find("$.columns[*].cards[*].id")).toEqual({
+      ok: true,
+      query: "$.columns[*].cards[*].id",
+      pointers: [
+        "/columns/0/cards/0/id",
+        "/columns/0/cards/1/id",
+        "/columns/1/cards/0/id",
+      ],
+    });
+
     expect(doc.query("$.columns[*].cards[*].id")).toEqual({
       ok: true,
       query: "$.columns[*].cards[*].id",
@@ -88,6 +98,33 @@ describe("zod-crud core standard conformance", () => {
       ok: false,
       code: "invalid_pointer",
     });
+  });
+
+  test("exposes muscle-memory editing verbs beside can probes", () => {
+    const doc = createBoardDocument();
+
+    expect(doc.canReplace("/columns/0/cards/0/title", "A1")).toEqual({ ok: true });
+    expect(doc.replace("/columns/0/cards/0/title", "A1")).toEqual({ ok: true });
+    expect(doc.value.columns[0]?.cards[0]?.title).toBe("A1");
+
+    expect(doc.canInsert("/columns/0/cards/-", { id: "c", title: "C" })).toEqual({ ok: true });
+    expect(doc.insert("/columns/0/cards/-", { id: "c", title: "C" })).toEqual({ ok: true });
+    expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["a", "b", "c"]);
+
+    expect(doc.canMove("/columns/0/cards/0", "/columns/0/cards/1")).toEqual({ ok: true });
+    expect(doc.move("/columns/0/cards/0", "/columns/0/cards/1")).toEqual({ ok: true });
+    expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "a", "c"]);
+
+    expect(doc.canDelete("/columns/0/cards/1")).toEqual({ ok: true });
+    expect(doc.delete("/columns/0/cards/1")).toEqual({ ok: true });
+    expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "c"]);
+
+    expect(doc.canUndo()).toEqual({ ok: true });
+    expect(doc.undo()).toBe(true);
+    expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "a", "c"]);
+    expect(doc.canRedo()).toEqual({ ok: true });
+    expect(doc.redo()).toBe(true);
+    expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "c"]);
   });
 
   test("keeps capability probes reasoned and mutation-free", () => {
@@ -144,23 +181,24 @@ describe("zod-crud core standard conformance", () => {
       code: "not_serializable",
     });
 
-    expect(doc.clipboard.copy(["/columns/0/cards/0", "/columns/0/cards/1"])).toMatchObject({
+    expect(doc.copy(["/columns/0/cards/0", "/columns/0/cards/1"])).toMatchObject({
       ok: true,
       sources: ["/columns/0/cards/0", "/columns/0/cards/1"],
     });
-    expect(doc.clipboard.paste("/columns/1/cards/-")).toMatchObject({ ok: true });
+    expect(doc.paste("/columns/1/cards/-")).toMatchObject({ ok: true });
     expect(doc.value.columns[1]?.cards.map((card) => card.id)).toEqual(["c", "a", "b"]);
 
     const directPayloadDoc = createBoardDocument();
-    expect(directPayloadDoc.clipboard.pastePayload("/columns/1/cards/-", [
-      { id: "x", title: "X" },
-    ])).toMatchObject({
+    expect(directPayloadDoc.paste("/columns/1/cards/-", {
+      payload: [{ id: "x", title: "X" }],
+    })).toMatchObject({
       ok: false,
       code: "schema_violation",
     });
-    expect(directPayloadDoc.clipboard.pastePayload("/columns/1/cards/-", [
-      { id: "x", title: "X" },
-    ], { spread: true })).toMatchObject({ ok: true });
+    expect(directPayloadDoc.paste("/columns/1/cards/-", {
+      payload: [{ id: "x", title: "X" }],
+      spread: true,
+    })).toMatchObject({ ok: true });
     expect(directPayloadDoc.value.columns[1]?.cards.map((card) => card.id)).toEqual(["c", "x"]);
   });
 

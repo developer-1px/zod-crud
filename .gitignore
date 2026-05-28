@@ -4,6 +4,8 @@ node_modules/
 .npm-cache/
 dist/
 packages/*/dist/
+labs/extensions/*/dist/
+labs/extensions/*/node_modules/
 apps/*/dist/
 apps/*/coverage/
 test-results/

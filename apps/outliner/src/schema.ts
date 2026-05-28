@@ -15,7 +15,7 @@ export const SAMPLE: OutlineNode = {
     { text: "Enter edit; Shift/Cmd+Enter insert", children: [] },
     { text: "Tab demote", children: [] },
     { text: "Shift+Tab promote", children: [] },
-    { text: "Backspace empty remove", children: [] },
+    { text: "Backspace empty delete", children: [] },
     {
       text: "Selection",
       children: [

@@ -61,7 +61,7 @@ describe("@zod-crud/clipboard-web", () => {
     });
   });
 
-  test("pastes clipboard text through the public pastePayload gate", async () => {
+  test("pastes clipboard text through the public paste gate", async () => {
     const doc = createDoc();
     const host = createMemoryClipboard(defaultWebClipboardCodec.encode({
       payload: { id: "c", name: "C" },

@@ -14,7 +14,7 @@ zod-crud는 Zod schema를 기준으로 JSON 데이터를 안전하게 읽고 바
 
 ## 배경
 
-프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. Form, CMS block, kanban card, outliner는 UI는 달라도 결국 값 추가, 변경, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
+프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. Form, CMS block, kanban card, outliner는 UI는 달라도 결국 삽입, 변경, 삭제, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
 
 문제는 이 규칙을 앱마다 다시 만들 때 생깁니다. Patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 서로 다른 코드에 흩어지면 같은 편집 동작을 테스트하기 어렵고, UI 코드가 상태 변경 규칙까지 떠안게 됩니다.
 
@@ -91,15 +91,15 @@ const doc = useJSONDocument(Card, initialCard, {
 | --- | --- |
 | 현재 값 읽기 | `doc.value`, `doc.at(pointer)` |
 | 하위 항목 나열 | `doc.entries(pointer)` |
-| 여러 위치 찾기 | `doc.query(jsonPath)` |
-| 값 추가, 변경, 삭제 | `doc.patch(...)`, `doc.commit([...])` |
-| 실행 전 검증 | `doc.canPatch(...)`, `doc.canPastePayload(...)`, `doc.canFind(...)` |
+| 여러 위치 찾기 | `doc.find(jsonPath)`, `doc.query(jsonPath)` |
+| 값 삽입, 변경, 삭제 | `doc.insert(...)`, `doc.replace(...)`, `doc.delete(...)` |
+| 실행 전 검증 | `doc.canInsert(...)`, `doc.canReplace(...)`, `doc.canDelete(...)` |
 | sibling 복제 | `doc.duplicate(pointer, options)` |
 | 선택 상태 저장 | `doc.selection?.selectRanges(...)`, `doc.selection?.snapshot()` |
-| 복사/잘라내기/붙여넣기 | `doc.clipboard.copy(...)`, `doc.clipboard.cut(...)`, `doc.clipboard.paste(...)` |
-| 되돌리기/다시하기 | `doc.canUndo()`, `doc.history.undo()`, `doc.history.redo()` |
+| 복사/잘라내기/붙여넣기 | `doc.copy(...)`, `doc.cut(...)`, `doc.paste(...)` |
+| 되돌리기/다시하기 | `doc.canUndo()`, `doc.undo()`, `doc.redo()` |
 
-High-level mutation인 `doc.duplicate(...)`, `doc.clipboard.cut(...)`, `doc.clipboard.paste(...)`, `doc.clipboard.pastePayload(...)`는 성공하면 document에 즉시 적용됩니다. 성공 결과의 `applied`는 이미 applied patch 기록이므로 다시 `commit`하지 않습니다.
+High-level mutation인 `doc.insert(...)`, `doc.replace(...)`, `doc.delete(...)`, `doc.duplicate(...)`, `doc.cut(...)`, `doc.paste(...)`는 성공하면 document에 즉시 적용됩니다. 성공 결과의 `applied`는 이미 applied patch 기록이므로 다시 `commit`하지 않습니다.
 
 `doc.at(pointer)`와 `doc.query(jsonPath)`는 raw value가 아니라 `ReadResult`와 `QueryResult` 같은 결과 객체를 반환합니다.
 
@@ -109,7 +109,7 @@ High-level mutation인 `doc.duplicate(...)`, `doc.clipboard.cut(...)`, `doc.clip
 
 ```ts
 const candidate = { id: "c2", title: "", status: "todo" };
-const result = doc.canPastePayload("/cards/-", candidate);
+const result = doc.canPaste("/cards/-", { payload: candidate });
 
 if (!result.ok) {
   result.code;
@@ -120,7 +120,7 @@ if (!result.ok) {
 
 이 구조 때문에 버튼 활성화, validation message, command palette의 disabled reason을 같은 값으로 만들 수 있습니다.
 
-`violations[].path`는 JSON Pointer입니다. `doc.schema.accepts(...)`는 요청한 schema 위치 기준의 `schema-slot` path를, `doc.canPatch(...)`와 `doc.canPastePayload(...)`는 patch preview 후 document 결과 위치 기준의 `document-result` path를 돌려줍니다.
+`violations[].path`는 JSON Pointer입니다. `doc.schema.accepts(...)`는 요청한 schema 위치 기준의 `schema-slot` path를, `doc.canPatch(...)`와 `doc.canPaste(...)`는 patch preview 후 document 결과 위치 기준의 `document-result` path를 돌려줍니다.
 
 `strict`는 `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` 실행 실패 정책입니다. `can*`는 항상 Result를 반환하고, document execution method는 strict mode에서 `JSONCrudError`를 throw할 수 있습니다.
 

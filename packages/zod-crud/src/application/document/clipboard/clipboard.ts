@@ -6,7 +6,7 @@ import { cloneTrustedPlainJson } from "../../../foundation/json/trustedClone.js"
 import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import { readAt, tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
 import { normalizePointerSources } from "../../../foundation/pointer/source.js";
-import type { JSONStateOps } from "../runtime/types.js";
+import type { JSONDocumentPasteOptions, JSONStateOps } from "../runtime/types.js";
 import type { SelectionSource } from "../../../domain/selection/types.js";
 import {
   paste,
@@ -491,12 +491,12 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     paste(target, options) {
+      const pasteOptions = splitPasteOptions(options);
+      if (pasteOptions.kind === "payload") {
+        return runPaste(pasteOptions.payload, target, pasteOptions.options, false, false);
+      }
       if (!buffer) return EMPTY_CLIPBOARD;
-      return runPaste(buffer.payload, target, options, (buffer.sources?.length ?? 0) > 1, true);
-    },
-
-    pastePayload(target, payload, options) {
-      return runPaste(payload, target, options, false, false);
+      return runPaste(buffer.payload, target, pasteOptions.options, (buffer.sources?.length ?? 0) > 1, true);
     },
   };
 
@@ -611,6 +611,18 @@ function planClipboardPastePreview<S extends z.ZodType>(
   };
   if (previewPatch !== undefined) plan.previewPatch = previewPatch;
   return plan;
+}
+
+function splitPasteOptions(options?: JSONDocumentPasteOptions):
+  | { kind: "clipboard"; options?: PasteOptions }
+  | { kind: "payload"; payload: unknown; options?: PasteOptions } {
+  if (!options || !Object.prototype.hasOwnProperty.call(options, "payload")) {
+    return options === undefined ? { kind: "clipboard" } : { kind: "clipboard", options };
+  }
+  const { payload, ...pasteOptions } = options;
+  return Object.keys(pasteOptions).length === 0
+    ? { kind: "payload", payload }
+    : { kind: "payload", payload, options: pasteOptions };
 }
 
 function emptyCopySource(): CopyError {

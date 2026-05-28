@@ -73,12 +73,12 @@ type FeatureStage = {
 
 const featureStages: readonly FeatureStage[] = [
   { id: "board-setup", title: "Board setup", apis: ["useJSONDocument", "createJSONDocument", "doc.load", "doc.reset", "doc.subscribe"] },
-  { id: "card-intake", title: "Card intake", apis: ["schema.accepts", "schema.describe", "canPatch", "patch(add)"] },
-  { id: "card-edit", title: "Card edit", apis: ["at", "exists", "schema.kind", "canReplace", "canPatch", "patch", "commit", "canRemove"] },
-  { id: "flow-columns", title: "Flow across columns", apis: ["canMove", "patch(move)", "canDuplicate", "duplicate"] },
-  { id: "selection-bulk", title: "Selection and bulk work", apis: ["selection.*", "canRemove", "patch(remove[])"] },
-  { id: "clipboard-reuse", title: "Reuse via clipboard", apis: ["clipboard.*", "canCopy", "canCut", "canPaste", "canPastePayload"] },
-  { id: "find-filter", title: "Find and filter", apis: ["canFind", "query", "selection.selectRanges"] },
+  { id: "card-intake", title: "Card intake", apis: ["schema.accepts", "schema.describe", "canInsert", "insert"] },
+  { id: "card-edit", title: "Card edit", apis: ["at", "exists", "schema.kind", "canReplace", "replace", "commit", "canDelete", "delete"] },
+  { id: "flow-columns", title: "Flow across columns", apis: ["canMove", "move", "canDuplicate", "duplicate"] },
+  { id: "selection-bulk", title: "Selection and bulk work", apis: ["selection.*", "canDelete", "delete"] },
+  { id: "clipboard-reuse", title: "Reuse via clipboard", apis: ["clipboard.*", "canCopy", "canCut", "canPaste", "paste"] },
+  { id: "find-filter", title: "Find and filter", apis: ["canFind", "find", "selection.selectRanges"] },
   { id: "recovery-history", title: "Recovery and history", apis: ["canUndo", "canRedo", "history.*"] },
   { id: "integration", title: "Integration and helpers", apis: ["applyOperation", "applyPatch", "applyPatchToTrustedState", "trackPointer", "pointer helpers"] },
 ];
@@ -516,13 +516,15 @@ function cardTitleAt(board: Board, pointer: Pointer): string | null {
 
 function mutatesBoard(call: string): boolean {
   return call.includes("doc.patch(")
+    || call.includes("doc.replace(")
+    || call.includes("doc.delete(")
+    || call.includes("doc.move(")
     || call.includes("doc.commit(")
     || call.includes("doc.duplicate(")
-    || call.includes("doc.clipboard.cut(")
-    || call.includes("doc.clipboard.paste(")
-    || call.includes("doc.clipboard.pastePayload(")
-    || call.includes("doc.history.undo(")
-    || call.includes("doc.history.redo(")
+    || call.includes("doc.cut(")
+    || call.includes("doc.paste(")
+    || call.includes("doc.undo(")
+    || call.includes("doc.redo(")
     || call.includes("doc.history.transaction(");
 }
 
@@ -612,21 +614,21 @@ export function InterfaceWorkbench() {
   const primarySource = valueTarget;
   const targetTitlePath = `${valueTarget}/title` as Pointer;
   const targetPointsPath = `${valueTarget}/points` as Pointer;
-  const canAddPayload = doc.canPatch([{ op: "add", path: insertTarget, value: payloadValue }]);
+  const canInsertPayload = doc.canInsert(insertTarget, payloadValue);
   const canPatchReplaceTitle = doc.canPatch([{ op: "replace", path: targetTitlePath, value: textPayload }]);
   const canPatchReplacePoints = doc.canPatch([{ op: "replace", path: targetPointsPath, value: pointsValue }]);
   const canPatchBadPoints = doc.canPatch([{ op: "replace", path: targetPointsPath, value: badPointsValue }]);
-  const canPatchRemoveTarget = doc.canPatch([{ op: "remove", path: valueTarget }]);
+  const canPatchDeleteTarget = doc.canPatch([{ op: "remove", path: valueTarget }]);
   const canDuplicateTarget = doc.canDuplicate(valueTarget, { rekey: cardRekey() });
   const canMoveTarget = doc.canMove(valueTarget, insertTarget);
   const canReplaceTargetTitle = doc.canReplace(targetTitlePath, textPayload);
-  const canRemoveSource = doc.canRemove(selectedSource);
+  const canDeleteSource = doc.canDelete(selectedSource);
   const canCopySource = doc.canCopy(selectedSource);
   const canCopyPrimary = doc.canCopy(primarySource);
   const canCutSource = doc.canCut(selectedSource);
   const canPasteClipboardAfterTarget = doc.canPaste({ after: valueTarget });
   const canPasteClipboardToInsertTarget = doc.canPaste(insertTarget, { spread: true, rekey: cardRekey() });
-  const canPastePayloadToInsertTarget = doc.canPastePayload(insertTarget, payloadValue, { rekey: cardRekey() });
+  const canPasteDirectPayloadToInsertTarget = doc.canPaste(insertTarget, { payload: payloadValue, rekey: cardRekey() });
   const canFindQuery = doc.canFind(query);
   const canUndo = doc.canUndo();
   const canRedo = doc.canRedo();
@@ -702,7 +704,7 @@ export function InterfaceWorkbench() {
 
   const featureBindings = (feature: string, call: string, board: Board): string[] => {
     const title = cardTitleAt(board, valueTarget);
-    if (feature === "Add card") {
+    if (feature === "Insert card") {
       const card = payloadValue as { title?: unknown; status?: unknown };
       return [
         `target ${insertTarget}`,
@@ -746,33 +748,27 @@ export function InterfaceWorkbench() {
     return payloadValue;
   };
 
-  const addCardToTodo = (): unknown => {
-    return doc.patch([
-      { op: "add", path: insertTarget, value: parsedPayload() },
-    ]);
-  };
+  const insertCardToTodo = (): unknown => doc.insert(insertTarget, parsedPayload());
 
-  const copySelection = (): unknown => doc.clipboard.copy(selectedSource);
+  const copySelection = (): unknown => doc.copy(selectedSource);
 
-  const copyPrimaryCard = (): unknown => doc.clipboard.copy(primarySource);
+  const copyPrimaryCard = (): unknown => doc.copy(primarySource);
 
-  const pasteClipboardAfterTarget = (): unknown => doc.clipboard.paste({ after: valueTarget });
+  const pasteClipboardAfterTarget = (): unknown => doc.paste({ after: valueTarget });
 
-  const pasteClipboardToInsertTarget = (): unknown => doc.clipboard.paste(insertTarget, {
+  const pasteClipboardToInsertTarget = (): unknown => doc.paste(insertTarget, {
     spread: true,
     rekey: cardRekey(),
   });
 
-  const pastePayloadAfterTarget = (): unknown => doc.clipboard.pastePayload(
+  const pasteDirectPayloadAfterTarget = (): unknown => doc.paste(
     { after: valueTarget },
-    parsedPayload(),
-    { rekey: cardRekey() },
+    { payload: parsedPayload(), rekey: cardRekey() },
   );
 
-  const pastePayloadToInsertTarget = (): unknown => doc.clipboard.pastePayload(
+  const pasteDirectPayloadToInsertTarget = (): unknown => doc.paste(
     insertTarget,
-    parsedPayload(),
-    { rekey: cardRekey() },
+    { payload: parsedPayload(), rekey: cardRekey() },
   );
 
   const duplicateTarget = (): unknown => {
@@ -785,7 +781,7 @@ export function InterfaceWorkbench() {
   };
 
   const selectTodoCards = (): unknown => {
-    const matches = doc.query(query);
+    const matches = doc.find(query);
     if (!matches.ok) return matches;
     doc.selection?.selectRanges(matches.pointers, undefined, undefined, Math.max(0, matches.pointers.length - 1));
     return matches;
@@ -816,7 +812,7 @@ export function InterfaceWorkbench() {
     return doc.value;
   };
 
-  const queryPointers = (): unknown => doc.query(query);
+  const queryPointers = (): unknown => doc.find(query);
 
   const inspectCreateJSONDocument = (): unknown => {
     const headless = createJSONDocument(BoardSchema, initialBoard, {
@@ -825,8 +821,8 @@ export function InterfaceWorkbench() {
     });
     headless.patch({ op: "copy", from: cardPointer(0, 0), path: "/lists/0/cards/-" });
     headless.selection?.togglePointer(cardPointer(0, 1));
-    headless.clipboard.copy(headless.selection?.selectedPointers ?? []);
-    headless.clipboard.paste("/lists/1/cards/-");
+    headless.copy(headless.selection?.selectedPointers ?? []);
+    headless.paste("/lists/1/cards/-");
 
     return {
       title: headless.value.title,
@@ -965,17 +961,13 @@ export function InterfaceWorkbench() {
     resetTargets();
     return doc.reset();
   };
-  const removeTarget = (): unknown => doc.patch({ op: "remove", path: valueTarget });
-  const removeTargets = (): unknown => doc.patch(
-    [...(selectedPointers.length > 0 ? selectedPointers : [valueTarget])]
-      .reverse()
-      .map((path) => ({ op: "remove", path }) satisfies JSONPatchOperation),
-  );
+  const deleteTarget = (): unknown => doc.delete(valueTarget);
+  const deleteTargets = (): unknown => doc.delete(selectedSource);
 
-  const executeAddCard = (): void => {
-    const disabled = canDisabledReason(canAddPayload);
+  const executeInsertCard = (): void => {
+    const disabled = canDisabledReason(canInsertPayload);
     if (disabled) return;
-    run(`doc.patch([{ op: "add", path: "${insertTarget}", value: payload }])`, addCardToTodo, "Add card");
+    run(`doc.insert("${insertTarget}", payload)`, insertCardToTodo, "Insert card");
   };
 
   const executeSelectNone = (): void => {
@@ -999,25 +991,25 @@ export function InterfaceWorkbench() {
   const executeUndo = (): void => {
     const disabled = canDisabledReason(canUndo);
     if (disabled) return;
-    run("doc.history.undo()", () => doc.history.undo(), "Undo and redo");
+    run("doc.undo()", () => doc.undo(), "Undo and redo");
   };
 
   const executeRedo = (): void => {
     const disabled = canDisabledReason(canRedo);
     if (disabled) return;
-    run("doc.history.redo()", () => doc.history.redo(), "Undo and redo");
+    run("doc.redo()", () => doc.redo(), "Undo and redo");
   };
 
   const executeRenameCard = (): void => {
     const disabled = selectedCardReason ?? canDisabledReason(canPatchReplaceTitle);
     if (disabled) return;
-    run(`doc.patch([{ op: "replace", path: "${targetTitlePath}", value: textPayload }])`, () => doc.patch([{ op: "replace", path: targetTitlePath, value: textPayload }]), "Edit card");
+    run(`doc.replace("${targetTitlePath}", textPayload)`, () => doc.replace(targetTitlePath, textPayload), "Edit card");
   };
 
   const executeMoveCard = (): void => {
     const disabled = selectedCardReason ?? canDisabledReason(canMoveTarget);
     if (disabled) return;
-    run(`doc.patch({ op: "move", from: "${valueTarget}", path: "${insertTarget}" })`, () => doc.patch({ op: "move", from: valueTarget, path: insertTarget }), "Move card");
+    run(`doc.move("${valueTarget}", "${insertTarget}")`, () => doc.move(valueTarget, insertTarget), "Move card");
   };
 
   const executeDuplicateCard = (): void => {
@@ -1030,12 +1022,12 @@ export function InterfaceWorkbench() {
     if (selectedCount > 1) {
       const disabled = bulkSelectionReason ?? canDisabledReason(canCopySource);
       if (disabled) return;
-      run("doc.clipboard.copy(source)", copySelection, "Bulk cards");
+      run("doc.copy(source)", copySelection, "Bulk cards");
       return;
     }
     const disabled = selectedCardReason ?? canDisabledReason(canCopyPrimary);
     if (disabled) return;
-    run(`doc.clipboard.copy("${primarySource}")`, copyPrimaryCard, "Copy and paste");
+    run(`doc.copy("${primarySource}")`, copyPrimaryCard, "Copy and paste");
   };
 
   const executeCutCommand = (): void => {
@@ -1043,31 +1035,31 @@ export function InterfaceWorkbench() {
       ? bulkSelectionReason ?? canDisabledReason(canCutSource)
       : selectedCardReason ?? canDisabledReason(canCutSource);
     if (disabled) return;
-    run("doc.clipboard.cut(source)", () => doc.clipboard.cut(selectedSource), selectedCount > 1 ? "Bulk cards" : "Copy and paste");
+    run("doc.cut(source)", () => doc.cut(selectedSource), selectedCount > 1 ? "Bulk cards" : "Copy and paste");
   };
 
   const executePasteCommand = (): void => {
     if (selectedCount > 1) {
       const disabled = bulkSelectionReason ?? canDisabledReason(canPasteClipboardToInsertTarget);
       if (disabled) return;
-      run(`doc.clipboard.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget, "Bulk cards");
+      run(`doc.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget, "Bulk cards");
       return;
     }
     const disabled = selectedCardReason ?? canDisabledReason(canPasteClipboardAfterTarget);
     if (disabled) return;
-    run(`doc.clipboard.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget, "Copy and paste");
+    run(`doc.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget, "Copy and paste");
   };
 
-  const executeRemoveCommand = (): void => {
+  const executeDeleteCommand = (): void => {
     if (selectedCount > 1) {
-      const disabled = bulkSelectionReason ?? canDisabledReason(canRemoveSource);
+      const disabled = bulkSelectionReason ?? canDisabledReason(canDeleteSource);
       if (disabled) return;
-      run("doc.patch(selectedPointers.map((path) => ({ op: \"remove\", path })))", removeTargets, "Bulk cards");
+      run("doc.delete(source)", deleteTargets, "Bulk cards");
       return;
     }
-    const disabled = selectedCardReason ?? canDisabledReason(canPatchRemoveTarget);
+    const disabled = selectedCardReason ?? canDisabledReason(canPatchDeleteTarget);
     if (disabled) return;
-    run(`doc.patch({ op: "remove", path: "${valueTarget}" })`, removeTarget, "Remove card");
+    run(`doc.delete("${valueTarget}")`, deleteTarget, "Delete card");
   };
 
   useEffect(() => {
@@ -1091,7 +1083,7 @@ export function InterfaceWorkbench() {
 
       if (key === "n") {
         event.preventDefault();
-        executeAddCard();
+        executeInsertCard();
       } else if (key === "f") {
         event.preventDefault();
         executeSelectSearchResults();
@@ -1115,7 +1107,7 @@ export function InterfaceWorkbench() {
         executePasteCommand();
       } else if (key === "delete" || key === "backspace") {
         event.preventDefault();
-        executeRemoveCommand();
+        executeDeleteCommand();
       } else if (key === "0") {
         event.preventDefault();
         executeSelectNone();
@@ -1229,14 +1221,14 @@ export function InterfaceWorkbench() {
     "card-intake": (
       <>
         <CommandRow
-          title="Add card to column"
-          api="doc.patch(add)"
-          status={<CommandState capability={canAddPayload} />}
-          args={<>{insertTargetInput("add target")}{payloadInput("add payload")}</>}
+          title="Insert card"
+          api="doc.insert(target, payload)"
+          status={<CommandState capability={canInsertPayload} />}
+          args={<>{insertTargetInput("insert target")}{payloadInput("insert payload")}</>}
           shortcut="N"
-          result={featureResult("Add card")}
+          result={featureResult("Insert card")}
         >
-          <ActionButton disabledReason={canDisabledReason(canAddPayload)} onClick={executeAddCard}>Add</ActionButton>
+          <ActionButton disabledReason={canDisabledReason(canInsertPayload)} onClick={executeInsertCard}>Insert</ActionButton>
         </CommandRow>
         <CommandRow
           title="Validate card draft"
@@ -1299,7 +1291,7 @@ export function InterfaceWorkbench() {
         </CommandRow>
         <CommandRow
           title="Rename card"
-          api="doc.patch(replace title)"
+          api="doc.replace(title)"
           status={<CommandState reason={selectedCardReason} capability={canPatchReplaceTitle} />}
           args={<>{valueTargetInput("rename target")}{textInput("rename title")}</>}
           shortcut="E"
@@ -1335,14 +1327,14 @@ export function InterfaceWorkbench() {
           <ActionButton disabledReason={selectedCardReason} onClick={() => run(`doc.canPatch([{ op: "replace", path: "${targetPointsPath}", value: badPoints }])`, () => canPatchBadPoints, "Edit card")}>Check invalid</ActionButton>
         </CommandRow>
         <CommandRow
-          title="Remove card"
-          api="doc.patch(remove)"
-          status={<CommandState reason={selectedCardReason} capability={canPatchRemoveTarget} />}
-          args={valueTargetInput("remove target")}
+          title="Delete card"
+          api="doc.delete(source)"
+          status={<CommandState reason={selectedCardReason} capability={canPatchDeleteTarget} />}
+          args={valueTargetInput("delete target")}
           shortcut="Del"
-          result={featureResult("Remove card")}
+          result={featureResult("Delete card")}
         >
-          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchRemoveTarget)} onClick={executeRemoveCommand}>Remove</ActionButton>
+          <ActionButton disabledReason={selectedCardReason ?? canDisabledReason(canPatchDeleteTarget)} onClick={executeDeleteCommand}>Delete</ActionButton>
         </CommandRow>
       </>
     ),
@@ -1350,7 +1342,7 @@ export function InterfaceWorkbench() {
       <>
         <CommandRow
           title="Move card"
-          api="doc.patch(move)"
+          api="doc.move(source, target)"
           status={<CommandState reason={selectedCardReason} capability={canMoveTarget} />}
           args={<>{valueTargetInput("move source")}{insertTargetInput("move target")}</>}
           shortcut="M"
@@ -1386,8 +1378,8 @@ export function InterfaceWorkbench() {
         <CommandRow title="Restore selection" api="selection.restore(snapshot)" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Selection set")}>
           <ActionButton disabledReason={bulkSelectionReason} onClick={() => run("doc.selection?.restore(snapshot)", selectionRestoreRoundtrip, "Selection set")}>Restore</ActionButton>
         </CommandRow>
-        <CommandRow title="Remove selected" api="doc.patch(remove[])" status={<CommandState reason={bulkSelectionReason} capability={canRemoveSource} />} shortcut="Del" result={featureResult("Bulk cards")}>
-          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canRemoveSource)} onClick={executeRemoveCommand}>Remove</ActionButton>
+        <CommandRow title="Delete selected" api="doc.delete(source)" status={<CommandState reason={bulkSelectionReason} capability={canDeleteSource} />} shortcut="Del" result={featureResult("Bulk cards")}>
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canDeleteSource)} onClick={executeDeleteCommand}>Delete</ActionButton>
         </CommandRow>
       </>
     ),
@@ -1407,15 +1399,15 @@ export function InterfaceWorkbench() {
         <CommandRow title="Clear clipboard" api="doc.clipboard.clear()" result={featureResult("Clipboard buffer")}>
           <ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return { cleared: true, hasData: doc.clipboard.hasData }; }, "Clipboard buffer")}>Clear</ActionButton>
         </CommandRow>
-        <CommandRow title="Copy selected" api="doc.clipboard.copy(source)" status={<CommandState reason={bulkSelectionReason} capability={canCopySource} />} shortcut="C" result={featureResult("Bulk cards")}>
+        <CommandRow title="Copy selected" api="doc.copy(source)" status={<CommandState reason={bulkSelectionReason} capability={canCopySource} />} shortcut="C" result={featureResult("Bulk cards")}>
           <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCopySource)} onClick={executeCopyCommand}>Copy</ActionButton>
         </CommandRow>
-        <CommandRow title="Cut selected" api="doc.clipboard.cut(source)" status={<CommandState reason={bulkSelectionReason} capability={canCutSource} />} shortcut="X" result={featureResult("Bulk cards")}>
+        <CommandRow title="Cut selected" api="doc.cut(source)" status={<CommandState reason={bulkSelectionReason} capability={canCutSource} />} shortcut="X" result={featureResult("Bulk cards")}>
           <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canCutSource)} onClick={executeCutCommand}>Cut</ActionButton>
         </CommandRow>
         <CommandRow
           title="Paste selected into column"
-          api="doc.clipboard.paste(target)"
+          api="doc.paste(target)"
           status={<CommandState reason={bulkSelectionReason} capability={canPasteClipboardToInsertTarget} />}
           args={insertTargetInput("paste target")}
           shortcut="V"
@@ -1425,12 +1417,12 @@ export function InterfaceWorkbench() {
         </CommandRow>
         <CommandRow
           title="Paste payload into column"
-          api="doc.clipboard.pastePayload(target, payload)"
-          status={<CommandState reason={bulkSelectionReason} capability={canPastePayloadToInsertTarget} />}
+          api="doc.paste(target, { payload })"
+          status={<CommandState reason={bulkSelectionReason} capability={canPasteDirectPayloadToInsertTarget} />}
           args={<>{insertTargetInput("payload target")}{payloadInput("column payload")}</>}
           result={featureResult("Bulk cards")}
         >
-          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPastePayloadToInsertTarget)} onClick={() => run(`doc.clipboard.pastePayload("${insertTarget}", payload, { rekey })`, pastePayloadToInsertTarget, "Bulk cards")}>Paste payload</ActionButton>
+          <ActionButton disabledReason={bulkSelectionReason ?? canDisabledReason(canPasteDirectPayloadToInsertTarget)} onClick={() => run(`doc.paste("${insertTarget}", { payload, rekey })`, pasteDirectPayloadToInsertTarget, "Bulk cards")}>Paste payload</ActionButton>
         </CommandRow>
       </>
     ),
@@ -1438,12 +1430,12 @@ export function InterfaceWorkbench() {
       <>
         <CommandRow
           title="Search cards"
-          api="doc.query(jsonpath)"
+          api="doc.find(jsonpath)"
           status={<CommandState capability={canFindQuery} />}
           args={queryInput("search query")}
           result={featureResult("Find and select")}
         >
-          <ActionButton disabledReason={canDisabledReason(canFindQuery)} onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers, "Find and select")}>Search</ActionButton>
+          <ActionButton disabledReason={canDisabledReason(canFindQuery)} onClick={() => run(`doc.find(${JSON.stringify(query)})`, queryPointers, "Find and select")}>Search</ActionButton>
         </CommandRow>
         <CommandRow
           title="Select search results"
@@ -1459,10 +1451,10 @@ export function InterfaceWorkbench() {
     ),
     "recovery-history": (
       <>
-        <CommandRow title="Undo" api="doc.history.undo()" status={<CommandState capability={canUndo} />} shortcut="Cmd/Ctrl Z" result={featureResult("Undo and redo")}>
+        <CommandRow title="Undo" api="doc.undo()" status={<CommandState capability={canUndo} />} shortcut="Cmd/Ctrl Z" result={featureResult("Undo and redo")}>
           <ActionButton disabledReason={canDisabledReason(canUndo)} onClick={executeUndo}>Undo</ActionButton>
         </CommandRow>
-        <CommandRow title="Redo" api="doc.history.redo()" status={<CommandState capability={canRedo} />} shortcut="Cmd/Ctrl Shift Z" result={featureResult("Undo and redo")}>
+        <CommandRow title="Redo" api="doc.redo()" status={<CommandState capability={canRedo} />} shortcut="Cmd/Ctrl Shift Z" result={featureResult("Undo and redo")}>
           <ActionButton disabledReason={canDisabledReason(canRedo)} onClick={executeRedo}>Redo</ActionButton>
         </CommandRow>
         <CommandRow title="Bulk transaction" api="history.transaction" status={<CommandState reason={bulkSelectionReason} />} result={featureResult("Undo and redo")}>
@@ -1634,7 +1626,7 @@ export function InterfaceWorkbench() {
           <ApiRow action={<ActionButton onClick={() => run("doc.history", () => ({ canUndo: doc.history.canUndo, canRedo: doc.history.canRedo, undoDepth: doc.history.undoDepth, redoDepth: doc.history.redoDepth }))}>doc.history</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.clipboard", () => doc.clipboard.read())}>doc.clipboard</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.schema", () => doc.schema.at(valueTarget))}>doc.schema</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run('doc.patch([{ op: "add", path, value }])', addCardToTodo)}>doc.patch</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run('doc.patch([{ op: "add", path, value }])', () => doc.patch([{ op: "add", path: insertTarget, value: parsedPayload() }]))}>doc.patch</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.commit(patch, options)", commitReplaceTitle)}>doc.commit</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.duplicate("${valueTarget}", { rekey })`, duplicateTarget)}>doc.duplicate</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.load(nextValue)", loadFixture)}>doc.load</ActionButton>} />
@@ -1642,18 +1634,24 @@ export function InterfaceWorkbench() {
           <ApiRow action={<ActionButton onClick={() => run("doc.subscribe(listener)", inspectSubscribe)}>doc.subscribe</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.at("${valueTarget}")`, () => doc.at(valueTarget))}>doc.at</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.exists("${valueTarget}")`, () => doc.exists(valueTarget))}>doc.exists</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.query(${JSON.stringify(query)})`, queryPointers)}>doc.query</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.find(${JSON.stringify(query)})`, queryPointers)}>doc.find</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.query(${JSON.stringify(query)})`, () => doc.query(query))}>doc.query</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run('doc.entries("/lists/0/cards")', () => doc.entries("/lists/0/cards" as Pointer))}>doc.entries</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.canPatch(patch)", () => canPatchReplaceTitle)}>doc.canPatch</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.canFind(${JSON.stringify(query)})`, () => doc.canFind(query))}>doc.canFind</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.canInsert("${insertTarget}", payload)`, () => doc.canInsert(insertTarget, parsedPayload()))}>doc.canInsert</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.insert("${insertTarget}", payload)`, insertCardToTodo)}>doc.insert</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.canReplace("${targetPointsPath}", pointsPayload)`, () => doc.canReplace(targetPointsPath, pointsValue))}>doc.canReplace</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.canRemove(source)", () => doc.canRemove(selectedSource))}>doc.canRemove</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.replace("${targetTitlePath}", textPayload)`, () => doc.replace(targetTitlePath, textPayload))}>doc.replace</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("doc.canDelete(source)", () => doc.canDelete(selectedSource))}>doc.canDelete</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("doc.delete(source)", () => doc.delete(selectedSource))}>doc.delete</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.canMove("${valueTarget}", "${insertTarget}")`, () => doc.canMove(valueTarget, insertTarget))}>doc.canMove</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.move("${valueTarget}", "${insertTarget}")`, () => doc.move(valueTarget, insertTarget))}>doc.move</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.canDuplicate("${valueTarget}", { rekey })`, () => doc.canDuplicate(valueTarget, { rekey: cardRekey() }))}>doc.canDuplicate</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.canCopy(source)", () => doc.canCopy(selectedSource))}>doc.canCopy</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.canCut(source)", () => doc.canCut(selectedSource))}>doc.canCut</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.canPaste("${insertTarget}", { spread: true, rekey })`, () => doc.canPaste(insertTarget, { spread: true, rekey: cardRekey() }))}>doc.canPaste</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.canPastePayload("${insertTarget}", payload)`, () => doc.canPastePayload(insertTarget, parsedPayload()))}>doc.canPastePayload</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.canPaste("${insertTarget}", { payload })`, () => doc.canPaste(insertTarget, { payload: parsedPayload() }))}>doc.canPaste payload</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.canUndo()", () => doc.canUndo())}>doc.canUndo</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.canRedo()", () => doc.canRedo())}>doc.canRedo</ActionButton>} />
         </ActionGroup>
@@ -1696,12 +1694,12 @@ export function InterfaceWorkbench() {
           <ApiRow action={<ActionButton onClick={() => run("doc.clipboard.read()", () => doc.clipboard.read())}>clipboard.read</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run(`doc.clipboard.write(payload, { source: "${valueTarget}" })`, () => { doc.clipboard.write(parsedPayload(), { source: valueTarget }); return doc.clipboard.read(); })}>clipboard.write</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.clipboard.clear()", () => { doc.clipboard.clear(); return { cleared: true, hasData: doc.clipboard.hasData }; })}>clipboard.clear</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.clipboard.copy(source)", copySelection)}>clipboard.copy</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.clipboard.cut(source)", () => doc.clipboard.cut(selectedSource))}>clipboard.cut</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.clipboard.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget)}>clipboard.paste</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.clipboard.pastePayload("${insertTarget}", payload, { rekey })`, pastePayloadToInsertTarget)}>clipboard.pastePayload</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.clipboard.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget)}>clipboard.paste after</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run(`doc.clipboard.pastePayload({ after: "${valueTarget}" }, payload, { rekey })`, pastePayloadAfterTarget)}>clipboard.pastePayload after</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("doc.copy(source)", copySelection)}>doc.copy</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("doc.cut(source)", () => doc.cut(selectedSource))}>doc.cut</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.paste("${insertTarget}", { spread: true, rekey })`, pasteClipboardToInsertTarget)}>doc.paste</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.paste("${insertTarget}", { payload, rekey })`, pasteDirectPayloadToInsertTarget)}>doc.paste payload</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.paste({ after: "${valueTarget}" })`, pasteClipboardAfterTarget)}>doc.paste after</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run(`doc.paste({ after: "${valueTarget}" }, { payload, rekey })`, pasteDirectPayloadAfterTarget)}>doc.paste payload after</ActionButton>} />
         </ActionGroup>
 
         <ActionGroup title="history API">
@@ -1709,8 +1707,8 @@ export function InterfaceWorkbench() {
           <ApiRow action={<ActionButton onClick={() => run("doc.history.canRedo", () => doc.history.canRedo)}>history.canRedo</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.history.undoDepth", () => doc.history.undoDepth)}>history.undoDepth</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.history.redoDepth", () => doc.history.redoDepth)}>history.redoDepth</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.history.undo()", () => doc.history.undo())}>history.undo</ActionButton>} />
-          <ApiRow action={<ActionButton onClick={() => run("doc.history.redo()", () => doc.history.redo())}>history.redo</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("doc.undo()", () => doc.undo())}>doc.undo</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("doc.redo()", () => doc.redo())}>doc.redo</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run('doc.history.mergeLast({ mergeKey: "manual" })', () => doc.history.mergeLast({ mergeKey: "manual" }))}>history.mergeLast</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("doc.history.transaction(options, fn)", transactionRename)}>history.transaction</ActionButton>} />
         </ActionGroup>

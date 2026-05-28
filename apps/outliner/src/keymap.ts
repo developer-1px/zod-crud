@@ -11,8 +11,8 @@ export type CommandId =
   | "exit-edit"
   | "demote"
   | "promote"
-  | "remove"
-  | "remove-if-empty"
+  | "delete"
+  | "delete-if-empty"
   | "select-all"
   | "focus-prev"
   | "focus-next"
@@ -54,10 +54,10 @@ export const KEYMAP: ReadonlyArray<KeyBinding> = [
   { chord: "Tab",          command: "demote",         label: "Demote",              modes: ["select", "edit"] },
   { chord: "Shift+Tab",    command: "promote",        label: "Promote",             modes: ["select", "edit"] },
 
-  // ── 제거 — select 는 즉시, edit 는 빈 텍스트일 때만 ────────────────────
-  { chord: "Backspace",    command: "remove",         label: "Delete row",          modes: ["select"] },
-  { chord: "Delete",       command: "remove",         label: "Delete row",          modes: ["select"] },
-  { chord: "Backspace",    command: "remove-if-empty",label: "Delete row if empty", modes: ["edit"] },
+  // ── 삭제 — select 는 즉시, edit 는 빈 텍스트일 때만 ────────────────────
+  { chord: "Backspace",    command: "delete",         label: "Delete row",          modes: ["select"] },
+  { chord: "Delete",       command: "delete",         label: "Delete row",          modes: ["select"] },
+  { chord: "Backspace",    command: "delete-if-empty",label: "Delete row if empty", modes: ["edit"] },
 
   // ── Selection ─────────────────────────────────────────────────────────
   { chord: "Mod+a",        command: "select-all",     label: "Select all rows",     modes: ["select"] },

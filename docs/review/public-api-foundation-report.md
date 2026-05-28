@@ -84,7 +84,7 @@ zod-crud 공개 API
 `violations[].path`가 어떤 좌표인지 명확해야 한다.
 
 - `doc.schema.accepts(...)`는 요청한 schema 위치 기준인 `schema-slot` path를 돌려준다.
-- `canPatch`, `canPastePayload`, `canPaste`, `canDuplicate`는 patch preview 뒤 실제 문서 위치 기준인 `document-result` path를 돌려준다.
+- `canPatch`, `canPaste`, `canDuplicate`는 patch preview 뒤 실제 문서 위치 기준인 `document-result` path를 돌려준다.
 - `/items/-`처럼 삽입 위치를 쓰면 mutation preflight는 `/items/2/name` 같은 실제 index로 보고해야 한다.
 
 판정: 새 concept이 아니라 문서 의미론 보강이다.

@@ -62,10 +62,10 @@ If the host is missing `readText`, read/paste/canPaste return `clipboard_unavail
 | `cut(source?, options?)` | host write 성공 뒤 `doc.clipboard.cut` 실행 |
 | `read()` | text host에서 읽고 zod-crud clipboard payload로 decode |
 | `writePayload(payload, metadata?)` | document 변경 없이 payload를 text host에 쓰기 |
-| `canPaste(target, options?)` | host text를 읽고 `doc.canPastePayload` 실행 |
-| `canPasteText(target, text, options?)` | 주어진 text로 `doc.canPastePayload` 실행 |
-| `paste(target, options?)` | host text를 읽고 `doc.clipboard.pastePayload` 실행 |
-| `pasteText(target, text, options?)` | 주어진 text로 `doc.clipboard.pastePayload` 실행 |
+| `canPaste(target, options?)` | host text를 읽고 `doc.canPaste(target, { payload })` 실행 |
+| `canPasteText(target, text, options?)` | 주어진 text로 `doc.canPaste(target, { payload })` 실행 |
+| `paste(target, options?)` | host text를 읽고 `doc.paste(target, { payload })` 실행 |
+| `pasteText(target, text, options?)` | 주어진 text로 `doc.paste(target, { payload })` 실행 |
 
 All methods return zod-crud style Results. Check `.ok` before assuming success.
 

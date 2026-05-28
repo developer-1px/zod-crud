@@ -99,7 +99,17 @@ schema capability와 introspection 결과는 document data에는
 - `schema`
 - `patch`
 - `commit`
+- `find`
+- `insert`
+- `replace`
+- `delete`
+- `move`
 - `duplicate`
+- `copy`
+- `cut`
+- `paste`
+- `undo`
+- `redo`
 - `load`
 - `reset`
 - `subscribe`
@@ -109,14 +119,14 @@ schema capability와 introspection 결과는 document data에는
 - `entries`
 - `canPatch`
 - `canFind`
+- `canInsert`
 - `canReplace`
-- `canRemove`
+- `canDelete`
 - `canMove`
 - `canDuplicate`
 - `canCopy`
 - `canCut`
 - `canPaste`
-- `canPastePayload`
 - `canUndo`
 - `canRedo`
 
@@ -171,8 +181,9 @@ adapter는 headless buffer를 host clipboard API에 연결할 수 있다.
 multi-source clipboard buffer를 array insertion target에 paste하면 기본적으로
 저장된 item을 spread해야 한다.
 
-직접 `pastePayload`에 array payload를 넘긴 경우 기본적으로 spread하면 안
-된다. caller가 명시적으로 spread를 요청한 경우에만 spread해야 한다.
+직접 `paste(target, { payload })`에 array payload를 넘긴 경우 기본적으로
+spread하면 안 된다. caller가 명시적으로 spread를 요청한 경우에만
+spread해야 한다.
 
 paste failure는 원자적이어야 한다.
 

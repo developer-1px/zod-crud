@@ -353,28 +353,29 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
-    bench("doc.canPastePayload single append", rounds, (index) =>
-      doc.canPastePayload("/items/-", makeItem(size + index)));
+    bench("doc.canPaste direct payload single append", rounds, (index) =>
+      doc.canPaste("/items/-", { payload: makeItem(size + index) }));
   }
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
-    bench("doc.clipboard.pastePayload single append", rounds, (index) =>
-      doc.clipboard.pastePayload("/items/-", makeItem(size + index)));
+    bench("doc.clipboard.paste direct payload single append", rounds, (index) =>
+      doc.clipboard.paste("/items/-", { payload: makeItem(size + index) }));
   }
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
-    bench(`doc.clipboard.pastePayload spread ${insertedItems.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
-      doc.clipboard.pastePayload("/items/-", insertedItems, { spread: true }));
+    bench(`doc.clipboard.paste direct payload spread ${insertedItems.length}`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.paste("/items/-", { payload: insertedItems, spread: true }));
   }
 
   {
     let doc;
-    benchWithSetup(`doc.clipboard.pastePayload spread ${insertedItems.length} + rekey`, Math.max(3, Math.ceil(rounds / 2)), () => {
+    benchWithSetup(`doc.clipboard.paste direct payload spread ${insertedItems.length} + rekey`, Math.max(3, Math.ceil(rounds / 2)), () => {
       doc = createJSONDocument(Schema, state, { history: 0 });
     }, () =>
-      doc.clipboard.pastePayload("/items/-", insertedItems, {
+      doc.clipboard.paste("/items/-", {
+        payload: insertedItems,
         spread: true,
         rekey: { fields: ["id"], strategy: "suffix" },
       }));
@@ -382,10 +383,11 @@ for (const size of sizes) {
 
   {
     let doc;
-    benchWithSetup(`doc.clipboard.pastePayload spread repeated rekey ${repeatedRekeyItems.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
+    benchWithSetup(`doc.clipboard.paste direct payload spread repeated rekey ${repeatedRekeyItems.length}`, Math.max(3, Math.ceil(rounds / 2)), () => {
       doc = createJSONDocument(Schema, state, { history: 0 });
     }, () =>
-      doc.clipboard.pastePayload("/items/-", repeatedRekeyItems, {
+      doc.clipboard.paste("/items/-", {
+        payload: repeatedRekeyItems,
         spread: true,
         rekey: { fields: ["id"], strategy: "suffix" },
       }));
@@ -393,8 +395,8 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(Schema, state, { history: 0 });
-    bench(`doc.clipboard.pastePayload spread ${insertedItems.length} before middle`, Math.max(3, Math.ceil(rounds / 2)), () =>
-      doc.clipboard.pastePayload(`/items/${middle}`, insertedItems, { spread: true }));
+    bench(`doc.clipboard.paste direct payload spread ${insertedItems.length} before middle`, Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.paste(`/items/${middle}`, { payload: insertedItems, spread: true }));
   }
 
   {
@@ -435,14 +437,14 @@ for (const size of sizes) {
 
   {
     const doc = createJSONDocument(UnknownItemsSchema, { items: [] }, { history: 0 });
-    bench("doc.clipboard.pastePayload unknown replace /items", Math.max(3, Math.ceil(rounds / 2)), () =>
-      doc.clipboard.pastePayload({ replace: "/items" }, state.items));
+    bench("doc.clipboard.paste direct payload unknown replace /items", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.paste({ replace: "/items" }, { payload: state.items }));
   }
 
   {
     const doc = createJSONDocument(UnknownItemsSchema, { items: [] }, { history: 0 });
-    bench("doc.clipboard.pastePayload unknown replace /items trusted", Math.max(3, Math.ceil(rounds / 2)), () =>
-      doc.clipboard.pastePayload({ replace: "/items" }, state.items, { trustedPayload: true }));
+    bench("doc.clipboard.paste direct payload unknown replace /items trusted", Math.max(3, Math.ceil(rounds / 2)), () =>
+      doc.clipboard.paste({ replace: "/items" }, { payload: state.items, trustedPayload: true }));
   }
 
   {

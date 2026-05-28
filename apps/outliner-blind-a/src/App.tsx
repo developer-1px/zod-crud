@@ -39,13 +39,13 @@ export function App() {
   }
 
   function patchText(row: FlatNode, text: string) {
-    doc.patch({ op: "replace", path: `${row.pointer}/text`, value: text });
+    doc.replace(`${row.pointer}/text`, text);
   }
 
   function addSibling(row: FlatNode) {
     const nextIndex = row.index + 1;
     const inserted = createNode("");
-    doc.patch({ op: "add", path: `${row.parentArrayPointer}/${nextIndex}`, value: inserted });
+    doc.insert(`${row.parentArrayPointer}/${nextIndex}`, inserted);
     setSelectedId(inserted.id);
   }
 
@@ -66,7 +66,7 @@ export function App() {
     );
     if (!previous) return;
 
-    doc.patch({ op: "move", from: row.pointer, path: `${previous.pointer}/children/-` });
+    doc.move(row.pointer, `${previous.pointer}/children/-`);
     setSelectedId(row.node.id);
   }
 
@@ -76,20 +76,20 @@ export function App() {
 
     const grandArrayPointer = arrayPointerOf(parentPointer);
     const parentIndex = indexOf(parentPointer);
-    doc.patch({ op: "move", from: row.pointer, path: `${grandArrayPointer}/${parentIndex + 1}` });
+    doc.move(row.pointer, `${grandArrayPointer}/${parentIndex + 1}`);
     setSelectedId(row.node.id);
   }
 
   function moveUp(row: FlatNode) {
     if (row.index === 0) return;
-    doc.patch({ op: "move", from: row.pointer, path: `${row.parentArrayPointer}/${row.index - 1}` });
+    doc.move(row.pointer, `${row.parentArrayPointer}/${row.index - 1}`);
     setSelectedId(row.node.id);
   }
 
   function moveDown(row: FlatNode) {
     const siblingCount = rows.filter((candidate) => candidate.parentArrayPointer === row.parentArrayPointer).length;
     if (row.index >= siblingCount - 1) return;
-    doc.patch({ op: "move", from: row.pointer, path: `${row.parentArrayPointer}/${row.index + 2}` });
+    doc.move(row.pointer, `${row.parentArrayPointer}/${row.index + 2}`);
     setSelectedId(row.node.id);
   }
 

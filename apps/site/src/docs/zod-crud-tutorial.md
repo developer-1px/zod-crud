@@ -43,16 +43,12 @@ const doc = createJSONDocument(Board, {
 사용자 action은 실행 전에 `can*`로 확인합니다.
 
 ```ts
-const patch = [{
-  op: "add",
-  path: "/lists/0/cards/-",
-  value: { id: "c2", title: "Review API", status: "todo" },
-}] as const;
+const card = { id: "c2", title: "Review API", status: "todo" };
 
-const canAdd = doc.canPatch(patch);
+const canInsert = doc.canInsert("/lists/0/cards/-", card);
 
-if (canAdd.ok) {
-  doc.commit(patch, { label: "add card" });
+if (canInsert.ok) {
+  doc.insert("/lists/0/cards/-", card);
 }
 ```
 
@@ -60,7 +56,7 @@ if (canAdd.ok) {
 
 ```ts
 const candidate = { id: "c3", title: "", status: "todo" };
-const canPaste = doc.canPastePayload("/lists/0/cards/-", candidate);
+const canPaste = doc.canPaste("/lists/0/cards/-", { payload: candidate });
 
 if (!canPaste.ok) {
   canPaste.code;
@@ -97,7 +93,7 @@ doc.commit([
 여러 위치를 찾을 때는 JSONPath로 검색하고, 반환된 Pointer로 patch를 만듭니다.
 
 ```ts
-const todos = doc.query("$..cards[?(@.status=='todo')]");
+const todos = doc.find("$..cards[?(@.status=='todo')]");
 
 if (todos.ok) {
   doc.patch(todos.pointers.map((path) => ({
@@ -110,7 +106,7 @@ if (todos.ok) {
 
 검색: JSONPath -> Pointer[]
 
-JSONPath는 변경 언어가 아닙니다. `doc.query(...)` 결과의 Pointer를 JSON Patch `path`로 사용합니다.
+JSONPath는 변경 언어가 아닙니다. `doc.find(...)` 결과의 Pointer를 JSON Patch `path`로 사용합니다.
 
 ## 5. selection과 clipboard 연결하기
 
@@ -120,9 +116,9 @@ Selection은 무엇이 선택됐는지 보관하고, clipboard가 payload 흐름
 doc.selection?.selectRanges(["/lists/0/cards/0"]);
 
 const source = doc.selection?.selectedPointers ?? [];
-doc.clipboard.copy(source);
+doc.copy(source);
 
-doc.clipboard.paste("/lists/0/cards/-", {
+doc.paste("/lists/0/cards/-", {
   spread: true,
   rekey: { fields: ["id"], strategy: "suffix" },
 });
@@ -138,7 +134,7 @@ doc.clipboard.paste("/lists/0/cards/-", {
 
 ```ts
 if (doc.canUndo().ok) {
-  doc.history.undo();
+  doc.undo();
 }
 ```
 

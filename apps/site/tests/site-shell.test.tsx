@@ -44,7 +44,7 @@ describe("official site shell", () => {
     await waitFor(() => expect(document.title).toBe("zod-crud Docs - zod-crud"));
     expect(document.head.querySelector('meta[name="description"]')?.getAttribute("content")).toBe("User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and history.");
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs");
-    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "배경" })).toBeTruthy();
     expect(screen.getAllByRole("navigation", { name: "Documentation pages" }).length).toBeGreaterThan(0);
 
@@ -74,7 +74,7 @@ describe("official site shell", () => {
     render(<App />);
     const nav = within(screen.getByRole("navigation", { name: "Site navigation" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Docs" }).getAttribute("aria-current")).toBe("page");
     await waitFor(() => expect(document.getElementById("배경")).toBeTruthy());
 

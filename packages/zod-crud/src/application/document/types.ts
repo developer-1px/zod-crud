@@ -2,7 +2,14 @@ import type { CapabilityResult } from "./can/result.js";
 import type { JSONPatchOperation, JSONResult } from "../../foundation/patch/types.js";
 import type { Pointer } from "../../foundation/pointer/index.js";
 import type { SelectionSource } from "../../domain/selection/types.js";
-import type { ClipboardState } from "./clipboard/types.js";
+import type {
+  ClipboardCopyOptions,
+  ClipboardCopyResult,
+  ClipboardCutOptions,
+  ClipboardCutResult,
+  ClipboardPasteResult,
+  ClipboardState,
+} from "./clipboard/types.js";
 import type { EntriesResult, QueryResult, ReadResult } from "./read.js";
 import type { SchemaState } from "./schema.js";
 import type { SelectionState } from "./selection/create.js";
@@ -47,6 +54,8 @@ export interface JSONDocumentOptions {
   onChange?: () => void;
 }
 export type JSONCapabilityResult = CapabilityResult;
+type JSONDocumentEditError = Extract<JSONCapabilityResult, { ok: false }>;
+type JSONDocumentEditResult = JSONResult | JSONDocumentEditError;
 
 export interface JSONDocument<T> {
   readonly value: T;
@@ -57,7 +66,21 @@ export interface JSONDocument<T> {
   readonly schema: SchemaState;
   patch(operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult;
   commit(operations: ReadonlyArray<JSONPatchOperation>, options?: JSONDocumentCommitOptions): JSONResult;
+  find(jsonpath: string): QueryResult;
+  insert(path: Pointer, value: unknown): JSONDocumentEditResult;
+  insert(value: unknown): JSONDocumentEditResult;
+  replace(path: Pointer, value: unknown): JSONDocumentEditResult;
+  replace(value: unknown): JSONDocumentEditResult;
+  delete(source?: SelectionSource): JSONDocumentEditResult;
+  move(source: Pointer, target: Pointer): JSONDocumentEditResult;
+  move(target: Pointer): JSONDocumentEditResult;
   duplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
+  duplicate(options?: JSONDocumentDuplicateOptions): JSONDocumentDuplicateResult<T>;
+  copy(source?: SelectionSource, options?: ClipboardCopyOptions): ClipboardCopyResult;
+  cut(source?: SelectionSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
+  paste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
+  undo(): boolean;
+  redo(): boolean;
   load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: unknown): JSONResult;
   subscribe(listener: (
@@ -70,14 +93,18 @@ export interface JSONDocument<T> {
   entries(path: Pointer): EntriesResult;
   canPatch(operations: JSONPatchInput): JSONCapabilityResult;
   canFind(jsonpath: string): JSONCapabilityResult;
+  canInsert(value: unknown): JSONCapabilityResult;
+  canInsert(path: Pointer, value: unknown): JSONCapabilityResult;
+  canReplace(value: unknown): JSONCapabilityResult;
   canReplace(path: Pointer, value: unknown): JSONCapabilityResult;
-  canRemove(source: SelectionSource): JSONCapabilityResult;
+  canDelete(source?: SelectionSource): JSONCapabilityResult;
+  canMove(target: Pointer): JSONCapabilityResult;
   canMove(source: Pointer, target: Pointer): JSONCapabilityResult;
   canDuplicate(source: Pointer, options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
-  canCopy(source: SelectionSource): JSONCapabilityResult;
-  canCut(source: SelectionSource): JSONCapabilityResult;
-  canPaste(target: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
-  canPastePayload(target: JSONDocumentPasteTarget, payload: unknown, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
+  canDuplicate(options?: JSONDocumentDuplicateOptions): JSONCapabilityResult;
+  canCopy(source?: SelectionSource): JSONCapabilityResult;
+  canCut(source?: SelectionSource): JSONCapabilityResult;
+  canPaste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): JSONCapabilityResult;
   canUndo(): JSONCapabilityResult;
   canRedo(): JSONCapabilityResult;
 }

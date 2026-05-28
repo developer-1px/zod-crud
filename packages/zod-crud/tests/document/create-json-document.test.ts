@@ -159,10 +159,11 @@ describe("createJSONDocument public interface", () => {
       ],
     });
 
-    expect(doc.clipboard.pastePayload("/items/-", [
-      { id: "a", name: "A2" },
-      { id: "b", name: "B2" },
-    ], {
+    expect(doc.clipboard.paste("/items/-", {
+      payload: [
+        { id: "a", name: "A2" },
+        { id: "b", name: "B2" },
+      ],
       spread: true,
       rekey: { fields: ["id"], strategy: "suffix" },
     })).toMatchObject({
@@ -182,10 +183,11 @@ describe("createJSONDocument public interface", () => {
       ],
     });
 
-    expect(doc.clipboard.pastePayload("/items/-", [
-      { id: "a", name: "A1" },
-      { id: "a", name: "A2" },
-    ], {
+    expect(doc.clipboard.paste("/items/-", {
+      payload: [
+        { id: "a", name: "A1" },
+        { id: "a", name: "A2" },
+      ],
       spread: true,
       rekey: { fields: ["id"], strategy: "suffix" },
     })).toMatchObject({
@@ -205,12 +207,13 @@ describe("createJSONDocument public interface", () => {
       ],
     });
 
-    expect(doc.clipboard.pastePayload("/items/-", [
-      { id: "a", name: "A1" },
-      { id: "a", name: "A2" },
-      { id: "a", name: "A3" },
-      { id: "a", name: "A4" },
-    ], {
+    expect(doc.clipboard.paste("/items/-", {
+      payload: [
+        { id: "a", name: "A1" },
+        { id: "a", name: "A2" },
+        { id: "a", name: "A3" },
+        { id: "a", name: "A4" },
+      ],
       spread: true,
       rekey: { fields: ["id"], strategy: "suffix" },
     })).toMatchObject({
@@ -302,7 +305,7 @@ describe("createJSONDocument public interface", () => {
     expect(doc.canPatch({ op: "replace", path: "/title", value: "next" })).toEqual({ ok: true });
     expect(doc.canReplace("/items/0/name", 1)).toMatchObject({ ok: false, code: "schema_violation" });
     expect(doc.canCopy("/items/99")).toMatchObject({ ok: false, code: "path_not_found" });
-    expect(doc.canPastePayload("/items/-", { id: "c", name: "C" })).toEqual({ ok: true });
+    expect(doc.canPaste("/items/-", { payload: { id: "c", name: "C" } })).toEqual({ ok: true });
     expect(doc.canUndo()).toMatchObject({ ok: false, code: "empty_stack" });
 
     doc.clipboard.copy("/items/0");
@@ -337,7 +340,7 @@ describe("createJSONDocument public interface", () => {
     expect("next" in pasted).toBe(false);
     expect(doc.value.items.map((item) => item.id)).toEqual(["a", "b", "a", "b"]);
 
-    expect(doc.clipboard.pastePayload("/items/-", { id: "x", name: "X" })).toMatchObject({
+    expect(doc.clipboard.paste("/items/-", { payload: { id: "x", name: "X" } })).toMatchObject({
       ok: true,
       value: { items: [{ id: "a" }, { id: "b" }, { id: "a" }, { id: "b" }, { id: "x" }] },
       applied: [{ op: "add", path: "/items/4", value: { id: "x", name: "X" } }],
@@ -349,10 +352,13 @@ describe("createJSONDocument public interface", () => {
   test("spread paste offsets numeric insertion paths", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
-    expect(doc.clipboard.pastePayload("/items/1", [
-      { id: "x", name: "X" },
-      { id: "y", name: "Y" },
-    ], { spread: true })).toMatchObject({
+    expect(doc.clipboard.paste("/items/1", {
+      payload: [
+        { id: "x", name: "X" },
+        { id: "y", name: "Y" },
+      ],
+      spread: true,
+    })).toMatchObject({
       ok: true,
       applied: [
         { op: "add", path: "/items/1", value: { id: "x", name: "X" } },

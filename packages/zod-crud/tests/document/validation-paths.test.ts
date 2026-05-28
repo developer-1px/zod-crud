@@ -68,24 +68,27 @@ describe("validation violation paths", () => {
     });
   });
 
-  test("canPastePayload anchors after replace and spread violations to result paths", () => {
+  test("canPaste direct payload anchors after replace and spread violations to result paths", () => {
     const doc = createJSONDocument(Schema, initial);
 
-    expect(doc.canPastePayload({ after: "/items/0" }, { id: "", name: "C" })).toMatchObject({
+    expect(doc.canPaste({ after: "/items/0" }, { payload: { id: "", name: "C" } })).toMatchObject({
       ok: false,
       code: "schema_violation",
       violations: [{ path: "/items/1/id", message: expect.any(String) }],
     });
-    expect(doc.canPastePayload({ replace: "/items/0" }, { id: "", name: "C" })).toMatchObject({
+    expect(doc.canPaste({ replace: "/items/0" }, { payload: { id: "", name: "C" } })).toMatchObject({
       ok: false,
       code: "schema_violation",
       violations: [{ path: "/items/0/id", message: expect.any(String) }],
     });
 
-    const spread = doc.canPastePayload("/items/-", [
-      { id: "", name: "C" },
-      { id: "", name: "D" },
-    ], { spread: true });
+    const spread = doc.canPaste("/items/-", {
+      payload: [
+        { id: "", name: "C" },
+        { id: "", name: "D" },
+      ],
+      spread: true,
+    });
     expect(spread).toMatchObject({ ok: false, code: "schema_violation" });
     if (!spread.ok) {
       expect(spread.violations).toEqual([
@@ -95,7 +98,7 @@ describe("validation violation paths", () => {
     }
   });
 
-  test("clipboard paste preserves pastePayload violation paths", () => {
+  test("clipboard paste preserves direct payload violation paths", () => {
     const doc = createJSONDocument(Schema, initial);
 
     expect(doc.clipboard.write({ id: "", name: "C" })).toEqual({ ok: true });
@@ -153,7 +156,7 @@ describe("validation violation paths", () => {
       blocks: [{ kind: "text", text: "hello" }],
     });
 
-    const result = doc.canPastePayload("/blocks/-", { kind: "video", src: "bad" });
+    const result = doc.canPaste("/blocks/-", { payload: { kind: "video", src: "bad" } });
 
     expect(result).toMatchObject({
       ok: false,

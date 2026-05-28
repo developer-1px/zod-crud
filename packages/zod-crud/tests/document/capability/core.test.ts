@@ -3,19 +3,21 @@ import * as z from "zod";
 
 import {
   canDocumentCopy,
+  canDocumentDelete,
   canDocumentFind,
+  canDocumentInsert,
   canDocumentPatch,
-  canDocumentRemove,
   canDocumentReplace,
   planDocumentCapabilityResult,
   planDocumentCopyCapability,
   planDocumentCutCapability,
+  planDocumentDeleteCapability,
   planDocumentDeleteTextCapability,
   planDocumentDuplicateCapability,
+  planDocumentInsertCapability,
   planDocumentMoveCapability,
   planDocumentPatchCapability,
   planDocumentPasteCapability,
-  planDocumentRemoveCapability,
   planDocumentReplaceCapability,
   planDocumentReplaceTextCapability,
 } from "../../../src/application/document/can/check.js";
@@ -139,7 +141,8 @@ describe("document capability core functions", () => {
       selection: selectedFirstItem,
     };
 
-    expect(canDocumentRemove(context)).toEqual({ ok: true });
+    expect(canDocumentDelete(context)).toEqual({ ok: true });
+    expect(canDocumentInsert(context, { id: "c", name: "C" })).toEqual({ ok: true });
     expect(canDocumentReplace(context, { id: "a1", name: "A1" })).toEqual({ ok: true });
     expect(initial.items.map((item) => item.id)).toEqual(["a", "b"]);
   });
@@ -155,24 +158,24 @@ describe("document capability core functions", () => {
     expect(canDocumentReplace(context, { id: "a1", name: "Alpha" })).toEqual({ ok: true });
   });
 
-  test("plans remove capabilities from explicit state and selection source", () => {
-    let removed: ReadonlyArray<JSONPatchOperation> | undefined;
+  test("plans delete capabilities from explicit state and selection source", () => {
+    let deleted: ReadonlyArray<JSONPatchOperation> | undefined;
 
-    expect(planDocumentRemoveCapability({
+    expect(planDocumentDeleteCapability({
       schema: Schema,
       state: initial,
     })).toEqual({
       ok: false,
       code: "empty_selection",
-      reason: "remove source selection is empty",
+      reason: "delete source selection is empty",
     });
 
-    expect(planDocumentRemoveCapability({
+    expect(planDocumentDeleteCapability({
       schema: Schema,
       state: initial,
       selectionSource: "/items/0",
       previewPatch(operations) {
-        removed = operations;
+        deleted = operations;
         return {
           state: {
             ...initial,
@@ -183,8 +186,43 @@ describe("document capability core functions", () => {
         };
       },
     })).toEqual({ ok: true });
-    expect(removed).toEqual([
+    expect(deleted).toEqual([
       { op: "remove", path: "/items/0" },
+    ]);
+  });
+
+  test("plans insert capabilities from explicit state and selection target", () => {
+    let inserted: ReadonlyArray<JSONPatchOperation> | undefined;
+
+    expect(planDocumentInsertCapability({
+      schema: Schema,
+      state: initial,
+      value: { id: "c", name: "C" },
+    })).toEqual({
+      ok: false,
+      code: "empty_selection",
+      reason: "insert target selection is empty",
+    });
+
+    expect(planDocumentInsertCapability({
+      schema: Schema,
+      state: initial,
+      selectionTarget: "/items/-",
+      value: { id: "c", name: "C" },
+      previewPatch(operations) {
+        inserted = operations;
+        return {
+          state: {
+            ...initial,
+            items: [...initial.items, { id: "c", name: "C" }],
+          },
+          result: { ok: true },
+          applied: operations,
+        };
+      },
+    })).toEqual({ ok: true });
+    expect(inserted).toEqual([
+      { op: "add", path: "/items/-", value: { id: "c", name: "C" } },
     ]);
   });
 

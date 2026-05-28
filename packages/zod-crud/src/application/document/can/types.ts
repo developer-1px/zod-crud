@@ -26,9 +26,10 @@ export interface DocumentCapabilities {
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CapabilityResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): CapabilityResult;
   find(jsonpath: string): CapabilityResult;
+  insert(pathOrValue: Pointer | unknown, value?: unknown): CapabilityResult;
   move(fromOrTo: Pointer, to?: Pointer): CapabilityResult;
   duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CapabilityResult;
-  remove(source?: SelectionSource): CapabilityResult;
+  delete(source?: SelectionSource): CapabilityResult;
   replace(pathOrValue: Pointer | unknown, value?: unknown): CapabilityResult;
   replaceText(replacement: string, options?: SelectionTextEditOptions & HistoryTransactionOptions): CapabilityResult;
   deleteText(options?: SelectionTextDeleteOptions & HistoryTransactionOptions): CapabilityResult;

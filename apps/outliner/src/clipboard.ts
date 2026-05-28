@@ -3,9 +3,9 @@
 // semantics to JSON Patch locally.
 
 import { useCallback, useState } from "react";
-import type { JSONDocument, Pointer, JSONResult } from "zod-crud";
+import type { ClipboardPasteResult, JSONDocument, Pointer, JSONResult } from "zod-crud";
 import type { OutlineNode } from "./schema.js";
-import { readNode, parentOf, lastIndex } from "./pointer-utils.js";
+import { readNode } from "./pointer-utils.js";
 
 export type ClipboardMode = "empty" | "copy" | "cut";
 
@@ -16,6 +16,7 @@ export interface ClipboardSnapshot {
 }
 
 export type PasteMode = "sibling" | "child";
+export type ClipboardPasteCommandResult = JSONResult | ClipboardPasteResult<OutlineNode>;
 
 export interface ClipboardApi {
   mode: ClipboardMode;
@@ -23,7 +24,7 @@ export interface ClipboardApi {
   sources: ReadonlyArray<Pointer>;
   copy(state: OutlineNode, sources: ReadonlyArray<Pointer>): void;
   cut(state: OutlineNode, sources: ReadonlyArray<Pointer>): void;
-  paste(target: Pointer, mode: PasteMode, document: Pick<JSONDocument<OutlineNode>, "patch">): JSONResult;
+  paste(target: Pointer, mode: PasteMode, document: Pick<JSONDocument<OutlineNode>, "paste">): ClipboardPasteCommandResult;
   clear(): void;
 }
 
@@ -33,29 +34,9 @@ function deepClone<T>(v: T): T {
   return JSON.parse(JSON.stringify(v));
 }
 
-// target Pointer 와 paste mode 로 N 개 sources 를 어떤 위치에 add/move 할지 계산.
-function expandTargets(target: Pointer, mode: PasteMode, count: number): Pointer[] {
-  if (count === 0) return [];
-
-  // sibling: target 다음 형제로. /-/0/1/...
-  // child: target/children/끝.
-  if (mode === "child") {
-    const childrenBase = `${target}/children`;
-    return Array.from({ length: count }, () => `${childrenBase}/-`);
-  }
-
-  // sibling: target 의 다음 인덱스부터. target 이 root("") 이면 child 모드로 fallback.
-  if (target === "") {
-    return Array.from({ length: count }, () => "/children/-");
-  }
-  const parent = parentOf(target);
-  const idx = lastIndex(target);
-  if (parent === null || idx === null) {
-    return Array.from({ length: count }, () => `${target}/children/-`);
-  }
-  // RFC 6902 sequential semantics: 매 add 마다 뒤가 밀려나므로 항상 같은 위치에 add 하면 역순으로 쌓임.
-  // 우리는 sources 순서대로 target+1, target+2, ... 가 되길 원함 → 인덱스를 한 번에 계산.
-  return Array.from({ length: count }, (_, i) => `${parent}/${idx + 1 + i}`);
+function pasteTarget(target: Pointer, mode: PasteMode): Pointer | { after: Pointer } {
+  if (mode === "child" || target === "") return `${target}/children/-`;
+  return { after: target };
 }
 
 export function useClipboard(): ClipboardApi {
@@ -82,18 +63,19 @@ export function useClipboard(): ClipboardApi {
   }, []);
 
   const paste = useCallback(
-    (target: Pointer, mode: PasteMode, document: Pick<JSONDocument<OutlineNode>, "patch">): JSONResult => {
+    (target: Pointer, mode: PasteMode, document: Pick<JSONDocument<OutlineNode>, "paste">): ClipboardPasteCommandResult => {
       // closure 로 잡힌 snap 이 아니라 현재 state 를 읽어야 하지만,
       // setSnap 콜백 안에서 처리하기 위해 일단 snap 로 처리 후 cut 모드면 비움.
       const cur = snap;
       if (cur.mode === "empty" || cur.values.length === 0) {
         return { ok: false, code: "path_not_found", reason: "clipboard is empty" };
       }
-      const targets = expandTargets(target, mode, cur.values.length);
       // cmd.cut 이 원본을 이미 제거했으므로 paste 는 mode 무관 add 만.
       // mode = cut 일 때만 paste 후 클립보드 비움 (1회용 — Workflowy / Notion 표준).
-      const batch = cur.values.map((v, i) => ({ op: "add" as const, path: targets[i] ?? target, value: deepClone(v) }));
-      const r = document.patch(batch);
+      const r = document.paste(pasteTarget(target, mode), {
+        payload: cur.values.map((value) => deepClone(value)),
+        spread: true,
+      });
       if (r.ok && cur.mode === "cut") setSnap(EMPTY);
       return r;
     },

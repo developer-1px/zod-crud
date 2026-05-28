@@ -156,7 +156,7 @@ export function createWebClipboard<T>(
   ): WebClipboardCanPasteResult => {
     const decoded = decodeText(codec, text);
     if (!decoded.ok) return decoded;
-    return doc.canPastePayload(target, decoded.payload, pasteOptions);
+    return doc.canPaste(target, { ...pasteOptions, payload: decoded.payload });
   };
 
   const pasteText = (
@@ -167,10 +167,10 @@ export function createWebClipboard<T>(
     const decoded = decodeText(codec, text);
     if (!decoded.ok) return decoded;
 
-    const capability = doc.canPastePayload(target, decoded.payload, pasteOptions);
+    const capability = doc.canPaste(target, { ...pasteOptions, payload: decoded.payload });
     if (!capability.ok) return capability;
 
-    return doc.clipboard.pastePayload(target, decoded.payload, pasteOptions);
+    return doc.paste(target, { ...pasteOptions, payload: decoded.payload });
   };
 
   return {
@@ -212,7 +212,7 @@ export function createWebClipboard<T>(
     async canPaste(target, pasteOptions) {
       const result = await read();
       if (!result.ok) return result;
-      return doc.canPastePayload(target, result.payload, pasteOptions);
+      return doc.canPaste(target, { ...pasteOptions, payload: result.payload });
     },
 
     canPasteText,
@@ -221,10 +221,10 @@ export function createWebClipboard<T>(
       const result = await read();
       if (!result.ok) return result;
 
-      const capability = doc.canPastePayload(target, result.payload, pasteOptions);
+      const capability = doc.canPaste(target, { ...pasteOptions, payload: result.payload });
       if (!capability.ok) return capability;
 
-      return doc.clipboard.pastePayload(target, result.payload, pasteOptions);
+      return doc.paste(target, { ...pasteOptions, payload: result.payload });
     },
 
     pasteText,
