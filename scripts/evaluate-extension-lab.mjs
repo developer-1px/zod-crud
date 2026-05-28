@@ -5,6 +5,13 @@ import { join } from "node:path";
 const root = new URL("..", import.meta.url).pathname;
 const labRoot = "labs/extensions";
 const verify = process.argv.includes("--verify");
+const retiredLabNames = new Set([
+  "document-outline",
+  "drop-intent",
+  "field-draft",
+  "pointer-bookmarks",
+  "text-search",
+]);
 
 function read(path) {
   return readFileSync(join(root, path), "utf8");
@@ -47,9 +54,19 @@ if (labs.length === 0) {
 for (const dir of labs) {
   const pkg = JSON.parse(read(`${dir}/package.json`));
   const label = pkg.name ?? dir;
+  const folderName = dir.slice(dir.lastIndexOf("/") + 1);
+  const packageName = typeof pkg.name === "string" && pkg.name.startsWith("@zod-crud/")
+    ? pkg.name.slice("@zod-crud/".length)
+    : null;
 
   if (!pkg.name?.startsWith("@zod-crud/")) {
     fail(`${label}: package name must stay under @zod-crud.`);
+  }
+  if (packageName !== folderName) {
+    fail(`${label}: package name must match its lab folder (${folderName}).`);
+  }
+  if (retiredLabNames.has(folderName) || (packageName !== null && retiredLabNames.has(packageName))) {
+    fail(`${label}: retired implementation-shaped lab name must not be reintroduced.`);
   }
   if (pkg.private !== true) {
     fail(`${label}: lab packages must be private until promoted.`);
