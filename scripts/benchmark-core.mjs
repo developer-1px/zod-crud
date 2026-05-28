@@ -3,16 +3,22 @@ import { performance } from "node:perf_hooks";
 import * as z from "zod";
 
 const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
-const distJsonEntry = new URL("../packages/zod-crud/dist/foundation/json.js", import.meta.url);
+const distJsonCloneEntry = new URL("../packages/zod-crud/dist/foundation/json/clone.js", import.meta.url);
+const distJsonSerializableEntry = new URL("../packages/zod-crud/dist/foundation/json/serializable.js", import.meta.url);
 const distJsonPathEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/index.js", import.meta.url);
-const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/index.js", import.meta.url);
-const distPatchInverseEntry = new URL("../packages/zod-crud/dist/foundation/json-patch/inverse.js", import.meta.url);
+const distJsonPathParseEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/parse.js", import.meta.url);
+const distJsonPathEvaluateEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/evaluate.js", import.meta.url);
+const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/patch/trusted.js", import.meta.url);
+const distPatchInverseEntry = new URL("../packages/zod-crud/dist/foundation/patch/inverse.js", import.meta.url);
 const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.js", import.meta.url);
 
 if (
   !existsSync(distEntry)
-  || !existsSync(distJsonEntry)
+  || !existsSync(distJsonCloneEntry)
+  || !existsSync(distJsonSerializableEntry)
   || !existsSync(distJsonPathEntry)
+  || !existsSync(distJsonPathParseEntry)
+  || !existsSync(distJsonPathEvaluateEntry)
   || !existsSync(distPatchEntry)
   || !existsSync(distPatchInverseEntry)
   || !existsSync(distHistoryEntry)
@@ -22,14 +28,11 @@ if (
 }
 
 const { applyPatch, applyPatchToTrustedState, createJSONDocument } = await import(distEntry.href);
-const { cloneJsonSerializable, jsonSerializableError } = await import(distJsonEntry.href);
-const {
-  evaluate: evaluateJsonPath,
-  matchPointers: matchJsonPathPointers,
-  parse: parseJsonPath,
-  query: jsonpathQuery,
-  queryMatches: jsonpathQueryMatches,
-} = await import(distJsonPathEntry.href);
+const { cloneJsonSerializable } = await import(distJsonCloneEntry.href);
+const { jsonSerializableError } = await import(distJsonSerializableEntry.href);
+const { query: jsonpathQuery, queryMatches: jsonpathQueryMatches } = await import(distJsonPathEntry.href);
+const { parse: parseJsonPath } = await import(distJsonPathParseEntry.href);
+const { evaluate: evaluateJsonPath, matchPointers: matchJsonPathPointers } = await import(distJsonPathEvaluateEntry.href);
 const { applyAcceptedPatch, applyTrustedPatch } = await import(distPatchEntry.href);
 const { computeInverses } = await import(distPatchInverseEntry.href);
 const {

@@ -3,14 +3,14 @@ import { JSONPathSyntaxError } from "../../foundation/jsonpath/tokenize.js";
 import { appendSegment, readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import { clonePoint, pointPath, samePoint } from "./point.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionCursorOptions,
   SelectionOrderOptions,
   SelectionScopeOptions,
 } from "./types.js";
 
 type TraversalPointsResult =
-  | { ok: true; points: JSONPoint[] }
+  | { ok: true; points: SelectionPoint[] }
   | {
       ok: false;
       code: "invalid_pointer" | "path_not_found" | "syntax_error";
@@ -62,9 +62,9 @@ export function emptyTraversalPointer(
 }
 
 function explicitCursorPoints(
-  points: ReadonlyArray<JSONPoint>,
-): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer"; reason: string; pointer: Pointer } {
-  const out: JSONPoint[] = [];
+  points: ReadonlyArray<SelectionPoint>,
+): { ok: true; points: SelectionPoint[] } | { ok: false; code: "invalid_pointer"; reason: string; pointer: Pointer } {
+  const out: SelectionPoint[] = [];
   for (const point of points) {
     const pointer = pointPath(point);
     if (tryParsePointer(pointer) === null) {
@@ -78,7 +78,7 @@ function explicitCursorPoints(
 function queryCursorPoints(
   state: unknown,
   jsonpath: string,
-): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "syntax_error"; reason: string; pointer: Pointer | null } {
+): { ok: true; points: SelectionPoint[] } | { ok: false; code: "invalid_pointer" | "syntax_error"; reason: string; pointer: Pointer | null } {
   try {
     return explicitCursorPoints(queryMatches(jsonpath, state).map((match) => match.pointer));
   } catch (error) {
@@ -93,7 +93,7 @@ function scopedCursorPoints(
   state: unknown,
   scope: Pointer,
   includeScope: boolean,
-): { ok: true; points: JSONPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer } {
+): { ok: true; points: SelectionPoint[] } | { ok: false; code: "invalid_pointer" | "path_not_found"; reason: string; pointer: Pointer } {
   const segments = tryParsePointer(scope);
   if (segments === null) {
     return { ok: false, code: "invalid_pointer", reason: `invalid cursor scope pointer: ${scope}`, pointer: scope };

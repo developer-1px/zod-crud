@@ -1,5 +1,5 @@
 // Outliner — Workflowy 모델: select / edit mode 분리.
-// useJSONDocument facade + outliner-local clipboard·keymap·commands 를 hook 들로 묶음.
+// useJSONDocument facade + outliner-local clipboard adapter/keymap/commands 를 hook 들로 묶음.
 
 import { useCallback, useState } from "react";
 import { useJSONDocument } from "zod-crud/react";

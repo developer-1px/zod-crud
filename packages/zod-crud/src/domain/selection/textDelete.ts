@@ -1,7 +1,7 @@
 import { cloneJson } from "../../foundation/json/clone.js";
 import { orderSelectionRanges } from "./order.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionRange,
   SelectionSnap,
 } from "./types.js";
@@ -108,7 +108,7 @@ function textDeleteSelection(
   return { ok: true, selection: textDeleteSelectionSnap(selection, ranges, ordered.primaryIndex) };
 }
 
-function textDeleteOffset(point: JSONPoint, length: number): number | null {
+function textDeleteOffset(point: SelectionPoint, length: number): number | null {
   if (typeof point === "string") return null;
   if (point.offset !== undefined) return Math.min(Math.max(Math.trunc(point.offset), 0), length);
   if (point.edge === "before") return 0;

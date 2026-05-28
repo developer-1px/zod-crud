@@ -19,8 +19,8 @@ const docs = {
   site: Object.values(siteDocs).join("\n\n"),
   llms: read("llms.txt"),
 };
-const releaseNotes = read("docs/release-notes.md");
-const apiUsageGaps = read("docs/api-usage-gaps.md");
+const releaseNotes = read("docs/release/notes.md");
+const apiUsageGaps = read("docs/adoption/api-usage-gaps.md");
 const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json")) as {
   root: { values: string[]; types: string[] };
   react: { values: string[]; types: string[] };
@@ -32,61 +32,53 @@ describe("public docs consistency", () => {
     for (const [name, source] of Object.entries(docs)) {
       expect(source, name).not.toMatch(/\{\s*at\s*:/);
       expect(source, name).not.toMatch(/JSONDocumentPasteMode|PasteMode/);
+      expect(source, name).not.toMatch(/\bUseJSONDocumentOptions\b|\bUseSelectionOptions\b/);
+      expect(source, name).not.toMatch(/\bPasteOptions\b|\bPasteTarget\b/);
+      expect(source, name).not.toMatch(/\bSelectionAction\b/);
+      expect(source, name).not.toMatch(/\bCopyOk\b|\bCopyError\b|\bCutOk\b|\bCutError\b|\bDuplicateOk\b|\bDuplicateError\b|\bPasteError\b|\bPasteDiscriminatorMismatch\b/);
       expect(source, name).toMatch(/\{ after: pointer \}|\{ after: "\/items\/0" \}|\{ after: "\/lists\/0\/cards\/0" \}/);
     }
 
-    expect(docs.readme).toMatch(/Use a pointer such as `\/cards\/-`/);
+    expect(docs.readme).toMatch(/삽입 위치를 이미 알고 있으면 `\/items\/-`|`\/lists\/1\/cards\/-`/);
     expect(docs.site).toMatch(/이미 `\/cards\/-` 같은 삽입 위치가 있으면 pointer를 그대로 넘깁니다/);
-    expect(docs.llms).toMatch(/Use a pointer for an insertion position/);
+    expect(docs.llms).toMatch(/삽입 위치에는 `\/items\/-`/);
   });
 
   test("state that high-level mutating results are already applied", () => {
     for (const [name, source] of Object.entries(docs)) {
       expect(source, name).toMatch(/mutate|mutates|즉시 적용|적용됩니다/);
       expect(source, name).toMatch(/applied/);
-      expect(source, name).toMatch(/do not pass|다시 `commit`하지 않습니다|Do not pass/);
+      expect(source, name).toMatch(/다시 `commit`하지 않습니다|다시 `commit`하면 안 됩니다|다시 `commit`하지 않는다|다시 `commit`하면 안 된다/);
     }
   });
 
   test("keep JSONPath scoped to search and JSON Pointer scoped to mutation", () => {
-    expect(docs.readme).toMatch(/Use JSONPath to find values, not to mutate them directly/);
-    expect(docs.spec).toMatch(/JSONPath is a search language/);
+    expect(docs.readme).toMatch(/JSONPath는 값을 찾는 언어이며 직접 변경하지 않습니다/);
+    expect(docs.spec).toMatch(/JSONPath는 검색 언어/);
     expect(docs.site).toMatch(/JSONPath는 변경 언어가 아닙니다/);
-    expect(docs.llms).toMatch(/JSONPath is for search only/);
+    expect(docs.llms).toMatch(/JSONPath는 검색 전용/);
   });
 
   test("document onboarding context before the API reference", () => {
     expect(docs.site).toMatch(/## 배경/);
-    expect(docs.site).toMatch(/## Core concept/);
+    expect(docs.site).toMatch(/## 핵심 개념/);
     expect(docs.site).toMatch(/튜토리얼: 작은 카드 편집기 만들기/);
     expect(docs.site).toMatch(/이걸로 할 수 있는 것들/);
     expect(docs.site).toMatch(/프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일/);
     expect(docs.site).toMatch(/검색: JSONPath -> Pointer\[\]/);
     expect(docs.readme).toMatch(/왜 zod-crud인가/);
-    expect(docs.llms).toMatch(/Why \/ Core \/ Tutorial Context/);
+    expect(docs.llms).toMatch(/왜 \/ 핵심 \/ 튜토리얼 맥락/);
   });
 
   test("keeps user-facing docs ahead of maintainer internals", () => {
-    const conceptMaintainer = siteDocs.concepts.indexOf("## Maintainer notes");
-    const apiMaintainer = siteDocs.api.indexOf("## Maintainer notes");
-    const readmeMaintainer = docs.readme.indexOf("## Maintainer Notes");
+    const conceptMaintainer = siteDocs.concepts.indexOf("## 관리자 메모");
+    const apiMaintainer = siteDocs.api.indexOf("## 관리자 메모");
+    const readmeMaintainer = docs.readme.indexOf("## 관리자 메모");
 
     expect(conceptMaintainer).toBeGreaterThan(siteDocs.concepts.indexOf("앱에서 하려는 일"));
     expect(siteDocs.concepts.indexOf("## 기본 사용 흐름")).toBeLessThan(conceptMaintainer);
     expect(siteDocs.api.indexOf("## 작업별 진입점")).toBeLessThan(apiMaintainer);
-    expect(siteDocs.api.indexOf("Source layout SSOT")).toBeGreaterThan(apiMaintainer);
-    expect(docs.readme.indexOf("## Task Entrypoints")).toBeLessThan(readmeMaintainer);
-    expect(docs.readme.indexOf("src/index.ts")).toBeGreaterThan(readmeMaintainer);
-    expect(siteDocs.tutorial).not.toMatch(/application\/document|domain\/schema|foundation\/patch/);
-
-    for (const token of [
-      "application/document/can",
-      "application/document/runtime",
-      "domain/schema/shared",
-      "foundation/patch/fast",
-    ]) {
-      expect(siteDocs.concepts.indexOf(token), `${token} appears before maintainer notes`).toBeGreaterThan(conceptMaintainer);
-    }
+    expect(docs.readme.indexOf("## 작업별 진입점")).toBeLessThan(readmeMaintainer);
   });
 
   test("list the public root exports in human docs", () => {
@@ -108,50 +100,35 @@ describe("public docs consistency", () => {
     expect(releaseNotes).toContain("public-contract.json");
     expect(docs.llms).toMatch(/prepublishOnly[\s\S]*release:check/);
     expect(releaseNotes).toMatch(/prepublishOnly[\s\S]*release:check/);
-    expect(releaseNotes).toContain("1.0.0 package version");
+    expect(releaseNotes).toMatch(/`1\.0\.0` 패키지 버전|패키지 버전은 `1\.0\.0`/);
   });
 
   test("keeps legacy facade drift out of the 1.0 root contract", () => {
     expect(apiUsageGaps).not.toMatch(/\bP0\b/);
     expect(apiUsageGaps).not.toContain("Decision needed");
-    expect(apiUsageGaps).toMatch(/No unresolved external-usage gap blocks the zod-crud 1\.0 package release/);
-    expect(apiUsageGaps).toMatch(/G-001: `doc\.ops` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/);
-    expect(apiUsageGaps).toMatch(/G-002: `doc\.commands` Facade Drift[\s\S]*Status: Closed for the zod-crud 1\.0 root contract/);
-    expect(apiUsageGaps).toMatch(/Keep `doc\.ops` out of the production root contract/);
-    expect(apiUsageGaps).toMatch(/Keep `doc\.commands` out of the production root contract/);
+    expect(apiUsageGaps).toMatch(/zod-crud 1\.0 패키지 릴리스를 막는 미해결 외부 사용 gap은 없다/);
+    expect(apiUsageGaps).toMatch(/G-001: `doc\.ops` facade drift[\s\S]*상태: zod-crud 1\.0 root 계약에서는 닫힘/);
+    expect(apiUsageGaps).toMatch(/G-002: `doc\.commands` facade drift[\s\S]*상태: zod-crud 1\.0 root 계약에서는 닫힘/);
+    expect(apiUsageGaps).toMatch(/프로덕션 root 계약에서 `doc\.ops`를 제외한다/);
+    expect(apiUsageGaps).toMatch(/프로덕션 root 계약에서 `doc\.commands`를 제외한다/);
   });
 
-  test("keeps the source layout SSOT aligned", () => {
-    for (const [name, source] of Object.entries({ ...docs, releaseNotes })) {
-      expect(source, `${name} missing root index entrypoint`).toContain("src/index.ts");
-      expect(source, `${name} missing root react entrypoint`).toContain("src/react.ts");
-      expect(source, `${name} missing application layer`).toContain("application");
-      expect(source, `${name} missing domain layer`).toContain("domain");
-      expect(source, `${name} missing foundation layer`).toContain("foundation");
-      expect(source, `${name} still mentions stale api layer`).not.toMatch(/src\/api|application\/react|dist\/api/);
-    }
-  });
-
-  test("site docs describe the current nested source layout", () => {
-    for (const path of [
-      "application/document/can",
-      "application/document/runtime",
-      "application/document/state",
-      "application/document/history",
-      "application/document/clipboard",
-      "application/document/selection",
-      "domain/pointer",
-      "domain/schema/array",
-      "domain/schema/object",
-      "domain/schema/shared",
-      "domain/schema/validation",
-      "domain/selection",
-      "foundation/json",
-      "foundation/jsonpath",
-      "foundation/patch/fast",
-      "foundation/pointer",
-    ]) {
-      expect(docs.site, `site docs missing ${path}`).toContain(path);
+  test("keeps internal source paths out of public docs", () => {
+    for (const [name, source] of Object.entries(docs)) {
+      for (const token of [
+        "src/index.ts",
+        "src/react.ts",
+        "application/document",
+        "domain/schema",
+        "domain/selection",
+        "domain/pointer",
+        "foundation/patch",
+        "foundation/json",
+        "foundation/jsonpath",
+        "foundation/pointer",
+      ]) {
+        expect(source, `${name} includes internal source path ${token}`).not.toContain(token);
+      }
     }
   });
 
@@ -173,11 +150,11 @@ describe("public docs consistency", () => {
 
   test("document performance fast-path boundaries", () => {
     for (const [name, source] of Object.entries(docs)) {
-      expect(source, `${name} missing public applyPatch boundary`).toMatch(/applyPatch[\s\S]*external JSON\s+boundary|applyPatch[\s\S]*외부 JSON boundary/);
-      expect(source, `${name} missing trusted document state`).toContain("trusted document state");
-      expect(source, `${name} missing plain structural schema`).toMatch(/plain\s+structural Zod schema/);
+      expect(source, `${name} missing public applyPatch boundary`).toMatch(/applyPatch[\s\S]*외부 JSON 경계/);
+      expect(source, `${name} missing trusted document state`).toMatch(/신뢰된 document state|trusted document state/);
+      expect(source, `${name} missing plain structural schema`).toMatch(/구조만 가진 Zod schema/);
       expect(source, `${name} missing fast path operations`).toMatch(/independent non-root[\s\S]*`replace`[\s\S]*same-array `add`\/`remove`/);
-      expect(source, `${name} missing full root validation fallback`).toContain("full root schema validation");
+      expect(source, `${name} missing full root validation fallback`).toMatch(/전체 루트 schema 검증/);
       expect(source, `${name} missing perf benchmark command`).toContain("npm run perf:core");
     }
   });
@@ -190,17 +167,17 @@ describe("public docs consistency", () => {
     expect(docs.readme).toMatch(/doc\.commit\(\.\.\.\)[\s\S]*operation arrays/);
     expect(docs.site).toMatch(/`doc\.commit\(\.\.\.\)`과 `doc\.canPatch\(\.\.\.\)`는/);
     expect(docs.llms).toMatch(/doc\.commit\(\.\.\.\)[\s\S]*operation arrays/);
-    expect(docs.readme).toMatch(/history\.transaction[\s\S]*does not turn repeated\s+`doc\.patch\(\.\.\.\)` calls into one schema validation pass/);
+    expect(docs.readme).toMatch(/history\.transaction[\s\S]*반복 `doc\.patch\(\.\.\.\)` 호출을 한 번의 schema validation으로 바꾸지는 않습니다/);
     expect(docs.site).toMatch(/history\.transaction[\s\S]*반복 `doc\.patch\(\.\.\.\)` 호출을 한 번의 schema validation/);
-    expect(docs.spec).toMatch(/Known burst edits[\s\S]*repeated `doc\.patch\(\.\.\.\)` calls still validate repeatedly/);
-    expect(docs.llms).toMatch(/For burst edits[\s\S]*repeated `doc\.patch\(\.\.\.\)` calls still validate repeatedly/);
+    expect(docs.spec).toMatch(/알려진 burst edit[\s\S]*반복 `doc\.patch\(\.\.\.\)` 호출을 한 번의 schema validation/);
+    expect(docs.llms).toMatch(/Burst edit[\s\S]*반복 `doc\.patch\(\.\.\.\)` 호출을 한 번의 schema validation/);
 
-    expect(docs.readme).toMatch(/Pointer-array copy stores an array payload/);
+    expect(docs.readme).toMatch(/Pointer 배열을 copy\/cut하면 clipboard payload도 배열/);
     expect(docs.site).toMatch(/Pointer 배열을 copy하면 clipboard payload도 배열/);
-    expect(docs.llms).toMatch(/Pointer-array copy\/cut stores an array payload/);
+    expect(docs.llms).toMatch(/Pointer array copy\/cut은 array payload/);
 
-    expect(docs.readme).toMatch(/Tree Editing Cookbook/);
-    expect(docs.site).toMatch(/tree editing cookbook/);
-    expect(docs.llms).toMatch(/Tree semantics are app-owned/);
+    expect(docs.readme).toMatch(/트리 편집 Cookbook/);
+    expect(docs.site).toMatch(/트리 편집 cookbook/);
+    expect(docs.llms).toMatch(/Tree semantics는 app-owned/);
   });
 });

@@ -24,28 +24,36 @@ export { createJSONDocument } from "./application/document/create.js";
 export type {
   JSONCapabilityResult,
   JSONDocumentCommitOptions,
+  JSONDocumentDuplicateError,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
   JSONDocumentHistory,
+  JSONDocumentOptions,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONDocument,
   JSONPatchInput,
-  UseJSONDocumentOptions,
 } from "./application/document/types.js";
 export type {
   ClipboardCopyOptions,
+  ClipboardCopyError,
+  ClipboardCopyOk,
+  ClipboardCopyResult,
   ClipboardCutOk,
+  ClipboardCutError,
   ClipboardCutOptions,
   ClipboardCutResult,
   ClipboardEmpty,
   ClipboardMutationOk,
+  ClipboardPasteDiscriminatorMismatch,
+  ClipboardPasteError,
   ClipboardPasteResult,
   ClipboardReadOk,
   ClipboardReadOptions,
   ClipboardReadResult,
   ClipboardState,
   ClipboardWriteOptions,
+  ClipboardSource,
 } from "./application/document/clipboard/types.js";
 export type {
   EntriesResult,
@@ -68,7 +76,7 @@ export type {
 export type {
   SelectionState,
 } from "./application/document/selection/create.js";
-export type { UseSelectionOptions } from "./application/document/runtime/types.js";
+export type { SelectionOptions } from "./application/document/runtime/types.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/patch/schema.js";
@@ -104,11 +112,10 @@ export type { Pointer } from "./foundation/pointer/index.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
-  JSONPointObject,
-  JSONPoint,
-  OrderedSelectionRange,
-  OrderedSelectionRangeEntry,
-  SelectionAction,
+  SelectionPointObject,
+  SelectionPoint,
+  SelectionOrderedRange,
+  SelectionOrderedRangeEntry,
   SelectionAffinity,
   SelectionContext,
   SelectionCursorDirection,
@@ -149,23 +156,4 @@ export type {
   SelectionTextDeleteDirection,
   SelectionTextDeleteOptions,
 } from "./domain/selection/textDelete.js";
-export type {
-  ClipboardSource,
-  CopyError,
-  CopyOk,
-} from "./domain/copy.js";
-export type {
-  CutError,
-  CutOk,
-} from "./domain/cut.js";
-export type {
-  DuplicateError,
-  DuplicateOk,
-} from "./domain/duplicate.js";
-export type {
-  PasteDuMismatch,
-  PasteError,
-  PasteOptions,
-  PasteTarget,
-} from "./domain/paste.js";
 export { trackPointer } from "./domain/pointer/track.js";

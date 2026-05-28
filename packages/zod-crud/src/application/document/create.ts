@@ -40,7 +40,7 @@ import type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONPatchInput,
-  UseJSONDocumentOptions,
+  JSONDocumentOptions,
 } from "./types.js";
 import { planDocumentCanPaste, planDocumentPatchCall, planDocumentSelectionRuntime } from "./state/commit.js";
 import {
@@ -59,8 +59,8 @@ import type {
   TrustedDocumentStateOps,
 } from "./runtime/types.js";
 
-type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
-type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };
+type TrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial: true };
+type UntrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial?: false | undefined };
 
 function buildDocumentCapabilities<S extends z.ZodType>(
   args: BuildDocumentCapabilitiesArgs<S>,
@@ -152,7 +152,7 @@ export function createJSONDocument<S extends z.ZodType>(
 export function createJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S> | z.output<S>,
-  options: UseJSONDocumentOptions = {},
+  options: JSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
   const json = createJSONState(schema, initial, options);
   const rawOps: TrustedDocumentStateOps<z.output<S>> = json.ops;

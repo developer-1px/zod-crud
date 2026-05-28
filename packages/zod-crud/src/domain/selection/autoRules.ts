@@ -3,7 +3,7 @@ import { buildPointer, isPrefix, tryParsePointer, type Pointer } from "../../fou
 import { appendArrayIndexes, arrayElementLocation, arrayIndexValue } from "../pointer/array.js";
 import { exists, recoverLostPointer, trackPointer, trackPointerFrom } from "../pointer/track.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionMode,
   SelectionRange,
   SelectionSnap,
@@ -154,7 +154,7 @@ export function applySelectionAutoRules(
     (trackedPathCache ??= new Map()).set(path, next);
     return next;
   };
-  const trackOrRecover = (p: JSONPoint | null): JSONPoint | null => {
+  const trackOrRecover = (p: SelectionPoint | null): SelectionPoint | null => {
     if (p === null) return null;
     const path = pointPath(p);
     const tracked = trackOrRecoverPath(path);
@@ -507,7 +507,7 @@ function canKeepSmallStringSelectionForStableReplacePatch(
 
 function smallStringSelectionTargets(selection: SelectionSnap): Pointer[] | null {
   const targets: Pointer[] = [];
-  const add = (point: JSONPoint | null): boolean => {
+  const add = (point: SelectionPoint | null): boolean => {
     if (point === null) return true;
     if (typeof point !== "string") return false;
     if (!isFastPointerText(point)) return false;
@@ -546,7 +546,7 @@ function canKeepStringSelectionForStableReplacePatch(
 
 function stringSelectionAncestorSet(selection: SelectionSnap, maxAncestors: number): Set<Pointer> | null {
   const ancestors = new Set<Pointer>();
-  const add = (point: JSONPoint | null): boolean => {
+  const add = (point: SelectionPoint | null): boolean => {
     if (point === null) return true;
     if (typeof point !== "string" || !isFastPointerText(point)) return false;
     addStrictPointerAncestors(point, ancestors);
@@ -606,7 +606,7 @@ function stableReplacementPointerSet(
 }
 
 function pointHasStrictReplacementAncestor(
-  point: JSONPoint | null,
+  point: SelectionPoint | null,
   replacements: ReadonlySet<Pointer>,
 ): boolean {
   if (point === null) return false;

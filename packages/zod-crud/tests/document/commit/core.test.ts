@@ -67,12 +67,12 @@ describe("document commit core functions", () => {
     expect(planDocumentCommitRoute({
       options: {
         label: "Rename",
-        selection: { type: "collapse", point: "/title" },
+        selection: titleSelection,
       },
     })).toEqual({
       kind: "selection",
       metadata: { label: "Rename" },
-      selection: { type: "collapse", point: "/title" },
+      selection: titleSelection,
     });
   });
 
@@ -80,7 +80,7 @@ describe("document commit core functions", () => {
     const plan = planDocumentCommitSelection({
       activeHistoryMetadata: { origin: "keyboard" },
       metadata: { label: "Rename", mergeKey: "typing:title" },
-      selection: { type: "collapse", point: "/title" },
+      selection: titleSelection,
       selectionBefore: emptySelection,
       state: { title: "final" },
       selectionMode: "single",

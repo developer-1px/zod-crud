@@ -100,11 +100,11 @@ describe("JSONDocument can* interface", () => {
 
     expect(doc.canPastePayload("/blocks/-", payload, { spread: true })).toMatchObject({
       ok: false,
-      code: "du_branch_mismatch",
+      code: "discriminator_mismatch",
     });
     expect(doc.clipboard.pastePayload("/blocks/-", payload, { spread: true })).toMatchObject({
       ok: false,
-      code: "du_branch_mismatch",
+      code: "discriminator_mismatch",
       source: { discriminator: "kind", value: "video" },
     });
     expect(doc.value.blocks).toEqual([{ kind: "text", text: "hello" }]);
@@ -125,7 +125,7 @@ describe("JSONDocument can* interface", () => {
       { kind: "image", text: "bad" },
     ], { spread: true })).toMatchObject({
       ok: false,
-      code: "du_branch_mismatch",
+      code: "discriminator_mismatch",
       source: { discriminator: "kind", value: "image" },
     });
     expect(doc.value.blocks).toEqual([{ kind: "text", text: "hello" }]);

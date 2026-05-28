@@ -1,26 +1,26 @@
-# zod-crud Docs
+# zod-crud 문서
 
 zod-crud는 Zod schema를 기준으로 JSON 데이터를 안전하게 읽고 바꾸는 headless 편집 도구입니다. UI component는 제공하지 않습니다. 앱은 버튼, 단축키, focus, rendering을 만들고, zod-crud는 변경 가능 여부, patch 적용, selection, clipboard, history를 맡습니다.
 
 ```txt
 앱에서 하려는 일
-├─ schema로 데이터 모양을 정한다
-├─ document를 만든다
-├─ path로 바꿀 위치를 가리킨다
-├─ can*으로 실행 가능 여부를 확인한다
-├─ patch/commit/duplicate/paste로 변경한다
-└─ 결과 value, selection, history를 UI에 반영한다
+|-- schema로 데이터 모양을 정한다
+|-- document를 만든다
+|-- Pointer로 바꿀 위치를 가리킨다
+|-- can*으로 실행 가능 여부를 확인한다
+|-- patch / commit / duplicate / paste로 변경한다
+`-- Result, selection, history를 UI에 반영한다
 ```
 
 ## 배경
 
-프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. 폼, CMS block, kanban card, outliner는 UI는 달라도 결국 값 추가, 변경, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
+프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. Form, CMS block, kanban card, outliner는 UI는 달라도 결국 값 추가, 변경, 이동, 복제, 선택, 붙여넣기, 되돌리기를 다룹니다.
 
-문제는 이 규칙을 앱마다 다시 만들 때 생깁니다. patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 서로 다른 코드에 흩어지면 같은 편집 동작을 테스트하기 어렵고, UI 코드가 상태 변경 규칙까지 떠안게 됩니다.
+문제는 이 규칙을 앱마다 다시 만들 때 생깁니다. Patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 서로 다른 코드에 흩어지면 같은 편집 동작을 테스트하기 어렵고, UI 코드가 상태 변경 규칙까지 떠안게 됩니다.
 
 zod-crud는 이 공통 규칙을 document API로 고정합니다. 처음 쓰는 사람은 내부 폴더를 몰라도 됩니다. 필요한 것은 schema, data, path, change, result입니다.
 
-## Core concept
+## 핵심 개념
 
 먼저 알아야 하는 개념은 사용 순서대로 아래와 같습니다.
 
@@ -47,8 +47,6 @@ zod-crud는 이 공통 규칙을 document API로 고정합니다. 처음 쓰는 
 ```
 
 ## 기본 사용 흐름
-
-사용자는 보통 아래 순서만 알면 됩니다.
 
 ```ts
 import { z } from "zod";
@@ -94,7 +92,7 @@ const doc = useJSONDocument(Card, initialCard, {
 | 현재 값 읽기 | `doc.value`, `doc.at(pointer)` |
 | 하위 항목 나열 | `doc.entries(pointer)` |
 | 여러 위치 찾기 | `doc.query(jsonPath)` |
-| 값 추가/변경/삭제 | `doc.patch(...)`, `doc.commit([...])` |
+| 값 추가, 변경, 삭제 | `doc.patch(...)`, `doc.commit([...])` |
 | 실행 전 검증 | `doc.canPatch(...)`, `doc.canPastePayload(...)`, `doc.canFind(...)` |
 | sibling 복제 | `doc.duplicate(pointer, options)` |
 | 선택 상태 저장 | `doc.selection?.selectRanges(...)`, `doc.selection?.snapshot()` |
@@ -122,11 +120,15 @@ if (!result.ok) {
 
 이 구조 때문에 버튼 활성화, validation message, command palette의 disabled reason을 같은 값으로 만들 수 있습니다.
 
+`violations[].path`는 JSON Pointer입니다. `doc.schema.accepts(...)`는 요청한 schema 위치 기준의 `schema-slot` path를, `doc.canPatch(...)`와 `doc.canPastePayload(...)`는 patch preview 후 document 결과 위치 기준의 `document-result` path를 돌려줍니다.
+
+`strict`는 `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` 실행 실패 정책입니다. `can*`는 항상 Result를 반환하고, document execution method는 strict mode에서 `JSONCrudError`를 throw할 수 있습니다.
+
 ## 성능 경계
 
-대부분의 앱은 `doc.patch`, `doc.commit`, `doc.canPatch`만 쓰면 됩니다. Public `applyPatch`는 외부 JSON boundary입니다. 입력 state 전체가 JSON-safe인지 확인한 뒤 patch를 적용합니다.
+대부분의 앱은 `doc.patch`, `doc.commit`, `doc.canPatch`만 쓰면 됩니다. 공개 `applyPatch`는 외부 JSON 경계입니다. 입력 state 전체가 JSON-safe인지 확인한 뒤 patch를 적용합니다.
 
-Document 내부 state는 trusted document state입니다. schema가 plain structural Zod schema이고 edit가 independent non-root `replace`, array edit, same-array `add`/`remove` batch에 해당하면 document path는 더 좁은 검증 경로를 씁니다. refinement, transform, check가 있는 schema는 full root schema validation으로 돌아갑니다.
+Document 내부 state는 신뢰된 document state입니다. schema가 구조만 가진 Zod schema이고 edit가 independent non-root `replace`, array edit, same-array `add`/`remove` batch에 해당하면 document path는 더 좁은 검증 경로를 씁니다. Refinement, transform, check가 있는 schema는 전체 루트 schema 검증으로 돌아갑니다.
 
 ```sh
 npm run perf:core
@@ -141,71 +143,12 @@ npm run perf:core
 
 ## 다음에 볼 문서
 
-- 작은 카드 편집기를 처음부터 따라 만들려면 Tutorial을 봅니다.
-- 이미 모델을 이해했고 메서드가 필요하면 API reference를 봅니다.
+- 작은 카드 편집기를 처음부터 따라 만들려면 tutorial을 봅니다.
+- 이미 모델을 이해했고 method가 필요하면 API reference를 봅니다.
 - release 전 문서 계약은 `npm run docs:evaluate`와 `npm run release:check`로 확인합니다.
 
-## Maintainer notes
+## 관리자 메모
 
-아래 내용은 API 사용에 필요하지 않습니다. 소스 수정자가 import 방향과 문서 계약을 확인할 때만 봅니다.
+아래 내용은 API 사용에 필요하지 않습니다. release 확인 시 문서 계약만 확인합니다.
 
-```txt
-src/
-├─ index.ts
-│  └─ public root entrypoint: zod-crud
-├─ react.ts
-│  └─ public React entrypoint: zod-crud/react
-├─ application/
-│  └─ document/
-│     ├─ can/
-│     ├─ runtime/
-│     ├─ state/
-│     ├─ history/
-│     ├─ clipboard/
-│     └─ selection/
-├─ domain/
-│  ├─ pointer/
-│  ├─ schema/
-│  │  ├─ array/
-│  │  ├─ object/
-│  │  ├─ shared/
-│  │  └─ validation/
-│  └─ selection/
-└─ foundation/
-   ├─ json/
-   ├─ jsonpath/
-   ├─ patch/
-   │  └─ fast/
-   └─ pointer/
-```
-
-```txt
-src/index.ts, src/react.ts
-└─ application/document
-   ├─ domain
-   │  └─ foundation
-   └─ foundation
-```
-
-Internal path checklist:
-
-```txt
-application/document/can
-application/document/runtime
-application/document/state
-application/document/history
-application/document/clipboard
-application/document/selection
-domain/pointer
-domain/schema/array
-domain/schema/object
-domain/schema/shared
-domain/schema/validation
-domain/selection
-foundation/json
-foundation/jsonpath
-foundation/patch/fast
-foundation/pointer
-```
-
-`application`, `domain`, `foundation`은 package subpath가 아닙니다. 앱은 `zod-crud`와 `zod-crud/react`만 import합니다.
+Package API는 `zod-crud`와 `zod-crud/react`입니다. 앱은 이 두 entrypoint만 import합니다. 전체 public export 목록은 `packages/zod-crud/public-contract.json`이 기준입니다.

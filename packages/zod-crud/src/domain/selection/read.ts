@@ -1,6 +1,6 @@
 import type { Pointer } from "../../foundation/pointer/index.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionRange,
   SelectionSnap,
   SelectionSource,
@@ -46,7 +46,7 @@ export function isSelected(s: SelectionSnap, pointer: Pointer): boolean {
   return s.selectedPointers.includes(pointer);
 }
 
-export function caretPoint(s: SelectionSnap): JSONPoint | null {
+export function caretPoint(s: SelectionSnap): SelectionPoint | null {
   return isCollapsed(s) && s.focus !== null ? clonePoint(s.focus) : null;
 }
 

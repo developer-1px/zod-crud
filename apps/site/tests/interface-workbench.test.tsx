@@ -265,7 +265,7 @@ describe("InterfaceWorkbench", () => {
       "ClipboardState",
       "SchemaState",
       "SelectionState",
-      "PasteTarget",
+      "JSONDocumentPasteTarget",
     ]) {
       expect(typeGroup.getByText(typeName)).toBeTruthy();
     }

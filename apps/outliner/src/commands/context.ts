@@ -1,6 +1,6 @@
 // Command 들이 공유하는 ctx 형식 + 공용 헬퍼.
 
-import type { JSONDocument, JSONPoint, Pointer, SelectionState } from "zod-crud";
+import type { JSONDocument, Pointer, SelectionPoint, SelectionState } from "zod-crud";
 import type { OutlineNode } from "../schema.js";
 import type { ClipboardApi } from "../clipboard.js";
 import { comparePointer } from "../pointer-utils.js";
@@ -12,7 +12,7 @@ export interface CommandContext {
   clipboard: ClipboardApi;
 }
 
-export function pointerOf(point: JSONPoint | null | undefined): Pointer | null {
+export function pointerOf(point: SelectionPoint | null | undefined): Pointer | null {
   if (point == null) return null;
   return typeof point === "string" ? point : point.path;
 }

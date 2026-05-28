@@ -6,8 +6,8 @@ import {
   selectionPoints,
 } from "./traversal.js";
 import type {
-  JSONPoint,
-  OrderedSelectionRangeEntry,
+  SelectionPoint,
+  SelectionOrderedRangeEntry,
   SelectionMode,
   SelectionOrderOptions,
   SelectionPointOrderResult,
@@ -74,8 +74,8 @@ export function resolveSelectionScope(
 }
 
 export function compareSelectionPoints(
-  left: JSONPoint,
-  right: JSONPoint,
+  left: SelectionPoint,
+  right: SelectionPoint,
   state: unknown,
   options: SelectionOrderOptions = {},
 ): SelectionPointOrderResult {
@@ -160,7 +160,7 @@ export function orderSelectionRanges(
     return { ok: false, code: "empty_selection", reason: "selection ranges are empty", pointer: null, index: null };
   }
 
-  const ranges: OrderedSelectionRangeEntry[] = [];
+  const ranges: SelectionOrderedRangeEntry[] = [];
   for (let index = 0; index < selection.selectionRanges.length; index += 1) {
     const ordered = orderSelectionRange(selection.selectionRanges[index]!, state, options);
     if (!ordered.ok) return { ...ordered, index };
@@ -177,14 +177,14 @@ export function orderSelectionRanges(
   };
 }
 
-export function cursorPointIndex(points: ReadonlyArray<JSONPoint>, current: JSONPoint): number {
+export function cursorPointIndex(points: ReadonlyArray<SelectionPoint>, current: SelectionPoint): number {
   const exact = points.findIndex((point) => samePoint(point, current));
   if (exact >= 0) return exact;
   const pointer = pointPath(current);
   return points.findIndex((point) => pointPath(point) === pointer);
 }
 
-function pointOrderOk(left: JSONPoint, right: JSONPoint, order: -1 | 0 | 1): Extract<SelectionPointOrderResult, { ok: true }> {
+function pointOrderOk(left: SelectionPoint, right: SelectionPoint, order: -1 | 0 | 1): Extract<SelectionPointOrderResult, { ok: true }> {
   return {
     ok: true,
     order,
@@ -196,7 +196,7 @@ function pointOrderOk(left: JSONPoint, right: JSONPoint, order: -1 | 0 | 1): Ext
   };
 }
 
-function compareSamePathPoints(left: JSONPoint, right: JSONPoint, state: unknown): -1 | 0 | 1 {
+function compareSamePathPoints(left: SelectionPoint, right: SelectionPoint, state: unknown): -1 | 0 | 1 {
   if (samePoint(left, right)) return 0;
   const leftRank = samePathPointRank(normalizePoint(left, state));
   const rightRank = samePathPointRank(normalizePoint(right, state));
@@ -204,7 +204,7 @@ function compareSamePathPoints(left: JSONPoint, right: JSONPoint, state: unknown
   return positionOrder === 0 ? compareNumbers(leftRank.edge, rightRank.edge) : positionOrder;
 }
 
-function compareBoundaryContainment(left: JSONPoint, right: JSONPoint): -1 | 1 | null {
+function compareBoundaryContainment(left: SelectionPoint, right: SelectionPoint): -1 | 1 | null {
   const leftSegments = tryParsePointer(pointPath(left));
   const rightSegments = tryParsePointer(pointPath(right));
   if (leftSegments === null || rightSegments === null) return null;
@@ -217,7 +217,7 @@ function isStrictPrefix(prefix: ReadonlyArray<string>, value: ReadonlyArray<stri
   return prefix.length < value.length && prefix.every((segment, index) => segment === value[index]);
 }
 
-function samePathPointRank(point: JSONPoint): { position: number; edge: number } {
+function samePathPointRank(point: SelectionPoint): { position: number; edge: number } {
   if (typeof point === "string") return { position: 0, edge: 0 };
   if (point.offset === undefined && point.edge === "before") return { position: Number.NEGATIVE_INFINITY, edge: 0 };
   if (point.offset === undefined && point.edge === "after") return { position: Number.POSITIVE_INFINITY, edge: 0 };
@@ -232,8 +232,8 @@ function compareNumbers(left: number, right: number): -1 | 0 | 1 {
 }
 
 function compareOrderedRanges(
-  left: OrderedSelectionRangeEntry,
-  right: OrderedSelectionRangeEntry,
+  left: SelectionOrderedRangeEntry,
+  right: SelectionOrderedRangeEntry,
   state: unknown,
   options: SelectionOrderOptions,
 ): -1 | 0 | 1 {

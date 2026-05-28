@@ -1,7 +1,7 @@
 // Headless selection state facade.
 // React hook and JSONDocument use this same implementation.
 
-import type { JSONStateOps, UseSelectionOptions } from "../runtime/types.js";
+import type { JSONStateOps, SelectionOptions } from "../runtime/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import {
   anchorPointer,
@@ -36,7 +36,7 @@ import {
 } from "../../../domain/selection/reducer.js";
 import { selectionSpansForPointer } from "../../../domain/selection/spans.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionAction,
   SelectionContext,
   SelectionCursorDirection,
@@ -79,7 +79,7 @@ import {
   selectionToggleRangeAction,
 } from "./action.js";
 
-interface CreateSelectionOptions extends UseSelectionOptions {
+interface CreateSelectionOptions extends SelectionOptions {
   onChange?: () => void;
 }
 
@@ -103,15 +103,15 @@ export interface SelectionState extends SelectionSnap {
   readonly focusPointer: Pointer | null;
   readonly selectedSource: SelectionSource | null;
   readonly primaryPointer: Pointer | null;
-  readonly caret: JSONPoint | null;
+  readonly caret: SelectionPoint | null;
   readonly caretPointer: Pointer | null;
   readonly context: SelectionContext | undefined;
-  collapse(point: JSONPoint): void;
-  setBaseAndExtent(anchor: JSONPoint, focus: JSONPoint): void;
-  extend(point: JSONPoint): void;
-  addRange(pointOrRange: JSONPoint | SelectionRange): void;
-  removeRange(pointOrRangeOrIndex: JSONPoint | SelectionRange | number): void;
-  toggleRange(pointOrRange: JSONPoint | SelectionRange): void;
+  collapse(point: SelectionPoint): void;
+  setBaseAndExtent(anchor: SelectionPoint, focus: SelectionPoint): void;
+  extend(point: SelectionPoint): void;
+  addRange(pointOrRange: SelectionPoint | SelectionRange): void;
+  removeRange(pointOrRangeOrIndex: SelectionPoint | SelectionRange | number): void;
+  toggleRange(pointOrRange: SelectionPoint | SelectionRange): void;
   togglePointer(pointer: Pointer): void;
   moveCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
   extendCursor(direction: SelectionCursorDirection, options?: SelectionCursorOptions): SelectionCursorResult;
@@ -126,8 +126,8 @@ export interface SelectionState extends SelectionSnap {
   resolveScope(options?: SelectionScopeOptions): SelectionScopeTarget;
   selectRanges(
     ranges: ReadonlyArray<SelectionRangeInput>,
-    anchor?: JSONPoint | null,
-    focus?: JSONPoint | null,
+    anchor?: SelectionPoint | null,
+    focus?: SelectionPoint | null,
     primaryIndex?: number,
   ): void;
   setContext(context: SelectionContext): void;

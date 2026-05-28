@@ -5,7 +5,7 @@ import {
   emptyTraversalReason,
 } from "./traversal.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionAction,
   SelectionContext,
   SelectionCursorDirection,
@@ -162,7 +162,7 @@ export function resolveSelectionCursor(
   };
 }
 
-function extentOf(mode: SelectionMode, anchor: JSONPoint, focus: JSONPoint, state?: unknown): SelectionSnap {
+function extentOf(mode: SelectionMode, anchor: SelectionPoint, focus: SelectionPoint, state?: unknown): SelectionSnap {
   if (!isMulti(mode)) return snapFromRanges([collapsedRange(focus)], 0, mode, state);
   return snapFromRanges([{ anchor, focus }], 0, mode, state);
 }
@@ -174,7 +174,7 @@ function withAdded(prev: SelectionSnap, mode: SelectionMode, range: SelectionRan
   return snapFromRanges(next, next.length - 1, mode, state);
 }
 
-function withRemoved(prev: SelectionSnap, input: JSONPoint | SelectionRange | number, mode: SelectionMode, state?: unknown): SelectionSnap {
+function withRemoved(prev: SelectionSnap, input: SelectionPoint | SelectionRange | number, mode: SelectionMode, state?: unknown): SelectionSnap {
   const removeAt = typeof input === "number"
     ? input
     : prev.selectionRanges.findIndex((candidate) => selectionInputMatches(candidate, input, prev.selectedPointers));
@@ -204,19 +204,19 @@ function selectRanges(
   return snapFromRanges(action.ranges.map(normalizeRangeInput), action.primaryIndex ?? action.ranges.length - 1, mode, state);
 }
 
-function actionPoint(action: { pointer?: Pointer; point?: JSONPoint }): JSONPoint {
+function actionPoint(action: { pointer?: Pointer; point?: SelectionPoint }): SelectionPoint {
   return action.point ?? action.pointer!;
 }
 
-function actionRange(action: { pointer?: Pointer; point?: JSONPoint; range?: SelectionRange }): SelectionRange {
+function actionRange(action: { pointer?: Pointer; point?: SelectionPoint; range?: SelectionRange }): SelectionRange {
   return action.range ?? collapsedRange(actionPoint(action));
 }
 
-function actionRemoveTarget(action: { pointer?: Pointer; point?: JSONPoint; range?: SelectionRange; index?: number }): JSONPoint | SelectionRange | number {
+function actionRemoveTarget(action: { pointer?: Pointer; point?: SelectionPoint; range?: SelectionRange; index?: number }): SelectionPoint | SelectionRange | number {
   return action.index ?? action.range ?? actionPoint(action);
 }
 
-function selectionInputMatches(candidate: SelectionRange, input: JSONPoint | SelectionRange, selectedPointers: ReadonlyArray<Pointer>): boolean {
+function selectionInputMatches(candidate: SelectionRange, input: SelectionPoint | SelectionRange, selectedPointers: ReadonlyArray<Pointer>): boolean {
   if (typeof input === "object" && "anchor" in input && "focus" in input) return sameRange(candidate, input);
   return samePoint(candidate.anchor, input)
     || samePoint(candidate.focus, input)

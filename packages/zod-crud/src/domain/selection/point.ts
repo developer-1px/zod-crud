@@ -1,6 +1,6 @@
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import type {
-  JSONPoint,
+  SelectionPoint,
   SelectionEdge,
   SelectionRange,
   SelectionRangeInput,
@@ -17,7 +17,7 @@ export function normalizeSelectionRange(range: SelectionRange, state?: unknown):
   };
 }
 
-export function normalizePoint(point: JSONPoint, state?: unknown): JSONPoint {
+export function normalizePoint(point: SelectionPoint, state?: unknown): SelectionPoint {
   if (typeof point === "string") return point;
   if (point.offset === undefined || state === undefined) return clonePoint(point);
   const segments = tryParsePointer(point.path);
@@ -33,15 +33,15 @@ export function clampOffset(offset: number, max: number): number {
   return Math.min(Math.max(Math.trunc(offset), 0), max);
 }
 
-export function collapsedRange(point: JSONPoint): SelectionRange {
+export function collapsedRange(point: SelectionPoint): SelectionRange {
   return { anchor: clonePoint(point), focus: clonePoint(point) };
 }
 
-export function pointPath(point: JSONPoint): Pointer {
+export function pointPath(point: SelectionPoint): Pointer {
   return typeof point === "string" ? point : point.path;
 }
 
-export function withPointPath(point: JSONPoint, path: Pointer): JSONPoint {
+export function withPointPath(point: SelectionPoint, path: Pointer): SelectionPoint {
   return typeof point === "string" ? path : { ...point, path };
 }
 
@@ -52,11 +52,11 @@ export function cloneRange(range: SelectionRange): SelectionRange {
   };
 }
 
-export function clonePoint(point: JSONPoint): JSONPoint {
+export function clonePoint(point: SelectionPoint): SelectionPoint {
   return typeof point === "string" ? point : { ...point };
 }
 
-export function pointEdge(point: JSONPoint): SelectionEdge | undefined {
+export function pointEdge(point: SelectionPoint): SelectionEdge | undefined {
   return typeof point === "string" ? undefined : point.edge;
 }
 
@@ -68,7 +68,7 @@ export function sameRange(left: SelectionRange, right: SelectionRange): boolean 
   return samePoint(left.anchor, right.anchor) && samePoint(left.focus, right.focus);
 }
 
-export function samePoint(left: JSONPoint, right: JSONPoint): boolean {
+export function samePoint(left: SelectionPoint, right: SelectionPoint): boolean {
   if (typeof left === "string" || typeof right === "string") return left === right;
   return left.path === right.path
     && left.offset === right.offset

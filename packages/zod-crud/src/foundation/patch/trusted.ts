@@ -1,6 +1,6 @@
 import { jsonSerializableError } from "../json/serializable.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
-import { normalizeOp } from "./container.js";
+import { normalizeAppliedOp, normalizeOp } from "./container.js";
 import { applyAcceptedFastPatch, applyTrustedFastPatch } from "./fast/apply.js";
 import { fail, ok } from "./result.js";
 import { applyTrustedValueMutation } from "./value.js";
@@ -30,11 +30,11 @@ export function applyTrustedPatch<T>(
     const shape = validateOperationShape(ops[i]!);
     if (shape) return { state, result: fail(shape.error, `op[${i}]: ${shape.reason}`), applied: [] };
     const n = normalizeOp(ops[i]!, cur);
-    normalized.push(n);
     const r = applyOpRaw(cur, n);
     if ("error" in r) {
       return { state, result: fail(r.error, r.reason ? `op[${i}]: ${r.reason}` : `op[${i}]`, r.pointer), applied: [] };
     }
+    normalized.push(normalizeAppliedOp(n, r.state));
     cur = r.state;
   }
   return { state: cur as T, result: ok, applied: normalized };

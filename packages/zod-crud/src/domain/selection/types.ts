@@ -33,25 +33,25 @@ export type SelectionOrderErrorCode =
   | "point_not_in_order"
   | "empty_selection";
 
-export interface JSONPointObject {
+export interface SelectionPointObject {
   path: Pointer;
   offset?: number;
   edge?: SelectionEdge;
   affinity?: SelectionAffinity;
 }
 
-export type JSONPoint = Pointer | JSONPointObject;
+export type SelectionPoint = Pointer | SelectionPointObject;
 
 export interface SelectionRange {
-  anchor: JSONPoint;
-  focus: JSONPoint;
+  anchor: SelectionPoint;
+  focus: SelectionPoint;
 }
 
-export type SelectionRangeInput = JSONPoint | SelectionRange;
+export type SelectionRangeInput = SelectionPoint | SelectionRange;
 export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
 
 export interface SelectionCursorOptions {
-  points?: ReadonlyArray<JSONPoint>;
+  points?: ReadonlyArray<SelectionPoint>;
   query?: string;
   scope?: Pointer;
   includeScope?: boolean;
@@ -59,7 +59,7 @@ export interface SelectionCursorOptions {
 }
 
 export interface SelectionScopeOptions {
-  points?: ReadonlyArray<JSONPoint>;
+  points?: ReadonlyArray<SelectionPoint>;
   query?: string;
   scope?: Pointer;
   includeScope?: boolean;
@@ -67,7 +67,7 @@ export interface SelectionScopeOptions {
 }
 
 export interface SelectionOrderOptions {
-  points?: ReadonlyArray<JSONPoint>;
+  points?: ReadonlyArray<SelectionPoint>;
   query?: string;
   scope?: Pointer;
   includeScope?: boolean;
@@ -83,7 +83,7 @@ export type SelectionCursorResult =
       ok: true;
       direction: SelectionCursorDirection;
       pointer: Pointer;
-      point: JSONPoint;
+      point: SelectionPoint;
       previousPointer: Pointer | null;
       selection: SelectionSnap;
     }
@@ -103,7 +103,7 @@ export type SelectionCursorTarget =
 export type SelectionScopeResult =
   | {
       ok: true;
-      points: ReadonlyArray<JSONPoint>;
+      points: ReadonlyArray<SelectionPoint>;
       selection: SelectionSnap;
     }
   | {
@@ -123,8 +123,8 @@ export type SelectionPointOrderResult =
       ok: true;
       order: -1 | 0 | 1;
       direction: SelectionDirection;
-      left: JSONPoint;
-      right: JSONPoint;
+      left: SelectionPoint;
+      right: SelectionPoint;
       leftPointer: Pointer;
       rightPointer: Pointer;
     }
@@ -135,16 +135,16 @@ export type SelectionPointOrderResult =
       pointer: Pointer | null;
     };
 
-export interface OrderedSelectionRange {
-  anchor: JSONPoint;
-  focus: JSONPoint;
-  start: JSONPoint;
-  end: JSONPoint;
+export interface SelectionOrderedRange {
+  anchor: SelectionPoint;
+  focus: SelectionPoint;
+  start: SelectionPoint;
+  end: SelectionPoint;
   direction: SelectionDirection;
   collapsed: boolean;
 }
 
-export interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
+export interface SelectionOrderedRangeEntry extends SelectionOrderedRange {
   index: number;
   primary: boolean;
 }
@@ -152,7 +152,7 @@ export interface OrderedSelectionRangeEntry extends OrderedSelectionRange {
 export type SelectionRangeOrderResult =
   | {
       ok: true;
-      range: OrderedSelectionRange;
+      range: SelectionOrderedRange;
     }
   | {
       ok: false;
@@ -164,9 +164,9 @@ export type SelectionRangeOrderResult =
 export type SelectionRangesOrderResult =
   | {
       ok: true;
-      ranges: ReadonlyArray<OrderedSelectionRangeEntry>;
+      ranges: ReadonlyArray<SelectionOrderedRangeEntry>;
       primaryIndex: number;
-      primaryRange: OrderedSelectionRangeEntry | null;
+      primaryRange: SelectionOrderedRangeEntry | null;
     }
   | {
       ok: false;
@@ -180,8 +180,8 @@ export interface SelectionPointerSpan {
   pointer: Pointer;
   rangeIndex: number;
   primary: boolean;
-  start: JSONPoint;
-  end: JSONPoint;
+  start: SelectionPoint;
+  end: SelectionPoint;
   startOffset: number | null;
   endOffset: number | null;
   collapsed: boolean;
@@ -206,8 +206,8 @@ export interface SelectionSnap {
   selectedPointers: ReadonlyArray<Pointer>;
   selectionRanges: ReadonlyArray<SelectionRange>;
   primaryIndex: number;
-  anchor: JSONPoint | null;
-  focus: JSONPoint | null;
+  anchor: SelectionPoint | null;
+  focus: SelectionPoint | null;
   context?: SelectionContext | undefined;
 }
 
@@ -221,26 +221,26 @@ export const EMPTY_SELECTION: SelectionSnap = {
 
 type SelectionShapeAction =
   | { type: "collapse"; pointer: Pointer }
-  | { type: "collapse"; point: JSONPoint }
-  | { type: "setBaseAndExtent"; anchor: JSONPoint; focus: JSONPoint }
+  | { type: "collapse"; point: SelectionPoint }
+  | { type: "setBaseAndExtent"; anchor: SelectionPoint; focus: SelectionPoint }
   | { type: "extend"; pointer: Pointer }
-  | { type: "extend"; point: JSONPoint }
+  | { type: "extend"; point: SelectionPoint }
   | { type: "addRange"; pointer: Pointer }
-  | { type: "addRange"; point: JSONPoint }
+  | { type: "addRange"; point: SelectionPoint }
   | { type: "addRange"; range: SelectionRange }
   | { type: "removeRange"; pointer: Pointer }
-  | { type: "removeRange"; point: JSONPoint }
+  | { type: "removeRange"; point: SelectionPoint }
   | { type: "removeRange"; range: SelectionRange }
   | { type: "removeRange"; index: number }
   | { type: "toggleRange"; pointer: Pointer }
-  | { type: "toggleRange"; point: JSONPoint }
+  | { type: "toggleRange"; point: SelectionPoint }
   | { type: "toggleRange"; range: SelectionRange }
   | { type: "togglePointer"; pointer: Pointer }
   | {
       type: "selectRanges";
       ranges: ReadonlyArray<SelectionRangeInput>;
-      anchor?: JSONPoint | null;
-      focus?: JSONPoint | null;
+      anchor?: SelectionPoint | null;
+      focus?: SelectionPoint | null;
       primaryIndex?: number;
     }
   | { type: "empty" };

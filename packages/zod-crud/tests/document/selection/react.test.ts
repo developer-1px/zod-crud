@@ -63,7 +63,7 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.caretPointer).toBe(null);
   });
 
-  test("initial selection accepts explicit JSONPoint ranges through the React facade", () => {
+  test("initial selection accepts explicit SelectionPoint ranges through the React facade", () => {
     const hook = renderHook(() => useJSONDocument(Schema, initial, {
       selection: {
         mode: "multiple",
@@ -166,27 +166,27 @@ describe("useJSONDocument doc.selection", () => {
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
 
     const caret = hook.current.selection?.caret;
-    if (caret === undefined || caret === null || typeof caret === "string") throw new Error("expected JSONPoint object");
+    if (caret === undefined || caret === null || typeof caret === "string") throw new Error("expected SelectionPoint object");
     caret.offset = 88;
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
 
     const primaryRange = hook.current.selection?.primaryRange;
     if (primaryRange === undefined || primaryRange === null || typeof primaryRange.anchor === "string") {
-      throw new Error("expected JSONPoint object");
+      throw new Error("expected SelectionPoint object");
     }
     primaryRange.anchor.offset = 66;
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
 
     const selectionRange = hook.current.selection?.selectionRanges[0];
     if (selectionRange === undefined || typeof selectionRange.anchor === "string") {
-      throw new Error("expected JSONPoint object");
+      throw new Error("expected SelectionPoint object");
     }
     selectionRange.anchor.offset = 55;
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
 
     const snapshot = hook.current.selection?.snapshot();
     const snapshotAnchor = snapshot?.selectionRanges[0]?.anchor;
-    if (snapshotAnchor === undefined || typeof snapshotAnchor === "string") throw new Error("expected JSONPoint object");
+    if (snapshotAnchor === undefined || typeof snapshotAnchor === "string") throw new Error("expected SelectionPoint object");
     snapshotAnchor.offset = 77;
     expect(hook.current.selection?.caret).toEqual({ path: "/items/0/name", offset: 1, affinity: "forward" });
   });

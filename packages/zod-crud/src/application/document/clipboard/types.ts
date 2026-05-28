@@ -1,8 +1,16 @@
-import type { ClipboardSource, CopyError, CopyOk } from "../../../domain/copy.js";
-import type { CutError } from "../../../domain/cut.js";
-import type { PasteDuMismatch, PasteError, PasteOptions, PasteTarget } from "../../../domain/paste.js";
+import type {
+  ClipboardSource as DomainClipboardSource,
+  CopyError as DomainCopyError,
+  CopyOk as DomainCopyOk,
+} from "../../../domain/copy.js";
+import type { CutError as DomainCutError } from "../../../domain/cut.js";
+import type {
+  PasteDiscriminatorMismatch as DomainPasteDiscriminatorMismatch,
+  PasteError as DomainPasteError,
+} from "../../../domain/paste.js";
 import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
+import type { JSONDocumentPasteOptions, JSONDocumentPasteTarget } from "../runtime/types.js";
 
 export interface ClipboardWriteOptions {
   source?: Pointer | null;
@@ -27,6 +35,11 @@ export interface ClipboardCutOptions {
   /** Store and return the cut source reference directly. Use only when the caller owns its mutation boundary. */
   clonePayload?: boolean;
 }
+
+export type ClipboardSource = DomainClipboardSource;
+export type ClipboardCopyOk = DomainCopyOk;
+export type ClipboardCopyError = DomainCopyError;
+export type ClipboardCopyResult = ClipboardCopyOk | ClipboardCopyError;
 
 export interface ClipboardReadOk {
   ok: true;
@@ -60,8 +73,15 @@ export interface ClipboardCutOk<T> extends ClipboardMutationOk<T> {
   sources: ReadonlyArray<Pointer>;
 }
 
-export type ClipboardCutResult<T> = ClipboardCutOk<T> | CutError;
-export type ClipboardPasteResult<T> = ClipboardMutationOk<T> | PasteError | PasteDuMismatch | ClipboardEmpty;
+export type ClipboardCutError = DomainCutError;
+export type ClipboardCutResult<T> = ClipboardCutOk<T> | ClipboardCutError;
+export type ClipboardPasteError = DomainPasteError;
+export type ClipboardPasteDiscriminatorMismatch = DomainPasteDiscriminatorMismatch;
+export type ClipboardPasteResult<T> =
+  | ClipboardMutationOk<T>
+  | ClipboardPasteError
+  | ClipboardPasteDiscriminatorMismatch
+  | ClipboardEmpty;
 
 export interface ClipboardState<T> {
   readonly hasData: boolean;
@@ -71,10 +91,10 @@ export interface ClipboardState<T> {
   write(payload: unknown, options?: ClipboardWriteOptions): JSONResult;
   clear(): void;
 
-  copy(source?: ClipboardSource, options?: ClipboardCopyOptions): CopyOk | CopyError;
+  copy(source?: ClipboardSource, options?: ClipboardCopyOptions): ClipboardCopyResult;
   cut(source?: ClipboardSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
-  paste(target?: PasteTarget, options?: PasteOptions): ClipboardPasteResult<T>;
-  pastePayload(target: PasteTarget, payload: unknown, options?: PasteOptions): ClipboardPasteResult<T>;
+  paste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
+  pastePayload(target: JSONDocumentPasteTarget, payload: unknown, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
 }
 
 export interface ClipboardBuffer {

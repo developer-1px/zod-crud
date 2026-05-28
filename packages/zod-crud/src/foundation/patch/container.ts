@@ -16,6 +16,18 @@ export function resolveAppendPath(path: Pointer, before: unknown): Pointer {
   return parent === "" ? `/${r.value.length}` : `${parent}/${r.value.length}`;
 }
 
+// move to `/-` is resolved after the source has been removed. The applied
+// record must point at the concrete inserted element so selection/history can
+// track it.
+export function resolveAppliedAppendPath(path: Pointer, after: unknown): Pointer {
+  if (!path.endsWith("/-")) return path;
+  const parent = path.slice(0, -2);
+  const segs = parent === "" ? [] : parsePointer(parent);
+  const r = readAt(after, segs);
+  if (!r.ok || !Array.isArray(r.value) || r.value.length === 0) return path;
+  return parent === "" ? `/${r.value.length - 1}` : `${parent}/${r.value.length - 1}`;
+}
+
 // op 안의 `/-` (path 만; from 은 RFC 6902 상 array append 의미가 없음) 을 적용 시점 상태 기준으로 정규화.
 export function normalizeOp(op: JSONPatchOperation, before: unknown): JSONPatchOperation {
   if (op === null || typeof op !== "object") return op;
@@ -26,6 +38,12 @@ export function normalizeOp(op: JSONPatchOperation, before: unknown): JSONPatchO
   if (path === op.path) return op;
   if (op.op === "move" || op.op === "copy") return { op: op.op, from: op.from, path };
   return { ...op, path } as JSONPatchOperation;
+}
+
+export function normalizeAppliedOp(op: JSONPatchOperation, after: unknown): JSONPatchOperation {
+  if (op.op !== "move" || !op.path.endsWith("/-")) return op;
+  const path = resolveAppliedAppendPath(op.path, after);
+  return path === op.path ? op : { op: "move", from: op.from, path };
 }
 
 export type ContainerError = { error: ErrorCode; reason?: string };

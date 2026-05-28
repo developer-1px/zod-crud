@@ -77,6 +77,61 @@ describe("doc.history metadata", () => {
     expect(doc.value).toEqual({ title: "final", count: 1 });
   });
 
+  test("transaction subscriber events are patch stream events, not history entry reads", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const events: Array<{
+      patch: ReadonlyArray<unknown>;
+      metadata: NonNullable<Parameters<Parameters<typeof doc.subscribe>[0]>[1]>;
+    }> = [];
+    doc.subscribe((patch, changeMetadata) => {
+      if (changeMetadata) events.push({ patch, metadata: changeMetadata });
+    });
+
+    doc.history.transaction({ label: "Edit fields", origin: "programmatic", mergeKey: "batch" }, () => {
+      doc.patch({ op: "replace", path: "/title", value: "final" });
+      doc.patch({ op: "replace", path: "/count", value: 1 });
+    });
+
+    expect(events).toHaveLength(2);
+    expect(events.map((event) => event.patch)).toEqual([
+      [{ op: "replace", path: "/title", value: "final" }],
+      [{ op: "replace", path: "/count", value: 1 }],
+    ]);
+    expect(events.map((event) => event.metadata.label)).toEqual(["Edit fields", "Edit fields"]);
+    expect(doc.history.undoDepth).toBe(1);
+  });
+
+  test("undo and redo patch stream events do not replay original labels", () => {
+    const doc = createJSONDocument(Schema, initial, {
+      history: 10,
+      selection: { mode: "single", initial: ["/title"] },
+    });
+    const metadata: Array<NonNullable<Parameters<Parameters<typeof doc.subscribe>[0]>[1]>> = [];
+    doc.subscribe((_, changeMetadata) => {
+      if (changeMetadata) metadata.push(changeMetadata);
+    });
+
+    doc.commit([{ op: "replace", path: "/title", value: "final" }], {
+      label: "Rename title",
+      origin: "keyboard",
+      mergeKey: "title",
+    });
+    metadata.length = 0;
+
+    expect(doc.history.undo()).toBe(true);
+    expect(doc.history.redo()).toBe(true);
+
+    expect(metadata).toHaveLength(2);
+    for (const changeMetadata of metadata) {
+      expect(changeMetadata).toMatchObject({
+        selectionAfter: { selectedPointers: ["/title"] },
+      });
+      expect(changeMetadata).not.toHaveProperty("label");
+      expect(changeMetadata).not.toHaveProperty("origin");
+      expect(changeMetadata).not.toHaveProperty("mergeKey");
+    }
+  });
+
   test("transaction metadata keeps repeated replace compacted", () => {
     const doc = createJSONDocument(Schema, initial, { history: 10 });
 
@@ -107,6 +162,22 @@ describe("doc.history metadata", () => {
 
     expect(doc.history.undo()).toBe(true);
     expect(doc.value.title).toBe("draft");
+  });
+
+  test("mergeLast updates history without emitting a patch stream event", () => {
+    const doc = createJSONDocument(Schema, initial, { history: 10 });
+    const patches: ReadonlyArray<unknown>[] = [];
+    doc.subscribe((patch) => {
+      patches.push(patch);
+    });
+
+    doc.patch({ op: "replace", path: "/title", value: "a" });
+    doc.patch({ op: "replace", path: "/title", value: "b" });
+
+    expect(patches).toHaveLength(2);
+    expect(doc.history.mergeLast({ mergeKey: "typing:title" })).toBe(true);
+    expect(patches).toHaveLength(2);
+    expect(doc.history.undoDepth).toBe(1);
   });
 
   test("text commands pass serializable history metadata through patch commits", () => {

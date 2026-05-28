@@ -8,7 +8,7 @@ import {
 } from "../../foundation/pointer/index.js";
 import {
   EMPTY_SELECTION,
-  type JSONPoint,
+  type SelectionPoint,
   type SelectionContext,
   type SelectionMode,
   type SelectionRange,
@@ -271,7 +271,7 @@ function sameSelectionContext(left: SelectionContext | undefined, right: Selecti
   return jsonEqual(left, right);
 }
 
-function samePointOrNull(left: JSONPoint | null, right: JSONPoint | null): boolean {
+function samePointOrNull(left: SelectionPoint | null, right: SelectionPoint | null): boolean {
   if (left === null || right === null) return left === right;
   return samePoint(left, right);
 }

@@ -7,7 +7,7 @@ export type CapabilityErrorCode =
   | ErrorCode
   | PatchPreflightErrorCode
   | SelectionTextEditErrorCode
-  | "du_branch_mismatch"
+  | "discriminator_mismatch"
   | "rekey_failed"
   | "missing_new_key"
   | "key_conflict"

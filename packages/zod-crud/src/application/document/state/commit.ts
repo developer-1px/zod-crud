@@ -1,9 +1,8 @@
 import type * as z from "zod";
 import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import { readAt, tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
-import { reduceSelection } from "../../../domain/selection/reducer.js";
 import { restoreSelection } from "../../../domain/selection/snap.js";
-import type { SelectionAction, SelectionMode, SelectionSnap } from "../../../domain/selection/types.js";
+import type { SelectionMode, SelectionSnap } from "../../../domain/selection/types.js";
 import { isPlainStructuralSchemaForLocalValidation } from "../../../domain/schema/validation/schema.js";
 import type { ClipboardPeekResult } from "../clipboard/types.js";
 import type { CapabilityResult } from "../can/result.js";
@@ -16,7 +15,7 @@ import type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONPatchInput,
-  UseSelectionOptions,
+  SelectionOptions,
 } from "../runtime/types.js";
 import { buildChangeMetadata, compactHistoryMetadata } from "../history/metadata.js";
 
@@ -39,14 +38,14 @@ type DocumentCanPastePlan =
     };
 
 interface PlanDocumentSelectionRuntimeInput {
-  selection: boolean | UseSelectionOptions | undefined;
+  selection: boolean | SelectionOptions | undefined;
   onChange: (() => void) | undefined;
 }
 
 interface DocumentSelectionRuntimePlan {
   selectionEnabled: boolean;
   selectionMode: SelectionMode;
-  createSelectionOptions: UseSelectionOptions & {
+  createSelectionOptions: SelectionOptions & {
     onChange?: () => void;
     applyMetadataSelectionAfter: true;
   };
@@ -70,13 +69,13 @@ type DocumentCommitRoutePlan =
   | {
       kind: "selection";
       metadata: HistoryTransactionOptions | undefined;
-      selection: SelectionAction | SelectionSnap;
+      selection: SelectionSnap;
     };
 
 interface PlanDocumentCommitSelectionInput {
   activeHistoryMetadata: HistoryTransactionOptions | undefined;
   metadata: HistoryTransactionOptions | undefined;
-  selection: SelectionAction | SelectionSnap;
+  selection: SelectionSnap;
   selectionBefore: SelectionSnap;
   state: unknown;
   selectionMode: SelectionMode;
@@ -84,8 +83,7 @@ interface PlanDocumentCommitSelectionInput {
 }
 
 interface PlanDocumentCommitSelectionAfterInput {
-  current: SelectionSnap;
-  selection: SelectionAction | SelectionSnap;
+  selection: SelectionSnap;
   state: unknown;
   mode: SelectionMode;
 }
@@ -189,7 +187,7 @@ export function planDocumentSelectionRuntime(
   input: PlanDocumentSelectionRuntimeInput,
 ): DocumentSelectionRuntimePlan {
   const selectionEnabled = input.selection !== undefined && input.selection !== false;
-  const selectionOptions: UseSelectionOptions =
+  const selectionOptions: SelectionOptions =
     typeof input.selection === "object" ? input.selection : {};
   const createSelectionOptions: DocumentSelectionRuntimePlan["createSelectionOptions"] = {
     ...selectionOptions,
@@ -245,7 +243,6 @@ export function planDocumentCommitSelection(
   input: PlanDocumentCommitSelectionInput,
 ): DocumentCommitSelectionPlan {
   const selectionAfter = planDocumentCommitSelectionAfter({
-    current: input.selectionBefore,
     selection: input.selection,
     state: input.state,
     mode: input.selectionMode,
@@ -267,9 +264,7 @@ export function planDocumentCommitSelection(
 function planDocumentCommitSelectionAfter(
   input: PlanDocumentCommitSelectionAfterInput,
 ): SelectionSnap {
-  return isDocumentSelectionSnapshot(input.selection)
-    ? restoreSelection(input.selection, input.mode, input.state)
-    : reduceSelection(input.current, input.selection, input.mode, input.state);
+  return restoreSelection(input.selection, input.mode, input.state);
 }
 
 export function planDocumentCommitPreview(
@@ -289,12 +284,4 @@ export function shouldRecordDocumentCommitHistory(
   return input.historyLimit > 0
     && !input.isRestoring
     && input.operationCount > 0;
-}
-
-function isDocumentSelectionSnapshot(selection: SelectionAction | SelectionSnap): selection is SelectionSnap {
-  return typeof selection === "object"
-    && selection !== null
-    && "selectionRanges" in selection
-    && "selectedPointers" in selection
-    && "primaryIndex" in selection;
 }

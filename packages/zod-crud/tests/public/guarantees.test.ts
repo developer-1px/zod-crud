@@ -8,7 +8,7 @@ import {
   applyOperation,
   applyPatch,
   type JSONPatchOperation,
-} from "../../src/index.js";
+} from "zod-crud";
 
 const Any = z.any();
 

@@ -1,10 +1,10 @@
-import type { JSONChangeMetadata, UseSelectionOptions } from "../runtime/types.js";
+import type { JSONChangeMetadata, SelectionOptions } from "../runtime/types.js";
 import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { jsonEqual } from "../../../foundation/json/equal.js";
 import {
   EMPTY_SELECTION,
-  type JSONPoint,
+  type SelectionPoint,
   type SelectionAction,
   type SelectionContext,
   type SelectionMode,
@@ -59,7 +59,7 @@ export function selectionAddRangeAction(pointOrRange: SelectionRangeInput): Sele
 }
 
 export function selectionRemoveRangeAction(
-  pointOrRangeOrIndex: JSONPoint | SelectionRange | number,
+  pointOrRangeOrIndex: SelectionPoint | SelectionRange | number,
 ): SelectionAction {
   return typeof pointOrRangeOrIndex === "number"
     ? { type: "removeRange", index: pointOrRangeOrIndex }
@@ -76,8 +76,8 @@ export function selectionToggleRangeAction(pointOrRange: SelectionRangeInput): S
 
 export function selectionSelectRangesAction(
   ranges: ReadonlyArray<SelectionRangeInput>,
-  anchor?: JSONPoint | null,
-  focus?: JSONPoint | null,
+  anchor?: SelectionPoint | null,
+  focus?: SelectionPoint | null,
   primaryIndex?: number,
 ): SelectionAction {
   return {
@@ -100,7 +100,7 @@ function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boole
 }
 
 export function planInitialSelection(
-  options: UseSelectionOptions,
+  options: SelectionOptions,
   mode: SelectionMode,
   state: unknown,
 ): SelectionSnap {
@@ -118,7 +118,7 @@ export function planInitialSelection(
   } else {
     snap = reduceSelection(
       EMPTY_SELECTION,
-      { type: "setBaseAndExtent", anchor: init[0] as JSONPoint, focus: init[init.length - 1] as JSONPoint },
+      { type: "setBaseAndExtent", anchor: init[0] as SelectionPoint, focus: init[init.length - 1] as SelectionPoint },
       mode,
       state,
     );
@@ -140,12 +140,12 @@ function sameSelectionContext(left: SelectionContext | undefined, right: Selecti
   return jsonEqual(left, right);
 }
 
-function samePointOrNull(left: JSONPoint | null, right: JSONPoint | null): boolean {
+function samePointOrNull(left: SelectionPoint | null, right: SelectionPoint | null): boolean {
   if (left === null || right === null) return left === right;
   return samePoint(left, right);
 }
 
-function samePoint(left: JSONPoint, right: JSONPoint): boolean {
+function samePoint(left: SelectionPoint, right: SelectionPoint): boolean {
   if (typeof left === "string" || typeof right === "string") return left === right;
   return left.path === right.path
     && left.offset === right.offset

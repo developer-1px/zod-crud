@@ -300,6 +300,31 @@ describe("JSONDocument selection interface", () => {
     expect(doc.selection?.primaryPointer).toBe("/items/0");
   });
 
+  test("move to nested append target tracks selection to the concrete inserted path", () => {
+    const doc = createJSONDocument(z.any(), {
+      children: [
+        { id: "a", children: [] },
+        { id: "b", children: [] },
+      ],
+    }, {
+      selection: { mode: "extended", initial: ["/children/1"] },
+    });
+
+    expect(doc.patch([{
+      op: "move",
+      from: "/children/1",
+      path: "/children/0/children/-",
+    }])).toEqual({ ok: true });
+
+    expect(doc.lastPatch).toEqual([{
+      op: "move",
+      from: "/children/1",
+      path: "/children/0/children/0",
+    }]);
+    expect(doc.selection?.selectedPointers).toEqual(["/children/0/children/0"]);
+    expect(doc.selection?.primaryPointer).toBe("/children/0/children/0");
+  });
+
   test("builds text patches from selected string ranges", () => {
     const doc = createJSONDocument(Schema, initial, {
       history: 10,

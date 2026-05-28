@@ -21,6 +21,7 @@ import {
   type JSONPatchOperation,
   type JSONCapabilityResult,
   type Pointer,
+  type SelectionSnap,
 } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
 
@@ -133,23 +134,30 @@ const publicTypeExports = [
   "JSONChangeMetadata",
   "JSONDocument",
   "JSONDocumentCommitOptions",
+  "JSONDocumentDuplicateError",
   "JSONDocumentDuplicateOptions",
   "JSONDocumentDuplicateResult",
   "JSONDocumentHistory",
+  "JSONDocumentOptions",
   "JSONDocumentPasteOptions",
   "JSONDocumentPasteTarget",
   "JSONPatchInput",
   "JSONPatchOperation",
-  "JSONPoint",
+  "SelectionPoint",
   "JSONResult",
   "Pointer",
-  "UseJSONDocumentOptions",
   "ClipboardCopyOptions",
+  "ClipboardCopyError",
+  "ClipboardCopyOk",
+  "ClipboardCopyResult",
+  "ClipboardCutError",
   "ClipboardCutOk",
   "ClipboardCutOptions",
   "ClipboardCutResult",
   "ClipboardEmpty",
   "ClipboardMutationOk",
+  "ClipboardPasteDiscriminatorMismatch",
+  "ClipboardPasteError",
   "ClipboardPasteResult",
   "ClipboardReadOk",
   "ClipboardReadOptions",
@@ -170,11 +178,10 @@ const publicTypeExports = [
   "SchemaPathMode",
   "SchemaQueryResult",
   "SchemaState",
-  "UseSelectionOptions",
-  "JSONPointObject",
-  "OrderedSelectionRange",
-  "OrderedSelectionRangeEntry",
-  "SelectionAction",
+  "SelectionOptions",
+  "SelectionPointObject",
+  "SelectionOrderedRange",
+  "SelectionOrderedRangeEntry",
   "SelectionAffinity",
   "SelectionContext",
   "SelectionCursorDirection",
@@ -212,16 +219,6 @@ const publicTypeExports = [
   "SelectionTextEditOptions",
   "SelectionTextEditsResult",
   "ClipboardSource",
-  "CopyError",
-  "CopyOk",
-  "CutError",
-  "CutOk",
-  "DuplicateError",
-  "DuplicateOk",
-  "PasteDuMismatch",
-  "PasteError",
-  "PasteOptions",
-  "PasteTarget",
 ];
 
 const publicTypeGroups = [
@@ -250,7 +247,7 @@ const publicTypeGroups = [
   {
     label: "Selection",
     note: "used by Find and Bulk cards",
-    items: publicTypeExports.filter((item) => item.includes("Selection") || item === "JSONPoint" || item === "JSONPointObject" || item === "OrderedSelectionRange" || item === "OrderedSelectionRangeEntry"),
+    items: publicTypeExports.filter((item) => item.includes("Selection") || item === "SelectionPoint" || item === "SelectionPointObject" || item === "SelectionOrderedRange" || item === "SelectionOrderedRangeEntry"),
   },
   {
     label: "Clipboard",
@@ -266,6 +263,16 @@ const publicTypeGroups = [
 
 function cardPointer(listIndex: number, cardIndex: number): Pointer {
   return `/lists/${listIndex}/cards/${cardIndex}` as Pointer;
+}
+
+function collapsedSelection(pointer: Pointer): SelectionSnap {
+  return {
+    selectedPointers: [pointer],
+    selectionRanges: [{ anchor: pointer, focus: pointer }],
+    primaryIndex: 0,
+    anchor: pointer,
+    focus: pointer,
+  };
 }
 
 function stringify(value: unknown): string {
@@ -797,7 +804,7 @@ export function InterfaceWorkbench() {
   const commitReplaceTitle = (): unknown => {
     return doc.commit(
       [{ op: "replace", path: targetTitlePath, value: textPayload }],
-      { label: "commit", selection: { type: "collapse", point: valueTarget } },
+      { label: "commit", selection: collapsedSelection(valueTarget) },
     );
   };
 

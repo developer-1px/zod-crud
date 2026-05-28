@@ -6,11 +6,11 @@ import type * as z from "zod";
 import { createJSONDocument } from "./application/document/create.js";
 import type {
   JSONDocument,
-  UseJSONDocumentOptions,
+  JSONDocumentOptions,
 } from "./application/document/types.js";
 
-type TrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial: true };
-type UntrustedInitialDocumentOptions = UseJSONDocumentOptions & { trustedInitial?: false | undefined };
+type TrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial: true };
+type UntrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial?: false | undefined };
 
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,
@@ -25,7 +25,7 @@ export function useJSONDocument<S extends z.ZodType>(
 export function useJSONDocument<S extends z.ZodType>(
   schema: S,
   initial: z.input<S> | z.output<S>,
-  options: UseJSONDocumentOptions = {},
+  options: JSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
   const [, force] = useReducer((version: number) => version + 1, 0);
   const optionsRef = useRef(options);

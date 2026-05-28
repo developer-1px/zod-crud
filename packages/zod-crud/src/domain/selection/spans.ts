@@ -1,8 +1,8 @@
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import { cursorPoints } from "./traversal.js";
 import type {
-  JSONPoint,
-  JSONPointObject,
+  SelectionPoint,
+  SelectionPointObject,
   SelectionPointerSpan,
   SelectionPointerSpansResult,
   SelectionSnap,
@@ -65,19 +65,19 @@ export function selectionSpansForPointer(
   return { ok: true, pointer, spans };
 }
 
-function pointBefore(pointer: Pointer): JSONPointObject {
+function pointBefore(pointer: Pointer): SelectionPointObject {
   return { path: pointer, edge: "before" };
 }
 
-function pointAfter(pointer: Pointer): JSONPointObject {
+function pointAfter(pointer: Pointer): SelectionPointObject {
   return { path: pointer, edge: "after" };
 }
 
-function isBeforeBoundary(point: JSONPoint, pointer: Pointer): boolean {
+function isBeforeBoundary(point: SelectionPoint, pointer: Pointer): boolean {
   return typeof point !== "string" && point.path === pointer && point.edge === "before";
 }
 
-function isAfterBoundary(point: JSONPoint, pointer: Pointer): boolean {
+function isAfterBoundary(point: SelectionPoint, pointer: Pointer): boolean {
   return typeof point !== "string" && point.path === pointer && point.edge === "after";
 }
 
@@ -100,7 +100,7 @@ function normalizeLength(value: number): number | null {
   return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : null;
 }
 
-function spanOffset(point: JSONPoint, side: "start" | "end", length: number | null): number | null {
+function spanOffset(point: SelectionPoint, side: "start" | "end", length: number | null): number | null {
   if (typeof point === "string") return null;
   if (point.offset !== undefined) return length === null ? Math.max(0, Math.trunc(point.offset)) : clampOffset(point.offset, length);
   if (point.edge === "before") return 0;
@@ -109,7 +109,7 @@ function spanOffset(point: JSONPoint, side: "start" | "end", length: number | nu
   return side === "start" ? 0 : length;
 }
 
-function spanIsFull(pointer: Pointer, start: JSONPoint, end: JSONPoint, length: number | null): boolean {
+function spanIsFull(pointer: Pointer, start: SelectionPoint, end: SelectionPoint, length: number | null): boolean {
   if (isBeforeBoundary(start, pointer) && isAfterBoundary(end, pointer)) return true;
   if (length === null) return false;
   return spanOffset(start, "start", length) === 0 && spanOffset(end, "end", length) === length;

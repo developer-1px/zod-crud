@@ -1,7 +1,6 @@
-import type { DuplicateError, DuplicateOpts } from "../../../domain/duplicate.js";
+import type { DuplicateError as DomainDuplicateError, DuplicateOpts } from "../../../domain/duplicate.js";
 import type { PasteOptions, PasteTarget } from "../../../domain/paste.js";
 import type {
-  SelectionAction,
   SelectionContext,
   SelectionMode,
   SelectionRangeInput,
@@ -24,16 +23,17 @@ export interface JSONChangeMetadata extends HistoryTransactionOptions {
 export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 
 export interface JSONDocumentCommitOptions extends HistoryTransactionOptions {
-  selection?: SelectionAction | SelectionSnap;
+  selection?: SelectionSnap;
 }
 
-export interface UseSelectionOptions {
+export interface SelectionOptions {
   mode?: SelectionMode;
   initial?: ReadonlyArray<SelectionRangeInput>;
   context?: SelectionContext;
 }
 
 export type JSONDocumentDuplicateOptions = DuplicateOpts;
+export type JSONDocumentDuplicateError = DomainDuplicateError;
 export type JSONDocumentDuplicateResult<T> =
   | {
       ok: true;
@@ -41,7 +41,7 @@ export type JSONDocumentDuplicateResult<T> =
       applied: ReadonlyArray<JSONPatchOperation>;
       duplicatedTo: Pointer;
     }
-  | DuplicateError
+  | JSONDocumentDuplicateError
   | Extract<JSONResult, { ok: false }>;
 
 export type JSONDocumentPasteOptions = PasteOptions;

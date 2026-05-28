@@ -1,5 +1,6 @@
-// Outliner-local clipboard buffer. zod-crud 가 책임지지 않음 (SPEC §8.5 비-목표 — clipboard 는 앱 책임).
-// 100% JSON 직렬화. paste 의미는 RFC 6902 batch 로 환원.
+// Outliner adapter clipboard buffer for product-specific sibling/child paste policy.
+// zod-crud owns the headless JSON clipboard API; this demo maps UI clipboard
+// semantics to JSON Patch locally.
 
 import { useCallback, useState } from "react";
 import type { JSONDocument, Pointer, JSONResult } from "zod-crud";

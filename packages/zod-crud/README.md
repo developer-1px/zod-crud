@@ -1,54 +1,87 @@
 # zod-crud
 
-Headless JSON editing primitives guarded by Zod schemas.
+Zod schema로 보호되는 headless JSON 편집 엔진입니다. UI component가 아니라 편집 도구의 core입니다. 앱은 rendering, focus, button, shortcut, drag/drop, 제품별 command 이름을 소유하고, zod-crud는 JSON Pointer 주소, JSON Patch 변경, JSONPath 검색, schema validation, selection, clipboard payload, undo/redo history를 소유합니다.
 
-Official site and demos: https://developer-1px.github.io/zod-crud/
+공식 사이트와 데모: https://developer-1px.github.io/zod-crud/
 
 ## 왜 zod-crud인가
 
-프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. zod-crud는 patch, pointer, selection, clipboard, history, schema validation을 UI 코드에서 분리해 headless document facade로 묶습니다.
+폼, CMS block, kanban board, outliner, settings editor는 UI가 달라도 같은 일을 합니다. 값을 추가하고, 바꾸고, 제거하고, 옮기고, 복제하고, 선택하고, 복사하고, 붙여넣고, 되돌립니다.
 
-공식 문서는 배경, core concept, 작은 카드 편집기 튜토리얼을 먼저 설명한 뒤 API reference로 이어집니다.
-
-The public model is small:
+zod-crud는 이 규칙을 UI component 밖으로 빼서 하나의 document facade로 제공합니다.
 
 ```txt
-document
-├─ patch(patch)              RFC 6902 JSON Patch
-├─ duplicate(pointer, opts)   sibling duplicate with optional rekey
-├─ at(pointer)               RFC 6901 JSON Pointer
-├─ query(jsonPath)           RFC 9535 JSONPath
-├─ selection                 explicit JSON selection snapshots
-├─ clipboard                 copy/cut/paste payload flow
-├─ history                   undo/redo patch history
-└─ can*                      reasoned capability checks
+schema
+`-- document
+    |-- Pointer로 한 위치를 가리킴
+    |-- JSONPath로 여러 위치를 찾음
+    |-- can*으로 실행 가능 여부를 확인함
+    |-- patch / commit / duplicate / clipboard로 변경함
+    `-- Result, selection, history를 앱이 UI에 반영함
 ```
 
-## Install
+처음 쓰는 사람은 내부 폴더를 몰라도 됩니다. 필요한 것은 schema, JSON value, Pointer, change, Result입니다.
+
+## 설치
 
 ```sh
 npm install zod-crud zod
 ```
 
-`zod` is a peer dependency. `react >=18` is optional and only needed for
-`zod-crud/react`.
+`zod`는 peer dependency입니다. React를 쓰는 앱만 `zod-crud/react`를 import합니다.
 
-## Task Entrypoints
+## 작업별 진입점
 
-| Task | API |
+| 하고 싶은 일 | 공개 API |
 | --- | --- |
-| Add, update, remove, or move JSON values | `doc.patch(...)` |
-| Duplicate a sibling | `doc.duplicate(pointer, options)` |
-| Find multiple locations | `doc.query(jsonPath)`, then patch returned pointers |
-| Copy or cut a multi-selection | pass `doc.selection?.selectedPointers` to `doc.clipboard.copy/cut` |
-| Paste external payload | `doc.clipboard.pastePayload(target, payload, options)` |
-| Validate before applying | `doc.can*` |
-| Undo or redo | check `doc.canUndo()` / `doc.canRedo()`, then call `doc.history` |
+| headless document 만들기 | `createJSONDocument(schema, initial, options?)` |
+| React에서 같은 표면 쓰기 | `useJSONDocument(schema, initial, options?)` |
+| 현재 값 읽기 | `doc.value`, `doc.lastPatch` |
+| 한 위치 읽기 | `doc.at(pointer)` |
+| 하위 항목 나열 | `doc.entries(pointer)` |
+| 여러 위치 찾기 | `doc.query(jsonPath)` |
+| 값 추가, 교체, 제거, 이동 | `doc.patch(...)`, `doc.commit(...)` |
+| 실행 전 확인 | `doc.canPatch`, `doc.canFind`, `doc.canReplace`, `doc.canRemove`, `doc.canMove`, `doc.canDuplicate`, `doc.canCopy`, `doc.canCut`, `doc.canPaste`, `doc.canPastePayload`, `doc.canUndo`, `doc.canRedo` |
+| sibling 복제 | `doc.duplicate(pointer, options)` |
+| 선택 상태 저장 | `doc.selection` |
+| copy, cut, paste, 직접 payload paste | `doc.clipboard` |
+| undo, redo, merge, transaction | `doc.history` |
+| 위치별 schema 확인 | `doc.schema.at`, `doc.schema.kind`, `doc.schema.describe`, `doc.schema.accepts` |
+
+## 시작 예제
+
+```ts
+import { z } from "zod";
+import { createJSONDocument } from "zod-crud";
+
+const Card = z.object({
+  id: z.string(),
+  title: z.string().min(1),
+  status: z.enum(["todo", "doing", "done"]),
+});
+
+const doc = createJSONDocument(Card, {
+  id: "c1",
+  title: "Write docs",
+  status: "todo",
+}, {
+  history: 100,
+  selection: true,
+});
+
+const patch = [{ op: "replace", path: "/status", value: "doing" }] as const;
+
+if (doc.canPatch(patch).ok) {
+  doc.commit(patch, { label: "change status" });
+}
+```
+
+React에서는 같은 `JSONDocument<T>` 표면을 hook으로 받습니다.
 
 ## React — `useJSONDocument`
 
 ```tsx
-import * as z from "zod";
+import { z } from "zod";
 import { useJSONDocument } from "zod-crud/react";
 
 const Schema = z.object({
@@ -63,8 +96,8 @@ export function App() {
     <>
       <input
         value={doc.value.title}
-        onChange={(e) =>
-          doc.patch({ op: "replace", path: "/title", value: e.target.value })
+        onChange={(event) =>
+          doc.patch({ op: "replace", path: "/title", value: event.target.value })
         }
       />
       <button
@@ -81,94 +114,102 @@ export function App() {
       <button onClick={() => doc.history.undo()} disabled={!doc.canUndo().ok}>
         undo
       </button>
-      {doc.value.tasks.map((task, index) => (
-        <label key={task.id}>
-          <input
-            type="checkbox"
-            checked={task.done}
-            onChange={(e) =>
-              doc.patch({
-                op: "replace",
-                path: `/tasks/${index}/done`,
-                value: e.target.checked,
-              })
-            }
-          />
-          {task.id}
-        </label>
-      ))}
     </>
   );
 }
 ```
 
-## Document Facade
+## 문서 Facade
 
-`createJSONDocument` and `useJSONDocument` expose the same document facade.
+`createJSONDocument`와 `useJSONDocument`는 같은 document facade를 노출합니다. React hook은 render lifecycle만 연결합니다.
 
-| Surface | Purpose |
+| 표면 | 역할 |
 | --- | --- |
-| `doc.value` | current schema-valid JSON value |
-| `doc.patch(patch)` | apply one JSON Patch operation or an operation array |
-| `doc.duplicate(pointer, opts)` | duplicate one sibling and optionally rekey unique fields |
-| `doc.load(value)` | replace the document with a schema-valid value |
-| `doc.reset()` | restore the initial value or a provided value |
-| `doc.subscribe(listener)` | observe applied patch records |
-| `doc.at(pointer)` | read one JSON Pointer location as a `ReadResult` |
-| `doc.exists(pointer)` | check whether a pointer resolves |
-| `doc.query(jsonPath)` | return pointer matches for a JSONPath query |
-| `doc.entries(pointer)` | list object/array child entries |
-| `doc.selection` | optional headless selection state |
+| `doc.value` | 현재 schema-valid JSON 값 |
+| `doc.patch(patch)` | JSON Patch operation 하나 또는 배열 적용 |
+| `doc.commit(operations, options)` | operation 배열과 metadata, 최종 selection을 하나의 변경으로 기록 |
+| `doc.duplicate(pointer, options)` | sibling 복제와 optional `rekey` |
+| `doc.load(value)` | schema-valid 값으로 document 교체 |
+| `doc.reset(value?)` | 초기값 또는 제공값으로 복원 |
+| `doc.subscribe(listener)` | 적용된 patch stream과 metadata 구독 |
+| `doc.at(pointer)` | 한 Pointer 위치를 `ReadResult`로 읽기 |
+| `doc.exists(pointer)` | Pointer 존재 여부 확인 |
+| `doc.query(jsonPath)` | JSONPath 검색 결과 Pointer 반환 |
+| `doc.entries(pointer)` | object/array child entry 나열 |
+| `doc.selection` | headless selection 상태 |
 | `doc.clipboard` | headless clipboard payload buffer |
-| `doc.history` | undo/redo state and controls |
-| `doc.can*` | reasoned capability checks, not booleans |
-| `doc.schema` | schema introspection for a pointer |
+| `doc.history` | undo/redo 제어 표면 |
+| `doc.can*` | boolean이 아니라 이유 있는 capability result |
+| `doc.schema` | Pointer 위치별 schema helper |
 
-## Patch, Pointer, JSONPath
+## Pointer, JSONPath, Patch
+
+Patch path와 selection/clipboard target은 JSON Pointer입니다.
 
 ```ts
 doc.patch({ op: "replace", path: "/title", value: "Ready" });
 doc.patch([
-  { op: "replace", path: "/settings/owner", value: "playground" },
+  { op: "replace", path: "/settings/owner", value: "editor" },
   { op: "add", path: "/lists/0/cards/-", value: card },
 ]);
-
-doc.at("/lists/0/cards/0/title");
-doc.query("$..cards[?(@.status=='todo')]");
 ```
 
-Patch paths are JSON Pointers. JSONPath is only for query; use the returned
-pointers when you want to patch.
-
-`doc.at(pointer)` returns a result object, not the raw value.
+JSONPath는 값을 찾는 언어이며 직접 변경하지 않습니다. `doc.query(jsonPath)`로 Pointer를 받은 뒤 그 Pointer로 `doc.patch(...)`를 만듭니다.
 
 ```ts
-const result = doc.at("/lists/0/cards/0/title");
+const result = doc.query("$..cards[?(@.status=='todo')]");
+
 if (result.ok) {
-  result.value;
+  doc.patch(result.pointers.map((path) => ({
+    op: "replace",
+    path: `${path}/status`,
+    value: "done",
+  })));
 }
 ```
 
-`doc.patch(...)` accepts one operation or an operation array. `doc.commit(...)`
-and `doc.canPatch(...)` take operation arrays because they plan or record a
-batch.
+`doc.at(pointer)`는 raw value가 아니라 `ReadResult`를 반환합니다.
 
 ```ts
-doc.patch({ op: "replace", path: "/title", value: "Ready" });
-doc.canPatch([{ op: "replace", path: "/title", value: "Ready" }]);
-doc.commit([{ op: "replace", path: "/title", value: "Ready" }], { label: "rename" });
+const result = doc.at("/lists/0/cards/0/title");
+if (result.ok) result.value;
 ```
 
-Use JSONPath to find values, not to mutate them directly.
+`doc.patch(...)`는 operation 하나 또는 operation 배열을 받습니다. `doc.commit(...)`과 `doc.canPatch(...)`는 batch를 계획하거나 기록하므로 operation arrays를 받습니다.
+
+알려진 burst edit은 operation 배열을 만들고 `doc.patch(...)`나 `doc.commit(...)`을 한 번 호출합니다. `history.transaction`은 history entry를 묶지만 반복 `doc.patch(...)` 호출을 한 번의 schema validation으로 바꾸지는 않습니다.
+
+## can* 결과
+
+`can*`는 boolean이 아닙니다. UI disabled reason, validation message, command palette 상태를 같은 결과 객체로 만들 수 있도록 이유를 포함합니다.
 
 ```ts
-doc.query("$..cards[?(@.status=='todo')]");
-doc.query("$.lists[*].cards[*]");
+const can = doc.canPastePayload("/lists/0/cards/-", candidateCard);
+
+if (!can.ok) {
+  can.code;
+  can.reason;
+  can.violations;
+}
 ```
 
-Use `duplicate` when the intent is sibling duplication rather than a raw RFC
-`copy` operation. Arrays insert the duplicate after the source. Object members
-need `newKey`. `rekey` can mint new values for id-like fields.
+`violations[].path`는 RFC 6901 JSON Pointer입니다. `doc.schema.accepts(path, value, mode)`는 요청한 schema 위치 기준인 `schema-slot` path를 보고합니다. `canPatch`, `canPastePayload`, `canPaste`, `canDuplicate` 같은 mutation preflight는 patch preview 뒤 실제 문서 결과 위치인 `document-result` path를 보고합니다.
+
+`/items/-`는 schema helper에서는 `/items/-/name`처럼 남을 수 있지만, mutation preflight에서는 현재 배열 길이에 따라 `/items/2/name` 같은 실제 index가 됩니다.
+
+`discriminator_mismatch`는 schema violation이 아니므로 `violations`를 노출하지 않습니다. Capability result는 `code`와 `reason`으로 보고하고, clipboard paste mutation result는 필요하면 `source`와 `expected`를 포함합니다.
+
+## 오류 정책
+
+`strict`는 `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` 같은 document execution method에만 적용됩니다. `can*`, read, schema, selection, clipboard, duplicate, history API는 각자의 Result, boolean, snapshot 표면을 유지하고 `strict`를 쓰지 않습니다.
+
+기본값은 module load 시점의 `strict ?? process.env.NODE_ENV !== "production"`입니다. 처리된 document execution failure가 생기면 `onError(JSONCrudError)`가 먼저 호출됩니다. 그 뒤 strict mode는 `JSONCrudError`를 throw하고, non-strict mode는 실패한 `JSONResult`를 반환합니다.
+
+초기 값이 invalid이면 document가 생기기 전에 Zod parse error가 throw됩니다. `trustedInitial: true`는 호출자가 그 validation boundary를 이미 소유할 때만 사용합니다.
+
+## 복제
+
+`doc.duplicate(pointer, options)`는 raw RFC 6902 `copy`가 아니라 sibling 복제 의도를 표현합니다. 배열에서는 source 바로 뒤에 삽입하고, object member 복제에는 `newKey`가 필요합니다. `rekey`는 id-like field 충돌을 피할 때 사용합니다.
 
 ```ts
 const duplicated = doc.duplicate("/lists/0/cards/0", {
@@ -176,19 +217,16 @@ const duplicated = doc.duplicate("/lists/0/cards/0", {
 });
 
 if (duplicated.ok) {
-  duplicated.value; // current document value after mutation
-  duplicated.applied; // already-applied patch records
+  duplicated.value;
+  duplicated.applied;
 }
 ```
 
-`duplicate`, `clipboard.cut`, `clipboard.paste`, and `clipboard.pastePayload`
-mutate the document immediately. Their `applied` records are for inspection;
-do not pass them to `commit` again.
+`duplicate`, `clipboard.cut`, `clipboard.paste`, `clipboard.pastePayload`는 성공하면 즉시 document를 변경합니다. 성공 결과의 `applied`는 이미 적용된 patch 기록이므로 다시 `commit`하지 않습니다.
 
-## Selection
+## 선택
 
-Selection is a JSON-safe value. Use `anchor`/`focus` to preserve direction and
-`selectionRanges` for multi-select.
+Selection은 DOM focus가 아니라 JSON-safe state입니다. bulk 작업에는 선택된 Pointer를 명시 source로 넘기는 편이 좋습니다.
 
 ```ts
 doc.selection?.selectRanges([
@@ -196,161 +234,54 @@ doc.selection?.selectRanges([
   "/lists/0/cards/1",
 ]);
 
-const selection = doc.selection?.snapshot();
-```
-
-Common selection surface:
-
-| Need | API |
-| --- | --- |
-| Read current selection | `selectedPointers`, `primaryPointer`, `anchorPointer`, `focusPointer`, `caret` |
-| Collapse or extend | `collapse(point)`, `setBaseAndExtent(anchor, focus)`, `extend(point)` |
-| Multi-select | `addRange(range)`, `removeRange(range)`, `togglePointer(pointer)`, `selectRanges(ranges)` |
-| Cursor movement | `moveCursor(direction)`, `extendCursor(direction)`, `resolveCursor(direction)` |
-| Text editing plans | `textPatch(replacement)`, `deleteText(options)` |
-| Serialization | `snapshot()`, `toJSON()`, `restore(snapshot)`, `subscribe(listener)` |
-
-For object members, prefer explicit pointer lists. JSON objects are unordered
-by the JSON RFC, so object child ranges should not carry ordering semantics.
-
-Use selected pointers as clipboard sources when the user has made a multi-select.
-
-```ts
 const source = doc.selection?.selectedPointers ?? [];
 doc.clipboard.copy(source);
-doc.clipboard.cut(source);
 ```
 
-`copy()` and `cut()` can fall back to the current selection when the source is
-omitted, but explicit sources are easier to audit in app code and tests.
+| 필요 | API |
+| --- | --- |
+| 현재 선택 읽기 | `selectedPointers`, `primaryPointer`, `anchorPointer`, `focusPointer`, `caret` |
+| 접기와 확장 | `collapse(point)`, `setBaseAndExtent(anchor, focus)`, `extend(point)` |
+| multi-select | `addRange(range)`, `removeRange(range)`, `toggleRange(range)`, `togglePointer(pointer)`, `selectRanges(ranges)` |
+| cursor 이동 | `moveCursor(direction)`, `extendCursor(direction)`, `resolveCursor(direction)` |
+| text edit 계획 | `textPatch(replacement)`, `deleteText(options)` |
+| 직렬화와 복원 | `snapshot()`, `toJSON()`, `restore(snapshot)`, `subscribe(listener)` |
 
-## Clipboard
+JSON object member는 표준상 순서가 없습니다. object child range에 순서 의미를 주기보다 명시 Pointer list를 사용합니다.
 
-Clipboard operations should receive explicit sources and targets.
+## 클립보드
+
+Clipboard는 copy/cut/paste payload 흐름을 맡습니다. Selection은 무엇이 선택되었는지만 기록합니다.
 
 ```ts
-const source = doc.selection?.selectedPointers ?? [];
-const copied = doc.clipboard.copy(source);
+const copied = doc.clipboard.copy(["/lists/0/cards/0"]);
 
 if (copied.ok) {
-  const pasted = doc.clipboard.paste("/lists/1/cards/-");
-  if (pasted.ok) pasted.applied;
+  doc.clipboard.paste("/lists/1/cards/-");
 }
 ```
 
-For direct payload insertion, pass the payload explicitly.
+삽입 위치를 이미 알고 있으면 `/items/-`나 `/lists/1/cards/-` 같은 Pointer를 그대로 넘깁니다. 기존 값을 기준으로 붙일 때는 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 사용합니다.
 
 ```ts
-doc.clipboard.pastePayload("/lists/0/cards/-", { id: "new", title: "New card" });
+doc.clipboard.pastePayload("/lists/0/cards/-", candidateCard);
 doc.clipboard.paste({ after: "/lists/0/cards/0" });
 ```
 
-For large payloads that are already JSON-compatible, buffer them without
-revalidating the JSON boundary.
-
-```ts
-doc.clipboard.write(cards, { trustedPayload: true });
-```
-
-When the caller also owns the payload's immutability boundary, skip the
-clipboard buffer clone as well.
-
-```ts
-doc.clipboard.write(cards, { trustedPayload: true, clonePayload: false });
-const read = doc.clipboard.read({ clonePayload: false });
-doc.clipboard.copy("/cards", { clonePayload: false });
-doc.clipboard.cut("/cards", { clonePayload: false });
-```
-
-Use a pointer such as `/cards/-` when you already have an insertion position.
-Use `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }` when
-the target is an existing value.
-
-Pointer-array copy stores an array payload. When the paste should insert each
-copied item as a separate sibling, pass `spread: true`. This matters even when
-the pointer array has one item.
-
-```ts
-doc.clipboard.copy(["/lists/0/cards/0"]);
-doc.clipboard.paste("/lists/1/cards/-", {
-  spread: true,
-  rekey: { fields: ["id"], strategy: "suffix" },
-});
-```
-
-Use the same paste options in `canPaste(...)` that you will use in
-`paste(...)`.
+Pointer 배열을 copy/cut하면 clipboard payload도 배열입니다. 여러 source를 담은 buffer를 array insertion target에 paste하면 기본적으로 item을 펼쳐 넣습니다. 배열 payload 자체를 하나의 값으로 넣어야 할 때만 `{ spread: false }`를 넘깁니다. 직접 array payload를 `pastePayload`에 넘기면서 각 item을 sibling으로 넣으려면 `{ spread: true, rekey }`를 `canPastePayload(...)`와 `clipboard.pastePayload(...)`에 같은 옵션으로 넘깁니다.
 
 ```ts
 const target = "/lists/1/cards/-";
 const options = { spread: true, rekey: { fields: ["id"], strategy: "suffix" } } as const;
-if (doc.canPaste(target, options).ok) doc.clipboard.paste(target, options);
+
+if (doc.canPaste(target, options).ok) {
+  doc.clipboard.paste(target, options);
+}
 ```
 
-## Tree Editing Cookbook
+## 히스토리
 
-Tree semantics belong to the app. zod-crud stores and validates JSON; the app
-turns UI actions such as indent, outdent, visible-row focus, and toolbar
-commands into JSON Pointers and JSON Patch operations.
-
-```ts
-type Node = { id: string; text: string; children: Node[] };
-
-const NodeSchema: z.ZodType<Node> = z.lazy(() =>
-  z.object({
-    id: z.string(),
-    text: z.string(),
-    children: z.array(NodeSchema),
-  }),
-);
-
-const OutlineSchema = z.object({ nodes: z.array(NodeSchema) });
-```
-
-Useful tree pointers look like this:
-
-```txt
-/nodes/0
-/nodes/0/children/0
-/nodes/0/children/0/children/0
-```
-
-Common tree actions are plain patch operations:
-
-```ts
-// Add child.
-doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });
-
-// Add sibling after /nodes/0.
-doc.patch({ op: "add", path: "/nodes/1", value: node });
-
-// Move up or down within the same array.
-doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0" }); // up
-doc.patch({ op: "move", from: "/nodes/0", path: "/nodes/1" }); // down one
-
-// Indent under previous sibling.
-doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0/children/-" });
-
-// Outdent to the parent's next sibling slot.
-doc.patch({ op: "move", from: "/nodes/0/children/1", path: "/nodes/1" });
-```
-
-For same-array moves, RFC 6902 removes the source first and then adds at the
-destination path. To move `/nodes/0` down one row, use `/nodes/1`, not
-`/nodes/2`.
-
-Selection is still headless JSON state. Pair it with DOM focus or local UI state
-when the product needs visible-row focus.
-
-```ts
-doc.selection?.selectRanges(["/nodes/0"]);
-const selected = doc.selection?.primaryPointer;
-```
-
-## History
-
-Document changes are recorded as patch/inverse-patch entries. Undo/redo lives
-under `doc.history`.
+History는 document patch와 inverse patch를 기록합니다.
 
 ```ts
 doc.patch({ op: "replace", path: "/title", value: "Final" });
@@ -358,8 +289,7 @@ doc.history.undo();
 doc.history.redo();
 ```
 
-For many known edits, build one operation array and commit it once. This keeps
-schema validation, history recording, and subscribers on one document change.
+알고 있는 여러 변경은 operation 배열로 한 번 commit합니다.
 
 ```ts
 doc.commit([
@@ -368,7 +298,7 @@ doc.commit([
 ], { label: "rename cards" });
 ```
 
-History metadata is serializable and follows the patch entry.
+History metadata는 앱이나 adapter가 document change에 붙이는 JSON-safe 주석입니다.
 
 ```ts
 doc.commit(patch, {
@@ -381,68 +311,34 @@ doc.commit(patch, {
 doc.history.mergeLast({ mergeKey: "title" });
 ```
 
-Use `history.transaction` only when each step must observe the intermediate
-document state. It groups history entries, but it does not turn repeated
-`doc.patch(...)` calls into one schema validation pass.
+공개 history API는 undo/redo control surface이지 history entry inspector가 아닙니다. 저장, audit log, command label, collaboration adapter가 metadata를 읽어야 하면 `doc.subscribe((patch, metadata) => ...)`로 패치 스트림을 mirror합니다. `history.transaction`은 여러 patch event를 하나의 undo entry로 묶을 수 있고, `history.mergeLast`는 새 patch event 없이 undo stack만 갱신합니다.
 
-## Performance
+앱이 `"Undo Rename card"` 같은 label을 필요로 하면 command/action layer에서 `commit`이나 `history.transaction`에 넘긴 metadata를 같이 보관합니다. `mergeKey`는 app annotation이면서 history grouping hint입니다.
 
-For large documents, keep hot UI paths on the document facade: `doc.patch`,
-`doc.commit`, and `doc.canPatch`. Public `applyPatch` is an external JSON
-boundary and checks the whole input state for JSON safety. If the state already
-crossed that boundary, `applyPatchToTrustedState` skips the state scan and can
-use the same trusted plain-schema fast paths as the document facade.
+## Schema helper
 
-Fast document paths apply when the current state is trusted document state and
-the schema is a plain structural Zod schema: objects, arrays, records, and
-scalar validators without refinements, transforms, or checks. Covered edits
-include independent non-root `replace`, root object edits, same-array field,
-nested-field, and element `replace` batches, array `add`/`remove`/`copy`/`move`,
-and same-array `add`/`remove` batches. Schemas with `refine`, `superRefine`, transforms,
-or other checks intentionally use full root schema validation.
-
-Measure core workloads locally with:
-
-```sh
-npm run perf:core
-```
-
-## Capability Checks
-
-`can*` methods return a result object so UI and tests can inspect the reason.
-`canPaste` checks the current clipboard buffer. `canPastePayload` checks a
-direct payload.
+Schema helper는 Pointer 위치가 어떤 값을 받는지 묻는 API입니다.
 
 ```ts
-const result = doc.canPastePayload("/lists/0/cards/-", candidateCard);
-
-if (!result.ok) {
-  console.log(result.code, result.reason);
-}
+doc.schema.kind("/lists/0/cards/-", "insert");
+doc.schema.at("/lists/0/cards/-", "insert");
+doc.schema.describe("/lists/0/cards/-", "insert");
+doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
 ```
 
-Schema failures expose `violations` for UI messages.
+## 순수 core
 
-```ts
-const blocked = doc.canPastePayload("/lists/0/cards/-", invalidCard);
+Root helper는 React-free이며 외부 JSON 경계에서 유용합니다.
 
-if (!blocked.ok && blocked.code === "schema_violation") {
-  blocked.violations?.map((violation) => [violation.path, violation.message]);
-}
-```
+대표 helper는 `applyOperation`, `applyPatch`, `applyPatchToTrustedState`입니다. `applyOperation`과 `applyPatch`는 pure function입니다. 같은 input은 같은 output을 만듭니다. `applyPatch`는 외부 JSON 경계라서 입력 state 전체의 JSON 안전성을 확인합니다. 호출자가 이미 그 state JSON 경계를 소유한다면 `applyPatchToTrustedState`를 사용할 수 있습니다.
 
-Available checks include `canPatch`, `canFind`, `canReplace`, `canRemove`,
-`canMove`, `canDuplicate`, `canCopy`, `canCut`, `canPaste`,
-`canPastePayload`, `canUndo`, and `canRedo`.
-
-## Pure core (no React)
+Pointer helper는 `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment`, `trackPointer`입니다.
 
 ```ts
 import * as z from "zod";
-import { applyOperation, applyPatch } from "zod-crud";
+import { applyPatch } from "zod-crud";
 
 const Schema = z.object({ title: z.string(), tags: z.array(z.string()) });
-
 const initial = { title: "draft", tags: [] };
 
 const r = applyPatch(Schema, initial, [
@@ -455,13 +351,9 @@ if (r.result.ok) {
 }
 ```
 
-Both `applyOperation` and `applyPatch` are pure. Same input, same output.
-Use `applyPatchToTrustedState` only when the caller already owns the JSON
-boundary for the input state; operation values and schema are still checked.
+## 직렬화
 
-## Serialization
-
-State, operations, selection snapshots, and patch records are JSON.
+State, operation, selection snapshot, patch record는 JSON입니다.
 
 ```ts
 import * as z from "zod";
@@ -474,7 +366,7 @@ const restored = Schema.parse(JSON.parse(json));
 const safe = Schema.safeParse(JSON.parse(json));
 ```
 
-Operations can be sent as `application/json-patch+json`.
+Operation은 `application/json-patch+json`으로 보낼 수 있습니다.
 
 ```ts
 const operations = [{ op: "replace", path: "/title", value: "final" }];
@@ -486,84 +378,102 @@ fetch("/api/save", {
 });
 ```
 
-## Maintainer Notes
+## 성능 경계
 
-This section is not required for package use. It exists to keep source
-references and release checks aligned.
+큰 문서의 hot path는 document facade인 `doc.patch`, `doc.commit`, `doc.canPatch`에 둡니다.
 
-Public entrypoints are intentionally at the package source root:
+빠른 document path는 현재 state가 신뢰된 document state이고 schema가 구조만 가진 Zod schema일 때만 적용됩니다. 대상은 refinement, transform, check가 없는 object, array, record, scalar validator입니다. 지원 edit는 independent non-root `replace`, root object edit, same-array field, nested-field, element `replace` batch, array `add`/`remove`/`copy`/`move`, same-array `add`/`remove` batch입니다.
 
-```txt
-src/
-├─ index.ts      zod-crud
-├─ react.ts      zod-crud/react
-├─ application/  document facade assembly
-├─ domain/       editing, selection, schema, tracking rules
-└─ foundation/   JSON Patch, JSON Pointer, JSONPath, history, errors
-```
-
-In source references, write these entrypoints as `src/index.ts` and
-`src/react.ts`.
-
-Only `zod-crud` and `zod-crud/react` are package API. Do not import
-`zod-crud/src/*`, `zod-crud/dist/*`, `application/*`, `domain/*`, or
-`foundation/*` subpaths.
-
-## Verification
-
-Before release, run the release gate. It runs root `verify`, `perf:core`, and
-`pack:library`. The root `verify` gate includes package checks and
-`docs:evaluate`, which guards this README, the site API doc, SPEC, `llms.txt`,
-release notes, the source-layout SSOT, and the 100-loop ledger.
+`refine`, `superRefine`, transform, check가 있는 schema는 의도적으로 전체 루트 schema 검증으로 돌아갑니다.
 
 ```sh
+npm run perf:core
+```
+
+## 트리 편집 Cookbook
+
+트리 의미론은 앱 책임입니다. zod-crud는 JSON을 검증하고 변경합니다. 앱은 indent, outdent, visible-row focus, toolbar command를 JSON Pointer와 JSON Patch operation으로 번역합니다.
+
+```txt
+/nodes/0
+/nodes/0/children/0
+/nodes/0/children/0/children/0
+```
+
+```ts
+doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });
+doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0/children/-" });
+doc.patch({ op: "move", from: "/nodes/0/children/1", path: "/nodes/1" });
+```
+
+같은 배열 move는 RFC 6902처럼 source를 먼저 제거한 뒤 destination에 add합니다. `/nodes/0`을 한 칸 아래로 내릴 때는 `/nodes/2`가 아니라 `/nodes/1`을 씁니다.
+
+## 관리자 메모
+
+이 섹션은 패키지 사용에 필요하지 않습니다. release check를 맞추기 위한 계약입니다.
+
+패키지 API는 `zod-crud`와 `zod-crud/react`로 제한됩니다. 전체 공개 export 계약은 `packages/zod-crud/public-contract.json`입니다.
+
+`prepublishOnly`는 root `release:check`로 위임됩니다. root `release:check`는 `verify`, `standard:check`, `perf:core`, `pack:library`를 순서대로 실행합니다. root `verify`에는 `docs:evaluate`가 포함되어 README, SPEC, site docs, `llms.txt`, release notes, 공개 export, source-layout SSOT, drift ledger를 확인합니다. `standard:check`는 draft core standard와 public conformance suite를 확인합니다.
+
+```sh
+npm run docs:evaluate
+npm run standard:check
 npm run release:check
 ```
 
-## Public Exports
+## 공개 Export
 
-Root entrypoint:
+Root 진입점:
 
 ```ts
 import {
   JSONCrudError,
-  createJSONDocument,
+  PointerSyntaxError,
+  appendSegment,
   applyOperation,
   applyPatch,
   applyPatchToTrustedState,
-  parsePointer,
-  tryParsePointer,
   buildPointer,
+  createJSONDocument,
   escapeSegment,
-  unescapeSegment,
-  PointerSyntaxError,
-  parentPointer,
   lastSegment,
   lastSegmentIndex,
-  appendSegment,
-  withLastSegment,
+  parentPointer,
+  parsePointer,
   trackPointer,
+  tryParsePointer,
+  unescapeSegment,
+  withLastSegment,
   type HistoryTransactionOptions,
   type JSONCapabilityResult,
   type JSONChangeMetadata,
   type JSONDocument,
   type JSONDocumentCommitOptions,
+  type JSONDocumentDuplicateError,
   type JSONDocumentDuplicateOptions,
   type JSONDocumentDuplicateResult,
   type JSONDocumentHistory,
+  type JSONDocumentOptions,
   type JSONDocumentPasteOptions,
   type JSONDocumentPasteTarget,
   type JSONPatchInput,
   type JSONPatchOperation,
+  type SelectionPoint,
   type JSONResult,
   type Pointer,
-  type UseJSONDocumentOptions,
   type ClipboardCopyOptions,
+  type ClipboardCopyError,
+  type ClipboardCopyOk,
+  type ClipboardCopyResult,
+  type ClipboardCutError,
   type ClipboardCutOk,
   type ClipboardCutOptions,
   type ClipboardCutResult,
   type ClipboardEmpty,
   type ClipboardMutationOk,
+  type ClipboardPasteDiscriminatorMismatch,
+  type ClipboardPasteError,
   type ClipboardPasteResult,
   type ClipboardReadOk,
   type ClipboardReadOptions,
@@ -584,12 +494,10 @@ import {
   type SchemaPathMode,
   type SchemaQueryResult,
   type SchemaState,
-  type UseSelectionOptions,
-  type JSONPointObject,
-  type JSONPoint,
-  type OrderedSelectionRange,
-  type OrderedSelectionRangeEntry,
-  type SelectionAction,
+  type SelectionOptions,
+  type SelectionPointObject,
+  type SelectionOrderedRange,
+  type SelectionOrderedRangeEntry,
   type SelectionAffinity,
   type SelectionContext,
   type SelectionCursorDirection,
@@ -613,9 +521,9 @@ import {
   type SelectionScopeOptions,
   type SelectionScopeResult,
   type SelectionScopeTarget,
+  type SelectionSnap,
   type SelectionSource,
   type SelectionSpanOptions,
-  type SelectionSnap,
   type SelectionState,
   type SelectionType,
   type DeleteSelectionTextResult,
@@ -627,20 +535,10 @@ import {
   type SelectionTextEditOptions,
   type SelectionTextEditsResult,
   type ClipboardSource,
-  type CopyError,
-  type CopyOk,
-  type CutError,
-  type CutOk,
-  type DuplicateError,
-  type DuplicateOk,
-  type PasteDuMismatch,
-  type PasteError,
-  type PasteOptions,
-  type PasteTarget,
 } from "zod-crud";
 ```
 
-React entrypoint:
+React 진입점:
 
 ```ts
 import { useJSONDocument } from "zod-crud/react";

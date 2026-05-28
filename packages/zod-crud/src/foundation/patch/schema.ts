@@ -1,7 +1,7 @@
 import type * as z from "zod";
 import { jsonSerializableError } from "../json/serializable.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
-import { normalizeOp } from "./container.js";
+import { normalizeAppliedOp, normalizeOp } from "./container.js";
 import { applyPublicTrustedStateFastPatch } from "./fast/apply.js";
 import { fail, ok, zodIssuesReason } from "./result.js";
 import { applyTrustedValueMutation } from "./value.js";
@@ -19,10 +19,11 @@ export function applyOperation<S extends z.ZodTypeAny>(
   const normalized = normalizeOp(op, state);
   const r = applyOpRaw(state, normalized);
   if ("error" in r) return { state, result: fail(r.error, r.reason, r.pointer), applied: [] };
-  if (normalized.op === "test") return { state, result: ok, applied: [normalized] };
+  const appliedOp = normalizeAppliedOp(normalized, r.state);
+  if (normalized.op === "test") return { state, result: ok, applied: [appliedOp] };
   const parsed = schema.safeParse(r.state);
   if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };
-  return { state: r.state as z.output<S>, result: ok, applied: [normalized] };
+  return { state: r.state as z.output<S>, result: ok, applied: [appliedOp] };
 }
 
 export function applyPatch<S extends z.ZodTypeAny>(
@@ -55,11 +56,11 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
     const shape = validateOperationShape(ops[i]!);
     if (shape) return { state, result: fail(shape.error, `op[${i}]: ${shape.reason}`), applied: [] };
     const n = normalizeOp(ops[i]!, cur);
-    normalized.push(n);
     const r = applyOpRaw(cur, n);
     if ("error" in r) {
       return { state, result: fail(r.error, r.reason ? `op[${i}]: ${r.reason}` : `op[${i}]`, r.pointer), applied: [] };
     }
+    normalized.push(normalizeAppliedOp(n, r.state));
     cur = r.state;
   }
   const parsed = schema.safeParse(cur);

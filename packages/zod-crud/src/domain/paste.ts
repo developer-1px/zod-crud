@@ -31,9 +31,9 @@ export interface PasteError {
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
-export interface PasteDuMismatch {
+export interface PasteDiscriminatorMismatch {
   ok: false;
-  code: "du_branch_mismatch";
+  code: "discriminator_mismatch";
   message: string;
   source: { discriminator: string; value: unknown };
   expected: { discriminator: string; allowed: unknown[] };
@@ -92,7 +92,7 @@ export function paste<S extends z.ZodType>(
   target: Pointer,
   mode: PasteMode = "into",
   options: PasteExecutionOptions = {},
-): PasteOk<z.output<S>> | PasteError | PasteDuMismatch {
+): PasteOk<z.output<S>> | PasteError | PasteDiscriminatorMismatch {
   const rekeyed = tryRekeyPayload(payload, state, options.rekey, {
     trustedPayload: options.trustedPayload,
   });
@@ -118,7 +118,7 @@ function findPasteMismatch<S extends z.ZodType>(
   target: Pointer,
   mode: PasteMode,
   spread: boolean,
-): PasteDuMismatch | null {
+): PasteDiscriminatorMismatch | null {
   const targetSchema = schemaAtPointer(schema, target, mode === "into" || mode === "before" || mode === "after" ? "insert" : "value");
   if (!targetSchema) return null;
 
@@ -132,7 +132,7 @@ function findPasteMismatch<S extends z.ZodType>(
   return null;
 }
 
-function createPayloadMismatchCapabilityer(targetSchema: z.ZodType): (payload: unknown) => PasteDuMismatch | null {
+function createPayloadMismatchCapabilityer(targetSchema: z.ZodType): (payload: unknown) => PasteDiscriminatorMismatch | null {
   const info = getDiscriminatedUnionInfo(targetSchema);
   if (info) {
     return (payload) => {
@@ -142,7 +142,7 @@ function createPayloadMismatchCapabilityer(targetSchema: z.ZodType): (payload: u
 
       return {
         ok: false,
-        code: "du_branch_mismatch",
+        code: "discriminator_mismatch",
         message: `${String(value)} cannot be pasted where ${info.allowed.map(String).join(" | ")} is expected`,
         source: { discriminator: info.discriminator, value },
         expected: { discriminator: info.discriminator, allowed: info.allowed },
@@ -177,7 +177,7 @@ function objectLiteralFields(targetSchema: z.ZodType): LiteralField[] {
 function findLiteralMismatch(
   payload: Record<string, unknown>,
   literalFields: ReadonlyArray<LiteralField>,
-): PasteDuMismatch | null {
+): PasteDiscriminatorMismatch | null {
   for (const { key, allowed } of literalFields) {
     if (!Object.prototype.hasOwnProperty.call(payload, key)) continue;
 
@@ -185,7 +185,7 @@ function findLiteralMismatch(
     if (allowed.some((allowedValue) => Object.is(allowedValue, value))) return null;
     return {
       ok: false,
-      code: "du_branch_mismatch",
+      code: "discriminator_mismatch",
       message: `${String(value)} cannot be pasted where ${allowed.map(String).join(" | ")} is expected`,
       source: { discriminator: key, value },
       expected: { discriminator: key, allowed },

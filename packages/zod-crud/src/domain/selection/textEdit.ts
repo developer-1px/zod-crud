@@ -11,8 +11,8 @@ import {
 } from "./order.js";
 import { selectionSpansForPointer } from "./spans.js";
 import type {
-  JSONPoint,
-  JSONPointObject,
+  SelectionPoint,
+  SelectionPointObject,
   SelectionAffinity,
   SelectionOrderErrorCode,
   SelectionPointerSpan,
@@ -192,7 +192,7 @@ export function replaceSelectionText(
   };
 }
 
-function uniquePointPointers(points: ReadonlyArray<JSONPoint>): Pointer[] {
+function uniquePointPointers(points: ReadonlyArray<SelectionPoint>): Pointer[] {
   const out: Pointer[] = [];
   for (const point of points) {
     const pointer = pointPath(point);
@@ -286,7 +286,7 @@ function textEditSelection(
   affinity: SelectionAffinity | undefined,
 ): SelectionSnap {
   const selectionRanges = edits.map((edit): SelectionRange => {
-    const point: JSONPointObject = {
+    const point: SelectionPointObject = {
       path: edit.pointer,
       offset: finalOffsets.get(edit) ?? edit.startOffset + edit.replacement.length,
     };

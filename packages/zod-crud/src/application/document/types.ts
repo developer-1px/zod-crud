@@ -11,12 +11,13 @@ import type { JSONDocumentHistory } from "./history/types.js";
 import type {
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
+  JSONDocumentDuplicateError,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONPatchInput,
-  UseSelectionOptions,
+  SelectionOptions,
 } from "./runtime/types.js";
 
 export type { JSONDocumentHistory } from "./history/types.js";
@@ -24,15 +25,16 @@ export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
+  JSONDocumentDuplicateError,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   JSONPatchInput,
-  UseSelectionOptions,
+  SelectionOptions,
 } from "./runtime/types.js";
 
-export interface UseJSONDocumentOptions {
+export interface JSONDocumentOptions {
   strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
   /**
@@ -41,7 +43,7 @@ export interface UseJSONDocumentOptions {
    */
   trustedInitial?: boolean | undefined;
   history?: number;
-  selection?: boolean | UseSelectionOptions;
+  selection?: boolean | SelectionOptions;
   onChange?: () => void;
 }
 export type JSONCapabilityResult = CapabilityResult;

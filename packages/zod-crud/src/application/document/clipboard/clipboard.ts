@@ -12,7 +12,7 @@ import {
   paste,
   rekeyProducesTrustedPayload,
   resolvePasteArgs,
-  type PasteDuMismatch,
+  type PasteDiscriminatorMismatch,
   type PasteError,
   type PasteOptions,
   type PasteTarget,
@@ -176,7 +176,7 @@ export type ClipboardPastePlanResult<T> =
       applied: ReadonlyArray<JSONPatchOperation>;
     }
   | PasteError
-  | PasteDuMismatch;
+  | PasteDiscriminatorMismatch;
 
 interface InternalClipboardState<T> extends ClipboardState<T> {
   [INTERNAL_CLIPBOARD_PEEK](): ClipboardPeekResult;
