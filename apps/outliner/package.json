@@ -13,7 +13,9 @@
   "dependencies": {
     "@zod-crud/clipboard-web": "*",
     "@zod-crud/collection": "*",
+    "@zod-crud/dirty-state": "*",
     "@zod-crud/outline": "*",
+    "@zod-crud/persist-web": "*",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zod": "^4.0.0",

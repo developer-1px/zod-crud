@@ -10,6 +10,7 @@ import { useClipboard } from "./clipboard.js";
 import { useToasts } from "./hooks/useToasts.js";
 import { useTextEditCoalesce } from "./hooks/useTextEditCoalesce.js";
 import { useDispatch } from "./hooks/useDispatch.js";
+import { useDraftState, type DraftCommandResult } from "./hooks/useDraftState.js";
 import { useGlobalKey } from "./hooks/useGlobalKey.js";
 import { useClickPolicy } from "./hooks/useClickPolicy.js";
 import "./outliner.css";
@@ -22,6 +23,7 @@ export function Outliner() {
     selection: { mode: "extended", initial: [""] },
   });
   const clipboard = useClipboard(doc);
+  const draft = useDraftState(doc);
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
   const ctx = doc.selection
@@ -41,6 +43,20 @@ export function Outliner() {
     if (dispatch(id)) { e.preventDefault(); e.stopPropagation(); }
   }, [mode, dispatch]);
 
+  const surfaceDraft = useCallback((task: Promise<DraftCommandResult>, okText: string) => {
+    void task
+      .then((result) => {
+        if (result.ok) {
+          pushToast("info", okText);
+          return;
+        }
+        pushToast("error", `${result.code}${result.reason || result.message ? `: ${result.reason ?? result.message}` : ""}`);
+      })
+      .catch((error: unknown) => {
+        pushToast("error", error instanceof Error ? error.message : "draft command failed");
+      });
+  }, [pushToast]);
+
   useGlobalKey(mode, dispatch);
   const { onClickText, onClickBullet } = useClickPolicy(doc.selection, setMode);
 
@@ -54,10 +70,13 @@ export function Outliner() {
         <button onClick={() => doc.history.undo()} disabled={!doc.history.canUndo}>undo</button>
         <button onClick={() => doc.history.redo()} disabled={!doc.history.canRedo}>redo</button>
         <button onClick={() => { doc.reset(); setMode("select"); }}>reset</button>
+        <button onClick={() => surfaceDraft(draft.save(), "saved")} disabled={!draft.dirty}>save</button>
+        <button onClick={() => surfaceDraft(draft.restore(), "restored")}>restore</button>
         <span className="zc-outliner-status status">
           mode = <code className={`zc-outliner-mode zc-outliner-mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focusPointer ?? "—"}</code>
           {" · "}selection = <code>{doc.selection?.selectedPointers.length ?? 0}</code>
+          {" · "}dirty = <code>{draft.dirty ? "yes" : "no"}</code>
           {" · "}clipboard = <code>{clipboard.mode === "empty" ? "—" : `${clipboard.mode} ${clipboard.count}`}</code>
         </span>
       </div>

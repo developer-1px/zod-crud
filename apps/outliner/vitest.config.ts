@@ -15,8 +15,16 @@ export default defineConfig({
         replacement: fileURLToPath(new URL("../../packages/collection/src/index.ts", import.meta.url)),
       },
       {
+        find: "@zod-crud/dirty-state",
+        replacement: fileURLToPath(new URL("../../packages/dirty-state/src/index.ts", import.meta.url)),
+      },
+      {
         find: "@zod-crud/outline",
         replacement: fileURLToPath(new URL("../../packages/outline/src/index.ts", import.meta.url)),
+      },
+      {
+        find: "@zod-crud/persist-web",
+        replacement: fileURLToPath(new URL("../../packages/persist-web/src/index.ts", import.meta.url)),
       },
       {
         find: "zod-crud/react",

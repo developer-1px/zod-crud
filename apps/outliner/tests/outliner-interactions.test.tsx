@@ -301,6 +301,29 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(treeTexts()).not.toContain(thirdItem);
   });
 
+  test("save and restore draft through the persistence extension", async () => {
+    globalThis.localStorage?.removeItem("zod-crud.outliner.draft");
+    renderOutliner();
+    const user = await clickAndEdit(firstItem);
+
+    await replaceFocusedText(user, firstItem, editedFirstItem);
+    await waitFor(() => expect(statusText()).toMatch(/dirty =\s*yes/));
+
+    await user.click(screen.getByRole("button", { name: "save" }));
+    await waitFor(() => expect(statusText()).toMatch(/dirty =\s*no/));
+
+    await user.click(screen.getByDisplayValue(editedFirstItem));
+    await user.keyboard("{Enter}");
+    await replaceFocusedText(user, editedFirstItem, "Unsaved draft");
+    await waitFor(() => expect(statusText()).toMatch(/dirty =\s*yes/));
+
+    await user.click(screen.getByRole("button", { name: "restore" }));
+
+    await waitFor(() => expect(treeTexts()).toContain(editedFirstItem));
+    expect(treeTexts()).not.toContain("Unsaved draft");
+    expect(statusText()).toMatch(/dirty =\s*no/);
+  });
+
   test("reset button restores the initial rendered document after keyboard edits", async () => {
     renderOutliner();
     const user = await clickAndEdit(firstItem);
