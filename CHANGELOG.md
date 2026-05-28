@@ -16,10 +16,12 @@ All notable changes to this project are documented here.
 - Added `zod-crud/react` as the React adapter entrypoint for the same
   `JSONDocument` surface.
 - Added extension-lab packages to test whether core concepts can support
-  clipboard, persistence, dirty state, query watching, schema forms, selection
-  models, record indexes, patch logs, list operations, bulk editing, document
-  outlines, patch previews, and Pointer bookmarks without expanding the core
-  API.
+  active pointers, autosave, checkpoints, clipboard, persistence, dirty state, query
+  watching, schema forms, selection models, record indexes, patch logs, list
+  operations, bulk editing, command state, computed fields, collection sorting,
+  document diffs, document outlines, field drafts, patch previews, Pointer
+  bookmarks, document-wide text search, drag/drop intents, and host-owned value
+  factories without expanding the core API.
 - Added `@zod-crud/clipboard-web` as a browser clipboard extension boundary.
 - Added `@zod-crud/collection` as the first official collection editing
   extension for ordered JSON arrays.
