@@ -33,7 +33,7 @@ drop.perform({
 - No DOM drag events, drag image, pointer capture, hover UI, keyboard policy, or
   focus policy.
 - No rendered drop zones or product-specific target naming.
-- No stable id lookup; use record-index separately.
+- No stable id lookup; host code owns id-to-pointer policy when needed.
 - No collection-specific reorder policy beyond public JSON Pointer insertion
   targets.
 - No plugin registration; this package composes functions and does not call

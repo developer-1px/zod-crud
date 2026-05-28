@@ -32,7 +32,7 @@ if (form.ok) {
 - No registry of field widgets.
 - No stale descriptor tracking. Recreate the form after document changes.
 - No collection movement; use `@zod-crud/collection`.
-- No stable identity lookup; use `@zod-crud/record-index`.
+- No stable identity lookup; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
 - No `zod-crud` internal imports.

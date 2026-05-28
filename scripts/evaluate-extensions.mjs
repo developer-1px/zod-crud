@@ -25,28 +25,6 @@ const officialExtensions = [
     ],
   },
   {
-    root: "packages/record-index",
-    name: "@zod-crud/record-index",
-    description: /stable record identity extension functions/,
-    readme: [
-      /createRecordIndex\(doc/,
-      /focused rows, selected cards, slide blocks, layer items, admin\s*sections, or spreadsheet tabs/,
-      /Stable identity is an extension concern/,
-      /does not call\s*`doc\.use\(\.\.\.\)`/,
-    ],
-  },
-  {
-    root: "packages/selection-model",
-    name: "@zod-crud/selection-model",
-    description: /pointer selection model extension functions/,
-    readme: [
-      /createSelectionModel\(doc\)/,
-      /selected kanban cards, outliner rows, slide blocks, admin sections, layer\s*items, or spreadsheet tabs/,
-      /Stable identity lookup; use `@zod-crud\/record-index`/,
-      /does not call\s*`doc\.use\(\.\.\.\)`/,
-    ],
-  },
-  {
     root: "packages/schema-form",
     name: "@zod-crud/schema-form",
     description: /schema-backed field descriptor extension functions/,
@@ -54,17 +32,6 @@ const officialExtensions = [
       /createSchemaForm\(doc/,
       /settings forms, generated admin resource forms,\s*document property panels, slide metadata panels, or spreadsheet tab settings/,
       /No rendered inputs, labels, layout, validation UI, focus, or keyboard policy/,
-      /does not call\s*`doc\.use\(\.\.\.\)`/,
-    ],
-  },
-  {
-    root: "packages/query-watch",
-    name: "@zod-crud/query-watch",
-    description: /JSONPath projection subscription extension functions/,
-    readme: [
-      /createQueryWatch\(doc/,
-      /inspectors, filtered side panels, search result lists,\s*preview summaries,\s*validation panels, or generated admin dashboards/,
-      /No UI, rendering, filters panel, search box, virtual list, or data grid/,
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },

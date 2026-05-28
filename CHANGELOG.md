@@ -16,22 +16,15 @@ All notable changes to this project are documented here.
 - Added `zod-crud/react` as the React adapter entrypoint for the same
   `JSONDocument` surface.
 - Added extension-lab packages to test whether core concepts can support
-  active pointers, annotation anchors, autosave, checkpoints, clipboard,
-  persistence, dirty state, query watching, schema forms, selection models,
-  presence cursors, record indexes, patch logs, list operations, bulk editing,
-  command state, computed fields, collection sorting, document diffs, document
-  outlines, expansion state, field drafts, patch previews, Pointer bookmarks,
-  document-wide text search, drag/drop intents, and host-owned value factories
-  without expanding the core API.
+  annotation anchors, autosave, checkpoints, clipboard, persistence, dirty
+  state, schema forms, presence cursors, patch logs, bulk editing, computed
+  fields, collection sorting, document diffs, document outlines, field drafts,
+  patch previews, Pointer bookmarks, document-wide text search, and drag/drop
+  intents without expanding the core API.
 - Added `@zod-crud/clipboard-web` as a browser clipboard extension boundary.
 - Added `@zod-crud/collection` as the first official collection editing
   extension for ordered JSON arrays.
-- Added `@zod-crud/record-index` as an official stable id-to-pointer extension.
-- Added `@zod-crud/selection-model` as an official pointer selection projection
-  extension.
 - Added `@zod-crud/schema-form` as an official schema-backed field descriptor
-  extension.
-- Added `@zod-crud/query-watch` as an official JSONPath projection subscription
   extension.
 - Added `@zod-crud/dirty-state` as an official clean-baseline dirty tracking
   extension.

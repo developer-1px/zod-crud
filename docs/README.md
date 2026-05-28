@@ -29,6 +29,9 @@ docs
 | `release/` | 릴리스 판단, 검증 루프, 성능·문서 drift 기록 | 릴리스 담당자 |
 | `adoption/` | 외부 소비자와 adapter에서 발견한 gap 분류 | adapter 작성자, 채택 지원 담당자 |
 
+`review/extension-package-doubt-audit.md`는 extension package를 concept
+extension과 convenience wrapper로 재분류한 제거 판단 기록이다.
+
 ## 작성 원칙
 
 - 본문은 한글로 쓴다.

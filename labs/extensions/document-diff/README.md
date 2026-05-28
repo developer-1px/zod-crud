@@ -38,6 +38,6 @@ The public facade is enough for basic value reconciliation: read `doc.value`,
 derive JSON Patch, validate with `canPatch`, then apply with `patch`.
 
 Array semantics are the explicit tradeoff. Without stable identity policy, this
-lab replaces arrays as arrays. Products that need row/card identity should
-compose record-index or collection-specific extensions instead of moving that
-policy into core.
+lab replaces arrays as arrays. Products that need row/card identity should keep
+that host-owned policy outside core instead of moving it into document mutation
+primitives.

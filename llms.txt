@@ -9,7 +9,7 @@ zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진이다. UI com
 - Root `zod-crud`는 React-free다.
 - React hook은 `zod-crud/react`에만 있다.
 - Core package import는 `zod-crud`와 `zod-crud/react`뿐이다.
-- Optional extension은 별도 package로 import한다. 공식 extension은 `@zod-crud/clipboard-web`, `@zod-crud/collection`, `@zod-crud/record-index`, `@zod-crud/selection-model`, `@zod-crud/schema-form`, `@zod-crud/query-watch`, `@zod-crud/dirty-state`, `@zod-crud/bulk-edit`, `@zod-crud/patch-log`, `@zod-crud/persist-web`처럼 core 밖에서 조립한다.
+- Optional extension은 별도 package로 import한다. 공식 extension은 `@zod-crud/clipboard-web`, `@zod-crud/collection`, `@zod-crud/schema-form`, `@zod-crud/dirty-state`, `@zod-crud/bulk-edit`, `@zod-crud/patch-log`, `@zod-crud/persist-web`처럼 core 밖에서 조립한다.
 - State, operation, selection snapshot, clipboard payload, history entry, wire payload는 JSON-serializable이다.
 - 표준 어휘는 의도적이다: JSON value, JSON Pointer, JSON Patch, JSONPath, Zod validation, W3C selection naming.
 
@@ -30,10 +30,7 @@ Optional extension은 core에 plugin 등록하지 않고 함수로 조립한다.
 ```ts
 import { createWebClipboard } from "@zod-crud/clipboard-web";
 import { createCollection } from "@zod-crud/collection";
-import { createRecordIndex } from "@zod-crud/record-index";
-import { createSelectionModel } from "@zod-crud/selection-model";
 import { createSchemaForm } from "@zod-crud/schema-form";
-import { createQueryWatch } from "@zod-crud/query-watch";
 import { createDirtyState } from "@zod-crud/dirty-state";
 import { createBulkEdit } from "@zod-crud/bulk-edit";
 import { createPatchLog } from "@zod-crud/patch-log";
@@ -238,31 +235,6 @@ collection.duplicateAfter("/slides/0", {
 collection.deleteItems(["/tabs/1", "/tabs/3"]);
 ```
 
-Stable id로 현재 Pointer를 찾아야 하면 `@zod-crud/record-index`를 조립한다. Focused row, selected card, slide block, layer item, admin section, spreadsheet tab처럼 UI는 stable id를 기억하고 mutation은 Pointer로 실행하는 경우에 쓴다.
-
-```ts
-import { createRecordIndex } from "@zod-crud/record-index";
-
-const cards = createRecordIndex(doc, {
-  query: "$.cards[*]",
-  key: "id",
-});
-
-const pointer = cards.pointerFor("todo");
-cards.replace("todo", { id: "todo", title: "Todo", done: true });
-```
-
-App-level selection snapshot과 selected values가 필요하면 `@zod-crud/selection-model`을 조립한다. Stable id lookup은 `record-index`, 순서 변경은 `collection`의 책임이다.
-
-```ts
-import { createSelectionModel } from "@zod-crud/selection-model";
-
-const selection = createSelectionModel(doc);
-
-selection.selectMany(["/cards/0", "/cards/1"]);
-const snapshot = selection.current();
-```
-
 Schema-backed field descriptor가 필요하면 `@zod-crud/schema-form`을 조립한다. Settings form, generated admin resource form, document property panel, slide metadata panel, spreadsheet tab settings처럼 UI는 host가 만들고 field path/value/schema kind/canSet/set만 필요할 때 쓴다.
 
 ```ts
@@ -274,17 +246,6 @@ if (form.ok) {
   const title = form.fields.find((field) => field.key === "title");
   title?.set("Published");
 }
-```
-
-JSONPath projection을 구독해야 하면 `@zod-crud/query-watch`를 조립한다. Inspector, filtered side panel, search result list, preview summary, validation panel, generated admin dashboard처럼 mutation 없이 derived read model만 필요할 때 쓴다.
-
-```ts
-import { createQueryWatch } from "@zod-crud/query-watch";
-
-const watch = createQueryWatch(doc, "$.items[*].title");
-const stop = watch.subscribe((snapshot) => {
-  if (snapshot.ok) snapshot.matches;
-});
 ```
 
 저장된 기준선 대비 변경 여부가 필요하면 `@zod-crud/dirty-state`를 조립한다. Draft editor, document workbench, generated admin form, slide editor, spreadsheet tab, CMS resource editor처럼 저장/동기화 UI는 host가 갖고 clean baseline 비교만 필요할 때 쓴다.

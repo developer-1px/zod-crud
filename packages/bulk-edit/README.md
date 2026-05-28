@@ -33,7 +33,7 @@ bulk.deleteAll("$.items[?@.archived == true]");
   policy.
 - No product-specific command names.
 - No persistence, audit log, or undo label policy.
-- No stable identity lookup; use `@zod-crud/record-index`.
+- No stable identity lookup; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
 - No `zod-crud` internal imports.

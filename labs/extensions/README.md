@@ -24,6 +24,9 @@ Naming test:
 - Avoid names that only describe an internal mechanism or pressure test.
 - If the name cannot explain what a downstream editor can build with it, keep it
   lab-only or rename it before promotion.
+- Do not keep convenience wrappers as packages. If core public APIs already make
+  a helper straightforward, document it as a recipe instead of preserving a lab
+  package.
 
 Rules:
 
@@ -47,35 +50,15 @@ Current labs:
 
 - `annotations`: build comment/review annotations anchored to document
   structure.
-- `active-pointer`: keep one active document target stable across edits.
 - `autosave`: schedule host-owned saves from document changes.
-- `bulk-edit`: run JSONPath-backed multi-target replace/delete operations.
 - `checkpoints`: name and restore document snapshots.
-- `command-state`: derive enabled/disabled command state from public `can*`
-  probes.
-- `computed-fields`: sync host-computed formula/derived fields.
 - `collection-sort`: sort or reverse ordered JSON arrays.
-- `dirty-state`: compare the document with a clean baseline.
+- `computed-fields`: sync host-computed formula/derived fields.
 - `document-diff`: produce and apply patch changes toward a target document.
 - `document-outline`: build a navigable document tree.
 - `drop-intent`: convert drag/drop input into move or paste operations.
-- `expansion-state`: keep outline/tree expanded paths stable across edits.
 - `field-draft`: hold temporary invalid field input before committing valid JSON.
 - `patch-preview`: preview patch effects before confirmation.
-- `persist-web`: save and load documents through browser storage-like hosts.
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `pointer-bookmarks`: keep named document locations stable across edits.
-- `list-ops`: predecessor pressure for the official `@zod-crud/collection`
-  package.
-- `patch-log`: predecessor pressure for the official `@zod-crud/patch-log`
-  package.
-- `query-watch`: predecessor pressure for the official `@zod-crud/query-watch`
-  package.
-- `record-index`: predecessor pressure for the official `@zod-crud/record-index`
-  package.
-- `schema-form`: predecessor pressure for the official `@zod-crud/schema-form`
-  package.
-- `selection-model`: predecessor pressure for the official
-  `@zod-crud/selection-model` package.
 - `text-search`: find and replace text across document string fields.
-- `value-factory`: create host-owned, schema-checked new values.

@@ -33,8 +33,8 @@ dirty.discard({ preserveHistory: true });
 - No form rendering, focus, keyboard, or route lifecycle ownership.
 - No history serialization. `discard({ preserveHistory: true })` only threads
   through the public `doc.load` option.
-- No selection baseline tracking; compose with `doc.selection` or
-  `@zod-crud/selection-model` when a product needs selection-aware state.
+- No selection baseline tracking; compose with `doc.selection` when a product
+  needs selection-aware state.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
 - No `zod-crud` internal imports.

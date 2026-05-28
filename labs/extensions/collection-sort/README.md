@@ -27,7 +27,7 @@ sorter.reverse("/slides");
 
 - No rendered table, kanban, spreadsheet, or outline UI.
 - No filter panel, sort menu, column model, keyboard policy, or focus policy.
-- No stable identity tracking; use record-index or Pointer tracking separately.
+- No stable identity tracking; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
 - No `zod-crud` internal imports.
