@@ -7,6 +7,10 @@ export default defineConfig({
   resolve: {
     alias: [
       {
+        find: "@zod-crud/clipboard-web",
+        replacement: fileURLToPath(new URL("../../packages/clipboard-web/src/index.ts", import.meta.url)),
+      },
+      {
         find: "@zod-crud/collection",
         replacement: fileURLToPath(new URL("../../packages/collection/src/index.ts", import.meta.url)),
       },

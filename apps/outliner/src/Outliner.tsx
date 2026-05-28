@@ -21,7 +21,7 @@ export function Outliner() {
     history: 200, strict: false, onError,
     selection: { mode: "extended", initial: [""] },
   });
-  const clipboard = useClipboard();
+  const clipboard = useClipboard(doc);
   const onTextEdit = useTextEditCoalesce(doc.history.mergeLast);
 
   const ctx = doc.selection
@@ -58,7 +58,7 @@ export function Outliner() {
           mode = <code className={`zc-outliner-mode zc-outliner-mode-${mode}`}>{mode}</code>
           {" · "}focus = <code>{doc.selection?.focusPointer ?? "—"}</code>
           {" · "}selection = <code>{doc.selection?.selectedPointers.length ?? 0}</code>
-          {" · "}clipboard = <code>{clipboard.mode === "empty" ? "—" : `${clipboard.mode} ${clipboard.values.length}`}</code>
+          {" · "}clipboard = <code>{clipboard.mode === "empty" ? "—" : `${clipboard.mode} ${clipboard.count}`}</code>
         </span>
       </div>
 

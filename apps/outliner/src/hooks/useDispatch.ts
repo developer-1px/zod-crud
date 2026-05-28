@@ -20,8 +20,33 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
   void mode; // 현재 dispatch 는 mode 를 직접 안 쓰지만 dependency 로 노출
   return useCallback((id: CommandId): boolean => {
     if (!ctx) return false;
-    const surface = (r: { ok: boolean; code?: string; reason?: string } | void) => {
-      if (r && !r.ok) pushToast("error", `${r.code}${r.reason ? `: ${r.reason}` : ""}`);
+    const surface = (r: { ok: boolean; code?: string; reason?: string; message?: string } | void) => {
+      if (r && !r.ok) {
+        const detail = r.reason ?? r.message;
+        pushToast("error", `${r.code}${detail ? `: ${detail}` : ""}`);
+      }
+    };
+    const surfaceResult = (
+      task:
+        | Promise<{ ok: boolean; code?: string; reason?: string; message?: string } | void>
+        | { ok: boolean; code?: string; reason?: string; message?: string }
+        | void,
+      onOk?: () => void,
+    ) => {
+      if (!task) return;
+      if (!("then" in task)) {
+        surface(task);
+        if (task.ok) onOk?.();
+        return;
+      }
+      void task
+        .then((result) => {
+          surface(result);
+          if (result?.ok) onOk?.();
+        })
+        .catch((error: unknown) => {
+          pushToast("error", error instanceof Error ? error.message : "command failed");
+        });
     };
     switch (id) {
       case "enter-edit":     setMode("edit"); return true;
@@ -50,10 +75,10 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
       case "extend-down":    cmd.extendSelection(ctx, "down"); return true;
       case "move-up":        surface(cmd.moveUp(ctx)); return true;
       case "move-down":      surface(cmd.moveDown(ctx)); return true;
-      case "copy":           cmd.copy(ctx); pushToast("info", `Copied ${ctx.selection.selectedPointers.length || 1}`); return true;
-      case "cut":            cmd.cut(ctx); pushToast("info", `Cut ${ctx.selection.selectedPointers.length || 1}`); return true;
-      case "paste-sibling":  surface(cmd.paste(ctx, "sibling")); return true;
-      case "paste-child":    surface(cmd.paste(ctx, "child")); return true;
+      case "copy":           surfaceResult(cmd.copy(ctx), () => pushToast("info", `Copied ${ctx.selection.selectedPointers.length || 1}`)); return true;
+      case "cut":            surfaceResult(cmd.cut(ctx), () => pushToast("info", `Cut ${ctx.selection.selectedPointers.length || 1}`)); return true;
+      case "paste-sibling":  surfaceResult(cmd.paste(ctx, "sibling")); return true;
+      case "paste-child":    surfaceResult(cmd.paste(ctx, "child")); return true;
       case "undo":           undo(); return true;
       case "redo":           redo(); return true;
     }

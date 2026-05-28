@@ -1,7 +1,7 @@
 // 키보드·마우스만으로 커버되는 outliner 행위들의 보강 테스트.
 // 기존 selection-auto-rules / outliner-interactions 가 다루지 않는 공백을 노린다.
 
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
 import { Outliner } from "../src/index.js";
@@ -204,7 +204,9 @@ describe("outliner coverage — keyboard & mouse only", () => {
     const user = await clickRow(firstItem);
     await user.keyboard("{Control>}v{/Control}");
 
-    expect(toastTexts().some((t) => /clipboard is empty/i.test(t))).toBe(true);
+    await waitFor(() => {
+      expect(toastTexts().some((t) => /clipboard is empty/i.test(t))).toBe(true);
+    });
   });
 
   test("focus rule ② — removing the focused row recovers focus to the next sibling", async () => {

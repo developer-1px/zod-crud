@@ -16,6 +16,7 @@
     "noEmit": true,
     "types": ["vite/client"],
     "paths": {
+      "@zod-crud/clipboard-web": ["../../packages/clipboard-web/src/index.ts"],
       "@zod-crud/collection": ["../../packages/collection/src/index.ts"],
       "@zod-crud/outline": ["../../packages/outline/src/index.ts"],
       "zod-crud/react": ["../../packages/zod-crud/src/react.ts"],
