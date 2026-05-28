@@ -62,3 +62,4 @@ Current labs:
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `bookmarks`: keep named document locations stable across edits.
 - `search-replace`: find and replace text across document string fields.
+- `snippets`: insert reusable JSON payloads with schema-safe paste checks.
