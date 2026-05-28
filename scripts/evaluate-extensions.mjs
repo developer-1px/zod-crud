@@ -25,6 +25,18 @@ const officialExtensions = [
     ],
   },
   {
+    root: "packages/outline",
+    name: "@zod-crud/outline",
+    description: /outline tree and structure editing extension functions/,
+    readme: [
+      /createOutline\(doc\)/,
+      /outliners, Markdown list editors,\s*document block trees, note outlines, or generated content review tools/,
+      /Demote one or more outline items under their previous sibling/,
+      /No Markdown parser, rich text formatting, renderer, DOM selection, focus,/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
+  {
     root: "packages/schema-form",
     name: "@zod-crud/schema-form",
     description: /schema-backed field descriptor extension functions/,
