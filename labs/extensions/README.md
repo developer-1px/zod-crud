@@ -58,6 +58,7 @@ Current labs:
 - `outline`: build a navigable document tree.
 - `drag-drop`: convert drag/drop input into move or paste operations.
 - `form-draft`: hold temporary form input before committing valid JSON.
+- `layer-order`: reorder visual stack arrays with bring/send commands.
 - `patch-preview`: preview patch effects before confirmation.
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `bookmarks`: keep named document locations stable across edits.
