@@ -73,17 +73,17 @@ Classification:
 | Sort/filter | sheets, Airtable, kanban, CMS, Linear/Jira | lab `collection-sort`; core query/read | sort covered; filter is mostly view-owned unless persisted as document state |
 | Fill/propagate series | sheets, Airtable-like grids | core patch can express it | lab-gap: `fill-series` should test range propagation |
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |
-| Group/ungroup | PowerPoint, Figma, FigJam, Miro | lab `grouping` | lab-covered; wrap/unwrap remains lab-gap |
-| Wrap/unwrap container | docs blocks, object frames, CMS sections | core patch can express it | lab-gap: feature differs from object grouping |
+| Group/ungroup | PowerPoint, Figma, FigJam, Miro | lab `grouping` | lab-covered; distinct from structural wrap/unwrap |
+| Wrap/unwrap container | docs blocks, object frames, CMS sections | lab `wrap-unwrap` | lab-covered; feature differs from object grouping |
 | Promote/demote | outliners, block editors, nested lists | official `outline` | official-covered |
 | Collapse/expand | outliners, grouped records, toggles | app view state or host metadata | app-owned unless persisted; no core gap |
-| Convert node/block kind | Notion blocks, CMS fields, Figma components, forms | core replace/patch can express it | lab-gap: `convert-node-kind` with host factory |
+| Convert node/block kind | Notion blocks, CMS fields, Figma components, forms | lab `convert-node-kind` | lab-covered with host factory |
 | Align/distribute | slides, Figma, Miro | lab `layer-order` covers z-order only | app-owned geometry; possible non-core `object-surface` outside zod-crud |
 | Lock/protect/readonly | Figma/Miro lock, Sheets protected ranges, CMS permissions | lab `protected-ranges`; schema validation | lab-covered; permissions remain app-owned |
 | Comments/mentions | docs, Notion, Figma, Miro, GitHub, Jira | lab `comments`; lab `presence-cursors` | lab-covered |
-| Suggested changes / review decisions | Google Docs, Word, GitHub review | core patch/history can express it | lab-gap: `suggestions` should own propose/accept/reject lifecycle |
+| Suggested changes / review decisions | Google Docs, Word, GitHub review | lab `proposed-changes` | lab-covered; patch review, accept, and reject lifecycle |
 | Draft/publish/checkpoint/autosave | CMS, Webflow, Contentful, docs | official `dirty-state`, `persist-web`; labs `autosave`, `checkpoints`, `patch-preview` | official/lab-covered |
-| References/backlinks/relations | CMS references, Webflow references, Notion mentions, Linear relations, GitHub issues | lab `bookmarks`; core pointer/query | core-pressure: stable identity/reference index should be labbed first |
+| References/backlinks/relations | CMS references, Webflow references, Notion mentions, Linear relations, GitHub issues | labs `references`, `bookmarks`; core pointer/query | lab-covered; stable identity/reference index remains core-pressure watch |
 | Validation/dropdowns/schema fields | sheets, forms, CMS | core schema validation/introspection; official `schema-form` | core/official-covered |
 | Conditional logic/branching | Typeform, forms, CMS workflows | core patch/schema can store rules; lab `computed-fields` covers derived values | lab-gap only if rule graphs need reusable editing semantics |
 | Document diff/preview/apply | review tools, CMS preview, migration flows | labs `document-diff`, `patch-preview`; core patch/history | lab-covered |
@@ -124,9 +124,9 @@ the same primitive appears in at least three independent feature packages.
 
 ## Lab Backlog
 
-Priority 1:
+Completed pressure labs:
 
-1. `suggestions` (#79)
+1. `proposed-changes` (#79)
    - Owns propose/accept/reject for schema-safe patch suggestions.
    - External pressure: Google Docs suggestions, Word track changes, GitHub
      suggested changes.
@@ -145,11 +145,11 @@ Priority 1:
      design component/frame conversion.
    - Core pressure: whether schema introspection is enough for safe conversion.
 
-Priority 2:
-
 4. `wrap-unwrap`
    - Owns structural wrapping without object-surface grouping semantics.
    - External pressure: sections, frames, toggles, callouts, containers.
+
+Priority 2:
 
 5. `paste-compatible`
    - Owns payload adaptation, ID remapping, and target compatibility diagnostics.

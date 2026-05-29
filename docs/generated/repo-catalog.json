@@ -1365,6 +1365,42 @@
         "template",
         "zod-crud"
       ]
+    },
+    {
+      "path": "labs/extensions/wrap-unwrap",
+      "name": "@zod-crud/wrap-unwrap",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab wrap and unwrap extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for structural `wrap` and `unwrap`.",
+      "publicExports": [
+        "WrapCreateContext",
+        "WrapSource",
+        "WrapUnwrap",
+        "WrapUnwrapAdapter",
+        "WrapUnwrapApplyResult",
+        "WrapUnwrapChange",
+        "WrapUnwrapChangeResult",
+        "WrapUnwrapError",
+        "WrapUnwrapErrorCode",
+        "WrapUnwrapOperation",
+        "canUnwrapSelection",
+        "canWrapSelection",
+        "createWrapUnwrap",
+        "unwrapSelection",
+        "wrapSelection"
+      ],
+      "publicExportCount": 15,
+      "keywords": [
+        "headless",
+        "structure",
+        "unwrap",
+        "wrap",
+        "zod-crud"
+      ]
     }
   ],
   "apps": [
@@ -1546,7 +1582,7 @@
   "totals": {
     "packages": 9,
     "officialExtensions": 8,
-    "labExtensions": 19,
+    "labExtensions": 20,
     "apps": 12
   }
 }

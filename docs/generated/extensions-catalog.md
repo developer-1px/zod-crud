@@ -17,7 +17,7 @@ Official extensions: 8
 | `@zod-crud/persist-web` | 24 | Official headless web persistence extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 
-Lab extensions: 19
+Lab extensions: 20
 
 | Package | Exports | Summary |
 | --- | ---: | --- |
@@ -40,3 +40,4 @@ Lab extensions: 19
 | `@zod-crud/references` | 21 | Lab extension for stable references and backlinks over JSON documents. |
 | `@zod-crud/search-replace` | 23 | Lab search and replace extension for `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | Lab snippet insertion extension for `zod-crud` documents. |
+| `@zod-crud/wrap-unwrap` | 15 | Lab extension for structural `wrap` and `unwrap`. |
