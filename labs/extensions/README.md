@@ -70,10 +70,10 @@ Current labs:
 - `grouping`: group and ungroup selected sibling JSON items.
 - `layer-order`: reorder visual stack arrays with bring/send commands.
 - `patch-preview`: preview patch effects before confirmation.
+- `proposed-changes`: review, accept, or reject proposed document changes.
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `references`: stable ID references and backlinks over JSON documents.
 - `bookmarks`: keep named document locations stable across edits.
 - `protected-ranges`: guard document edits with protected JSON ranges.
 - `search-replace`: find and replace text across document string fields.
 - `snippets`: insert reusable JSON payloads with schema-safe paste checks.
-- `suggestions`: propose, accept, or reject schema-safe JSON Patch changes.

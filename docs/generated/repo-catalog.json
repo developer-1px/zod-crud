@@ -1132,6 +1132,46 @@
       ]
     },
     {
+      "path": "labs/extensions/proposed-changes",
+      "name": "@zod-crud/proposed-changes",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab proposed document change review extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for proposed document changes.",
+      "publicExports": [
+        "ProposedChange",
+        "ProposedChangeAcceptResult",
+        "ProposedChangeAuditData",
+        "ProposedChangeError",
+        "ProposedChangeErrorCode",
+        "ProposedChangeFilter",
+        "ProposedChangeGuard",
+        "ProposedChangeInput",
+        "ProposedChangeListener",
+        "ProposedChangePlan",
+        "ProposedChangePlanResult",
+        "ProposedChangeResult",
+        "ProposedChangeSnapshot",
+        "ProposedChangeStatus",
+        "ProposedChanges",
+        "ProposedChangesOptions",
+        "canAcceptChange",
+        "canProposeChange",
+        "createProposedChanges"
+      ],
+      "publicExportCount": 19,
+      "keywords": [
+        "headless",
+        "patch",
+        "proposed-changes",
+        "review",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/protected-ranges",
       "name": "@zod-crud/protected-ranges",
       "status": "lab-extension",
@@ -1290,44 +1330,6 @@
         "template",
         "zod-crud"
       ]
-    },
-    {
-      "path": "labs/extensions/suggestions",
-      "name": "@zod-crud/suggestions",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab proposed patch suggestion extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab extension for proposed JSON Patch suggestions.",
-      "publicExports": [
-        "Suggestion",
-        "SuggestionAcceptResult",
-        "SuggestionError",
-        "SuggestionErrorCode",
-        "SuggestionFilter",
-        "SuggestionGuard",
-        "SuggestionInput",
-        "SuggestionListener",
-        "SuggestionPlan",
-        "SuggestionPlanResult",
-        "SuggestionResult",
-        "SuggestionSnapshot",
-        "SuggestionStatus",
-        "Suggestions",
-        "canAcceptSuggestion",
-        "canProposeSuggestion",
-        "createSuggestions"
-      ],
-      "publicExportCount": 17,
-      "keywords": [
-        "headless",
-        "patch",
-        "review",
-        "suggestions",
-        "zod-crud"
-      ]
     }
   ],
   "apps": [
@@ -1422,6 +1424,20 @@
       "keywords": []
     },
     {
+      "path": "apps/proposed-changes-lab",
+      "name": "@zod-crud/proposed-changes-lab",
+      "status": "app",
+      "private": true,
+      "publishable": false,
+      "version": null,
+      "description": null,
+      "license": null,
+      "summary": "Dogfoods `@zod-crud/proposed-changes` as a small proposed document change review feature.",
+      "publicExports": [],
+      "publicExportCount": 0,
+      "keywords": []
+    },
+    {
       "path": "apps/protected-ranges-lab",
       "name": "@zod-crud/protected-ranges-lab",
       "status": "app",
@@ -1487,20 +1503,6 @@
       "description": null,
       "license": null,
       "summary": "Dogfoods `@zod-crud/snippets` as a page block composer.",
-      "publicExports": [],
-      "publicExportCount": 0,
-      "keywords": []
-    },
-    {
-      "path": "apps/suggestions-lab",
-      "name": "@zod-crud/suggestions-lab",
-      "status": "app",
-      "private": true,
-      "publishable": false,
-      "version": null,
-      "description": null,
-      "license": null,
-      "summary": "Dogfoods `@zod-crud/suggestions` as a small proposed patch review feature.",
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []

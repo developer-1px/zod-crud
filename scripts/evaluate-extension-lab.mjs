@@ -13,6 +13,7 @@ const retiredLabNames = new Set([
   "field-draft",
   "outline",
   "pointer-bookmarks",
+  "suggestions",
   "text-search",
 ]);
 

@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: zodCrudSourceAliases({
-      extra: [labExtensionSourceAlias("suggestions")],
+      extra: [labExtensionSourceAlias("proposed-changes")],
     }),
   },
   test: {

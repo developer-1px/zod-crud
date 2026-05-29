@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import { createSuggestions, type SuggestionPlanResult } from "@zod-crud/suggestions";
+import { createProposedChanges, type ProposedChangePlanResult } from "@zod-crud/proposed-changes";
 import { useJSONDocument } from "zod-crud/react";
 import { z } from "zod";
-import "./suggestions-lab.css";
+import "./proposed-changes-lab.css";
 
 const SectionSchema = z.object({
   id: z.string(),
@@ -26,50 +26,50 @@ export const initialPage: z.output<typeof PageSchema> = {
 
 export function App() {
   const doc = useJSONDocument(PageSchema, initialPage, { history: 50 });
-  const suggestions = useMemo(() => createSuggestions(doc), [doc]);
+  const proposedChanges = useMemo(() => createProposedChanges(doc), [doc]);
   const [, refresh] = useState(0);
   const [message, setMessage] = useState("ready");
 
-  useEffect(() => suggestions.subscribe(() => refresh((version) => version + 1)), [suggestions]);
+  useEffect(() => proposedChanges.subscribe(() => refresh((version) => version + 1)), [proposedChanges]);
 
-  const open = suggestions.current();
-  const all = suggestions.current({ status: "all" });
-  const firstOpen = open.suggestions[0];
-  const canAccept = firstOpen === undefined ? empty("accept") : suggestions.canAccept(firstOpen.id);
-  const canReject = firstOpen === undefined ? empty("reject") : suggestions.canReject(firstOpen.id);
-  const renamePlan = suggestions.canPropose({
+  const open = proposedChanges.current();
+  const all = proposedChanges.current({ status: "all" });
+  const firstOpen = open.changes[0];
+  const canAccept = firstOpen === undefined ? empty("accept") : proposedChanges.canAccept(firstOpen.id);
+  const canReject = firstOpen === undefined ? empty("reject") : proposedChanges.canReject(firstOpen.id);
+  const renamePlan = proposedChanges.canPropose({
     operations: { op: "replace", path: "/title", value: "Reviewed page" },
   });
-  const invalidPlan = suggestions.canPropose({
+  const invalidPlan = proposedChanges.canPropose({
     operations: { op: "replace", path: "/status", value: "invalid" },
   });
 
   const proposeRename = () => {
-    const result = suggestions.propose({
+    const result = proposedChanges.propose({
       operations: { op: "replace", path: "/title", value: "Reviewed page" },
       label: "Rename title",
     });
-    setMessage(result.ok ? `proposed ${result.suggestion.id}` : result.code);
+    setMessage(result.ok ? `proposed ${result.change.id}` : result.code);
   };
 
   const proposeInvalid = () => {
-    const result = suggestions.propose({
+    const result = proposedChanges.propose({
       operations: { op: "replace", path: "/status", value: "invalid" },
       label: "Invalid status",
     });
-    setMessage(result.ok ? `proposed ${result.suggestion.id}` : result.code);
+    setMessage(result.ok ? `proposed ${result.change.id}` : result.code);
   };
 
   const accept = () => {
     if (firstOpen === undefined) return;
-    const result = suggestions.accept(firstOpen.id, { label: "accept suggestion" });
-    setMessage(result.ok ? `accepted ${result.suggestion.id}` : result.code);
+    const result = proposedChanges.accept(firstOpen.id, { label: "accept patch change" });
+    setMessage(result.ok ? `accepted ${result.change.id}` : result.code);
   };
 
   const reject = () => {
     if (firstOpen === undefined) return;
-    const result = suggestions.reject(firstOpen.id);
-    setMessage(result.ok ? `rejected ${result.suggestion.id}` : result.code);
+    const result = proposedChanges.reject(firstOpen.id);
+    setMessage(result.ok ? `rejected ${result.change.id}` : result.code);
   };
 
   const directEdit = () => {
@@ -79,19 +79,19 @@ export function App() {
 
   const reset = () => {
     doc.reset();
-    suggestions.clear();
+    proposedChanges.clear();
     setMessage("reset");
   };
 
   return (
-    <main className="suggestions-lab">
-      <header className="suggestions-lab__bar">
-        <h1>Suggestions lab</h1>
+    <main className="proposed-changes-lab">
+      <header className="proposed-changes-lab__bar">
+        <h1>Proposed changes lab</h1>
         <button type="button" onClick={reset}>reset</button>
       </header>
 
-      <section className="suggestions-lab__layout">
-        <aside className="suggestions-lab__commands" aria-label="commands">
+      <section className="proposed-changes-lab__layout">
+        <aside className="proposed-changes-lab__commands" aria-label="commands">
           <CommandButton label="propose title" capability={renamePlan} onClick={proposeRename} />
           <CommandButton label="propose invalid" capability={invalidPlan} onClick={proposeInvalid} />
           <CommandButton label="accept first" capability={canAccept} onClick={accept} />
@@ -99,7 +99,7 @@ export function App() {
           <button type="button" onClick={directEdit}>direct edit</button>
         </aside>
 
-        <section className="suggestions-lab__document" aria-label="document">
+        <section className="proposed-changes-lab__document" aria-label="document">
           <div><span>title</span><strong>{doc.value.title}</strong></div>
           <div><span>status</span><strong>{doc.value.status}</strong></div>
           {doc.value.sections.map((section) => (
@@ -107,23 +107,23 @@ export function App() {
           ))}
         </section>
 
-        <section className="suggestions-lab__suggestions" aria-label="suggestions">
-          <div className="suggestions-lab__counts">
+        <section className="proposed-changes-lab__changes" aria-label="proposed changes">
+          <div className="proposed-changes-lab__counts">
             <code>open {all.open}</code>
             <code>accepted {all.accepted}</code>
             <code>rejected {all.rejected}</code>
           </div>
-          {all.suggestions.map((suggestion) => (
-            <article key={suggestion.id}>
-              <strong>{suggestion.label ?? suggestion.id}</strong>
-              <code>{suggestion.status}</code>
-              <code>{suggestion.operations[0]?.path}</code>
+          {all.changes.map((change) => (
+            <article key={change.id}>
+              <strong>{change.label ?? change.id}</strong>
+              <code>{change.status}</code>
+              <code>{change.operations[0]?.path}</code>
             </article>
           ))}
         </section>
       </section>
 
-      <p className="suggestions-lab__status" role="status">{message}</p>
+      <p className="proposed-changes-lab__status" role="status">{message}</p>
     </main>
   );
 }
@@ -141,10 +141,10 @@ function CommandButton(props: {
   );
 }
 
-function empty(action: "accept" | "reject"): SuggestionPlanResult {
+function empty(action: "accept" | "reject"): ProposedChangePlanResult {
   return {
     ok: false,
     code: "not_found",
-    reason: `no suggestion to ${action}`,
+    reason: `no change to ${action}`,
   };
 }

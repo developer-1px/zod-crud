@@ -1,4 +1,4 @@
-.suggestions-lab {
+.proposed-changes-lab {
   box-sizing: border-box;
   min-height: 100vh;
   padding: 24px;
@@ -7,27 +7,27 @@
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
-.suggestions-lab * {
+.proposed-changes-lab * {
   box-sizing: border-box;
 }
 
-.suggestions-lab h1,
-.suggestions-lab p {
+.proposed-changes-lab h1,
+.proposed-changes-lab p {
   margin: 0;
 }
 
-.suggestions-lab__bar {
+.proposed-changes-lab__bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 16px;
 }
 
-.suggestions-lab h1 {
+.proposed-changes-lab h1 {
   font-size: 20px;
 }
 
-.suggestions-lab button {
+.proposed-changes-lab button {
   min-height: 32px;
   border: 1px solid #c9cdc4;
   border-radius: 6px;
@@ -36,21 +36,21 @@
   font: inherit;
 }
 
-.suggestions-lab button:disabled {
+.proposed-changes-lab button:disabled {
   color: #858a82;
   background: #e9ece7;
 }
 
-.suggestions-lab__layout {
+.proposed-changes-lab__layout {
   display: grid;
   grid-template-columns: 260px minmax(280px, 1fr) minmax(260px, 360px);
   gap: 14px;
   align-items: start;
 }
 
-.suggestions-lab__commands,
-.suggestions-lab__document,
-.suggestions-lab__suggestions {
+.proposed-changes-lab__commands,
+.proposed-changes-lab__document,
+.proposed-changes-lab__changes {
   display: grid;
   gap: 10px;
   min-width: 0;
@@ -60,7 +60,7 @@
   background: #fff;
 }
 
-.suggestions-lab__commands button {
+.proposed-changes-lab__commands button {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 104px;
   align-items: center;
@@ -69,8 +69,8 @@
   text-align: left;
 }
 
-.suggestions-lab__document div,
-.suggestions-lab__suggestions article {
+.proposed-changes-lab__document div,
+.proposed-changes-lab__changes article {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);
   gap: 8px;
@@ -80,23 +80,23 @@
   border-radius: 8px;
 }
 
-.suggestions-lab__suggestions article {
+.proposed-changes-lab__changes article {
   grid-template-columns: minmax(0, 1fr) 82px 96px;
 }
 
-.suggestions-lab__counts {
+.proposed-changes-lab__counts {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
 }
 
-.suggestions-lab span,
-.suggestions-lab code {
+.proposed-changes-lab span,
+.proposed-changes-lab code {
   color: #5e655d;
   font-size: 12px;
 }
 
-.suggestions-lab__status {
+.proposed-changes-lab__status {
   min-height: 20px;
   margin-top: 12px;
   color: #596057;
@@ -104,13 +104,13 @@
 }
 
 @media (max-width: 900px) {
-  .suggestions-lab {
+  .proposed-changes-lab {
     padding: 16px;
   }
 
-  .suggestions-lab__layout,
-  .suggestions-lab__document div,
-  .suggestions-lab__suggestions article {
+  .proposed-changes-lab__layout,
+  .proposed-changes-lab__document div,
+  .proposed-changes-lab__changes article {
     grid-template-columns: 1fr;
   }
 }

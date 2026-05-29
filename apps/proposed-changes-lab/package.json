@@ -1,5 +1,5 @@
 {
-  "name": "@zod-crud/suggestions-lab",
+  "name": "@zod-crud/proposed-changes-lab",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zod-crud/suggestions": "file:../../labs/extensions/suggestions",
+    "@zod-crud/proposed-changes": "file:../../labs/extensions/proposed-changes",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zod": "^4.0.0",

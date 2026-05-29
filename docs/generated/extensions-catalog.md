@@ -34,8 +34,8 @@ Lab extensions: 18
 | `@zod-crud/layer-order` | 11 | Lab layer ordering extension for `zod-crud` documents. |
 | `@zod-crud/patch-preview` | 8 | Headless patch preview helpers for `zod-crud` documents. |
 | `@zod-crud/presence-cursors` | 10 | Lab package for remote collaborator cursor and selection presence. |
+| `@zod-crud/proposed-changes` | 19 | Lab extension for proposed document changes. |
 | `@zod-crud/protected-ranges` | 22 | Lab protected range guard extension for `zod-crud` documents. |
 | `@zod-crud/references` | 21 | Lab extension for stable references and backlinks over JSON documents. |
 | `@zod-crud/search-replace` | 21 | Lab search and replace extension for `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | Lab snippet insertion extension for `zod-crud` documents. |
-| `@zod-crud/suggestions` | 17 | Lab extension for proposed JSON Patch suggestions. |

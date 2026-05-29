@@ -5,7 +5,7 @@ import { App } from "../src/App.js";
 
 afterEach(cleanup);
 
-describe("suggestions lab dogfood", () => {
+describe("proposed changes lab dogfood", () => {
   test("shows proposal capabilities", () => {
     render(<App />);
 
@@ -21,15 +21,15 @@ describe("suggestions lab dogfood", () => {
 
     await user.click(screen.getByRole("button", { name: "propose title" }));
 
-    expect(screen.getByRole("status").textContent).toBe("proposed suggestion-1");
+    expect(screen.getByRole("status").textContent).toBe("proposed change-1");
     expect(within(screen.getByLabelText("document")).getByText("Draft page")).toBeTruthy();
     expect((screen.getByRole("button", { name: "accept first" }) as HTMLButtonElement).disabled).toBe(false);
 
     await user.click(screen.getByRole("button", { name: "accept first" }));
 
-    expect(screen.getByRole("status").textContent).toBe("accepted suggestion-1");
+    expect(screen.getByRole("status").textContent).toBe("accepted change-1");
     expect(within(screen.getByLabelText("document")).getByText("Reviewed page")).toBeTruthy();
-    expect(within(screen.getByLabelText("suggestions")).getByText("accepted")).toBeTruthy();
+    expect(within(screen.getByLabelText("proposed changes")).getByText("accepted")).toBeTruthy();
   });
 
   test("surfaces stale proposals after a direct edit", async () => {
@@ -41,6 +41,6 @@ describe("suggestions lab dogfood", () => {
 
     expect(within(screen.getByLabelText("document")).getByText("Edited directly")).toBeTruthy();
     expect((screen.getByRole("button", { name: "accept first" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(within(screen.getByRole("button", { name: "accept first" })).getByText("stale_suggestion")).toBeTruthy();
+    expect(within(screen.getByRole("button", { name: "accept first" })).getByText("stale_change")).toBeTruthy();
   });
 });
