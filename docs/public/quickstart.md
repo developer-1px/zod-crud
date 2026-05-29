@@ -123,6 +123,9 @@ doc.paste("/lists/0/cards/-", {
 ```
 
 Pointer 배열을 copy하면 clipboard payload도 배열입니다. 한 항목만 복사해도 붙여넣을 때 sibling으로 펼치려면 `spread: true`를 넘깁니다.
+여러 source를 담은 clipboard buffer는 array 삽입 target에서 기본으로 펼쳐집니다.
+직접 array payload를 `doc.paste(target, { payload })`로 넘기는 경우에는 item별
+sibling paste 의도를 추론하지 않으므로 `spread: true`를 명시합니다.
 
 이미 `/cards/-` 같은 삽입 위치가 있으면 pointer를 그대로 넘깁니다. 기존 항목을 기준으로 붙일 때는 `{ after: "/lists/0/cards/0" }`처럼 씁니다.
 

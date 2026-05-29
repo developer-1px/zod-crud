@@ -192,7 +192,9 @@ Validation failure의 `violations[].path`는 RFC 6901 JSON Pointer입니다. `do
 
 예상 가능한 편집 실패는 Result로 표현합니다. `strict`는 `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` 실행 실패 정책입니다.
 
-strict mode에서 처리된 execution failure는 `JSONCrudError`를 throw할 수 있습니다. `can*`는 항상 Result를 반환합니다.
+기본값은 `strict: false`입니다. `strict: true`를 명시한 document에서 처리된
+execution failure는 `JSONCrudError`를 throw할 수 있습니다. `can*`와 top-level
+`doc.undo()` / `doc.redo()`는 Result를 반환합니다.
 
 ## duplicate
 

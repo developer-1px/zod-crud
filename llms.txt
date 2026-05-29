@@ -47,6 +47,12 @@ schema -> document -> pointer/query -> can* -> change -> result
 3. API reference: 정확한 method와 type.
 4. Extensions: 공식 extension 조립법.
 
+1.0 public contract를 검토할 때는 다음 표준 문서를 함께 본다.
+
+- Result/error code: `docs/standard/result-contract.md`
+- Selection semantics: `docs/standard/selection-contract.md`
+- Schema introspection: `docs/standard/schema-introspection-contract.md`
+
 ## 작업별 진입점
 
 Application code는 document facade를 우선 사용한다.

@@ -21,10 +21,10 @@ Document는 schema surface를 제공한다.
 
 ```ts
 type SchemaState = {
-  at(path: Pointer, options?: { mode?: SchemaPathMode }): SchemaQueryResult;
-  kind(path: Pointer, options?: { mode?: SchemaPathMode }): SchemaKindResult;
-  describe(path: Pointer, options?: { mode?: SchemaPathMode }): SchemaDescriptionResult;
-  accepts(path: Pointer, value: unknown, options?: { mode?: SchemaPathMode }): JSONCapabilityResult;
+  at(path: Pointer, mode?: SchemaPathMode): SchemaQueryResult;
+  kind(path: Pointer, mode?: SchemaPathMode): SchemaKindResult;
+  describe(path: Pointer, mode?: SchemaPathMode): SchemaDescriptionResult;
+  accepts(path: Pointer, value: unknown, mode?: SchemaPathMode): JSONCapabilityResult;
 };
 ```
 
@@ -109,7 +109,7 @@ Schema query result는 모두 `ok` discriminant를 가진다.
 ```ts
 type SchemaQueryResult =
   | { ok: true; path: Pointer; mode: SchemaPathMode; kind: SchemaKind; description: SchemaDescription }
-  | { ok: false; code: SchemaErrorCode; reason: string; pointer?: Pointer };
+  | { ok: false; code: SchemaErrorCode; reason?: string; pointer: Pointer };
 ```
 
 `kind`와 `describe`는 같은 실패 shape를 공유하고, 성공 result에서 필요한 field만
@@ -124,7 +124,7 @@ type SchemaQueryResult =
 
 ## Accepts And Violations
 
-`accepts(path, value, { mode })`는 해당 schema slot이 value를 받을 수 있는지
+`accepts(path, value, mode)`는 해당 schema slot이 value를 받을 수 있는지
 검사한다. 성공하면 `{ ok: true }`를 반환한다.
 
 실패하면 `JSONCapabilityResult`를 반환하며, schema 검증 실패는
@@ -165,4 +165,3 @@ document-result failure를 transaction failure로 보여줄 수 있다.
 - `accepts`가 `JSONCapabilityResult`가 아닌 다른 실패 shape를 반환하도록 변경.
 - `schema-slot`과 `document-result` violation path 기준 변경.
 - schema query가 state를 변경하도록 변경.
-

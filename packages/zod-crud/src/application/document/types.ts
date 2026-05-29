@@ -79,8 +79,8 @@ export interface JSONDocument<T> {
   copy(source?: SelectionSource, options?: ClipboardCopyOptions): ClipboardCopyResult;
   cut(source?: SelectionSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
   paste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
-  undo(): boolean;
-  redo(): boolean;
+  undo(): JSONCapabilityResult;
+  redo(): JSONCapabilityResult;
   load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: unknown): JSONResult;
   subscribe(listener: (

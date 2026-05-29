@@ -286,6 +286,18 @@ export function createJSONDocument<S extends z.ZodType>(
     getStateJsonTrusted: () => rawOps.stateJsonTrusted,
   };
   const clipboard = createClipboard(options.onChange === undefined ? clipboardOptions : { ...clipboardOptions, onChange: options.onChange });
+  const restoreHistory = (direction: "undo" | "redo"): CapabilityResult => {
+    const capability = direction === "undo" ? capabilities.undo : capabilities.redo;
+    if (!capability.ok) return capability;
+    const restored = direction === "undo" ? history.undo() : history.redo();
+    return restored
+      ? OK
+      : {
+          ok: false,
+          code: "apply_failed",
+          reason: `${direction} failed to apply history entry`,
+        };
+  };
   const read = buildReadFacade({ schema, getState: () => rawOps.state });
   const schemaState = createSchemaState({ schema });
   function insert(pathOrValue: Pointer | unknown, maybeValue?: unknown): JSONDocumentEditResult {
@@ -376,8 +388,8 @@ export function createJSONDocument<S extends z.ZodType>(
     copy: clipboard.copy,
     cut: clipboard.cut,
     paste: clipboard.paste,
-    undo: history.undo,
-    redo: history.redo,
+    undo: () => restoreHistory("undo"),
+    redo: () => restoreHistory("redo"),
     load: ops.load,
     reset: ops.reset,
     subscribe: ops.subscribe,

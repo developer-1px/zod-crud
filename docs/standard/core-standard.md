@@ -135,15 +135,19 @@ document 표면은 flat하게 유지하는 편이 좋다. adapter는 convenience
 
 ## 8. 실행과 Capability
 
-`patch`, `commit`, `load`, `reset`은 document execution method다.
+`patch`, `commit`, `load`, `reset`, `undo`, `redo`는 document execution method다.
 
 execution method는 전체 변경을 commit하거나 아무것도 commit하지 않아야
 한다.
 
-`strict`는 document execution method에만 적용된다. strict mode에서 처리된
-execution failure는 `JSONCrudError`를 throw해야 한다. non-strict mode에서는
-실패한 `JSONResult`를 반환해야 한다. `onError`는 throw나 return보다 먼저
-실행되어야 한다.
+`strict`는 `patch`, `commit`, `load`, `reset`의 execution failure에만 적용된다.
+기본값은 `strict: false`다. `strict: true`에서 처리된 execution failure는
+`JSONCrudError`를 throw해야 한다. non-strict mode에서는 실패한 `JSONResult`를
+반환해야 한다. `onError`는 throw나 return보다 먼저 실행되어야 한다.
+
+`undo`와 `redo`는 top-level document command로 `JSONCapabilityResult`를 반환해야
+한다. Low-level `doc.history.undo()`와 `doc.history.redo()`는 history control
+surface로 boolean을 유지할 수 있다.
 
 `can*` method는 state를 바꾸면 안 된다. boolean이 아니라 이유를 담은
 capability result를 반환해야 한다.

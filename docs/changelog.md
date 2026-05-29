@@ -2,6 +2,24 @@
 
 All notable changes to this project are documented here.
 
+## Unreleased
+
+### Changed
+
+- Changed the default document execution error policy to `strict: false`.
+  Callers that want `JSONCrudError` throws now opt in with `strict: true`.
+- Changed top-level `doc.undo()` and `doc.redo()` to return
+  `JSONCapabilityResult` instead of boolean so command execution follows the
+  same `can* -> command -> result` shape.
+
+### Fixed
+
+- Clarified clipboard spread docs: multi-source clipboard buffer paste spreads
+  by default at array insertion targets, while direct array payload paste needs
+  explicit `spread: true`.
+- Added semantic contract references for result/error, selection, and schema
+  introspection to LLM-facing docs.
+
 ## 1.0.0 - 2026-05-28
 
 ### Added

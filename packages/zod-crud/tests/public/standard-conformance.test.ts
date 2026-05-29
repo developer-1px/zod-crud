@@ -120,11 +120,13 @@ describe("zod-crud core standard conformance", () => {
     expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "c"]);
 
     expect(doc.canUndo()).toEqual({ ok: true });
-    expect(doc.undo()).toBe(true);
+    expect(doc.undo()).toEqual({ ok: true });
     expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "a", "c"]);
     expect(doc.canRedo()).toEqual({ ok: true });
-    expect(doc.redo()).toBe(true);
+    expect(doc.redo()).toEqual({ ok: true });
     expect(doc.value.columns[0]?.cards.map((card) => card.id)).toEqual(["b", "c"]);
+    expect(doc.canRedo()).toEqual({ ok: false, code: "empty_stack", reason: "redo stack is empty" });
+    expect(doc.redo()).toEqual({ ok: false, code: "empty_stack", reason: "redo stack is empty" });
   });
 
   test("keeps capability probes reasoned and mutation-free", () => {

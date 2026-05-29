@@ -31,8 +31,8 @@ describe("JSONCrudError", () => {
     expect(error.message).toBe("zod-crud replace failed: schema_violation");
   });
 
-  test("strict document operations throw JSONCrudError through the public facade", () => {
-    const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" });
+  test("strict true document operations throw JSONCrudError through the public facade", () => {
+    const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" }, { strict: true });
 
     expect(() => doc.patch({ op: "replace", path: "/name", value: 1 })).toThrow(JSONCrudError);
     expect(doc.value).toEqual({ name: "ok" });
@@ -68,9 +68,9 @@ describe("JSONCrudError", () => {
     expect(doc.value).toEqual({ name: "ok" });
   });
 
-  test("onError runs before strict document execution failures throw", () => {
+  test("onError runs before strict true document execution failures throw", () => {
     const onError = vi.fn();
-    const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" }, { onError });
+    const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" }, { strict: true, onError });
 
     expect(() => doc.patch({ op: "replace", path: "/name", value: 1 })).toThrow(JSONCrudError);
     expect(onError).toHaveBeenCalledTimes(1);
@@ -118,31 +118,13 @@ describe("JSONCrudError", () => {
     expect(onError).not.toHaveBeenCalled();
   });
 
-  test("production default returns document execution failures unless strict overrides", async () => {
-    const previous = process.env.NODE_ENV;
-    process.env.NODE_ENV = "production";
-    vi.resetModules();
-    try {
-      const fresh = await import("zod-crud");
-      const doc = fresh.createJSONDocument(z.object({ name: z.string() }), { name: "ok" });
+  test("default strict policy returns document execution failures unless strict overrides", () => {
+    const doc = createJSONDocument(z.object({ name: z.string() }), { name: "ok" });
 
-      expect(doc.patch({ op: "replace", path: "/name", value: 1 })).toMatchObject({
-        ok: false,
-        code: "schema_violation",
-      });
-      expect(doc.value).toEqual({ name: "ok" });
-
-      const strictDoc = fresh.createJSONDocument(
-        z.object({ name: z.string() }),
-        { name: "ok" },
-        { strict: true },
-      );
-      expect(() => strictDoc.patch({ op: "replace", path: "/name", value: 1 }))
-        .toThrow(fresh.JSONCrudError);
-    } finally {
-      if (previous === undefined) delete process.env.NODE_ENV;
-      else process.env.NODE_ENV = previous;
-      vi.resetModules();
-    }
+    expect(doc.patch({ op: "replace", path: "/name", value: 1 })).toMatchObject({
+      ok: false,
+      code: "schema_violation",
+    });
+    expect(doc.value).toEqual({ name: "ok" });
   });
 });

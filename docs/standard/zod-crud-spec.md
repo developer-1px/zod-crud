@@ -192,8 +192,8 @@ interface JSONDocument<T> {
   copy(source?: SelectionSource, options?: ClipboardCopyOptions): ClipboardCopyResult;
   cut(source?: SelectionSource, options?: ClipboardCutOptions): ClipboardCutResult<T>;
   paste(target?: JSONDocumentPasteTarget, options?: JSONDocumentPasteOptions): ClipboardPasteResult<T>;
-  undo(): boolean;
-  redo(): boolean;
+  undo(): JSONCapabilityResult;
+  redo(): JSONCapabilityResult;
   load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
   reset(value?: unknown): JSONResult;
   subscribe(listener: (applied: readonly JSONPatchOperation[], metadata?: JSONChangeMetadata) => void): () => void;
@@ -224,9 +224,11 @@ interface JSONDocument<T> {
 
 `can*`는 boolean이 아니라 이유 있는 결과를 반환한다.
 
-`strict`는 `patch`, `commit`, `load`, `reset`에만 적용된다. 처리된 execution failure는 `JSONCrudError`를 만들고, `onError`는 throw나 return보다 먼저 실행된다. Strict mode는 throw하고 non-strict mode는 실패한 `JSONResult`를 반환한다. `can*`, read, schema, selection, clipboard, duplicate, history API는 각자의 Result, boolean, snapshot 표면을 유지한다.
+`strict`는 `patch`, `commit`, `load`, `reset`에만 적용된다. 처리된 execution failure는 `JSONCrudError`를 만들고, `onError`는 throw나 return보다 먼저 실행된다. `strict: true`는 throw하고 기본 non-strict mode는 실패한 `JSONResult`를 반환한다. `can*`, read, schema, selection, clipboard, duplicate, history API는 각자의 Result, boolean, snapshot 표면을 유지한다.
 
-기본값은 module load 시점의 `strict ?? process.env.NODE_ENV !== "production"`이다. Invalid initial value는 document 생성 전에 Zod parse error를 throw한다.
+기본값은 `strict: false`다. 실행 실패를 throw로 받고 싶은 caller만
+`strict: true`를 명시한다. Invalid initial value는 document 생성 전에 Zod parse
+error를 throw한다.
 
 ## 4. 변경
 

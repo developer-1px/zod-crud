@@ -19,6 +19,7 @@
 | 8 | lab package intuition | 7/10 | lab이 core 압력을 잘 드러내지만 상태 분류가 부족하다 |
 | 9 | breaking-risk/API freeze | 7/10 | Result/error code, Selection, schema introspection freeze가 blocker다 |
 | 10 | synthesis | 6.9/10 | 1.0 전에는 core 추가보다 freeze 문서와 recipe 보강이 우선이다 |
+| 11 | blind product pressure | S1 반복 | strict default, undo/redo Result, stable id, anchor lifecycle, patch preview가 반복됐다 |
 
 평균 점수는 약 6.9/10이다. 이 점수는 실패가 아니라 현재 위치를 의미한다.
 Core foundation은 안정적으로 읽히지만, 1.0 전에 freeze해야 할 의미론과

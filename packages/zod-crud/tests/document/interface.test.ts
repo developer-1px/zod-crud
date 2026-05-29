@@ -99,10 +99,10 @@ describe("JSONDocument interface", () => {
     expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a", "c"]);
 
     expect(doc.canUndo()).toEqual({ ok: true });
-    expect(doc.undo()).toBe(true);
+    expect(doc.undo()).toEqual({ ok: true });
     expect(doc.value.items.map((item) => item.id)).toEqual(["b", "b-copy", "a", "c"]);
     expect(doc.canRedo()).toEqual({ ok: true });
-    expect(doc.redo()).toBe(true);
+    expect(doc.redo()).toEqual({ ok: true });
     expect(doc.value.items.map((item) => item.id)).toEqual(["b", "a", "c"]);
   });
 

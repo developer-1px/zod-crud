@@ -19,15 +19,6 @@ function formatOp(op: JSONCrudOpLabel): string {
   return typeof op === "string" ? op : op.op;
 }
 
-declare const process: { env?: { NODE_ENV?: string } } | undefined;
-const isProd = ((): boolean => {
-  try {
-    return typeof process !== "undefined" && process?.env?.NODE_ENV === "production";
-  } catch {
-    return false;
-  }
-})();
-
 export interface ErrorPolicy {
   strict?: boolean | undefined;
   onError?: (error: JSONCrudError) => void;
@@ -40,7 +31,7 @@ export function handleResult(
   result: JSONResult,
 ): JSONResult {
   if (result.ok) return result;
-  const strict = policy.strict ?? !isProd;
+  const strict = policy.strict === true;
   if (policy.onError) {
     policy.onError(new JSONCrudError(op, result));
   }

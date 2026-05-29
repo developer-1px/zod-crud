@@ -32,7 +32,7 @@ for (const [label, pattern] of [
   ["pointer-query-mutation distinction", /JSONPath는 mutation target으로 받아들이면 안 된다/],
   ["schema semantics", /## 6\. Schema 의미론/],
   ["document surface", /find[\s\S]*insert[\s\S]*replace[\s\S]*delete[\s\S]*move[\s\S]*duplicate[\s\S]*copy[\s\S]*cut[\s\S]*paste[\s\S]*undo[\s\S]*redo[\s\S]*canFind[\s\S]*canInsert[\s\S]*canRedo/],
-  ["strict semantics", /`strict`는 document execution method에만 적용된다/],
+  ["strict semantics", /기본값은 `strict: false`/],
   ["selection semantics", /selection은 DOM focus가 아니라 headless document data다/],
   ["clipboard spread", /직접 `paste\(target, \{ payload \}\)`에 array payload를 넘긴 경우 기본적으로[\s\S]*spread하면 안/],
   ["history semantics", /history는 undo\/redo control surface/],
