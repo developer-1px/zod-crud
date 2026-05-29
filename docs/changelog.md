@@ -18,6 +18,8 @@ All notable changes to this project are documented here.
   comments anchored to JSON Pointers.
 - Added `@zod-crud/form-draft` as an official headless extension for keeping
   temporary invalid input outside schema-valid JSON documents until commit.
+- Added `@zod-crud/protected-ranges` as an official headless extension for
+  guarding edits to locked JSON Pointer ranges before core capability checks.
 
 ### Changed
 

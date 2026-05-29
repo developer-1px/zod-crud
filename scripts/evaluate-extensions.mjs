@@ -164,6 +164,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/protected-ranges",
+    name: "@zod-crud/protected-ranges",
+    description: /protected range guard extension functions/,
+    readme: [
+      /createProtectedRanges\(doc/,
+      /published fields,\s*legal copy,\s*locked\s*settings,\s*import targets,\s*generated sections,\s*or moderated content/,
+      /Guard direct document edits before calling public `zod-crud` operations/,
+      /No UI lock icons, focus handling, keyboard policy, or permissions dialog/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

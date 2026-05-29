@@ -49,7 +49,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Field descriptor | `@zod-crud/schema-form` | grid column rendering |
 | Sort rows | lab `collection-sort` | view state |
 | Derived values | lab `computed-fields` | formula language |
-| Protected cells | lab `protected-ranges` | role/auth policy |
+| Protected cells | `@zod-crud/protected-ranges` | role/auth policy |
 | TSV/CSV paste | missing candidate | parser, 2D range mapping |
 
 `clipboard-web`는 browser clipboard bridge입니다. Spreadsheet TSV/CSV paste는
@@ -67,7 +67,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Invalid input draft | `@zod-crud/form-draft` | parser, widget messages |
 | Templates/import paste | lab `snippets`, lab `paste-compatible` | snippet catalog, parser |
 | Publish review | `@zod-crud/patch-preview`, `@zod-crud/proposed-changes` | approval workflow |
-| Locked published fields | lab `protected-ranges` | auth/server policy |
+| Locked published fields | `@zod-crud/protected-ranges` | auth/server policy |
 
 `schema-form`은 form renderer가 아닙니다. Zod schema에서 field descriptor를
 읽고, 실제 input, label, layout, focus, accessibility는 host가 소유합니다.
@@ -82,7 +82,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Dry-run preview | `@zod-crud/patch-preview`, core `applyPatch` | visual diff |
 | Proposed changes | `@zod-crud/proposed-changes` | review workflow, storage |
 | Reviewer comments | `@zod-crud/comments` | thread UI, authoring |
-| Protected targets | lab `protected-ranges` | role/auth policy |
+| Protected targets | `@zod-crud/protected-ranges` | role/auth policy |
 | Patch audit/replay | `@zod-crud/patch-log` | product activity feed |
 | Stable id to Pointer | `@zod-crud/id-resolver` | row/card identity policy |
 
@@ -100,7 +100,7 @@ zod-crud 쪽 후보는 dry-run, proposed patch, guard reason, stable target look
 | Layer order | lab `layer-order` | layer panel UI |
 | Group/ungroup | lab `grouping`, lab `wrap-unwrap` | group value factory |
 | Drag/drop | lab `drag-drop` | pointer events |
-| Lock/protect | lab `protected-ranges` | visibility policy |
+| Lock/protect | `@zod-crud/protected-ranges` | visibility policy |
 | Search/replace | `@zod-crud/search-replace` | visible text policy |
 | Resize/snap/align | missing candidate | hit testing, canvas math |
 
@@ -118,7 +118,7 @@ Canvas rendering, zoom, pan, export, rich text editing, snapping, handles는
 | Frame/container wrap | lab `wrap-unwrap` | frame semantics |
 | Connectors/references | lab `references` | ports, routing, geometry |
 | Comments | `@zod-crud/comments` | thread UI, workflow |
-| Lock/protect | lab `protected-ranges` | auth/visibility policy |
+| Lock/protect | `@zod-crud/protected-ranges` | auth/visibility policy |
 | Stable id to Pointer | `@zod-crud/id-resolver` | selected object id lookup |
 
 Diagram/whiteboard products need stable object identity more strongly than slide
@@ -149,7 +149,7 @@ stay outside zod-crud.
 
 | Pressure | Current state | Direction |
 | --- | --- | --- |
-| Guard composition | lab마다 `can*` guard를 조합 | shared contract 후보 |
+| Guard composition | `@zod-crud/protected-ranges` + labs | shared contract 후보 |
 | Patch preview / dry-run | `@zod-crud/patch-preview` | official extension |
 | Structural result shape | lab마다 `selectionAfter` 필요 | result contract 후보 |
 | Anchored comments | `@zod-crud/comments` | official extension |
@@ -170,7 +170,7 @@ stay outside zod-crud.
 | `schema-form` | form renderer |
 | `grouping` | Airtable group-by |
 | `computed-fields` | full formula engine |
-| `protected-ranges` | 2D spreadsheet range UI |
+| `protected-ranges` | 2D spreadsheet range UI, auth, role model, or server authorization |
 | `drag-drop` | DOM drag/drop implementation |
 | `persist-web` | server sync |
 | `patch-log` | product activity feed |

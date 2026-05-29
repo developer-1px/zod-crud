@@ -476,6 +476,53 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/protected-ranges",
+      "name": "@zod-crud/protected-ranges",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official protected range guard extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless protected range guard extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "guard edits to protected JSON Pointer ranges",
+        "notFor": "2D spreadsheet selection UI or server authorization"
+      },
+      "publicExports": [
+        "ProtectedRange",
+        "ProtectedRangeCapabilityResult",
+        "ProtectedRangeEditResult",
+        "ProtectedRangeError",
+        "ProtectedRangeErrorCode",
+        "ProtectedRangeOperation",
+        "ProtectedRangePasteResult",
+        "ProtectedRangeSummary",
+        "ProtectedRanges",
+        "canDeleteProtectedRange",
+        "canInsertProtectedRange",
+        "canMoveProtectedRange",
+        "canPasteProtectedRange",
+        "canPatchProtectedRanges",
+        "canReplaceProtectedRange",
+        "createProtectedRanges",
+        "deleteProtectedRange",
+        "insertProtectedRange",
+        "moveProtectedRange",
+        "pasteProtectedRange",
+        "patchProtectedRanges",
+        "replaceProtectedRange"
+      ],
+      "publicExportCount": 22,
+      "keywords": [
+        "headless",
+        "lock",
+        "protected",
+        "ranges",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/schema-form",
       "name": "@zod-crud/schema-form",
       "status": "official-extension",
@@ -1162,6 +1209,53 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/protected-ranges",
+      "name": "@zod-crud/protected-ranges",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official protected range guard extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless protected range guard extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "guard edits to protected JSON Pointer ranges",
+        "notFor": "2D spreadsheet selection UI or server authorization"
+      },
+      "publicExports": [
+        "ProtectedRange",
+        "ProtectedRangeCapabilityResult",
+        "ProtectedRangeEditResult",
+        "ProtectedRangeError",
+        "ProtectedRangeErrorCode",
+        "ProtectedRangeOperation",
+        "ProtectedRangePasteResult",
+        "ProtectedRangeSummary",
+        "ProtectedRanges",
+        "canDeleteProtectedRange",
+        "canInsertProtectedRange",
+        "canMoveProtectedRange",
+        "canPasteProtectedRange",
+        "canPatchProtectedRanges",
+        "canReplaceProtectedRange",
+        "createProtectedRanges",
+        "deleteProtectedRange",
+        "insertProtectedRange",
+        "moveProtectedRange",
+        "pasteProtectedRange",
+        "patchProtectedRanges",
+        "replaceProtectedRange"
+      ],
+      "publicExportCount": 22,
+      "keywords": [
+        "headless",
+        "lock",
+        "protected",
+        "ranges",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/schema-form",
       "name": "@zod-crud/schema-form",
       "status": "official-extension",
@@ -1694,53 +1788,6 @@ export const repoCatalog = {
       ]
     },
     {
-      "path": "labs/extensions/protected-ranges",
-      "name": "@zod-crud/protected-ranges",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab protected range guard extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab protected range guard extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "guard edits to protected JSON Pointer ranges",
-        "notFor": "2D spreadsheet selection UI or server authorization"
-      },
-      "publicExports": [
-        "ProtectedRange",
-        "ProtectedRangeCapabilityResult",
-        "ProtectedRangeEditResult",
-        "ProtectedRangeError",
-        "ProtectedRangeErrorCode",
-        "ProtectedRangeOperation",
-        "ProtectedRangePasteResult",
-        "ProtectedRangeSummary",
-        "ProtectedRanges",
-        "canDeleteProtectedRange",
-        "canInsertProtectedRange",
-        "canMoveProtectedRange",
-        "canPasteProtectedRange",
-        "canPatchProtectedRanges",
-        "canReplaceProtectedRange",
-        "createProtectedRanges",
-        "deleteProtectedRange",
-        "insertProtectedRange",
-        "moveProtectedRange",
-        "pasteProtectedRange",
-        "patchProtectedRanges",
-        "replaceProtectedRange"
-      ],
-      "publicExportCount": 22,
-      "keywords": [
-        "headless",
-        "lock",
-        "protected",
-        "ranges",
-        "zod-crud"
-      ]
-    },
-    {
       "path": "labs/extensions/references",
       "name": "@zod-crud/references",
       "status": "lab-extension",
@@ -1985,7 +2032,7 @@ export const repoCatalog = {
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `@zod-crud/protected-ranges` as a locked structured content editor.",
+      "summary": "Dogfoods official `@zod-crud/protected-ranges` as a locked structured content editor.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -2053,9 +2100,9 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 15,
-    "officialExtensions": 14,
-    "labExtensions": 16,
+    "packages": 16,
+    "officialExtensions": 15,
+    "labExtensions": 15,
     "apps": 12
   }
 } as const;

@@ -50,7 +50,7 @@ stable strengths
 | stable id to Pointer | kanban, form, grid, import, diagram | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 host-owned id policy 확인 |
 | TSV/CSV grid paste | grid, import | lab 후보 | grid clipboard lab 후보로 유지 |
 | Patch preview / dry-run | grid, form, import | 반영됨: `@zod-crud/patch-preview` | visual diff/review workflow가 host-owned로 남는지 확인 |
-| guard composition | form, import, grid, diagram | lab convention | core 금지, guard vocabulary만 관찰 |
+| guard composition | form, import, grid, diagram | 부분 반영: `@zod-crud/protected-ranges` | core 금지, guard vocabulary는 계속 관찰 |
 | `selectionAfter` | structural edits, grid, diagram, form | result convention 후보 | lab naming 통일 |
 | anchored pointer lifecycle | comments, bookmarks, presence, review | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle은 core `trackPointer` 위의 helper 후보로 관찰 |
 | text search/replace | docs, review, import, object notes | 반영됨: `@zod-crud/search-replace` | rendered text extraction/ranking은 host-owned 유지 |
@@ -107,6 +107,7 @@ stable strengths
 - `@zod-crud/id-resolver`를 official extension으로 승격.
 - `@zod-crud/comments`를 official extension으로 승격.
 - `@zod-crud/form-draft`를 official extension으로 승격.
+- `@zod-crud/protected-ranges`를 official extension으로 승격.
 
 남은 문서 액션:
 
@@ -119,7 +120,7 @@ stable strengths
 
 | Status | Labs |
 | --- | --- |
-| official candidate | `protected-ranges`, `references`, `snippets` |
+| official candidate | `references`, `snippets` |
 | conditional official candidate | `document-diff`, `drag-drop` |
 | recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
 | experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |

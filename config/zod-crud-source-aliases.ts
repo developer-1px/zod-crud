@@ -20,6 +20,7 @@ export const officialExtensionPackages = [
   "proposed-changes",
   "comments",
   "form-draft",
+  "protected-ranges",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];

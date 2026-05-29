@@ -39,7 +39,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 
 | 후보 | 반복 신호 | 현재 판정 | 다음 증거 |
 | --- | --- | --- | --- |
-| guard composition | `protected-ranges`, `proposed-changes`, `search-replace`, paste/drop 계열이 guard와 core capability 실패를 조합 | lab convention | 같은 guard result shape가 3개 이상 package에서 자연스럽게 맞는지 확인 |
+| guard composition | `protected-ranges`, `proposed-changes`, `search-replace`, paste/drop 계열이 guard와 core capability 실패를 조합 | 부분 반영: `@zod-crud/protected-ranges` | 같은 guard result shape가 3개 이상 package에서 자연스럽게 맞는지 확인 |
 | patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | 반영됨: `@zod-crud/patch-preview` | downstream dogfood에서 visual diff/review workflow가 host-owned로 남는지 확인 |
 | structural change result | `grouping`, `wrap-unwrap`, `outline`, `bulk-edit`가 prospective operations와 execution result를 노출 | lab convention | `operations`, `selectionAfter`, `diagnostics` naming을 통일할 수 있는지 확인 |
 | anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle이 bookmark/presence 밖에서도 같은지 확인 |

@@ -38,6 +38,7 @@ schema -> document -> pointer/query -> can* -> change -> result
 | [packages/clipboard-web](packages/clipboard-web) | browser clipboard bridge |
 | [packages/schema-form](packages/schema-form) | schema-backed field descriptor |
 | [packages/form-draft](packages/form-draft) | valid JSON commit 전 temporary invalid form input |
+| [packages/protected-ranges](packages/protected-ranges) | protected JSON Pointer range edit guard |
 | [packages/dirty-state](packages/dirty-state) | clean baseline 대비 dirty state |
 | [packages/bulk-edit](packages/bulk-edit) | JSONPath replace-all/delete-all |
 | [packages/patch-log](packages/patch-log) | applied patch stream 기록/replay |

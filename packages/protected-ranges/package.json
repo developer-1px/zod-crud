@@ -1,8 +1,7 @@
 {
   "name": "@zod-crud/protected-ranges",
   "version": "0.1.0",
-  "description": "Lab protected range guard extension functions for zod-crud documents.",
-  "private": true,
+  "description": "Official protected range guard extension functions for zod-crud documents.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -11,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/developer-1px/zod-crud.git",
-    "directory": "labs/extensions/protected-ranges"
+    "directory": "packages/protected-ranges"
   },
   "keywords": [
     "zod-crud",

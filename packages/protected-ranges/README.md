@@ -1,9 +1,10 @@
 # @zod-crud/protected-ranges
 
-Lab protected range guard extension for `zod-crud` documents.
+Official headless protected range guard extension for `zod-crud` documents.
 
 Use it when the schema accepts an edit, but the product policy says a JSON
-subtree is locked or protected.
+Pointer range is locked or protected: published fields, legal copy, locked
+settings, import targets, generated sections, or moderated content.
 
 ```ts
 import { createProtectedRanges } from "@zod-crud/protected-ranges";
@@ -32,11 +33,10 @@ protectedRanges.replace("/title", "Next title");
   `doc.use(...)`.
 - No `zod-crud` internal imports.
 
-## Friction report
+## Contract
 
-The public facade is enough for simple protected JSON ranges. The package can
-wrap public `can*` and execute methods and return feature-level disabled
-reasons before the core schema check runs.
+`@zod-crud/protected-ranges` wraps public `can*` and execute methods and returns
+feature-level disabled reasons before the core schema check runs.
 
 The pressure point is shared guard composition: if comments, snippets,
 drag/drop, schema-form, and bulk-edit all need to ask the same policy guard
