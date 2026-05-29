@@ -75,3 +75,4 @@ Current labs:
 - `protected-ranges`: guard document edits with protected JSON ranges.
 - `search-replace`: find and replace text across document string fields.
 - `snippets`: insert reusable JSON payloads with schema-safe paste checks.
+- `suggestions`: propose, accept, or reject schema-safe JSON Patch changes.

@@ -1,0 +1,49 @@
+{
+  "name": "@zod-crud/suggestions",
+  "version": "0.1.0",
+  "description": "Lab proposed patch suggestion extension functions for zod-crud documents.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/developer-1px/zod-crud.git",
+    "directory": "labs/extensions/suggestions"
+  },
+  "keywords": [
+    "zod-crud",
+    "suggestions",
+    "review",
+    "patch",
+    "headless"
+  ],
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "verify": "npm run typecheck && npm test && npm run build"
+  },
+  "peerDependencies": {
+    "zod-crud": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.7",
+    "zod": "^4.0.0",
+    "zod-crud": "*"
+  }
+}

@@ -4,7 +4,7 @@ export const repoCatalog = {
   "repo": {
     "name": "zod-crud-monorepo",
     "private": true,
-    "summary": "Zod schema로 검증되는 JSON document editing facade와 작은 extension 함수들을\n모은 monorepo입니다. 앱 전체를 소유하지 않고, JSON document mutation,\nselection, clipboard payload, history, persistence-adjacent workflow의 하부\n구조를 제공합니다."
+    "summary": "zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다."
   },
   "packages": [
     {
@@ -296,7 +296,7 @@ export const repoCatalog = {
       "version": "1.0.0",
       "description": "Headless JSON editing primitives guarded by Zod schemas.",
       "license": "MIT",
-      "summary": "Zod schema로 보호되는 headless JSON 편집 엔진입니다. UI component가 아니라 편집 도구의 core입니다. 앱은 rendering, focus, button, shortcut, drag/drop, 제품별 command 이름을 소유하고, zod-crud는 JSON Pointer 주소, JSON Patch 변경, JSONPath 검색, schema validation, selection, clipboard payload, undo/redo history를 소유합니다.",
+      "summary": "zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다.",
       "publicExports": [
         "ClipboardCopyError",
         "ClipboardCopyOk",
@@ -1249,6 +1249,44 @@ export const repoCatalog = {
         "template",
         "zod-crud"
       ]
+    },
+    {
+      "path": "labs/extensions/suggestions",
+      "name": "@zod-crud/suggestions",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab proposed patch suggestion extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for proposed JSON Patch suggestions.",
+      "publicExports": [
+        "Suggestion",
+        "SuggestionAcceptResult",
+        "SuggestionError",
+        "SuggestionErrorCode",
+        "SuggestionFilter",
+        "SuggestionGuard",
+        "SuggestionInput",
+        "SuggestionListener",
+        "SuggestionPlan",
+        "SuggestionPlanResult",
+        "SuggestionResult",
+        "SuggestionSnapshot",
+        "SuggestionStatus",
+        "Suggestions",
+        "canAcceptSuggestion",
+        "canProposeSuggestion",
+        "createSuggestions"
+      ],
+      "publicExportCount": 17,
+      "keywords": [
+        "headless",
+        "patch",
+        "review",
+        "suggestions",
+        "zod-crud"
+      ]
     }
   ],
   "apps": [
@@ -1411,13 +1449,27 @@ export const repoCatalog = {
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
+    },
+    {
+      "path": "apps/suggestions-lab",
+      "name": "@zod-crud/suggestions-lab",
+      "status": "app",
+      "private": true,
+      "publishable": false,
+      "version": null,
+      "description": null,
+      "license": null,
+      "summary": "Dogfoods `@zod-crud/suggestions` as a small proposed patch review feature.",
+      "publicExports": [],
+      "publicExportCount": 0,
+      "keywords": []
     }
   ],
   "totals": {
     "packages": 9,
     "officialExtensions": 8,
-    "labExtensions": 16,
-    "apps": 11
+    "labExtensions": 17,
+    "apps": 12
   }
 } as const;
 
