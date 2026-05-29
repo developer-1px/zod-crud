@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { MarkdownViewer, markdownHeadings } from "../components/MarkdownViewer";
 import apiReferenceMarkdown from "../../../../docs/public/api.md?raw";
 import extensionsMarkdown from "../../../../docs/public/extensions.md?raw";
+import extensionsCatalogMarkdown from "../../../../docs/generated/extensions-catalog.md?raw";
 import overviewMarkdown from "../../../../docs/public/overview.md?raw";
 import quickstartMarkdown from "../../../../docs/public/quickstart.md?raw";
 
@@ -30,7 +31,7 @@ const docPages = [
     path: "/docs/extensions",
     label: "Extensions",
     title: "zod-crud Extensions",
-    source: extensionsMarkdown,
+    source: `${extensionsMarkdown}\n\n${extensionsCatalogMarkdown}`,
   },
 ] as const;
 

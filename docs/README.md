@@ -7,6 +7,9 @@
 ```txt
 docs
 |-- changelog.md              # 사용자 영향 중심 변경 기록
+|-- generated
+|   |-- repo-catalog.json      # package/app/lab scan 결과
+|   `-- extensions-catalog.md  # site가 붙이는 extension catalog
 |-- public
 |   |-- overview.md            # 프로젝트 이해
 |   |-- quickstart.md          # 사용 시작
@@ -24,6 +27,7 @@ docs
 | 위치 | 책임 | 독자 |
 | --- | --- | --- |
 | `changelog.md` | 사용자 영향 중심 변경 기록 | 외부 사용자, 릴리스 확인자 |
+| `generated/` | repo scan으로 만든 reference data. 직접 편집하지 않는다. | 사이트, evaluator |
 | `public/` | 사용법과 프로젝트 이해를 위한 공식 문서 원천 | 외부 사용자, LLM, 사이트 방문자 |
 | `standard/` | 구현과 분리된 public API 의미론과 conformance 기준 | 표준화 검토자, 대체 구현 작성자 |
 
@@ -34,5 +38,6 @@ docs
 - public 문서는 usage와 프로젝트 이해만 다룬다.
 - 릴리스 history, 검토 loop, maintainer-only gate는 public 문서에 쓰지 않는다.
 - 내부 구현 경로는 public 문서에 쓰지 않는다.
+- package/app/lab 목록은 `npm run docs:generate` 결과를 우선 사용한다.
 - 새 문서는 기존 책임 폴더 중 하나에 들어가야 한다.
 - 새 책임 폴더가 필요하면 먼저 이 파일의 책임 표를 갱신한다.

@@ -14,18 +14,7 @@ npm install zod-crud @zod-crud/collection
 
 ## 공식 extension
 
-| Package | 쓰는 경우 |
-| --- | --- |
-| `@zod-crud/clipboard-web` | browser/system clipboard와 core clipboard buffer를 연결 |
-| `@zod-crud/collection` | ordered JSON array item 이동, 복제, 삭제 |
-| `@zod-crud/outline` | outliner형 tree에서 promote/demote 구조 변경 |
-| `@zod-crud/schema-form` | schema-backed field descriptor 만들기 |
-| `@zod-crud/dirty-state` | clean baseline 대비 dirty 상태 추적 |
-| `@zod-crud/bulk-edit` | JSONPath match replace-all/delete-all |
-| `@zod-crud/patch-log` | applied patch stream 기록과 replay |
-| `@zod-crud/persist-web` | browser storage-like host에 document 저장/복원 |
-
-`labs/extensions/*`의 `autosave`, `comments`, `search-replace`, `form-draft`, `drag-drop` 등은 후보입니다. public 문서에서 공식 extension이라고 부르지 않습니다.
+공식 extension 목록과 lab 후보 목록은 repo catalog에서 생성됩니다. `packages/*`에 있는 publishable `@zod-crud/*` package가 공식 extension이고, `labs/extensions/*`는 후보입니다. public 문서에서 lab package를 공식 extension이라고 부르지 않습니다.
 
 ## 선택 기준
 

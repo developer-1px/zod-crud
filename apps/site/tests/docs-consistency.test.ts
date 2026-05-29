@@ -28,18 +28,33 @@ const publicDocs = {
   api: read("docs/public/api.md"),
   extensions: read("docs/public/extensions.md"),
 };
+const generatedExtensionsCatalog = read("docs/generated/extensions-catalog.md");
+const generatedRepoCatalog = JSON.parse(read("docs/generated/repo-catalog.json")) as {
+  officialExtensions: { name: string; path: string; publicExports: string[] }[];
+  labExtensions: { name: string; path: string; publicExports: string[] }[];
+  totals: { officialExtensions: number; labExtensions: number };
+};
 const docs = {
   rootReadme: read("README.md"),
   readme: read("packages/zod-crud/README.md"),
   spec: read("docs/standard/zod-crud-spec.md"),
   llms: read("llms.txt"),
-  site: Object.values(publicDocs).join("\n\n"),
+  site: [...Object.values(publicDocs), generatedExtensionsCatalog].join("\n\n"),
   ...publicDocs,
+  generatedExtensionsCatalog,
 };
 const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json")) as {
   root: { values: string[]; types: string[] };
   react: { values: string[]; types: string[] };
 };
+
+function officialExtensionNames(): string[] {
+  return readdirSync(join(root, "packages"), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== "zod-crud")
+    .map((entry) => JSON.parse(read(`packages/${entry.name}/package.json`)) as { name: string })
+    .map((pkg) => pkg.name)
+    .sort();
+}
 
 describe("public docs consistency", () => {
   test("uses docs/public as the official markdown source", () => {
@@ -94,9 +109,24 @@ describe("public docs consistency", () => {
     expect(docs.api).toMatch(/ReadResult/);
     expect(docs.extensions).toMatch(/@zod-crud\/collection/);
     expect(docs.extensions).toMatch(/@zod-crud\/clipboard-web/);
+    expect(docs.generatedExtensionsCatalog).toMatch(/Generated extension catalog/);
+    expect(docs.generatedExtensionsCatalog).toMatch(/Official extensions: \d+/);
     expect(docs.readme).toMatch(/npm install zod-crud zod/);
     expect(docs.readme).toMatch(/왜 zod-crud인가/);
     expect(docs.llms).toMatch(/왜 \/ 핵심 \/ 튜토리얼 맥락/);
+  });
+
+  test("keeps generated repo catalog aligned with package directories", () => {
+    const generatedOfficialNames = generatedRepoCatalog.officialExtensions.map((item) => item.name).sort();
+    const packageOfficialNames = officialExtensionNames();
+
+    expect(generatedOfficialNames).toEqual(packageOfficialNames);
+    expect(generatedRepoCatalog.totals.officialExtensions).toBe(packageOfficialNames.length);
+    expect(generatedRepoCatalog.totals.labExtensions).toBeGreaterThan(0);
+
+    for (const name of packageOfficialNames) {
+      expect(generatedExtensionsCatalog).toContain(`\`${name}\``);
+    }
   });
 
   test("describe paste targets without legacy target aliases", () => {

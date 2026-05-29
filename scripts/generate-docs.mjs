@@ -1,0 +1,199 @@
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const root = dirname(dirname(fileURLToPath(import.meta.url)));
+const check = process.argv.includes("--check");
+
+const outputs = [
+  ["docs/generated/repo-catalog.json", () => `${JSON.stringify(createRepoCatalog(), null, 2)}\n`],
+  ["docs/generated/extensions-catalog.md", () => renderExtensionsCatalog(createRepoCatalog())],
+  ["apps/site/src/generated/repo-catalog.ts", () => renderSiteCatalog(createRepoCatalog())],
+];
+
+const stale = [];
+for (const [path, build] of outputs) {
+  const next = build();
+  const absolute = join(root, path);
+  const current = existsSync(absolute) ? readFileSync(absolute, "utf8") : null;
+
+  if (check) {
+    if (current !== next) stale.push(path);
+    continue;
+  }
+
+  mkdirSync(dirname(absolute), { recursive: true });
+  writeFileSync(absolute, next);
+}
+
+if (stale.length > 0) {
+  console.error(`Generated docs are stale. Run npm run docs:generate.\n${stale.map((path) => `- ${path}`).join("\n")}`);
+  process.exitCode = 1;
+} else if (check) {
+  console.log("generated docs ok");
+} else {
+  console.log("generated docs updated");
+}
+
+function createRepoCatalog() {
+  const packages = packageEntries("packages").map((entry) =>
+    packageDoc(entry.path, entry.name === "zod-crud" ? "core" : "official-extension"),
+  );
+  const labExtensions = packageEntries("labs/extensions").map((entry) =>
+    packageDoc(entry.path, "lab-extension"),
+  );
+  const apps = packageEntries("apps").map((entry) => packageDoc(entry.path, "app"));
+  const rootPackage = readJson("package.json");
+  const readme = readIfExists("README.md");
+
+  return {
+    schemaVersion: 1,
+    repo: {
+      name: rootPackage.name,
+      private: rootPackage.private === true,
+      summary: summaryFromReadme(readme),
+    },
+    packages: packages.sort(byPath),
+    officialExtensions: packages
+      .filter((item) => item.status === "official-extension")
+      .sort(byName),
+    labExtensions: labExtensions.sort(byName),
+    apps: apps.sort(byName),
+    totals: {
+      packages: packages.length,
+      officialExtensions: packages.filter((item) => item.status === "official-extension").length,
+      labExtensions: labExtensions.length,
+      apps: apps.length,
+    },
+  };
+}
+
+function packageEntries(dir) {
+  const absolute = join(root, dir);
+  if (!existsSync(absolute)) return [];
+  return readdirSync(absolute, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && existsSync(join(absolute, entry.name, "package.json")))
+    .map((entry) => ({
+      name: entry.name,
+      path: `${dir}/${entry.name}`,
+    }));
+}
+
+function packageDoc(path, status) {
+  const pkg = readJson(`${path}/package.json`);
+  const readme = readIfExists(`${path}/README.md`);
+  const sourcePath = `${path}/src/index.ts`;
+  const source = readIfExists(sourcePath);
+  const publicExports = extractExports(source);
+
+  return {
+    path,
+    name: stringValue(pkg.name),
+    status,
+    private: pkg.private === true,
+    publishable: pkg.private !== true,
+    version: stringValue(pkg.version),
+    description: stringValue(pkg.description),
+    license: stringValue(pkg.license),
+    summary: summaryFromReadme(readme) ?? stringValue(pkg.description),
+    publicExports,
+    publicExportCount: publicExports.length,
+    keywords: Array.isArray(pkg.keywords) ? pkg.keywords.filter((item) => typeof item === "string").sort() : [],
+  };
+}
+
+function readJson(path) {
+  return JSON.parse(read(path));
+}
+
+function read(path) {
+  return readFileSync(join(root, path), "utf8");
+}
+
+function readIfExists(path) {
+  const absolute = join(root, path);
+  return existsSync(absolute) ? readFileSync(absolute, "utf8") : "";
+}
+
+function stringValue(value) {
+  return typeof value === "string" ? value : null;
+}
+
+function byName(a, b) {
+  return a.name.localeCompare(b.name);
+}
+
+function byPath(a, b) {
+  return a.path.localeCompare(b.path);
+}
+
+function summaryFromReadme(readme) {
+  return readme
+    .split(/\n\n+/)
+    .map((block) => block.trim())
+    .find((block) =>
+      block
+      && !block.startsWith("#")
+      && !block.startsWith("```")
+      && !block.startsWith("|")
+      && !block.startsWith("- "),
+    ) ?? null;
+}
+
+function extractExports(source) {
+  const names = new Set();
+
+  for (const match of source.matchAll(/export\s+(?:type\s+)?\{([\s\S]*?)\}/g)) {
+    for (const raw of match[1].split(",")) {
+      const name = raw.trim().split(/\s+as\s+/).pop()?.trim();
+      if (name) names.add(name);
+    }
+  }
+
+  for (const match of source.matchAll(/export\s+(?:declare\s+)?(?:async\s+)?(?:function|interface|type|const|class|enum)\s+([A-Za-z_$][\w$]*)\b/g)) {
+    names.add(match[1]);
+  }
+
+  return [...names].sort();
+}
+
+function renderExtensionsCatalog(catalog) {
+  return [
+    "<!-- Generated by scripts/generate-docs.mjs. Do not edit directly. -->",
+    "",
+    "## Generated extension catalog",
+    "",
+    "This section is generated from `packages/*` and `labs/extensions/*`.",
+    "",
+    `Official extensions: ${catalog.totals.officialExtensions}`,
+    "",
+    "| Package | Exports | Summary |",
+    "| --- | ---: | --- |",
+    ...catalog.officialExtensions.map((item) =>
+      `| \`${item.name}\` | ${item.publicExportCount} | ${escapeMarkdownCell(item.summary ?? item.description ?? "")} |`,
+    ),
+    "",
+    `Lab extensions: ${catalog.totals.labExtensions}`,
+    "",
+    "| Package | Exports | Summary |",
+    "| --- | ---: | --- |",
+    ...catalog.labExtensions.map((item) =>
+      `| \`${item.name}\` | ${item.publicExportCount} | ${escapeMarkdownCell(item.summary ?? item.description ?? "")} |`,
+    ),
+    "",
+  ].join("\n");
+}
+
+function renderSiteCatalog(catalog) {
+  return [
+    "// Generated by scripts/generate-docs.mjs. Do not edit directly.",
+    `export const repoCatalog = ${JSON.stringify(catalog, null, 2)} as const;`,
+    "",
+    "export type RepoCatalog = typeof repoCatalog;",
+    "",
+  ].join("\n");
+}
+
+function escapeMarkdownCell(value) {
+  return value.replaceAll("|", "\\|").replace(/\s+/g, " ").trim();
+}

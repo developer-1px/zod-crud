@@ -45,6 +45,11 @@ const publicDocs = {
   api: read("docs/public/api.md"),
   extensions: read("docs/public/extensions.md"),
 };
+const generatedDocs = {
+  repoCatalog: JSON.parse(read("docs/generated/repo-catalog.json")),
+  extensionsCatalog: read("docs/generated/extensions-catalog.md"),
+  siteRepoCatalog: read("apps/site/src/generated/repo-catalog.ts"),
+};
 const surfaces = {
   rootReadme: read("README.md"),
   readme: read("packages/zod-crud/README.md"),
@@ -57,6 +62,7 @@ const docsRoute = read("apps/site/src/routes/Docs.tsx");
 const packageJson = JSON.parse(read("packages/zod-crud/package.json"));
 const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json"));
 const officialExtensions = officialExtensionNames();
+const generatedOfficialExtensions = generatedDocs.repoCatalog.officialExtensions.map((item) => item.name).sort();
 
 for (const removedPath of [
   "docs/release/evaluation-loop.md",
@@ -159,8 +165,11 @@ for (const route of siteRoutes) {
 }
 
 for (const extensionName of officialExtensions) {
-  if (!surfaces.extensions.includes(`\`${extensionName}\``)) {
-    fail(`extensions: shipped official extension missing from public docs: ${extensionName}.`);
+  if (!generatedDocs.extensionsCatalog.includes(`\`${extensionName}\``)) {
+    fail(`generated extension catalog: shipped official extension missing: ${extensionName}.`);
+  }
+  if (!generatedDocs.siteRepoCatalog.includes(`"name": "${extensionName}"`)) {
+    fail(`site repo catalog: shipped official extension missing: ${extensionName}.`);
   }
   if (!surfaces.readme.includes(extensionName)) {
     fail(`readme: shipped official extension missing from README import list: ${extensionName}.`);
@@ -168,6 +177,18 @@ for (const extensionName of officialExtensions) {
   if (!surfaces.llms.includes(extensionName)) {
     fail(`llms: shipped official extension missing from LLM import list: ${extensionName}.`);
   }
+}
+
+if (JSON.stringify(officialExtensions) !== JSON.stringify(generatedOfficialExtensions)) {
+  fail("generated repo catalog: official extension list does not match packages/*.");
+}
+
+if (
+  generatedDocs.repoCatalog.totals.officialExtensions !== officialExtensions.length
+  || generatedDocs.repoCatalog.totals.labExtensions < 1
+  || generatedDocs.repoCatalog.packages.length < officialExtensions.length + 1
+) {
+  fail("generated repo catalog: package totals are inconsistent.");
 }
 
 const required = [
@@ -195,6 +216,9 @@ const required = [
   ["extensions", /@zod-crud\/clipboard-web/],
   ["extensions", /@zod-crud\/outline/],
   ["extensions", /labs\/extensions\/\*/],
+  ["extensionsCatalog", /Generated extension catalog/],
+  ["extensionsCatalog", /Official extensions: \d+/],
+  ["extensionsCatalog", /Lab extensions: \d+/],
   ["extensions", /Rich editor host pattern/],
   ["extensions", /origin: "prosemirror"/],
   ["rootReadme", /## 문서 지도/],
@@ -221,7 +245,8 @@ const required = [
 ];
 
 for (const [name, pattern] of required) {
-  if (!pattern.test(surfaces[name])) fail(`${name}: missing ${pattern}.`);
+  const source = surfaces[name] ?? generatedDocs[name];
+  if (!pattern.test(source)) fail(`${name}: missing ${pattern}.`);
 }
 
 if (!publicContract.root.values.includes("createJSONDocument") || !publicContract.react.values.includes("useJSONDocument")) {
@@ -253,6 +278,7 @@ for (const pattern of [
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/quickstart\.md\?raw/,
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/api\.md\?raw/,
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/extensions\.md\?raw/,
+  /\.\.\/\.\.\/\.\.\/\.\.\/docs\/generated\/extensions-catalog\.md\?raw/,
   /Documentation pages/,
   /On this page/,
 ]) {
