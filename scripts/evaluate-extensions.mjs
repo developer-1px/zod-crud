@@ -140,6 +140,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/comments",
+    name: "@zod-crud/comments",
+    description: /comments extension functions/,
+    readme: [
+      /createComments\(doc\)/,
+      /block documents,\s*CMS review,\s*slide\/object notes,\s*import review,\s*moderation queues,\s*or\s*generated admin editors/,
+      /Track anchors through document edits with `doc\.subscribe/,
+      /No rendered comment UI, thread layout, popovers, highlighting, keyboard, or\s*focus policy/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

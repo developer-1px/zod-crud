@@ -33,7 +33,7 @@ auth, remote sync는 앱 책임입니다.
 | Dirty/save | `@zod-crud/dirty-state`, `@zod-crud/persist-web` | server sync |
 | Stable card id to Pointer | `@zod-crud/id-resolver` | id generation, route policy |
 | Drag/drop intent | lab `drag-drop` | DOM events, hit testing |
-| Comments/review | `@zod-crud/search-replace`, `@zod-crud/proposed-changes`, lab `comments` | workflow, authoring |
+| Comments/review | `@zod-crud/search-replace`, `@zod-crud/proposed-changes`, `@zod-crud/comments` | workflow, authoring |
 
 Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아니라
 `@zod-crud/id-resolver` 같은 small extension 책임입니다.
@@ -81,7 +81,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Current vs imported diff | lab `document-diff` | identity/move inference |
 | Dry-run preview | `@zod-crud/patch-preview`, core `applyPatch` | visual diff |
 | Proposed changes | `@zod-crud/proposed-changes` | review workflow, storage |
-| Reviewer comments | lab `comments` | thread UI, authoring |
+| Reviewer comments | `@zod-crud/comments` | thread UI, authoring |
 | Protected targets | lab `protected-ranges` | role/auth policy |
 | Patch audit/replay | `@zod-crud/patch-log` | product activity feed |
 | Stable id to Pointer | `@zod-crud/id-resolver` | row/card identity policy |
@@ -117,7 +117,7 @@ Canvas rendering, zoom, pan, export, rich text editing, snapping, handles는
 | Object group/ungroup | lab `grouping` | group factory, bounds policy |
 | Frame/container wrap | lab `wrap-unwrap` | frame semantics |
 | Connectors/references | lab `references` | ports, routing, geometry |
-| Comments | lab `comments` | thread UI, workflow |
+| Comments | `@zod-crud/comments` | thread UI, workflow |
 | Lock/protect | lab `protected-ranges` | auth/visibility policy |
 | Stable id to Pointer | `@zod-crud/id-resolver` | selected object id lookup |
 
@@ -134,7 +134,7 @@ stay outside zod-crud.
 | Tree movement | `@zod-crud/outline`, `@zod-crud/collection` | keyboard focus |
 | Snippet insertion | lab `snippets` | slash palette UI |
 | Mention/reference | lab `references` | entity source, autocomplete |
-| Review comments | lab `comments` | thread UI, workflow |
+| Review comments | `@zod-crud/comments` | thread UI, workflow |
 | Proposed changes | `@zod-crud/proposed-changes`, `@zod-crud/patch-preview` | diff UI, approval |
 | External paste/import | lab `paste-compatible`, lab `document-diff` | HTML/Markdown parser |
 | Search/replace | `@zod-crud/search-replace` | rendered text extraction |
@@ -152,7 +152,8 @@ stay outside zod-crud.
 | Guard composition | lab마다 `can*` guard를 조합 | shared contract 후보 |
 | Patch preview / dry-run | `@zod-crud/patch-preview` | official extension |
 | Structural result shape | lab마다 `selectionAfter` 필요 | result contract 후보 |
-| Anchored pointer lifecycle | core `trackPointer` + labs | annotation helper 후보 |
+| Anchored comments | `@zod-crud/comments` | official extension |
+| Generic anchor lifecycle | core `trackPointer` + labs | bookmark/presence helper 후보 |
 | Stable id to Pointer | `@zod-crud/id-resolver` | official extension |
 | Text search/replace | `@zod-crud/search-replace` | official extension |
 | Proposed changes | `@zod-crud/proposed-changes` | official extension |

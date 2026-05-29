@@ -127,6 +127,44 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/comments",
+      "name": "@zod-crud/comments",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official comments extension functions for review notes anchored to zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless comments extension for review notes anchored to `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "anchor review comments to document structure",
+        "notFor": "comment UI, moderation, or author storage"
+      },
+      "publicExports": [
+        "Comment",
+        "CommentError",
+        "CommentErrorCode",
+        "CommentFilter",
+        "CommentInput",
+        "CommentListResult",
+        "CommentListener",
+        "CommentPointerFilter",
+        "CommentResult",
+        "CommentSnapshot",
+        "CommentStatus",
+        "CommentUpdate",
+        "Comments",
+        "createComments"
+      ],
+      "publicExportCount": 14,
+      "keywords": [
+        "comment",
+        "headless",
+        "review",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/dirty-state",
       "name": "@zod-crud/dirty-state",
       "status": "official-extension",
@@ -735,6 +773,44 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/comments",
+      "name": "@zod-crud/comments",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official comments extension functions for review notes anchored to zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless comments extension for review notes anchored to `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "anchor review comments to document structure",
+        "notFor": "comment UI, moderation, or author storage"
+      },
+      "publicExports": [
+        "Comment",
+        "CommentError",
+        "CommentErrorCode",
+        "CommentFilter",
+        "CommentInput",
+        "CommentListResult",
+        "CommentListener",
+        "CommentPointerFilter",
+        "CommentResult",
+        "CommentSnapshot",
+        "CommentStatus",
+        "CommentUpdate",
+        "Comments",
+        "createComments"
+      ],
+      "publicExportCount": 14,
+      "keywords": [
+        "comment",
+        "headless",
+        "review",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/dirty-state",
       "name": "@zod-crud/dirty-state",
       "status": "official-extension",
@@ -1231,44 +1307,6 @@ export const repoCatalog = {
         "headless",
         "json",
         "sort",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/comments",
-      "name": "@zod-crud/comments",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab comments extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab package for headless review comments anchored to JSON Pointers.",
-      "guidance": {
-        "useFor": "anchor review comments to document structure",
-        "notFor": "comment UI, moderation, or author storage"
-      },
-      "publicExports": [
-        "Comment",
-        "CommentError",
-        "CommentErrorCode",
-        "CommentFilter",
-        "CommentInput",
-        "CommentListResult",
-        "CommentListener",
-        "CommentPointerFilter",
-        "CommentResult",
-        "CommentSnapshot",
-        "CommentStatus",
-        "CommentUpdate",
-        "Comments",
-        "createComments"
-      ],
-      "publicExportCount": 14,
-      "keywords": [
-        "comment",
-        "headless",
-        "review",
         "zod-crud"
       ]
     },
@@ -1922,7 +1960,7 @@ export const repoCatalog = {
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `labs/extensions/comments` as an editorial review product surface.",
+      "summary": "Dogfoods `@zod-crud/comments` as an editorial review product surface.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -1975,9 +2013,9 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 13,
-    "officialExtensions": 12,
-    "labExtensions": 18,
+    "packages": 14,
+    "officialExtensions": 13,
+    "labExtensions": 17,
     "apps": 12
   }
 } as const;

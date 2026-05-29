@@ -58,8 +58,6 @@ Promotion path:
 
 Current labs:
 
-- `comments`: build review comments anchored to document
-  structure.
 - `autosave`: schedule host-owned saves from document changes.
 - `checkpoints`: name and restore document snapshots.
 - `collection-sort`: sort or reverse ordered JSON arrays.

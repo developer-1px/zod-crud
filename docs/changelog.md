@@ -14,6 +14,8 @@ All notable changes to this project are documented here.
   searching and replacing JSON string fields.
 - Added `@zod-crud/proposed-changes` as an official headless extension for
   reviewing, accepting, and rejecting proposed JSON Patch changes.
+- Added `@zod-crud/comments` as an official headless extension for review
+  comments anchored to JSON Pointers.
 
 ### Changed
 

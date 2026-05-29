@@ -42,7 +42,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | guard composition | `protected-ranges`, `proposed-changes`, `search-replace`, paste/drop 계열이 guard와 core capability 실패를 조합 | lab convention | 같은 guard result shape가 3개 이상 package에서 자연스럽게 맞는지 확인 |
 | patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | 반영됨: `@zod-crud/patch-preview` | downstream dogfood에서 visual diff/review workflow가 host-owned로 남는지 확인 |
 | structural change result | `grouping`, `wrap-unwrap`, `outline`, `bulk-edit`가 prospective operations와 execution result를 노출 | lab convention | `operations`, `selectionAfter`, `diagnostics` naming을 통일할 수 있는지 확인 |
-| anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | official 후보 | anchor lifecycle이 comment/bookmark/presence 밖에서도 같은지 확인 |
+| anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle이 bookmark/presence 밖에서도 같은지 확인 |
 | stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
 | text search/replace | block docs, review editor, import cleanup, object notes에서 반복 | 반영됨: `@zod-crud/search-replace` | rendered text extraction과 ranking이 host-owned로 남는지 확인 |
 | proposed changes | AI edit review, import review, CMS copy review, moderation queues에서 반복 | 반영됨: `@zod-crud/proposed-changes` | approval workflow와 storage/sync가 host-owned로 남는지 확인 |
@@ -130,8 +130,9 @@ anchor
 `-- recovered or discarded by host policy
 ```
 
-이것은 core `trackPointer`보다 한 단계 높은 concept이다. 지금은 official
-extension 후보이며, core로 올릴 증거는 부족하다.
+이것은 core `trackPointer`보다 한 단계 높은 concept이다. review comment
+feature는 `@zod-crud/comments` official extension으로 반영했다. 그러나 generic
+anchor lifecycle을 core나 shared package로 올릴 증거는 아직 부족하다.
 
 ## Stable Id To Pointer
 

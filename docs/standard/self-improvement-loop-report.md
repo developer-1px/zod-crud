@@ -52,7 +52,7 @@ stable strengths
 | Patch preview / dry-run | grid, form, import | 반영됨: `@zod-crud/patch-preview` | visual diff/review workflow가 host-owned로 남는지 확인 |
 | guard composition | form, import, grid, diagram | lab convention | core 금지, guard vocabulary만 관찰 |
 | `selectionAfter` | structural edits, grid, diagram, form | result convention 후보 | lab naming 통일 |
-| anchored pointer lifecycle | comments, bookmarks, presence, review | official 후보 | core `trackPointer` 위의 helper 후보로 관찰 |
+| anchored pointer lifecycle | comments, bookmarks, presence, review | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle은 core `trackPointer` 위의 helper 후보로 관찰 |
 | text search/replace | docs, review, import, object notes | 반영됨: `@zod-crud/search-replace` | rendered text extraction/ranking은 host-owned 유지 |
 | proposed changes | AI edit review, import, CMS copy review | 반영됨: `@zod-crud/proposed-changes` | approval workflow/storage/sync는 host-owned 유지 |
 | package name misreads | all | doc/catalog 보강 | `Use for` / `Not for` 유지 |
@@ -105,6 +105,7 @@ stable strengths
 - `collection` package description을 ordered JSON array command로 명확화.
 - `schema-form` package description에 rendered form UI가 아님을 명시.
 - `@zod-crud/id-resolver`를 official extension으로 승격.
+- `@zod-crud/comments`를 official extension으로 승격.
 
 남은 문서 액션:
 
@@ -117,7 +118,7 @@ stable strengths
 
 | Status | Labs |
 | --- | --- |
-| official candidate | `comments`, `form-draft`, `protected-ranges`, `references`, `snippets` |
+| official candidate | `form-draft`, `protected-ranges`, `references`, `snippets` |
 | conditional official candidate | `document-diff`, `drag-drop` |
 | recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
 | experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |

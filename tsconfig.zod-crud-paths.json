@@ -14,6 +14,7 @@
       "@zod-crud/patch-preview": ["packages/patch-preview/src/index.ts"],
       "@zod-crud/search-replace": ["packages/search-replace/src/index.ts"],
       "@zod-crud/proposed-changes": ["packages/proposed-changes/src/index.ts"],
+      "@zod-crud/comments": ["packages/comments/src/index.ts"],
       "zod-crud/react": ["packages/zod-crud/src/react.ts"],
       "zod-crud": ["packages/zod-crud/src/index.ts"]
     }

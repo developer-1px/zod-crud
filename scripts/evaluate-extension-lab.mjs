@@ -8,6 +8,7 @@ const officialRoot = "packages";
 const verify = process.argv.includes("--verify");
 const retiredLabNames = new Set([
   "annotations",
+  "comments",
   "document-outline",
   "drop-intent",
   "field-draft",

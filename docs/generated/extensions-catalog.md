@@ -4,13 +4,14 @@
 
 This section is generated from `packages/*` and `labs/extensions/*`.
 
-Official extensions: 12
+Official extensions: 13
 
 | Package | Exports | Use for | Not for | Summary |
 | --- | ---: | --- | --- | --- |
 | `@zod-crud/bulk-edit` | 15 | apply JSONPath replace/delete operations to many document positions | rendered text search UI or product workflow approval | Official headless JSONPath bulk editing extension for `zod-crud` documents. |
 | `@zod-crud/clipboard-web` | 20 | bridge zod-crud clipboard payloads to the browser clipboard | TSV/CSV spreadsheet paste engines | Web clipboard extension functions for `zod-crud`. |
 | `@zod-crud/collection` | 9 | edit ordered JSON arrays with item-level commands | database collections or rendered list UI | Official headless collection editing extension for `zod-crud` documents. |
+| `@zod-crud/comments` | 14 | anchor review comments to document structure | comment UI, moderation, or author storage | Official headless comments extension for review notes anchored to `zod-crud` documents. |
 | `@zod-crud/dirty-state` | 7 | compare a document to a clean baseline | persistence or server save status | Official headless dirty state tracking extension for `zod-crud` documents. |
 | `@zod-crud/id-resolver` | 10 | resolve scoped stable ids to current JSON Pointers | id generation, relation graphs, routing, or server identity | Official headless stable id resolver extension for `zod-crud` documents. |
 | `@zod-crud/outline` | 19 | project and edit nested document outline structures | Figma layer panels without a tree schema adapter | Official headless outline tree and structure editing extension for `zod-crud` documents. |
@@ -21,7 +22,7 @@ Official extensions: 12
 | `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 
-Lab extensions: 18
+Lab extensions: 17
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -31,7 +32,6 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/bookmarks` | lab-only | 8 | keep named JSON Pointer locations stable across edits | browser bookmarks or route state | Headless bookmark tracking helpers for `zod-crud` documents. |
 | `@zod-crud/checkpoints` | lab-only | 13 | name and restore document snapshots | durable version graphs or cloud backup | Lab checkpoint extension for `zod-crud` documents. |
 | `@zod-crud/collection-sort` | lab-only | 13 | sort or reverse JSON array items | query views, filters, or server sorting | Lab collection sort extension for `zod-crud` documents. |
-| `@zod-crud/comments` | lab-only | 14 | anchor review comments to document structure | comment UI, moderation, or author storage | Lab package for headless review comments anchored to JSON Pointers. |
 | `@zod-crud/computed-fields` | lab-only | 12 | sync host-computed derived JSON fields | formula languages or dependency runtimes | Lab computed field extension for `zod-crud` documents. |
 | `@zod-crud/convert-node-kind` | lab-only | 12 | convert selected nodes between host-described kinds | schema migration systems | Lab extension for converting a JSON node from one host-described kind to another. |
 | `@zod-crud/document-diff` | lab-only | 10 | produce and apply patch changes toward a target document | visual diff UI or merge conflict resolution | Lab document diff and apply extension for `zod-crud` documents. |

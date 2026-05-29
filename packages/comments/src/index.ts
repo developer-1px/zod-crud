@@ -16,7 +16,7 @@ export type CommentErrorCode =
 export interface CommentError {
   ok: false;
   code: CommentErrorCode;
-  reason?: string;
+  reason: string;
   pointer?: Pointer;
   id?: string;
 }
@@ -162,7 +162,7 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
       if (comment === undefined) return notFound(id);
 
       if (hasOwn(patch, "text") && isEmptyText(patch.text)) {
-        return { ok: false, code: "empty_text", id };
+        return commentError("empty_text", "comment text must not be empty", { id });
       }
 
       if (patch.pointer !== undefined) {
@@ -228,12 +228,12 @@ function canAdd<T>(
   input: CommentInput,
 ): { ok: true } | CommentError {
   if (input.id !== undefined && comments.has(input.id)) {
-    return { ok: false, code: "duplicate_id", id: input.id };
+    return commentError("duplicate_id", `comment already exists: ${input.id}`, { id: input.id });
   }
   if (isEmptyText(input.text)) {
     return input.id === undefined
-      ? { ok: false, code: "empty_text" }
-      : { ok: false, code: "empty_text", id: input.id };
+      ? commentError("empty_text", "comment text must not be empty")
+      : commentError("empty_text", "comment text must not be empty", { id: input.id });
   }
 
   const read = doc.at(input.pointer);
@@ -371,16 +371,25 @@ function readError(
   pointer: Pointer,
   reason?: string,
 ): CommentError {
-  return {
-    ok: false,
-    code,
-    ...(reason !== undefined ? { reason } : {}),
-    pointer,
-  };
+  return commentError(code, reason ?? `comment anchor is not readable: ${pointer}`, { pointer });
 }
 
 function notFound(id: string): CommentError {
-  return { ok: false, code: "not_found", id };
+  return commentError("not_found", `comment not found: ${id}`, { id });
+}
+
+function commentError(
+  code: CommentErrorCode,
+  reason: string,
+  options: {
+    id?: string;
+    pointer?: Pointer;
+  } = {},
+): CommentError {
+  const error: CommentError = { ok: false, code, reason };
+  if (options.id !== undefined) error.id = options.id;
+  if (options.pointer !== undefined) error.pointer = options.pointer;
+  return error;
 }
 
 function hasOwn<T extends object, K extends PropertyKey>(

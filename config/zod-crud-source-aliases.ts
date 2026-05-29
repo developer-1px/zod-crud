@@ -18,6 +18,7 @@ export const officialExtensionPackages = [
   "patch-preview",
   "search-replace",
   "proposed-changes",
+  "comments",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];

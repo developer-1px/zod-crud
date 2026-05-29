@@ -62,11 +62,20 @@ describe("@zod-crud/comments", () => {
       id: "review-1",
       pointer: "/items/1/title",
       text: "Duplicate",
-    })).toEqual({ ok: false, code: "duplicate_id", id: "review-1" });
+    })).toEqual({
+      ok: false,
+      code: "duplicate_id",
+      reason: "comment already exists: review-1",
+      id: "review-1",
+    });
     expect(comments.add({
       pointer: "/items/1/title",
       text: "   ",
-    })).toEqual({ ok: false, code: "empty_text" });
+    })).toEqual({
+      ok: false,
+      code: "empty_text",
+      reason: "comment text must not be empty",
+    });
     expect(comments.add({
       pointer: "/items/9/title",
       text: "Missing",
