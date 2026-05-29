@@ -17,7 +17,7 @@ Official extensions: 8
 | `@zod-crud/persist-web` | 24 | Official headless web persistence extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 
-Lab extensions: 18
+Lab extensions: 19
 
 | Package | Exports | Summary |
 | --- | ---: | --- |
@@ -27,6 +27,7 @@ Lab extensions: 18
 | `@zod-crud/collection-sort` | 13 | Lab collection sort extension for `zod-crud` documents. |
 | `@zod-crud/comments` | 14 | Lab package for headless review comments anchored to JSON Pointers. |
 | `@zod-crud/computed-fields` | 12 | Lab computed field extension for `zod-crud` documents. |
+| `@zod-crud/convert-node-kind` | 12 | Lab extension for converting a JSON node from one host-described kind to another. |
 | `@zod-crud/document-diff` | 10 | Lab document diff and apply extension for `zod-crud` documents. |
 | `@zod-crud/drag-drop` | 15 | Lab drag and drop extension for `zod-crud` documents. |
 | `@zod-crud/form-draft` | 15 | Lab form draft extension for `zod-crud` documents. |

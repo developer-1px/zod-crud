@@ -899,6 +899,39 @@
       ]
     },
     {
+      "path": "labs/extensions/convert-node-kind",
+      "name": "@zod-crud/convert-node-kind",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab node kind conversion extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for converting a JSON node from one host-described kind to\nanother.",
+      "publicExports": [
+        "NodeKindConversionDescriptor",
+        "NodeKindConversionError",
+        "NodeKindConversionErrorCode",
+        "NodeKindConversionFactoryInput",
+        "NodeKindConversionInput",
+        "NodeKindConversionPlan",
+        "NodeKindConversionPlanResult",
+        "NodeKindConversionResult",
+        "NodeKindConverter",
+        "canConvertNodeKind",
+        "convertNodeKind",
+        "createNodeKindConverter"
+      ],
+      "publicExportCount": 12,
+      "keywords": [
+        "convert",
+        "headless",
+        "node-kind",
+        "structure",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/document-diff",
       "name": "@zod-crud/document-diff",
       "status": "lab-extension",
@@ -1511,7 +1544,7 @@
   "totals": {
     "packages": 9,
     "officialExtensions": 8,
-    "labExtensions": 18,
+    "labExtensions": 19,
     "apps": 12
   }
 }

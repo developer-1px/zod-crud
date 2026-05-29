@@ -63,6 +63,7 @@ Current labs:
 - `autosave`: schedule host-owned saves from document changes.
 - `checkpoints`: name and restore document snapshots.
 - `collection-sort`: sort or reverse ordered JSON arrays.
+- `convert-node-kind`: convert selected JSON nodes between host-described kinds.
 - `computed-fields`: sync host-computed formula/derived fields.
 - `document-diff`: produce and apply patch changes toward a target document.
 - `drag-drop`: convert drag/drop input into move or paste operations.
