@@ -12,6 +12,7 @@
       "@zod-crud/persist-web": ["packages/persist-web/src/index.ts"],
       "@zod-crud/id-resolver": ["packages/id-resolver/src/index.ts"],
       "@zod-crud/patch-preview": ["packages/patch-preview/src/index.ts"],
+      "@zod-crud/search-replace": ["packages/search-replace/src/index.ts"],
       "zod-crud/react": ["packages/zod-crud/src/react.ts"],
       "zod-crud": ["packages/zod-crud/src/index.ts"]
     }

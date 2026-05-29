@@ -151,6 +151,7 @@ import { createPatchLog } from "@zod-crud/patch-log";
 import { createDocumentPersistence } from "@zod-crud/persist-web";
 import { createIdResolver } from "@zod-crud/id-resolver";
 import { createPatchPreview } from "@zod-crud/patch-preview";
+import { createSearchReplace } from "@zod-crud/search-replace";
 import { createWebClipboard } from "@zod-crud/clipboard-web";
 ```
 

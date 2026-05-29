@@ -16,6 +16,7 @@ export const officialExtensionPackages = [
   "persist-web",
   "id-resolver",
   "patch-preview",
+  "search-replace",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];

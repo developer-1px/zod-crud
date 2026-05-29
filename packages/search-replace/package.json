@@ -1,8 +1,7 @@
 {
   "name": "@zod-crud/search-replace",
   "version": "0.1.0",
-  "description": "Lab search and replace extension functions for zod-crud documents.",
-  "private": true,
+  "description": "Official search and replace extension functions for text fields in zod-crud documents.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -11,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/developer-1px/zod-crud.git",
-    "directory": "labs/extensions/search-replace"
+    "directory": "packages/search-replace"
   },
   "keywords": [
     "zod-crud",

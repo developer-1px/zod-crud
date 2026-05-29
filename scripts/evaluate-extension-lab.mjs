@@ -16,6 +16,7 @@ const retiredLabNames = new Set([
   "pointer-bookmarks",
   "suggestions",
   "text-search",
+  "search-replace",
 ]);
 
 function read(path) {

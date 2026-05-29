@@ -33,7 +33,7 @@ auth, remote sync는 앱 책임입니다.
 | Dirty/save | `@zod-crud/dirty-state`, `@zod-crud/persist-web` | server sync |
 | Stable card id to Pointer | `@zod-crud/id-resolver` | id generation, route policy |
 | Drag/drop intent | lab `drag-drop` | DOM events, hit testing |
-| Comments/review | lab `comments`, lab `proposed-changes` | workflow, authoring |
+| Comments/review | `@zod-crud/search-replace`, lab `comments`, lab `proposed-changes` | workflow, authoring |
 
 Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아니라
 `@zod-crud/id-resolver` 같은 small extension 책임입니다.
@@ -101,7 +101,7 @@ zod-crud 쪽 후보는 dry-run, proposed patch, guard reason, stable target look
 | Group/ungroup | lab `grouping`, lab `wrap-unwrap` | group value factory |
 | Drag/drop | lab `drag-drop` | pointer events |
 | Lock/protect | lab `protected-ranges` | visibility policy |
-| Search/replace | lab `search-replace` | visible text policy |
+| Search/replace | `@zod-crud/search-replace` | visible text policy |
 | Resize/snap/align | missing candidate | hit testing, canvas math |
 
 Canvas rendering, zoom, pan, export, rich text editing, snapping, handles는
@@ -137,7 +137,7 @@ stay outside zod-crud.
 | Review comments | lab `comments` | thread UI, workflow |
 | Proposed changes | lab `proposed-changes`, `@zod-crud/patch-preview` | diff UI, approval |
 | External paste/import | lab `paste-compatible`, lab `document-diff` | HTML/Markdown parser |
-| Search/replace | lab `search-replace` | rendered text extraction |
+| Search/replace | `@zod-crud/search-replace` | rendered text extraction |
 | Rich text body | app-owned | ProseMirror/Markdown/contenteditable |
 
 `proposed-changes`는 slash suggestion이나 mention popup이 아닙니다. JSON Patch
@@ -154,6 +154,7 @@ stay outside zod-crud.
 | Structural result shape | lab마다 `selectionAfter` 필요 | result contract 후보 |
 | Anchored pointer lifecycle | core `trackPointer` + labs | annotation helper 후보 |
 | Stable id to Pointer | `@zod-crud/id-resolver` | official extension |
+| Text search/replace | `@zod-crud/search-replace` | official extension |
 | TSV/CSV grid paste | missing | grid clipboard lab 후보 |
 | Invalid draft | lab `form-draft` | official 후보 |
 | Import review flow | labs 조합 | recipe 필요 |

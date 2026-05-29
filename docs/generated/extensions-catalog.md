@@ -4,7 +4,7 @@
 
 This section is generated from `packages/*` and `labs/extensions/*`.
 
-Official extensions: 10
+Official extensions: 11
 
 | Package | Exports | Use for | Not for | Summary |
 | --- | ---: | --- | --- | --- |
@@ -18,8 +18,9 @@ Official extensions: 10
 | `@zod-crud/patch-preview` | 8 | preview patch effects before confirmation | visual diff rendering | Official headless patch preview extension for `zod-crud` documents. |
 | `@zod-crud/persist-web` | 24 | save and restore documents in browser storage-like hosts | server sync, auth, or conflict resolution | Official headless web persistence extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
+| `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 
-Lab extensions: 20
+Lab extensions: 19
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -42,6 +43,5 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/proposed-changes` | lab-only | 19 | review, accept, or reject proposed document patches | slash commands or mention autocomplete | Lab extension for proposed document changes. |
 | `@zod-crud/protected-ranges` | lab-only | 22 | guard edits to protected JSON Pointer ranges | 2D spreadsheet selection UI or server authorization | Lab protected range guard extension for `zod-crud` documents. |
 | `@zod-crud/references` | lab-only | 21 | track stable references and backlinks over JSON documents | route state or rendered links | Lab extension for stable references and backlinks over JSON documents. |
-| `@zod-crud/search-replace` | lab-only | 23 | find and replace text across document string fields | rendered text extraction or search UI | Lab search and replace extension for `zod-crud` documents. |
 | `@zod-crud/snippets` | lab-only | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Lab snippet insertion extension for `zod-crud` documents. |
 | `@zod-crud/wrap-unwrap` | lab-only | 15 | wrap sibling JSON items in host-defined containers | visual grouping or layout containers | Lab extension for structural `wrap` and `unwrap`. |

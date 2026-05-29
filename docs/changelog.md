@@ -10,6 +10,8 @@ All notable changes to this project are documented here.
   scoped stable ids to current JSON Pointers.
 - Added `@zod-crud/patch-preview` as an official headless extension for
   previewing schema-safe JSON Patch changes before applying them.
+- Added `@zod-crud/search-replace` as an official headless extension for
+  searching and replacing JSON string fields.
 
 ### Changed
 

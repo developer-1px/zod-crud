@@ -388,6 +388,54 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/search-replace",
+      "name": "@zod-crud/search-replace",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official search and replace extension functions for text fields in zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless search and replace extension for text fields in `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "find and replace text across document string fields",
+        "notFor": "rendered text extraction or search UI"
+      },
+      "publicExports": [
+        "SearchReplace",
+        "SearchReplaceApplyResult",
+        "SearchReplaceChange",
+        "SearchReplaceChangeResult",
+        "SearchReplaceError",
+        "SearchReplaceErrorCode",
+        "SearchReplaceMatch",
+        "SearchReplaceMatchApplyResult",
+        "SearchReplaceMatchChange",
+        "SearchReplaceMatchChangeResult",
+        "SearchReplaceMatchTarget",
+        "SearchReplaceOptions",
+        "SearchReplaceResult",
+        "SearchReplaceSnapshot",
+        "SearchReplaceTargetFilter",
+        "SearchReplaceTextTarget",
+        "TextMatchRange",
+        "canReplaceAllText",
+        "canReplaceTextMatch",
+        "createSearchReplace",
+        "findText",
+        "replaceAllText",
+        "replaceTextMatch"
+      ],
+      "publicExportCount": 23,
+      "keywords": [
+        "headless",
+        "replace",
+        "search",
+        "text",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/zod-crud",
       "name": "zod-crud",
       "status": "core",
@@ -900,6 +948,54 @@ export const repoCatalog = {
         "form",
         "headless",
         "schema",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "packages/search-replace",
+      "name": "@zod-crud/search-replace",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official search and replace extension functions for text fields in zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless search and replace extension for text fields in `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "find and replace text across document string fields",
+        "notFor": "rendered text extraction or search UI"
+      },
+      "publicExports": [
+        "SearchReplace",
+        "SearchReplaceApplyResult",
+        "SearchReplaceChange",
+        "SearchReplaceChangeResult",
+        "SearchReplaceError",
+        "SearchReplaceErrorCode",
+        "SearchReplaceMatch",
+        "SearchReplaceMatchApplyResult",
+        "SearchReplaceMatchChange",
+        "SearchReplaceMatchChangeResult",
+        "SearchReplaceMatchTarget",
+        "SearchReplaceOptions",
+        "SearchReplaceResult",
+        "SearchReplaceSnapshot",
+        "SearchReplaceTargetFilter",
+        "SearchReplaceTextTarget",
+        "TextMatchRange",
+        "canReplaceAllText",
+        "canReplaceTextMatch",
+        "createSearchReplace",
+        "findText",
+        "replaceAllText",
+        "replaceTextMatch"
+      ],
+      "publicExportCount": 23,
+      "keywords": [
+        "headless",
+        "replace",
+        "search",
+        "text",
         "zod-crud"
       ]
     }
@@ -1569,54 +1665,6 @@ export const repoCatalog = {
       ]
     },
     {
-      "path": "labs/extensions/search-replace",
-      "name": "@zod-crud/search-replace",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab search and replace extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab search and replace extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "find and replace text across document string fields",
-        "notFor": "rendered text extraction or search UI"
-      },
-      "publicExports": [
-        "SearchReplace",
-        "SearchReplaceApplyResult",
-        "SearchReplaceChange",
-        "SearchReplaceChangeResult",
-        "SearchReplaceError",
-        "SearchReplaceErrorCode",
-        "SearchReplaceMatch",
-        "SearchReplaceMatchApplyResult",
-        "SearchReplaceMatchChange",
-        "SearchReplaceMatchChangeResult",
-        "SearchReplaceMatchTarget",
-        "SearchReplaceOptions",
-        "SearchReplaceResult",
-        "SearchReplaceSnapshot",
-        "SearchReplaceTargetFilter",
-        "SearchReplaceTextTarget",
-        "TextMatchRange",
-        "canReplaceAllText",
-        "canReplaceTextMatch",
-        "createSearchReplace",
-        "findText",
-        "replaceAllText",
-        "replaceTextMatch"
-      ],
-      "publicExportCount": 23,
-      "keywords": [
-        "headless",
-        "replace",
-        "search",
-        "text",
-        "zod-crud"
-      ]
-    },
-    {
       "path": "labs/extensions/snippets",
       "name": "@zod-crud/snippets",
       "status": "lab-extension",
@@ -1704,7 +1752,7 @@ export const repoCatalog = {
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `labs/extensions/search-replace` as a copy cleanup product surface.",
+      "summary": "Dogfoods `@zod-crud/search-replace` as a copy cleanup product surface.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -1883,9 +1931,9 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 11,
-    "officialExtensions": 10,
-    "labExtensions": 20,
+    "packages": 12,
+    "officialExtensions": 11,
+    "labExtensions": 19,
     "apps": 12
   }
 } as const;

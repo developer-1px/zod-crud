@@ -69,7 +69,7 @@ Classification:
 | Move/reorder | slides, sheets, kanban, outliners, object surfaces | core `move`; official `collection`; official/lab `outline`; lab `layer-order` | official/lab-covered |
 | Duplicate | docs, sheets, slides, Figma, Airtable, Notion | core `duplicate`; official `collection`; labs can specialize selection results | core-covered |
 | Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; labs `drag-drop`, `snippets`, `paste-compatible` | lab-covered |
-| Search/find/replace | docs, sheets, Notion, code review | core `find/query`; lab `search-replace`; official `bulk-edit` | official/lab-covered |
+| Search/find/replace | docs, sheets, Notion, code review | core `find/query`; official `search-replace`, `bulk-edit` | official-covered |
 | Sort/filter | sheets, Airtable, kanban, CMS, Linear/Jira | lab `collection-sort`; core query/read | sort covered; filter is mostly view-owned unless persisted as document state |
 | Fill/propagate series | sheets, Airtable-like grids | core patch can express it | lab-gap: `fill-series` should test range propagation |
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |

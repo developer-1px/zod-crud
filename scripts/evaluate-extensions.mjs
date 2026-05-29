@@ -116,6 +116,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/search-replace",
+    name: "@zod-crud/search-replace",
+    description: /search and replace extension functions/,
+    readme: [
+      /createSearchReplace\(doc\)/,
+      /block documents,\s*CMS copy review,\s*generated admin editors,\s*slide notes,\s*import cleanup,\s*or settings search/,
+      /Find occurrences inside string values/,
+      /No rendered text extraction from Markdown,\s*HTML,\s*ProseMirror,\s*canvas text,\s*or\s*custom rich text formats/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

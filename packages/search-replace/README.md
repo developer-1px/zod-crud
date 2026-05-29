@@ -1,9 +1,11 @@
 # @zod-crud/search-replace
 
-Lab search and replace extension for `zod-crud` documents.
+Official headless search and replace extension for text fields in `zod-crud`
+documents.
 
-Use it to test whether document-wide search and replace can stay outside core while
-using only public document traversal and patch APIs.
+Use it when a product needs document-wide or subtree text search over JSON
+string fields: block documents, CMS copy review, generated admin editors,
+slide notes, import cleanup, or settings search.
 
 ```ts
 import { createSearchReplace } from "@zod-crud/search-replace";
@@ -42,6 +44,8 @@ text.replaceAll("draft", "published", {
 
 - No rendered search box, result list, selection UI, highlight UI, keyboard, or
   focus policy.
+- No rendered text extraction from Markdown, HTML, ProseMirror, canvas text, or
+  custom rich text formats.
 - No full-text indexing, stemming, language analysis, fuzzy search, or regex
   engine.
 - No built-in product-specific field taxonomy, weighting, ranking, or result
@@ -50,18 +54,19 @@ text.replaceAll("draft", "published", {
   `doc.use(...)`.
 - No `zod-crud` internal imports.
 
-## Friction report
+## Contract
 
-The public facade is enough for simple document-wide search and replace:
+The public facade is enough for document string-field search and replace:
 `entries` gives structural traversal, `at` gives values, one-match replacement
-uses `canReplace`/`replace`, and replace-all is a normal JSON Patch batch.
+uses `canReplace`/`replace`, and replace-all is a JSON Patch batch through
+`canPatch`/`patch`.
 
 This extension intentionally does not ask core for text indexing or UI
 highlighting. Those are product policies. The useful core contract is stable
 Pointer addressing plus mutation preflight.
 
-Dogfooding in canvas showed that most products need a searchable-field policy:
-visible text should be searched, while identity, style, and storage strings
-should not be changed. The extension now accepts host-owned `include` filtering
-so `find`, `canReplaceAll`, and `replaceAll` share the same target policy
-without forcing apps to rebuild replacement patches.
+Most products need a searchable-field policy: visible copy should be searched,
+while identity, style, and storage strings should not be changed. Pass
+host-owned `include` filtering so `find`, `canReplaceAll`, and `replaceAll`
+share the same target policy without forcing apps to rebuild replacement
+patches.

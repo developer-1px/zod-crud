@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "useDefineForClassFields": true,
     "paths": {
-      "@zod-crud/search-replace": ["../../labs/extensions/search-replace/src/index.ts"],
+      "@zod-crud/search-replace": ["../../packages/search-replace/src/index.ts"],
       "zod-crud/react": ["../../packages/zod-crud/src/react.ts"],
       "zod-crud": ["../../packages/zod-crud/src/index.ts"]
     }
