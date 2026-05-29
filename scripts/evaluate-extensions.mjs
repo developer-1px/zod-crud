@@ -33,6 +33,7 @@ const officialExtensions = [
       /outliners, Markdown list editors,\s*document block trees, note outlines, or generated content review tools/,
       /Demote one or more outline items under their previous sibling/,
       /No Markdown parser, rich text formatting, renderer, DOM selection, focus,/,
+      /No default row factory and no insert-sibling\/insert-child policy/,
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
@@ -92,6 +93,12 @@ const officialExtensions = [
     ],
   },
 ];
+const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
+const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));
+const outlinerVitestConfig = read("apps/outliner/vitest.config.ts");
+const outlinerTsconfig = JSON.parse(read("apps/outliner/tsconfig.json"));
+const siteViteConfig = read("apps/site/vite.config.ts");
+const siteTsconfig = JSON.parse(read("apps/site/tsconfig.json"));
 
 function read(path) {
   return readFileSync(join(root, path), "utf8");
@@ -152,5 +159,36 @@ for (const extension of officialExtensions) {
 
   for (const pattern of extension.readme) {
     if (!pattern.test(readme)) fail(`${label} README: missing ${pattern}.`);
+  }
+
+  const packageName = extension.name.replace("@zod-crud/", "");
+  if (!sourceAliasHelper.includes(`"${packageName}"`)) {
+    fail(`${label}: missing from shared source alias helper.`);
+  }
+  if (tsconfigPaths.compilerOptions?.paths?.[extension.name]?.[0] !== `${extension.root}/src/index.ts`) {
+    fail(`${label}: missing from shared tsconfig paths.`);
+  }
+}
+
+for (const [label, source] of [
+  ["apps/outliner/vitest.config.ts", outlinerVitestConfig],
+  ["apps/site/vite.config.ts", siteViteConfig],
+]) {
+  if (!source.includes("zodCrudSourceAliases({ officialExtensions: true })")) {
+    fail(`${label}: official extension aliases must use the shared helper.`);
+  }
+}
+
+if (outlinerTsconfig.extends !== "../../tsconfig.zod-crud-paths.json") {
+  fail("apps/outliner/tsconfig.json: must extend shared zod-crud paths.");
+}
+if (siteTsconfig.extends !== "../../tsconfig.zod-crud-paths.json") {
+  fail("apps/site/tsconfig.json: must extend shared zod-crud paths.");
+}
+
+for (const configPath of files("apps").filter((path) => /vite(?:st)?\.config\.ts$/.test(path))) {
+  const source = read(configPath);
+  if (/\.\.\/\.\.\/(?:packages|labs\/extensions)\//.test(source)) {
+    fail(`${configPath}: zod-crud source aliases must use config/zod-crud-source-aliases.ts.`);
   }
 }

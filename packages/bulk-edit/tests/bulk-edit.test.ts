@@ -59,6 +59,36 @@ describe("@zod-crud/bulk-edit", () => {
     ]);
   });
 
+  test("passes command metadata through replace and delete commits", () => {
+    const doc = createBoard();
+    const observed: unknown[] = [];
+    doc.subscribe((_patch, metadata) => {
+      observed.push(metadata);
+    });
+    const bulk = createBulkEdit(doc);
+
+    expect(bulk.replaceAll("$.tasks[*].done", true, {
+      label: "Mark tasks done",
+      origin: "replace-all",
+      mergeKey: "bulk:done",
+    })).toMatchObject({ ok: true, count: 5 });
+    expect(deleteAll(doc, "$.tasks[?(@.archived==true)]", {
+      label: "Archive cleanup",
+      origin: "bulk-delete",
+    })).toMatchObject({ ok: true, count: 3 });
+
+    expect(observed).toHaveLength(2);
+    expect(observed[0]).toMatchObject({
+      label: "Mark tasks done",
+      origin: "replace-all",
+      mergeKey: "bulk:done",
+    });
+    expect(observed[1]).toMatchObject({
+      label: "Archive cleanup",
+      origin: "bulk-delete",
+    });
+  });
+
   test("maps replacement values from the current query matches", () => {
     const doc = createBoard();
 

@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.zod-crud-paths.json",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -14,16 +15,7 @@
     "verbatimModuleSyntax": false,
     "allowImportingTsExtensions": false,
     "noEmit": true,
-    "types": ["vite/client"],
-    "paths": {
-      "@zod-crud/clipboard-web": ["../../packages/clipboard-web/src/index.ts"],
-      "@zod-crud/collection": ["../../packages/collection/src/index.ts"],
-      "@zod-crud/dirty-state": ["../../packages/dirty-state/src/index.ts"],
-      "@zod-crud/outline": ["../../packages/outline/src/index.ts"],
-      "@zod-crud/persist-web": ["../../packages/persist-web/src/index.ts"],
-      "zod-crud/react": ["../../packages/zod-crud/src/react.ts"],
-      "zod-crud": ["../../packages/zod-crud/src/index.ts"]
-    }
+    "types": ["vite/client"]
   },
   "include": ["src"]
 }

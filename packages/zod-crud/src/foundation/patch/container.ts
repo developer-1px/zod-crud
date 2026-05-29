@@ -1,4 +1,4 @@
-// patch.ts 내부 헬퍼 — public API 아님. SPEC.md §3 의 RFC 6902 구현 디테일.
+// patch.ts 내부 헬퍼 — public API 아님. docs/standard/zod-crud-spec.md §3 의 RFC 6902 구현 디테일.
 
 import { parsePointer, readAt, type Pointer, PointerSyntaxError } from "../pointer/index.js";
 import { cloneJson } from "../json/clone.js";

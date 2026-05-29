@@ -1,46 +1,38 @@
 # 문서 구조
 
-이 디렉터리는 패키지 사용법이 아니라 프로젝트 판단 기록을 보관한다.
-사용자는 먼저 `packages/zod-crud/README.md`, 사이트 문서, `llms.txt`를 읽는다.
-`docs` 아래 문서는 표준화, 검토, 릴리스, 채택 이슈처럼 유지보수자가
-판단해야 하는 기록을 책임별로 나눈다.
+이 디렉터리는 외부 사용자에게 공개할 문서 원천과 최소 표준 문서만 보관한다.
+릴리스 과정, 검토 루프, 과거 판단 기록은 공개 사용자가 알아야 할 내용이
+아니므로 별도 markdown으로 유지하지 않는다.
 
 ```txt
 docs
-|-- standard
-|   |-- core-standard.md        # 표준 후보 계약
-|   `-- foundation-gate.md      # RFC급 파운데이션 판정 기준
-|-- review
-|   |-- public-api-foundation-protocol.md
-|   |-- public-api-foundation-report.md
-|   |-- extension-package-doubt-audit.md
-|   `-- sibling-product-extension-map.md
-|-- release
-|   |-- notes.md
-|   `-- evaluation-loop.md
-`-- adoption
-    `-- api-usage-gaps.md
+|-- changelog.md              # 사용자 영향 중심 변경 기록
+|-- public
+|   |-- overview.md            # 프로젝트 이해
+|   |-- quickstart.md          # 사용 시작
+|   |-- api.md                 # 공개 API
+|   `-- extensions.md          # 공식 extension 사용법
+`-- standard
+    |-- core-standard.md        # 표준 후보 계약
+    |-- extension-delegation-standard.md
+    |-- foundation-gate.md      # foundation 판정 기준
+    `-- zod-crud-spec.md        # 패키지 의미론 명세
 ```
 
 ## 책임 기준
 
 | 위치 | 책임 | 독자 |
 | --- | --- | --- |
+| `changelog.md` | 사용자 영향 중심 변경 기록 | 외부 사용자, 릴리스 확인자 |
+| `public/` | 사용법과 프로젝트 이해를 위한 공식 문서 원천 | 외부 사용자, LLM, 사이트 방문자 |
 | `standard/` | 구현과 분리된 public API 의미론과 conformance 기준 | 표준화 검토자, 대체 구현 작성자 |
-| `review/` | public API가 foundation으로 충분한지 검토한 방법과 결과 | maintainer, 릴리스 판단자 |
-| `release/` | 릴리스 판단, 검증 루프, 성능·문서 drift 기록 | 릴리스 담당자 |
-| `adoption/` | 외부 소비자와 adapter에서 발견한 gap 분류 | adapter 작성자, 채택 지원 담당자 |
-
-`review/extension-package-doubt-audit.md`는 extension package를 concept
-extension과 convenience wrapper로 재분류한 제거 판단 기록이다.
-`review/sibling-product-extension-map.md`는 sibling repo 제품 요구를
-zod-crud core, feature extension, app 책임으로 다시 분류한 기록이다.
 
 ## 작성 원칙
 
 - 본문은 한글로 쓴다.
 - 코드 식별자, 명령어, 파일 경로, 표준명은 원문을 유지한다.
-- public 사용 문서는 외부자 관점으로 쓴다.
-- 내부 구현 경로는 maintainer 기록에서만 다룬다.
+- public 문서는 usage와 프로젝트 이해만 다룬다.
+- 릴리스 history, 검토 loop, maintainer-only gate는 public 문서에 쓰지 않는다.
+- 내부 구현 경로는 public 문서에 쓰지 않는다.
 - 새 문서는 기존 책임 폴더 중 하나에 들어가야 한다.
 - 새 책임 폴더가 필요하면 먼저 이 파일의 책임 표를 갱신한다.

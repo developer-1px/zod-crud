@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@zod-crud/clipboard-web": ["packages/clipboard-web/src/index.ts"],
+      "@zod-crud/collection": ["packages/collection/src/index.ts"],
+      "@zod-crud/outline": ["packages/outline/src/index.ts"],
+      "@zod-crud/schema-form": ["packages/schema-form/src/index.ts"],
+      "@zod-crud/dirty-state": ["packages/dirty-state/src/index.ts"],
+      "@zod-crud/bulk-edit": ["packages/bulk-edit/src/index.ts"],
+      "@zod-crud/patch-log": ["packages/patch-log/src/index.ts"],
+      "@zod-crud/persist-web": ["packages/persist-web/src/index.ts"],
+      "zod-crud/react": ["packages/zod-crud/src/react.ts"],
+      "zod-crud": ["packages/zod-crud/src/index.ts"]
+    }
+  }
+}

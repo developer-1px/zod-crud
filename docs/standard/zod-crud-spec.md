@@ -389,24 +389,10 @@ doc.schema.accepts("/items/-", candidate, "insert");
 
 Root validation issue는 empty JSON Pointer `""`를 사용한다. Record value는 `/meta/newKey` 같은 concrete member pointer로 검증한다. `insert` mode는 주로 array insertion slot용이다.
 
-## 11. 테스트 계약
+## 11. 공개 계약
 
-공개 동작 테스트는 root export와 `JSONDocument` surface로 진입한다. Private source structure를 assert하지 않는다. Internal module은 구현 응집도를 위해 존재할 수 있지만 external contract가 아니다.
+패키지 consumer가 의존할 수 있는 표면은 root `zod-crud` entrypoint와 `zod-crud/react` entrypoint다. Private source structure는 external contract가 아니다.
 
-공개 export 계약 SSOT는 `packages/zod-crud/public-contract.json`이다. Package smoke test, docs consistency test, docs evaluation은 이 파일을 읽는다.
+공개 export 계약 SSOT는 `packages/zod-crud/public-contract.json`이다. Semver 판단은 이 파일의 export 목록, `JSONDocument` surface, Result shape, error code, atomicity, clipboard spread 기본 동작, strict 의미론을 기준으로 한다.
 
-릴리스 전 필수 검증:
-
-- `npm run release:check`
-- `npm run standard:check`
-- `npm run typecheck -w zod-crud`
-- `npm test -w zod-crud`
-- `npm run build -w zod-crud`
-- `npm run smoke:package -w zod-crud`
-- `npm run docs:evaluate`
-- `npm run verify`
-- `npm run perf:core`
-- `npm run pack:library`
-- `npm run playground:typecheck`
-- `npm run playground:test`
-- `npm run build -w @zod-crud/site`
+다른 구현체나 adapter는 public package entrypoint와 이 문서의 의미론만 기준으로 삼아야 한다. 구현 파일 경로나 internal module import를 요구하면 zod-crud 호환 surface가 아니다.

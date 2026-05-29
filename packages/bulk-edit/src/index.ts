@@ -1,5 +1,6 @@
 import {
   tryParsePointer,
+  type JSONChangeMetadata,
   type JSONCapabilityResult,
   type JSONDocument,
   type JSONPatchOperation,
@@ -61,15 +62,16 @@ export interface BulkEditReplaceAll {
   <TValue = unknown>(
     jsonPath: string,
     valueOrMapper: BulkEditValueMapper<TValue>,
+    metadata?: JSONChangeMetadata,
   ): BulkEditResult;
-  (jsonPath: string, value: unknown): BulkEditResult;
+  (jsonPath: string, value: unknown, metadata?: JSONChangeMetadata): BulkEditResult;
 }
 
 export interface BulkEdit<TDocument> {
   canReplaceAll: BulkEditCanReplaceAll;
   replaceAll: BulkEditReplaceAll;
   canDeleteAll(jsonPath: string): BulkEditChangeResult;
-  deleteAll(jsonPath: string): BulkEditResult;
+  deleteAll(jsonPath: string, metadata?: JSONChangeMetadata): BulkEditResult;
 }
 
 interface BulkEditReadOk<TValue> {
@@ -87,14 +89,14 @@ export function createBulkEdit<TDocument>(
     canReplaceAll: (jsonPath: string, valueOrMapper: unknown): BulkEditChangeResult => {
       return canReplaceAll(doc, jsonPath, valueOrMapper);
     },
-    replaceAll: (jsonPath: string, valueOrMapper: unknown): BulkEditResult => {
-      return replaceAll(doc, jsonPath, valueOrMapper);
+    replaceAll: (jsonPath: string, valueOrMapper: unknown, metadata?: JSONChangeMetadata): BulkEditResult => {
+      return replaceAll(doc, jsonPath, valueOrMapper, metadata);
     },
     canDeleteAll(jsonPath) {
       return canDeleteAll(doc, jsonPath);
     },
-    deleteAll(jsonPath) {
-      return deleteAll(doc, jsonPath);
+    deleteAll(jsonPath, metadata) {
+      return deleteAll(doc, jsonPath, metadata);
     },
   };
   return bulk;
@@ -145,21 +147,24 @@ export function replaceAll<TDocument, TValue = unknown>(
   doc: JSONDocument<TDocument>,
   jsonPath: string,
   valueOrMapper: BulkEditValueMapper<TValue>,
+  metadata?: JSONChangeMetadata,
 ): BulkEditResult;
 export function replaceAll<TDocument>(
   doc: JSONDocument<TDocument>,
   jsonPath: string,
   value: unknown,
+  metadata?: JSONChangeMetadata,
 ): BulkEditResult;
 export function replaceAll<TDocument, TValue = unknown>(
   doc: JSONDocument<TDocument>,
   jsonPath: string,
   valueOrMapper: BulkEditReplacementInput<TValue>,
+  metadata?: JSONChangeMetadata,
 ): BulkEditResult {
   const change = canReplaceAll(doc, jsonPath, valueOrMapper);
   if (!change.ok) return change;
 
-  const patched = doc.patch(change.operations);
+  const patched = doc.patch(change.operations, metadata);
   if (!patched.ok) return patchError("patch_failed", jsonPath, patched);
   return change;
 }
@@ -184,11 +189,12 @@ export function canDeleteAll<TDocument>(
 export function deleteAll<TDocument>(
   doc: JSONDocument<TDocument>,
   jsonPath: string,
+  metadata?: JSONChangeMetadata,
 ): BulkEditResult {
   const change = canDeleteAll(doc, jsonPath);
   if (!change.ok) return change;
 
-  const patched = doc.patch(change.operations);
+  const patched = doc.patch(change.operations, metadata);
   if (!patched.ok) return patchError("patch_failed", jsonPath, patched);
   return change;
 }

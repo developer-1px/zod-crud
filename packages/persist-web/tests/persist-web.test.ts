@@ -109,6 +109,35 @@ describe("@zod-crud/persist-web", () => {
     expect(target.selection?.primaryPointer).toBe("/items/1/name");
   });
 
+  test("skips persisted selection when the restored document no longer has that pointer", async () => {
+    const target = createDoc();
+    target.selection?.collapse("/title");
+    const host = createMemoryHost({
+      draft: defaultDocumentPersistenceCodec.encode({
+        value: { title: "Restored", items: [] },
+        selection: {
+          selectedPointers: ["/items/1/name"],
+          selectionRanges: [{ anchor: "/items/1/name", focus: "/items/1/name" }],
+          primaryIndex: 0,
+          anchor: "/items/1/name",
+          focus: "/items/1/name",
+        },
+        savedAt: "2026-01-01T00:00:00.000Z",
+      }),
+    });
+    const persistence = createDocumentPersistence(target, { key: "draft", host });
+
+    const result = await persistence.restore({ restoreSelection: true });
+
+    expect(result).toMatchObject({
+      ok: true,
+      selectionSaved: true,
+      selectionRestored: false,
+    });
+    expect(target.value).toEqual({ title: "Restored", items: [] });
+    expect(target.selection?.selectedPointers).not.toContain("/items/1/name");
+  });
+
   test("threads preserveHistory through public document load", async () => {
     const source = createDoc();
     const host = createMemoryHost();
@@ -157,6 +186,57 @@ describe("@zod-crud/persist-web", () => {
     expect(defaultDocumentPersistenceCodec.decode(host.data.get("draft") ?? "").value).toMatchObject({
       title: "Changed",
     });
+  });
+
+  test("exposes deterministic watch flush and pending status", async () => {
+    const doc = createDoc();
+    const data = new Map<string, string>();
+    let releaseWrite = () => {};
+    const host: DocumentPersistenceHost = {
+      getItem: (key) => data.get(key) ?? null,
+      setItem: (key, value) =>
+        new Promise<void>((resolve) => {
+          releaseWrite = () => {
+            data.set(key, value);
+            resolve();
+          };
+        }),
+      removeItem: (key) => {
+        data.delete(key);
+      },
+    };
+    const persistence = createDocumentPersistence(doc, { key: "draft", host });
+    const watch = persistence.watch();
+
+    expect(watch.status()).toMatchObject({
+      active: true,
+      pending: 0,
+      saving: false,
+      lastResult: null,
+    });
+
+    doc.patch({ op: "replace", path: "/title", value: "Changed" });
+    expect(watch.status()).toMatchObject({ pending: 1, saving: false });
+
+    const flushed = watch.flush();
+    await Promise.resolve();
+
+    expect(watch.status()).toMatchObject({ pending: 0, saving: true });
+    releaseWrite();
+
+    await expect(flushed).resolves.toMatchObject({ ok: true, key: "draft" });
+    expect(watch.status()).toMatchObject({
+      active: true,
+      pending: 0,
+      saving: false,
+      lastResult: { ok: true, key: "draft" },
+    });
+    expect(defaultDocumentPersistenceCodec.decode(data.get("draft") ?? "").value).toMatchObject({
+      title: "Changed",
+    });
+
+    watch.stop();
+    expect(watch.status()).toMatchObject({ active: false });
   });
 
   test("supports read/write/remove host methods and clear", async () => {

@@ -16,6 +16,7 @@ const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github
 const Docs = lazy(() => import("./routes/Docs").then((module) => ({ default: module.Docs })));
 const DocsTutorial = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsTutorial })));
 const DocsApiReference = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsApiReference })));
+const DocsExtensions = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsExtensions })));
 const Playground = lazy(() => import("./routes/Playground").then((module) => ({ default: module.Playground })));
 const Outliner = lazy(() => import("@zod-crud/outliner").then((module) => ({ default: module.Outliner })));
 const MobileCms = lazy(() => import("@zod-crud/mobile-cms").then((module) => ({ default: module.App })));
@@ -24,6 +25,7 @@ const routeComponents: Record<string, ComponentType> = {
   "/docs": Docs,
   "/docs/tutorial": DocsTutorial,
   "/docs/api": DocsApiReference,
+  "/docs/extensions": DocsExtensions,
   "/playground": Playground,
   "/playground/outliner": Outliner,
   "/playground/mobile-cms": MobileCms,

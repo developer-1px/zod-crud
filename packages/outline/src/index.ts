@@ -291,7 +291,17 @@ function planPromote<TDocument>(
   if (!checked.ok) return checked;
 
   const operations: JSONPatchOperation[] = [];
+  const selected = new Set<Pointer>(checked.pointers);
+  const promotedAfterOwner = new Map<Pointer, number>();
   for (const original of checked.pointers) {
+    const originalLocation = outlineItemLocation(original, options);
+    if (!originalLocation.ok) return originalLocation;
+
+    const originalOwner = ownerPointer(originalLocation);
+    if (originalOwner === null || originalOwner === "") {
+      return editError("path_not_found", "outline item is already top-level", original);
+    }
+
     const current = trackPointer(original, operations);
     if (current === null) continue;
 
@@ -307,12 +317,12 @@ function planPromote<TDocument>(
     if (!ownerLocation.ok) return ownerLocation;
 
     const ownerParent = ownerLocation.parentArray;
-    const promotedPath = appendSegment(ownerParent, ownerLocation.index + 1);
+    const previousPromoted = promotedAfterOwner.get(originalOwner) ?? 0;
+    const promotedPath = appendSegment(ownerParent, ownerLocation.index + 1 + previousPromoted);
     operations.push({ op: "move", from: current, path: promotedPath });
+    promotedAfterOwner.set(originalOwner, previousPromoted + 1);
 
-    const originalLocation = outlineItemLocation(original, options);
-    if (!originalLocation.ok) return originalLocation;
-    const trailCount = trailingSiblingCount(doc, originalLocation);
+    const trailCount = trailingUnselectedSiblingCount(doc, originalLocation, selected);
     if (!trailCount.ok) return trailCount;
 
     for (let index = 0; index < trailCount.count; index += 1) {
@@ -403,6 +413,28 @@ function trailingSiblingCount<TDocument>(
     ok: true,
     count: Math.max(0, read.value.length - location.index - 1),
   };
+}
+
+function trailingUnselectedSiblingCount<TDocument>(
+  doc: JSONDocument<TDocument>,
+  location: OutlineItemLocation,
+  selected: ReadonlySet<Pointer>,
+): { ok: true; count: number } | OutlineEditError {
+  if (selected.size <= 1) return trailingSiblingCount(doc, location);
+
+  const read = doc.at(location.parentArray);
+  if (!read.ok) return editError(read.code, read.reason ?? `parent not found: ${location.parentArray}`, read.pointer);
+  if (!Array.isArray(read.value)) {
+    return editError("not_outline_item", `parent is not an array: ${location.parentArray}`, location.pointer);
+  }
+
+  let count = 0;
+  for (let index = location.index + 1; index < read.value.length; index += 1) {
+    const pointer = appendSegment(location.parentArray, index);
+    if (selected.has(pointer)) break;
+    count += 1;
+  }
+  return { ok: true, count };
 }
 
 function changeWithCapability<TDocument>(

@@ -3,6 +3,7 @@ import { defineConfig, type Plugin } from "vite";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
 import siteRoutes from "./src/site-routes.json";
 
 function rootLlmsTxt(): Plugin {
@@ -104,36 +105,7 @@ export default defineConfig({
   base: process.env.SITE_BASE ?? "/",
   plugins: [react(), rootLlmsTxt(), productionSiteAssets()],
   resolve: {
-    alias: [
-      {
-        find: "@zod-crud/clipboard-web",
-        replacement: fileURLToPath(new URL("../../packages/clipboard-web/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/collection",
-        replacement: fileURLToPath(new URL("../../packages/collection/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/dirty-state",
-        replacement: fileURLToPath(new URL("../../packages/dirty-state/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/outline",
-        replacement: fileURLToPath(new URL("../../packages/outline/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/persist-web",
-        replacement: fileURLToPath(new URL("../../packages/persist-web/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud/react",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
-      },
-    ],
+    alias: zodCrudSourceAliases({ officialExtensions: true }),
   },
   server: {
     host: "127.0.0.1",

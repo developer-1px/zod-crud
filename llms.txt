@@ -4,15 +4,6 @@ zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진이다. UI com
 
 공식 사이트와 데모: https://developer-1px.github.io/zod-crud/
 
-## 안정된 정체성
-
-- Root `zod-crud`는 React-free다.
-- React hook은 `zod-crud/react`에만 있다.
-- Core package import는 `zod-crud`와 `zod-crud/react`뿐이다.
-- Optional extension은 별도 package로 import한다. 공식 extension은 `@zod-crud/clipboard-web`, `@zod-crud/collection`, `@zod-crud/schema-form`, `@zod-crud/dirty-state`, `@zod-crud/bulk-edit`, `@zod-crud/patch-log`, `@zod-crud/persist-web`처럼 core 밖에서 조립한다.
-- State, operation, selection snapshot, clipboard payload, history entry, wire payload는 JSON-serializable이다.
-- 표준 어휘는 의도적이다: JSON value, JSON Pointer, JSON Patch, JSONPath, Zod validation, W3C selection naming.
-
 ## Import 경계
 
 사용자는 package entrypoint만 import한다.
@@ -22,20 +13,22 @@ import { createJSONDocument } from "zod-crud";
 import { useJSONDocument } from "zod-crud/react";
 ```
 
-`zod-crud/react` 외의 package subpath는 import하지 않는다.
-Core 내부 경로도 import하지 않는다.
+`zod-crud/react` 외의 package subpath는 import하지 않는다. Core 내부 경로도 import하지 않는다.
 
 Optional extension은 core에 plugin 등록하지 않고 함수로 조립한다.
 
 ```ts
-import { createWebClipboard } from "@zod-crud/clipboard-web";
 import { createCollection } from "@zod-crud/collection";
+import { createOutline } from "@zod-crud/outline";
 import { createSchemaForm } from "@zod-crud/schema-form";
 import { createDirtyState } from "@zod-crud/dirty-state";
 import { createBulkEdit } from "@zod-crud/bulk-edit";
 import { createPatchLog } from "@zod-crud/patch-log";
 import { createDocumentPersistence } from "@zod-crud/persist-web";
+import { createWebClipboard } from "@zod-crud/clipboard-web";
 ```
+
+Official extension은 현재 shipped `packages/*`만이다. `labs/extensions/*`는 후보이고 공식 package로 안내하지 않는다.
 
 ## 왜 / 핵심 / 튜토리얼 맥락
 
@@ -50,9 +43,9 @@ schema -> document -> pointer/query -> can* -> change -> result
 공식 onboarding은 외부 사용자 관점으로 유지한다.
 
 1. 개념: schema, JSON value, Pointer, JSONPath, Patch, can*, Result.
-2. 튜토리얼: 작은 card board editor 만들기.
+2. Quickstart: 작은 card board editor 만들기.
 3. API reference: 정확한 method와 type.
-4. 관리자 메모: release check.
+4. Extensions: 공식 extension 조립법.
 
 ## 작업별 진입점
 
@@ -71,10 +64,8 @@ Application code는 document facade를 우선 사용한다.
 | sibling 복제 | `doc.duplicate(pointer, options)` |
 | selected pointer 저장 | `doc.selection` |
 | copy, cut, paste, direct payload paste | `doc.copy(...)`, `doc.cut(...)`, `doc.paste(...)`, `doc.paste(target, { payload })` |
-| undo, redo, merge, transaction | `doc.undo()`, `doc.redo()`, `doc.history` |
+| undo, redo | `doc.undo()`, `doc.redo()`, `doc.history` |
 | 위치별 schema 확인 | `doc.schema.at`, `doc.schema.kind`, `doc.schema.describe`, `doc.schema.accepts` |
-
-`createJSONDocument`와 `useJSONDocument`는 같은 document surface를 노출한다. React는 render lifecycle만 소유한다.
 
 ## 최소 예제
 
@@ -120,8 +111,6 @@ JSONPath는 검색 전용이다. 편집 feature에서는 `doc.find(jsonPath)`를
 
 `doc.at(pointer)`는 raw value가 아니라 `ReadResult`를 반환한다.
 
-`doc.patch(...)`는 operation 하나 또는 operation 배열을 받는다. `doc.commit(...)`과 `doc.canPatch(...)`는 batch를 plan하거나 record하므로 operation arrays를 받는다.
-
 Burst edit은 operation 배열을 만들고 `doc.patch(...)`나 `doc.commit(...)`을 한 번 호출한다. `history.transaction`은 history entry를 묶지만 반복 `doc.patch(...)` 호출을 한 번의 schema validation으로 바꾸지는 않는다.
 
 ## can* Result
@@ -139,18 +128,6 @@ if (!can.ok) {
 ```
 
 `violations[].path`는 RFC 6901 JSON Pointer다. `schema.accepts(path, value, mode)`는 요청한 schema 위치 기준인 `schema-slot` path를 보고한다. `canPatch`, `canPaste`, `canDuplicate` 같은 mutation preflight는 patch planning 뒤 실제 document 위치 기준인 `document-result` path를 보고한다.
-
-`discriminator_mismatch`는 schema violation이 아니며 `violations`를 노출하지 않는다. Capability check는 `code`와 `reason`으로 보고하고, clipboard paste mutation result는 `source`와 `expected` detail을 포함할 수 있다.
-
-## Error Policy
-
-`strict`는 `doc.patch`, `doc.commit`, `doc.load`, `doc.reset`에만 적용된다. `can*`, read, schema, selection, clipboard, duplicate, history API는 각자의 Result, boolean, snapshot surface를 유지한다.
-
-기본값은 module load 시점의 `strict ?? process.env.NODE_ENV !== "production"`이다. 처리된 document execution failure에서는 `onError(JSONCrudError)`가 먼저 실행된다. 그 뒤 strict mode는 `JSONCrudError`를 throw하고 non-strict mode는 실패한 `JSONResult`를 반환한다.
-
-Invalid initial value는 document 생성 전에 Zod parse error를 throw한다. `trustedInitial: true`는 caller가 그 validation boundary를 소유할 때만 사용한다.
-
-`canPaste(...)`에 넘긴 option과 실제 `doc.paste(...)` option은 같아야 한다.
 
 ## Duplicate
 
@@ -178,17 +155,6 @@ const source = doc.selection?.selectedPointers ?? [];
 doc.copy(source);
 ```
 
-공통 surface:
-
-- `selectedPointers`, `primaryPointer`, `anchorPointer`, `focusPointer`, `caret`
-- `collapse`, `setBaseAndExtent`, `extend`
-- `addRange`, `removeRange`, `toggleRange`, `togglePointer`, `selectRanges`
-- `moveCursor`, `extendCursor`, `resolveCursor`
-- `textPatch`, `deleteText`
-- `snapshot`, `toJSON`, `restore`, `subscribe`
-
-Object member는 JSON 표준상 unordered다. Object member range 의미보다 explicit pointer list를 선호한다.
-
 ## 클립보드
 
 Clipboard는 copy/cut/paste payload flow를 소유한다. Selection은 무엇이 선택되었는지만 기록한다.
@@ -202,139 +168,11 @@ if (copied.ok) {
 
 삽입 위치에는 `/items/-`나 `/lists/1/cards/-` 같은 Pointer를 사용한다. 기존 value를 기준으로 붙일 때는 `{ before: pointer }`, `{ after: pointer }`, `{ replace: pointer }`를 사용한다.
 
-Pointer array copy/cut은 array payload를 저장한다. Multi-source buffer를 array insertion target에 paste하면 기본적으로 spread된다. Array payload 자체를 하나의 값으로 넣어야 할 때만 `{ spread: false }`를 넘긴다. Direct array payload를 item별 sibling으로 넣으려면 `{ payload, spread: true, rekey }`를 `canPaste(...)`와 `doc.paste(...)`에 같이 넘긴다.
+Pointer array copy/cut은 array payload를 저장한다. Multi-source buffer를 array insertion target에 paste하면 기본적으로 spread된다. Array payload 자체를 하나의 값으로 넣어야 할 때만 `{ spread: false }`를 넘긴다.
 
 ## Official extensions
 
-`zod-crud` core는 `navigator.clipboard`를 호출하지 않는다. Web system clipboard가 필요하면 `@zod-crud/clipboard-web`을 조립한다.
-
-```ts
-import { createWebClipboard } from "@zod-crud/clipboard-web";
-
-const webClipboard = createWebClipboard(doc);
-
-await webClipboard.copy("/lists/0/cards/0");
-await webClipboard.paste("/lists/1/cards/-", {
-  rekey: { fields: ["id"], strategy: "suffix" },
-});
-```
-
-Extension은 public `JSONDocument` surface만 사용한다. 내부 경로, plugin registry, `doc.use(...)`가 필요 없다. Browser가 아닌 test/runtime에서는 `{ readText, writeText }` host를 주입한다.
-
-Ordered JSON array item movement가 필요하면 `@zod-crud/collection`을 조립한다. Kanban card, outliner row, slide rail item, layer list item, admin tree section, spreadsheet tab처럼 제품명은 달라도 구조는 collection item이다.
-
-```ts
-import { createCollection } from "@zod-crud/collection";
-
-const collection = createCollection(doc);
-
-collection.moveAfter("/lists/0/cards/0", "/lists/1/cards/0");
-collection.duplicateAfter("/slides/0", {
-  rekey: { fields: ["id"], strategy: "suffix" },
-});
-collection.deleteItems(["/tabs/1", "/tabs/3"]);
-```
-
-Schema-backed field descriptor가 필요하면 `@zod-crud/schema-form`을 조립한다. Settings form, generated admin resource form, document property panel, slide metadata panel, spreadsheet tab settings처럼 UI는 host가 만들고 field path/value/schema kind/canSet/set만 필요할 때 쓴다.
-
-```ts
-import { createSchemaForm } from "@zod-crud/schema-form";
-
-const form = createSchemaForm(doc, "/settings");
-
-if (form.ok) {
-  const title = form.fields.find((field) => field.key === "title");
-  title?.set("Published");
-}
-```
-
-저장된 기준선 대비 변경 여부가 필요하면 `@zod-crud/dirty-state`를 조립한다. Draft editor, document workbench, generated admin form, slide editor, spreadsheet tab, CMS resource editor처럼 저장/동기화 UI는 host가 갖고 clean baseline 비교만 필요할 때 쓴다.
-
-```ts
-import { createDirtyState } from "@zod-crud/dirty-state";
-
-const dirty = createDirtyState(doc);
-
-if (dirty.isDirty()) {
-  dirty.current();
-}
-```
-
-JSONPath match 전체를 한 번에 바꾸거나 지워야 하면 `@zod-crud/bulk-edit`를 조립한다. Find/replace panel, batch cleanup tool, generated admin action, CMS moderation queue, spreadsheet normalizer, kanban maintenance command처럼 UI는 host가 갖고 replace-all/delete-all command만 필요할 때 쓴다.
-
-```ts
-import { createBulkEdit } from "@zod-crud/bulk-edit";
-
-const bulk = createBulkEdit(doc);
-
-if (bulk.canReplaceAll("$.items[*].done", true).ok) {
-  bulk.replaceAll("$.items[*].done", true);
-}
-```
-
-적용된 patch stream을 외부에 복사해 두거나 replay해야 하면 `@zod-crud/patch-log`를 조립한다. Audit mirror, replay fixture, support repro script, command debugging panel, import dry run, synchronization adapter처럼 core history를 열지 않고 applied patch stream만 필요할 때 쓴다.
-
-```ts
-import { createPatchLog } from "@zod-crud/patch-log";
-
-const log = createPatchLog(doc);
-
-doc.replace("/title", "Next");
-log.replayInto(otherDoc);
-```
-
-브라우저 draft 저장/복원이 필요하면 `@zod-crud/persist-web`을 조립한다. Browser draft, settings editor, generated admin form, CMS resource editor, slide editor, spreadsheet tab, embedded workbench처럼 storage host I/O와 save/restore orchestration만 필요할 때 쓴다.
-
-```ts
-import { createDocumentPersistence } from "@zod-crud/persist-web";
-
-const persistence = createDocumentPersistence(doc, { key: "draft" });
-
-await persistence.save();
-await persistence.restore({ restoreSelection: true });
-```
-
-## 히스토리
-
-History는 document patch entry와 inverse patch를 기록한다.
-
-```ts
-doc.patch({ op: "replace", path: "/title", value: "Final" });
-doc.undo();
-doc.redo();
-```
-
-알려진 multi-step change는 metadata와 함께 하나의 `doc.commit([...])`으로 적용한다.
-
-```ts
-doc.commit(patch, {
-  label: "typing",
-  origin: "keyboard",
-  mergeKey: "title",
-  selection: nextSelection,
-});
-
-doc.history.mergeLast({ mergeKey: "title" });
-```
-
-History metadata는 app/adapter 주석이다. 공개 history API는 undo/redo control surface이지 history entry inspector가 아니다.
-
-Storage, audit log, command label, collaboration adapter가 metadata를 읽어야 하면 `doc.subscribe((patch, metadata) => ...)`로 패치 스트림을 mirror한다. 이 stream은 applied patch event를 보고하며 internal undo stack과 1:1이라고 가정하면 안 된다.
-
-앱이 `"Undo Rename card"` 같은 label을 필요로 하면 command/action layer에서 `commit`이나 `history.transaction`에 넘긴 metadata를 같이 보관한다. `mergeKey`는 app annotation이면서 history grouping hint다.
-
-`history.transaction`은 각 step이 intermediate document state를 읽어야 할 때만 사용한다.
-
-## Schema helper
-
-Pointer가 어떤 값을 받는지 schema helper에 묻는다.
-
-```ts
-doc.schema.kind("/lists/0/cards/-", "insert");
-doc.schema.at("/lists/0/cards/-", "insert");
-doc.schema.describe("/lists/0/cards/-", "insert");
-doc.schema.accepts("/lists/0/cards/-", candidateCard, "insert");
-```
+공식 extension은 public `JSONDocument` surface만 사용한다. 내부 경로, plugin registry, `doc.use(...)`가 필요 없다.
 
 ## 순수 Root helper
 
@@ -346,54 +184,12 @@ import { applyOperation, applyPatch, applyPatchToTrustedState } from "zod-crud";
 
 `applyOperation`과 `applyPatch`는 pure하다. `applyPatch`는 외부 JSON 경계라서 입력 state 전체의 JSON 안전성을 확인한다. `applyPatchToTrustedState`는 caller가 이미 state JSON boundary를 소유할 때만 사용한다.
 
-Pointer helper는 `parsePointer`, `tryParsePointer`, `buildPointer`, `escapeSegment`, `unescapeSegment`, `parentPointer`, `lastSegment`, `lastSegmentIndex`, `appendSegment`, `withLastSegment`, `trackPointer`다.
-
 ## 성능 경계
 
 큰 document에서는 hot UI path를 document facade에 둔다: `doc.patch`, `doc.commit`, `doc.canPatch`.
 
-빠른 document path는 신뢰된 document state와 구조만 가진 Zod schema에서만 적용된다. 대상은 refinement, transform, check가 없는 object, array, record, scalar validator다. 지원 edit는 independent non-root `replace`, root object edit, same-array field, nested-field, element `replace` batch, array `add`/`remove`/`copy`/`move`, same-array `add`/`remove` batch다.
-
-`refine`, `superRefine`, transform, check가 있는 schema는 전체 루트 schema 검증을 사용한다.
-
-```sh
-npm run perf:core
-```
+빠른 document path는 신뢰된 document state와 구조만 가진 Zod schema에서만 적용된다. `refine`, `superRefine`, transform, check가 있는 schema는 전체 루트 schema 검증을 사용한다.
 
 ## 트리 편집
 
 Tree semantics는 app-owned다. zod-crud는 JSON을 검증하고 mutate한다. 앱은 indent, outdent, visible-row focus, toolbar command를 JSON Pointer와 JSON Patch operation으로 번역한다.
-
-```txt
-/nodes/0
-/nodes/0/children/0
-/nodes/0/children/0/children/0
-```
-
-```ts
-doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });
-doc.patch({ op: "move", from: "/nodes/1", path: "/nodes/0/children/-" });
-doc.patch({ op: "move", from: "/nodes/0/children/1", path: "/nodes/1" });
-```
-
-Same-array move는 RFC 6902처럼 source를 먼저 제거한 뒤 destination path에 add한다.
-
-## 공개 type 방향
-
-중요한 공개 type에는 `JSONDocument`, `JSONPatchOperation`, `JSONPatchInput`, `JSONCapabilityResult`, `JSONResult`, `ReadResult`, `QueryResult`, `EntriesResult`, `Pointer`, `SelectionState`, `SelectionOptions`, `ClipboardState`, `SchemaState`, `JSONDocumentHistory`, `JSONDocumentOptions`, `JSONDocumentCommitOptions`, `JSONDocumentDuplicateOptions`, `JSONDocumentPasteOptions`, `JSONDocumentPasteTarget`이 있다.
-
-완전한 export list는 `packages/zod-crud/public-contract.json`과 API reference를 기준으로 한다.
-
-## 관리자 메모
-
-이 섹션은 package 사용에 필요하지 않다.
-
-Package API는 `zod-crud`와 `zod-crud/react`로 제한된다. 공개 export contract SSOT는 `packages/zod-crud/public-contract.json`이다.
-
-Package `prepublishOnly`는 root `release:check`로 위임된다. Root `release:check`는 `verify`, `standard:check`, `perf:core`, `pack:library`를 실행한다. Root `verify`는 `docs:evaluate`를 포함한다. `standard:check`는 draft core standard와 public conformance suite를 확인한다.
-
-```sh
-npm run docs:evaluate
-npm run standard:check
-npm run release:check
-```

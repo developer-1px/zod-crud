@@ -1,20 +1,11 @@
 import react from "@vitejs/plugin-react";
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
+import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [
-      {
-        find: "zod-crud/react",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
-      },
-    ],
+    alias: zodCrudSourceAliases(),
   },
   server: {
     host: "127.0.0.1",

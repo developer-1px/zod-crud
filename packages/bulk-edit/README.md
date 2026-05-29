@@ -14,7 +14,7 @@ const bulk = createBulkEdit(doc);
 
 bulk.replaceAll("$.items[*].done", true);
 bulk.replaceAll("$.items[*].title", ({ value }) => String(value).trim());
-bulk.deleteAll("$.items[?@.archived == true]");
+bulk.deleteAll("$.items[?@.archived == true]", { label: "delete archived" });
 ```
 
 ## Scope
@@ -24,6 +24,8 @@ bulk.deleteAll("$.items[?@.archived == true]");
 - Expose `canReplaceAll` / `replaceAll`.
 - Expose `canDeleteAll` / `deleteAll`.
 - Return the applied Pointer list and JSON Patch operations.
+- Pass optional document change metadata to `doc.patch` for command labels,
+  origins, and merge keys.
 - Sort delete operations so nested paths and later array indexes are patched
   before earlier containers.
 
@@ -32,7 +34,8 @@ bulk.deleteAll("$.items[?@.archived == true]");
 - No search panel, replace dialog, confirmation UI, selection UI, or keyboard
   policy.
 - No product-specific command names.
-- No persistence, audit log, or undo label policy.
+- No persistence, audit log, or undo label policy beyond forwarding caller
+  metadata.
 - No stable identity lookup; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.

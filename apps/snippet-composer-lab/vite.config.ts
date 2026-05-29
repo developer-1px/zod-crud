@@ -1,24 +1,13 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
-import { fileURLToPath } from "node:url";
+import { labExtensionSourceAlias, zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [
-      {
-        find: "@zod-crud/snippets",
-        replacement: fileURLToPath(new URL("../../labs/extensions/snippets/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud/react",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
-      },
-    ],
+    alias: zodCrudSourceAliases({
+      extra: [labExtensionSourceAlias("snippets")],
+    }),
   },
   test: {
     environment: "jsdom",

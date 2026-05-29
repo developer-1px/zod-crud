@@ -137,8 +137,16 @@ export function useClipboard(document: JSONDocument<OutlineNode>): ClipboardApi 
         const result = await webClipboard.paste(pasteTarget(target, mode), {
           spread: true,
         });
-        if (!result.ok && result.code === "clipboard_parse_failed" && cur.mode === "empty") {
+        if (
+          !result.ok
+          && result.code === "clipboard_parse_failed"
+          && !resolvedHost.usesSystemClipboard
+          && cur.mode === "empty"
+        ) {
           return emptyClipboardResult();
+        }
+        if (!result.ok && result.code === "clipboard_parse_failed" && cur.mode === "cut") {
+          updateSnap(EMPTY);
         }
         if (result.ok && cur.mode === "cut") updateSnap(EMPTY);
         return result;

@@ -13,9 +13,11 @@ const persistence = createDocumentPersistence(doc, { key: "draft" });
 
 await persistence.save();
 await persistence.restore({ preserveHistory: true, restoreSelection: true });
-const stop = persistence.watch();
+const watch = persistence.watch();
+await watch.flush();
+watch.status();
 await persistence.clear();
-stop();
+watch.stop();
 ```
 
 ## Scope
@@ -27,6 +29,8 @@ stop();
 - Optionally save and restore selection snapshots when document selection is
   enabled.
 - Watch document changes through `doc.subscribe` and enqueue saves.
+- Expose `watch().flush()` and `watch().status()` for deterministic tests and
+  pending-save visibility.
 - Use `globalThis.localStorage` by default when no host is injected.
 - Support injected `getItem`/`setItem`/`removeItem` or
   `read`/`write`/`remove` hosts for tests and custom runtimes.

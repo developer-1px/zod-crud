@@ -218,6 +218,32 @@ describe("@zod-crud/outline structure", () => {
     });
   });
 
+  test("promotes multiple selected siblings without nesting selected rows into each other", () => {
+    const doc = createRows();
+    const outline = createOutline(doc);
+
+    expect(outline.demote(["/children/1", "/children/2"])).toMatchObject({ ok: true });
+    expect(doc.value.children[0]?.children.map((item) => item.text)).toEqual(["B", "C"]);
+
+    expect(outline.promote(["/children/0/children/0", "/children/0/children/1"])).toMatchObject({
+      ok: true,
+      operations: [
+        { op: "move", from: "/children/0/children/0", path: "/children/1" },
+        { op: "move", from: "/children/0/children/0", path: "/children/2" },
+      ],
+    });
+    expect(doc.value.children.map((item) => item.text)).toEqual(["A", "B", "C", "D"]);
+    expect(doc.value.children[0]).toEqual({ text: "A", children: [] });
+    expect(doc.value.children[1]).toEqual({ text: "B", children: [] });
+    expect(doc.value.children[2]).toEqual({
+      text: "C",
+      children: [
+        { text: "C1", children: [] },
+        { text: "C2", children: [] },
+      ],
+    });
+  });
+
   test("rejects invalid outline movements without mutation", () => {
     const doc = createRows();
     const outline = createOutline(doc);

@@ -15,6 +15,7 @@ export default defineConfig({
   reporter: "list",
   use: {
     baseURL,
+    permissions: ["clipboard-read", "clipboard-write"],
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
     video: "off",

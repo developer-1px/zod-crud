@@ -28,6 +28,8 @@ outline.promote("/children/0/children/1");
 
 - No Markdown parser, rich text formatting, renderer, DOM selection, focus,
   keyboard, or command palette ownership.
+- No default row factory and no insert-sibling/insert-child policy; host code
+  creates the value and decides edit-mode transitions.
 - No product words such as note, block, bullet, heading, or list item in the API.
 - No stable id lookup; host code translates selected ids to JSON Pointers.
 - No plugin registration; this package composes functions and does not call

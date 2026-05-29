@@ -29,7 +29,7 @@ describe("official site shell", () => {
     expect(screen.getByRole("heading", { level: 1, name: "zod-crud" })).toBeTruthy();
     expect(screen.getByText(/Zod-guarded JSON editing/)).toBeTruthy();
     expect(screen.getByText("npm install zod-crud zod")).toBeTruthy();
-    expect(screen.getByText("npm run verify")).toBeTruthy();
+    expect(screen.getByText('import { createJSONDocument } from "zod-crud";')).toBeTruthy();
     expect(screen.getByRole("link", { name: "npm" }).getAttribute("href")).toBe("https://www.npmjs.com/package/zod-crud");
     expect(screen.getByRole("link", { name: "GitHub" }).getAttribute("href")).toBe("https://github.com/developer-1px/zod-crud");
     expect(screen.queryByText("Interface bench")).toBeNull();
@@ -42,7 +42,7 @@ describe("official site shell", () => {
 
     await user.click(nav.getByRole("link", { name: "Docs" }));
     await waitFor(() => expect(document.title).toBe("zod-crud Docs - zod-crud"));
-    expect(document.head.querySelector('meta[name="description"]')?.getAttribute("content")).toBe("User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and history.");
+    expect(document.head.querySelector('meta[name="description"]')?.getAttribute("content")).toBe("User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and project model.");
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute("href")).toBe("https://developer-1px.github.io/zod-crud/docs");
     expect(await screen.findByRole("heading", { level: 1, name: "zod-crud Docs" }, { timeout: 10000 })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "배경" })).toBeTruthy();

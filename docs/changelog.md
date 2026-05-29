@@ -34,6 +34,10 @@ All notable changes to this project are documented here.
   extension.
 - Added `@zod-crud/persist-web` as an official local document persistence
   extension for browser storage-like hosts.
+- Added deterministic `persist-web.watch().flush()` / `status()` affordances for
+  downstream integration tests.
+- Added optional `bulk-edit` command metadata forwarding for labeled replace-all
+  and delete-all changes.
 - Added standardization checks, public conformance tests, and API Lab coverage
   for the public facade.
 
@@ -58,6 +62,8 @@ All notable changes to this project are documented here.
   selection when the source pointer is omitted.
 - Removed stale documentation references that presented nested clipboard methods
   as the primary mutation surface.
+- Aligned extension docs with shipped packages and kept lab candidates out of
+  the official extension list.
 
 ### Contract
 

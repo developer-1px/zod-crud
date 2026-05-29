@@ -35,7 +35,6 @@
   "files": [
     "dist",
     "README.md",
-    "SPEC.md",
     "public-contract.json",
     "LICENSE"
   ],

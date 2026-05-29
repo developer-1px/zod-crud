@@ -50,8 +50,8 @@ export function Home() {
           <div className="rounded border border-stone-200 bg-stone-950 p-3 text-stone-100">
             <div className="mb-2 text-xs font-medium text-stone-400">Install</div>
             <pre className="m-0 overflow-x-auto text-sm leading-6"><code>npm install zod-crud zod</code></pre>
-            <div className="mt-4 border-t border-stone-800 pt-3 text-xs font-medium text-stone-400">Release gate</div>
-            <pre className="m-0 mt-2 overflow-x-auto text-sm leading-6"><code>npm run verify</code></pre>
+            <div className="mt-4 border-t border-stone-800 pt-3 text-xs font-medium text-stone-400">Start</div>
+            <pre className="m-0 mt-2 overflow-x-auto text-sm leading-6"><code>{`import { createJSONDocument } from "zod-crud";`}</code></pre>
           </div>
         </div>
       </section>

@@ -1,8 +1,9 @@
 import { useMemo } from "react";
 import { MarkdownViewer, markdownHeadings } from "../components/MarkdownViewer";
-import apiReferenceMarkdown from "../docs/zod-crud-api.md?raw";
-import conceptsMarkdown from "../docs/zod-crud-concepts.md?raw";
-import tutorialMarkdown from "../docs/zod-crud-tutorial.md?raw";
+import apiReferenceMarkdown from "../../../../docs/public/api.md?raw";
+import extensionsMarkdown from "../../../../docs/public/extensions.md?raw";
+import overviewMarkdown from "../../../../docs/public/overview.md?raw";
+import quickstartMarkdown from "../../../../docs/public/quickstart.md?raw";
 
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -11,19 +12,25 @@ const docPages = [
     path: "/docs",
     label: "Concepts",
     title: "zod-crud Docs",
-    source: conceptsMarkdown,
+    source: overviewMarkdown,
   },
   {
     path: "/docs/tutorial",
-    label: "Tutorial",
+    label: "Quickstart",
     title: "작은 카드 편집기 만들기",
-    source: tutorialMarkdown,
+    source: quickstartMarkdown,
   },
   {
     path: "/docs/api",
     label: "API reference",
     title: "zod-crud API",
     source: apiReferenceMarkdown,
+  },
+  {
+    path: "/docs/extensions",
+    label: "Extensions",
+    title: "zod-crud Extensions",
+    source: extensionsMarkdown,
   },
 ] as const;
 
@@ -43,6 +50,10 @@ export function DocsTutorial() {
 
 export function DocsApiReference() {
   return <DocsPage page={docPages[2]} />;
+}
+
+export function DocsExtensions() {
+  return <DocsPage page={docPages[3]} />;
 }
 
 function DocsPage({ page }: { page: DocPage }) {

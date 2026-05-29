@@ -1,4 +1,4 @@
-// SPEC.md G4·G5 — RFC 6901/6902 호환 정합성.
+// docs/standard/zod-crud-spec.md G4·G5 — RFC 6901/6902 호환 정합성.
 
 import { describe, expect, it } from "vitest";
 import * as z from "zod";

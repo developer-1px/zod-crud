@@ -10,12 +10,12 @@
     "path": "/docs",
     "label": "Docs",
     "title": "zod-crud Docs - zod-crud",
-    "description": "User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and history.",
+    "description": "User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and project model.",
     "group": "Start"
   },
   {
     "path": "/docs/tutorial",
-    "label": "Tutorial",
+    "label": "Quickstart",
     "title": "Tutorial - zod-crud",
     "description": "Step-by-step zod-crud tutorial for building a small card editor with schema checks, selection, clipboard, and history.",
     "group": "Start"
@@ -25,6 +25,13 @@
     "label": "API reference",
     "title": "zod-crud API - zod-crud",
     "description": "Public zod-crud API reference for document changes, can* checks, selection, clipboard, history, Pointer, and JSONPath.",
+    "group": "Start"
+  },
+  {
+    "path": "/docs/extensions",
+    "label": "Extensions",
+    "title": "Extensions - zod-crud",
+    "description": "Official zod-crud extension packages for collection editing, outline movement, schema forms, dirty state, bulk edit, patch logs, persistence, and web clipboard.",
     "group": "Start"
   },
   {

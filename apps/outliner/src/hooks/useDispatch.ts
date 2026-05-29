@@ -59,7 +59,8 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
         if (f === null) return false;
         const node = readNode(ctx.state, f);
         if (!node || node.text !== "") return false;
-        cmd.deleteRows(ctx); setMode("select"); return true;
+        surfaceResult(cmd.deleteRows(ctx), () => setMode("select"));
+        return true;
       }
       case "demote":         surface(cmd.demote(ctx)); return true;
       case "promote":        surface(cmd.promote(ctx)); return true;

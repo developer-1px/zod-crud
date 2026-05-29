@@ -1,5 +1,5 @@
 // RFC 6901 — JSON Pointer.
-// 정본: SPEC.md §2. 변환은 lossless.
+// 정본: docs/standard/zod-crud-spec.md §2. 변환은 lossless.
 
 export type Pointer = string;
 

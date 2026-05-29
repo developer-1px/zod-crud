@@ -1,4 +1,4 @@
-// SPEC.md §7 — G1~G8 보장 직접 검증.
+// docs/standard/zod-crud-spec.md §7 — G1~G8 보장 직접 검증.
 // G4·G5·G2·G3·G8은 rfc6902.test.ts에서 다룸. 여기서는 G6·G7·G1을 추가 검증.
 
 import { describe, expect, it } from "vitest";

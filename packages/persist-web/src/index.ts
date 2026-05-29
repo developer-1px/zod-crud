@@ -4,6 +4,7 @@ import {
   type JSONDocument,
   type JSONPatchOperation,
   type JSONResult,
+  type Pointer,
   type SelectionPoint,
   type SelectionSnap,
 } from "zod-crud";
@@ -59,6 +60,20 @@ export interface DocumentPersistenceWatchOptions {
   onSave?: (result: DocumentPersistenceSaveResult, event: DocumentPersistenceWatchEvent) => void;
 }
 
+export interface DocumentPersistenceWatchStatus {
+  active: boolean;
+  pending: number;
+  saving: boolean;
+  lastResult: DocumentPersistenceSaveResult | null;
+}
+
+export interface DocumentPersistenceWatchHandle {
+  (): void;
+  stop(): void;
+  flush(): Promise<DocumentPersistenceSaveResult | null>;
+  status(): DocumentPersistenceWatchStatus;
+}
+
 export type DocumentPersistenceErrorCode =
   | "persistence_unavailable"
   | "persistence_empty"
@@ -112,7 +127,7 @@ export type DocumentPersistenceRestoreResult<T> =
 export interface DocumentPersistence<T> {
   save(): Promise<DocumentPersistenceSaveResult>;
   restore(options?: DocumentPersistenceRestoreOptions): Promise<DocumentPersistenceRestoreResult<T>>;
-  watch(options?: DocumentPersistenceWatchOptions): () => void;
+  watch(options?: DocumentPersistenceWatchOptions): DocumentPersistenceWatchHandle;
   clear(): Promise<DocumentPersistenceClearResult>;
 }
 
@@ -228,7 +243,9 @@ export function createDocumentPersistence<T>(
         && doc.selection !== undefined;
       if (shouldRestoreSelection) {
         try {
-          doc.selection.restore(selection);
+          if (selectionPointersExist(doc, selection)) {
+            doc.selection.restore(selection);
+          }
         } catch (cause) {
           return persistenceError("persistence_restore_failed", "failed to restore persisted selection", cause);
         }
@@ -240,25 +257,35 @@ export function createDocumentPersistence<T>(
         value: doc.value,
         savedAt: snapshot.snapshot.savedAt,
         selectionSaved: selection !== null,
-        selectionRestored: shouldRestoreSelection,
+        selectionRestored: shouldRestoreSelection && selectionPointersExist(doc, selection),
       };
     },
 
     watch(watchOptions = {}) {
       let active = true;
-      let queue = Promise.resolve();
+      let pending = 0;
+      let saving = false;
+      let lastResult: DocumentPersistenceSaveResult | null = null;
+      let queue: Promise<DocumentPersistenceSaveResult | null> = Promise.resolve(null);
       const enqueue = (event: DocumentPersistenceWatchEvent): void => {
+        pending += 1;
         queue = queue
           .then(async () => {
-            if (!active) return;
+            pending -= 1;
+            if (!active) return lastResult;
+            saving = true;
             const result = await save();
+            saving = false;
+            lastResult = result;
             watchOptions.onSave?.(result, event);
+            return result;
           })
           .catch((cause: unknown) => {
-            watchOptions.onSave?.(
-              persistenceError("persistence_write_failed", "failed to write persisted document", cause),
-              event,
-            );
+            saving = false;
+            const result = persistenceError("persistence_write_failed", "failed to write persisted document", cause);
+            lastResult = result;
+            watchOptions.onSave?.(result, event);
+            return result;
           });
       };
 
@@ -267,10 +294,20 @@ export function createDocumentPersistence<T>(
         enqueue(watchEvent(applied, metadata));
       });
 
-      return () => {
+      const stop = () => {
         active = false;
         unsubscribe();
       };
+      const handle = stop as DocumentPersistenceWatchHandle;
+      handle.stop = stop;
+      handle.flush = async () => queue;
+      handle.status = () => ({
+        active,
+        pending,
+        saving,
+        lastResult,
+      });
+      return handle;
     },
 
     clear,
@@ -371,6 +408,31 @@ function normalizeSelection(value: unknown): SelectionSnap | null {
   };
   if (value.context === undefined) return snapshot;
   return { ...snapshot, context: value.context };
+}
+
+function selectionPointersExist<T>(
+  doc: JSONDocument<T>,
+  selection: SelectionSnap | null,
+): boolean {
+  if (selection === null) return false;
+  const pointers = selectionPointerPaths(selection);
+  return pointers.length > 0 && pointers.every((pointer) => doc.exists(pointer));
+}
+
+function selectionPointerPaths(selection: SelectionSnap): Pointer[] {
+  const pointers: Pointer[] = [];
+  for (const pointer of selection.selectedPointers) pointers.push(pointer);
+  for (const range of selection.selectionRanges) {
+    pointers.push(selectionPointPath(range.anchor));
+    pointers.push(selectionPointPath(range.focus));
+  }
+  if (selection.anchor !== null) pointers.push(selectionPointPath(selection.anchor));
+  if (selection.focus !== null) pointers.push(selectionPointPath(selection.focus));
+  return [...new Set(pointers)];
+}
+
+function selectionPointPath(point: SelectionPoint): Pointer {
+  return typeof point === "string" ? point : point.path;
 }
 
 function isSelectionSnap(value: unknown): value is SelectionSnap {

@@ -1,40 +1,11 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
-import { fileURLToPath } from "node:url";
+import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: [
-      {
-        find: "@zod-crud/clipboard-web",
-        replacement: fileURLToPath(new URL("../../packages/clipboard-web/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/collection",
-        replacement: fileURLToPath(new URL("../../packages/collection/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/dirty-state",
-        replacement: fileURLToPath(new URL("../../packages/dirty-state/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/outline",
-        replacement: fileURLToPath(new URL("../../packages/outline/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "@zod-crud/persist-web",
-        replacement: fileURLToPath(new URL("../../packages/persist-web/src/index.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud/react",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/react.ts", import.meta.url)),
-      },
-      {
-        find: "zod-crud",
-        replacement: fileURLToPath(new URL("../../packages/zod-crud/src/index.ts", import.meta.url)),
-      },
-    ],
+    alias: zodCrudSourceAliases({ officialExtensions: true }),
   },
   test: {
     environment: "jsdom",

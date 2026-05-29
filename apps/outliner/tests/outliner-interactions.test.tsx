@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
+import { defaultDocumentPersistenceCodec } from "@zod-crud/persist-web";
 import { Outliner } from "../src/index.js";
 import { findCommand } from "../src/keymap.js";
 
@@ -10,9 +11,11 @@ const thirdItem = "Shift+Tab promote";
 const selectionItem = "Selection";
 const firstSelectionChild = "Click focus";
 const editedFirstItem = "Edited first item";
+const draftKey = "zod-crud.outliner.draft";
 
 afterEach(() => {
   cleanup();
+  globalThis.localStorage?.removeItem(draftKey);
 });
 
 function renderOutliner() {
@@ -22,6 +25,10 @@ function renderOutliner() {
 
 function statusText() {
   return document.querySelector(".status")?.textContent ?? "";
+}
+
+function toastTexts() {
+  return Array.from(document.querySelectorAll(".toast")).map((el) => el.textContent ?? "");
 }
 
 function tree() {
@@ -53,6 +60,54 @@ function markerForText(text: string) {
   const marker = rowForText(text).querySelector(".marker");
   if (!(marker instanceof HTMLElement)) throw new Error(`No marker for ${text}`);
   return marker;
+}
+
+function installSystemClipboard(readText: () => string) {
+  const hadSecureContext = "isSecureContext" in globalThis;
+  const originalSecureContext = globalThis.isSecureContext;
+  const originalClipboard = globalThis.navigator.clipboard;
+  Object.defineProperty(globalThis, "isSecureContext", {
+    configurable: true,
+    value: true,
+  });
+  Object.defineProperty(globalThis.navigator, "clipboard", {
+    configurable: true,
+    value: {
+      readText,
+      writeText: () => undefined,
+    },
+  });
+
+  return () => {
+    if (hadSecureContext) {
+      Object.defineProperty(globalThis, "isSecureContext", {
+        configurable: true,
+        value: originalSecureContext,
+      });
+    } else {
+      delete (globalThis as { isSecureContext?: boolean }).isSecureContext;
+    }
+    Object.defineProperty(globalThis.navigator, "clipboard", {
+      configurable: true,
+      value: originalClipboard,
+    });
+  };
+}
+
+function installLocalStorageHost(host: Pick<Storage, "getItem" | "setItem" | "removeItem">) {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    value: host,
+  });
+
+  return () => {
+    if (descriptor) {
+      Object.defineProperty(globalThis, "localStorage", descriptor);
+    } else {
+      delete (globalThis as { localStorage?: Storage }).localStorage;
+    }
+  };
 }
 
 // click 정책 (변경됨): text 클릭은 select 모드. edit 진입은 Enter 가 필요.
@@ -219,6 +274,45 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(screen.getByText("path_not_found: clipboard is empty")).toBeTruthy();
   });
 
+  test("invalid external system clipboard reports parse failure instead of local empty state", async () => {
+    const restoreClipboard = installSystemClipboard(() => "not json");
+    try {
+      renderOutliner();
+      const user = userEvent.setup();
+
+      await user.click(markerForText(firstItem));
+      await user.keyboard("{Control>}v{/Control}");
+
+      await waitFor(() => {
+        expect(screen.getByText("clipboard_parse_failed: failed to parse clipboard text")).toBeTruthy();
+      });
+    } finally {
+      restoreClipboard();
+    }
+  });
+
+  test("invalid external clipboard clears stale cut status after failed paste", async () => {
+    const restoreClipboard = installSystemClipboard(() => "not json");
+    try {
+      renderOutliner();
+      const user = userEvent.setup();
+
+      await user.click(markerForText(secondItem));
+      await user.keyboard("{Control>}x{/Control}");
+      expect(statusText()).toMatch(/clipboard =\s*cut 1/);
+
+      await user.click(markerForText(selectionItem));
+      await user.keyboard("{Control>}v{/Control}");
+
+      await waitFor(() => {
+        expect(screen.getByText("clipboard_parse_failed: failed to parse clipboard text")).toBeTruthy();
+      });
+      expect(statusText()).toMatch(/clipboard =\s*—/);
+    } finally {
+      restoreClipboard();
+    }
+  });
+
   test("copy and paste as sibling operate through keyboard shortcuts and rendered rows", async () => {
     renderOutliner();
     const user = userEvent.setup();
@@ -244,6 +338,27 @@ describe("outliner keyboard and mouse interactions", () => {
 
     await user.keyboard("{Shift>}{Tab}{/Shift}");
     expect(rowForText(secondItem).getAttribute("aria-level")).toBe("1");
+  });
+
+  test("Tab and Shift+Tab preserve multi-row selection through outline moves", async () => {
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(markerForText(secondItem));
+    await user.keyboard("{Shift>}");
+    await user.click(screen.getByDisplayValue(thirdItem));
+    await user.keyboard("{/Shift}");
+    expect(selectedRows()).toHaveLength(2);
+
+    await user.keyboard("{Tab}");
+    expect(rowForText(secondItem).getAttribute("aria-level")).toBe("2");
+    expect(rowForText(thirdItem).getAttribute("aria-level")).toBe("2");
+    expect(selectedRows()).toHaveLength(2);
+
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(rowForText(secondItem).getAttribute("aria-level")).toBe("1");
+    expect(rowForText(thirdItem).getAttribute("aria-level")).toBe("1");
+    expect(selectedRows()).toHaveLength(2);
   });
 
   test("Ctrl+ArrowUp and Ctrl+ArrowDown move the focused row among siblings", async () => {
@@ -284,6 +399,20 @@ describe("outliner keyboard and mouse interactions", () => {
     expect(treeTexts()).not.toContain(firstItem);
   });
 
+  test("Backspace on an empty edited root surfaces delete failure and stays in edit mode", async () => {
+    renderOutliner();
+    const before = treeItems().length;
+    const user = await clickAndEdit("zod-crud outliner");
+
+    await replaceFocusedText(user, "zod-crud outliner", "");
+    await user.keyboard("{Backspace}");
+
+    expect(screen.getByText("path_not_found: cannot delete root")).toBeTruthy();
+    expect(statusText()).toMatch(/mode = edit/);
+    expect(statusText()).toMatch(/focus =\s*·\s*selection/);
+    expect(treeItems()).toHaveLength(before);
+  });
+
   test("Backspace removes a mouse-selected range of rows", async () => {
     renderOutliner();
     const user = userEvent.setup();
@@ -302,7 +431,7 @@ describe("outliner keyboard and mouse interactions", () => {
   });
 
   test("save and restore draft through the persistence extension", async () => {
-    globalThis.localStorage?.removeItem("zod-crud.outliner.draft");
+    globalThis.localStorage?.removeItem(draftKey);
     renderOutliner();
     const user = await clickAndEdit(firstItem);
 
@@ -322,6 +451,102 @@ describe("outliner keyboard and mouse interactions", () => {
     await waitFor(() => expect(treeTexts()).toContain(editedFirstItem));
     expect(treeTexts()).not.toContain("Unsaved draft");
     expect(statusText()).toMatch(/dirty =\s*no/);
+  });
+
+  test("restore reports missing draft without changing the rendered document", async () => {
+    globalThis.localStorage?.removeItem(draftKey);
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "restore" }));
+
+    await waitFor(() => {
+      expect(toastTexts().some((text) => text.includes("persistence_empty"))).toBe(true);
+    });
+    expect(treeTexts()).toContain(firstItem);
+  });
+
+  test("restore reports corrupt draft payload without changing the rendered document", async () => {
+    globalThis.localStorage?.setItem(draftKey, "not json");
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "restore" }));
+
+    await waitFor(() => {
+      expect(toastTexts().some((text) => text.includes("persistence_parse_failed"))).toBe(true);
+    });
+    expect(treeTexts()).toContain(firstItem);
+  });
+
+  test("restore reports schema-invalid draft payload without changing the rendered document", async () => {
+    globalThis.localStorage?.setItem(draftKey, defaultDocumentPersistenceCodec.encode({
+      value: {
+        text: "invalid",
+        children: [{ text: 123, children: [] }],
+      },
+      selection: null,
+      savedAt: "2026-05-28T00:00:00.000Z",
+    }));
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "restore" }));
+
+    await waitFor(() => {
+      expect(toastTexts().some((text) => text.includes("schema_violation"))).toBe(true);
+    });
+    expect(treeTexts()).toContain(firstItem);
+  });
+
+  test("restore skips persisted selection that points outside the restored draft", async () => {
+    globalThis.localStorage?.setItem(draftKey, defaultDocumentPersistenceCodec.encode({
+      value: {
+        text: "restored outline",
+        children: [{ text: "safe restored row", children: [] }],
+      },
+      selection: {
+        selectedPointers: ["/children/99"],
+        selectionRanges: [{ anchor: "/children/99", focus: "/children/99" }],
+        primaryIndex: 0,
+        anchor: "/children/99",
+        focus: "/children/99",
+      },
+      savedAt: "2026-05-28T00:00:00.000Z",
+    }));
+    renderOutliner();
+    const user = userEvent.setup();
+
+    await user.click(screen.getByRole("button", { name: "restore" }));
+
+    await waitFor(() => expect(treeTexts()).toContain("safe restored row"));
+    expect(toastTexts()).toContain("restored");
+    expect(statusText()).not.toContain("/children/99");
+  });
+
+  test("save reports localStorage write failures and keeps the draft dirty", async () => {
+    renderOutliner();
+    const user = await clickAndEdit(firstItem);
+    await replaceFocusedText(user, firstItem, editedFirstItem);
+    await waitFor(() => expect(statusText()).toMatch(/dirty =\s*yes/));
+
+    const restoreStorage = installLocalStorageHost({
+      getItem: () => null,
+      setItem: () => {
+        throw new Error("storage denied");
+      },
+      removeItem: () => undefined,
+    });
+    try {
+      await user.click(screen.getByRole("button", { name: "save" }));
+
+      await waitFor(() => {
+        expect(toastTexts().some((text) => text.includes("persistence_write_failed"))).toBe(true);
+      });
+      expect(statusText()).toMatch(/dirty =\s*yes/);
+    } finally {
+      restoreStorage();
+    }
   });
 
   test("reset button restores the initial rendered document after keyboard edits", async () => {

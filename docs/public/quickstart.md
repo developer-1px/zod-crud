@@ -4,8 +4,6 @@
 
 ## 1. schema와 document 만들기
 
-먼저 앱의 JSON state를 Zod schema로 정합니다. 이 예제는 list 안에 card가 들어 있는 작은 board입니다.
-
 ```ts
 import { z } from "zod";
 import { createJSONDocument } from "zod-crud";
@@ -36,7 +34,7 @@ const doc = createJSONDocument(Board, {
 });
 ```
 
-여기서 알아야 할 것은 세 가지입니다. schema가 허용 구조이고, document가 현재 value와 변경 API를 들고 있으며, path는 JSON Pointer입니다.
+schema는 허용 구조이고, document는 현재 value와 변경 API를 들고 있으며, path는 JSON Pointer입니다.
 
 ## 2. 변경 전에 확인하기
 
@@ -44,7 +42,6 @@ const doc = createJSONDocument(Board, {
 
 ```ts
 const card = { id: "c2", title: "Review API", status: "todo" };
-
 const canInsert = doc.canInsert("/lists/0/cards/-", card);
 
 if (canInsert.ok) {
@@ -86,8 +83,6 @@ doc.commit([
 ], { label: "finish card" });
 ```
 
-`doc.commit(...)`과 `doc.canPatch(...)`는 operation arrays를 받습니다.
-
 ## 4. JSONPath로 찾고 Pointer로 바꾸기
 
 여러 위치를 찾을 때는 JSONPath로 검색하고, 반환된 Pointer로 patch를 만듭니다.
@@ -104,9 +99,12 @@ if (todos.ok) {
 }
 ```
 
+```txt
 검색: JSONPath -> Pointer[]
+변경: Pointer -> JSON Patch
+```
 
-JSONPath는 변경 언어가 아닙니다. `doc.find(...)` 결과의 Pointer를 JSON Patch `path`로 사용합니다.
+JSONPath는 변경 언어가 아닙니다.
 
 ## 5. selection과 clipboard 연결하기
 
@@ -124,7 +122,7 @@ doc.paste("/lists/0/cards/-", {
 });
 ```
 
-`selectedPointers`는 JSON-safe selection snapshot에서 읽습니다. Pointer 배열을 copy하면 clipboard payload도 배열입니다. 한 항목만 복사해도 붙여넣을 때 sibling으로 펼치려면 `spread: true`를 넘깁니다.
+Pointer 배열을 copy하면 clipboard payload도 배열입니다. 한 항목만 복사해도 붙여넣을 때 sibling으로 펼치려면 `spread: true`를 넘깁니다.
 
 이미 `/cards/-` 같은 삽입 위치가 있으면 pointer를 그대로 넘깁니다. 기존 항목을 기준으로 붙일 때는 `{ after: "/lists/0/cards/0" }`처럼 씁니다.
 
@@ -138,17 +136,7 @@ if (doc.canUndo().ok) {
 }
 ```
 
-History entry에는 `mergeKey`, `mergeLast`, selection snapshot metadata를 붙일 수 있습니다.
-
-```ts
-doc.commit([
-  { op: "replace", path: "/lists/0/cards/0/title", value: "Typing" },
-], { label: "typing", mergeKey: "card-title", selection: doc.selection?.snapshot() });
-
-doc.history.mergeLast({ mergeKey: "card-title" });
-```
-
-`history.transaction`은 history entry를 묶지만 반복 `doc.patch(...)` 호출을 한 번의 schema validation으로 바꾸지는 않습니다. 알고 있는 batch는 `doc.commit([...])`으로 한 번에 넘깁니다.
+알고 있는 여러 변경은 operation 배열로 한 번 commit합니다. `history.transaction`은 history entry를 묶지만 반복 `doc.patch(...)` 호출을 한 번의 schema validation으로 바꾸지는 않습니다.
 
 ## 7. React에서 쓰기
 
@@ -164,12 +152,3 @@ const doc = useJSONDocument(Board, initialBoard, {
 ```
 
 Root package는 React-free입니다. React 앱에서만 `zod-crud/react`를 import합니다.
-
-## 8. 배포 전 확인
-
-문서와 public contract drift는 release gate에서 같이 확인합니다.
-
-```sh
-npm run docs:evaluate
-npm run release:check
-```
