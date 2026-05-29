@@ -159,6 +159,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/id-resolver",
+      "name": "@zod-crud/id-resolver",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official stable id resolver extension functions for locating zod-crud document nodes by scope and id.",
+      "license": "MIT",
+      "summary": "Official headless stable id resolver extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "resolve scoped stable ids to current JSON Pointers",
+        "notFor": "id generation, relation graphs, routing, or server identity"
+      },
+      "publicExports": [
+        "IdResolver",
+        "IdResolverDiagnostic",
+        "IdResolverDiagnosticCode",
+        "IdResolverEntry",
+        "IdResolverOptions",
+        "IdResolverScope",
+        "IdResolverSnapshot",
+        "ResolveIdErrorCode",
+        "ResolveIdResult",
+        "createIdResolver"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "editing",
+        "headless",
+        "id",
+        "json",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/outline",
       "name": "@zod-crud/outline",
       "status": "official-extension",
@@ -602,6 +637,41 @@ export const repoCatalog = {
         "dirty",
         "editor",
         "headless",
+        "json",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "packages/id-resolver",
+      "name": "@zod-crud/id-resolver",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official stable id resolver extension functions for locating zod-crud document nodes by scope and id.",
+      "license": "MIT",
+      "summary": "Official headless stable id resolver extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "resolve scoped stable ids to current JSON Pointers",
+        "notFor": "id generation, relation graphs, routing, or server identity"
+      },
+      "publicExports": [
+        "IdResolver",
+        "IdResolverDiagnostic",
+        "IdResolverDiagnosticCode",
+        "IdResolverEntry",
+        "IdResolverOptions",
+        "IdResolverScope",
+        "IdResolverSnapshot",
+        "ResolveIdErrorCode",
+        "ResolveIdResult",
+        "createIdResolver"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "editing",
+        "headless",
+        "id",
         "json",
         "zod-crud"
       ]
@@ -1780,8 +1850,8 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 9,
-    "officialExtensions": 8,
+    "packages": 10,
+    "officialExtensions": 9,
     "labExtensions": 21,
     "apps": 12
   }

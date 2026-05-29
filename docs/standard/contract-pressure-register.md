@@ -43,7 +43,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | official 후보 | `patch-preview`가 두 제품 이상에서 직접 dogfood 되는지 확인 |
 | structural change result | `grouping`, `wrap-unwrap`, `outline`, `bulk-edit`가 prospective operations와 execution result를 노출 | lab convention | `operations`, `selectionAfter`, `diagnostics` naming을 통일할 수 있는지 확인 |
 | anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | official 후보 | anchor lifecycle이 comment/bookmark/presence 밖에서도 같은지 확인 |
-| stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | official 후보 | id policy 차이를 보존한 small lab이 가능한지 확인 |
+| stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
 | TSV/CSV grid paste | grid/table product에서 반복 | lab 후보 | `paste-compatible`과 별개 feature인지 실사용으로 확인 |
 | result diagnostic normalization | result diagnostic text를 `reason`으로 통일 | 반영됨 | official/lab extension도 `reason` 우선 유지 |
 | semantic contract lock | export lock은 이름만 고정하고 signature/error literal 의미론은 문서와 테스트가 고정 | evaluator 후보 | signature snapshot 또는 semantic fixture를 추가할지 확인 |
@@ -138,14 +138,14 @@ id field, uniqueness scope, nested lookup, deleted item 처리, server identity
 정책이 제품마다 다르다.
 
 2026-05-30 blind product review 3회에서는 spreadsheet, block docs, object editor가
-모두 이 후보를 다시 제기했다. 따라서 현재 방향은 recipe보다 한 단계 높은
-official extension 후보로 올려 관찰한다. 단, core 승격은 여전히 금지한다.
+모두 이 후보를 다시 제기했다. 따라서 `@zod-crud/id-resolver`를 official
+extension으로 승격했다. 단, core 승격은 여전히 금지한다.
 
 ```txt
 stable id resolver
 |-- core 아님: id semantics를 모름
-|-- official 후보: 반복 압력은 충분함
-|-- lab 필요: descriptor로 id field와 collection scope를 받는 실험
+|-- official extension: scope + id -> current JSON Pointer
+|-- host-owned: id generation, uniqueness repair, route policy
 `-- recipe 필요: DnD, URL route, review target에서 먼저 막힘
 ```
 

@@ -47,7 +47,7 @@ stable strengths
 | Result/error code freeze | API freeze | blocker | code taxonomy와 violation shape 문서화 |
 | Selection semantics freeze | API freeze, grid, diagram | blocker | public `Selection*` 의미론 문서화 |
 | Schema introspection freeze | API freeze, schema-form | blocker | `SchemaKind`, `SchemaDescription`, path mode 문서화 |
-| stable id to Pointer | kanban, form, grid, import, diagram | recipe 후보 | recipe 먼저, 이후 lab 실험 |
+| stable id to Pointer | kanban, form, grid, import, diagram | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 host-owned id policy 확인 |
 | TSV/CSV grid paste | grid, import | lab 후보 | grid clipboard lab 후보로 유지 |
 | Patch preview / dry-run | grid, form, import | official 후보 | `patch-preview` dogfood와 result vocabulary 정리 |
 | guard composition | form, import, grid, diagram | lab convention | core 금지, guard vocabulary만 관찰 |
@@ -76,7 +76,7 @@ stable strengths
 
 - `PatchPlan`
 - `GuardedPlan`
-- stable id to Pointer resolver
+- stable id to Pointer resolver in core
 - anchor lifecycle state machine
 - TSV/CSV parser
 - formula runtime
@@ -102,6 +102,7 @@ stable strengths
 - Diagram Whiteboard recipe.
 - `collection` package description을 ordered JSON array command로 명확화.
 - `schema-form` package description에 rendered form UI가 아님을 명시.
+- `@zod-crud/id-resolver`를 official extension으로 승격.
 
 남은 문서 액션:
 

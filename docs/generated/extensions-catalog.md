@@ -4,7 +4,7 @@
 
 This section is generated from `packages/*` and `labs/extensions/*`.
 
-Official extensions: 8
+Official extensions: 9
 
 | Package | Exports | Use for | Not for | Summary |
 | --- | ---: | --- | --- | --- |
@@ -12,6 +12,7 @@ Official extensions: 8
 | `@zod-crud/clipboard-web` | 20 | bridge zod-crud clipboard payloads to the browser clipboard | TSV/CSV spreadsheet paste engines | Web clipboard extension functions for `zod-crud`. |
 | `@zod-crud/collection` | 9 | edit ordered JSON arrays with item-level commands | database collections or rendered list UI | Official headless collection editing extension for `zod-crud` documents. |
 | `@zod-crud/dirty-state` | 7 | compare a document to a clean baseline | persistence or server save status | Official headless dirty state tracking extension for `zod-crud` documents. |
+| `@zod-crud/id-resolver` | 10 | resolve scoped stable ids to current JSON Pointers | id generation, relation graphs, routing, or server identity | Official headless stable id resolver extension for `zod-crud` documents. |
 | `@zod-crud/outline` | 19 | project and edit nested document outline structures | Figma layer panels without a tree schema adapter | Official headless outline tree and structure editing extension for `zod-crud` documents. |
 | `@zod-crud/patch-log` | 9 | record and replay applied JSON Patch records | product activity feeds or audit authorization | Official headless patch recording and replay extension for `zod-crud` documents. |
 | `@zod-crud/persist-web` | 24 | save and restore documents in browser storage-like hosts | server sync, auth, or conflict resolution | Official headless web persistence extension for `zod-crud` documents. |

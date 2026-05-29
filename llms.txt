@@ -25,6 +25,7 @@ import { createDirtyState } from "@zod-crud/dirty-state";
 import { createBulkEdit } from "@zod-crud/bulk-edit";
 import { createPatchLog } from "@zod-crud/patch-log";
 import { createDocumentPersistence } from "@zod-crud/persist-web";
+import { createIdResolver } from "@zod-crud/id-resolver";
 import { createWebClipboard } from "@zod-crud/clipboard-web";
 ```
 

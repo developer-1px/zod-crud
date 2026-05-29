@@ -14,6 +14,7 @@ export const officialExtensionPackages = [
   "bulk-edit",
   "patch-log",
   "persist-web",
+  "id-resolver",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];

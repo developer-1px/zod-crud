@@ -92,6 +92,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/id-resolver",
+    name: "@zod-crud/id-resolver",
+    description: /stable id resolver extension functions/,
+    readme: [
+      /createIdResolver\(doc/,
+      /kanban cards,\s*form fields,\s*slide objects,\s*diagram nodes,\s*review comments,\s*layer panels,\s*or imported rows/,
+      /Resolve a registered `scope` and stable `id` to the current JSON Pointer/,
+      /No id generation, id rekeying, uniqueness repair, or server identity policy/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

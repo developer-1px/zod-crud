@@ -36,6 +36,10 @@ const extensionGuidance = {
     useFor: "edit ordered JSON arrays with item-level commands",
     notFor: "database collections or rendered list UI",
   },
+  "@zod-crud/id-resolver": {
+    useFor: "resolve scoped stable ids to current JSON Pointers",
+    notFor: "id generation, relation graphs, routing, or server identity",
+  },
   "@zod-crud/collection-sort": {
     useFor: "sort or reverse JSON array items",
     notFor: "query views, filters, or server sorting",

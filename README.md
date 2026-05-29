@@ -41,6 +41,7 @@ schema -> document -> pointer/query -> can* -> change -> result
 | [packages/bulk-edit](packages/bulk-edit) | JSONPath replace-all/delete-all |
 | [packages/patch-log](packages/patch-log) | applied patch stream 기록/replay |
 | [packages/persist-web](packages/persist-web) | browser storage-like persistence |
+| [packages/id-resolver](packages/id-resolver) | stable id를 현재 JSON Pointer로 해석 |
 | [packages/outline](packages/outline) | document outline projection |
 | [apps/site](apps/site) | public docs site와 workbench |
 | [apps/outliner](apps/outliner) | outliner demo app |
