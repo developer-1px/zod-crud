@@ -64,6 +64,30 @@ describe("@zod-crud/layer-order", () => {
     expect(layerIds(doc)).toEqual(["background", "title", "card", "cursor"]);
   });
 
+  test("plans layer ordering as one parent-array replace patch", () => {
+    const doc = createCanvas();
+    const order = createLayerOrder(doc);
+
+    const change = order.canBringForward(["/layers/0", "/layers/2"]);
+
+    expect(change.ok).toBe(true);
+    if (!change.ok) throw new Error(change.reason);
+    expect(change.operations).toEqual([
+      {
+        op: "replace",
+        path: "/layers",
+        value: [
+          { id: "card", label: "Card" },
+          { id: "background", label: "Background" },
+          { id: "cursor", label: "Cursor" },
+          { id: "title", label: "Title" },
+        ],
+      },
+    ]);
+    expect(change.operations.some((operation) => operation.op === "move")).toBe(false);
+    expect(layerIds(doc)).toEqual(["background", "card", "title", "cursor"]);
+  });
+
   test("sends a layer backward by one slot", () => {
     const doc = createCanvas();
     const order = createLayerOrder(doc);
