@@ -364,7 +364,7 @@ export function createJSONDocument<S extends z.ZodType>(
       return {
         ok: false,
         code: "empty_selection",
-        message: "duplicate source selection is empty",
+        reason: "duplicate source selection is empty",
       };
     }
     return mutation.duplicate(source, duplicateOptions);

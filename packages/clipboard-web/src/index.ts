@@ -55,7 +55,6 @@ export interface WebClipboardError {
   ok: false;
   code: WebClipboardErrorCode;
   reason: string;
-  message: string;
   cause?: unknown;
 }
 
@@ -297,6 +296,6 @@ function restoreClipboard<T>(
 }
 
 function webClipboardError(code: WebClipboardErrorCode, reason: string, cause?: unknown): WebClipboardError {
-  if (cause === undefined) return { ok: false, code, reason, message: reason };
-  return { ok: false, code, reason, message: reason, cause };
+  if (cause === undefined) return { ok: false, code, reason };
+  return { ok: false, code, reason, cause };
 }

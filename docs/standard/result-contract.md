@@ -25,8 +25,10 @@ type Result<T, E> =
 ```
 
 성공 result는 API별 payload를 가진다. 실패 result는 stable `code`를 가져야
-한다. `reason` 또는 `message`는 사람이 읽는 diagnostic이며, 정확한 문구를
-프로그램 분기에 사용하면 안 된다.
+한다. 사람이 읽는 diagnostic text는 `reason`에 둔다. 일부 clipboard와
+structural result는 1.0 migration alias로 같은 값을 `message`에도 보존할 수
+있지만, 새 코드와 문서는 `reason`을 우선 읽어야 한다. 정확한 문구를 프로그램
+분기에 사용하면 안 된다.
 
 ## JSONResult
 
@@ -137,8 +139,8 @@ Clipboard와 structural command result는 `ok` discriminant를 공유하지만 A
 | duplicate | next `value`, `applied`, `duplicatedTo` |
 | undo/redo | top-level document command는 `JSONCapabilityResult` |
 
-Clipboard family의 실패 diagnostic field는 `message`일 수 있다. 이 경우에도
-stable branch key는 `code`다.
+Clipboard family와 structural result의 실패 diagnostic field는 `reason`이다.
+Stable branch key는 `code`다.
 
 `discriminator_mismatch`는 추가 정보를 제공한다.
 
@@ -146,9 +148,9 @@ stable branch key는 `code`다.
 type DiscriminatorMismatch = {
   ok: false;
   code: "discriminator_mismatch";
+  reason: string;
   source: { discriminator: string; value: unknown };
   expected: { discriminator: string; allowed: unknown[] };
-  message: string;
 };
 ```
 

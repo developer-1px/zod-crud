@@ -22,7 +22,7 @@ export function useDispatch({ ctx, mode, setMode, pushToast, undo, redo }: UseDi
     if (!ctx) return false;
     const surface = (r: { ok: boolean; code?: string; reason?: string; message?: string } | void) => {
       if (r && !r.ok) {
-        const detail = r.reason ?? r.message;
+        const detail = r.reason;
         pushToast("error", `${r.code}${detail ? `: ${detail}` : ""}`);
       }
     };

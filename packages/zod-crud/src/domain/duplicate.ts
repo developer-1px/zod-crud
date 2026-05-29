@@ -37,7 +37,7 @@ export interface DuplicateError {
     | "not_serializable"
     | "rekey_failed"
     | PatchPreflightErrorCode;
-  message: string;
+  reason: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
@@ -69,15 +69,15 @@ export function duplicate<S extends z.ZodType>(
 ): DuplicateOk<z.output<S>> | DuplicateError {
   const parent = parentPointer(source);
   if (parent === null) {
-    return { ok: false, code: "invalid_pointer", message: "cannot duplicate root" };
+    return duplicateError("invalid_pointer", "cannot duplicate root");
   }
   const parentSegs = tryParsePointer(parent);
   if (parentSegs === null) {
-    return { ok: false, code: "invalid_pointer", message: `invalid parent pointer: ${parent}` };
+    return duplicateError("invalid_pointer", `invalid parent pointer: ${parent}`);
   }
   const parentRead = readAt(state, parentSegs);
   if (!parentRead.ok) {
-    return { ok: false, code: "path_not_found", message: `parent not found: ${parent}` };
+    return duplicateError("path_not_found", `parent not found: ${parent}`);
   }
 
   let target: Pointer;
@@ -85,36 +85,32 @@ export function duplicate<S extends z.ZodType>(
     // 배열: 다음 인덱스 (즉 source idx + 1)
     const idx = lastSegmentIndex(source);
     if (idx === null) {
-      return { ok: false, code: "invalid_pointer", message: `array source must have integer index: ${source}` };
+      return duplicateError("invalid_pointer", `array source must have integer index: ${source}`);
     }
     const nextIdx = idx + 1;
     target = withLastSegment(source, nextIdx) ?? source;
   } else {
     // object: opts.newKey 필수
     if (!opts.newKey) {
-      return {
-        ok: false,
-        code: "missing_new_key",
-        message: "object duplicate requires opts.newKey (배열은 자동, object 는 명시)",
-      };
+      return duplicateError("missing_new_key", "object duplicate requires opts.newKey (배열은 자동, object 는 명시)");
     }
     target = withLastSegment(source, opts.newKey) ?? source;
     if (target === source) {
-      return { ok: false, code: "invalid_pointer", message: `cannot derive target from ${source}` };
+      return duplicateError("invalid_pointer", `cannot derive target from ${source}`);
     }
     // 충돌 체크 — newKey 가 이미 존재하면 거부
     if (Object.prototype.hasOwnProperty.call(parentRead.value as object, opts.newKey)) {
-      return { ok: false, code: "key_conflict", message: `newKey "${opts.newKey}" already exists at ${parent}` };
+      return duplicateError("key_conflict", `newKey "${opts.newKey}" already exists at ${parent}`);
     }
   }
 
   const sourceSegs = tryParsePointer(source);
   if (sourceSegs === null) {
-    return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
+    return duplicateError("invalid_pointer", `invalid source pointer: ${source}`);
   }
   const sourceRead = readAt(state, sourceSegs);
   if (!sourceRead.ok) {
-    return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
+    return duplicateError("path_not_found", `source not found: ${source}`);
   }
 
   const rekeyed = tryRekeyPayload(sourceRead.value, state, opts.rekey, {
@@ -127,9 +123,19 @@ export function duplicate<S extends z.ZodType>(
     ? patchPreflightFromApplyResult(options.previewPatch([op]))
     : patchPreflight(schema, state, [op]);
   if (!r.ok) {
-    return { ok: false, code: r.code, message: r.message, violations: r.violations };
+    return duplicateError(r.code, r.message, r.violations);
   }
   return { ok: true, next: r.draft as z.output<S>, patch: [op], duplicatedTo: target };
+}
+
+function duplicateError(
+  code: DuplicateError["code"],
+  reason: string,
+  violations?: DuplicateError["violations"],
+): DuplicateError {
+  return violations === undefined
+    ? { ok: false, code, reason }
+    : { ok: false, code, reason, violations };
 }
 
 /** unused helper hint to silence linter for lastSegment import — also useful in error messages. */

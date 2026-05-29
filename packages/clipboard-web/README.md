@@ -15,14 +15,14 @@ const clipboard = createWebClipboard(doc);
 
 const copied = await clipboard.copy("/cards/0");
 if (!copied.ok) {
-  const reason = "reason" in copied ? copied.reason : copied.message;
+  const reason = copied.reason;
 }
 
 const pasted = await clipboard.paste("/cards/-", {
   rekey: { fields: ["id"], strategy: "suffix" },
 });
 if (!pasted.ok) {
-  const reason = "reason" in pasted ? pasted.reason : pasted.message;
+  const reason = pasted.reason;
 }
 ```
 

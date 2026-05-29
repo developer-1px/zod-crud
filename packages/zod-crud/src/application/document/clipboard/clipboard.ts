@@ -40,7 +40,7 @@ import type {
 export const EMPTY_CLIPBOARD: ClipboardEmpty = {
   ok: false,
   code: "empty_clipboard",
-  message: "clipboard is empty",
+  reason: "clipboard is empty",
 };
 
 export const INTERNAL_CLIPBOARD_PEEK: unique symbol = Symbol("zod-crud.internal.clipboard.peek");
@@ -302,7 +302,7 @@ export function planClipboardPaste<S extends z.ZodType>(
     return {
       ok: false,
       code: "empty_selection",
-      message: "paste target selection is empty",
+      reason: "paste target selection is empty",
     };
   }
   const spread = args.options.spread ?? context.spreadByDefault ?? false;
@@ -333,7 +333,7 @@ export function planClipboardPasteApplyResult<T>(
   return {
     ok: false,
     code: input.result.code,
-    message: input.result.reason ?? input.result.code,
+    reason: input.result.reason ?? input.result.code,
   };
 }
 
@@ -344,7 +344,7 @@ export function planClipboardCutApplyResult<T>(
     return {
       ok: false,
       code: input.result.code,
-      message: input.result.reason ?? input.result.code,
+      reason: input.result.reason ?? input.result.code,
       violations: [],
     };
   }
@@ -629,7 +629,7 @@ function emptyCopySource(): CopyError {
   return {
     ok: false,
     code: "empty_selection",
-    message: "copy source selection is empty",
+    reason: "copy source selection is empty",
   };
 }
 
@@ -637,6 +637,6 @@ function emptyCutSource(): CutError {
   return {
     ok: false,
     code: "empty_selection",
-    message: "cut source selection is empty",
+    reason: "cut source selection is empty",
   };
 }

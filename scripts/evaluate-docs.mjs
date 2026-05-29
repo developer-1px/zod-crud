@@ -277,6 +277,7 @@ const required = [
   ["resultContract", /## JSONCapabilityResult/],
   ["resultContract", /CapabilityErrorCode/],
   ["resultContract", /violations\[\]\.path/],
+  ["resultContract", /diagnostic text는 `reason`/],
   ["resultContract", /discriminator_mismatch/],
   ["resultContract", /preflight_failed/],
   ["resultContract", /empty_clipboard/],

@@ -55,7 +55,7 @@ interface ClipboardPeekOk extends ClipboardReadOk {
 export interface ClipboardEmpty {
   ok: false;
   code: "empty_clipboard";
-  message: string;
+  reason: string;
 }
 
 export type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;

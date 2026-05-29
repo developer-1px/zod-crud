@@ -255,7 +255,7 @@ describe("document clipboard core functions", () => {
     })).toEqual({
       ok: false,
       code: "invalid_pointer",
-      message: "invalid source pointer: items/0",
+      reason: "invalid source pointer: items/0",
     });
   });
 
@@ -304,7 +304,7 @@ describe("document clipboard core functions", () => {
       result: {
         ok: false,
         code: "empty_selection",
-        message: "copy source selection is empty",
+        reason: "copy source selection is empty",
       },
     });
 
@@ -316,7 +316,7 @@ describe("document clipboard core functions", () => {
       result: {
         ok: false,
         code: "empty_selection",
-        message: "cut source selection is empty",
+        reason: "cut source selection is empty",
       },
     });
   });
@@ -378,7 +378,7 @@ describe("document clipboard core functions", () => {
     })).toEqual({
       ok: false,
       code: "path_not_found",
-      message: "missing source",
+      reason: "missing source",
       violations: [],
     });
   });
@@ -435,7 +435,7 @@ describe("document clipboard core functions", () => {
     })).toEqual({
       ok: false,
       code: "path_not_found",
-      message: "missing target",
+      reason: "missing target",
     });
   });
 

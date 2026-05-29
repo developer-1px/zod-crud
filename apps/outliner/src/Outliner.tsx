@@ -50,7 +50,7 @@ export function Outliner() {
           pushToast("info", okText);
           return;
         }
-        pushToast("error", `${result.code}${result.reason || result.message ? `: ${result.reason ?? result.message}` : ""}`);
+        pushToast("error", `${result.code}${result.reason ? `: ${result.reason}` : ""}`);
       })
       .catch((error: unknown) => {
         pushToast("error", error instanceof Error ? error.message : "draft command failed");

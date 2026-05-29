@@ -45,7 +45,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | official 후보 | anchor lifecycle이 comment/bookmark/presence 밖에서도 같은지 확인 |
 | stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | official 후보 | id policy 차이를 보존한 small lab이 가능한지 확인 |
 | TSV/CSV grid paste | grid/table product에서 반복 | lab 후보 | `paste-compatible`과 별개 feature인지 실사용으로 확인 |
-| result diagnostic normalization | clipboard/structural/domain result가 `message`, capability result가 `reason`을 사용 | 1.0 breaking 검토 | `reason`으로 통일할지, helper를 둘지 결정 |
+| result diagnostic normalization | result diagnostic text를 `reason`으로 통일 | 반영됨 | official/lab extension도 `reason` 우선 유지 |
 | semantic contract lock | export lock은 이름만 고정하고 signature/error literal 의미론은 문서와 테스트가 고정 | evaluator 후보 | signature snapshot 또는 semantic fixture를 추가할지 확인 |
 | structural object commands | grouping, wrap/unwrap, layer order가 slide/diagram/object editor에서 반복 | official 후보 | 같은 `operations`/`selectionAfter` result shape로 승격 가능한지 확인 |
 
@@ -156,18 +156,17 @@ stable id resolver
 문구 안정성을 보장하지 않는다. 하지만 command palette, disabled reason, toast,
 test assertion에서는 한 필드로 읽을 수 있는 편이 낫다.
 
-1.0 전 결정 후보:
+1차 반영:
 
 ```txt
 diagnostic text
-|-- core result 실패는 `reason`으로 통일
-|-- 기존 domain/clipboard `message`는 제거하거나 deprecated alias로 유지
-`-- extension result도 same helper를 사용
+|-- core result 실패는 `reason`으로 통일 중
+|-- validation issue text와 JavaScript Error만 `message` 유지
+`-- extension result도 `reason` 우선으로 수렴
 ```
 
-아직 즉시 core 변경하지 않는다. 변경하면 copy, cut, paste, duplicate,
-web clipboard, lab extension의 실패 shape까지 넓게 닿기 때문이다. 다음 루프에서
-실제 public type blast radius를 계산한다.
+`violations[].message`와 `JSONCrudError.message`는 result diagnostic이 아니라
+각각 validation issue text와 JavaScript Error contract이므로 예외다.
 
 ## Semantic Contract Lock
 

@@ -21,7 +21,7 @@ export interface CopyOk {
 export interface CopyError {
   ok: false;
   code: "empty_selection" | "invalid_pointer" | "path_not_found" | "not_serializable";
-  message: string;
+  reason: string;
 }
 
 type CopyResult = CopyOk | CopyError;
@@ -61,16 +61,16 @@ function copyOne(
 ): CopyResult {
   const segments = tryParsePointer(source);
   if (segments === null) {
-    return { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${source}` };
+    return copyError("invalid_pointer", `invalid source pointer: ${source}`);
   }
   const r = readAt(state, segments);
   if (!r.ok) {
-    return { ok: false, code: "path_not_found", message: `source not found: ${source}` };
+    return copyError("path_not_found", `source not found: ${source}`);
   }
   if (!options.trusted) {
     const jsonErr = jsonSerializableError(r.value);
     if (jsonErr) {
-      return { ok: false, code: "not_serializable", message: jsonErr };
+      return copyError("not_serializable", jsonErr);
     }
   }
   const payload = options.clonePayload === false ? r.value : cloneTrustedPlainJson(r.value);
@@ -84,6 +84,10 @@ function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer
 
 function copySourceError(error: PointerSourceError): CopyError {
   return error.code === "invalid_pointer"
-    ? { ok: false, code: "invalid_pointer", message: `invalid source pointer: ${error.pointer}` }
-    : { ok: false, code: "empty_selection", message: "copy source selection is empty" };
+    ? copyError("invalid_pointer", `invalid source pointer: ${error.pointer}`)
+    : copyError("empty_selection", "copy source selection is empty");
+}
+
+function copyError(code: CopyError["code"], reason: string): CopyError {
+  return { ok: false, code, reason };
 }

@@ -88,7 +88,6 @@ export interface DocumentPersistenceError {
   ok: false;
   code: DocumentPersistenceErrorCode;
   reason: string;
-  message: string;
   cause?: unknown;
 }
 
@@ -113,9 +112,7 @@ export interface DocumentPersistenceRestoreOk<T> {
   selectionRestored: boolean;
 }
 
-export type DocumentPersistenceLoadError = Extract<JSONResult, { ok: false }> & {
-  message: string;
-};
+export type DocumentPersistenceLoadError = Extract<JSONResult, { ok: false }>;
 
 export type DocumentPersistenceSaveResult = DocumentPersistenceSaveOk | DocumentPersistenceError;
 export type DocumentPersistenceClearResult = DocumentPersistenceClearOk | DocumentPersistenceError;
@@ -479,10 +476,7 @@ function watchEvent(
 }
 
 function loadError(result: Extract<JSONResult, { ok: false }>): DocumentPersistenceLoadError {
-  return {
-    ...result,
-    message: result.reason ?? result.code,
-  };
+  return result;
 }
 
 function persistenceError(
@@ -490,6 +484,6 @@ function persistenceError(
   reason: string,
   cause?: unknown,
 ): DocumentPersistenceError {
-  if (cause === undefined) return { ok: false, code, reason, message: reason };
-  return { ok: false, code, reason, message: reason, cause };
+  if (cause === undefined) return { ok: false, code, reason };
+  return { ok: false, code, reason, cause };
 }

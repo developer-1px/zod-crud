@@ -27,14 +27,14 @@ interface PasteOk<T> {
 export interface PasteError {
   ok: false;
   code: "empty_selection" | "not_serializable" | "rekey_failed" | PatchPreflightErrorCode;
-  message: string;
+  reason: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
 export interface PasteDiscriminatorMismatch {
   ok: false;
   code: "discriminator_mismatch";
-  message: string;
+  reason: string;
   source: { discriminator: string; value: unknown };
   expected: { discriminator: string; allowed: unknown[] };
 }
@@ -107,7 +107,7 @@ export function paste<S extends z.ZodType>(
     ? patchPreflightFromApplyResult(options.previewPatch(patch))
     : patchPreflight(schema, state, patch);
   if (!r.ok) {
-    return { ok: false, code: r.code, message: r.message, violations: r.violations };
+    return pasteError(r.code, r.message, r.violations);
   }
   return { ok: true, next: r.draft as z.output<S>, patch, applied: r.applied };
 }
@@ -140,10 +140,11 @@ function createPayloadMismatchCapabilityer(targetSchema: z.ZodType): (payload: u
       const value = payload[info.discriminator];
       if (info.allowed.some((allowed) => Object.is(allowed, value))) return null;
 
+      const reason = `${String(value)} cannot be pasted where ${info.allowed.map(String).join(" | ")} is expected`;
       return {
         ok: false,
         code: "discriminator_mismatch",
-        message: `${String(value)} cannot be pasted where ${info.allowed.map(String).join(" | ")} is expected`,
+        reason,
         source: { discriminator: info.discriminator, value },
         expected: { discriminator: info.discriminator, allowed: info.allowed },
       };
@@ -183,15 +184,26 @@ function findLiteralMismatch(
 
     const value = payload[key];
     if (allowed.some((allowedValue) => Object.is(allowedValue, value))) return null;
+    const reason = `${String(value)} cannot be pasted where ${allowed.map(String).join(" | ")} is expected`;
     return {
       ok: false,
       code: "discriminator_mismatch",
-      message: `${String(value)} cannot be pasted where ${allowed.map(String).join(" | ")} is expected`,
+      reason,
       source: { discriminator: key, value },
       expected: { discriminator: key, allowed },
     };
   }
   return null;
+}
+
+function pasteError(
+  code: PasteError["code"],
+  reason: string,
+  violations?: PasteError["violations"],
+): PasteError {
+  return violations === undefined
+    ? { ok: false, code, reason }
+    : { ok: false, code, reason, violations };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

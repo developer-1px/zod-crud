@@ -20,7 +20,7 @@ const initial: z.output<typeof Schema> = {
 const emptyClipboard: ClipboardPeekResult = {
   ok: false,
   code: "empty_clipboard",
-  message: "clipboard is empty",
+  reason: "clipboard is empty",
 };
 
 function clipboardWithData(

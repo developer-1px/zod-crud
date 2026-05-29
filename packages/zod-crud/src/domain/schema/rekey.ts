@@ -19,7 +19,9 @@ export interface RekeyOptions {
 }
 
 export type RekeyErrorCode = "not_serializable" | "rekey_failed";
-export type RekeyResult = { ok: true; payload: unknown } | { ok: false; code: RekeyErrorCode; message: string };
+export type RekeyResult =
+  | { ok: true; payload: unknown }
+  | { ok: false; code: RekeyErrorCode; reason: string };
 
 export interface RekeyExecutionOptions {
   trustedPayload?: boolean | undefined;
@@ -80,7 +82,7 @@ function rekeyError(error: unknown): RekeyResult {
   return {
     ok: false,
     code: message.startsWith("Value is not JSON-serializable") ? "not_serializable" : "rekey_failed",
-    message,
+    reason: message,
   };
 }
 

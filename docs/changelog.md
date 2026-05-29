@@ -11,6 +11,9 @@ All notable changes to this project are documented here.
 - Changed top-level `doc.undo()` and `doc.redo()` to return
   `JSONCapabilityResult` instead of boolean so command execution follows the
   same `can* -> command -> result` shape.
+- Changed clipboard, paste, duplicate, web clipboard, and persistence failure
+  diagnostics to use `reason` instead of result-level `message`. Validation
+  `violations[].message` and JavaScript `Error.message` remain unchanged.
 
 ### Fixed
 

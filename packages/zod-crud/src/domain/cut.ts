@@ -28,7 +28,7 @@ export interface CutOk<T> {
 export interface CutError {
   ok: false;
   code: "empty_selection" | "invalid_pointer" | "path_not_found" | "not_serializable" | PatchPreflightErrorCode;
-  message: string;
+  reason: string;
   violations?: ReadonlyArray<{ path: string; message: string }>;
 }
 
@@ -62,7 +62,7 @@ export function cut<S extends z.ZodType>(
     ? patchPreflightFromApplyResult(options.previewPatch(patch))
     : patchPreflight(schema, state, patch);
   if (!r.ok) {
-    return { ok: false, code: r.code, message: r.message, violations: r.violations };
+    return cutError(r.code, r.message, r.violations);
   }
 
   // 3) atomic — payload + next + patch 동시 산출
@@ -84,16 +84,16 @@ function readPayload(
 ): { ok: true; payload: unknown } | CutError {
   const segments = tryParsePointer(source);
   if (segments === null) {
-    return { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${source}` };
+    return cutError("invalid_pointer", `invalid cut source pointer: ${source}`);
   }
   const v = readAt(state, segments);
   if (!v.ok) {
-    return { ok: false, code: "path_not_found", message: `cut source not found: ${source}` };
+    return cutError("path_not_found", `cut source not found: ${source}`);
   }
   if (!options.trusted) {
     const jsonErr = jsonSerializableError(v.value);
     if (jsonErr) {
-      return { ok: false, code: "not_serializable", message: jsonErr };
+      return cutError("not_serializable", jsonErr);
     }
   }
   const payload = options.clonePayload === false ? v.value : cloneTrustedPlainJson(v.value);
@@ -102,6 +102,16 @@ function readPayload(
 
 function cutSourceError(error: PointerSourceError): CutError {
   return error.code === "invalid_pointer"
-    ? { ok: false, code: "invalid_pointer", message: `invalid cut source pointer: ${error.pointer}` }
-    : { ok: false, code: "empty_selection", message: "cut source selection is empty" };
+    ? cutError("invalid_pointer", `invalid cut source pointer: ${error.pointer}`)
+    : cutError("empty_selection", "cut source selection is empty");
+}
+
+function cutError(
+  code: CutError["code"],
+  reason: string,
+  violations?: CutError["violations"],
+): CutError {
+  return violations === undefined
+    ? { ok: false, code, reason }
+    : { ok: false, code, reason, violations };
 }
