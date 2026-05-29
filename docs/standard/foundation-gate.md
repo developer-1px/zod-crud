@@ -38,6 +38,9 @@ RFC급 foundation
 | 게이트 | 산출물 | 상태 |
 | --- | --- | --- |
 | 규범 표준 | `docs/standard/core-standard.md` | 초안 추가 |
+| result/error freeze | `docs/standard/result-contract.md` | 활성 |
+| selection freeze | `docs/standard/selection-contract.md` | 활성 |
+| schema introspection freeze | `docs/standard/schema-introspection-contract.md` | 활성 |
 | extension 위임 표준 | `docs/standard/extension-delegation-standard.md` | 초안 추가 |
 | contract pressure register | `docs/standard/contract-pressure-register.md` | 활성 |
 | self-improvement loop report | `docs/standard/self-improvement-loop-report.md` | 10회 루프 완료 |

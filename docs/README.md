@@ -21,6 +21,9 @@ docs
     |-- contract-pressure-register.md
     |-- extension-delegation-standard.md
     |-- foundation-gate.md      # foundation 판정 기준
+    |-- result-contract.md      # result/error code 의미론
+    |-- schema-introspection-contract.md
+    |-- selection-contract.md   # headless selection 의미론
     |-- self-improvement-loop-report.md
     `-- zod-crud-spec.md        # 패키지 의미론 명세
 ```

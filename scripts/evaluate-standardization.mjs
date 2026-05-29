@@ -18,6 +18,9 @@ function requirePattern(name, source, pattern) {
 
 const standard = read("docs/standard/core-standard.md");
 const foundationGate = read("docs/standard/foundation-gate.md");
+const resultContract = read("docs/standard/result-contract.md");
+const selectionContract = read("docs/standard/selection-contract.md");
+const schemaIntrospectionContract = read("docs/standard/schema-introspection-contract.md");
 const conformance = read("packages/zod-crud/tests/public/standard-conformance.test.ts");
 const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json"));
 const rootPackage = JSON.parse(read("package.json"));
@@ -56,11 +59,45 @@ for (const token of [
 for (const [label, pattern] of [
   ["foundation tree", /RFC급 foundation/],
   ["normative artifact", /core-standard\.md/],
+  ["result freeze artifact", /result-contract\.md/],
+  ["selection freeze artifact", /selection-contract\.md/],
+  ["schema freeze artifact", /schema-introspection-contract\.md/],
   ["conformance artifact", /standard-conformance\.test\.ts/],
   ["evaluator artifact", /evaluate-standardization\.mjs/],
   ["adapter pressure", /form[\s\S]*table\/data-grid[\s\S]*outliner\/tree[\s\S]*rich text[\s\S]*storage\/collaboration/i],
 ]) {
   requirePattern("foundation gate", foundationGate, pattern);
+}
+
+for (const [label, pattern] of [
+  ["json result shape", /## JSONResult[\s\S]*invalid_pointer[\s\S]*schema_violation/],
+  ["capability result shape", /## JSONCapabilityResult[\s\S]*CapabilityErrorCode[\s\S]*violations\[\]\.path/],
+  ["preflight and clipboard codes", /preflight_failed[\s\S]*empty_clipboard/],
+  ["schema violation path modes", /schema-slot[\s\S]*document-result/],
+  ["breaking changes", /## Breaking Change[\s\S]*error code/],
+]) {
+  requirePattern("result contract", resultContract, pattern);
+}
+
+for (const [label, pattern] of [
+  ["selection mode", /## SelectionMode[\s\S]*`single`[\s\S]*`multiple`[\s\S]*`extended`/],
+  ["selection snap", /## SelectionSnap[\s\S]*selectedPointers[\s\S]*selectionRanges[\s\S]*primaryIndex/],
+  ["selection after", /selectionAfter[\s\S]*history entry/],
+  ["text edit codes", /missing_length[\s\S]*multi_pointer_range[\s\S]*overlapping_ranges[\s\S]*not_string/],
+  ["non-goals", /DOM focus[\s\S]*2D marquee[\s\S]*stable object id resolver/],
+]) {
+  requirePattern("selection contract", selectionContract, pattern);
+}
+
+for (const [label, pattern] of [
+  ["schema state", /## SchemaState[\s\S]*accepts/],
+  ["path mode", /SchemaPathMode[\s\S]*`value`[\s\S]*`insert`/],
+  ["schema kind", /SchemaKind[\s\S]*discriminatedUnion[\s\S]*nullable/],
+  ["description", /SchemaDescription[\s\S]*jsonSchema[\s\S]*discriminator/],
+  ["schema slot result", /schema-slot[\s\S]*document-result/],
+  ["capability result", /JSONCapabilityResult[\s\S]*schema_violation/],
+]) {
+  requirePattern("schema introspection contract", schemaIntrospectionContract, pattern);
 }
 
 if (!/from "zod-crud"/.test(conformance)) {

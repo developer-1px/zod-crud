@@ -58,10 +58,13 @@ stable strengths
 
 다음은 새 기능이 아니라 계약 안정화 작업이다.
 
-1. Result/error code와 `violations` shape를 freeze 문서로 열거한다.
+1. Result/error code와 `violations` shape를 freeze 문서로 열거한다. 반영:
+   `docs/standard/result-contract.md`.
 2. Public `Selection*` 타입군의 의미론과 patch tracking 복구 규칙을 고정한다.
+   반영: `docs/standard/selection-contract.md`.
 3. Schema introspection public shape를 고정한다: `SchemaKind`, `SchemaDescription`,
    `SchemaPathMode`, `schema-slot`, `document-result`.
+   반영: `docs/standard/schema-introspection-contract.md`.
 4. `applyPatchToTrustedState`의 trusted boundary를 더 좁게 문서화한다.
 
 이 작업 없이 core를 더 키우면 1.0 이후 breaking regret가 커진다.
@@ -128,8 +131,8 @@ stable strengths
 |-- official extension naming: acceptable with guardrails
 |-- lab strategy: healthy, but status taxonomy needed
 |-- product coverage: uneven; grid/import/diagram weak
-`-- semantic freeze: not ready until blockers are documented
+`-- semantic freeze: result, selection, schema docs are now pinned by evaluator
 ```
 
-따라서 지금은 “1.0 가능”이 아니라 “1.0 전 의미론 freeze 작업이 명확해졌다”가
-정확한 결론이다.
+따라서 다음 판단은 새 core 추가가 아니라, 이 freeze 문서가 conformance와
+제품 압력에서 계속 깨지지 않는지 검증하는 것이다.
