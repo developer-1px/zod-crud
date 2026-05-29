@@ -11,6 +11,125 @@ const outputs = [
   ["apps/site/src/generated/repo-catalog.ts", () => renderSiteCatalog(createRepoCatalog())],
 ];
 
+const extensionGuidance = {
+  "@zod-crud/autosave": {
+    useFor: "schedule host-owned saves after document changes",
+    notFor: "retry queues, offline sync, or server conflict resolution",
+  },
+  "@zod-crud/bookmarks": {
+    useFor: "keep named JSON Pointer locations stable across edits",
+    notFor: "browser bookmarks or route state",
+  },
+  "@zod-crud/bulk-edit": {
+    useFor: "apply JSONPath replace/delete operations to many document positions",
+    notFor: "rendered text search UI or product workflow approval",
+  },
+  "@zod-crud/checkpoints": {
+    useFor: "name and restore document snapshots",
+    notFor: "durable version graphs or cloud backup",
+  },
+  "@zod-crud/clipboard-web": {
+    useFor: "bridge zod-crud clipboard payloads to the browser clipboard",
+    notFor: "TSV/CSV spreadsheet paste engines",
+  },
+  "@zod-crud/collection": {
+    useFor: "edit ordered JSON arrays with item-level commands",
+    notFor: "database collections or rendered list UI",
+  },
+  "@zod-crud/collection-sort": {
+    useFor: "sort or reverse JSON array items",
+    notFor: "query views, filters, or server sorting",
+  },
+  "@zod-crud/comments": {
+    useFor: "anchor review comments to document structure",
+    notFor: "comment UI, moderation, or author storage",
+  },
+  "@zod-crud/computed-fields": {
+    useFor: "sync host-computed derived JSON fields",
+    notFor: "formula languages or dependency runtimes",
+  },
+  "@zod-crud/convert-node-kind": {
+    useFor: "convert selected nodes between host-described kinds",
+    notFor: "schema migration systems",
+  },
+  "@zod-crud/dirty-state": {
+    useFor: "compare a document to a clean baseline",
+    notFor: "persistence or server save status",
+  },
+  "@zod-crud/document-diff": {
+    useFor: "produce and apply patch changes toward a target document",
+    notFor: "visual diff UI or merge conflict resolution",
+  },
+  "@zod-crud/drag-drop": {
+    useFor: "turn drag/drop intent into move or paste operations",
+    notFor: "DOM drag/drop events, hit testing, or hover UI",
+  },
+  "@zod-crud/form-draft": {
+    useFor: "hold temporary invalid form input before committing valid JSON",
+    notFor: "rendered form components",
+  },
+  "@zod-crud/grouping": {
+    useFor: "group and ungroup selected sibling JSON items",
+    notFor: "Airtable group-by views",
+  },
+  "@zod-crud/layer-order": {
+    useFor: "reorder visual stack arrays with bring/send commands",
+    notFor: "canvas rendering or z-index CSS management",
+  },
+  "@zod-crud/outline": {
+    useFor: "project and edit nested document outline structures",
+    notFor: "Figma layer panels without a tree schema adapter",
+  },
+  "@zod-crud/paste-compatible": {
+    useFor: "adapt external payloads before schema-safe paste",
+    notFor: "browser clipboard I/O or autocomplete dropdowns",
+  },
+  "@zod-crud/patch-log": {
+    useFor: "record and replay applied JSON Patch records",
+    notFor: "product activity feeds or audit authorization",
+  },
+  "@zod-crud/patch-preview": {
+    useFor: "preview patch effects before confirmation",
+    notFor: "visual diff rendering",
+  },
+  "@zod-crud/persist-web": {
+    useFor: "save and restore documents in browser storage-like hosts",
+    notFor: "server sync, auth, or conflict resolution",
+  },
+  "@zod-crud/presence-cursors": {
+    useFor: "track remote collaborator cursors and selections",
+    notFor: "CRDT/OT or realtime transport",
+  },
+  "@zod-crud/proposed-changes": {
+    useFor: "review, accept, or reject proposed document patches",
+    notFor: "slash commands or mention autocomplete",
+  },
+  "@zod-crud/protected-ranges": {
+    useFor: "guard edits to protected JSON Pointer ranges",
+    notFor: "2D spreadsheet selection UI or server authorization",
+  },
+  "@zod-crud/references": {
+    useFor: "track stable references and backlinks over JSON documents",
+    notFor: "route state or rendered links",
+  },
+  "@zod-crud/schema-form": {
+    useFor: "derive schema-backed field descriptors",
+    notFor: "form rendering or input widgets",
+  },
+  "@zod-crud/search-replace": {
+    useFor: "find and replace text across document string fields",
+    notFor: "rendered text extraction or search UI",
+  },
+  "@zod-crud/snippets": {
+    useFor: "insert reusable JSON payloads with schema-safe paste checks",
+    notFor: "slash palette UI or snippet storage",
+  },
+  "@zod-crud/wrap-unwrap": {
+    useFor: "wrap sibling JSON items in host-defined containers",
+    notFor: "visual grouping or layout containers",
+  },
+};
+
 const stale = [];
 for (const [path, build] of outputs) {
   const next = build();
@@ -96,6 +215,7 @@ function packageDoc(path, status) {
     description: stringValue(pkg.description),
     license: stringValue(pkg.license),
     summary: summaryFromReadme(readme) ?? stringValue(pkg.description),
+    guidance: extensionGuidance[pkg.name] ?? null,
     publicExports,
     publicExportCount: publicExports.length,
     keywords: Array.isArray(pkg.keywords) ? pkg.keywords.filter((item) => typeof item === "string").sort() : [],
@@ -167,21 +287,37 @@ function renderExtensionsCatalog(catalog) {
     "",
     `Official extensions: ${catalog.totals.officialExtensions}`,
     "",
-    "| Package | Exports | Summary |",
-    "| --- | ---: | --- |",
+    "| Package | Exports | Use for | Not for | Summary |",
+    "| --- | ---: | --- | --- | --- |",
     ...catalog.officialExtensions.map((item) =>
-      `| \`${item.name}\` | ${item.publicExportCount} | ${escapeMarkdownCell(item.summary ?? item.description ?? "")} |`,
+      extensionCatalogRow(item),
     ),
     "",
     `Lab extensions: ${catalog.totals.labExtensions}`,
     "",
-    "| Package | Exports | Summary |",
-    "| --- | ---: | --- |",
+    "Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.",
+    "",
+    "| Package | Status | Exports | Use for | Not for | Summary |",
+    "| --- | --- | ---: | --- | --- | --- |",
     ...catalog.labExtensions.map((item) =>
-      `| \`${item.name}\` | ${item.publicExportCount} | ${escapeMarkdownCell(item.summary ?? item.description ?? "")} |`,
+      extensionCatalogRow(item),
     ),
     "",
   ].join("\n");
+}
+
+function extensionCatalogRow(item) {
+  const guidance = item.guidance ?? {};
+  const cells = [
+    `\`${item.name}\``,
+    item.status === "lab-extension" ? "lab-only" : null,
+    item.publicExportCount,
+    escapeMarkdownCell(guidance.useFor ?? ""),
+    escapeMarkdownCell(guidance.notFor ?? ""),
+    escapeMarkdownCell(item.summary ?? item.description ?? ""),
+  ].filter((cell) => cell !== null);
+
+  return `| ${cells.join(" | ")} |`;
 }
 
 function renderSiteCatalog(catalog) {

@@ -14,7 +14,8 @@ docs
 |   |-- overview.md            # 프로젝트 이해
 |   |-- quickstart.md          # 사용 시작
 |   |-- api.md                 # 공개 API
-|   `-- extensions.md          # 공식 extension 사용법
+|   |-- extensions.md          # 공식 extension 사용법
+|   `-- recipes.md             # 제품별 feature coverage 지도
 `-- standard
     |-- core-standard.md        # 표준 후보 계약
     |-- extension-delegation-standard.md

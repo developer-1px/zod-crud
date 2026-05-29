@@ -6,39 +6,41 @@ This section is generated from `packages/*` and `labs/extensions/*`.
 
 Official extensions: 8
 
-| Package | Exports | Summary |
-| --- | ---: | --- |
-| `@zod-crud/bulk-edit` | 15 | Official headless JSONPath bulk editing extension for `zod-crud` documents. |
-| `@zod-crud/clipboard-web` | 20 | Web clipboard extension functions for `zod-crud`. |
-| `@zod-crud/collection` | 9 | Official headless collection editing extension for `zod-crud` documents. |
-| `@zod-crud/dirty-state` | 7 | Official headless dirty state tracking extension for `zod-crud` documents. |
-| `@zod-crud/outline` | 19 | Official headless outline tree and structure editing extension for `zod-crud` documents. |
-| `@zod-crud/patch-log` | 9 | Official headless patch recording and replay extension for `zod-crud` documents. |
-| `@zod-crud/persist-web` | 24 | Official headless web persistence extension for `zod-crud` documents. |
-| `@zod-crud/schema-form` | 9 | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
+| Package | Exports | Use for | Not for | Summary |
+| --- | ---: | --- | --- | --- |
+| `@zod-crud/bulk-edit` | 15 | apply JSONPath replace/delete operations to many document positions | rendered text search UI or product workflow approval | Official headless JSONPath bulk editing extension for `zod-crud` documents. |
+| `@zod-crud/clipboard-web` | 20 | bridge zod-crud clipboard payloads to the browser clipboard | TSV/CSV spreadsheet paste engines | Web clipboard extension functions for `zod-crud`. |
+| `@zod-crud/collection` | 9 | edit ordered JSON arrays with item-level commands | database collections or rendered list UI | Official headless collection editing extension for `zod-crud` documents. |
+| `@zod-crud/dirty-state` | 7 | compare a document to a clean baseline | persistence or server save status | Official headless dirty state tracking extension for `zod-crud` documents. |
+| `@zod-crud/outline` | 19 | project and edit nested document outline structures | Figma layer panels without a tree schema adapter | Official headless outline tree and structure editing extension for `zod-crud` documents. |
+| `@zod-crud/patch-log` | 9 | record and replay applied JSON Patch records | product activity feeds or audit authorization | Official headless patch recording and replay extension for `zod-crud` documents. |
+| `@zod-crud/persist-web` | 24 | save and restore documents in browser storage-like hosts | server sync, auth, or conflict resolution | Official headless web persistence extension for `zod-crud` documents. |
+| `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 
 Lab extensions: 21
 
-| Package | Exports | Summary |
-| --- | ---: | --- |
-| `@zod-crud/autosave` | 12 | Lab autosave extension for `zod-crud` documents. |
-| `@zod-crud/bookmarks` | 8 | Headless bookmark tracking helpers for `zod-crud` documents. |
-| `@zod-crud/checkpoints` | 13 | Lab checkpoint extension for `zod-crud` documents. |
-| `@zod-crud/collection-sort` | 13 | Lab collection sort extension for `zod-crud` documents. |
-| `@zod-crud/comments` | 14 | Lab package for headless review comments anchored to JSON Pointers. |
-| `@zod-crud/computed-fields` | 12 | Lab computed field extension for `zod-crud` documents. |
-| `@zod-crud/convert-node-kind` | 12 | Lab extension for converting a JSON node from one host-described kind to another. |
-| `@zod-crud/document-diff` | 10 | Lab document diff and apply extension for `zod-crud` documents. |
-| `@zod-crud/drag-drop` | 15 | Lab drag and drop extension for `zod-crud` documents. |
-| `@zod-crud/form-draft` | 15 | Lab form draft extension for `zod-crud` documents. |
-| `@zod-crud/grouping` | 15 | Lab extension for structural `group` and `ungroup`. |
-| `@zod-crud/layer-order` | 11 | Lab layer ordering extension for `zod-crud` documents. |
-| `@zod-crud/paste-compatible` | 17 | Lab extension for compatible paste. |
-| `@zod-crud/patch-preview` | 8 | Headless patch preview helpers for `zod-crud` documents. |
-| `@zod-crud/presence-cursors` | 10 | Lab package for remote collaborator cursor and selection presence. |
-| `@zod-crud/proposed-changes` | 19 | Lab extension for proposed document changes. |
-| `@zod-crud/protected-ranges` | 22 | Lab protected range guard extension for `zod-crud` documents. |
-| `@zod-crud/references` | 21 | Lab extension for stable references and backlinks over JSON documents. |
-| `@zod-crud/search-replace` | 23 | Lab search and replace extension for `zod-crud` documents. |
-| `@zod-crud/snippets` | 12 | Lab snippet insertion extension for `zod-crud` documents. |
-| `@zod-crud/wrap-unwrap` | 15 | Lab extension for structural `wrap` and `unwrap`. |
+Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
+
+| Package | Status | Exports | Use for | Not for | Summary |
+| --- | --- | ---: | --- | --- | --- |
+| `@zod-crud/autosave` | lab-only | 12 | schedule host-owned saves after document changes | retry queues, offline sync, or server conflict resolution | Lab autosave extension for `zod-crud` documents. |
+| `@zod-crud/bookmarks` | lab-only | 8 | keep named JSON Pointer locations stable across edits | browser bookmarks or route state | Headless bookmark tracking helpers for `zod-crud` documents. |
+| `@zod-crud/checkpoints` | lab-only | 13 | name and restore document snapshots | durable version graphs or cloud backup | Lab checkpoint extension for `zod-crud` documents. |
+| `@zod-crud/collection-sort` | lab-only | 13 | sort or reverse JSON array items | query views, filters, or server sorting | Lab collection sort extension for `zod-crud` documents. |
+| `@zod-crud/comments` | lab-only | 14 | anchor review comments to document structure | comment UI, moderation, or author storage | Lab package for headless review comments anchored to JSON Pointers. |
+| `@zod-crud/computed-fields` | lab-only | 12 | sync host-computed derived JSON fields | formula languages or dependency runtimes | Lab computed field extension for `zod-crud` documents. |
+| `@zod-crud/convert-node-kind` | lab-only | 12 | convert selected nodes between host-described kinds | schema migration systems | Lab extension for converting a JSON node from one host-described kind to another. |
+| `@zod-crud/document-diff` | lab-only | 10 | produce and apply patch changes toward a target document | visual diff UI or merge conflict resolution | Lab document diff and apply extension for `zod-crud` documents. |
+| `@zod-crud/drag-drop` | lab-only | 15 | turn drag/drop intent into move or paste operations | DOM drag/drop events, hit testing, or hover UI | Lab drag and drop extension for `zod-crud` documents. |
+| `@zod-crud/form-draft` | lab-only | 15 | hold temporary invalid form input before committing valid JSON | rendered form components | Lab form draft extension for `zod-crud` documents. |
+| `@zod-crud/grouping` | lab-only | 15 | group and ungroup selected sibling JSON items | Airtable group-by views | Lab extension for structural `group` and `ungroup`. |
+| `@zod-crud/layer-order` | lab-only | 11 | reorder visual stack arrays with bring/send commands | canvas rendering or z-index CSS management | Lab layer ordering extension for `zod-crud` documents. |
+| `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
+| `@zod-crud/patch-preview` | lab-only | 8 | preview patch effects before confirmation | visual diff rendering | Headless patch preview helpers for `zod-crud` documents. |
+| `@zod-crud/presence-cursors` | lab-only | 10 | track remote collaborator cursors and selections | CRDT/OT or realtime transport | Lab package for remote collaborator cursor and selection presence. |
+| `@zod-crud/proposed-changes` | lab-only | 19 | review, accept, or reject proposed document patches | slash commands or mention autocomplete | Lab extension for proposed document changes. |
+| `@zod-crud/protected-ranges` | lab-only | 22 | guard edits to protected JSON Pointer ranges | 2D spreadsheet selection UI or server authorization | Lab protected range guard extension for `zod-crud` documents. |
+| `@zod-crud/references` | lab-only | 21 | track stable references and backlinks over JSON documents | route state or rendered links | Lab extension for stable references and backlinks over JSON documents. |
+| `@zod-crud/search-replace` | lab-only | 23 | find and replace text across document string fields | rendered text extraction or search UI | Lab search and replace extension for `zod-crud` documents. |
+| `@zod-crud/snippets` | lab-only | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Lab snippet insertion extension for `zod-crud` documents. |
+| `@zod-crud/wrap-unwrap` | lab-only | 15 | wrap sibling JSON items in host-defined containers | visual grouping or layout containers | Lab extension for structural `wrap` and `unwrap`. |

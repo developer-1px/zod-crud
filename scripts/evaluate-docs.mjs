@@ -44,6 +44,7 @@ const publicDocs = {
   quickstart: read("docs/public/quickstart.md"),
   api: read("docs/public/api.md"),
   extensions: read("docs/public/extensions.md"),
+  recipes: read("docs/public/recipes.md"),
 };
 const generatedDocs = {
   repoCatalog: JSON.parse(read("docs/generated/repo-catalog.json")),
@@ -221,9 +222,18 @@ const required = [
   ["extensionsCatalog", /Lab extensions: \d+/],
   ["extensions", /Rich editor host pattern/],
   ["extensions", /origin: "prosemirror"/],
+  ["extensions", /## 오해 방지/],
+  ["recipes", /## Kanban/],
+  ["recipes", /## Grid Table/],
+  ["recipes", /## Slide Object Editor/],
+  ["recipes", /## Block Docs/],
+  ["recipes", /## Misread Guardrails/],
+  ["recipes", /stable id에서 JSON Pointer/],
+  ["recipes", /TSV\/CSV grid paste/],
   ["rootReadme", /## 문서 지도/],
   ["rootReadme", /docs\/public\/overview\.md/],
   ["rootReadme", /docs\/public\/api\.md/],
+  ["rootReadme", /docs\/public\/recipes\.md/],
   ["rootReadme", /## 코드 지도/],
   ["rootReadme", /packages\/zod-crud/],
   ["rootReadme", /apps\/site/],
@@ -267,6 +277,7 @@ for (const route of [
   ["/docs/tutorial", "Tutorial - zod-crud"],
   ["/docs/api", "zod-crud API - zod-crud"],
   ["/docs/extensions", "Extensions - zod-crud"],
+  ["/docs/recipes", "Product Recipes - zod-crud"],
 ]) {
   if (!siteRoutes.some((item) => item.path === route[0] && item.title === route[1])) {
     fail(`site routes: missing ${route[0]} ${route[1]} metadata.`);
@@ -278,6 +289,7 @@ for (const pattern of [
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/quickstart\.md\?raw/,
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/api\.md\?raw/,
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/extensions\.md\?raw/,
+  /\.\.\/\.\.\/\.\.\/\.\.\/docs\/public\/recipes\.md\?raw/,
   /\.\.\/\.\.\/\.\.\/\.\.\/docs\/generated\/extensions-catalog\.md\?raw/,
   /Documentation pages/,
   /On this page/,

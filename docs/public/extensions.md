@@ -16,6 +16,9 @@ npm install zod-crud @zod-crud/collection
 
 공식 extension 목록과 lab 후보 목록은 repo catalog에서 생성됩니다. `packages/*`에 있는 publishable `@zod-crud/*` package가 공식 extension이고, `labs/extensions/*`는 후보입니다. public 문서에서 lab package를 공식 extension이라고 부르지 않습니다.
 
+Lab package는 제품 feature 압력을 검증하기 위한 실험입니다. 설치 가능한 공식
+package로 안내하지 않고, 제품별 조합은 Recipes에서 먼저 확인합니다.
+
 ## 선택 기준
 
 | 상황 | 먼저 쓰는 표면 |
@@ -37,6 +40,20 @@ npm install zod-crud @zod-crud/collection
 | rich editor JSON truth layer | `persist-web`, `dirty-state`, `collection` | ProseMirror/DOM selection adapter, markdown/parser semantics, editor command 이름 |
 | outliner rows | `outline`, `collection`, `clipboard-web`, `persist-web` | focus recovery, keyboard policy, default node factory |
 | review/copy cleanup lab | lab `search-replace`, lab `comments` | review workflow, UI thread state, publish policy |
+
+## 오해 방지
+
+| 이름 | 의미하지 않는 것 |
+| --- | --- |
+| `clipboard-web` | TSV/CSV spreadsheet clipboard engine |
+| `schema-form` | rendered form UI |
+| `grouping` | Airtable group-by view |
+| `computed-fields` | formula language/runtime |
+| `protected-ranges` | 2D grid selection UI |
+| `drag-drop` | DOM drag/drop event handling |
+| `persist-web` | server sync |
+| `patch-log` | product activity feed |
+| `proposed-changes` | slash or mention autocomplete |
 
 ## Rich editor host pattern
 

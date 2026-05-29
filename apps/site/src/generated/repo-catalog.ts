@@ -17,6 +17,10 @@ export const repoCatalog = {
       "description": "Official JSONPath bulk editing extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless JSONPath bulk editing extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "apply JSONPath replace/delete operations to many document positions",
+        "notFor": "rendered text search UI or product workflow approval"
+      },
       "publicExports": [
         "BulkEdit",
         "BulkEditCanReplaceAll",
@@ -53,6 +57,10 @@ export const repoCatalog = {
       "description": "Web clipboard extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Web clipboard extension functions for `zod-crud`.",
+      "guidance": {
+        "useFor": "bridge zod-crud clipboard payloads to the browser clipboard",
+        "notFor": "TSV/CSV spreadsheet paste engines"
+      },
       "publicExports": [
         "CreateWebClipboardOptions",
         "JSONCapabilityError",
@@ -94,6 +102,10 @@ export const repoCatalog = {
       "description": "Official collection editing extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless collection editing extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "edit ordered JSON arrays with item-level commands",
+        "notFor": "database collections or rendered list UI"
+      },
       "publicExports": [
         "Collection",
         "CollectionCapabilityResult",
@@ -124,6 +136,10 @@ export const repoCatalog = {
       "description": "Official dirty state tracking extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless dirty state tracking extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "compare a document to a clean baseline",
+        "notFor": "persistence or server save status"
+      },
       "publicExports": [
         "CreateDirtyStateOptions",
         "DirtyState",
@@ -152,6 +168,10 @@ export const repoCatalog = {
       "description": "Official outline tree and structure editing extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless outline tree and structure editing extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "project and edit nested document outline structures",
+        "notFor": "Figma layer panels without a tree schema adapter"
+      },
       "publicExports": [
         "Outline",
         "OutlineEditChange",
@@ -192,6 +212,10 @@ export const repoCatalog = {
       "description": "Official patch log and replay extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless patch recording and replay extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "record and replay applied JSON Patch records",
+        "notFor": "product activity feeds or audit authorization"
+      },
       "publicExports": [
         "PatchLog",
         "PatchLogEntry",
@@ -222,6 +246,10 @@ export const repoCatalog = {
       "description": "Official web persistence extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless web persistence extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "save and restore documents in browser storage-like hosts",
+        "notFor": "server sync, auth, or conflict resolution"
+      },
       "publicExports": [
         "CreateDocumentPersistenceOptions",
         "DocumentPersistence",
@@ -267,6 +295,10 @@ export const repoCatalog = {
       "description": "Official schema-backed field descriptor extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless schema-backed field descriptor extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "derive schema-backed field descriptors",
+        "notFor": "form rendering or input widgets"
+      },
       "publicExports": [
         "SchemaFormContainerKind",
         "SchemaFormError",
@@ -297,6 +329,7 @@ export const repoCatalog = {
       "description": "Headless JSON editing primitives guarded by Zod schemas.",
       "license": "MIT",
       "summary": "zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다.",
+      "guidance": null,
       "publicExports": [
         "ClipboardCopyError",
         "ClipboardCopyOk",
@@ -432,6 +465,10 @@ export const repoCatalog = {
       "description": "Official JSONPath bulk editing extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless JSONPath bulk editing extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "apply JSONPath replace/delete operations to many document positions",
+        "notFor": "rendered text search UI or product workflow approval"
+      },
       "publicExports": [
         "BulkEdit",
         "BulkEditCanReplaceAll",
@@ -468,6 +505,10 @@ export const repoCatalog = {
       "description": "Web clipboard extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Web clipboard extension functions for `zod-crud`.",
+      "guidance": {
+        "useFor": "bridge zod-crud clipboard payloads to the browser clipboard",
+        "notFor": "TSV/CSV spreadsheet paste engines"
+      },
       "publicExports": [
         "CreateWebClipboardOptions",
         "JSONCapabilityError",
@@ -509,6 +550,10 @@ export const repoCatalog = {
       "description": "Official collection editing extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless collection editing extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "edit ordered JSON arrays with item-level commands",
+        "notFor": "database collections or rendered list UI"
+      },
       "publicExports": [
         "Collection",
         "CollectionCapabilityResult",
@@ -539,6 +584,10 @@ export const repoCatalog = {
       "description": "Official dirty state tracking extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless dirty state tracking extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "compare a document to a clean baseline",
+        "notFor": "persistence or server save status"
+      },
       "publicExports": [
         "CreateDirtyStateOptions",
         "DirtyState",
@@ -567,6 +616,10 @@ export const repoCatalog = {
       "description": "Official outline tree and structure editing extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless outline tree and structure editing extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "project and edit nested document outline structures",
+        "notFor": "Figma layer panels without a tree schema adapter"
+      },
       "publicExports": [
         "Outline",
         "OutlineEditChange",
@@ -607,6 +660,10 @@ export const repoCatalog = {
       "description": "Official patch log and replay extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless patch recording and replay extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "record and replay applied JSON Patch records",
+        "notFor": "product activity feeds or audit authorization"
+      },
       "publicExports": [
         "PatchLog",
         "PatchLogEntry",
@@ -637,6 +694,10 @@ export const repoCatalog = {
       "description": "Official web persistence extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless web persistence extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "save and restore documents in browser storage-like hosts",
+        "notFor": "server sync, auth, or conflict resolution"
+      },
       "publicExports": [
         "CreateDocumentPersistenceOptions",
         "DocumentPersistence",
@@ -682,6 +743,10 @@ export const repoCatalog = {
       "description": "Official schema-backed field descriptor extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless schema-backed field descriptor extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "derive schema-backed field descriptors",
+        "notFor": "form rendering or input widgets"
+      },
       "publicExports": [
         "SchemaFormContainerKind",
         "SchemaFormError",
@@ -714,6 +779,10 @@ export const repoCatalog = {
       "description": "Lab autosave orchestration extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab autosave extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "schedule host-owned saves after document changes",
+        "notFor": "retry queues, offline sync, or server conflict resolution"
+      },
       "publicExports": [
         "AutoSave",
         "AutoSaveEvent",
@@ -746,6 +815,10 @@ export const repoCatalog = {
       "description": "Lab bookmark tracking extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Headless bookmark tracking helpers for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "keep named JSON Pointer locations stable across edits",
+        "notFor": "browser bookmarks or route state"
+      },
       "publicExports": [
         "Bookmark",
         "BookmarkError",
@@ -775,6 +848,10 @@ export const repoCatalog = {
       "description": "Lab checkpoint snapshot extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab checkpoint extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "name and restore document snapshots",
+        "notFor": "durable version graphs or cloud backup"
+      },
       "publicExports": [
         "CheckpointEntry",
         "CheckpointError",
@@ -809,6 +886,10 @@ export const repoCatalog = {
       "description": "Lab collection sort extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab collection sort extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "sort or reverse JSON array items",
+        "notFor": "query views, filters, or server sorting"
+      },
       "publicExports": [
         "CollectionSort",
         "CollectionSortChange",
@@ -843,6 +924,10 @@ export const repoCatalog = {
       "description": "Lab comments extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab package for headless review comments anchored to JSON Pointers.",
+      "guidance": {
+        "useFor": "anchor review comments to document structure",
+        "notFor": "comment UI, moderation, or author storage"
+      },
       "publicExports": [
         "Comment",
         "CommentError",
@@ -877,6 +962,10 @@ export const repoCatalog = {
       "description": "Lab computed field sync extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab computed field extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "sync host-computed derived JSON fields",
+        "notFor": "formula languages or dependency runtimes"
+      },
       "publicExports": [
         "ComputedFieldChange",
         "ComputedFieldContext",
@@ -909,6 +998,10 @@ export const repoCatalog = {
       "description": "Lab node kind conversion extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for converting a JSON node from one host-described kind to\nanother.",
+      "guidance": {
+        "useFor": "convert selected nodes between host-described kinds",
+        "notFor": "schema migration systems"
+      },
       "publicExports": [
         "NodeKindConversionDescriptor",
         "NodeKindConversionError",
@@ -942,6 +1035,10 @@ export const repoCatalog = {
       "description": "Lab document diff and apply extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab document diff and apply extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "produce and apply patch changes toward a target document",
+        "notFor": "visual diff UI or merge conflict resolution"
+      },
       "publicExports": [
         "DocumentDiff",
         "DocumentDiffApplyResult",
@@ -973,6 +1070,10 @@ export const repoCatalog = {
       "description": "Lab drag and drop extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab drag and drop extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "turn drag/drop intent into move or paste operations",
+        "notFor": "DOM drag/drop events, hit testing, or hover UI"
+      },
       "publicExports": [
         "DragDrop",
         "DragDropError",
@@ -1010,6 +1111,10 @@ export const repoCatalog = {
       "description": "Lab form draft extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab form draft extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "hold temporary invalid form input before committing valid JSON",
+        "notFor": "rendered form components"
+      },
       "publicExports": [
         "CreateFormDraftOptions",
         "FormDraftBatchChange",
@@ -1046,6 +1151,10 @@ export const repoCatalog = {
       "description": "Lab structural group and ungroup extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for structural `group` and `ungroup`.",
+      "guidance": {
+        "useFor": "group and ungroup selected sibling JSON items",
+        "notFor": "Airtable group-by views"
+      },
       "publicExports": [
         "Grouping",
         "GroupingAdapter",
@@ -1082,6 +1191,10 @@ export const repoCatalog = {
       "description": "Lab layer ordering extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab layer ordering extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "reorder visual stack arrays with bring/send commands",
+        "notFor": "canvas rendering or z-index CSS management"
+      },
       "publicExports": [
         "LayerOrder",
         "LayerOrderAction",
@@ -1114,6 +1227,10 @@ export const repoCatalog = {
       "description": "Lab compatible paste extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for compatible paste.",
+      "guidance": {
+        "useFor": "adapt external payloads before schema-safe paste",
+        "notFor": "browser clipboard I/O or autocomplete dropdowns"
+      },
       "publicExports": [
         "CompatiblePaste",
         "CompatiblePasteAdaptedPayload",
@@ -1152,6 +1269,10 @@ export const repoCatalog = {
       "description": "Lab patch preview extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Headless patch preview helpers for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "preview patch effects before confirmation",
+        "notFor": "visual diff rendering"
+      },
       "publicExports": [
         "PatchPreview",
         "PatchPreviewError",
@@ -1181,6 +1302,10 @@ export const repoCatalog = {
       "description": "Lab remote presence cursor extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab package for remote collaborator cursor and selection presence.",
+      "guidance": {
+        "useFor": "track remote collaborator cursors and selections",
+        "notFor": "CRDT/OT or realtime transport"
+      },
       "publicExports": [
         "PresenceCursor",
         "PresenceCursorError",
@@ -1213,6 +1338,10 @@ export const repoCatalog = {
       "description": "Lab proposed document change review extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for proposed document changes.",
+      "guidance": {
+        "useFor": "review, accept, or reject proposed document patches",
+        "notFor": "slash commands or mention autocomplete"
+      },
       "publicExports": [
         "ProposedChange",
         "ProposedChangeAcceptResult",
@@ -1253,6 +1382,10 @@ export const repoCatalog = {
       "description": "Lab protected range guard extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab protected range guard extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "guard edits to protected JSON Pointer ranges",
+        "notFor": "2D spreadsheet selection UI or server authorization"
+      },
       "publicExports": [
         "ProtectedRange",
         "ProtectedRangeCapabilityResult",
@@ -1296,6 +1429,10 @@ export const repoCatalog = {
       "description": "Lab stable reference and backlink extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for stable references and backlinks over JSON documents.",
+      "guidance": {
+        "useFor": "track stable references and backlinks over JSON documents",
+        "notFor": "route state or rendered links"
+      },
       "publicExports": [
         "ReferenceBacklinksResult",
         "ReferenceDiagnostic",
@@ -1338,6 +1475,10 @@ export const repoCatalog = {
       "description": "Lab search and replace extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab search and replace extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "find and replace text across document string fields",
+        "notFor": "rendered text extraction or search UI"
+      },
       "publicExports": [
         "SearchReplace",
         "SearchReplaceApplyResult",
@@ -1382,6 +1523,10 @@ export const repoCatalog = {
       "description": "Lab snippet insertion extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab snippet insertion extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "insert reusable JSON payloads with schema-safe paste checks",
+        "notFor": "slash palette UI or snippet storage"
+      },
       "publicExports": [
         "Snippet",
         "SnippetError",
@@ -1415,6 +1560,10 @@ export const repoCatalog = {
       "description": "Lab wrap and unwrap extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for structural `wrap` and `unwrap`.",
+      "guidance": {
+        "useFor": "wrap sibling JSON items in host-defined containers",
+        "notFor": "visual grouping or layout containers"
+      },
       "publicExports": [
         "WrapCreateContext",
         "WrapSource",
@@ -1453,6 +1602,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": "Dogfoods `labs/extensions/search-replace` as a copy cleanup product surface.",
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1467,6 +1617,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": "Dogfoods `@zod-crud/grouping` as a small structural editor feature.",
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1481,6 +1632,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1495,6 +1647,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "guidance": null,
       "publicExports": [
         "EMPTY_NODE",
         "OutlineNode",
@@ -1515,6 +1668,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1529,6 +1683,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1543,6 +1698,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": "Dogfoods `@zod-crud/proposed-changes` as a small proposed document change review feature.",
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1557,6 +1713,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": "Dogfoods `@zod-crud/protected-ranges` as a locked structured content editor.",
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1571,6 +1728,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": "Dogfoods `labs/extensions/comments` as an editorial review product surface.",
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1585,6 +1743,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1599,6 +1758,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1613,6 +1773,7 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": "Dogfoods `@zod-crud/snippets` as a page block composer.",
+      "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []

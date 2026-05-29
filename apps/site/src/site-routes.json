@@ -35,6 +35,13 @@
     "group": "Start"
   },
   {
+    "path": "/docs/recipes",
+    "label": "Recipes",
+    "title": "Product Recipes - zod-crud",
+    "description": "Product-centered zod-crud feature recipes for Kanban, grid tables, slide object editors, and block docs editors.",
+    "group": "Start"
+  },
+  {
     "path": "/playground",
     "label": "Workbench",
     "title": "Workbench - zod-crud",

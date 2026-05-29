@@ -21,6 +21,7 @@ schema -> document -> pointer/query -> can* -> change -> result
 | 빠른 사용 예제 | [docs/public/quickstart.md](docs/public/quickstart.md) |
 | 공개 API | [docs/public/api.md](docs/public/api.md) |
 | 공식 extension 사용법 | [docs/public/extensions.md](docs/public/extensions.md) |
+| 제품별 feature 지도 | [docs/public/recipes.md](docs/public/recipes.md) |
 | 문서 구조 | [docs/README.md](docs/README.md) |
 | 변경 기록 | [docs/changelog.md](docs/changelog.md) |
 | core 의미론 명세 | [docs/standard/zod-crud-spec.md](docs/standard/zod-crud-spec.md) |
