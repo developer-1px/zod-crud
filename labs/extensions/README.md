@@ -71,6 +71,7 @@ Current labs:
 - `layer-order`: reorder visual stack arrays with bring/send commands.
 - `patch-preview`: preview patch effects before confirmation.
 - `presence-cursors`: track remote collaborator cursors and selections.
+- `references`: stable ID references and backlinks over JSON documents.
 - `bookmarks`: keep named document locations stable across edits.
 - `protected-ranges`: guard document edits with protected JSON ranges.
 - `search-replace`: find and replace text across document string fields.

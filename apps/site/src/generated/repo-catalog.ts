@@ -1176,6 +1176,48 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/references",
+      "name": "@zod-crud/references",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab stable reference and backlink extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for stable references and backlinks over JSON documents.",
+      "publicExports": [
+        "ReferenceBacklinksResult",
+        "ReferenceDiagnostic",
+        "ReferenceDiagnosticCode",
+        "ReferenceError",
+        "ReferenceErrorCode",
+        "ReferenceFieldDescriptor",
+        "ReferenceLink",
+        "ReferenceResolveResult",
+        "ReferenceSetInput",
+        "ReferenceSetPlan",
+        "ReferenceSetPlanResult",
+        "ReferenceSetResult",
+        "ReferenceSnapshot",
+        "ReferenceTarget",
+        "ReferenceTargetDescriptor",
+        "References",
+        "ReferencesDescriptor",
+        "canSetReference",
+        "createReferences",
+        "indexReferences",
+        "resolveReference"
+      ],
+      "publicExportCount": 21,
+      "keywords": [
+        "backlinks",
+        "headless",
+        "references",
+        "relations",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/search-replace",
       "name": "@zod-crud/search-replace",
       "status": "lab-extension",
@@ -1468,7 +1510,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 9,
     "officialExtensions": 8,
-    "labExtensions": 17,
+    "labExtensions": 18,
     "apps": 12
   }
 } as const;

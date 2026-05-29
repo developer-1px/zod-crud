@@ -17,7 +17,7 @@ Official extensions: 8
 | `@zod-crud/persist-web` | 24 | Official headless web persistence extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 
-Lab extensions: 17
+Lab extensions: 18
 
 | Package | Exports | Summary |
 | --- | ---: | --- |
@@ -35,6 +35,7 @@ Lab extensions: 17
 | `@zod-crud/patch-preview` | 8 | Headless patch preview helpers for `zod-crud` documents. |
 | `@zod-crud/presence-cursors` | 10 | Lab package for remote collaborator cursor and selection presence. |
 | `@zod-crud/protected-ranges` | 22 | Lab protected range guard extension for `zod-crud` documents. |
+| `@zod-crud/references` | 21 | Lab extension for stable references and backlinks over JSON documents. |
 | `@zod-crud/search-replace` | 21 | Lab search and replace extension for `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | Lab snippet insertion extension for `zod-crud` documents. |
 | `@zod-crud/suggestions` | 17 | Lab extension for proposed JSON Patch suggestions. |
