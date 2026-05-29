@@ -111,6 +111,47 @@ describe("@zod-crud/search-replace", () => {
     });
   });
 
+  test("filters search and replace-all targets with a host predicate", () => {
+    const doc = createDoc();
+    const text = createSearchReplace(doc);
+    expect(doc.replace("/pages/0/id", "draft-id")).toEqual({ ok: true });
+
+    const include = ({ pointer }: { pointer: string }) =>
+      pointer === "/title"
+      || pointer.endsWith("/title")
+      || pointer.endsWith("/body")
+      || pointer.includes("/notes/");
+
+    expect(text.find("draft", { include })).toMatchObject({
+      ok: true,
+      count: 5,
+      matches: [
+        { pointer: "/title" },
+        { pointer: "/pages/0/title" },
+        { pointer: "/pages/0/body" },
+        { pointer: "/pages/0/notes/0" },
+      ],
+    });
+
+    expect(text.canReplaceAll("draft", "final", { include })).toMatchObject({
+      ok: true,
+      count: 5,
+      operations: [
+        { op: "replace", path: "/title", value: "final doc" },
+        { op: "replace", path: "/pages/0/title", value: "final intro" },
+        { op: "replace", path: "/pages/0/body", value: "final body final" },
+        { op: "replace", path: "/pages/0/notes/0", value: "first final" },
+      ],
+    });
+
+    expect(text.replaceAll("draft", "final", { include })).toMatchObject({
+      ok: true,
+      count: 5,
+    });
+    expect(doc.value.pages[0]?.id).toBe("draft-id");
+    expect(doc.value.hidden.label).toBe("draft-hidden");
+  });
+
   test("supports case-sensitive search", () => {
     const doc = createDoc();
     const text = createSearchReplace(doc);

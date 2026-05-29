@@ -1314,6 +1314,8 @@
         "SearchReplaceOptions",
         "SearchReplaceResult",
         "SearchReplaceSnapshot",
+        "SearchReplaceTargetFilter",
+        "SearchReplaceTextTarget",
         "TextMatchRange",
         "canReplaceAllText",
         "canReplaceTextMatch",
@@ -1322,7 +1324,7 @@
         "replaceAllText",
         "replaceTextMatch"
       ],
-      "publicExportCount": 21,
+      "publicExportCount": 23,
       "keywords": [
         "headless",
         "replace",

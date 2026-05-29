@@ -25,9 +25,17 @@ export interface SearchReplaceError {
   patch?: Extract<JSONResult | JSONCapabilityResult, { ok: false }>;
 }
 
+export interface SearchReplaceTextTarget {
+  pointer: Pointer;
+  value: string;
+}
+
+export type SearchReplaceTargetFilter = (target: SearchReplaceTextTarget) => boolean;
+
 export interface SearchReplaceOptions {
   root?: Pointer;
   caseSensitive?: boolean;
+  include?: SearchReplaceTargetFilter;
 }
 
 export interface TextMatchRange {
@@ -94,6 +102,7 @@ export interface SearchReplace<TDocument> {
 interface NormalizedSearchReplaceOptions {
   root: Pointer;
   caseSensitive: boolean;
+  include?: SearchReplaceTargetFilter;
 }
 
 export function createSearchReplace<TDocument>(
@@ -181,7 +190,9 @@ export function findText<TDocument>(
   if (!normalized.ok) return normalized;
 
   const matches: SearchReplaceMatch[] = [];
+  const include = normalized.options.include;
   const walked = walkText(doc, normalized.options.root, (pointer, value) => {
+    if (include !== undefined && !include({ pointer, value })) return;
     const ranges = findRanges(value, search, normalized.options.caseSensitive);
     if (ranges.length === 0) return;
     matches.push({
@@ -288,12 +299,14 @@ function normalizeSearch(
   if (search.length === 0) {
     return searchReplaceError("empty_search", "search text must not be empty", options.root);
   }
+  const normalized: NormalizedSearchReplaceOptions = {
+    root: options.root ?? "",
+    caseSensitive: options.caseSensitive === true,
+  };
+  if (options.include !== undefined) normalized.include = options.include;
   return {
     ok: true,
-    options: {
-      root: options.root ?? "",
-      caseSensitive: options.caseSensitive === true,
-    },
+    options: normalized,
   };
 }
 

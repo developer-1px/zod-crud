@@ -1315,6 +1315,8 @@ export const repoCatalog = {
         "SearchReplaceOptions",
         "SearchReplaceResult",
         "SearchReplaceSnapshot",
+        "SearchReplaceTargetFilter",
+        "SearchReplaceTextTarget",
         "TextMatchRange",
         "canReplaceAllText",
         "canReplaceTextMatch",
@@ -1323,7 +1325,7 @@ export const repoCatalog = {
         "replaceAllText",
         "replaceTextMatch"
       ],
-      "publicExportCount": 21,
+      "publicExportCount": 23,
       "keywords": [
         "headless",
         "replace",
