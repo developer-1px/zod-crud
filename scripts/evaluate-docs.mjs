@@ -55,6 +55,7 @@ const surfaces = {
   rootReadme: read("README.md"),
   readme: read("packages/zod-crud/README.md"),
   spec: read("docs/standard/zod-crud-spec.md"),
+  contractPressure: read("docs/standard/contract-pressure-register.md"),
   llms: read("llms.txt"),
   ...publicDocs,
 };
@@ -252,6 +253,11 @@ const required = [
   ["spec", /JSONPath는 검색 언어/],
   ["spec", /duplicate\(pointer, options\)/],
   ["spec", /public-contract\.json/],
+  ["contractPressure", /## Guard Composition/],
+  ["contractPressure", /PatchPlan.*아직 이르다/],
+  ["contractPressure", /recipe note[\s\S]*lab convention[\s\S]*official extension[\s\S]*core primitive/],
+  ["contractPressure", /stable id resolver/],
+  ["contractPressure", /## Loop Gate/],
 ];
 
 for (const [name, pattern] of required) {

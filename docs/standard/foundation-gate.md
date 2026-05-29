@@ -39,6 +39,7 @@ RFC급 foundation
 | --- | --- | --- |
 | 규범 표준 | `docs/standard/core-standard.md` | 초안 추가 |
 | extension 위임 표준 | `docs/standard/extension-delegation-standard.md` | 초안 추가 |
+| contract pressure register | `docs/standard/contract-pressure-register.md` | 활성 |
 | export lock | `packages/zod-crud/public-contract.json` | 활성 |
 | 의미론 conformance | `packages/zod-crud/tests/public/standard-conformance.test.ts` | 활성 |
 | 표준화 evaluator | `scripts/evaluate-standardization.mjs` | 활성 |
@@ -57,3 +58,7 @@ RFC급 foundation
 각 압력 spike는 먼저 기존 표준 concept인 document, schema, patch, pointer,
 query, selection, clipboard, history, capability로 요구를 표현해 봐야 한다.
 새 core concept은 그 표현이 증거와 함께 실패한 뒤에만 허용한다.
+
+반복 압력은 `docs/standard/contract-pressure-register.md`에 먼저 기록한다.
+`guard composition`과 `PatchPlan` 같은 후보는 바로 core public API가 아니라
+recipe, lab convention, official extension 후보 순서로 검증한다.

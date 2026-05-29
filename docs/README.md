@@ -18,6 +18,7 @@ docs
 |   `-- recipes.md             # 제품별 feature coverage 지도
 `-- standard
     |-- core-standard.md        # 표준 후보 계약
+    |-- contract-pressure-register.md
     |-- extension-delegation-standard.md
     |-- foundation-gate.md      # foundation 판정 기준
     `-- zod-crud-spec.md        # 패키지 의미론 명세
