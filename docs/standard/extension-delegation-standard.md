@@ -95,6 +95,38 @@ official 승격은 다음을 의미한다.
 - app authors가 이 개념을 직접 구현하지 않아도 된다고 믿을 수 있어야 한다.
 - extension이 core internals 없이 public facade만으로 성립함을 증명해야 한다.
 
+### 2.4 패키지 class를 섞지 않는다
+
+모든 official package가 같은 종류의 feature extension은 아니다. 이름과 문서는
+어떤 class의 책임인지 드러내야 한다. 이 구분이 없으면 host boundary나 lifecycle
+helper가 editing feature처럼 보이고, core gap 판단이 흐려진다.
+
+```txt
+official packages
+|-- feature extensions
+|   |-- collection
+|   |-- outline
+|   |-- bulk-edit
+|   `-- schema-form
+|-- host adapters
+|   |-- clipboard-web
+|   `-- persist-web
+|-- lifecycle adapters
+|   `-- dirty-state
+`-- instrumentation
+    `-- patch-log
+```
+
+Feature extension은 편집 command vocabulary를 위임한다. Host adapter는 browser,
+storage, system clipboard 같은 실행 boundary를 위임한다. Lifecycle adapter는
+clean baseline, restore, save lifecycle 같은 document 주변 상태를 위임한다.
+Instrumentation은 patch stream 관찰, replay, audit 같은 관측 책임을 위임한다.
+
+이 class들은 모두 core 밖에 있어야 하지만, promotion gate는 다르게 읽어야 한다.
+`collection`이 성공한 이유는 app에서 collection editing 방법이 사라졌기 때문이고,
+`clipboard-web`이 성공한 이유는 browser clipboard boundary와 실패 surface가
+반복되기 때문이다. 둘을 같은 "feature package"로 평가하면 leak 판정이 흔들린다.
+
 ## 3. 판별 기준
 
 다음 질문에서 `Yes`가 많을수록 feature 위임이다. `No`가 많으면 단순 함수

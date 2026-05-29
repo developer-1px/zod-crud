@@ -65,7 +65,6 @@ Current labs:
 - `collection-sort`: sort or reverse ordered JSON arrays.
 - `computed-fields`: sync host-computed formula/derived fields.
 - `document-diff`: produce and apply patch changes toward a target document.
-- `outline`: build a navigable document tree.
 - `drag-drop`: convert drag/drop input into move or paste operations.
 - `form-draft`: hold temporary form input before committing valid JSON.
 - `grouping`: group and ungroup selected sibling JSON items.

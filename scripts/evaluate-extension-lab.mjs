@@ -4,12 +4,14 @@ import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
 const labRoot = "labs/extensions";
+const officialRoot = "packages";
 const verify = process.argv.includes("--verify");
 const retiredLabNames = new Set([
   "annotations",
   "document-outline",
   "drop-intent",
   "field-draft",
+  "outline",
   "pointer-bookmarks",
   "text-search",
 ]);
@@ -51,6 +53,7 @@ const labs = packages();
 if (labs.length === 0) {
   fail("extension lab: no lab packages found.");
 }
+const officialPackageNames = new Set(officialPackages().map((pkg) => pkg.name));
 
 for (const dir of labs) {
   const pkg = JSON.parse(read(`${dir}/package.json`));
@@ -68,6 +71,9 @@ for (const dir of labs) {
   }
   if (retiredLabNames.has(folderName) || (packageName !== null && retiredLabNames.has(packageName))) {
     fail(`${label}: retired implementation-shaped lab name must not be reintroduced.`);
+  }
+  if (typeof pkg.name === "string" && officialPackageNames.has(pkg.name)) {
+    fail(`${label}: lab package name collides with an official package. Retire the lab or choose a distinct experimental concept name.`);
   }
   if (pkg.private !== true) {
     fail(`${label}: lab packages must be private until promoted.`);
@@ -111,3 +117,13 @@ for (const dir of labs) {
 }
 
 console.log(`extension lab evaluation ok: ${labs.length} package(s)${verify ? " verified" : " checked"}`);
+
+function officialPackages() {
+  const absoluteRoot = join(root, officialRoot);
+  if (!existsSync(absoluteRoot)) return [];
+  return readdirSync(absoluteRoot, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== "zod-crud")
+    .filter((entry) => existsSync(join(absoluteRoot, entry.name, "package.json")))
+    .map((entry) => JSON.parse(read(`${officialRoot}/${entry.name}/package.json`)))
+    .filter((pkg) => typeof pkg.name === "string" && pkg.name.startsWith("@zod-crud/"));
+}

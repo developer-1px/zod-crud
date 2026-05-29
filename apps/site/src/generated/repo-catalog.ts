@@ -1004,6 +1004,42 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/grouping",
+      "name": "@zod-crud/grouping",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab structural group and ungroup extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for structural `group` and `ungroup`.",
+      "publicExports": [
+        "Grouping",
+        "GroupingAdapter",
+        "GroupingApplyResult",
+        "GroupingChange",
+        "GroupingChangeResult",
+        "GroupingCreateContext",
+        "GroupingError",
+        "GroupingErrorCode",
+        "GroupingOperation",
+        "GroupingSource",
+        "canGroupSelection",
+        "canUngroupSelection",
+        "createGrouping",
+        "groupSelection",
+        "ungroupSelection"
+      ],
+      "publicExportCount": 15,
+      "keywords": [
+        "group",
+        "headless",
+        "selection",
+        "ungroup",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/layer-order",
       "name": "@zod-crud/layer-order",
       "status": "lab-extension",
@@ -1032,33 +1068,6 @@ export const repoCatalog = {
         "layer",
         "order",
         "z-order",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/outline",
-      "name": "@zod-crud/outline",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab outline extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Headless outline helpers for `zod-crud` documents.",
-      "publicExports": [
-        "OutlineError",
-        "OutlineErrorCode",
-        "OutlineNode",
-        "OutlineOptions",
-        "OutlineResult",
-        "createOutline"
-      ],
-      "publicExportCount": 6,
-      "keywords": [
-        "headless",
-        "json",
-        "outline",
-        "tree",
         "zod-crud"
       ]
     },
@@ -1120,6 +1129,49 @@ export const repoCatalog = {
         "headless",
         "presence",
         "selection",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/protected-ranges",
+      "name": "@zod-crud/protected-ranges",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab protected range guard extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab protected range guard extension for `zod-crud` documents.",
+      "publicExports": [
+        "ProtectedRange",
+        "ProtectedRangeCapabilityResult",
+        "ProtectedRangeEditResult",
+        "ProtectedRangeError",
+        "ProtectedRangeErrorCode",
+        "ProtectedRangeOperation",
+        "ProtectedRangePasteResult",
+        "ProtectedRangeSummary",
+        "ProtectedRanges",
+        "canDeleteProtectedRange",
+        "canInsertProtectedRange",
+        "canMoveProtectedRange",
+        "canPasteProtectedRange",
+        "canPatchProtectedRanges",
+        "canReplaceProtectedRange",
+        "createProtectedRanges",
+        "deleteProtectedRange",
+        "insertProtectedRange",
+        "moveProtectedRange",
+        "pasteProtectedRange",
+        "patchProtectedRanges",
+        "replaceProtectedRange"
+      ],
+      "publicExportCount": 22,
+      "keywords": [
+        "headless",
+        "lock",
+        "protected",
+        "ranges",
         "zod-crud"
       ]
     },
@@ -1215,6 +1267,20 @@ export const repoCatalog = {
       "keywords": []
     },
     {
+      "path": "apps/grouping-lab",
+      "name": "@zod-crud/grouping-lab",
+      "status": "app",
+      "private": true,
+      "publishable": false,
+      "version": null,
+      "description": null,
+      "license": null,
+      "summary": "Dogfoods `@zod-crud/grouping` as a small structural editor feature.",
+      "publicExports": [],
+      "publicExportCount": 0,
+      "keywords": []
+    },
+    {
       "path": "apps/mobile-cms",
       "name": "@zod-crud/mobile-cms",
       "status": "app",
@@ -1272,6 +1338,20 @@ export const repoCatalog = {
       "description": null,
       "license": null,
       "summary": null,
+      "publicExports": [],
+      "publicExportCount": 0,
+      "keywords": []
+    },
+    {
+      "path": "apps/protected-ranges-lab",
+      "name": "@zod-crud/protected-ranges-lab",
+      "status": "app",
+      "private": true,
+      "publishable": false,
+      "version": null,
+      "description": null,
+      "license": null,
+      "summary": "Dogfoods `@zod-crud/protected-ranges` as a locked structured content editor.",
       "publicExports": [],
       "publicExportCount": 0,
       "keywords": []
@@ -1336,8 +1416,8 @@ export const repoCatalog = {
   "totals": {
     "packages": 9,
     "officialExtensions": 8,
-    "labExtensions": 15,
-    "apps": 9
+    "labExtensions": 16,
+    "apps": 11
   }
 } as const;
 

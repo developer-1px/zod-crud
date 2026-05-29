@@ -17,7 +17,7 @@ Official extensions: 8
 | `@zod-crud/persist-web` | 24 | Official headless web persistence extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 
-Lab extensions: 15
+Lab extensions: 16
 
 | Package | Exports | Summary |
 | --- | ---: | --- |
@@ -30,9 +30,10 @@ Lab extensions: 15
 | `@zod-crud/document-diff` | 10 | Lab document diff and apply extension for `zod-crud` documents. |
 | `@zod-crud/drag-drop` | 15 | Lab drag and drop extension for `zod-crud` documents. |
 | `@zod-crud/form-draft` | 15 | Lab form draft extension for `zod-crud` documents. |
+| `@zod-crud/grouping` | 15 | Lab extension for structural `group` and `ungroup`. |
 | `@zod-crud/layer-order` | 11 | Lab layer ordering extension for `zod-crud` documents. |
-| `@zod-crud/outline` | 6 | Headless outline helpers for `zod-crud` documents. |
 | `@zod-crud/patch-preview` | 8 | Headless patch preview helpers for `zod-crud` documents. |
 | `@zod-crud/presence-cursors` | 10 | Lab package for remote collaborator cursor and selection presence. |
+| `@zod-crud/protected-ranges` | 22 | Lab protected range guard extension for `zod-crud` documents. |
 | `@zod-crud/search-replace` | 21 | Lab search and replace extension for `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | Lab snippet insertion extension for `zod-crud` documents. |
