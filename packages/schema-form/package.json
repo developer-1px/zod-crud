@@ -1,7 +1,7 @@
 {
   "name": "@zod-crud/schema-form",
   "version": "0.1.0",
-  "description": "Official schema-backed field descriptor extension functions for zod-crud documents.",
+  "description": "Official schema-backed field descriptor extension functions for zod-crud documents; no rendered form UI.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,

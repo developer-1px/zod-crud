@@ -1,7 +1,7 @@
 {
   "name": "@zod-crud/collection",
   "version": "0.1.0",
-  "description": "Official collection editing extension functions for zod-crud documents.",
+  "description": "Official collection editing extension functions for ordered JSON array item commands in zod-crud documents.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,

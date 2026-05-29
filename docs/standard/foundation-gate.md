@@ -40,6 +40,7 @@ RFC급 foundation
 | 규범 표준 | `docs/standard/core-standard.md` | 초안 추가 |
 | extension 위임 표준 | `docs/standard/extension-delegation-standard.md` | 초안 추가 |
 | contract pressure register | `docs/standard/contract-pressure-register.md` | 활성 |
+| self-improvement loop report | `docs/standard/self-improvement-loop-report.md` | 10회 루프 완료 |
 | export lock | `packages/zod-crud/public-contract.json` | 활성 |
 | 의미론 conformance | `packages/zod-crud/tests/public/standard-conformance.test.ts` | 활성 |
 | 표준화 evaluator | `scripts/evaluate-standardization.mjs` | 활성 |

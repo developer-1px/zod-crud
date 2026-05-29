@@ -21,6 +21,7 @@ docs
     |-- contract-pressure-register.md
     |-- extension-delegation-standard.md
     |-- foundation-gate.md      # foundation 판정 기준
+    |-- self-improvement-loop-report.md
     `-- zod-crud-spec.md        # 패키지 의미론 명세
 ```
 

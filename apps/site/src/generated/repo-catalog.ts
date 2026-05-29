@@ -99,7 +99,7 @@ export const repoCatalog = {
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official collection editing extension functions for zod-crud documents.",
+      "description": "Official collection editing extension functions for ordered JSON array item commands in zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless collection editing extension for `zod-crud` documents.",
       "guidance": {
@@ -292,7 +292,7 @@ export const repoCatalog = {
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official schema-backed field descriptor extension functions for zod-crud documents.",
+      "description": "Official schema-backed field descriptor extension functions for zod-crud documents; no rendered form UI.",
       "license": "MIT",
       "summary": "Official headless schema-backed field descriptor extension for `zod-crud`\ndocuments.",
       "guidance": {
@@ -547,7 +547,7 @@ export const repoCatalog = {
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official collection editing extension functions for zod-crud documents.",
+      "description": "Official collection editing extension functions for ordered JSON array item commands in zod-crud documents.",
       "license": "MIT",
       "summary": "Official headless collection editing extension for `zod-crud` documents.",
       "guidance": {
@@ -740,7 +740,7 @@ export const repoCatalog = {
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official schema-backed field descriptor extension functions for zod-crud documents.",
+      "description": "Official schema-backed field descriptor extension functions for zod-crud documents; no rendered form UI.",
       "license": "MIT",
       "summary": "Official headless schema-backed field descriptor extension for `zod-crud`\ndocuments.",
       "guidance": {

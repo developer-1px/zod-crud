@@ -56,6 +56,7 @@ const surfaces = {
   readme: read("packages/zod-crud/README.md"),
   spec: read("docs/standard/zod-crud-spec.md"),
   contractPressure: read("docs/standard/contract-pressure-register.md"),
+  selfImprovement: read("docs/standard/self-improvement-loop-report.md"),
   llms: read("llms.txt"),
   ...publicDocs,
 };
@@ -226,7 +227,10 @@ const required = [
   ["extensions", /## 오해 방지/],
   ["recipes", /## Kanban/],
   ["recipes", /## Grid Table/],
+  ["recipes", /## Form Builder/],
+  ["recipes", /## Import Review/],
   ["recipes", /## Slide Object Editor/],
+  ["recipes", /## Diagram Whiteboard/],
   ["recipes", /## Block Docs/],
   ["recipes", /## Misread Guardrails/],
   ["recipes", /stable id에서 JSON Pointer/],
@@ -258,6 +262,11 @@ const required = [
   ["contractPressure", /recipe note[\s\S]*lab convention[\s\S]*official extension[\s\S]*core primitive/],
   ["contractPressure", /stable id resolver/],
   ["contractPressure", /## Loop Gate/],
+  ["selfImprovement", /10회 루프 완료 기록/],
+  ["selfImprovement", /Result\/error code freeze/],
+  ["selfImprovement", /Selection semantics freeze/],
+  ["selfImprovement", /Schema introspection freeze/],
+  ["selfImprovement", /1\.0 전 Core 금지 목록/],
 ];
 
 for (const [name, pattern] of required) {
