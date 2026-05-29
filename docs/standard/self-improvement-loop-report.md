@@ -12,7 +12,7 @@
 | 1 | 제품 recipe baseline | 7.25/10 | core 경계는 이해되지만 제품별 recipe가 부족했다 |
 | 2 | contract pressure gate | 8/10 confidence | `guard composition`, `PatchPlan`은 압력이지만 core 승격은 이르다 |
 | 3 | spreadsheet/database editor | 5.5/10 | TSV/CSV paste, stable record id, PatchPlan gap이 크다 |
-| 4 | form/survey/admin builder | 6.5/10 | `form-draft`, stable field id, guard/dry-run recipe가 필요하다 |
+| 4 | form/survey/admin builder | 6.5/10 | invalid draft, stable field id, guard/dry-run recipe가 필요하다 |
 | 5 | import/review workflow | 6.5/10 | import review recipe와 stable id to Pointer gap이 반복된다 |
 | 6 | diagram/whiteboard surface | 6/10 | connector/reference, grouping/wrap, layer-order, geometry boundary가 필요하다 |
 | 7 | official package intuition | 8.1/10 | official package는 대체로 읽히지만 `schema-form`, `collection` 오독이 있다 |
@@ -106,6 +106,7 @@ stable strengths
 - `schema-form` package description에 rendered form UI가 아님을 명시.
 - `@zod-crud/id-resolver`를 official extension으로 승격.
 - `@zod-crud/comments`를 official extension으로 승격.
+- `@zod-crud/form-draft`를 official extension으로 승격.
 
 남은 문서 액션:
 
@@ -118,7 +119,7 @@ stable strengths
 
 | Status | Labs |
 | --- | --- |
-| official candidate | `form-draft`, `protected-ranges`, `references`, `snippets` |
+| official candidate | `protected-ranges`, `references`, `snippets` |
 | conditional official candidate | `document-diff`, `drag-drop` |
 | recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
 | experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |

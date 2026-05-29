@@ -81,7 +81,7 @@ export type FormDraftBatchCommitResult<TInput = unknown> =
 
 export type FormDraftListener<TInput = unknown> = (snapshot: FormDraftSnapshot<TInput>) => void;
 
-export interface FormDrafts<TDocument, TInput = unknown> {
+export interface FormDrafts<TInput = unknown> {
   current(path: Pointer): FormDraftSnapshot<TInput> | null;
   currentAll(root?: Pointer): ReadonlyArray<FormDraftSnapshot<TInput>>;
   set(path: Pointer, input: TInput): FormDraftSetResult<TInput>;
@@ -103,7 +103,7 @@ interface StoredDraft<TInput> {
 export function createFormDraft<TDocument, TInput = unknown>(
   doc: JSONDocument<TDocument>,
   options: CreateFormDraftOptions<TInput> = {},
-): FormDrafts<TDocument, TInput> {
+): FormDrafts<TInput> {
   const parse = options.parse ?? identityParser<TInput>;
   const drafts = new Map<Pointer, StoredDraft<TInput>>();
   const listeners = new Set<FormDraftListener<TInput>>();
@@ -280,7 +280,7 @@ function readSnapshot<TDocument, TInput>(
   if (!readable.ok) return readError(readable.code, readable.pointer, readable.reason);
 
   const schema = doc.schema.kind(draft.pointer);
-  const kind = schema.ok ? schema.kind : "unknown";
+  const kind = schema.ok ? schema.kind : valueKind(readable.value);
   const parsed = parse({
     path: readable.path,
     input: cloneJson(draft.input),
@@ -309,7 +309,7 @@ function readSnapshot<TDocument, TInput>(
   }
 
   const accepted = doc.schema.accepts(readable.path, parsed.value);
-  if (!accepted.ok) {
+  if (!accepted.ok && accepted.code !== "path_not_found") {
     const error = capabilityError("value_rejected", readable.path, accepted);
     return {
       ok: true,
@@ -326,7 +326,13 @@ function readSnapshot<TDocument, TInput>(
   }
 
   const capability = doc.canReplace(readable.path, parsed.value);
-  const error = capability.ok ? null : capabilityError("commit_rejected", readable.path, capability);
+  const error = capability.ok
+    ? null
+    : capabilityError(
+        capability.code === "schema_violation" ? "value_rejected" : "commit_rejected",
+        readable.path,
+        capability,
+      );
   return {
     ok: true,
     snapshot: snapshotFromParts({
@@ -382,6 +388,23 @@ function readCommittedSnapshot<TDocument, TInput>(
     error: null,
     capability: { ok: true },
   };
+}
+
+function valueKind(value: unknown): SchemaKind {
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "array";
+  switch (typeof value) {
+    case "string":
+      return "string";
+    case "number":
+      return "number";
+    case "boolean":
+      return "boolean";
+    case "object":
+      return "object";
+    default:
+      return "unknown";
+  }
 }
 
 function capabilityError(

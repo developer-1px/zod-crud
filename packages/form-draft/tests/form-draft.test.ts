@@ -13,11 +13,27 @@ const Schema = z.object({
   count: z.number().int().min(0),
 });
 
+const UnionSchema = z.object({
+  blocks: z.array(z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("text"), text: z.string() }),
+    z.object({ kind: z.literal("link"), label: z.string(), href: z.string().url() }),
+  ])),
+});
+
 function createDoc() {
   return createJSONDocument(Schema, {
     title: "Draft",
     count: 1,
   }, { history: 20 });
+}
+
+function createUnionDoc() {
+  return createJSONDocument(UnionSchema, {
+    blocks: [
+      { kind: "text", text: "Body" },
+      { kind: "link", label: "Docs", href: "https://example.com/docs" },
+    ],
+  });
 }
 
 const parseNumber: FormDraftParser<string> = ({ input }) => {
@@ -102,6 +118,46 @@ describe("@zod-crud/form-draft", () => {
       },
     });
     expect(doc.value.count).toBe(1);
+  });
+
+  test("falls back to canReplace for discriminated-union branch fields", () => {
+    const doc = createUnionDoc();
+    const drafts = createFormDraft(doc);
+
+    expect(drafts.set("/blocks/0/text", "Updated")).toMatchObject({
+      ok: true,
+      snapshot: {
+        kind: "string",
+        valid: true,
+        capability: { ok: true },
+      },
+    });
+    expect(drafts.commit("/blocks/0/text")).toMatchObject({
+      ok: true,
+      snapshot: {
+        currentValue: "Updated",
+        dirty: false,
+      },
+    });
+
+    expect(drafts.set("/blocks/1/href", "not-a-url")).toMatchObject({
+      ok: true,
+      snapshot: {
+        kind: "string",
+        valid: false,
+        error: {
+          code: "value_rejected",
+          capability: {
+            code: "schema_violation",
+          },
+        },
+      },
+    });
+    expect(doc.at("/blocks/1/href")).toEqual({
+      ok: true,
+      path: "/blocks/1/href",
+      value: "https://example.com/docs",
+    });
   });
 
   test("commits valid drafts through document replace", () => {

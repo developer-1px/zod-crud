@@ -12,6 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@zod-crud/form-draft": "file:../../packages/form-draft",
     "@zod-crud/schema-form": "*",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",

@@ -84,7 +84,7 @@ Classification:
 | Suggested changes / review decisions | Google Docs, Word, GitHub review | official `proposed-changes` | official-covered; patch review, accept, and reject lifecycle |
 | Draft/publish/checkpoint/autosave | CMS, Webflow, Contentful, docs | official `dirty-state`, `persist-web`, `patch-preview`; labs `autosave`, `checkpoints` | official/lab-covered |
 | References/backlinks/relations | CMS references, Webflow references, Notion mentions, Linear relations, GitHub issues | labs `references`, `bookmarks`; core pointer/query | lab-covered; stable identity/reference index remains core-pressure watch |
-| Validation/dropdowns/schema fields | sheets, forms, CMS | core schema validation/introspection; official `schema-form` | core/official-covered |
+| Validation/dropdowns/schema fields | sheets, forms, CMS | core schema validation/introspection; official `schema-form`; official `form-draft` | core/official-covered |
 | Conditional logic/branching | Typeform, forms, CMS workflows | core patch/schema can store rules; lab `computed-fields` covers derived values | lab-gap only if rule graphs need reusable editing semantics |
 | Document diff/preview/apply | review tools, CMS preview, migration flows | official `patch-preview`; lab `document-diff`; core patch/history | official/lab-covered |
 

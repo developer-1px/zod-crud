@@ -12,6 +12,7 @@ const retiredLabNames = new Set([
   "document-outline",
   "drop-intent",
   "field-draft",
+  "form-draft",
   "outline",
   "patch-preview",
   "pointer-bookmarks",

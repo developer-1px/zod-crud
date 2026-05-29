@@ -196,6 +196,46 @@
       ]
     },
     {
+      "path": "packages/form-draft",
+      "name": "@zod-crud/form-draft",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official form draft extension functions for temporary invalid input before committing valid zod-crud JSON.",
+      "license": "MIT",
+      "summary": "Official headless form draft extension for temporary input that is not ready to\nenter a schema-valid `zod-crud` document.",
+      "guidance": {
+        "useFor": "hold temporary invalid form input before committing valid JSON",
+        "notFor": "rendered form components"
+      },
+      "publicExports": [
+        "CreateFormDraftOptions",
+        "FormDraftBatchChange",
+        "FormDraftBatchCommitResult",
+        "FormDraftBatchResult",
+        "FormDraftCommitResult",
+        "FormDraftError",
+        "FormDraftErrorCode",
+        "FormDraftListener",
+        "FormDraftParseContext",
+        "FormDraftParseResult",
+        "FormDraftParser",
+        "FormDraftSetResult",
+        "FormDraftSnapshot",
+        "FormDrafts",
+        "createFormDraft"
+      ],
+      "publicExportCount": 15,
+      "keywords": [
+        "draft",
+        "field",
+        "form",
+        "headless",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/id-resolver",
       "name": "@zod-crud/id-resolver",
       "status": "official-extension",
@@ -842,6 +882,46 @@
       ]
     },
     {
+      "path": "packages/form-draft",
+      "name": "@zod-crud/form-draft",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official form draft extension functions for temporary invalid input before committing valid zod-crud JSON.",
+      "license": "MIT",
+      "summary": "Official headless form draft extension for temporary input that is not ready to\nenter a schema-valid `zod-crud` document.",
+      "guidance": {
+        "useFor": "hold temporary invalid form input before committing valid JSON",
+        "notFor": "rendered form components"
+      },
+      "publicExports": [
+        "CreateFormDraftOptions",
+        "FormDraftBatchChange",
+        "FormDraftBatchCommitResult",
+        "FormDraftBatchResult",
+        "FormDraftCommitResult",
+        "FormDraftError",
+        "FormDraftErrorCode",
+        "FormDraftListener",
+        "FormDraftParseContext",
+        "FormDraftParseResult",
+        "FormDraftParser",
+        "FormDraftSetResult",
+        "FormDraftSnapshot",
+        "FormDrafts",
+        "createFormDraft"
+      ],
+      "publicExportCount": 15,
+      "keywords": [
+        "draft",
+        "field",
+        "form",
+        "headless",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/id-resolver",
       "name": "@zod-crud/id-resolver",
       "status": "official-extension",
@@ -1459,46 +1539,6 @@
       ]
     },
     {
-      "path": "labs/extensions/form-draft",
-      "name": "@zod-crud/form-draft",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab form draft extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab form draft extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "hold temporary invalid form input before committing valid JSON",
-        "notFor": "rendered form components"
-      },
-      "publicExports": [
-        "CreateFormDraftOptions",
-        "FormDraftBatchChange",
-        "FormDraftBatchCommitResult",
-        "FormDraftBatchResult",
-        "FormDraftCommitResult",
-        "FormDraftError",
-        "FormDraftErrorCode",
-        "FormDraftListener",
-        "FormDraftParseContext",
-        "FormDraftParseResult",
-        "FormDraftParser",
-        "FormDraftSetResult",
-        "FormDraftSnapshot",
-        "FormDrafts",
-        "createFormDraft"
-      ],
-      "publicExportCount": 15,
-      "keywords": [
-        "draft",
-        "field",
-        "form",
-        "headless",
-        "zod-crud"
-      ]
-    },
-    {
       "path": "labs/extensions/grouping",
       "name": "@zod-crud/grouping",
       "status": "lab-extension",
@@ -2012,9 +2052,9 @@
     }
   ],
   "totals": {
-    "packages": 14,
-    "officialExtensions": 13,
-    "labExtensions": 17,
+    "packages": 15,
+    "officialExtensions": 14,
+    "labExtensions": 16,
     "apps": 12
   }
 }

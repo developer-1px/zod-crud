@@ -64,7 +64,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Field descriptors | `@zod-crud/schema-form` | rendered inputs, labels, layout |
 | Field/option reorder | `@zod-crud/collection` | drag target, keyboard policy |
 | Stable field id lookup | `@zod-crud/id-resolver` | id scope and routing |
-| Invalid input draft | lab `form-draft` | parser, widget messages |
+| Invalid input draft | `@zod-crud/form-draft` | parser, widget messages |
 | Templates/import paste | lab `snippets`, lab `paste-compatible` | snippet catalog, parser |
 | Publish review | `@zod-crud/patch-preview`, `@zod-crud/proposed-changes` | approval workflow |
 | Locked published fields | lab `protected-ranges` | auth/server policy |
@@ -158,7 +158,7 @@ stay outside zod-crud.
 | Text search/replace | `@zod-crud/search-replace` | official extension |
 | Proposed changes | `@zod-crud/proposed-changes` | official extension |
 | TSV/CSV grid paste | missing | grid clipboard lab 후보 |
-| Invalid draft | lab `form-draft` | official 후보 |
+| Invalid draft | `@zod-crud/form-draft` | official extension |
 | Import review flow | labs 조합 | recipe 필요 |
 
 ## Misread Guardrails

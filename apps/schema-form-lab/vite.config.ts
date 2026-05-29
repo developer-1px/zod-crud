@@ -5,7 +5,7 @@ import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: zodCrudSourceAliases({ officialExtensions: ["schema-form"] }),
+    alias: zodCrudSourceAliases({ officialExtensions: ["schema-form", "form-draft"] }),
   },
   test: {
     environment: "jsdom",

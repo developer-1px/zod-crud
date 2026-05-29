@@ -24,7 +24,7 @@ describe("schema form lab dogfood", () => {
     expect(screen.getByLabelText("/blocks/1/href")).toBeTruthy();
   });
 
-  test("sets scalar, enum, and boolean fields through descriptor methods", async () => {
+  test("commits scalar, enum, and boolean form drafts through descriptor paths", async () => {
     renderLab();
     const user = userEvent.setup();
 
@@ -34,31 +34,41 @@ describe("schema form lab dogfood", () => {
     await user.selectOptions(screen.getByLabelText("/status"), "review");
     await user.click(screen.getByLabelText("/published"));
 
+    expect(stateText()).toContain('"title": "Draft page"');
+    await user.click(screen.getByRole("button", { name: "commit drafts" }));
+
     expect(stateText()).toContain('"title": "Published page"');
     expect(stateText()).toContain('"status": "review"');
     expect(stateText()).toContain('"published": true');
+    expect(screen.getByRole("status").textContent).toBe("committed 3 draft(s)");
   });
 
-  test("edits a discriminated-union branch field through document capability fallback", () => {
+  test("drafts a discriminated-union branch field before mutating document state", async () => {
     renderLab();
+    const user = userEvent.setup();
 
     fireEvent.change(screen.getByLabelText("/blocks/0/text"), {
       target: { value: "Updated body" },
     });
 
+    expect(stateText()).not.toContain('"text": "Updated body"');
+    expect(screen.getByRole("status").textContent).toBe("draft /blocks/0/text");
+    await user.click(screen.getByRole("button", { name: "commit drafts" }));
+
     expect(stateText()).toContain('"text": "Updated body"');
-    expect(screen.getByRole("status").textContent).toBe("set /blocks/0/text");
   });
 
-  test("rejects invalid payloads before mutating document state", () => {
+  test("keeps invalid payloads in draft state before mutating document state", () => {
     renderLab();
 
     fireEvent.change(screen.getByLabelText("/blocks/1/href"), {
       target: { value: "not-a-url" },
     });
 
+    expect(screen.getByLabelText("/blocks/1/href")).toHaveProperty("value", "not-a-url");
     expect(stateText()).toContain('"href": "https://example.com/docs"');
     expect(stateText()).not.toContain("not-a-url");
     expect(screen.getByRole("status").textContent).toBe("schema_violation: /blocks/1/href");
+    expect((screen.getByRole("button", { name: "commit drafts" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });

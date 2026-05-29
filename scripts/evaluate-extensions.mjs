@@ -152,6 +152,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/form-draft",
+    name: "@zod-crud/form-draft",
+    description: /form draft extension functions/,
+    readme: [
+      /createFormDraft\(doc/,
+      /form,\s*property panel,\s*settings,\s*CMS,\s*generated admin,\s*spreadsheet cell,\s*or import mapping inputs/,
+      /Preflight commits with `doc\.canReplace`/,
+      /No rendered input, label, layout, keyboard, focus, IME, masking, or debounce\s*policy/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

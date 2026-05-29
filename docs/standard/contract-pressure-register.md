@@ -44,6 +44,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | structural change result | `grouping`, `wrap-unwrap`, `outline`, `bulk-edit`가 prospective operations와 execution result를 노출 | lab convention | `operations`, `selectionAfter`, `diagnostics` naming을 통일할 수 있는지 확인 |
 | anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle이 bookmark/presence 밖에서도 같은지 확인 |
 | stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
+| invalid form draft | form builder, settings, CMS property panel, spreadsheet cell editing에서 valid JSON commit 전 temporary input이 반복 | 반영됨: `@zod-crud/form-draft` | parser/widget/focus policy가 host-owned로 남는지 확인 |
 | text search/replace | block docs, review editor, import cleanup, object notes에서 반복 | 반영됨: `@zod-crud/search-replace` | rendered text extraction과 ranking이 host-owned로 남는지 확인 |
 | proposed changes | AI edit review, import review, CMS copy review, moderation queues에서 반복 | 반영됨: `@zod-crud/proposed-changes` | approval workflow와 storage/sync가 host-owned로 남는지 확인 |
 | TSV/CSV grid paste | grid/table product에서 반복 | lab 후보 | `paste-compatible`과 별개 feature인지 실사용으로 확인 |

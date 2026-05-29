@@ -1,9 +1,11 @@
 # @zod-crud/form-draft
 
-Lab form draft extension for `zod-crud` documents.
+Official headless form draft extension for temporary input that is not ready to
+enter a schema-valid `zod-crud` document.
 
-Use it to test whether temporary invalid input state can stay outside the core
-document while commits still use the public schema and capability surface.
+Use it when a product needs form, property panel, settings, CMS, generated admin,
+spreadsheet cell, or import mapping inputs that can be temporarily invalid while
+the saved JSON document stays valid.
 
 ```ts
 import { createFormDraft } from "@zod-crud/form-draft";
@@ -26,7 +28,7 @@ drafts.commitAll("/settings");
 
 - Hold form draft input outside document state.
 - Parse host input with host-owned parser policy.
-- Validate parsed values with `doc.schema.accepts`.
+- Use `doc.schema.accepts` when direct schema paths are available.
 - Preflight commits with `doc.canReplace`.
 - Commit valid drafts with `doc.replace`.
 - Preflight and commit a form/subtree through `doc.canPatch` and `doc.patch`.
@@ -41,12 +43,11 @@ drafts.commitAll("/settings");
   `doc.use(...)`.
 - No `zod-crud` internal imports.
 
-## Friction report
+## Contract
 
-The public facade is enough for form drafts. The extension keeps temporary
-invalid input outside `doc.value`, asks host code to parse, checks schema
-acceptance, then commits one field through `replace` or a whole form/subtree as
-one JSON Patch batch.
+`@zod-crud/form-draft` keeps temporary invalid input outside `doc.value`, asks
+host code to parse, checks document capability, then commits one field through
+`replace` or a whole form/subtree as one JSON Patch batch.
 
 This keeps core document state schema-valid at all times. Partial input,
 formatting, parsing, and validation message presentation remain host concerns.

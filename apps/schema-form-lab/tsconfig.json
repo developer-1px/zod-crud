@@ -14,6 +14,7 @@
     "resolveJsonModule": true,
     "useDefineForClassFields": true,
     "paths": {
+      "@zod-crud/form-draft": ["../../packages/form-draft/src/index.ts"],
       "@zod-crud/schema-form": ["../../packages/schema-form/src/index.ts"],
       "zod-crud/react": ["../../packages/zod-crud/src/react.ts"],
       "zod-crud": ["../../packages/zod-crud/src/index.ts"]

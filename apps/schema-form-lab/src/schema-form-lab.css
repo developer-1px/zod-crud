@@ -103,6 +103,16 @@
   gap: 2px;
 }
 
+.schema-form-lab__field[data-invalid="true"] input {
+  border-color: #a63a30;
+}
+
+.schema-form-lab__field small {
+  grid-column: 2;
+  color: #8f2d25;
+  font-size: 12px;
+}
+
 .schema-form-lab code {
   color: #67635c;
   font-family: "SFMono-Regular", Consolas, monospace;
@@ -151,6 +161,10 @@
   .schema-form-lab__grid,
   .schema-form-lab__field {
     grid-template-columns: 1fr;
+  }
+
+  .schema-form-lab__field small {
+    grid-column: 1;
   }
 
   .schema-form-lab__bar {

@@ -65,7 +65,6 @@ Current labs:
 - `computed-fields`: sync host-computed formula/derived fields.
 - `document-diff`: produce and apply patch changes toward a target document.
 - `drag-drop`: convert drag/drop input into move or paste operations.
-- `form-draft`: hold temporary form input before committing valid JSON.
 - `grouping`: group and ungroup selected sibling JSON items.
 - `layer-order`: reorder visual stack arrays with bring/send commands.
 - `paste-compatible`: adapt external payloads before schema-safe paste.

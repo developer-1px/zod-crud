@@ -16,6 +16,8 @@ All notable changes to this project are documented here.
   reviewing, accepting, and rejecting proposed JSON Patch changes.
 - Added `@zod-crud/comments` as an official headless extension for review
   comments anchored to JSON Pointers.
+- Added `@zod-crud/form-draft` as an official headless extension for keeping
+  temporary invalid input outside schema-valid JSON documents until commit.
 
 ### Changed
 

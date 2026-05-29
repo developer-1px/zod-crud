@@ -19,6 +19,7 @@ export const officialExtensionPackages = [
   "search-replace",
   "proposed-changes",
   "comments",
+  "form-draft",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];

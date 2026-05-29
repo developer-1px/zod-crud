@@ -4,7 +4,7 @@
 
 This section is generated from `packages/*` and `labs/extensions/*`.
 
-Official extensions: 13
+Official extensions: 14
 
 | Package | Exports | Use for | Not for | Summary |
 | --- | ---: | --- | --- | --- |
@@ -13,6 +13,7 @@ Official extensions: 13
 | `@zod-crud/collection` | 9 | edit ordered JSON arrays with item-level commands | database collections or rendered list UI | Official headless collection editing extension for `zod-crud` documents. |
 | `@zod-crud/comments` | 14 | anchor review comments to document structure | comment UI, moderation, or author storage | Official headless comments extension for review notes anchored to `zod-crud` documents. |
 | `@zod-crud/dirty-state` | 7 | compare a document to a clean baseline | persistence or server save status | Official headless dirty state tracking extension for `zod-crud` documents. |
+| `@zod-crud/form-draft` | 15 | hold temporary invalid form input before committing valid JSON | rendered form components | Official headless form draft extension for temporary input that is not ready to enter a schema-valid `zod-crud` document. |
 | `@zod-crud/id-resolver` | 10 | resolve scoped stable ids to current JSON Pointers | id generation, relation graphs, routing, or server identity | Official headless stable id resolver extension for `zod-crud` documents. |
 | `@zod-crud/outline` | 19 | project and edit nested document outline structures | Figma layer panels without a tree schema adapter | Official headless outline tree and structure editing extension for `zod-crud` documents. |
 | `@zod-crud/patch-log` | 9 | record and replay applied JSON Patch records | product activity feeds or audit authorization | Official headless patch recording and replay extension for `zod-crud` documents. |
@@ -22,7 +23,7 @@ Official extensions: 13
 | `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 
-Lab extensions: 17
+Lab extensions: 16
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -36,7 +37,6 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/convert-node-kind` | lab-only | 12 | convert selected nodes between host-described kinds | schema migration systems | Lab extension for converting a JSON node from one host-described kind to another. |
 | `@zod-crud/document-diff` | lab-only | 10 | produce and apply patch changes toward a target document | visual diff UI or merge conflict resolution | Lab document diff and apply extension for `zod-crud` documents. |
 | `@zod-crud/drag-drop` | lab-only | 15 | turn drag/drop intent into move or paste operations | DOM drag/drop events, hit testing, or hover UI | Lab drag and drop extension for `zod-crud` documents. |
-| `@zod-crud/form-draft` | lab-only | 15 | hold temporary invalid form input before committing valid JSON | rendered form components | Lab form draft extension for `zod-crud` documents. |
 | `@zod-crud/grouping` | lab-only | 15 | group and ungroup selected sibling JSON items | Airtable group-by views | Lab extension for structural `group` and `ungroup`. |
 | `@zod-crud/layer-order` | lab-only | 11 | reorder visual stack arrays with bring/send commands | canvas rendering or z-index CSS management | Lab layer ordering extension for `zod-crud` documents. |
 | `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
