@@ -461,6 +461,70 @@ lab candidate
 `-- official evaluator에 등록
 ```
 
+### 8.1 Lab-first escalation principle
+
+새 편집 feature는 바로 official package나 core로 올리지 않는다. lab은 package를
+늘리는 장소가 아니라 core와 official extension의 경계를 발굴하는 압력실이다.
+
+```txt
+labs/extensions
+|-- feature 후보를 많이 만든다
+|-- public facade만 사용한다
+|-- 단일 기능 단위로 유지한다
+|-- dogfood app이나 기존 app에 적용한다
+|-- app-owned concept code가 줄었는지 확인한다
+`-- 여러 lab에서 반복되는 하위 개념을 기록한다
+
+packages/*
+|-- 충분히 검증된 extension만 승격한다
+|-- 이름이 실제 편집도구 어휘와 맞아야 한다
+|-- 범위가 작고 선명해야 한다
+|-- app code를 concept 수준에서 얇게 만들어야 한다
+`-- breaking 가능성이 낮아야 한다
+
+packages/zod-crud core
+|-- 가장 늦게 승격한다
+|-- 여러 extension이 같은 primitive를 재구현할 때만 검토한다
+|-- product feature 이름을 가져오면 안 된다
+`-- core concept 수를 거의 늘리지 않아야 한다
+```
+
+core primitive 승격의 1차 신호는 "여러 package에서 같은 코드가 보인다"가
+아니다. 더 정확한 신호는 여러 package가 같은 개념적 제약을 직접 해결하느라
+feature 구현이 두꺼워지는 것이다.
+
+```txt
+core candidate
+|-- 3개 이상 lab/official extension에서 같은 하위 개념이 반복된다
+|-- public API만으로 구현하면 비효율, 불안정, 중복이 크다
+|-- 특정 product 이름 없이 설명된다
+|-- 모든 편집 feature가 조합 가능한 primitive로 쓸 수 있다
+`-- core에 들어와도 public concept 수가 거의 늘지 않는다
+
+official extension 유지
+|-- product/editor feature 이름으로 설명된다
+|-- public API만으로 구현 가능하다
+|-- app 책임을 확실히 줄인다
+|-- 단일 기능 경계가 선명하다
+`-- 모든 app에 필요한 것은 아니다
+
+app-owned 유지
+|-- UI/UX 결정이다
+|-- domain policy다
+|-- 특정 product workflow다
+`-- 재사용해도 feature 위임이 아니라 함수 호출 수준이다
+```
+
+운영 원칙:
+
+- lab first: 새 아이디어는 lab에서 시작한다.
+- dogfood required: package만 만들지 않고 실제 app이나 lab에 적용해 app
+  책임 감소를 확인한다.
+- promotion by evidence: 반복 증거 없이 official로 올리지 않는다.
+- core last: core는 여러 extension이 같은 primitive를 재발명할 때만 검토한다.
+- concept budget: feature extension은 늘릴 수 있지만 core concept은 거의
+  늘리지 않는다.
+
 official 승격 전에는 다음 표를 작성해야 한다.
 
 | 항목 | 질문 |

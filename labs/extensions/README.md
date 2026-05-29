@@ -36,6 +36,16 @@ Rules:
 - Keep every lab package `private: true`.
 - Record public API friction in the package README.
 
+Escalation strategy:
+
+- Start every new editor feature in `labs/extensions`.
+- Keep lab packages small and centered on one feature vocabulary.
+- Dogfood the package in an app or focused lab before promotion.
+- Promote to `packages/*` only after repeated evidence shows a stable feature
+  boundary.
+- Promote to `packages/zod-crud` core last, only when several extensions are
+  recreating the same product-neutral primitive.
+
 Promotion path:
 
 1. A lab package proves a distinct responsibility.
@@ -62,5 +72,6 @@ Current labs:
 - `patch-preview`: preview patch effects before confirmation.
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `bookmarks`: keep named document locations stable across edits.
+- `protected-ranges`: guard document edits with protected JSON ranges.
 - `search-replace`: find and replace text across document string fields.
 - `snippets`: insert reusable JSON payloads with schema-safe paste checks.
