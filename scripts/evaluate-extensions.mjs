@@ -104,6 +104,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/patch-preview",
+    name: "@zod-crud/patch-preview",
+    description: /patch preview extension functions/,
+    readme: [
+      /createPatchPreview\(Schema, doc\)/,
+      /import review,\s*find\/replace confirmation,\s*AI proposed changes,\s*bulk cleanup,\s*dry-run save checks,\s*or admin moderation/,
+      /Compute a next JSON document value without mutating the document/,
+      /No visual diff rendering, confirmation UI, review workflow/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

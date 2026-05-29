@@ -71,7 +71,6 @@ Current labs:
 - `grouping`: group and ungroup selected sibling JSON items.
 - `layer-order`: reorder visual stack arrays with bring/send commands.
 - `paste-compatible`: adapt external payloads before schema-safe paste.
-- `patch-preview`: preview patch effects before confirmation.
 - `proposed-changes`: review, accept, or reject proposed document changes.
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `references`: stable ID references and backlinks over JSON documents.

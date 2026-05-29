@@ -66,7 +66,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Stable field id lookup | `@zod-crud/id-resolver` | id scope and routing |
 | Invalid input draft | lab `form-draft` | parser, widget messages |
 | Templates/import paste | lab `snippets`, lab `paste-compatible` | snippet catalog, parser |
-| Publish review | lab `patch-preview`, lab `proposed-changes` | approval workflow |
+| Publish review | `@zod-crud/patch-preview`, lab `proposed-changes` | approval workflow |
 | Locked published fields | lab `protected-ranges` | auth/server policy |
 
 `schema-form`은 form renderer가 아닙니다. Zod schema에서 field descriptor를
@@ -79,7 +79,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | CSV/JSON parsing | app-owned | parser, column mapping |
 | External payload adaptation | lab `paste-compatible` | source format policy |
 | Current vs imported diff | lab `document-diff` | identity/move inference |
-| Dry-run preview | lab `patch-preview`, core `applyPatch` | visual diff |
+| Dry-run preview | `@zod-crud/patch-preview`, core `applyPatch` | visual diff |
 | Proposed changes | lab `proposed-changes` | review workflow, storage |
 | Reviewer comments | lab `comments` | thread UI, authoring |
 | Protected targets | lab `protected-ranges` | role/auth policy |
@@ -135,7 +135,7 @@ stay outside zod-crud.
 | Snippet insertion | lab `snippets` | slash palette UI |
 | Mention/reference | lab `references` | entity source, autocomplete |
 | Review comments | lab `comments` | thread UI, workflow |
-| Proposed changes | lab `proposed-changes`, lab `patch-preview` | diff UI, approval |
+| Proposed changes | lab `proposed-changes`, `@zod-crud/patch-preview` | diff UI, approval |
 | External paste/import | lab `paste-compatible`, lab `document-diff` | HTML/Markdown parser |
 | Search/replace | lab `search-replace` | rendered text extraction |
 | Rich text body | app-owned | ProseMirror/Markdown/contenteditable |
@@ -150,7 +150,7 @@ stay outside zod-crud.
 | Pressure | Current state | Direction |
 | --- | --- | --- |
 | Guard composition | lab마다 `can*` guard를 조합 | shared contract 후보 |
-| Patch preview / dry-run | lab `patch-preview` | official 후보 |
+| Patch preview / dry-run | `@zod-crud/patch-preview` | official extension |
 | Structural result shape | lab마다 `selectionAfter` 필요 | result contract 후보 |
 | Anchored pointer lifecycle | core `trackPointer` + labs | annotation helper 후보 |
 | Stable id to Pointer | `@zod-crud/id-resolver` | official extension |

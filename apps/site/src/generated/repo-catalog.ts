@@ -272,6 +272,39 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/patch-preview",
+      "name": "@zod-crud/patch-preview",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official patch preview extension functions for dry-running zod-crud document patches.",
+      "license": "MIT",
+      "summary": "Official headless patch preview extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "preview patch effects before confirmation",
+        "notFor": "visual diff rendering"
+      },
+      "publicExports": [
+        "PatchPreview",
+        "PatchPreviewError",
+        "PatchPreviewErrorCode",
+        "PatchPreviewOk",
+        "PatchPreviewOptions",
+        "PatchPreviewResult",
+        "createPatchPreview",
+        "previewPatch"
+      ],
+      "publicExportCount": 8,
+      "keywords": [
+        "dry-run",
+        "headless",
+        "patch",
+        "preview",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/persist-web",
       "name": "@zod-crud/persist-web",
       "status": "official-extension",
@@ -751,6 +784,39 @@ export const repoCatalog = {
         "log",
         "patch",
         "replay",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "packages/patch-preview",
+      "name": "@zod-crud/patch-preview",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official patch preview extension functions for dry-running zod-crud document patches.",
+      "license": "MIT",
+      "summary": "Official headless patch preview extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "preview patch effects before confirmation",
+        "notFor": "visual diff rendering"
+      },
+      "publicExports": [
+        "PatchPreview",
+        "PatchPreviewError",
+        "PatchPreviewErrorCode",
+        "PatchPreviewOk",
+        "PatchPreviewOptions",
+        "PatchPreviewResult",
+        "createPatchPreview",
+        "previewPatch"
+      ],
+      "publicExportCount": 8,
+      "keywords": [
+        "dry-run",
+        "headless",
+        "patch",
+        "preview",
         "zod-crud"
       ]
     },
@@ -1330,39 +1396,6 @@ export const repoCatalog = {
       ]
     },
     {
-      "path": "labs/extensions/patch-preview",
-      "name": "@zod-crud/patch-preview",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab patch preview extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Headless patch preview helpers for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "preview patch effects before confirmation",
-        "notFor": "visual diff rendering"
-      },
-      "publicExports": [
-        "PatchPreview",
-        "PatchPreviewError",
-        "PatchPreviewErrorCode",
-        "PatchPreviewOk",
-        "PatchPreviewOptions",
-        "PatchPreviewResult",
-        "createPatchPreview",
-        "previewPatch"
-      ],
-      "publicExportCount": 8,
-      "keywords": [
-        "dry-run",
-        "headless",
-        "patch",
-        "preview",
-        "zod-crud"
-      ]
-    },
-    {
       "path": "labs/extensions/presence-cursors",
       "name": "@zod-crud/presence-cursors",
       "status": "lab-extension",
@@ -1850,9 +1883,9 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 10,
-    "officialExtensions": 9,
-    "labExtensions": 21,
+    "packages": 11,
+    "officialExtensions": 10,
+    "labExtensions": 20,
     "apps": 12
   }
 } as const;

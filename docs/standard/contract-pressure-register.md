@@ -40,7 +40,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | 후보 | 반복 신호 | 현재 판정 | 다음 증거 |
 | --- | --- | --- | --- |
 | guard composition | `protected-ranges`, `proposed-changes`, `search-replace`, paste/drop 계열이 guard와 core capability 실패를 조합 | lab convention | 같은 guard result shape가 3개 이상 package에서 자연스럽게 맞는지 확인 |
-| patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | official 후보 | `patch-preview`가 두 제품 이상에서 직접 dogfood 되는지 확인 |
+| patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | 반영됨: `@zod-crud/patch-preview` | downstream dogfood에서 visual diff/review workflow가 host-owned로 남는지 확인 |
 | structural change result | `grouping`, `wrap-unwrap`, `outline`, `bulk-edit`가 prospective operations와 execution result를 노출 | lab convention | `operations`, `selectionAfter`, `diagnostics` naming을 통일할 수 있는지 확인 |
 | anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | official 후보 | anchor lifecycle이 comment/bookmark/presence 밖에서도 같은지 확인 |
 | stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
@@ -100,7 +100,7 @@ plan pressure
 
 현재 방향:
 
-- `patch-preview`는 official 승격 후보로 관찰한다.
+- `patch-preview`는 `@zod-crud/patch-preview` official extension으로 승격했다.
 - `PatchPlan`은 core 타입으로 만들지 않는다.
 - lab에서는 `operations`, `preview`, `apply`, `diagnostics`, `selectionAfter`를
   같은 의미로 쓰는지 확인한다.

@@ -26,6 +26,7 @@ import { createBulkEdit } from "@zod-crud/bulk-edit";
 import { createPatchLog } from "@zod-crud/patch-log";
 import { createDocumentPersistence } from "@zod-crud/persist-web";
 import { createIdResolver } from "@zod-crud/id-resolver";
+import { createPatchPreview } from "@zod-crud/patch-preview";
 import { createWebClipboard } from "@zod-crud/clipboard-web";
 ```
 

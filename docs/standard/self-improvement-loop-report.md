@@ -49,7 +49,7 @@ stable strengths
 | Schema introspection freeze | API freeze, schema-form | blocker | `SchemaKind`, `SchemaDescription`, path mode 문서화 |
 | stable id to Pointer | kanban, form, grid, import, diagram | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 host-owned id policy 확인 |
 | TSV/CSV grid paste | grid, import | lab 후보 | grid clipboard lab 후보로 유지 |
-| Patch preview / dry-run | grid, form, import | official 후보 | `patch-preview` dogfood와 result vocabulary 정리 |
+| Patch preview / dry-run | grid, form, import | 반영됨: `@zod-crud/patch-preview` | visual diff/review workflow가 host-owned로 남는지 확인 |
 | guard composition | form, import, grid, diagram | lab convention | core 금지, guard vocabulary만 관찰 |
 | `selectionAfter` | structural edits, grid, diagram, form | result convention 후보 | lab naming 통일 |
 | anchored pointer lifecycle | comments, bookmarks, presence, review | official 후보 | core `trackPointer` 위의 helper 후보로 관찰 |
@@ -116,7 +116,7 @@ stable strengths
 | Status | Labs |
 | --- | --- |
 | official candidate | `comments`, `form-draft`, `protected-ranges`, `references`, `search-replace`, `snippets` |
-| conditional official candidate | `document-diff`, `drag-drop`, `proposed-changes`, `patch-preview` |
+| conditional official candidate | `document-diff`, `drag-drop`, `proposed-changes` |
 | recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
 | experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |
 

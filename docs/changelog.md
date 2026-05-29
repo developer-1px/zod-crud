@@ -8,6 +8,8 @@ All notable changes to this project are documented here.
 
 - Added `@zod-crud/id-resolver` as an official headless extension for resolving
   scoped stable ids to current JSON Pointers.
+- Added `@zod-crud/patch-preview` as an official headless extension for
+  previewing schema-safe JSON Patch changes before applying them.
 
 ### Changed
 
