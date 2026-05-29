@@ -17,7 +17,7 @@ Official extensions: 8
 | `@zod-crud/persist-web` | 24 | Official headless web persistence extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 
-Lab extensions: 20
+Lab extensions: 21
 
 | Package | Exports | Summary |
 | --- | ---: | --- |
@@ -33,6 +33,7 @@ Lab extensions: 20
 | `@zod-crud/form-draft` | 15 | Lab form draft extension for `zod-crud` documents. |
 | `@zod-crud/grouping` | 15 | Lab extension for structural `group` and `ungroup`. |
 | `@zod-crud/layer-order` | 11 | Lab layer ordering extension for `zod-crud` documents. |
+| `@zod-crud/paste-compatible` | 17 | Lab extension for compatible paste. |
 | `@zod-crud/patch-preview` | 8 | Headless patch preview helpers for `zod-crud` documents. |
 | `@zod-crud/presence-cursors` | 10 | Lab package for remote collaborator cursor and selection presence. |
 | `@zod-crud/proposed-changes` | 19 | Lab extension for proposed document changes. |

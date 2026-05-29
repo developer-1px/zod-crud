@@ -1105,6 +1105,44 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/paste-compatible",
+      "name": "@zod-crud/paste-compatible",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab compatible paste extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for compatible paste.",
+      "publicExports": [
+        "CompatiblePaste",
+        "CompatiblePasteAdaptedPayload",
+        "CompatiblePasteAdapter",
+        "CompatiblePasteAdapterError",
+        "CompatiblePasteAdapterInput",
+        "CompatiblePasteAdapterResult",
+        "CompatiblePasteApplyResult",
+        "CompatiblePasteDiagnostic",
+        "CompatiblePasteError",
+        "CompatiblePasteErrorCode",
+        "CompatiblePasteInput",
+        "CompatiblePasteOptions",
+        "CompatiblePastePlan",
+        "CompatiblePastePlanResult",
+        "canPasteCompatible",
+        "createCompatiblePaste",
+        "pasteCompatible"
+      ],
+      "publicExportCount": 17,
+      "keywords": [
+        "clipboard",
+        "compatible",
+        "headless",
+        "paste",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/patch-preview",
       "name": "@zod-crud/patch-preview",
       "status": "lab-extension",
@@ -1583,7 +1621,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 9,
     "officialExtensions": 8,
-    "labExtensions": 20,
+    "labExtensions": 21,
     "apps": 12
   }
 } as const;

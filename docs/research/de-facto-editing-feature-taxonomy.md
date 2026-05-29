@@ -68,7 +68,7 @@ Classification:
 | Insert/delete/replace | all genres | core `insert`, `delete`, `replace`, `patch`, `can*` | core-covered |
 | Move/reorder | slides, sheets, kanban, outliners, object surfaces | core `move`; official `collection`; official/lab `outline`; lab `layer-order` | official/lab-covered |
 | Duplicate | docs, sheets, slides, Figma, Airtable, Notion | core `duplicate`; official `collection`; labs can specialize selection results | core-covered |
-| Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; labs `drag-drop`, `snippets` | covered, with `paste-compatible` as lab-gap |
+| Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; labs `drag-drop`, `snippets`, `paste-compatible` | lab-covered |
 | Search/find/replace | docs, sheets, Notion, code review | core `find/query`; lab `search-replace`; official `bulk-edit` | official/lab-covered |
 | Sort/filter | sheets, Airtable, kanban, CMS, Linear/Jira | lab `collection-sort`; core query/read | sort covered; filter is mostly view-owned unless persisted as document state |
 | Fill/propagate series | sheets, Airtable-like grids | core patch can express it | lab-gap: `fill-series` should test range propagation |
@@ -149,12 +149,12 @@ Completed pressure labs:
    - Owns structural wrapping without object-surface grouping semantics.
    - External pressure: sections, frames, toggles, callouts, containers.
 
-Priority 2:
-
 5. `paste-compatible`
    - Owns payload adaptation, ID remapping, and target compatibility diagnostics.
    - External pressure: slides copy/paste, Figma paste between containers,
      CMS/import payloads.
+
+Priority 2:
 
 6. `fill-series`
    - Owns spreadsheet-like propagation across selected ranges.
