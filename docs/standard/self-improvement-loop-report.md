@@ -108,6 +108,7 @@ stable strengths
 - `@zod-crud/comments`를 official extension으로 승격.
 - `@zod-crud/form-draft`를 official extension으로 승격.
 - `@zod-crud/protected-ranges`를 official extension으로 승격.
+- `@zod-crud/snippets`를 official extension으로 승격.
 
 남은 문서 액션:
 
@@ -120,7 +121,7 @@ stable strengths
 
 | Status | Labs |
 | --- | --- |
-| official candidate | `references`, `snippets` |
+| official candidate | `references` |
 | conditional official candidate | `document-diff`, `drag-drop` |
 | recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
 | experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |

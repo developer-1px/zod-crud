@@ -93,7 +93,7 @@ export function App() {
       : undefined
   ), [rekey]);
   const plan = snippets.canInsert(selectedSnippetId, target, options);
-  const canInsert = plan.ok && plan.capability.ok;
+  const canInsert = plan.ok;
   const summaries = snippets.list();
 
   const insertSelectedSnippet = () => {
@@ -219,8 +219,12 @@ function targetLabel(target: JSONDocumentPasteTarget): string {
 }
 
 function capabilityLabel(plan: ReturnType<ReturnType<typeof createSnippets>["canInsert"]>): string {
-  if (!plan.ok) return plan.code;
-  return plan.capability.ok ? "ok" : capabilityErrorLabel(plan.capability);
+  if (!plan.ok) {
+    return plan.code === "disabled" && plan.capability !== undefined
+      ? capabilityErrorLabel(plan.capability)
+      : plan.code;
+  }
+  return "ok";
 }
 
 function capabilityErrorLabel(capability: Exclude<JSONCapabilityResult, { ok: true }>): string {

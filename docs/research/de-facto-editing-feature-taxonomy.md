@@ -68,7 +68,7 @@ Classification:
 | Insert/delete/replace | all genres | core `insert`, `delete`, `replace`, `patch`, `can*` | core-covered |
 | Move/reorder | slides, sheets, kanban, outliners, object surfaces | core `move`; official `collection`; official/lab `outline`; lab `layer-order` | official/lab-covered |
 | Duplicate | docs, sheets, slides, Figma, Airtable, Notion | core `duplicate`; official `collection`; labs can specialize selection results | core-covered |
-| Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; labs `drag-drop`, `snippets`, `paste-compatible` | lab-covered |
+| Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; official `snippets`; labs `drag-drop`, `paste-compatible` | official/lab-covered |
 | Search/find/replace | docs, sheets, Notion, code review | core `find/query`; official `search-replace`, `bulk-edit` | official-covered |
 | Sort/filter | sheets, Airtable, kanban, CMS, Linear/Jira | lab `collection-sort`; core query/read | sort covered; filter is mostly view-owned unless persisted as document state |
 | Fill/propagate series | sheets, Airtable-like grids | core patch can express it | lab-gap: `fill-series` should test range propagation |

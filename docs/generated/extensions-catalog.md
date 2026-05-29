@@ -4,7 +4,7 @@
 
 This section is generated from `packages/*` and `labs/extensions/*`.
 
-Official extensions: 15
+Official extensions: 16
 
 | Package | Exports | Use for | Not for | Summary |
 | --- | ---: | --- | --- | --- |
@@ -23,8 +23,9 @@ Official extensions: 15
 | `@zod-crud/protected-ranges` | 22 | guard edits to protected JSON Pointer ranges | 2D spreadsheet selection UI or server authorization | Official headless protected range guard extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
+| `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 15
+Lab extensions: 14
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -43,5 +44,4 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
 | `@zod-crud/presence-cursors` | lab-only | 10 | track remote collaborator cursors and selections | CRDT/OT or realtime transport | Lab package for remote collaborator cursor and selection presence. |
 | `@zod-crud/references` | lab-only | 21 | track stable references and backlinks over JSON documents | route state or rendered links | Lab extension for stable references and backlinks over JSON documents. |
-| `@zod-crud/snippets` | lab-only | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Lab snippet insertion extension for `zod-crud` documents. |
 | `@zod-crud/wrap-unwrap` | lab-only | 15 | wrap sibling JSON items in host-defined containers | visual grouping or layout containers | Lab extension for structural `wrap` and `unwrap`. |

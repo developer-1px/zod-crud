@@ -41,7 +41,7 @@ export interface SnippetPlan {
   ok: true;
   id: string;
   target: JSONDocumentPasteTarget;
-  capability: JSONCapabilityResult;
+  capability: { ok: true };
 }
 
 export type SnippetPlanResult =
@@ -99,11 +99,14 @@ export function canInsertSnippet<TDocument>(
   target: JSONDocumentPasteTarget,
   options?: SnippetInsertOptions,
 ): SnippetPlanResult {
+  const capability = doc.canPaste(target, pasteOptions(snippet, options));
+  if (!capability.ok) return disabled(snippet.id, target, capability);
+
   return {
     ok: true,
     id: snippet.id,
     target,
-    capability: doc.canPaste(target, pasteOptions(snippet, options)),
+    capability,
   };
 }
 
@@ -115,7 +118,6 @@ export function insertSnippet<TDocument>(
 ): SnippetInsertResult<TDocument> {
   const plan = canInsertSnippet(doc, snippet, target, options);
   if (!plan.ok) return plan;
-  if (!plan.capability.ok) return disabled(snippet.id, target, plan.capability);
 
   const result = doc.paste(target, pasteOptions(snippet, options));
   if (!result.ok) return executionFailed(snippet.id, target, result);

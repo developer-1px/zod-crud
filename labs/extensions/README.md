@@ -71,5 +71,4 @@ Current labs:
 - `presence-cursors`: track remote collaborator cursors and selections.
 - `references`: stable ID references and backlinks over JSON documents.
 - `bookmarks`: keep named document locations stable across edits.
-- `snippets`: insert reusable JSON payloads with schema-safe paste checks.
 - `wrap-unwrap`: wrap sibling JSON items in host-defined structural containers.

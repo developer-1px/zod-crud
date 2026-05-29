@@ -21,6 +21,7 @@ export const officialExtensionPackages = [
   "comments",
   "form-draft",
   "protected-ranges",
+  "snippets",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];

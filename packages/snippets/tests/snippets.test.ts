@@ -91,7 +91,8 @@ describe("@zod-crud/snippets", () => {
     const snippets = createSnippets(doc, [cardSnippet]);
 
     expect(snippets.canInsert("todo-card", "/cards/-")).toMatchObject({
-      ok: true,
+      ok: false,
+      code: "disabled",
       id: "todo-card",
       capability: {
         ok: false,

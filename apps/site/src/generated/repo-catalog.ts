@@ -605,6 +605,43 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/snippets",
+      "name": "@zod-crud/snippets",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official snippet insertion extension functions for reusable JSON payloads in zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless snippet insertion extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "insert reusable JSON payloads with schema-safe paste checks",
+        "notFor": "slash palette UI or snippet storage"
+      },
+      "publicExports": [
+        "Snippet",
+        "SnippetError",
+        "SnippetErrorCode",
+        "SnippetInsertOptions",
+        "SnippetInsertResult",
+        "SnippetPlan",
+        "SnippetPlanResult",
+        "SnippetSummary",
+        "Snippets",
+        "canInsertSnippet",
+        "createSnippets",
+        "insertSnippet"
+      ],
+      "publicExportCount": 12,
+      "keywords": [
+        "headless",
+        "insert",
+        "snippets",
+        "template",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/zod-crud",
       "name": "zod-crud",
       "status": "core",
@@ -1336,6 +1373,43 @@ export const repoCatalog = {
         "text",
         "zod-crud"
       ]
+    },
+    {
+      "path": "packages/snippets",
+      "name": "@zod-crud/snippets",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official snippet insertion extension functions for reusable JSON payloads in zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless snippet insertion extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "insert reusable JSON payloads with schema-safe paste checks",
+        "notFor": "slash palette UI or snippet storage"
+      },
+      "publicExports": [
+        "Snippet",
+        "SnippetError",
+        "SnippetErrorCode",
+        "SnippetInsertOptions",
+        "SnippetInsertResult",
+        "SnippetPlan",
+        "SnippetPlanResult",
+        "SnippetSummary",
+        "Snippets",
+        "canInsertSnippet",
+        "createSnippets",
+        "insertSnippet"
+      ],
+      "publicExportCount": 12,
+      "keywords": [
+        "headless",
+        "insert",
+        "snippets",
+        "template",
+        "zod-crud"
+      ]
     }
   ],
   "labExtensions": [
@@ -1834,43 +1908,6 @@ export const repoCatalog = {
       ]
     },
     {
-      "path": "labs/extensions/snippets",
-      "name": "@zod-crud/snippets",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab snippet insertion extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab snippet insertion extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "insert reusable JSON payloads with schema-safe paste checks",
-        "notFor": "slash palette UI or snippet storage"
-      },
-      "publicExports": [
-        "Snippet",
-        "SnippetError",
-        "SnippetErrorCode",
-        "SnippetInsertOptions",
-        "SnippetInsertResult",
-        "SnippetPlan",
-        "SnippetPlanResult",
-        "SnippetSummary",
-        "Snippets",
-        "canInsertSnippet",
-        "createSnippets",
-        "insertSnippet"
-      ],
-      "publicExportCount": 12,
-      "keywords": [
-        "headless",
-        "insert",
-        "snippets",
-        "template",
-        "zod-crud"
-      ]
-    },
-    {
       "path": "labs/extensions/wrap-unwrap",
       "name": "@zod-crud/wrap-unwrap",
       "status": "lab-extension",
@@ -2092,7 +2129,7 @@ export const repoCatalog = {
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `@zod-crud/snippets` as a page block composer.",
+      "summary": "Dogfoods official `@zod-crud/snippets` as a page block composer.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -2100,9 +2137,9 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 16,
-    "officialExtensions": 15,
-    "labExtensions": 15,
+    "packages": 17,
+    "officialExtensions": 16,
+    "labExtensions": 14,
     "apps": 12
   }
 } as const;

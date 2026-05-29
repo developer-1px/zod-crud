@@ -65,7 +65,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Field/option reorder | `@zod-crud/collection` | drag target, keyboard policy |
 | Stable field id lookup | `@zod-crud/id-resolver` | id scope and routing |
 | Invalid input draft | `@zod-crud/form-draft` | parser, widget messages |
-| Templates/import paste | lab `snippets`, lab `paste-compatible` | snippet catalog, parser |
+| Templates/import paste | `@zod-crud/snippets`, lab `paste-compatible` | snippet catalog, parser |
 | Publish review | `@zod-crud/patch-preview`, `@zod-crud/proposed-changes` | approval workflow |
 | Locked published fields | `@zod-crud/protected-ranges` | auth/server policy |
 
@@ -132,7 +132,7 @@ stay outside zod-crud.
 | --- | --- | --- |
 | Block JSON truth | core `createJSONDocument` | block schema |
 | Tree movement | `@zod-crud/outline`, `@zod-crud/collection` | keyboard focus |
-| Snippet insertion | lab `snippets` | slash palette UI |
+| Snippet insertion | `@zod-crud/snippets` | slash palette UI |
 | Mention/reference | lab `references` | entity source, autocomplete |
 | Review comments | `@zod-crud/comments` | thread UI, workflow |
 | Proposed changes | `@zod-crud/proposed-changes`, `@zod-crud/patch-preview` | diff UI, approval |
@@ -159,6 +159,7 @@ stay outside zod-crud.
 | Proposed changes | `@zod-crud/proposed-changes` | official extension |
 | TSV/CSV grid paste | missing | grid clipboard lab 후보 |
 | Invalid draft | `@zod-crud/form-draft` | official extension |
+| Snippet insertion | `@zod-crud/snippets` | official extension |
 | Import review flow | labs 조합 | recipe 필요 |
 
 ## Misread Guardrails

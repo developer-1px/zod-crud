@@ -17,6 +17,7 @@
       "@zod-crud/comments": ["packages/comments/src/index.ts"],
       "@zod-crud/form-draft": ["packages/form-draft/src/index.ts"],
       "@zod-crud/protected-ranges": ["packages/protected-ranges/src/index.ts"],
+      "@zod-crud/snippets": ["packages/snippets/src/index.ts"],
       "zod-crud/react": ["packages/zod-crud/src/react.ts"],
       "zod-crud": ["packages/zod-crud/src/index.ts"]
     }

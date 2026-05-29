@@ -1,8 +1,7 @@
 {
   "name": "@zod-crud/snippets",
   "version": "0.1.0",
-  "description": "Lab snippet insertion extension functions for zod-crud documents.",
-  "private": true,
+  "description": "Official snippet insertion extension functions for reusable JSON payloads in zod-crud documents.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -11,7 +10,7 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/developer-1px/zod-crud.git",
-    "directory": "labs/extensions/snippets"
+    "directory": "packages/snippets"
   },
   "keywords": [
     "zod-crud",

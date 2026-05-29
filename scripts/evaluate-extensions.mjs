@@ -176,6 +176,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/snippets",
+    name: "@zod-crud/snippets",
+    description: /snippet insertion extension functions/,
+    readme: [
+      /createSnippets\(doc/,
+      /block editors,\s*CMS sections,\s*kanban cards,\s*form fields,\s*generated admin templates,\s*slide objects,\s*or import presets/,
+      /Insert a snippet payload with `canPaste` \/ `paste`/,
+      /No slash command UI, palette, menu, editor toolbar, or search ranking/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

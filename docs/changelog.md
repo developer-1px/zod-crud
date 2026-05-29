@@ -20,6 +20,8 @@ All notable changes to this project are documented here.
   temporary invalid input outside schema-valid JSON documents until commit.
 - Added `@zod-crud/protected-ranges` as an official headless extension for
   guarding edits to locked JSON Pointer ranges before core capability checks.
+- Added `@zod-crud/snippets` as an official headless extension for inserting
+  reusable JSON payload snippets through schema-safe paste.
 
 ### Changed
 
