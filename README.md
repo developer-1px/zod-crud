@@ -1,9 +1,15 @@
 # zod-crud
 
-Zod schema로 검증되는 JSON document editing facade와 작은 extension 함수들을
-모은 monorepo입니다. 앱 전체를 소유하지 않고, JSON document mutation,
-selection, clipboard payload, history, persistence-adjacent workflow의 하부
-구조를 제공합니다.
+zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document
+engine입니다.
+
+폼, CMS block, kanban board, outliner, settings editor처럼 UI가 다른 편집 툴도
+결국 schema가 있는 JSON document를 읽고, 바꾸고, 선택하고, 복사하고,
+붙여넣고, 되돌립니다. zod-crud는 이 공통 document engine을 UI 밖에 둡니다.
+
+```txt
+schema -> document -> pointer/query -> can* -> change -> result
+```
 
 공식 사이트: https://developer-1px.github.io/zod-crud/
 
@@ -39,15 +45,15 @@ selection, clipboard payload, history, persistence-adjacent workflow의 하부
 
 ## 경계
 
-zod-crud가 맡는 것:
+zod-crud가 제공하는 document engine:
 
 - Zod schema로 검증되는 JSON document state
 - JSON Pointer 주소, JSON Patch mutation, JSONPath search
 - `can*` capability result
 - headless selection, clipboard payload, undo/redo history
-- 작은 extension 함수 조합
+- 반복 편집 개념을 조립하는 작은 extension 함수
 
-앱이 맡는 것:
+편집 툴이 계속 소유하는 것:
 
 - rendering, DOM focus, keyboard, drag/drop UI
 - grid selection, TSV clipboard, formula engine
