@@ -354,6 +354,50 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "packages/proposed-changes",
+      "name": "@zod-crud/proposed-changes",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official proposed document change review extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless proposed document change review extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "review, accept, or reject proposed document patches",
+        "notFor": "slash commands or mention autocomplete"
+      },
+      "publicExports": [
+        "ProposedChange",
+        "ProposedChangeAcceptResult",
+        "ProposedChangeAuditData",
+        "ProposedChangeError",
+        "ProposedChangeErrorCode",
+        "ProposedChangeFilter",
+        "ProposedChangeGuard",
+        "ProposedChangeInput",
+        "ProposedChangeListener",
+        "ProposedChangePlan",
+        "ProposedChangePlanResult",
+        "ProposedChangeResult",
+        "ProposedChangeSnapshot",
+        "ProposedChangeStatus",
+        "ProposedChanges",
+        "ProposedChangesOptions",
+        "canAcceptChange",
+        "canProposeChange",
+        "createProposedChanges"
+      ],
+      "publicExportCount": 19,
+      "keywords": [
+        "headless",
+        "patch",
+        "proposed-changes",
+        "review",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "packages/schema-form",
       "name": "@zod-crud/schema-form",
       "status": "official-extension",
@@ -914,6 +958,50 @@ export const repoCatalog = {
         "json",
         "persistence",
         "web",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "packages/proposed-changes",
+      "name": "@zod-crud/proposed-changes",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official proposed document change review extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Official headless proposed document change review extension for `zod-crud`\ndocuments.",
+      "guidance": {
+        "useFor": "review, accept, or reject proposed document patches",
+        "notFor": "slash commands or mention autocomplete"
+      },
+      "publicExports": [
+        "ProposedChange",
+        "ProposedChangeAcceptResult",
+        "ProposedChangeAuditData",
+        "ProposedChangeError",
+        "ProposedChangeErrorCode",
+        "ProposedChangeFilter",
+        "ProposedChangeGuard",
+        "ProposedChangeInput",
+        "ProposedChangeListener",
+        "ProposedChangePlan",
+        "ProposedChangePlanResult",
+        "ProposedChangeResult",
+        "ProposedChangeSnapshot",
+        "ProposedChangeStatus",
+        "ProposedChanges",
+        "ProposedChangesOptions",
+        "canAcceptChange",
+        "canProposeChange",
+        "createProposedChanges"
+      ],
+      "publicExportCount": 19,
+      "keywords": [
+        "headless",
+        "patch",
+        "proposed-changes",
+        "review",
         "zod-crud"
       ]
     },
@@ -1528,50 +1616,6 @@ export const repoCatalog = {
       ]
     },
     {
-      "path": "labs/extensions/proposed-changes",
-      "name": "@zod-crud/proposed-changes",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab proposed document change review extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab extension for proposed document changes.",
-      "guidance": {
-        "useFor": "review, accept, or reject proposed document patches",
-        "notFor": "slash commands or mention autocomplete"
-      },
-      "publicExports": [
-        "ProposedChange",
-        "ProposedChangeAcceptResult",
-        "ProposedChangeAuditData",
-        "ProposedChangeError",
-        "ProposedChangeErrorCode",
-        "ProposedChangeFilter",
-        "ProposedChangeGuard",
-        "ProposedChangeInput",
-        "ProposedChangeListener",
-        "ProposedChangePlan",
-        "ProposedChangePlanResult",
-        "ProposedChangeResult",
-        "ProposedChangeSnapshot",
-        "ProposedChangeStatus",
-        "ProposedChanges",
-        "ProposedChangesOptions",
-        "canAcceptChange",
-        "canProposeChange",
-        "createProposedChanges"
-      ],
-      "publicExportCount": 19,
-      "keywords": [
-        "headless",
-        "patch",
-        "proposed-changes",
-        "review",
-        "zod-crud"
-      ]
-    },
-    {
       "path": "labs/extensions/protected-ranges",
       "name": "@zod-crud/protected-ranges",
       "status": "lab-extension",
@@ -1931,9 +1975,9 @@ export const repoCatalog = {
     }
   ],
   "totals": {
-    "packages": 12,
-    "officialExtensions": 11,
-    "labExtensions": 19,
+    "packages": 13,
+    "officialExtensions": 12,
+    "labExtensions": 18,
     "apps": 12
   }
 } as const;

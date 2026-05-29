@@ -1,21 +1,17 @@
 # @zod-crud/proposed-changes
 
-Lab extension for proposed document changes.
+Official headless proposed document change review extension for `zod-crud`
+documents.
 
 This package is not an autocomplete, combobox, mention, or slash-command
 surface. It stores proposed JSON Patch changes so a host editor can review,
 accept, reject, persist, and explain them without rendering assumptions.
 
-Status:
+Use it when a product needs an in-memory review model for JSON Patch proposals:
+AI edits, import review, moderation queues, CMS copy review, generated admin
+approval, or document cleanup suggestions.
 
-- lab-only
-- private package
-- not promoted to official extension yet
-
-Promotion is deferred until downstream dogfooding proves that the proposed
-change boundary is stable across more than one editor host.
-
-Scope:
+## Scope
 
 - propose schema-safe document patches without mutating the document
 - accept an open proposed change through `doc.patch`
@@ -25,7 +21,7 @@ Scope:
   or `proposedChanges.load(...)`
 - preserve structured `can*` and execution results
 
-Out of scope:
+## Non-goals
 
 - autocomplete, mention, or slash-command surfaces
 - review UI
@@ -35,6 +31,9 @@ Out of scope:
 - approval workflow policy
 - text diff rendering
 - storage adapter policy
+- plugin registration; this package composes functions and does not call
+  `doc.use(...)`
+- `zod-crud` internal imports
 
 ```ts
 const proposedChanges = createProposedChanges(doc);
@@ -110,7 +109,7 @@ editor command / AI result
 -> reject(id) closes without document mutation
 ```
 
-Friction report:
+## Contract
 
 - Core `canPatch` is enough to reject schema-invalid proposals before storage.
 - Core `patch` is enough to accept proposed changes atomically.
@@ -118,5 +117,5 @@ Friction report:
   would otherwise still be patchable.
 - Persistence does not require a core change yet because serialized
   `ProposedChange` values can be restored at extension level.
-- No core change is recommended yet. Watch whether `proposed-changes`,
-  `protected-ranges`, and `patch-preview` repeat a common guard primitive.
+- `data` remains host-owned metadata. The exported `ProposedChangeAuditData`
+  is a convention, not a required schema.

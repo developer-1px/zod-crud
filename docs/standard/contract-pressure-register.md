@@ -45,6 +45,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | anchored pointer lifecycle | `comments`, `bookmarks`, `presence-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | official 후보 | anchor lifecycle이 comment/bookmark/presence 밖에서도 같은지 확인 |
 | stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
 | text search/replace | block docs, review editor, import cleanup, object notes에서 반복 | 반영됨: `@zod-crud/search-replace` | rendered text extraction과 ranking이 host-owned로 남는지 확인 |
+| proposed changes | AI edit review, import review, CMS copy review, moderation queues에서 반복 | 반영됨: `@zod-crud/proposed-changes` | approval workflow와 storage/sync가 host-owned로 남는지 확인 |
 | TSV/CSV grid paste | grid/table product에서 반복 | lab 후보 | `paste-compatible`과 별개 feature인지 실사용으로 확인 |
 | result diagnostic normalization | result diagnostic text를 `reason`으로 통일 | 반영됨 | official/lab extension도 `reason` 우선 유지 |
 | semantic contract lock | export lock은 이름만 고정하고 signature/error literal 의미론은 문서와 테스트가 고정 | evaluator 후보 | signature snapshot 또는 semantic fixture를 추가할지 확인 |

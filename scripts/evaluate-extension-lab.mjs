@@ -14,6 +14,7 @@ const retiredLabNames = new Set([
   "outline",
   "patch-preview",
   "pointer-bookmarks",
+  "proposed-changes",
   "suggestions",
   "text-search",
   "search-replace",

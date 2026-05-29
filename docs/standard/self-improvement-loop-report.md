@@ -54,6 +54,7 @@ stable strengths
 | `selectionAfter` | structural edits, grid, diagram, form | result convention 후보 | lab naming 통일 |
 | anchored pointer lifecycle | comments, bookmarks, presence, review | official 후보 | core `trackPointer` 위의 helper 후보로 관찰 |
 | text search/replace | docs, review, import, object notes | 반영됨: `@zod-crud/search-replace` | rendered text extraction/ranking은 host-owned 유지 |
+| proposed changes | AI edit review, import, CMS copy review | 반영됨: `@zod-crud/proposed-changes` | approval workflow/storage/sync는 host-owned 유지 |
 | package name misreads | all | doc/catalog 보강 | `Use for` / `Not for` 유지 |
 
 ## 1.0 전 Blockers
@@ -117,7 +118,7 @@ stable strengths
 | Status | Labs |
 | --- | --- |
 | official candidate | `comments`, `form-draft`, `protected-ranges`, `references`, `snippets` |
-| conditional official candidate | `document-diff`, `drag-drop`, `proposed-changes` |
+| conditional official candidate | `document-diff`, `drag-drop` |
 | recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
 | experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |
 

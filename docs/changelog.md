@@ -12,6 +12,8 @@ All notable changes to this project are documented here.
   previewing schema-safe JSON Patch changes before applying them.
 - Added `@zod-crud/search-replace` as an official headless extension for
   searching and replacing JSON string fields.
+- Added `@zod-crud/proposed-changes` as an official headless extension for
+  reviewing, accepting, and rejecting proposed JSON Patch changes.
 
 ### Changed
 

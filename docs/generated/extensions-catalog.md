@@ -4,7 +4,7 @@
 
 This section is generated from `packages/*` and `labs/extensions/*`.
 
-Official extensions: 11
+Official extensions: 12
 
 | Package | Exports | Use for | Not for | Summary |
 | --- | ---: | --- | --- | --- |
@@ -17,10 +17,11 @@ Official extensions: 11
 | `@zod-crud/patch-log` | 9 | record and replay applied JSON Patch records | product activity feeds or audit authorization | Official headless patch recording and replay extension for `zod-crud` documents. |
 | `@zod-crud/patch-preview` | 8 | preview patch effects before confirmation | visual diff rendering | Official headless patch preview extension for `zod-crud` documents. |
 | `@zod-crud/persist-web` | 24 | save and restore documents in browser storage-like hosts | server sync, auth, or conflict resolution | Official headless web persistence extension for `zod-crud` documents. |
+| `@zod-crud/proposed-changes` | 19 | review, accept, or reject proposed document patches | slash commands or mention autocomplete | Official headless proposed document change review extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 
-Lab extensions: 19
+Lab extensions: 18
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -40,7 +41,6 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/layer-order` | lab-only | 11 | reorder visual stack arrays with bring/send commands | canvas rendering or z-index CSS management | Lab layer ordering extension for `zod-crud` documents. |
 | `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
 | `@zod-crud/presence-cursors` | lab-only | 10 | track remote collaborator cursors and selections | CRDT/OT or realtime transport | Lab package for remote collaborator cursor and selection presence. |
-| `@zod-crud/proposed-changes` | lab-only | 19 | review, accept, or reject proposed document patches | slash commands or mention autocomplete | Lab extension for proposed document changes. |
 | `@zod-crud/protected-ranges` | lab-only | 22 | guard edits to protected JSON Pointer ranges | 2D spreadsheet selection UI or server authorization | Lab protected range guard extension for `zod-crud` documents. |
 | `@zod-crud/references` | lab-only | 21 | track stable references and backlinks over JSON documents | route state or rendered links | Lab extension for stable references and backlinks over JSON documents. |
 | `@zod-crud/snippets` | lab-only | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Lab snippet insertion extension for `zod-crud` documents. |

@@ -81,7 +81,7 @@ Classification:
 | Align/distribute | slides, Figma, Miro | lab `layer-order` covers z-order only | app-owned geometry; possible non-core `object-surface` outside zod-crud |
 | Lock/protect/readonly | Figma/Miro lock, Sheets protected ranges, CMS permissions | lab `protected-ranges`; schema validation | lab-covered; permissions remain app-owned |
 | Comments/mentions | docs, Notion, Figma, Miro, GitHub, Jira | lab `comments`; lab `presence-cursors` | lab-covered |
-| Suggested changes / review decisions | Google Docs, Word, GitHub review | lab `proposed-changes` | lab-covered; patch review, accept, and reject lifecycle |
+| Suggested changes / review decisions | Google Docs, Word, GitHub review | official `proposed-changes` | official-covered; patch review, accept, and reject lifecycle |
 | Draft/publish/checkpoint/autosave | CMS, Webflow, Contentful, docs | official `dirty-state`, `persist-web`, `patch-preview`; labs `autosave`, `checkpoints` | official/lab-covered |
 | References/backlinks/relations | CMS references, Webflow references, Notion mentions, Linear relations, GitHub issues | labs `references`, `bookmarks`; core pointer/query | lab-covered; stable identity/reference index remains core-pressure watch |
 | Validation/dropdowns/schema fields | sheets, forms, CMS | core schema validation/introspection; official `schema-form` | core/official-covered |

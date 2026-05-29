@@ -128,6 +128,18 @@ const officialExtensions = [
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
+  {
+    root: "packages/proposed-changes",
+    name: "@zod-crud/proposed-changes",
+    description: /proposed document change review extension functions/,
+    readme: [
+      /createProposedChanges\(doc\)/,
+      /AI edits,\s*import review,\s*moderation queues,\s*CMS copy review,\s*generated admin\s*approval,\s*or document cleanup suggestions/,
+      /detect stale changes by comparing guarded target values/,
+      /autocomplete, mention, or slash-command surfaces/,
+      /does not call\s*`doc\.use\(\.\.\.\)`/,
+    ],
+  },
 ];
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));

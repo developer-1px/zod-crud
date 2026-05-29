@@ -17,6 +17,7 @@ export const officialExtensionPackages = [
   "id-resolver",
   "patch-preview",
   "search-replace",
+  "proposed-changes",
 ] as const;
 
 export type OfficialExtensionPackage = (typeof officialExtensionPackages)[number];
