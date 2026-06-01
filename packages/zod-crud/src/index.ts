@@ -109,6 +109,13 @@ export {
   withLastSegment,
 } from "./foundation/pointer/index.js";
 export type { Pointer } from "./foundation/pointer/index.js";
+export { resolveSiblingRange } from "./foundation/pointer/siblingRange.js";
+export type {
+  ResolveSiblingRangeOptions,
+  SiblingLocation,
+  SiblingRangeErrorCode,
+  SiblingRangeResult,
+} from "./foundation/pointer/siblingRange.js";
 
 // === Selection — W3C Selection API 정합 ===
 export type {
