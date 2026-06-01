@@ -25,7 +25,7 @@ Official extensions: 16
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 25
+Lab extensions: 26
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -36,6 +36,7 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/bookmarks` | lab-only | 8 | keep named JSON Pointer locations stable across edits | browser bookmarks or route state | Headless bookmark tracking helpers for `zod-crud` documents. |
 | `@zod-crud/checkpoints` | lab-only | 13 | name and restore document snapshots | durable version graphs or cloud backup | Lab checkpoint extension for `zod-crud` documents. |
 | `@zod-crud/clear-values` | lab-only | 10 | reset selected fields to schema-derived empty values, keeping structure | structural delete, caller-supplied bulk replace, or enum/object default policy | Lab clear-values extension for `zod-crud` documents. |
+| `@zod-crud/coerce` | lab-only | 9 | convert a field type (string/number/integer/boolean) where the schema permits it | locale/format-aware parsing of currency or dates, or input masks | Lab coerce extension for `zod-crud` documents. |
 | `@zod-crud/collection-sort` | lab-only | 13 | sort or reverse JSON array items | query views, filters, or server sorting | Lab collection sort extension for `zod-crud` documents. |
 | `@zod-crud/computed-fields` | lab-only | 12 | sync host-computed derived JSON fields | formula languages or dependency runtimes | Lab computed field extension for `zod-crud` documents. |
 | `@zod-crud/convert-node-kind` | lab-only | 12 | convert selected nodes between host-described kinds | schema migration systems | Lab extension for converting a JSON node from one host-described kind to another. |

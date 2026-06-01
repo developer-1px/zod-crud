@@ -1598,6 +1598,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/coerce",
+      "name": "@zod-crud/coerce",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab coerce (convert a field type: string/number/boolean) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab coerce extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "convert a field type (string/number/integer/boolean) where the schema permits it",
+        "notFor": "locale/format-aware parsing of currency or dates, or input masks"
+      },
+      "publicExports": [
+        "Coerce",
+        "CoerceChange",
+        "CoerceError",
+        "CoerceErrorCode",
+        "CoerceResult",
+        "CoerceTarget",
+        "canCoerce",
+        "coerce",
+        "createCoerce"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "cast",
+        "coerce",
+        "headless",
+        "json",
+        "type",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/collection-sort",
       "name": "@zod-crud/collection-sort",
       "status": "lab-extension",
@@ -2536,7 +2571,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 25,
+    "labExtensions": 26,
     "apps": 12
   }
 } as const;
