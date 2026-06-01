@@ -8,6 +8,8 @@ import {
 import {
   getArrayElement,
   getDef,
+  getEnumValues,
+  getLiteralValues,
   getObjectKeys,
   getObjectShape,
 } from "../../domain/schema/zod.js";
@@ -282,6 +284,14 @@ function describeSchema(schema: z.ZodType): SchemaDescription {
     description.discriminator = du.discriminator;
     description.allowed = [...du.allowed];
   }
+
+  // `allowed` reflects every closed value set MECE-ly: discriminatedUnion (above),
+  // enum, and literal. Readers (clear-values, cycle, ...) can enumerate options
+  // from the schema instead of requiring host-supplied values.
+  const enumValues = getEnumValues(schema);
+  if (enumValues) description.allowed = enumValues;
+  const literalValues = getLiteralValues(schema);
+  if (literalValues) description.allowed = literalValues;
 
   return description;
 }
