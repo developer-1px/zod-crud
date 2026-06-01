@@ -104,6 +104,10 @@ const extensionGuidance = {
     useFor: "reorder visual stack arrays with bring/send commands",
     notFor: "canvas rendering or z-index CSS management",
   },
+  "@zod-crud/number-step": {
+    useFor: "increment, decrement, or step a numeric field with optional clamping",
+    notFor: "rendered spinners, formatting, units, or currency",
+  },
   "@zod-crud/outline": {
     useFor: "project and edit nested document outline structures",
     notFor: "Figma layer panels without a tree schema adapter",

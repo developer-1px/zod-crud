@@ -2005,6 +2005,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/number-step",
+      "name": "@zod-crud/number-step",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab number-step (increment/decrement a numeric field) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab number-step extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "increment, decrement, or step a numeric field with optional clamping",
+        "notFor": "rendered spinners, formatting, units, or currency"
+      },
+      "publicExports": [
+        "NumberStep",
+        "NumberStepChange",
+        "NumberStepError",
+        "NumberStepErrorCode",
+        "NumberStepOptions",
+        "NumberStepResult",
+        "canStep",
+        "createNumberStep",
+        "step"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "headless",
+        "increment",
+        "json",
+        "number",
+        "stepper",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/paste-compatible",
       "name": "@zod-crud/paste-compatible",
       "status": "lab-extension",
@@ -2360,7 +2395,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 20,
+    "labExtensions": 21,
     "apps": 12
   }
 } as const;
