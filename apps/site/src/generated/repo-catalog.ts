@@ -2164,6 +2164,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/text-transform",
+      "name": "@zod-crud/text-transform",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab text-transform (case/whitespace transforms on a string field) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab text-transform extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
+        "notFor": "locale-aware casing, rich text formatting toolbars, or find/replace"
+      },
+      "publicExports": [
+        "TextTransform",
+        "TextTransformChange",
+        "TextTransformError",
+        "TextTransformErrorCode",
+        "TextTransformResult",
+        "TextTransformer",
+        "applyTransform",
+        "canTransform",
+        "createTextTransform"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "case",
+        "headless",
+        "json",
+        "text",
+        "transform",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/wrap-unwrap",
       "name": "@zod-crud/wrap-unwrap",
       "status": "lab-extension",
@@ -2395,7 +2430,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 21,
+    "labExtensions": 22,
     "apps": 12
   }
 } as const;
