@@ -104,6 +104,10 @@ const extensionGuidance = {
     useFor: "hold temporary invalid form input before committing valid JSON",
     notFor: "rendered form components",
   },
+  "@zod-crud/forward-fill": {
+    useFor: "carry the last non-empty value into the empty slots that follow (ffill)",
+    notFor: "constant fill, numeric series interpolation, or rendered grid UI",
+  },
   "@zod-crud/grid-paste": {
     useFor: "paste a 2D value matrix onto a rectangular array-of-records region",
     notFor: "TSV/CSV parsing, clipboard I/O, or auto-growing the array",
