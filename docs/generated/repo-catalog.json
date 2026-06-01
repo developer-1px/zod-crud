@@ -1672,6 +1672,42 @@
       ]
     },
     {
+      "path": "labs/extensions/dedupe",
+      "name": "@zod-crud/dedupe",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab dedupe (remove duplicate array items) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab dedupe extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "remove duplicate array items by whole value or a host key",
+        "notFor": "fuzzy matching, cross-array dedupe, or JSONPath match deletion"
+      },
+      "publicExports": [
+        "Dedupe",
+        "DedupeChange",
+        "DedupeError",
+        "DedupeErrorCode",
+        "DedupeKeyOf",
+        "DedupeOptions",
+        "DedupeResult",
+        "canDedupe",
+        "createDedupe",
+        "dedupe"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "array",
+        "dedupe",
+        "duplicate",
+        "headless",
+        "json",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/document-diff",
       "name": "@zod-crud/document-diff",
       "status": "lab-extension",
@@ -2287,7 +2323,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 18,
+    "labExtensions": 19,
     "apps": 12
   }
 }
