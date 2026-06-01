@@ -204,6 +204,10 @@ const extensionGuidance = {
     useFor: "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
     notFor: "ordered insertion position or deduping an existing array",
   },
+  "@zod-crud/slugify": {
+    useFor: "derive a URL-safe slug from a string field (CMS title to slug)",
+    notFor: "uniqueness/collision handling or non-Latin transliteration",
+  },
   "@zod-crud/snippets": {
     useFor: "insert reusable JSON payloads with schema-safe paste checks",
     notFor: "slash palette UI or snippet storage",

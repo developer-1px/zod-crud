@@ -2516,6 +2516,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/slugify",
+      "name": "@zod-crud/slugify",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab slugify (derive a URL-safe slug from a string) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab slugify extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "derive a URL-safe slug from a string field (CMS title to slug)",
+        "notFor": "uniqueness/collision handling or non-Latin transliteration"
+      },
+      "publicExports": [
+        "Slugify",
+        "SlugifyChange",
+        "SlugifyError",
+        "SlugifyErrorCode",
+        "SlugifyOptions",
+        "SlugifyResult",
+        "canSlugify",
+        "createSlugify",
+        "slugify"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "headless",
+        "json",
+        "slug",
+        "slugify",
+        "url",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/split-text",
       "name": "@zod-crud/split-text",
       "status": "lab-extension",
@@ -2851,7 +2886,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 34,
+    "labExtensions": 35,
     "apps": 12
   }
 } as const;
