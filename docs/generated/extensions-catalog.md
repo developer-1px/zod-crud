@@ -25,7 +25,7 @@ Official extensions: 16
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 36
+Lab extensions: 37
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -55,6 +55,7 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/limit` | lab-only | 9 | cap a JSON array to at most N items, keeping the start or end | choosing survivors beyond start/end, or auto-trimming on insert | Lab limit extension for `zod-crud` documents. |
 | `@zod-crud/move-selection` | lab-only | 9 | move a contiguous selection of sibling items to a new position | single-item moves, drag/drop events, or cross-array moves | Lab move-selection extension for `zod-crud` documents. |
 | `@zod-crud/number-step` | lab-only | 9 | increment, decrement, or step a numeric field with optional clamping | rendered spinners, formatting, units, or currency | Lab number-step extension for `zod-crud` documents. |
+| `@zod-crud/pad` | lab-only | 9 | pad a string field to a minimum length (zero-padded codes/IDs) | number formatting or display-time alignment | Lab pad extension for `zod-crud` documents. |
 | `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
 | `@zod-crud/presence-cursors` | lab-only | 10 | track remote collaborator cursors and selections | CRDT/OT or realtime transport | Lab package for remote collaborator cursor and selection presence. |
 | `@zod-crud/references` | lab-only | 21 | track stable references and backlinks over JSON documents | route state or rendered links | Lab extension for stable references and backlinks over JSON documents. |

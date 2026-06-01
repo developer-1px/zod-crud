@@ -2285,6 +2285,41 @@
       ]
     },
     {
+      "path": "labs/extensions/pad",
+      "name": "@zod-crud/pad",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab pad (pad a string to a minimum length) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab pad extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "pad a string field to a minimum length (zero-padded codes/IDs)",
+        "notFor": "number formatting or display-time alignment"
+      },
+      "publicExports": [
+        "Pad",
+        "PadChange",
+        "PadError",
+        "PadErrorCode",
+        "PadOptions",
+        "PadResult",
+        "canPad",
+        "createPad",
+        "pad"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "format",
+        "headless",
+        "json",
+        "pad",
+        "string",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/paste-compatible",
       "name": "@zod-crud/paste-compatible",
       "status": "lab-extension",
@@ -2920,7 +2955,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 36,
+    "labExtensions": 37,
     "apps": 12
   }
 }
