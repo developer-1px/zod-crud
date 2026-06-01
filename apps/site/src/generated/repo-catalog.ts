@@ -1970,6 +1970,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/join-text",
+      "name": "@zod-crud/join-text",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab join-text (join an array into a string field) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab join-text extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "join an array into a string field with a separator (inverse of split-text)",
+        "notFor": "locale list formatting, or reading the result without writing"
+      },
+      "publicExports": [
+        "JoinText",
+        "JoinTextChange",
+        "JoinTextError",
+        "JoinTextErrorCode",
+        "JoinTextOptions",
+        "JoinTextResult",
+        "canJoin",
+        "createJoinText",
+        "join"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "array",
+        "headless",
+        "join",
+        "json",
+        "text",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/layer-order",
       "name": "@zod-crud/layer-order",
       "status": "lab-extension",
@@ -2501,7 +2536,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 24,
+    "labExtensions": 25,
     "apps": 12
   }
 } as const;

@@ -75,6 +75,7 @@ Classification:
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |
 | Batch set field on selection | Notion/Airtable multi-select edit, Jira/Linear bulk | lab `batch-set`; official `bulk-edit`; core canPatch | lab-covered (selection-driven); `bulk-edit` is JSONPath query-driven, `batch-set` takes explicit selected pointers |
 | Clear contents / reset field | sheets (Delete), forms, CMS, admin reset | lab `clear-values`; core schema introspection + replace | lab-covered; schema-derived empties, enum/object empties stay host policy via `emptyFor` |
+| Join list to text | tag->csv, derived display fields, Sheets TEXTJOIN | lab `join-text`; core read + canPatch | lab-covered; inverse of `split-text`, locale formatting host-owned |
 | Split text to list | tag inputs, paste-as-list, Sheets split | lab `split-text`; core read + canPatch | lab-covered; delimiter split into 1D array, distinct from `grid-paste` 2D and full CSV parsing |
 | Change case / trim text | docs change-case, sheets UPPER/LOWER/TRIM, CMS cleanup | lab `text-transform`; core read + canPatch | lab-covered; named transforms + host fn, schema string constraints enforced by canPatch |
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |

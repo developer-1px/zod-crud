@@ -104,6 +104,10 @@ const extensionGuidance = {
     useFor: "move a contiguous selection of sibling items to a new position",
     notFor: "single-item moves, drag/drop events, or cross-array moves",
   },
+  "@zod-crud/join-text": {
+    useFor: "join an array into a string field with a separator (inverse of split-text)",
+    notFor: "locale list formatting, or reading the result without writing",
+  },
   "@zod-crud/layer-order": {
     useFor: "reorder visual stack arrays with bring/send commands",
     notFor: "canvas rendering or z-index CSS management",
