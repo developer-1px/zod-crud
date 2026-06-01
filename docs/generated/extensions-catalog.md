@@ -25,13 +25,14 @@ Official extensions: 16
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 22
+Lab extensions: 23
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
 | Package | Status | Exports | Use for | Not for | Summary |
 | --- | --- | ---: | --- | --- | --- |
 | `@zod-crud/autosave` | lab-only | 12 | schedule host-owned saves after document changes | retry queues, offline sync, or server conflict resolution | Lab autosave extension for `zod-crud` documents. |
+| `@zod-crud/batch-set` | lab-only | 10 | set a field across a list of selected item pointers to a constant or computed value | selecting which items to edit, or JSONPath query-driven replacement | Lab batch-set extension for `zod-crud` documents. |
 | `@zod-crud/bookmarks` | lab-only | 8 | keep named JSON Pointer locations stable across edits | browser bookmarks or route state | Headless bookmark tracking helpers for `zod-crud` documents. |
 | `@zod-crud/checkpoints` | lab-only | 13 | name and restore document snapshots | durable version graphs or cloud backup | Lab checkpoint extension for `zod-crud` documents. |
 | `@zod-crud/clear-values` | lab-only | 10 | reset selected fields to schema-derived empty values, keeping structure | structural delete, caller-supplied bulk replace, or enum/object default policy | Lab clear-values extension for `zod-crud` documents. |

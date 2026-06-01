@@ -1454,6 +1454,42 @@
       ]
     },
     {
+      "path": "labs/extensions/batch-set",
+      "name": "@zod-crud/batch-set",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab batch-set (set a field across selected items) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab batch-set extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "set a field across a list of selected item pointers to a constant or computed value",
+        "notFor": "selecting which items to edit, or JSONPath query-driven replacement"
+      },
+      "publicExports": [
+        "BatchSet",
+        "BatchSetChange",
+        "BatchSetError",
+        "BatchSetErrorCode",
+        "BatchSetOptions",
+        "BatchSetResult",
+        "BatchSetValue",
+        "batchSet",
+        "canBatchSet",
+        "createBatchSet"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "batch",
+        "headless",
+        "json",
+        "selection",
+        "set",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/bookmarks",
       "name": "@zod-crud/bookmarks",
       "status": "lab-extension",
@@ -2429,7 +2465,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 22,
+    "labExtensions": 23,
     "apps": 12
   }
 }
