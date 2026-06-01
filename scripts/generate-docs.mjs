@@ -180,6 +180,10 @@ const extensionGuidance = {
     useFor: "derive schema-backed field descriptors",
     notFor: "form rendering or input widgets",
   },
+  "@zod-crud/round": {
+    useFor: "round a number to a precision or nearest step (round/floor/ceil/trunc)",
+    notFor: "currency/locale formatting, or increment/clamp (see number-step)",
+  },
   "@zod-crud/search-replace": {
     useFor: "find and replace text across document string fields",
     notFor: "rendered text extraction or search UI",

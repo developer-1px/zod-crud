@@ -82,6 +82,7 @@ Classification:
 | Coerce field type | import cleanup, Sheets convert-to-number, data entry | lab `coerce`; core read + canPatch | lab-covered; only where schema accepts target type (union/coerce/unknown), strict fields rejected by canPatch |
 | Split text to list | tag inputs, paste-as-list, Sheets split | lab `split-text`; core read + canPatch | lab-covered; delimiter split into 1D array, distinct from `grid-paste` 2D and full CSV parsing |
 | Change case / trim text | docs change-case, sheets UPPER/LOWER/TRIM, CMS cleanup | lab `text-transform`; core read + canPatch | lab-covered; named transforms + host fn, schema string constraints enforced by canPatch |
+| Round / snap number | currency 2dp, measurements, slider step snap | lab `round`; core read + canPatch | lab-covered; round/floor/ceil to precision or step, distinct from `number-step` increment |
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |
 | Toggle set membership | tags, labels, multi-select chips | lab `set-membership`; core read + canPatch | lab-covered; toggle/add/remove a value in an array-as-set, host keyOf for objects |
 | Toggle / cycle value | checkboxes, kanban status, select fields | lab `cycle`; core read + canPatch | lab-covered; boolean toggle from schema, enum order is host-supplied `values` |
