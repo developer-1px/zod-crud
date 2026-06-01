@@ -16,6 +16,10 @@ const extensionGuidance = {
     useFor: "schedule host-owned saves after document changes",
     notFor: "retry queues, offline sync, or server conflict resolution",
   },
+  "@zod-crud/batch-set": {
+    useFor: "set a field across a list of selected item pointers to a constant or computed value",
+    notFor: "selecting which items to edit, or JSONPath query-driven replacement",
+  },
   "@zod-crud/bookmarks": {
     useFor: "keep named JSON Pointer locations stable across edits",
     notFor: "browser bookmarks or route state",

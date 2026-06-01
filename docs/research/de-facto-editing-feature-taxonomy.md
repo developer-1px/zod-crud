@@ -73,6 +73,7 @@ Classification:
 | Sort/filter | sheets, Airtable, kanban, CMS, Linear/Jira | lab `collection-sort`; core query/read | sort covered; filter is mostly view-owned unless persisted as document state |
 | Fill/propagate series | sheets, Airtable-like grids | lab `fill-series`; core patch can express it | lab-covered; constant fill + linear numeric series, host owns date/pattern series |
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |
+| Batch set field on selection | Notion/Airtable multi-select edit, Jira/Linear bulk | lab `batch-set`; official `bulk-edit`; core canPatch | lab-covered (selection-driven); `bulk-edit` is JSONPath query-driven, `batch-set` takes explicit selected pointers |
 | Clear contents / reset field | sheets (Delete), forms, CMS, admin reset | lab `clear-values`; core schema introspection + replace | lab-covered; schema-derived empties, enum/object empties stay host policy via `emptyFor` |
 | Change case / trim text | docs change-case, sheets UPPER/LOWER/TRIM, CMS cleanup | lab `text-transform`; core read + canPatch | lab-covered; named transforms + host fn, schema string constraints enforced by canPatch |
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |
