@@ -176,6 +176,10 @@ const extensionGuidance = {
     useFor: "find and replace text across document string fields",
     notFor: "rendered text extraction or search UI",
   },
+  "@zod-crud/swap": {
+    useFor: "exchange the positions of two items in the same array",
+    notFor: "cross-array swaps or moving to an arbitrary index",
+  },
   "@zod-crud/text-transform": {
     useFor: "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
     notFor: "locale-aware casing, rich text formatting toolbars, or find/replace",

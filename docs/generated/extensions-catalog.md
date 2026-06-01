@@ -25,7 +25,7 @@ Official extensions: 16
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 30
+Lab extensions: 31
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -59,5 +59,6 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/references` | lab-only | 21 | track stable references and backlinks over JSON documents | route state or rendered links | Lab extension for stable references and backlinks over JSON documents. |
 | `@zod-crud/set-membership` | lab-only | 9 | toggle, add, or remove a value's presence in a JSON array (tag/multi-select) | ordered insertion position or deduping an existing array | Lab set-membership extension for `zod-crud` documents. |
 | `@zod-crud/split-text` | lab-only | 9 | split a string into array items by a delimiter (tag input, paste-as-list) | CSV/TSV quoting, split-to-columns, or clipboard access | Lab split-text extension for `zod-crud` documents. |
+| `@zod-crud/swap` | lab-only | 8 | exchange the positions of two items in the same array | cross-array swaps or moving to an arbitrary index | Lab swap extension for `zod-crud` documents. |
 | `@zod-crud/text-transform` | lab-only | 9 | apply case/whitespace transforms (upper, lower, trim, title) to a string field | locale-aware casing, rich text formatting toolbars, or find/replace | Lab text-transform extension for `zod-crud` documents. |
 | `@zod-crud/wrap-unwrap` | lab-only | 15 | wrap sibling JSON items in host-defined containers | visual grouping or layout containers | Lab extension for structural `wrap` and `unwrap`. |

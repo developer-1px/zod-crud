@@ -2444,6 +2444,40 @@
       ]
     },
     {
+      "path": "labs/extensions/swap",
+      "name": "@zod-crud/swap",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab swap (exchange two array items) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab swap extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "exchange the positions of two items in the same array",
+        "notFor": "cross-array swaps or moving to an arbitrary index"
+      },
+      "publicExports": [
+        "Swap",
+        "SwapChange",
+        "SwapError",
+        "SwapErrorCode",
+        "SwapResult",
+        "canSwap",
+        "createSwap",
+        "swap"
+      ],
+      "publicExportCount": 8,
+      "keywords": [
+        "exchange",
+        "headless",
+        "json",
+        "reorder",
+        "swap",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/text-transform",
       "name": "@zod-crud/text-transform",
       "status": "lab-extension",
@@ -2710,7 +2744,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 30,
+    "labExtensions": 31,
     "apps": 12
   }
 }
