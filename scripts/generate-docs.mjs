@@ -160,6 +160,10 @@ const extensionGuidance = {
     useFor: "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
     notFor: "locale-aware casing, rich text formatting toolbars, or find/replace",
   },
+  "@zod-crud/split-text": {
+    useFor: "split a string into array items by a delimiter (tag input, paste-as-list)",
+    notFor: "CSV/TSV quoting, split-to-columns, or clipboard access",
+  },
   "@zod-crud/snippets": {
     useFor: "insert reusable JSON payloads with schema-safe paste checks",
     notFor: "slash palette UI or snippet storage",

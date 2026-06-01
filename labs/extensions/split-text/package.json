@@ -1,0 +1,50 @@
+{
+  "name": "@zod-crud/split-text",
+  "version": "0.1.0",
+  "description": "Lab split-text (split a string into array items) extension functions for zod-crud documents.",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/developer-1px/zod-crud.git",
+    "directory": "labs/extensions/split-text"
+  },
+  "keywords": [
+    "zod-crud",
+    "split",
+    "text",
+    "tags",
+    "json",
+    "headless"
+  ],
+  "files": [
+    "README.md",
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "test": "vitest run --config vitest.config.ts",
+    "typecheck": "tsc -p tsconfig.test.json --noEmit",
+    "verify": "npm run typecheck && npm test && npm run build"
+  },
+  "peerDependencies": {
+    "zod-crud": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "vitest": "^4.1.7",
+    "zod": "^4.0.0",
+    "zod-crud": "*"
+  }
+}

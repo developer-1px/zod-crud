@@ -2200,6 +2200,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/split-text",
+      "name": "@zod-crud/split-text",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab split-text (split a string into array items) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab split-text extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "split a string into array items by a delimiter (tag input, paste-as-list)",
+        "notFor": "CSV/TSV quoting, split-to-columns, or clipboard access"
+      },
+      "publicExports": [
+        "SplitText",
+        "SplitTextChange",
+        "SplitTextError",
+        "SplitTextErrorCode",
+        "SplitTextOptions",
+        "SplitTextResult",
+        "canSplit",
+        "createSplitText",
+        "split"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "headless",
+        "json",
+        "split",
+        "tags",
+        "text",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/text-transform",
       "name": "@zod-crud/text-transform",
       "status": "lab-extension",
@@ -2466,7 +2501,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 23,
+    "labExtensions": 24,
     "apps": 12
   }
 } as const;
