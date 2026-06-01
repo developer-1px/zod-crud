@@ -70,7 +70,11 @@ export function canCycle<TDocument, TValue = unknown>(
 
   const current = read.value as TValue;
   const step = options?.direction === "prev" ? -1 : 1;
-  const next = nextValue(current, options?.values, step);
+  // When the host omits values, derive them from the schema: enum/literal now
+  // expose their option set via describe().allowed (zod-crud #130). Booleans
+  // still toggle without any value list.
+  const values = options?.values ?? enumValuesFromSchema<TValue>(doc, pointer);
+  const next = nextValue(current, values, step);
   if (!next.ok) {
     return error("not_cyclable", next.reason, pointer);
   }
@@ -106,6 +110,16 @@ export function cycle<TDocument, TValue = unknown>(
   const patched = doc.patch(change.operations);
   if (!patched.ok) return patchError(pointer, patched);
   return change;
+}
+
+function enumValuesFromSchema<TValue>(
+  doc: JSONDocument<unknown>,
+  pointer: Pointer,
+): ReadonlyArray<TValue> | undefined {
+  const described = doc.schema.describe(pointer);
+  if (!described.ok) return undefined;
+  const allowed = described.description.allowed;
+  return allowed && allowed.length > 0 ? (allowed as ReadonlyArray<TValue>) : undefined;
 }
 
 function nextValue<TValue>(

@@ -7,10 +7,11 @@ import { canCycle, createCycle, type CycleResult } from "../src/index.js";
 const Schema = z.object({
   done: z.boolean(),
   status: z.enum(["todo", "doing", "review", "done"]),
+  name: z.string(),
 });
 
 function createDoc() {
-  return createJSONDocument(Schema, { done: false, status: "todo" });
+  return createJSONDocument(Schema, { done: false, status: "todo", name: "x" });
 }
 
 const STATUSES = ["todo", "doing", "review", "done"] as const;
@@ -42,7 +43,7 @@ describe("@zod-crud/cycle", () => {
   });
 
   test("wraps around at the end", () => {
-    const doc = createJSONDocument(Schema, { done: false, status: "done" });
+    const doc = createJSONDocument(Schema, { done: false, status: "done", name: "x" });
     const c = createCycle(doc);
 
     expectOk(c.cycle("/status", { values: STATUSES }));
@@ -58,7 +59,7 @@ describe("@zod-crud/cycle", () => {
   });
 
   test("jumps to the first entry when the current value is not in the list", () => {
-    const doc = createJSONDocument(Schema, { done: false, status: "review" });
+    const doc = createJSONDocument(Schema, { done: false, status: "review", name: "x" });
     const c = createCycle(doc);
 
     const result = expectOk(c.cycle("/status", { values: ["todo", "done"] }));
@@ -72,9 +73,19 @@ describe("@zod-crud/cycle", () => {
     expect(doc.value.done).toBe(false);
   });
 
-  test("rejects a non-boolean field with no values", () => {
+  test("cycles an enum field from the schema when values are omitted (#130)", () => {
     const doc = createDoc();
-    const result = canCycle(doc, "/status");
+    const c = createCycle(doc);
+
+    const result = expectOk(c.cycle("/status"));
+    expect(result.from).toBe("todo");
+    expect(result.to).toBe("doing");
+    expect(doc.value.status).toBe("doing");
+  });
+
+  test("rejects a non-enum non-boolean field with no values", () => {
+    const doc = createDoc();
+    const result = canCycle(doc, "/name");
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.code).toBe("not_cyclable");
   });

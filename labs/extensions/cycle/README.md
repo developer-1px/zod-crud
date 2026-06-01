@@ -30,9 +30,13 @@ c.cycle("/status", { values: STATUSES, direction: "prev" }); // previous
 
 ## Friction report
 
-Boolean toggle needs nothing from the schema. For enum/select fields the host
-must pass `values`, because `doc.schema.describe` reports `kind: "enum"` but does
-**not** expose the option set in `SchemaDescription.allowed` (only
-`discriminatedUnion` populates it). This is the same introspection gap recorded
-by `@zod-crud/clear-values`: exposing `allowed` for enum/literal would let cycle
-derive the option order generically instead of requiring host-supplied `values`.
+Boolean toggle needs nothing from the schema. For enum fields, cycle now derives
+the option set from `doc.schema.describe(pointer).allowed` when `values` is
+omitted, so a select/status field cycles with no host input.
+
+This closes the introspection gap originally recorded here and by
+`@zod-crud/clear-values`: zod-crud now exposes `allowed` for enum/literal (not
+just `discriminatedUnion`), so the option order comes from the schema. A host
+`values` is still accepted to override the order or cycle a non-enum field; a
+plain string/number with neither a boolean type, schema `allowed`, nor `values`
+is reported as `not_cyclable`.

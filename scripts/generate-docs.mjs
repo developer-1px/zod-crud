@@ -53,8 +53,8 @@ const extensionGuidance = {
     notFor: "id generation, relation graphs, routing, or server identity",
   },
   "@zod-crud/cycle": {
-    useFor: "toggle a boolean or advance a field through ordered values",
-    notFor: "deriving enum options from schema, or rendered controls",
+    useFor: "toggle a boolean or advance an enum/value field (enum options come from the schema)",
+    notFor: "rendered toggle controls or keyboard policy",
   },
   "@zod-crud/collection-sort": {
     useFor: "sort or reverse JSON array items",

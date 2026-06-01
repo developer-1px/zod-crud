@@ -40,7 +40,7 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/collection-sort` | lab-only | 13 | sort or reverse JSON array items | query views, filters, or server sorting | Lab collection sort extension for `zod-crud` documents. |
 | `@zod-crud/computed-fields` | lab-only | 12 | sync host-computed derived JSON fields | formula languages or dependency runtimes | Lab computed field extension for `zod-crud` documents. |
 | `@zod-crud/convert-node-kind` | lab-only | 12 | convert selected nodes between host-described kinds | schema migration systems | Lab extension for converting a JSON node from one host-described kind to another. |
-| `@zod-crud/cycle` | lab-only | 10 | toggle a boolean or advance a field through ordered values | deriving enum options from schema, or rendered controls | Lab cycle extension for `zod-crud` documents. |
+| `@zod-crud/cycle` | lab-only | 10 | toggle a boolean or advance an enum/value field (enum options come from the schema) | rendered toggle controls or keyboard policy | Lab cycle extension for `zod-crud` documents. |
 | `@zod-crud/dedupe` | lab-only | 10 | remove duplicate array items by whole value or a host key | fuzzy matching, cross-array dedupe, or JSONPath match deletion | Lab dedupe extension for `zod-crud` documents. |
 | `@zod-crud/document-diff` | lab-only | 10 | produce and apply patch changes toward a target document | visual diff UI or merge conflict resolution | Lab document diff and apply extension for `zod-crud` documents. |
 | `@zod-crud/drag-drop` | lab-only | 15 | turn drag/drop intent into move or paste operations | DOM drag/drop events, hit testing, or hover UI | Lab drag and drop extension for `zod-crud` documents. |
