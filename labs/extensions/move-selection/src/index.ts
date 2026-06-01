@@ -2,12 +2,14 @@ import {
   appendSegment,
   lastSegmentIndex,
   parentPointer,
+  resolveSiblingRange,
   tryParsePointer,
   type JSONCapabilityResult,
   type JSONDocument,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
+  type SiblingRangeErrorCode,
 } from "zod-crud";
 
 export type MoveSelectionErrorCode =
@@ -161,42 +163,20 @@ interface NormalizedRange {
   indices: number[];
 }
 
+// Selected-sibling-range normalization is shared core (RFC #87). Map its error
+// codes back to this lab's existing codes so behavior stays identical.
+const MOVE_ERROR_CODE: Record<SiblingRangeErrorCode, MoveSelectionErrorCode> = {
+  empty_selection: "empty_selection",
+  invalid_pointer: "invalid_pointer",
+  not_array_item: "not_array_item",
+  mixed_parent: "mixed_parent",
+  non_contiguous: "not_contiguous",
+};
+
 function normalizeRange(source: ReadonlyArray<Pointer>): NormalizedRange | MoveSelectionError {
-  if (source.length === 0) {
-    return error("empty_selection", "move source must contain at least one pointer.");
-  }
-
-  let parent: Pointer | null = null;
-  const indices: number[] = [];
-  for (const pointer of source) {
-    if (tryParsePointer(pointer) === null) {
-      return error("invalid_pointer", `invalid JSON Pointer in move source: ${pointer}`, pointer);
-    }
-    const index = lastSegmentIndex(pointer);
-    if (index === null) {
-      return error("not_array_item", `move source pointer must end with an array index: ${pointer}`, pointer);
-    }
-    const itemParent = parentPointer(pointer);
-    if (itemParent === null) {
-      return error("not_array_item", `move source pointer has no parent array: ${pointer}`, pointer);
-    }
-    if (parent === null) {
-      parent = itemParent;
-    } else if (parent !== itemParent) {
-      return error("mixed_parent", `move source pointers must share one parent array: ${parent} vs ${itemParent}`, pointer);
-    }
-    indices.push(index);
-  }
-
-  indices.sort((left, right) => left - right);
-  const start = indices[0] as number;
-  for (let offset = 0; offset < indices.length; offset += 1) {
-    if (indices[offset] !== start + offset) {
-      return error("not_contiguous", `move source must be a contiguous index range; got ${indices.join(", ")}`, parent ?? undefined);
-    }
-  }
-
-  return { ok: true, parent: parent as Pointer, indices };
+  const range = resolveSiblingRange(source, { requireContiguous: true });
+  if (!range.ok) return error(MOVE_ERROR_CODE[range.code], range.reason, range.pointer);
+  return { ok: true, parent: range.parent, indices: range.locations.map((location) => location.index) };
 }
 
 function capabilityError(
