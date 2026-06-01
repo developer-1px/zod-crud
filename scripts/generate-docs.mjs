@@ -88,6 +88,10 @@ const extensionGuidance = {
     useFor: "turn drag/drop intent into move or paste operations",
     notFor: "DOM drag/drop events, hit testing, or hover UI",
   },
+  "@zod-crud/fill-empty": {
+    useFor: "fill only empty slots across targets, preserving non-empty values",
+    notFor: "adding missing fields, choosing targets, or unconditional batch set",
+  },
   "@zod-crud/fill-series": {
     useFor: "fill a value or linear series across a contiguous sibling range",
     notFor: "date/pattern series, 2D grid fill, or fill-handle drag UI",
