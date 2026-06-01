@@ -1708,6 +1708,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/fill-series",
+      "name": "@zod-crud/fill-series",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab fill/series propagation extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab fill/series propagation extension for `zod-crud` documents.",
+      "guidance": null,
+      "publicExports": [
+        "FillCell",
+        "FillGenerator",
+        "FillOptions",
+        "FillSeries",
+        "FillSeriesChange",
+        "FillSeriesError",
+        "FillSeriesErrorCode",
+        "FillSeriesResult",
+        "FillSource",
+        "canFill",
+        "createFillSeries",
+        "fill"
+      ],
+      "publicExportCount": 12,
+      "keywords": [
+        "autofill",
+        "fill",
+        "headless",
+        "json",
+        "series",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/grouping",
       "name": "@zod-crud/grouping",
       "status": "lab-extension",
@@ -2139,7 +2174,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 14,
+    "labExtensions": 15,
     "apps": 12
   }
 } as const;
