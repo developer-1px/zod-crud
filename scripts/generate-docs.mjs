@@ -152,6 +152,10 @@ const extensionGuidance = {
     useFor: "find and replace text across document string fields",
     notFor: "rendered text extraction or search UI",
   },
+  "@zod-crud/text-transform": {
+    useFor: "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
+    notFor: "locale-aware casing, rich text formatting toolbars, or find/replace",
+  },
   "@zod-crud/snippets": {
     useFor: "insert reusable JSON payloads with schema-safe paste checks",
     notFor: "slash palette UI or snippet storage",
