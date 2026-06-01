@@ -144,6 +144,10 @@ const extensionGuidance = {
     useFor: "adapt external payloads before schema-safe paste",
     notFor: "browser clipboard I/O or autocomplete dropdowns",
   },
+  "@zod-crud/pad": {
+    useFor: "pad a string field to a minimum length (zero-padded codes/IDs)",
+    notFor: "number formatting or display-time alignment",
+  },
   "@zod-crud/patch-log": {
     useFor: "record and replay applied JSON Patch records",
     notFor: "product activity feeds or audit authorization",
