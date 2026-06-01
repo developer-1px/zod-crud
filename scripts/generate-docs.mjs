@@ -60,6 +60,10 @@ const extensionGuidance = {
     useFor: "convert selected nodes between host-described kinds",
     notFor: "schema migration systems",
   },
+  "@zod-crud/dedupe": {
+    useFor: "remove duplicate array items by whole value or a host key",
+    notFor: "fuzzy matching, cross-array dedupe, or JSONPath match deletion",
+  },
   "@zod-crud/dirty-state": {
     useFor: "compare a document to a clean baseline",
     notFor: "persistence or server save status",
