@@ -1822,6 +1822,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/move-selection",
+      "name": "@zod-crud/move-selection",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab contiguous sibling block move extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab move-selection extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "move a contiguous selection of sibling items to a new position",
+        "notFor": "single-item moves, drag/drop events, or cross-array moves"
+      },
+      "publicExports": [
+        "MoveSelection",
+        "MoveSelectionChange",
+        "MoveSelectionError",
+        "MoveSelectionErrorCode",
+        "MoveSelectionResult",
+        "MoveSelectionTarget",
+        "canMoveSelection",
+        "createMoveSelection",
+        "moveSelection"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "headless",
+        "json",
+        "move",
+        "reorder",
+        "selection",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/paste-compatible",
       "name": "@zod-crud/paste-compatible",
       "status": "lab-extension",
@@ -2177,7 +2212,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 15,
+    "labExtensions": 16,
     "apps": 12
   }
 } as const;

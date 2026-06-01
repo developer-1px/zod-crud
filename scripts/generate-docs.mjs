@@ -80,6 +80,10 @@ const extensionGuidance = {
     useFor: "group and ungroup selected sibling JSON items",
     notFor: "Airtable group-by views",
   },
+  "@zod-crud/move-selection": {
+    useFor: "move a contiguous selection of sibling items to a new position",
+    notFor: "single-item moves, drag/drop events, or cross-array moves",
+  },
   "@zod-crud/layer-order": {
     useFor: "reorder visual stack arrays with bring/send commands",
     notFor: "canvas rendering or z-index CSS management",
