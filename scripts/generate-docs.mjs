@@ -28,6 +28,10 @@ const extensionGuidance = {
     useFor: "name and restore document snapshots",
     notFor: "durable version graphs or cloud backup",
   },
+  "@zod-crud/clear-values": {
+    useFor: "reset selected fields to schema-derived empty values, keeping structure",
+    notFor: "structural delete, caller-supplied bulk replace, or enum/object default policy",
+  },
   "@zod-crud/clipboard-web": {
     useFor: "bridge zod-crud clipboard payloads to the browser clipboard",
     notFor: "TSV/CSV spreadsheet paste engines",
