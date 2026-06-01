@@ -1673,6 +1673,42 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/cycle",
+      "name": "@zod-crud/cycle",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab cycle (toggle/advance a field through values) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab cycle extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "toggle a boolean or advance a field through ordered values",
+        "notFor": "deriving enum options from schema, or rendered controls"
+      },
+      "publicExports": [
+        "Cycle",
+        "CycleChange",
+        "CycleDirection",
+        "CycleError",
+        "CycleErrorCode",
+        "CycleOptions",
+        "CycleResult",
+        "canCycle",
+        "createCycle",
+        "cycle"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "cycle",
+        "enum",
+        "headless",
+        "json",
+        "toggle",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/dedupe",
       "name": "@zod-crud/dedupe",
       "status": "lab-extension",
@@ -2324,7 +2360,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 19,
+    "labExtensions": 20,
     "apps": 12
   }
 } as const;
