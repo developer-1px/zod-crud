@@ -1,12 +1,11 @@
 import {
-  lastSegmentIndex,
-  parentPointer,
-  tryParsePointer,
+  resolveSiblingRange,
   type JSONCapabilityResult,
   type JSONDocument,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
+  type SiblingRangeErrorCode,
 } from "zod-crud";
 
 export type LayerOrderAction =
@@ -184,74 +183,42 @@ function planLayerOrder<TDocument>(
   };
 }
 
+// Selected-sibling-range normalization (dedupe, shared parent, sort) is shared
+// core (RFC #87). Layer order does not require contiguity. Bounds reads stay
+// local; layer items carry no value.
+const LAYER_ERROR_CODE: Record<SiblingRangeErrorCode, LayerOrderErrorCode> = {
+  empty_selection: "empty_selection",
+  invalid_pointer: "invalid_pointer",
+  not_array_item: "not_layer_item",
+  mixed_parent: "mixed_parent",
+  non_contiguous: "mixed_parent",
+};
+
 function readLayerLocations<TDocument>(
   doc: JSONDocument<TDocument>,
   source: LayerOrderSource,
 ): { ok: true; locations: ReadonlyArray<LayerItemLocation> } | LayerOrderError {
-  const pointers = uniquePointers(Array.isArray(source) ? source : [source]);
-  if (pointers.length === 0) {
-    return layerOrderError("empty_selection", "layer order source is empty");
-  }
+  const range = resolveSiblingRange(Array.isArray(source) ? source : [source], { dedupe: true });
+  if (!range.ok) return layerOrderError(LAYER_ERROR_CODE[range.code], range.reason, range.pointer);
 
-  const locations: LayerItemLocation[] = [];
-  for (const pointer of pointers) {
-    const location = readLayerLocation(doc, pointer);
-    if (!location.ok) return location;
-    locations.push(location.location);
-  }
-
-  const parent = locations[0]!.parent;
-  if (locations.some((location) => location.parent !== parent)) {
-    return layerOrderError("mixed_parent", "layer order source must share one parent array", parent);
-  }
-
-  return {
-    ok: true,
-    locations: locations.sort((left, right) => left.index - right.index),
-  };
-}
-
-function readLayerLocation<TDocument>(
-  doc: JSONDocument<TDocument>,
-  pointer: Pointer,
-): { ok: true; location: LayerItemLocation } | LayerOrderError {
-  if (tryParsePointer(pointer) === null) {
-    return layerOrderError("invalid_pointer", `invalid JSON Pointer: ${pointer}`, pointer);
-  }
-
-  const parent = parentPointer(pointer);
-  if (parent === null) {
-    return layerOrderError("not_layer_item", "root is not a layer item", pointer);
-  }
-
-  const index = lastSegmentIndex(pointer);
-  if (index === null) {
-    return layerOrderError("not_layer_item", `pointer does not address an array item: ${pointer}`, pointer);
-  }
-
-  const parentRead = doc.at(parent);
+  const parentRead = doc.at(range.parent);
   if (!parentRead.ok) {
-    return layerOrderError(parentRead.code, parentRead.reason ?? `parent not found: ${parent}`, parentRead.pointer);
+    return layerOrderError(parentRead.code, parentRead.reason ?? `parent not found: ${range.parent}`, parentRead.pointer);
   }
   if (!Array.isArray(parentRead.value)) {
-    return layerOrderError("not_layer_item", `parent is not an array: ${parent}`, pointer, {
-      parent,
-    });
-  }
-  if (index >= parentRead.value.length) {
-    return layerOrderError("path_not_found", `layer item not found: ${pointer}`, pointer, {
-      parent,
-    });
+    return layerOrderError("not_layer_item", `parent is not an array: ${range.parent}`, range.parent, { parent: range.parent });
   }
 
-  return {
-    ok: true,
-    location: {
-      pointer,
-      parent,
-      index,
-    },
-  };
+  const items = parentRead.value;
+  const locations: LayerItemLocation[] = [];
+  for (const location of range.locations) {
+    if (location.index >= items.length) {
+      return layerOrderError("path_not_found", `layer item not found: ${location.pointer}`, location.pointer, { parent: range.parent });
+    }
+    locations.push({ pointer: location.pointer, parent: location.parent, index: location.index });
+  }
+
+  return { ok: true, locations };
 }
 
 function reorderArray(
@@ -299,9 +266,6 @@ function sameOrder(
     && current.every((item, index) => item === next[index]);
 }
 
-function uniquePointers(pointers: ReadonlyArray<Pointer>): Pointer[] {
-  return [...new Set(pointers)];
-}
 
 function copyChange(plan: LayerOrderPlan): LayerOrderChange {
   return {
