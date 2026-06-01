@@ -66,7 +66,7 @@ Classification:
 | --- | --- | --- | --- |
 | Select target(s) | docs, sheets, object surfaces, outliners, kanban | core selection snapshots, pointers, read/query | core-covered; visual focus and hit testing stay app-owned |
 | Insert/delete/replace | all genres | core `insert`, `delete`, `replace`, `patch`, `can*` | core-covered |
-| Move/reorder | slides, sheets, kanban, outliners, object surfaces | core `move`; official `collection`; official/lab `outline`; lab `layer-order` | official/lab-covered |
+| Move/reorder | slides, sheets, kanban, outliners, object surfaces | core `move`; official `collection`; official/lab `outline`; labs `layer-order`, `move-selection` | official/lab-covered; `collection` owns single-item, `move-selection` owns contiguous block |
 | Duplicate | docs, sheets, slides, Figma, Airtable, Notion | core `duplicate`; official `collection`; labs can specialize selection results | core-covered |
 | Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; official `snippets`; labs `drag-drop`, `paste-compatible` | official/lab-covered |
 | Search/find/replace | docs, sheets, Notion, code review | core `find/query`; official `search-replace`, `bulk-edit` | official-covered |
