@@ -25,7 +25,7 @@ Official extensions: 16
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 32
+Lab extensions: 33
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -47,6 +47,7 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/ensure-fields` | lab-only | 8 | add missing object keys from a defaults map without overwriting existing ones | filling existing empty values, removing unknown keys, or deep merge | Lab ensure-fields extension for `zod-crud` documents. |
 | `@zod-crud/fill-empty` | lab-only | 10 | fill only empty slots across targets, preserving non-empty values | adding missing fields, choosing targets, or unconditional batch set | Lab fill-empty extension for `zod-crud` documents. |
 | `@zod-crud/fill-series` | lab-only | 12 | fill a value or linear series across a contiguous sibling range | date/pattern series, 2D grid fill, or fill-handle drag UI | Lab fill/series propagation extension for `zod-crud` documents. |
+| `@zod-crud/forward-fill` | lab-only | 9 | carry the last non-empty value into the empty slots that follow (ffill) | constant fill, numeric series interpolation, or rendered grid UI | Lab forward-fill extension for `zod-crud` documents. |
 | `@zod-crud/grid-paste` | lab-only | 9 | paste a 2D value matrix onto a rectangular array-of-records region | TSV/CSV parsing, clipboard I/O, or auto-growing the array | Lab grid-paste extension for `zod-crud` documents. |
 | `@zod-crud/grouping` | lab-only | 15 | group and ungroup selected sibling JSON items | Airtable group-by views | Lab extension for structural `group` and `ungroup`. |
 | `@zod-crud/join-text` | lab-only | 9 | join an array into a string field with a separator (inverse of split-text) | locale list formatting, or reading the result without writing | Lab join-text extension for `zod-crud` documents. |

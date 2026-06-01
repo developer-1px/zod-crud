@@ -74,6 +74,7 @@ Classification:
 | Fill/propagate series | sheets, Airtable-like grids | lab `fill-series`; core patch can express it | lab-covered; constant fill + linear numeric series, host owns date/pattern series |
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |
 | Ensure object defaults | settings/config normalization, form init | lab `ensure-fields`; core read + canPatch | lab-covered; add missing keys only, additive complement to `fill-empty` |
+| Forward-fill blanks | unmerge cleanup, pandas ffill, fill-down-blanks | lab `forward-fill`; core read + canPatch | lab-covered; carry neighbor value (down/up), distinct from `fill-empty` constant and `fill-series` series |
 | Fill empty / default blanks | Sheets fill blanks, default missing values, data cleanup | lab `fill-empty`; core read + canPatch | lab-covered; conditional set (preserves non-empty), distinct from `batch-set` unconditional |
 | Batch set field on selection | Notion/Airtable multi-select edit, Jira/Linear bulk | lab `batch-set`; official `bulk-edit`; core canPatch | lab-covered (selection-driven); `bulk-edit` is JSONPath query-driven, `batch-set` takes explicit selected pointers |
 | Clear contents / reset field | sheets (Delete), forms, CMS, admin reset | lab `clear-values`; core schema introspection + replace | lab-covered; schema-derived empties, enum/object empties stay host policy via `emptyFor` |

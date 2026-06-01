@@ -2000,6 +2000,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/forward-fill",
+      "name": "@zod-crud/forward-fill",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab forward-fill (carry last non-empty value into blanks) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab forward-fill extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "carry the last non-empty value into the empty slots that follow (ffill)",
+        "notFor": "constant fill, numeric series interpolation, or rendered grid UI"
+      },
+      "publicExports": [
+        "ForwardFill",
+        "ForwardFillChange",
+        "ForwardFillError",
+        "ForwardFillErrorCode",
+        "ForwardFillOptions",
+        "ForwardFillResult",
+        "canForwardFill",
+        "createForwardFill",
+        "forwardFill"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "ffill",
+        "forward-fill",
+        "headless",
+        "json",
+        "propagate",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/grid-paste",
       "name": "@zod-crud/grid-paste",
       "status": "lab-extension",
@@ -2780,7 +2815,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 32,
+    "labExtensions": 33,
     "apps": 12
   }
 } as const;
