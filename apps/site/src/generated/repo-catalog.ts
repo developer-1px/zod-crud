@@ -1746,6 +1746,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/grid-paste",
+      "name": "@zod-crud/grid-paste",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab grid paste (2D matrix into rectangular region) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab grid-paste extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "paste a 2D value matrix onto a rectangular array-of-records region",
+        "notFor": "TSV/CSV parsing, clipboard I/O, or auto-growing the array"
+      },
+      "publicExports": [
+        "GridPaste",
+        "GridPasteChange",
+        "GridPasteError",
+        "GridPasteErrorCode",
+        "GridPasteResult",
+        "GridPasteTarget",
+        "canPasteGrid",
+        "createGridPaste",
+        "pasteGrid"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "grid",
+        "headless",
+        "json",
+        "paste",
+        "table",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/grouping",
       "name": "@zod-crud/grouping",
       "status": "lab-extension",
@@ -2212,7 +2247,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 16,
+    "labExtensions": 17,
     "apps": 12
   }
 } as const;

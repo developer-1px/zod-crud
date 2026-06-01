@@ -76,6 +76,10 @@ const extensionGuidance = {
     useFor: "hold temporary invalid form input before committing valid JSON",
     notFor: "rendered form components",
   },
+  "@zod-crud/grid-paste": {
+    useFor: "paste a 2D value matrix onto a rectangular array-of-records region",
+    notFor: "TSV/CSV parsing, clipboard I/O, or auto-growing the array",
+  },
   "@zod-crud/grouping": {
     useFor: "group and ungroup selected sibling JSON items",
     notFor: "Airtable group-by views",
