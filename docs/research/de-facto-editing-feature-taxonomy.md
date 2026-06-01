@@ -71,7 +71,7 @@ Classification:
 | Copy/cut/paste/import | all genres | core clipboard; official `clipboard-web`; official `snippets`; labs `drag-drop`, `paste-compatible` | official/lab-covered |
 | Search/find/replace | docs, sheets, Notion, code review | core `find/query`; official `search-replace`, `bulk-edit` | official-covered |
 | Sort/filter | sheets, Airtable, kanban, CMS, Linear/Jira | lab `collection-sort`; core query/read | sort covered; filter is mostly view-owned unless persisted as document state |
-| Fill/propagate series | sheets, Airtable-like grids | core patch can express it | lab-gap: `fill-series` should test range propagation |
+| Fill/propagate series | sheets, Airtable-like grids | lab `fill-series`; core patch can express it | lab-covered; constant fill + linear numeric series, host owns date/pattern series |
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |
 | Group/ungroup | PowerPoint, Figma, FigJam, Miro | lab `grouping` | lab-covered; distinct from structural wrap/unwrap |
 | Wrap/unwrap container | docs blocks, object frames, CMS sections | lab `wrap-unwrap` | lab-covered; feature differs from object grouping |
@@ -154,11 +154,12 @@ Completed pressure labs:
    - External pressure: slides copy/paste, Figma paste between containers,
      CMS/import payloads.
 
-Priority 2:
-
-6. `fill-series`
-   - Owns spreadsheet-like propagation across selected ranges.
+6. `fill-series` (#86)
+   - Owns spreadsheet-like propagation across selected ranges: constant fill,
+     linear numeric series, and a host generator for date/pattern series.
    - External pressure: Excel/Sheets fill down/right/series.
+   - Core pressure: whether selected-sibling contiguous-range normalization keeps
+     reappearing across structural extensions.
 
 Priority 3:
 
