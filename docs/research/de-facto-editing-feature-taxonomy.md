@@ -81,6 +81,7 @@ Classification:
 | Split text to list | tag inputs, paste-as-list, Sheets split | lab `split-text`; core read + canPatch | lab-covered; delimiter split into 1D array, distinct from `grid-paste` 2D and full CSV parsing |
 | Change case / trim text | docs change-case, sheets UPPER/LOWER/TRIM, CMS cleanup | lab `text-transform`; core read + canPatch | lab-covered; named transforms + host fn, schema string constraints enforced by canPatch |
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |
+| Toggle set membership | tags, labels, multi-select chips | lab `set-membership`; core read + canPatch | lab-covered; toggle/add/remove a value in an array-as-set, host keyOf for objects |
 | Toggle / cycle value | checkboxes, kanban status, select fields | lab `cycle`; core read + canPatch | lab-covered; boolean toggle from schema, enum order is host-supplied `values` |
 | Cap array length | recent-items lists, history rotation, keep-latest-N | lab `limit`; core read + canPatch | lab-covered; trim to N from start/end, schema minItems enforced by canPatch |
 | Remove duplicates | sheets, Airtable, data cleanup | lab `dedupe`; core read + canPatch | lab-covered; keep-first by host key, distinct from `bulk-edit` JSONPath deletion |
