@@ -1892,6 +1892,40 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/ensure-fields",
+      "name": "@zod-crud/ensure-fields",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab ensure-fields (add missing object keys from defaults) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab ensure-fields extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "add missing object keys from a defaults map without overwriting existing ones",
+        "notFor": "filling existing empty values, removing unknown keys, or deep merge"
+      },
+      "publicExports": [
+        "EnsureFields",
+        "EnsureFieldsChange",
+        "EnsureFieldsError",
+        "EnsureFieldsErrorCode",
+        "EnsureFieldsResult",
+        "canEnsure",
+        "createEnsureFields",
+        "ensure"
+      ],
+      "publicExportCount": 8,
+      "keywords": [
+        "defaults",
+        "ensure",
+        "headless",
+        "json",
+        "object",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/fill-empty",
       "name": "@zod-crud/fill-empty",
       "status": "lab-extension",
@@ -2677,7 +2711,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 29,
+    "labExtensions": 30,
     "apps": 12
   }
 } as const;
