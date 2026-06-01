@@ -82,6 +82,7 @@ Classification:
 | Change case / trim text | docs change-case, sheets UPPER/LOWER/TRIM, CMS cleanup | lab `text-transform`; core read + canPatch | lab-covered; named transforms + host fn, schema string constraints enforced by canPatch |
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |
 | Toggle / cycle value | checkboxes, kanban status, select fields | lab `cycle`; core read + canPatch | lab-covered; boolean toggle from schema, enum order is host-supplied `values` |
+| Cap array length | recent-items lists, history rotation, keep-latest-N | lab `limit`; core read + canPatch | lab-covered; trim to N from start/end, schema minItems enforced by canPatch |
 | Remove duplicates | sheets, Airtable, data cleanup | lab `dedupe`; core read + canPatch | lab-covered; keep-first by host key, distinct from `bulk-edit` JSONPath deletion |
 | Group/ungroup | PowerPoint, Figma, FigJam, Miro | lab `grouping` | lab-covered; distinct from structural wrap/unwrap |
 | Wrap/unwrap container | docs blocks, object frames, CMS sections | lab `wrap-unwrap` | lab-covered; feature differs from object grouping |

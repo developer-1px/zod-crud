@@ -2112,6 +2112,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/limit",
+      "name": "@zod-crud/limit",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab limit (cap an array to N items) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab limit extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "cap a JSON array to at most N items, keeping the start or end",
+        "notFor": "choosing survivors beyond start/end, or auto-trimming on insert"
+      },
+      "publicExports": [
+        "Limit",
+        "LimitChange",
+        "LimitError",
+        "LimitErrorCode",
+        "LimitOptions",
+        "LimitResult",
+        "canLimit",
+        "createLimit",
+        "limit"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "cap",
+        "headless",
+        "json",
+        "limit",
+        "slice",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/move-selection",
       "name": "@zod-crud/move-selection",
       "status": "lab-extension",
@@ -2607,7 +2642,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 27,
+    "labExtensions": 28,
     "apps": 12
   }
 } as const;
