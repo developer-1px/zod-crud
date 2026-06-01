@@ -81,6 +81,7 @@ Classification:
 | Join list to text | tag->csv, derived display fields, Sheets TEXTJOIN | lab `join-text`; core read + canPatch | lab-covered; inverse of `split-text`, locale formatting host-owned |
 | Coerce field type | import cleanup, Sheets convert-to-number, data entry | lab `coerce`; core read + canPatch | lab-covered; only where schema accepts target type (union/coerce/unknown), strict fields rejected by canPatch |
 | Split text to list | tag inputs, paste-as-list, Sheets split | lab `split-text`; core read + canPatch | lab-covered; delimiter split into 1D array, distinct from `grid-paste` 2D and full CSV parsing |
+| Slugify title | CMS title->slug, blog permalinks | lab `slugify`; core read + canPatch | lab-covered; lowercase/diacritics/collapse; uniqueness and non-Latin transliteration host-owned |
 | Change case / trim text | docs change-case, sheets UPPER/LOWER/TRIM, CMS cleanup | lab `text-transform`; core read + canPatch | lab-covered; named transforms + host fn, schema string constraints enforced by canPatch |
 | Round / snap number | currency 2dp, measurements, slider step snap | lab `round`; core read + canPatch | lab-covered; round/floor/ceil to precision or step, distinct from `number-step` increment |
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |
