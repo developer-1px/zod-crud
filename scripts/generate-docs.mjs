@@ -180,6 +180,10 @@ const extensionGuidance = {
     useFor: "split a string into array items by a delimiter (tag input, paste-as-list)",
     notFor: "CSV/TSV quoting, split-to-columns, or clipboard access",
   },
+  "@zod-crud/set-membership": {
+    useFor: "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
+    notFor: "ordered insertion position or deduping an existing array",
+  },
   "@zod-crud/snippets": {
     useFor: "insert reusable JSON payloads with schema-safe paste checks",
     notFor: "slash palette UI or snippet storage",

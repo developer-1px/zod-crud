@@ -2341,6 +2341,41 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/set-membership",
+      "name": "@zod-crud/set-membership",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab set-membership (toggle a value in an array set) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab set-membership extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
+        "notFor": "ordered insertion position or deduping an existing array"
+      },
+      "publicExports": [
+        "MembershipAction",
+        "SetMembership",
+        "SetMembershipChange",
+        "SetMembershipError",
+        "SetMembershipErrorCode",
+        "SetMembershipOptions",
+        "SetMembershipResult",
+        "createSetMembership",
+        "plan"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "headless",
+        "json",
+        "membership",
+        "set",
+        "toggle",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/split-text",
       "name": "@zod-crud/split-text",
       "status": "lab-extension",
@@ -2642,7 +2677,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 28,
+    "labExtensions": 29,
     "apps": 12
   }
 } as const;
