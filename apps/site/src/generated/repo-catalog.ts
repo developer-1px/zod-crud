@@ -1892,6 +1892,42 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/fill-empty",
+      "name": "@zod-crud/fill-empty",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab fill-empty (fill only empty slots) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab fill-empty extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "fill only empty slots across targets, preserving non-empty values",
+        "notFor": "adding missing fields, choosing targets, or unconditional batch set"
+      },
+      "publicExports": [
+        "FillEmpty",
+        "FillEmptyChange",
+        "FillEmptyError",
+        "FillEmptyErrorCode",
+        "FillEmptyOptions",
+        "FillEmptyResult",
+        "FillEmptyValue",
+        "canFillEmpty",
+        "createFillEmpty",
+        "fillEmpty"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "default",
+        "empty",
+        "fill",
+        "headless",
+        "json",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/fill-series",
       "name": "@zod-crud/fill-series",
       "status": "lab-extension",
@@ -2571,7 +2607,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 26,
+    "labExtensions": 27,
     "apps": 12
   }
 } as const;
