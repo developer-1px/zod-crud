@@ -40,6 +40,10 @@ const extensionGuidance = {
     useFor: "bridge zod-crud clipboard payloads to the browser clipboard",
     notFor: "TSV/CSV spreadsheet paste engines",
   },
+  "@zod-crud/coerce": {
+    useFor: "convert a field type (string/number/integer/boolean) where the schema permits it",
+    notFor: "locale/format-aware parsing of currency or dates, or input masks",
+  },
   "@zod-crud/collection": {
     useFor: "edit ordered JSON arrays with item-level commands",
     notFor: "database collections or rendered list UI",
