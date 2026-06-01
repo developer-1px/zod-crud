@@ -1717,7 +1717,10 @@ export const repoCatalog = {
       "description": "Lab fill/series propagation extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab fill/series propagation extension for `zod-crud` documents.",
-      "guidance": null,
+      "guidance": {
+        "useFor": "fill a value or linear series across a contiguous sibling range",
+        "notFor": "date/pattern series, 2D grid fill, or fill-handle drag UI"
+      },
       "publicExports": [
         "FillCell",
         "FillGenerator",

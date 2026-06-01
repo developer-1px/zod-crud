@@ -39,7 +39,7 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/convert-node-kind` | lab-only | 12 | convert selected nodes between host-described kinds | schema migration systems | Lab extension for converting a JSON node from one host-described kind to another. |
 | `@zod-crud/document-diff` | lab-only | 10 | produce and apply patch changes toward a target document | visual diff UI or merge conflict resolution | Lab document diff and apply extension for `zod-crud` documents. |
 | `@zod-crud/drag-drop` | lab-only | 15 | turn drag/drop intent into move or paste operations | DOM drag/drop events, hit testing, or hover UI | Lab drag and drop extension for `zod-crud` documents. |
-| `@zod-crud/fill-series` | lab-only | 12 |  |  | Lab fill/series propagation extension for `zod-crud` documents. |
+| `@zod-crud/fill-series` | lab-only | 12 | fill a value or linear series across a contiguous sibling range | date/pattern series, 2D grid fill, or fill-handle drag UI | Lab fill/series propagation extension for `zod-crud` documents. |
 | `@zod-crud/grouping` | lab-only | 15 | group and ungroup selected sibling JSON items | Airtable group-by views | Lab extension for structural `group` and `ungroup`. |
 | `@zod-crud/layer-order` | lab-only | 11 | reorder visual stack arrays with bring/send commands | canvas rendering or z-index CSS management | Lab layer ordering extension for `zod-crud` documents. |
 | `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
