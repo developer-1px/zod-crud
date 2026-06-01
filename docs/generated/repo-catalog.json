@@ -1520,6 +1520,42 @@
       ]
     },
     {
+      "path": "labs/extensions/clear-values",
+      "name": "@zod-crud/clear-values",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab clear-values (reset fields to schema-derived empties) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab clear-values extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "reset selected fields to schema-derived empty values, keeping structure",
+        "notFor": "structural delete, caller-supplied bulk replace, or enum/object default policy"
+      },
+      "publicExports": [
+        "ClearValues",
+        "ClearValuesChange",
+        "ClearValuesError",
+        "ClearValuesErrorCode",
+        "ClearValuesOptions",
+        "ClearValuesResult",
+        "EmptyFor",
+        "canClearValues",
+        "clearValues",
+        "createClearValues"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "clear",
+        "empty",
+        "headless",
+        "json",
+        "reset",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/collection-sort",
       "name": "@zod-crud/collection-sort",
       "status": "lab-extension",
@@ -2246,7 +2282,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 17,
+    "labExtensions": 18,
     "apps": 12
   }
 }
