@@ -2444,6 +2444,42 @@
       ]
     },
     {
+      "path": "labs/extensions/round",
+      "name": "@zod-crud/round",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab round (round/floor/ceil a number) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab round extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "round a number to a precision or nearest step (round/floor/ceil/trunc)",
+        "notFor": "currency/locale formatting, or increment/clamp (see number-step)"
+      },
+      "publicExports": [
+        "Round",
+        "RoundChange",
+        "RoundError",
+        "RoundErrorCode",
+        "RoundMode",
+        "RoundOptions",
+        "RoundResult",
+        "canRound",
+        "createRound",
+        "round"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "headless",
+        "json",
+        "number",
+        "precision",
+        "round",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/set-membership",
       "name": "@zod-crud/set-membership",
       "status": "lab-extension",
@@ -2814,7 +2850,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 33,
+    "labExtensions": 34,
     "apps": 12
   }
 }
