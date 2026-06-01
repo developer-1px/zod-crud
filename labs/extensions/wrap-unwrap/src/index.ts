@@ -2,12 +2,14 @@ import {
   appendSegment,
   lastSegmentIndex,
   parentPointer,
+  resolveSiblingRange,
   tryParsePointer,
   type JSONCapabilityResult,
   type JSONDocument,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
+  type SiblingRangeResult,
 } from "zod-crud";
 
 export type WrapSource = Pointer | ReadonlyArray<Pointer>;
@@ -276,30 +278,55 @@ function readSelectedLocations<TDocument>(
   source: WrapSource,
   operation: WrapUnwrapOperation,
 ): { ok: true; locations: ReadonlyArray<ItemLocation> } | WrapUnwrapError {
-  const pointers = pruneDescendantPointers(uniquePointers(Array.isArray(source) ? source : [source]));
-  if (pointers.length === 0) {
-    return wrapUnwrapError("empty_selection", "wrap source is empty", undefined, { operation });
-  }
+  // Selected-sibling-range normalization (dedupe, prune nested, shared parent,
+  // sort) is shared core (RFC #87). Item value + bounds reads stay local.
+  const range = resolveSiblingRange(Array.isArray(source) ? source : [source], {
+    dedupe: true,
+    pruneDescendants: true,
+  });
+  if (!range.ok) return mapRangeError(range, operation);
 
-  const locations: ItemLocation[] = [];
-  for (const pointer of pointers) {
-    const location = readItemLocation(doc, pointer, operation);
-    if (!location.ok) return location;
-    locations.push(location.location);
-  }
-
-  const parent = locations[0]!.parent;
-  if (locations.some((location) => location.parent !== parent)) {
-    return wrapUnwrapError("mixed_parent", "wrap source must share one parent array", parent, {
+  const parentRead = doc.at(range.parent);
+  if (!parentRead.ok) {
+    return wrapUnwrapError(parentRead.code, parentRead.reason ?? `parent not found: ${range.parent}`, parentRead.pointer, {
       operation,
-      parent,
+      parent: range.parent,
+    });
+  }
+  if (!Array.isArray(parentRead.value)) {
+    return wrapUnwrapError("not_array_item", `parent is not an array: ${range.parent}`, range.parent, {
+      operation,
+      parent: range.parent,
     });
   }
 
-  return {
-    ok: true,
-    locations: locations.sort((left, right) => left.index - right.index),
-  };
+  const items = parentRead.value;
+  const locations: ItemLocation[] = [];
+  for (const location of range.locations) {
+    if (location.index >= items.length) {
+      return wrapUnwrapError("path_not_found", `item not found: ${location.pointer}`, location.pointer, {
+        operation,
+        parent: range.parent,
+      });
+    }
+    locations.push({
+      pointer: location.pointer,
+      parent: location.parent,
+      index: location.index,
+      value: items[location.index],
+    });
+  }
+
+  return { ok: true, locations };
+}
+
+function mapRangeError(
+  range: Extract<SiblingRangeResult, { ok: false }>,
+  operation: WrapUnwrapOperation,
+): WrapUnwrapError {
+  const code: WrapUnwrapErrorCode =
+    range.code === "non_contiguous" ? "non_contiguous_selection" : range.code;
+  return wrapUnwrapError(code, range.reason, range.pointer, { operation });
 }
 
 function readItemLocation<TDocument>(
@@ -355,26 +382,10 @@ function readItemLocation<TDocument>(
   };
 }
 
-function uniquePointers(pointers: ReadonlyArray<Pointer>): Pointer[] {
-  return [...new Set(pointers)];
-}
-
-function pruneDescendantPointers(pointers: ReadonlyArray<Pointer>): Pointer[] {
-  return pointers.filter((pointer) => (
-    !pointers.some((candidate) => candidate !== pointer && isDescendantOf(pointer, candidate))
-  ));
-}
-
 function isContiguous(locations: ReadonlyArray<ItemLocation>): boolean {
   return locations.every((location, offset) => (
     location.index === locations[0]!.index + offset
   ));
-}
-
-function isDescendantOf(pointer: Pointer, candidateAncestor: Pointer): boolean {
-  return candidateAncestor === ""
-    ? pointer !== ""
-    : pointer.startsWith(`${candidateAncestor}/`);
 }
 
 function copyChange(plan: WrapUnwrapPlan): WrapUnwrapChange {
