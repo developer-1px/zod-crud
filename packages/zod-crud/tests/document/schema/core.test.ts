@@ -104,4 +104,37 @@ describe("document schema core functions", () => {
       pointer: "title",
     });
   });
+
+  test("exposes allowed for every closed value set: enum, literal, discriminatedUnion", () => {
+    const ClosedSets = z.object({
+      status: z.enum(["todo", "doing", "done"]),
+      flag: z.literal("on"),
+      blocks: z.array(z.discriminatedUnion("kind", [
+        z.object({ kind: z.literal("text") }),
+        z.object({ kind: z.literal("image") }),
+      ])),
+    });
+    const schema = createSchemaState({ schema: ClosedSets });
+
+    const status = schema.describe("/status");
+    expect(status.ok).toBe(true);
+    if (status.ok) {
+      expect(status.description.kind).toBe("enum");
+      expect(status.description.allowed).toEqual(["todo", "doing", "done"]);
+    }
+
+    const flag = schema.describe("/flag");
+    expect(flag.ok).toBe(true);
+    if (flag.ok) {
+      expect(flag.description.kind).toBe("literal");
+      expect(flag.description.allowed).toEqual(["on"]);
+    }
+
+    const block = schema.describe("/blocks/0");
+    expect(block.ok).toBe(true);
+    if (block.ok) {
+      expect(block.description.kind).toBe("discriminatedUnion");
+      expect(block.description.allowed).toEqual(["text", "image"]);
+    }
+  });
 });
