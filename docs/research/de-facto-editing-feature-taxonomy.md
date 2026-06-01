@@ -84,6 +84,7 @@ Classification:
 | Increment / decrement number | quantity steppers, counters, ratings | lab `number-step`; core read + canPatch | lab-covered; +/- by step with optional clamp, schema range enforced by canPatch |
 | Toggle set membership | tags, labels, multi-select chips | lab `set-membership`; core read + canPatch | lab-covered; toggle/add/remove a value in an array-as-set, host keyOf for objects |
 | Toggle / cycle value | checkboxes, kanban status, select fields | lab `cycle`; core read + canPatch | lab-covered; boolean toggle from schema, enum order is host-supplied `values` |
+| Reindex order field | Trello card positions, sortable lists, persisted drag order | lab `reindex`; core read + canPatch | lab-covered; sync position-as-order across the array, distinct from `fill-series` range fill |
 | Swap two items | gallery reorder, A/B arrange, swap rows | lab `swap`; core read + canPatch | lab-covered; exchanges positions directly (two `move`s would shift indices) |
 | Cap array length | recent-items lists, history rotation, keep-latest-N | lab `limit`; core read + canPatch | lab-covered; trim to N from start/end, schema minItems enforced by canPatch |
 | Remove duplicates | sheets, Airtable, data cleanup | lab `dedupe`; core read + canPatch | lab-covered; keep-first by host key, distinct from `bulk-edit` JSONPath deletion |
