@@ -98,6 +98,16 @@ for (const dir of labs) {
   if (!existsSync(join(root, dir, "README.md"))) {
     fail(`${label}: README.md is required for lab review.`);
   }
+  const readme = read(`${dir}/README.md`);
+  for (const [section, pattern] of [
+    ["Scope", /^## Scope\b/m],
+    ["Non-goals", /^## Non-goals\b/m],
+    ["Friction report", /^## Friction report\b/m],
+  ]) {
+    if (!pattern.test(readme)) {
+      fail(`${label}: README.md must include a ${section} section.`);
+    }
+  }
 
   for (const sourcePath of files(`${dir}/src`)) {
     const source = read(sourcePath);

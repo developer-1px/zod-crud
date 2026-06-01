@@ -2,7 +2,7 @@
 
 Lab extension for stable references and backlinks over JSON documents.
 
-Scope:
+## Scope
 
 - index schema-described targets with stable IDs
 - index outgoing references and backlinks
@@ -10,7 +10,7 @@ Scope:
 - set a reference field through `doc.canPatch` and `doc.patch`
 - avoid assuming any field name such as `id`
 
-Out of scope:
+## Non-goals
 
 - link UI
 - hover cards
@@ -38,7 +38,7 @@ const references = createReferences(doc, {
 const backlinks = references.backlinks("entry", "intro");
 ```
 
-Friction report:
+## Friction report
 
 - Core `query`, `at`, `canPatch`, and `patch` are enough for a first
   reference/backlink engine.

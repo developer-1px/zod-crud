@@ -27,13 +27,13 @@ r.round("/price", { mode: "ceil" });          // round up to integer
 
 - Currency/locale formatting or display strings (this changes the stored
   number, not its rendering).
-- Incrementing/clamping — see `@zod-crud/number-step`.
+- Incrementing/clamping — see `@zod-crud/increment-number`.
 - No plugin registration; no `zod-crud` internal imports.
 
 ## Friction report
 
 The public facade is enough: read the number, round in memory, preflight with
-`doc.canPatch`, apply. Distinct from `number-step` (which adds a delta with
+`doc.canPatch`, apply. Distinct from `increment-number` (which adds a delta with
 optional clamp): round *snaps* an existing value to a precision or step grid —
 the currency/measurement/slider-snap cleanup. Float drift is contained by a
 scaled, fixed-precision round-trip.

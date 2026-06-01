@@ -47,8 +47,8 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Row add/delete/move | core + `@zod-crud/collection` | row handles |
 | Batch edit | `@zod-crud/bulk-edit` | selection policy |
 | Field descriptor | `@zod-crud/schema-form` | grid column rendering |
-| Sort rows | lab `collection-sort` | view state |
-| Derived values | lab `computed-fields` | formula language |
+| Sort rows | lab `sort-items` | view state |
+| Derived values | lab `calculated-fields` | formula language |
 | Protected cells | `@zod-crud/protected-ranges` | role/auth policy |
 | TSV/CSV paste | missing candidate | parser, 2D range mapping |
 
@@ -65,7 +65,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Field/option reorder | `@zod-crud/collection` | drag target, keyboard policy |
 | Stable field id lookup | `@zod-crud/id-resolver` | id scope and routing |
 | Invalid input draft | `@zod-crud/form-draft` | parser, widget messages |
-| Templates/import paste | `@zod-crud/snippets`, lab `paste-compatible` | snippet catalog, parser |
+| Templates/import paste | `@zod-crud/snippets`, lab `paste-special` | snippet catalog, parser |
 | Publish review | `@zod-crud/patch-preview`, `@zod-crud/proposed-changes` | approval workflow |
 | Locked published fields | `@zod-crud/protected-ranges` | auth/server policy |
 
@@ -77,7 +77,7 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | Feature | Use | App-owned |
 | --- | --- | --- |
 | CSV/JSON parsing | app-owned | parser, column mapping |
-| External payload adaptation | lab `paste-compatible` | source format policy |
+| External payload adaptation | lab `paste-special` | source format policy |
 | Current vs imported diff | lab `document-diff` | identity/move inference |
 | Dry-run preview | `@zod-crud/patch-preview`, core `applyPatch` | visual diff |
 | Proposed changes | `@zod-crud/proposed-changes` | review workflow, storage |
@@ -98,7 +98,7 @@ zod-crud 쪽 후보는 dry-run, proposed patch, guard reason, stable target look
 | Object create/delete/move | core + `@zod-crud/collection` | command labels |
 | Shape property edit | core `replace`, `patch` | geometry semantics |
 | Layer order | lab `layer-order` | layer panel UI |
-| Group/ungroup | lab `grouping`, lab `wrap-unwrap` | group value factory |
+| Group/ungroup | lab `grouping`, lab `wrap-selection` | group value factory |
 | Drag/drop | lab `drag-drop` | pointer events |
 | Lock/protect | `@zod-crud/protected-ranges` | visibility policy |
 | Search/replace | `@zod-crud/search-replace` | visible text policy |
@@ -115,7 +115,7 @@ Canvas rendering, zoom, pan, export, rich text editing, snapping, handles는
 | Shape CRUD/property edit | core + `@zod-crud/schema-form` | geometry semantics |
 | Layer stack | lab `layer-order` | layer panel, rendering |
 | Object group/ungroup | lab `grouping` | group factory, bounds policy |
-| Frame/container wrap | lab `wrap-unwrap` | frame semantics |
+| Frame/container wrap | lab `wrap-selection` | frame semantics |
 | Connectors/references | lab `references` | ports, routing, geometry |
 | Comments | `@zod-crud/comments` | thread UI, workflow |
 | Lock/protect | `@zod-crud/protected-ranges` | auth/visibility policy |
@@ -136,7 +136,7 @@ stay outside zod-crud.
 | Mention/reference | lab `references` | entity source, autocomplete |
 | Review comments | `@zod-crud/comments` | thread UI, workflow |
 | Proposed changes | `@zod-crud/proposed-changes`, `@zod-crud/patch-preview` | diff UI, approval |
-| External paste/import | lab `paste-compatible`, lab `document-diff` | HTML/Markdown parser |
+| External paste/import | lab `paste-special`, lab `document-diff` | HTML/Markdown parser |
 | Search/replace | `@zod-crud/search-replace` | rendered text extraction |
 | Rich text body | app-owned | ProseMirror/Markdown/contenteditable |
 
@@ -170,7 +170,7 @@ stay outside zod-crud.
 | `clipboard-web` | spreadsheet TSV clipboard engine |
 | `schema-form` | form renderer |
 | `grouping` | Airtable group-by |
-| `computed-fields` | full formula engine |
+| `calculated-fields` | full formula engine |
 | `protected-ranges` | 2D spreadsheet range UI, auth, role model, or server authorization |
 | `drag-drop` | DOM drag/drop implementation |
 | `persist-web` | server sync |

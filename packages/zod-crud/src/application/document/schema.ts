@@ -286,7 +286,7 @@ function describeSchema(schema: z.ZodType): SchemaDescription {
   }
 
   // `allowed` reflects every closed value set MECE-ly: discriminatedUnion (above),
-  // enum, and literal. Readers (clear-values, cycle, ...) can enumerate options
+  // enum, and literal. Readers (clear-contents, toggle-value, ...) can enumerate options
   // from the schema instead of requiring host-supplied values.
   const enumValues = getEnumValues(schema);
   if (enumValues) description.allowed = enumValues;

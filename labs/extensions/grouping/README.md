@@ -2,7 +2,7 @@
 
 Lab extension for structural `group` and `ungroup`.
 
-Scope:
+## Scope
 
 - select contiguous sibling JSON array items
 - create one host-defined group value
@@ -10,7 +10,7 @@ Scope:
 - return JSON Patch operations and `selectionAfter`
 - validate through the public `zod-crud` document facade
 
-Out of scope:
+## Non-goals
 
 - 2D bounds
 - hit testing
@@ -33,7 +33,7 @@ const canGroup = grouping.canGroup(["/items/0", "/items/1"]);
 if (canGroup.ok) grouping.group(canGroup.source);
 ```
 
-Friction report:
+## Friction report
 
 - `group` is a real editor feature vocabulary, but the JSON shape is host-owned.
 - Public pointer helpers were enough for same-parent selection planning.

@@ -1418,6 +1418,40 @@
   ],
   "labExtensions": [
     {
+      "path": "labs/extensions/apply-defaults",
+      "name": "@zod-crud/apply-defaults",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab apply-defaults (add missing object keys from defaults) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab apply-defaults extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "add missing object keys from a defaults map without overwriting existing ones",
+        "notFor": "filling existing empty values, removing unknown keys, or deep merge"
+      },
+      "publicExports": [
+        "ApplyDefaults",
+        "ApplyDefaultsChange",
+        "ApplyDefaultsError",
+        "ApplyDefaultsErrorCode",
+        "ApplyDefaultsResult",
+        "canEnsure",
+        "createApplyDefaults",
+        "ensure"
+      ],
+      "publicExportCount": 8,
+      "keywords": [
+        "defaults",
+        "ensure",
+        "headless",
+        "json",
+        "object",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/autosave",
       "name": "@zod-crud/autosave",
       "status": "lab-extension",
@@ -1454,30 +1488,30 @@
       ]
     },
     {
-      "path": "labs/extensions/batch-set",
-      "name": "@zod-crud/batch-set",
+      "path": "labs/extensions/batch-update",
+      "name": "@zod-crud/batch-update",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab batch-set (set a field across selected items) extension functions for zod-crud documents.",
+      "description": "Lab batch-update (set a field across selected items) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab batch-set extension for `zod-crud` documents.",
+      "summary": "Lab batch-update extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "set a field across a list of selected item pointers to a constant or computed value",
         "notFor": "selecting which items to edit, or JSONPath query-driven replacement"
       },
       "publicExports": [
-        "BatchSet",
-        "BatchSetChange",
-        "BatchSetError",
-        "BatchSetErrorCode",
-        "BatchSetOptions",
-        "BatchSetResult",
-        "BatchSetValue",
-        "batchSet",
-        "canBatchSet",
-        "createBatchSet"
+        "BatchUpdate",
+        "BatchUpdateChange",
+        "BatchUpdateError",
+        "BatchUpdateErrorCode",
+        "BatchUpdateOptions",
+        "BatchUpdateResult",
+        "BatchUpdateValue",
+        "batchUpdate",
+        "canBatchUpdate",
+        "createBatchUpdate"
       ],
       "publicExportCount": 10,
       "keywords": [
@@ -1498,7 +1532,7 @@
       "version": "0.1.0",
       "description": "Lab bookmark tracking extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Headless bookmark tracking helpers for `zod-crud` documents.",
+      "summary": "Headless bookmark tracking extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "keep named JSON Pointer locations stable across edits",
         "notFor": "browser bookmarks or route state"
@@ -1519,6 +1553,77 @@
         "headless",
         "pointer",
         "tracking",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/calculated-fields",
+      "name": "@zod-crud/calculated-fields",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab calculated-fields (sync host-calculated fields) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab calculated field extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "sync host-computed derived JSON fields",
+        "notFor": "formula languages or dependency runtimes"
+      },
+      "publicExports": [
+        "CalculatedFieldChange",
+        "CalculatedFieldContext",
+        "CalculatedFieldDefinition",
+        "CalculatedFieldError",
+        "CalculatedFieldErrorCode",
+        "CalculatedFields",
+        "CalculatedFieldsChange",
+        "CalculatedFieldsPlanResult",
+        "CalculatedFieldsSyncResult",
+        "createCalculatedFields",
+        "planCalculatedFields",
+        "syncCalculatedFields"
+      ],
+      "publicExportCount": 12,
+      "keywords": [
+        "computed",
+        "formula",
+        "headless",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/change-case",
+      "name": "@zod-crud/change-case",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab change-case (case/whitespace transforms on a string field) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab change-case extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
+        "notFor": "locale-aware casing, rich text formatting toolbars, or find/replace"
+      },
+      "publicExports": [
+        "CaseTransform",
+        "ChangeCase",
+        "ChangeCaseChange",
+        "ChangeCaseError",
+        "ChangeCaseErrorCode",
+        "ChangeCaseResult",
+        "applyTransform",
+        "canTransform",
+        "createChangeCase"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "case",
+        "headless",
+        "json",
+        "text",
+        "transform",
         "zod-crud"
       ]
     },
@@ -1561,30 +1666,30 @@
       ]
     },
     {
-      "path": "labs/extensions/clear-values",
-      "name": "@zod-crud/clear-values",
+      "path": "labs/extensions/clear-contents",
+      "name": "@zod-crud/clear-contents",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab clear-values (reset fields to schema-derived empties) extension functions for zod-crud documents.",
+      "description": "Lab clear-contents (reset fields to schema-derived empties) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab clear-values extension for `zod-crud` documents.",
+      "summary": "Lab clear-contents extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "reset selected fields to schema-derived empty values, keeping structure",
         "notFor": "structural delete, caller-supplied bulk replace, or enum/object default policy"
       },
       "publicExports": [
-        "ClearValues",
-        "ClearValuesChange",
-        "ClearValuesError",
-        "ClearValuesErrorCode",
-        "ClearValuesOptions",
-        "ClearValuesResult",
+        "ClearContents",
+        "ClearContentsChange",
+        "ClearContentsError",
+        "ClearContentsErrorCode",
+        "ClearContentsOptions",
+        "ClearContentsResult",
         "EmptyFor",
-        "canClearValues",
-        "clearValues",
-        "createClearValues"
+        "canClearContents",
+        "clearContents",
+        "createClearContents"
       ],
       "publicExportCount": 10,
       "keywords": [
@@ -1597,141 +1702,32 @@
       ]
     },
     {
-      "path": "labs/extensions/coerce",
-      "name": "@zod-crud/coerce",
+      "path": "labs/extensions/convert-block-type",
+      "name": "@zod-crud/convert-block-type",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab coerce (convert a field type: string/number/boolean) extension functions for zod-crud documents.",
+      "description": "Lab block type conversion extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab coerce extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "convert a field type (string/number/integer/boolean) where the schema permits it",
-        "notFor": "locale/format-aware parsing of currency or dates, or input masks"
-      },
-      "publicExports": [
-        "Coerce",
-        "CoerceChange",
-        "CoerceError",
-        "CoerceErrorCode",
-        "CoerceResult",
-        "CoerceTarget",
-        "canCoerce",
-        "coerce",
-        "createCoerce"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "cast",
-        "coerce",
-        "headless",
-        "json",
-        "type",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/collection-sort",
-      "name": "@zod-crud/collection-sort",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab collection sort extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab collection sort extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "sort or reverse JSON array items",
-        "notFor": "query views, filters, or server sorting"
-      },
-      "publicExports": [
-        "CollectionSort",
-        "CollectionSortChange",
-        "CollectionSortChangeResult",
-        "CollectionSortCompare",
-        "CollectionSortError",
-        "CollectionSortErrorCode",
-        "CollectionSortItem",
-        "CollectionSortResult",
-        "canReverse",
-        "canSort",
-        "createCollectionSort",
-        "reverse",
-        "sort"
-      ],
-      "publicExportCount": 13,
-      "keywords": [
-        "collection",
-        "headless",
-        "json",
-        "sort",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/computed-fields",
-      "name": "@zod-crud/computed-fields",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab computed field sync extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab computed field extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "sync host-computed derived JSON fields",
-        "notFor": "formula languages or dependency runtimes"
-      },
-      "publicExports": [
-        "ComputedFieldChange",
-        "ComputedFieldContext",
-        "ComputedFieldDefinition",
-        "ComputedFieldError",
-        "ComputedFieldErrorCode",
-        "ComputedFields",
-        "ComputedFieldsChange",
-        "ComputedFieldsPlanResult",
-        "ComputedFieldsSyncResult",
-        "createComputedFields",
-        "planComputedFields",
-        "syncComputedFields"
-      ],
-      "publicExportCount": 12,
-      "keywords": [
-        "computed",
-        "formula",
-        "headless",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/convert-node-kind",
-      "name": "@zod-crud/convert-node-kind",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab node kind conversion extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab extension for converting a JSON node from one host-described kind to\nanother.",
+      "summary": "Lab extension for converting a JSON block/object from one host-described type to\nanother.",
       "guidance": {
         "useFor": "convert selected nodes between host-described kinds",
         "notFor": "schema migration systems"
       },
       "publicExports": [
-        "NodeKindConversionDescriptor",
-        "NodeKindConversionError",
-        "NodeKindConversionErrorCode",
-        "NodeKindConversionFactoryInput",
-        "NodeKindConversionInput",
-        "NodeKindConversionPlan",
-        "NodeKindConversionPlanResult",
-        "NodeKindConversionResult",
-        "NodeKindConverter",
-        "canConvertNodeKind",
-        "convertNodeKind",
-        "createNodeKindConverter"
+        "BlockTypeConversionDescriptor",
+        "BlockTypeConversionError",
+        "BlockTypeConversionErrorCode",
+        "BlockTypeConversionFactoryInput",
+        "BlockTypeConversionInput",
+        "BlockTypeConversionPlan",
+        "BlockTypeConversionPlanResult",
+        "BlockTypeConversionResult",
+        "BlockTypeConverter",
+        "canConvertBlockType",
+        "convertBlockType",
+        "createBlockTypeConverter"
       ],
       "publicExportCount": 12,
       "keywords": [
@@ -1743,38 +1739,37 @@
       ]
     },
     {
-      "path": "labs/extensions/cycle",
-      "name": "@zod-crud/cycle",
+      "path": "labs/extensions/convert-type",
+      "name": "@zod-crud/convert-type",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab cycle (toggle/advance a field through values) extension functions for zod-crud documents.",
+      "description": "Lab convert-type (convert a field type: string/number/boolean) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab cycle extension for `zod-crud` documents.",
+      "summary": "Lab convert-type extension for `zod-crud` documents.",
       "guidance": {
-        "useFor": "toggle a boolean or advance an enum/value field (enum options come from the schema)",
-        "notFor": "rendered toggle controls or keyboard policy"
+        "useFor": "convert a field type (string/number/integer/boolean) where the schema permits it",
+        "notFor": "locale/format-aware parsing of currency or dates, or input masks"
       },
       "publicExports": [
-        "Cycle",
-        "CycleChange",
-        "CycleDirection",
-        "CycleError",
-        "CycleErrorCode",
-        "CycleOptions",
-        "CycleResult",
-        "canCycle",
-        "createCycle",
-        "cycle"
+        "ConvertType",
+        "ConvertTypeChange",
+        "ConvertTypeError",
+        "ConvertTypeErrorCode",
+        "ConvertTypeResult",
+        "ConvertTypeTarget",
+        "canConvertType",
+        "convertType",
+        "createConvertType"
       ],
-      "publicExportCount": 10,
+      "publicExportCount": 9,
       "keywords": [
-        "cycle",
-        "enum",
+        "cast",
+        "convert-type",
         "headless",
         "json",
-        "toggle",
+        "type",
         "zod-crud"
       ]
     },
@@ -1891,64 +1886,30 @@
       ]
     },
     {
-      "path": "labs/extensions/ensure-fields",
-      "name": "@zod-crud/ensure-fields",
+      "path": "labs/extensions/fill-blanks",
+      "name": "@zod-crud/fill-blanks",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab ensure-fields (add missing object keys from defaults) extension functions for zod-crud documents.",
+      "description": "Lab fill-blanks (fill only empty slots) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab ensure-fields extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "add missing object keys from a defaults map without overwriting existing ones",
-        "notFor": "filling existing empty values, removing unknown keys, or deep merge"
-      },
-      "publicExports": [
-        "EnsureFields",
-        "EnsureFieldsChange",
-        "EnsureFieldsError",
-        "EnsureFieldsErrorCode",
-        "EnsureFieldsResult",
-        "canEnsure",
-        "createEnsureFields",
-        "ensure"
-      ],
-      "publicExportCount": 8,
-      "keywords": [
-        "defaults",
-        "ensure",
-        "headless",
-        "json",
-        "object",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/fill-empty",
-      "name": "@zod-crud/fill-empty",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab fill-empty (fill only empty slots) extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab fill-empty extension for `zod-crud` documents.",
+      "summary": "Lab fill-blanks extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "fill only empty slots across targets, preserving non-empty values",
         "notFor": "adding missing fields, choosing targets, or unconditional batch set"
       },
       "publicExports": [
-        "FillEmpty",
-        "FillEmptyChange",
-        "FillEmptyError",
-        "FillEmptyErrorCode",
-        "FillEmptyOptions",
-        "FillEmptyResult",
-        "FillEmptyValue",
-        "canFillEmpty",
-        "createFillEmpty",
-        "fillEmpty"
+        "FillBlanks",
+        "FillBlanksChange",
+        "FillBlanksError",
+        "FillBlanksErrorCode",
+        "FillBlanksOptions",
+        "FillBlanksResult",
+        "FillBlanksValue",
+        "canFillBlanks",
+        "createFillBlanks",
+        "fillBlanks"
       ],
       "publicExportCount": 10,
       "keywords": [
@@ -1957,6 +1918,41 @@
         "fill",
         "headless",
         "json",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/fill-down",
+      "name": "@zod-crud/fill-down",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab fill-down (carry last non-empty value into blanks) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab fill-down extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "carry the last non-empty value into the empty slots that follow (ffill)",
+        "notFor": "constant fill, numeric series interpolation, or rendered grid UI"
+      },
+      "publicExports": [
+        "FillDown",
+        "FillDownChange",
+        "FillDownError",
+        "FillDownErrorCode",
+        "FillDownOptions",
+        "FillDownResult",
+        "canFillDown",
+        "createFillDown",
+        "fillDown"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "ffill",
+        "fill-down",
+        "headless",
+        "json",
+        "propagate",
         "zod-crud"
       ]
     },
@@ -1999,72 +1995,37 @@
       ]
     },
     {
-      "path": "labs/extensions/forward-fill",
-      "name": "@zod-crud/forward-fill",
+      "path": "labs/extensions/generate-slug",
+      "name": "@zod-crud/generate-slug",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab forward-fill (carry last non-empty value into blanks) extension functions for zod-crud documents.",
+      "description": "Lab generate-slug (derive a URL-safe slug from a string) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab forward-fill extension for `zod-crud` documents.",
+      "summary": "Lab generate-slug extension for `zod-crud` documents.",
       "guidance": {
-        "useFor": "carry the last non-empty value into the empty slots that follow (ffill)",
-        "notFor": "constant fill, numeric series interpolation, or rendered grid UI"
+        "useFor": "derive a URL-safe slug from a string field (CMS title to slug)",
+        "notFor": "uniqueness/collision handling or non-Latin transliteration"
       },
       "publicExports": [
-        "ForwardFill",
-        "ForwardFillChange",
-        "ForwardFillError",
-        "ForwardFillErrorCode",
-        "ForwardFillOptions",
-        "ForwardFillResult",
-        "canForwardFill",
-        "createForwardFill",
-        "forwardFill"
+        "GenerateSlug",
+        "GenerateSlugChange",
+        "GenerateSlugError",
+        "GenerateSlugErrorCode",
+        "GenerateSlugOptions",
+        "GenerateSlugResult",
+        "canGenerateSlug",
+        "createGenerateSlug",
+        "generateSlug"
       ],
       "publicExportCount": 9,
       "keywords": [
-        "ffill",
-        "forward-fill",
+        "generate-slug",
         "headless",
         "json",
-        "propagate",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/grid-paste",
-      "name": "@zod-crud/grid-paste",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab grid paste (2D matrix into rectangular region) extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab grid-paste extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "paste a 2D value matrix onto a rectangular array-of-records region",
-        "notFor": "TSV/CSV parsing, clipboard I/O, or auto-growing the array"
-      },
-      "publicExports": [
-        "GridPaste",
-        "GridPasteChange",
-        "GridPasteError",
-        "GridPasteErrorCode",
-        "GridPasteResult",
-        "GridPasteTarget",
-        "canPasteGrid",
-        "createGridPaste",
-        "pasteGrid"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "grid",
-        "headless",
-        "json",
-        "paste",
-        "table",
+        "slug",
+        "url",
         "zod-crud"
       ]
     },
@@ -2105,6 +2066,41 @@
         "headless",
         "selection",
         "ungroup",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/increment-number",
+      "name": "@zod-crud/increment-number",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab increment-number (increment/decrement a numeric field) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab increment-number extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "increment, decrement, or step a numeric field with optional clamping",
+        "notFor": "rendered spinners, formatting, units, or currency"
+      },
+      "publicExports": [
+        "IncrementNumber",
+        "IncrementNumberChange",
+        "IncrementNumberError",
+        "IncrementNumberErrorCode",
+        "IncrementNumberOptions",
+        "IncrementNumberResult",
+        "canStep",
+        "createIncrementNumber",
+        "step"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "headless",
+        "increment",
+        "json",
+        "number",
+        "stepper",
         "zod-crud"
       ]
     },
@@ -2180,29 +2176,29 @@
       ]
     },
     {
-      "path": "labs/extensions/limit",
-      "name": "@zod-crud/limit",
+      "path": "labs/extensions/limit-items",
+      "name": "@zod-crud/limit-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab limit (cap an array to N items) extension functions for zod-crud documents.",
+      "description": "Lab limit-items (cap an array to N items) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab limit extension for `zod-crud` documents.",
+      "summary": "Lab limit-items extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "cap a JSON array to at most N items, keeping the start or end",
         "notFor": "choosing survivors beyond start/end, or auto-trimming on insert"
       },
       "publicExports": [
-        "Limit",
-        "LimitChange",
-        "LimitError",
-        "LimitErrorCode",
-        "LimitOptions",
-        "LimitResult",
-        "canLimit",
-        "createLimit",
-        "limit"
+        "LimitItems",
+        "LimitItemsChange",
+        "LimitItemsError",
+        "LimitItemsErrorCode",
+        "LimitItemsOptions",
+        "LimitItemsResult",
+        "canLimitItems",
+        "createLimitItems",
+        "limitItems"
       ],
       "publicExportCount": 9,
       "keywords": [
@@ -2215,29 +2211,65 @@
       ]
     },
     {
-      "path": "labs/extensions/move-selection",
-      "name": "@zod-crud/move-selection",
+      "path": "labs/extensions/live-cursors",
+      "name": "@zod-crud/live-cursors",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab contiguous sibling block move extension functions for zod-crud documents.",
+      "description": "Lab live-cursors (track remote collaborator cursors) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab move-selection extension for `zod-crud` documents.",
+      "summary": "Lab package for remote collaborator cursor and selection presence.",
+      "guidance": {
+        "useFor": "track remote collaborator cursors and selections",
+        "notFor": "CRDT/OT or realtime transport"
+      },
+      "publicExports": [
+        "LiveCursors",
+        "PresenceCursor",
+        "PresenceCursorError",
+        "PresenceCursorErrorCode",
+        "PresenceCursorInput",
+        "PresenceCursorListener",
+        "PresenceCursorResult",
+        "PresenceCursorSnapshot",
+        "PresenceCursorUpdate",
+        "createLiveCursors"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "collaboration",
+        "cursor",
+        "headless",
+        "presence",
+        "selection",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/move-selected",
+      "name": "@zod-crud/move-selected",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab move-selected (move a contiguous selected block) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab move-selected extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "move a contiguous selection of sibling items to a new position",
         "notFor": "single-item moves, drag/drop events, or cross-array moves"
       },
       "publicExports": [
-        "MoveSelection",
-        "MoveSelectionChange",
-        "MoveSelectionError",
-        "MoveSelectionErrorCode",
-        "MoveSelectionResult",
-        "MoveSelectionTarget",
-        "canMoveSelection",
-        "createMoveSelection",
-        "moveSelection"
+        "MoveSelected",
+        "MoveSelectedChange",
+        "MoveSelectedError",
+        "MoveSelectedErrorCode",
+        "MoveSelectedResult",
+        "MoveSelectedTarget",
+        "canMoveSelected",
+        "createMoveSelected",
+        "moveSelected"
       ],
       "publicExportCount": 9,
       "keywords": [
@@ -2250,64 +2282,29 @@
       ]
     },
     {
-      "path": "labs/extensions/number-step",
-      "name": "@zod-crud/number-step",
+      "path": "labs/extensions/pad-text",
+      "name": "@zod-crud/pad-text",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab number-step (increment/decrement a numeric field) extension functions for zod-crud documents.",
+      "description": "Lab pad-text (pad a string to a minimum length) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab number-step extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "increment, decrement, or step a numeric field with optional clamping",
-        "notFor": "rendered spinners, formatting, units, or currency"
-      },
-      "publicExports": [
-        "NumberStep",
-        "NumberStepChange",
-        "NumberStepError",
-        "NumberStepErrorCode",
-        "NumberStepOptions",
-        "NumberStepResult",
-        "canStep",
-        "createNumberStep",
-        "step"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "headless",
-        "increment",
-        "json",
-        "number",
-        "stepper",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/pad",
-      "name": "@zod-crud/pad",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab pad (pad a string to a minimum length) extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab pad extension for `zod-crud` documents.",
+      "summary": "Lab pad-text extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "pad a string field to a minimum length (zero-padded codes/IDs)",
         "notFor": "number formatting or display-time alignment"
       },
       "publicExports": [
-        "Pad",
-        "PadChange",
-        "PadError",
-        "PadErrorCode",
-        "PadOptions",
-        "PadResult",
-        "canPad",
-        "createPad",
-        "pad"
+        "PadText",
+        "PadTextChange",
+        "PadTextError",
+        "PadTextErrorCode",
+        "PadTextOptions",
+        "PadTextResult",
+        "canPadText",
+        "createPadText",
+        "padText"
       ],
       "publicExportCount": 9,
       "keywords": [
@@ -2320,37 +2317,72 @@
       ]
     },
     {
-      "path": "labs/extensions/paste-compatible",
-      "name": "@zod-crud/paste-compatible",
+      "path": "labs/extensions/paste-cells",
+      "name": "@zod-crud/paste-cells",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab compatible paste extension functions for zod-crud documents.",
+      "description": "Lab paste-cells (2D matrix into rectangular cells) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab extension for compatible paste.",
+      "summary": "Lab paste-cells extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "paste a 2D value matrix onto a rectangular array-of-records region",
+        "notFor": "TSV/CSV parsing, clipboard I/O, or auto-growing the array"
+      },
+      "publicExports": [
+        "PasteCells",
+        "PasteCellsChange",
+        "PasteCellsError",
+        "PasteCellsErrorCode",
+        "PasteCellsResult",
+        "PasteCellsTarget",
+        "canPasteGrid",
+        "createPasteCells",
+        "pasteGrid"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "grid",
+        "headless",
+        "json",
+        "paste",
+        "table",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/paste-special",
+      "name": "@zod-crud/paste-special",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab paste special extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab extension for paste special.",
       "guidance": {
         "useFor": "adapt external payloads before schema-safe paste",
         "notFor": "browser clipboard I/O or autocomplete dropdowns"
       },
       "publicExports": [
-        "CompatiblePaste",
-        "CompatiblePasteAdaptedPayload",
-        "CompatiblePasteAdapter",
-        "CompatiblePasteAdapterError",
-        "CompatiblePasteAdapterInput",
-        "CompatiblePasteAdapterResult",
-        "CompatiblePasteApplyResult",
-        "CompatiblePasteDiagnostic",
-        "CompatiblePasteError",
-        "CompatiblePasteErrorCode",
-        "CompatiblePasteInput",
-        "CompatiblePasteOptions",
-        "CompatiblePastePlan",
-        "CompatiblePastePlanResult",
-        "canPasteCompatible",
-        "createCompatiblePaste",
-        "pasteCompatible"
+        "PasteSpecial",
+        "PasteSpecialAdaptedPayload",
+        "PasteSpecialAdapter",
+        "PasteSpecialAdapterError",
+        "PasteSpecialAdapterInput",
+        "PasteSpecialAdapterResult",
+        "PasteSpecialApplyResult",
+        "PasteSpecialDiagnostic",
+        "PasteSpecialError",
+        "PasteSpecialErrorCode",
+        "PasteSpecialInput",
+        "PasteSpecialOptions",
+        "PasteSpecialPlan",
+        "PasteSpecialPlanResult",
+        "canPasteSpecial",
+        "createPasteSpecial",
+        "pasteSpecial"
       ],
       "publicExportCount": 17,
       "keywords": [
@@ -2358,42 +2390,6 @@
         "compatible",
         "headless",
         "paste",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/presence-cursors",
-      "name": "@zod-crud/presence-cursors",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab remote presence cursor extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab package for remote collaborator cursor and selection presence.",
-      "guidance": {
-        "useFor": "track remote collaborator cursors and selections",
-        "notFor": "CRDT/OT or realtime transport"
-      },
-      "publicExports": [
-        "PresenceCursor",
-        "PresenceCursorError",
-        "PresenceCursorErrorCode",
-        "PresenceCursorInput",
-        "PresenceCursorListener",
-        "PresenceCursorResult",
-        "PresenceCursorSnapshot",
-        "PresenceCursorUpdate",
-        "PresenceCursors",
-        "createPresenceCursors"
-      ],
-      "publicExportCount": 10,
-      "keywords": [
-        "collaboration",
-        "cursor",
-        "headless",
-        "presence",
-        "selection",
         "zod-crud"
       ]
     },
@@ -2444,29 +2440,29 @@
       ]
     },
     {
-      "path": "labs/extensions/reindex",
-      "name": "@zod-crud/reindex",
+      "path": "labs/extensions/renumber-items",
+      "name": "@zod-crud/renumber-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab reindex (sync an order field to array position) extension functions for zod-crud documents.",
+      "description": "Lab renumber-items (sync an order field to array position) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab reindex extension for `zod-crud` documents.",
+      "summary": "Lab renumber-items extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "sync an order/position field to each item array position after a reorder",
         "notFor": "reordering the array itself, or fractional/gap indexing"
       },
       "publicExports": [
-        "Reindex",
-        "ReindexChange",
-        "ReindexError",
-        "ReindexErrorCode",
-        "ReindexOptions",
-        "ReindexResult",
-        "canReindex",
-        "createReindex",
-        "reindex"
+        "RenumberItems",
+        "RenumberItemsChange",
+        "RenumberItemsError",
+        "RenumberItemsErrorCode",
+        "RenumberItemsOptions",
+        "RenumberItemsResult",
+        "canRenumberItems",
+        "createRenumberItems",
+        "renumberItems"
       ],
       "publicExportCount": 9,
       "keywords": [
@@ -2474,7 +2470,7 @@
         "json",
         "order",
         "position",
-        "reindex",
+        "renumber-items",
         "zod-crud"
       ]
     },
@@ -2490,7 +2486,7 @@
       "summary": "Lab round extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "round a number to a precision or nearest step (round/floor/ceil/trunc)",
-        "notFor": "currency/locale formatting, or increment/clamp (see number-step)"
+        "notFor": "currency/locale formatting, or increment/clamp (see increment-number)"
       },
       "publicExports": [
         "Round",
@@ -2515,72 +2511,40 @@
       ]
     },
     {
-      "path": "labs/extensions/set-membership",
-      "name": "@zod-crud/set-membership",
+      "path": "labs/extensions/sort-items",
+      "name": "@zod-crud/sort-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab set-membership (toggle a value in an array set) extension functions for zod-crud documents.",
+      "description": "Lab sort-items (sort/reverse array items) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab set-membership extension for `zod-crud` documents.",
+      "summary": "Lab collection sort extension for `zod-crud` documents.",
       "guidance": {
-        "useFor": "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
-        "notFor": "ordered insertion position or deduping an existing array"
+        "useFor": "sort or reverse JSON array items",
+        "notFor": "query views, filters, or server sorting"
       },
       "publicExports": [
-        "MembershipAction",
-        "SetMembership",
-        "SetMembershipChange",
-        "SetMembershipError",
-        "SetMembershipErrorCode",
-        "SetMembershipOptions",
-        "SetMembershipResult",
-        "createSetMembership",
-        "plan"
+        "SortItems",
+        "SortItemsChange",
+        "SortItemsChangeResult",
+        "SortItemsCompare",
+        "SortItemsError",
+        "SortItemsErrorCode",
+        "SortItemsItem",
+        "SortItemsResult",
+        "canReverse",
+        "canSort",
+        "createSortItems",
+        "reverse",
+        "sort"
       ],
-      "publicExportCount": 9,
+      "publicExportCount": 13,
       "keywords": [
+        "collection",
         "headless",
         "json",
-        "membership",
-        "set",
-        "toggle",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "labs/extensions/slugify",
-      "name": "@zod-crud/slugify",
-      "status": "lab-extension",
-      "private": true,
-      "publishable": false,
-      "version": "0.1.0",
-      "description": "Lab slugify (derive a URL-safe slug from a string) extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Lab slugify extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "derive a URL-safe slug from a string field (CMS title to slug)",
-        "notFor": "uniqueness/collision handling or non-Latin transliteration"
-      },
-      "publicExports": [
-        "Slugify",
-        "SlugifyChange",
-        "SlugifyError",
-        "SlugifyErrorCode",
-        "SlugifyOptions",
-        "SlugifyResult",
-        "canSlugify",
-        "createSlugify",
-        "slugify"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "headless",
-        "json",
-        "slug",
-        "slugify",
-        "url",
+        "sort",
         "zod-crud"
       ]
     },
@@ -2620,28 +2584,28 @@
       ]
     },
     {
-      "path": "labs/extensions/swap",
-      "name": "@zod-crud/swap",
+      "path": "labs/extensions/swap-items",
+      "name": "@zod-crud/swap-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab swap (exchange two array items) extension functions for zod-crud documents.",
+      "description": "Lab swap-items (exchange two array items) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab swap extension for `zod-crud` documents.",
+      "summary": "Lab swap-items extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "exchange the positions of two items in the same array",
         "notFor": "cross-array swaps or moving to an arbitrary index"
       },
       "publicExports": [
-        "Swap",
-        "SwapChange",
-        "SwapError",
-        "SwapErrorCode",
-        "SwapResult",
-        "canSwap",
-        "createSwap",
-        "swap"
+        "SwapItems",
+        "SwapItemsChange",
+        "SwapItemsError",
+        "SwapItemsErrorCode",
+        "SwapItemsResult",
+        "canSwapItems",
+        "createSwapItems",
+        "swapItems"
       ],
       "publicExportCount": 8,
       "keywords": [
@@ -2649,69 +2613,105 @@
         "headless",
         "json",
         "reorder",
-        "swap",
+        "swap-items",
         "zod-crud"
       ]
     },
     {
-      "path": "labs/extensions/text-transform",
-      "name": "@zod-crud/text-transform",
+      "path": "labs/extensions/toggle-option",
+      "name": "@zod-crud/toggle-option",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab text-transform (case/whitespace transforms on a string field) extension functions for zod-crud documents.",
+      "description": "Lab toggle-option (toggle a value in an array set) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab text-transform extension for `zod-crud` documents.",
+      "summary": "Lab toggle-option extension for `zod-crud` documents.",
       "guidance": {
-        "useFor": "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
-        "notFor": "locale-aware casing, rich text formatting toolbars, or find/replace"
+        "useFor": "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
+        "notFor": "ordered insertion position or deduping an existing array"
       },
       "publicExports": [
-        "TextTransform",
-        "TextTransformChange",
-        "TextTransformError",
-        "TextTransformErrorCode",
-        "TextTransformResult",
-        "TextTransformer",
-        "applyTransform",
-        "canTransform",
-        "createTextTransform"
+        "MembershipAction",
+        "ToggleOption",
+        "ToggleOptionChange",
+        "ToggleOptionError",
+        "ToggleOptionErrorCode",
+        "ToggleOptionOptions",
+        "ToggleOptionResult",
+        "createToggleOption",
+        "plan"
       ],
       "publicExportCount": 9,
       "keywords": [
-        "case",
         "headless",
         "json",
-        "text",
-        "transform",
+        "membership",
+        "set",
+        "toggle",
         "zod-crud"
       ]
     },
     {
-      "path": "labs/extensions/truncate",
-      "name": "@zod-crud/truncate",
+      "path": "labs/extensions/toggle-value",
+      "name": "@zod-crud/toggle-value",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab truncate (cap a string to a max length) extension functions for zod-crud documents.",
+      "description": "Lab toggle-value (toggle/advance a field through values) extension functions for zod-crud documents.",
       "license": "MIT",
-      "summary": "Lab truncate extension for `zod-crud` documents.",
+      "summary": "Lab toggle-value extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "toggle a boolean or advance an enum/value field (enum options come from the schema)",
+        "notFor": "rendered toggle controls or keyboard policy"
+      },
+      "publicExports": [
+        "ToggleValue",
+        "ToggleValueChange",
+        "ToggleValueDirection",
+        "ToggleValueError",
+        "ToggleValueErrorCode",
+        "ToggleValueOptions",
+        "ToggleValueResult",
+        "canToggleValue",
+        "createToggleValue",
+        "toggleValue"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "enum",
+        "headless",
+        "json",
+        "toggle",
+        "toggle-value",
+        "zod-crud"
+      ]
+    },
+    {
+      "path": "labs/extensions/trim-text",
+      "name": "@zod-crud/trim-text",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab trim-text (cap a string to a max length) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab trim-text extension for `zod-crud` documents.",
       "guidance": {
         "useFor": "cap a string field to a max length with optional ellipsis and word boundary",
         "notFor": "display-time CSS truncation or grapheme/locale-aware length"
       },
       "publicExports": [
-        "Truncate",
-        "TruncateChange",
-        "TruncateError",
-        "TruncateErrorCode",
-        "TruncateOptions",
-        "TruncateResult",
-        "canTruncate",
-        "createTruncate",
-        "truncate"
+        "TrimText",
+        "TrimTextChange",
+        "TrimTextError",
+        "TrimTextErrorCode",
+        "TrimTextOptions",
+        "TrimTextResult",
+        "canTrimText",
+        "createTrimText",
+        "trimText"
       ],
       "publicExportCount": 9,
       "keywords": [
@@ -2719,18 +2719,18 @@
         "headless",
         "json",
         "text",
-        "truncate",
+        "trim-text",
         "zod-crud"
       ]
     },
     {
-      "path": "labs/extensions/wrap-unwrap",
-      "name": "@zod-crud/wrap-unwrap",
+      "path": "labs/extensions/wrap-selection",
+      "name": "@zod-crud/wrap-selection",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab wrap and unwrap extension functions for zod-crud documents.",
+      "description": "Lab wrap-selection (wrap/unwrap selected items) extension functions for zod-crud documents.",
       "license": "MIT",
       "summary": "Lab extension for structural `wrap` and `unwrap`.",
       "guidance": {
@@ -2739,18 +2739,18 @@
       },
       "publicExports": [
         "WrapCreateContext",
+        "WrapSelection",
+        "WrapSelectionAdapter",
+        "WrapSelectionApplyResult",
+        "WrapSelectionChange",
+        "WrapSelectionChangeResult",
+        "WrapSelectionError",
+        "WrapSelectionErrorCode",
+        "WrapSelectionOperation",
         "WrapSource",
-        "WrapUnwrap",
-        "WrapUnwrapAdapter",
-        "WrapUnwrapApplyResult",
-        "WrapUnwrapChange",
-        "WrapUnwrapChangeResult",
-        "WrapUnwrapError",
-        "WrapUnwrapErrorCode",
-        "WrapUnwrapOperation",
         "canUnwrapSelection",
         "canWrapSelection",
-        "createWrapUnwrap",
+        "createWrapSelection",
         "unwrapSelection",
         "wrapSelection"
       ],

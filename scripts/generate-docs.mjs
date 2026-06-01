@@ -16,7 +16,7 @@ const extensionGuidance = {
     useFor: "schedule host-owned saves after document changes",
     notFor: "retry queues, offline sync, or server conflict resolution",
   },
-  "@zod-crud/batch-set": {
+  "@zod-crud/batch-update": {
     useFor: "set a field across a list of selected item pointers to a constant or computed value",
     notFor: "selecting which items to edit, or JSONPath query-driven replacement",
   },
@@ -32,7 +32,7 @@ const extensionGuidance = {
     useFor: "name and restore document snapshots",
     notFor: "durable version graphs or cloud backup",
   },
-  "@zod-crud/clear-values": {
+  "@zod-crud/clear-contents": {
     useFor: "reset selected fields to schema-derived empty values, keeping structure",
     notFor: "structural delete, caller-supplied bulk replace, or enum/object default policy",
   },
@@ -40,7 +40,7 @@ const extensionGuidance = {
     useFor: "bridge zod-crud clipboard payloads to the browser clipboard",
     notFor: "TSV/CSV spreadsheet paste engines",
   },
-  "@zod-crud/coerce": {
+  "@zod-crud/convert-type": {
     useFor: "convert a field type (string/number/integer/boolean) where the schema permits it",
     notFor: "locale/format-aware parsing of currency or dates, or input masks",
   },
@@ -52,11 +52,11 @@ const extensionGuidance = {
     useFor: "resolve scoped stable ids to current JSON Pointers",
     notFor: "id generation, relation graphs, routing, or server identity",
   },
-  "@zod-crud/cycle": {
+  "@zod-crud/toggle-value": {
     useFor: "toggle a boolean or advance an enum/value field (enum options come from the schema)",
     notFor: "rendered toggle controls or keyboard policy",
   },
-  "@zod-crud/collection-sort": {
+  "@zod-crud/sort-items": {
     useFor: "sort or reverse JSON array items",
     notFor: "query views, filters, or server sorting",
   },
@@ -64,11 +64,11 @@ const extensionGuidance = {
     useFor: "anchor review comments to document structure",
     notFor: "comment UI, moderation, or author storage",
   },
-  "@zod-crud/computed-fields": {
+  "@zod-crud/calculated-fields": {
     useFor: "sync host-computed derived JSON fields",
     notFor: "formula languages or dependency runtimes",
   },
-  "@zod-crud/convert-node-kind": {
+  "@zod-crud/convert-block-type": {
     useFor: "convert selected nodes between host-described kinds",
     notFor: "schema migration systems",
   },
@@ -88,11 +88,11 @@ const extensionGuidance = {
     useFor: "turn drag/drop intent into move or paste operations",
     notFor: "DOM drag/drop events, hit testing, or hover UI",
   },
-  "@zod-crud/ensure-fields": {
+  "@zod-crud/apply-defaults": {
     useFor: "add missing object keys from a defaults map without overwriting existing ones",
     notFor: "filling existing empty values, removing unknown keys, or deep merge",
   },
-  "@zod-crud/fill-empty": {
+  "@zod-crud/fill-blanks": {
     useFor: "fill only empty slots across targets, preserving non-empty values",
     notFor: "adding missing fields, choosing targets, or unconditional batch set",
   },
@@ -104,11 +104,11 @@ const extensionGuidance = {
     useFor: "hold temporary invalid form input before committing valid JSON",
     notFor: "rendered form components",
   },
-  "@zod-crud/forward-fill": {
+  "@zod-crud/fill-down": {
     useFor: "carry the last non-empty value into the empty slots that follow (ffill)",
     notFor: "constant fill, numeric series interpolation, or rendered grid UI",
   },
-  "@zod-crud/grid-paste": {
+  "@zod-crud/paste-cells": {
     useFor: "paste a 2D value matrix onto a rectangular array-of-records region",
     notFor: "TSV/CSV parsing, clipboard I/O, or auto-growing the array",
   },
@@ -116,11 +116,11 @@ const extensionGuidance = {
     useFor: "group and ungroup selected sibling JSON items",
     notFor: "Airtable group-by views",
   },
-  "@zod-crud/limit": {
+  "@zod-crud/limit-items": {
     useFor: "cap a JSON array to at most N items, keeping the start or end",
     notFor: "choosing survivors beyond start/end, or auto-trimming on insert",
   },
-  "@zod-crud/move-selection": {
+  "@zod-crud/move-selected": {
     useFor: "move a contiguous selection of sibling items to a new position",
     notFor: "single-item moves, drag/drop events, or cross-array moves",
   },
@@ -132,7 +132,7 @@ const extensionGuidance = {
     useFor: "reorder visual stack arrays with bring/send commands",
     notFor: "canvas rendering or z-index CSS management",
   },
-  "@zod-crud/number-step": {
+  "@zod-crud/increment-number": {
     useFor: "increment, decrement, or step a numeric field with optional clamping",
     notFor: "rendered spinners, formatting, units, or currency",
   },
@@ -140,11 +140,11 @@ const extensionGuidance = {
     useFor: "project and edit nested document outline structures",
     notFor: "Figma layer panels without a tree schema adapter",
   },
-  "@zod-crud/paste-compatible": {
+  "@zod-crud/paste-special": {
     useFor: "adapt external payloads before schema-safe paste",
     notFor: "browser clipboard I/O or autocomplete dropdowns",
   },
-  "@zod-crud/pad": {
+  "@zod-crud/pad-text": {
     useFor: "pad a string field to a minimum length (zero-padded codes/IDs)",
     notFor: "number formatting or display-time alignment",
   },
@@ -160,7 +160,7 @@ const extensionGuidance = {
     useFor: "save and restore documents in browser storage-like hosts",
     notFor: "server sync, auth, or conflict resolution",
   },
-  "@zod-crud/presence-cursors": {
+  "@zod-crud/live-cursors": {
     useFor: "track remote collaborator cursors and selections",
     notFor: "CRDT/OT or realtime transport",
   },
@@ -172,7 +172,7 @@ const extensionGuidance = {
     useFor: "guard edits to protected JSON Pointer ranges",
     notFor: "2D spreadsheet selection UI or server authorization",
   },
-  "@zod-crud/reindex": {
+  "@zod-crud/renumber-items": {
     useFor: "sync an order/position field to each item array position after a reorder",
     notFor: "reordering the array itself, or fractional/gap indexing",
   },
@@ -186,21 +186,21 @@ const extensionGuidance = {
   },
   "@zod-crud/round": {
     useFor: "round a number to a precision or nearest step (round/floor/ceil/trunc)",
-    notFor: "currency/locale formatting, or increment/clamp (see number-step)",
+    notFor: "currency/locale formatting, or increment/clamp (see increment-number)",
   },
   "@zod-crud/search-replace": {
     useFor: "find and replace text across document string fields",
     notFor: "rendered text extraction or search UI",
   },
-  "@zod-crud/swap": {
+  "@zod-crud/swap-items": {
     useFor: "exchange the positions of two items in the same array",
     notFor: "cross-array swaps or moving to an arbitrary index",
   },
-  "@zod-crud/truncate": {
+  "@zod-crud/trim-text": {
     useFor: "cap a string field to a max length with optional ellipsis and word boundary",
     notFor: "display-time CSS truncation or grapheme/locale-aware length",
   },
-  "@zod-crud/text-transform": {
+  "@zod-crud/change-case": {
     useFor: "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
     notFor: "locale-aware casing, rich text formatting toolbars, or find/replace",
   },
@@ -208,11 +208,11 @@ const extensionGuidance = {
     useFor: "split a string into array items by a delimiter (tag input, paste-as-list)",
     notFor: "CSV/TSV quoting, split-to-columns, or clipboard access",
   },
-  "@zod-crud/set-membership": {
+  "@zod-crud/toggle-option": {
     useFor: "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
     notFor: "ordered insertion position or deduping an existing array",
   },
-  "@zod-crud/slugify": {
+  "@zod-crud/generate-slug": {
     useFor: "derive a URL-safe slug from a string field (CMS title to slug)",
     notFor: "uniqueness/collision handling or non-Latin transliteration",
   },
@@ -220,7 +220,7 @@ const extensionGuidance = {
     useFor: "insert reusable JSON payloads with schema-safe paste checks",
     notFor: "slash palette UI or snippet storage",
   },
-  "@zod-crud/wrap-unwrap": {
+  "@zod-crud/wrap-selection": {
     useFor: "wrap sibling JSON items in host-defined containers",
     notFor: "visual grouping or layout containers",
   },

@@ -25,6 +25,18 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- Renamed lab extension packages toward common editor command names: `batch-set`
+  to `batch-update`, `clear-values` to `clear-contents`, `coerce` to
+  `convert-type`, `collection-sort` to `sort-items`, `computed-fields` to
+  `calculated-fields`, `convert-node-kind` to `convert-block-type`, `cycle` to
+  `toggle-value`, `ensure-fields` to `apply-defaults`, `fill-empty` to
+  `fill-blanks`, `forward-fill` to `fill-down`, `grid-paste` to `paste-cells`,
+  `limit` to `limit-items`, `move-selection` to `move-selected`, `number-step`
+  to `increment-number`, `pad` to `pad-text`, `paste-compatible` to
+  `paste-special`, `presence-cursors` to `live-cursors`, `reindex` to
+  `renumber-items`, `set-membership` to `toggle-option`, `slugify` to
+  `generate-slug`, `swap` to `swap-items`, `text-transform` to `change-case`,
+  `truncate` to `trim-text`, and `wrap-unwrap` to `wrap-selection`.
 - Changed the default document execution error policy to `strict: false`.
   Callers that want `JSONCrudError` throws now opt in with `strict: true`.
 - Changed top-level `doc.undo()` and `doc.redo()` to return

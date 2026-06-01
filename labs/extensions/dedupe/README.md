@@ -40,7 +40,7 @@ d.dedupe("/rows", { keyOf: (row) => row.id });
 
 The public facade is enough: read the array with `doc.at`, build the deduped
 array (first occurrence per key), preflight with `doc.canPatch`, then apply with
-`doc.patch`. Same shape as `@zod-crud/collection-sort` — an array-level command
+`doc.patch`. Same shape as `@zod-crud/sort-items` — an array-level command
 parameterized by a host function, applied as one schema-safe array replacement.
 
 This is distinct from `@zod-crud/bulk-edit` (which deletes positions matched by a

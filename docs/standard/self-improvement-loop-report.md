@@ -122,8 +122,8 @@ stable strengths
 | --- | --- |
 | official candidate | `references` |
 | conditional official candidate | `document-diff`, `drag-drop` |
-| recipe-first | `bookmarks`, `collection-sort`, `computed-fields`, `layer-order`, `paste-compatible` |
-| experiment | `convert-node-kind`, `grouping`, `presence-cursors`, `wrap-unwrap` |
+| recipe-first | `bookmarks`, `sort-items`, `calculated-fields`, `layer-order`, `paste-special` |
+| experiment | `convert-block-type`, `grouping`, `live-cursors`, `wrap-selection` |
 
 이 표는 promotion 결정이 아니다. 다음 루프에서 dogfood evidence가 쌓이면 변경할 수
 있는 관찰 상태다.
@@ -136,14 +136,14 @@ stable strengths
 | `document-diff` | `patch-preview`와 proposed review flow 사이에서 책임 경계가 아직 넓다 | import review recipe에서 identity/move inference를 host-owned로 유지할 수 있는지 확인 |
 | `drag-drop` | DOM event, hit testing, hover UI와 쉽게 섞인다 | pointer-free intent만 남는지 두 제품에서 확인 |
 | `bookmarks` | `comments`와 generic anchor lifecycle 압력을 공유한다 | comment 밖의 named anchor dogfood 확보 |
-| `collection-sort` | 정렬은 view-owned인지 document mutation인지 제품마다 갈린다 | persisted sort command가 두 제품 이상에서 필요할 때 재검토 |
-| `computed-fields` | formula/runtime으로 커질 위험이 높다 | derived JSON write-back만 유지되는지 확인 |
+| `sort-items` | 정렬은 view-owned인지 document mutation인지 제품마다 갈린다 | persisted sort command가 두 제품 이상에서 필요할 때 재검토 |
+| `calculated-fields` | formula/runtime으로 커질 위험이 높다 | derived JSON write-back만 유지되는지 확인 |
 | `layer-order` | object-surface z-order feature지만 geometry/selection과 붙기 쉽다 | slide/diagram dogfood에서 array order command만 남는지 확인 |
-| `paste-compatible` | parser/import adapter와 섞일 위험이 높다 | external payload adaptation만 독립되는지 확인 |
-| `convert-node-kind` | host factory와 schema migration으로 확장될 수 있다 | block kind conversion MVP에서 공통 contract 반복 여부 확인 |
-| `grouping` | 2D object grouping과 structural group이 쉽게 섞인다 | `wrap-unwrap`와 함께 structural operation naming 재검토 |
-| `presence-cursors` | collaboration transport와 rendering에 붙는다 | remote selection payload만 headless로 남는지 확인 |
-| `wrap-unwrap` | structural command 후보지만 group/ungroup과 경계가 아직 불안정하다 | object/editor 두 장르에서 같은 `selectionAfter` shape가 반복되는지 확인 |
+| `paste-special` | parser/import adapter와 섞일 위험이 높다 | external payload adaptation만 독립되는지 확인 |
+| `convert-block-type` | host factory와 schema migration으로 확장될 수 있다 | block kind conversion MVP에서 공통 contract 반복 여부 확인 |
+| `grouping` | 2D object grouping과 structural group이 쉽게 섞인다 | `wrap-selection`와 함께 structural operation naming 재검토 |
+| `live-cursors` | collaboration transport와 rendering에 붙는다 | remote selection payload만 headless로 남는지 확인 |
+| `wrap-selection` | structural command 후보지만 group/ungroup과 경계가 아직 불안정하다 | object/editor 두 장르에서 같은 `selectionAfter` shape가 반복되는지 확인 |
 
 ## Release Readiness
 

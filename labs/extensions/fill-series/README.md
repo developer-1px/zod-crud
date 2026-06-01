@@ -48,26 +48,16 @@ filler.fill(["/rows/1", "/rows/2"], { from: (cell) => `row-${cell.index}` }, { f
 ## Friction report
 
 The public facade is enough to express constant fill, linear series, and a host
-generator. The flow is: normalize the target with the public Pointer utilities
-(`tryParsePointer`, `lastSegmentIndex`, `parentPointer`, `appendSegment`), read
-current cell values with `doc.at`, build per-cell `replace` operations, preflight
-the whole batch with `doc.canPatch`, then apply with `doc.patch`. Schema safety
-falls out of `canPatch` for free — a numeric series aimed at a string field is
-rejected as `patch_rejected` and nothing is applied.
+generator. The flow is: normalize the target with `resolveSiblingRange`, read
+current cell values with `doc.at`, build per-cell `replace` operations,
+preflight the whole batch with `doc.canPatch`, then apply with `doc.patch`.
+Schema safety falls out of `canPatch` for free — a numeric series aimed at a
+string field is rejected as `patch_rejected` and nothing is applied.
 
-Seam pressure observed (matches the contract-pressure-register watchlist):
+Resolved core pressure:
 
-- **Selected sibling normalization / contiguous range check.** Turning a set of
-  selected item pointers into a parent + sorted index run is hand-written here
-  (shared parent, sort, `start + offset` contiguity). This is the same
-  normalization that `bulk-edit`, `grouping`, and `wrap-unwrap` re-derive. The
-  public API exposes the Pointer arithmetic but not "is this selection a single
-  contiguous sibling range", so each extension reimplements it.
-- **`selectionAfter` planning.** The fill range maps cleanly to item pointers, so
-  `selectionAfter` is trivial here. The recurring question is whether this field
-  should converge to one shared shape (`operations` / `selectionAfter` /
-  `diagnostics`) across structural extensions rather than each naming its own.
-- **No core gap for the feature itself.** Fill/series does not need a new core
-  primitive. The only thing core could remove is the repeated selection-range
-  normalization, and that should be proven across three independent extensions
-  before it moves anywhere near core.
+- Selected sibling normalization / contiguous range check moved to
+  `resolveSiblingRange` after enough independent labs repeated it.
+- This lab maps `resolveSiblingRange` errors back to its existing error codes so
+  the feature contract stays stable.
+- `selectionAfter` remains a lab convention, not a core concept yet.

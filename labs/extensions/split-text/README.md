@@ -36,5 +36,5 @@ s.split("/tags", "a,b", { append: true });   // append to existing
 
 The public facade is enough: split/trim/filter in memory, preflight the array
 replacement with `doc.canPatch`, then apply. This is the tag-input / paste-as-list
-case (one delimiter into a flat list), deliberately distinct from grid-paste
+case (one delimiter into a flat list), deliberately distinct from paste-cells
 (2D matrix → rectangle) and from full CSV parsing, which stays host-owned.
