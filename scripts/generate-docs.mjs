@@ -88,6 +88,10 @@ const extensionGuidance = {
     useFor: "turn drag/drop intent into move or paste operations",
     notFor: "DOM drag/drop events, hit testing, or hover UI",
   },
+  "@zod-crud/ensure-fields": {
+    useFor: "add missing object keys from a defaults map without overwriting existing ones",
+    notFor: "filling existing empty values, removing unknown keys, or deep merge",
+  },
   "@zod-crud/fill-empty": {
     useFor: "fill only empty slots across targets, preserving non-empty values",
     notFor: "adding missing fields, choosing targets, or unconditional batch set",
