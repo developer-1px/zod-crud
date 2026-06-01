@@ -108,6 +108,10 @@ const extensionGuidance = {
     useFor: "group and ungroup selected sibling JSON items",
     notFor: "Airtable group-by views",
   },
+  "@zod-crud/limit": {
+    useFor: "cap a JSON array to at most N items, keeping the start or end",
+    notFor: "choosing survivors beyond start/end, or auto-trimming on insert",
+  },
   "@zod-crud/move-selection": {
     useFor: "move a contiguous selection of sibling items to a new position",
     notFor: "single-item moves, drag/drop events, or cross-array moves",

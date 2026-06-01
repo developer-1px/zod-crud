@@ -25,7 +25,7 @@ Official extensions: 16
 | `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
-Lab extensions: 27
+Lab extensions: 28
 
 Lab extensions are private candidates. They are listed to show product pressure, not as shipped packages.
 
@@ -50,6 +50,7 @@ Lab extensions are private candidates. They are listed to show product pressure,
 | `@zod-crud/grouping` | lab-only | 15 | group and ungroup selected sibling JSON items | Airtable group-by views | Lab extension for structural `group` and `ungroup`. |
 | `@zod-crud/join-text` | lab-only | 9 | join an array into a string field with a separator (inverse of split-text) | locale list formatting, or reading the result without writing | Lab join-text extension for `zod-crud` documents. |
 | `@zod-crud/layer-order` | lab-only | 11 | reorder visual stack arrays with bring/send commands | canvas rendering or z-index CSS management | Lab layer ordering extension for `zod-crud` documents. |
+| `@zod-crud/limit` | lab-only | 9 | cap a JSON array to at most N items, keeping the start or end | choosing survivors beyond start/end, or auto-trimming on insert | Lab limit extension for `zod-crud` documents. |
 | `@zod-crud/move-selection` | lab-only | 9 | move a contiguous selection of sibling items to a new position | single-item moves, drag/drop events, or cross-array moves | Lab move-selection extension for `zod-crud` documents. |
 | `@zod-crud/number-step` | lab-only | 9 | increment, decrement, or step a numeric field with optional clamping | rendered spinners, formatting, units, or currency | Lab number-step extension for `zod-crud` documents. |
 | `@zod-crud/paste-compatible` | lab-only | 17 | adapt external payloads before schema-safe paste | browser clipboard I/O or autocomplete dropdowns | Lab extension for compatible paste. |
