@@ -51,7 +51,7 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 | result diagnostic normalization | result diagnostic text를 `reason`으로 통일 | 반영됨 | official/lab extension도 `reason` 우선 유지 |
 | semantic contract lock | export lock은 이름만 고정하고 signature/error literal 의미론은 문서와 테스트가 고정 | evaluator 후보 | signature snapshot 또는 semantic fixture를 추가할지 확인 |
 | structural object commands | grouping, wrap/unwrap, layer order가 slide/diagram/object editor에서 반복 | official 후보 | 같은 `operations`/`selectionAfter` result shape로 승격 가능한지 확인 |
-| sibling-range 정규화 | "선택된 sibling pointer → {공유 parent, 정렬 index, 연속성}" 를 `grouping`·`wrap-unwrap`·`layer-order`·`drag-drop`·`fill-series` 5개 독립 확장이 재구현. `grouping`/`wrap-unwrap`의 resolver는 byte 단위 동일. `uniquePointers`/`pruneDescendantPointers`/`isContiguous` 하위 헬퍼도 `bulk-edit`·core까지 중복 | **측정됨: 독립 5개 재구현, RFC #87** | core helper `resolveSiblingRange` 후보 시그니처 검토. value 동봉·contiguity flag 여부는 아키텍트 결정. 기존 5개 리팩토링은 RFC 승인 후 |
+| sibling-range 정규화 | "선택된 sibling pointer → {공유 parent, 정렬 index, 연속성}" 를 `fill-series`·`move-selection`·`grouping`·`wrap-unwrap`·`layer-order` 5개 독립 확장이 재구현. `grouping`/`wrap-unwrap`의 resolver는 byte 단위 동일 | **반영됨: core `resolveSiblingRange` (#95)** | 순수 path helper로 core 승격(#95), 5개 소비자 모두 수렴(#96/#97/#98). `drag-drop`은 단일 source/target 개별 해석이라 range 대상이 아님(하위 primitive 사용, 제외). 남은 후보: 에러 코드 통일(현재 각 확장이 helper 코드를 자기 코드로 매핑) |
 
 ## Guard Composition
 
