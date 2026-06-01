@@ -164,6 +164,10 @@ const extensionGuidance = {
     useFor: "guard edits to protected JSON Pointer ranges",
     notFor: "2D spreadsheet selection UI or server authorization",
   },
+  "@zod-crud/reindex": {
+    useFor: "sync an order/position field to each item array position after a reorder",
+    notFor: "reordering the array itself, or fractional/gap indexing",
+  },
   "@zod-crud/references": {
     useFor: "track stable references and backlinks over JSON documents",
     notFor: "route state or rendered links",
