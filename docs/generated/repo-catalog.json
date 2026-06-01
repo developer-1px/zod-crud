@@ -2654,6 +2654,41 @@
       ]
     },
     {
+      "path": "labs/extensions/truncate",
+      "name": "@zod-crud/truncate",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab truncate (cap a string to a max length) extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab truncate extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "cap a string field to a max length with optional ellipsis and word boundary",
+        "notFor": "display-time CSS truncation or grapheme/locale-aware length"
+      },
+      "publicExports": [
+        "Truncate",
+        "TruncateChange",
+        "TruncateError",
+        "TruncateErrorCode",
+        "TruncateOptions",
+        "TruncateResult",
+        "canTruncate",
+        "createTruncate",
+        "truncate"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "excerpt",
+        "headless",
+        "json",
+        "text",
+        "truncate",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/wrap-unwrap",
       "name": "@zod-crud/wrap-unwrap",
       "status": "lab-extension",
@@ -2885,7 +2920,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 35,
+    "labExtensions": 36,
     "apps": 12
   }
 }

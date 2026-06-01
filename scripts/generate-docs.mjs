@@ -192,6 +192,10 @@ const extensionGuidance = {
     useFor: "exchange the positions of two items in the same array",
     notFor: "cross-array swaps or moving to an arbitrary index",
   },
+  "@zod-crud/truncate": {
+    useFor: "cap a string field to a max length with optional ellipsis and word boundary",
+    notFor: "display-time CSS truncation or grapheme/locale-aware length",
+  },
   "@zod-crud/text-transform": {
     useFor: "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
     notFor: "locale-aware casing, rich text formatting toolbars, or find/replace",
