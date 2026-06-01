@@ -1,13 +1,12 @@
 import {
   appendSegment,
-  lastSegmentIndex,
-  parentPointer,
-  tryParsePointer,
+  resolveSiblingRange,
   type JSONCapabilityResult,
   type JSONDocument,
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
+  type SiblingRangeErrorCode,
 } from "zod-crud";
 
 export type FillSeriesErrorCode =
@@ -197,46 +196,20 @@ interface NormalizedRange {
   indices: number[];
 }
 
+// Selected-sibling-range normalization is shared core (RFC #87). Map its error
+// codes back to this lab's existing codes so behavior stays identical.
+const FILL_ERROR_CODE: Record<SiblingRangeErrorCode, FillSeriesErrorCode> = {
+  empty_selection: "empty_target",
+  invalid_pointer: "invalid_pointer",
+  not_array_item: "invalid_pointer",
+  mixed_parent: "mixed_parent",
+  non_contiguous: "not_contiguous",
+};
+
 function normalizeRange(target: ReadonlyArray<Pointer>): NormalizedRange | FillSeriesError {
-  if (target.length === 0) {
-    return error("empty_target", "fill target must contain at least one pointer.");
-  }
-
-  let parent: Pointer | null = null;
-  const indices: number[] = [];
-  for (const pointer of target) {
-    if (tryParsePointer(pointer) === null) {
-      return error("invalid_pointer", `invalid JSON Pointer in fill target: ${pointer}`, pointer);
-    }
-    const index = lastSegmentIndex(pointer);
-    if (index === null) {
-      return error("invalid_pointer", `fill target pointer must end with an array index: ${pointer}`, pointer);
-    }
-    const itemParent = parentPointer(pointer);
-    if (itemParent === null) {
-      return error("invalid_pointer", `fill target pointer has no parent array: ${pointer}`, pointer);
-    }
-    if (parent === null) {
-      parent = itemParent;
-    } else if (parent !== itemParent) {
-      return error("mixed_parent", `fill target pointers must share one parent array: ${parent} vs ${itemParent}`, pointer);
-    }
-    indices.push(index);
-  }
-
-  indices.sort((left, right) => left - right);
-  const start = indices[0] as number;
-  for (let offset = 0; offset < indices.length; offset += 1) {
-    if (indices[offset] !== start + offset) {
-      return error(
-        "not_contiguous",
-        `fill target must be a contiguous index range; got ${indices.join(", ")}`,
-        parent ?? undefined,
-      );
-    }
-  }
-
-  return { ok: true, parent: parent as Pointer, indices };
+  const range = resolveSiblingRange(target, { requireContiguous: true });
+  if (!range.ok) return error(FILL_ERROR_CODE[range.code], range.reason, range.pointer);
+  return { ok: true, parent: range.parent, indices: range.locations.map((location) => location.index) };
 }
 
 function computeValues<TValue>(
