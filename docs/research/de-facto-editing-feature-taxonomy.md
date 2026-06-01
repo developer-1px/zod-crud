@@ -74,6 +74,7 @@ Classification:
 | Fill/propagate series | sheets, Airtable-like grids | lab `fill-series`; core patch can express it | lab-covered; constant fill + linear numeric series, host owns date/pattern series |
 | Batch edit selected fields | Notion database, Airtable, Jira/Linear, CMS | official `bulk-edit`; core patch/canPatch | official-covered |
 | Clear contents / reset field | sheets (Delete), forms, CMS, admin reset | lab `clear-values`; core schema introspection + replace | lab-covered; schema-derived empties, enum/object empties stay host policy via `emptyFor` |
+| Toggle / cycle value | checkboxes, kanban status, select fields | lab `cycle`; core read + canPatch | lab-covered; boolean toggle from schema, enum order is host-supplied `values` |
 | Remove duplicates | sheets, Airtable, data cleanup | lab `dedupe`; core read + canPatch | lab-covered; keep-first by host key, distinct from `bulk-edit` JSONPath deletion |
 | Group/ungroup | PowerPoint, Figma, FigJam, Miro | lab `grouping` | lab-covered; distinct from structural wrap/unwrap |
 | Wrap/unwrap container | docs blocks, object frames, CMS sections | lab `wrap-unwrap` | lab-covered; feature differs from object grouping |
