@@ -30,6 +30,9 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- Changed lab `@zod-crud/grid-range` fill to accept a host-owned
+  `generateFillIntent` hook so products can preserve arithmetic/date/formula
+  series semantics while zod-crud owns sparse record application.
 - Clarified the `@zod-crud/search-replace` delegation boundary: literal JSON
   string-field find/replace is standardized, while regex engines, rendered text
   extraction, advanced search ranking, and regex replace-all capture policy

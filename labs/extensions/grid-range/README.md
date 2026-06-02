@@ -31,8 +31,9 @@ preflight, and one document mutation boundary.
 - Paste a rectangular `unknown[][]` matrix into a sparse-record-backed grid
   range.
 - Fill a target grid range from a source grid range by repeating the source
-  rectangle pattern.
-- Accept host-owned `keyForCell`, bounds, value-to-intent, and equality hooks.
+  rectangle pattern by default.
+- Accept host-owned `keyForCell`, bounds, value-to-intent, fill-intent
+  generation, and equality hooks.
 - Plan entry-level `add`, `replace`, `remove`, and `noop` decisions with one
   `doc.canPatch` preflight and one `doc.patch` apply.
 - Return structured cell decisions, operation counts, planned JSON Patch
@@ -44,8 +45,8 @@ preflight, and one document mutation boundary.
   grid UI.
 - No A1/RC coordinate naming policy, row/column header model, bounds discovery,
   formula language, displayed value semantics, or clipboard parsing.
-- No CSV/TSV quoting, merged cells, auto-grow rows/columns, or date/pattern
-  series inference.
+- No CSV/TSV quoting, merged cells, auto-grow rows/columns, or built-in
+  date/pattern series inference.
 - No plugin registration; no `zod-crud` internal imports.
 
 ## Friction report
@@ -62,3 +63,9 @@ Sparse-record-backed editors still need a reusable command that starts at grid
 intent: paste this rectangle, or fill that range from this source range. The
 host provides coordinate naming and product normalization; zod-crud owns the
 document-safe sparse record edit procedure.
+
+`fill` keeps repeat-only behavior as the default because it is a common grid
+operation and requires no product semantics. Products that need arithmetic
+series, date series, formula-relative values, or copy-vs-series policy can pass
+`generateFillIntent`; the package still owns applying those generated intents
+as one sparse record edit command.

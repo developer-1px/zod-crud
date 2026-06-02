@@ -17,6 +17,7 @@ export type GridRangeErrorCode =
   | "path_not_found"
   | "not_record"
   | "key_failed"
+  | "fill_failed"
   | "conflicting_cell"
   | "patch_rejected"
   | "patch_failed";
@@ -82,8 +83,28 @@ export interface GridRangeIntentContext extends GridRangeResolvedCell {
   raw: unknown;
 }
 
+export interface GridRangeSourceCell extends GridRangeResolvedCell {
+  exists: boolean;
+  intent: GridRangeCellIntent;
+  value?: unknown;
+}
+
+export interface GridRangeFillContext {
+  root: Pointer;
+  sourceRange: GridRangeRect;
+  targetRange: GridRangeRect;
+  sourceCells: ReadonlyArray<GridRangeSourceCell>;
+  sourceCell: GridRangeSourceCell;
+  sourceIndex: number;
+  targetCell: GridRangeResolvedCell;
+  targetIndex: number;
+}
+
+export type GridRangeFillGenerator = (cell: GridRangeFillContext) => GridRangeCellIntent;
+
 export interface GridRangeOptions {
   valueToIntent?: (value: unknown, cell: GridRangeIntentContext) => GridRangeCellIntent;
+  generateFillIntent?: GridRangeFillGenerator;
   equals?: (current: unknown, next: unknown, cell: GridRangeEqualityContext) => boolean;
 }
 
@@ -197,14 +218,11 @@ export function canFillGridRange<TDocument>(
   const targetCells = resolveCells(input.root, input.target, input.keyForCell);
   if (!targetCells.ok) return targetCells;
 
-  const sourceValues = readSourceValues(record.record, sourceCells.cells);
-  const values = targetCells.cells.map((cell) => {
-    const sourceRow = cell.rowOffset % input.source.rowCount;
-    const sourceColumn = cell.columnOffset % input.source.columnCount;
-    return sourceValues[sourceRow * input.source.columnCount + sourceColumn]!;
-  });
+  const sourceValues = readSourceCells(record.record, sourceCells.cells);
+  const values = resolveFillIntents(input, sourceValues, targetCells.cells, options);
+  if (!values.ok) return values;
 
-  return planCells(doc, record.record, targetCells.cells, values, options, input.target);
+  return planCells(doc, record.record, targetCells.cells, values.values, options, input.target);
 }
 
 export function fillGridRange<TDocument>(
@@ -327,16 +345,73 @@ function resolveKey(
   }
 }
 
-function readSourceValues(
+function readSourceCells(
   record: Record<string, unknown>,
   sourceCells: ReadonlyArray<GridRangeResolvedCell>,
-): PlannedCellInput[] {
+): GridRangeSourceCell[] {
   return sourceCells.map((cell) => {
     if (!Object.prototype.hasOwnProperty.call(record, cell.key)) {
-      return { intent: "remove" } satisfies GridRangeCellIntent;
+      return {
+        ...cell,
+        exists: false,
+        intent: { intent: "remove" },
+      };
     }
-    return { kind: "raw", value: cloneJson(record[cell.key]) };
+    const value = cloneJson(record[cell.key]);
+    return {
+      ...cell,
+      exists: true,
+      value,
+      intent: { intent: "set", value },
+    };
   });
+}
+
+function resolveFillIntents(
+  input: GridRangeFillInput,
+  sourceCells: ReadonlyArray<GridRangeSourceCell>,
+  targetCells: ReadonlyArray<GridRangeResolvedCell>,
+  options: GridRangeOptions,
+): { ok: true; values: PlannedCellInput[] } | GridRangeError {
+  const sourceRange = cloneJson(input.source);
+  const targetRange = cloneJson(input.target);
+  const sourceSnapshot = cloneJson(sourceCells);
+  const values: PlannedCellInput[] = [];
+
+  for (let targetIndex = 0; targetIndex < targetCells.length; targetIndex += 1) {
+    const targetCell = targetCells[targetIndex] as GridRangeResolvedCell;
+    const sourceRow = targetCell.rowOffset % input.source.rowCount;
+    const sourceColumn = targetCell.columnOffset % input.source.columnCount;
+    const sourceIndex = sourceRow * input.source.columnCount + sourceColumn;
+    const sourceCell = sourceCells[sourceIndex]!;
+
+    if (options.generateFillIntent === undefined) {
+      values.push(sourceCell.intent);
+      continue;
+    }
+
+    try {
+      values.push(options.generateFillIntent({
+        root: input.root,
+        sourceRange,
+        targetRange,
+        sourceCells: sourceSnapshot,
+        sourceCell: cloneJson(sourceCell),
+        sourceIndex,
+        targetCell: cloneJson(targetCell),
+        targetIndex,
+      }));
+    } catch (cause) {
+      return cellError(
+        "fill_failed",
+        cause instanceof Error ? cause.message : "grid-range fill generator threw.",
+        targetCell.pointer,
+        targetCell,
+      );
+    }
+  }
+
+  return { ok: true, values };
 }
 
 function planCells<TDocument>(

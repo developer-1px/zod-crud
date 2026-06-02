@@ -31,6 +31,17 @@ function createDoc() {
   });
 }
 
+function createSeriesDoc() {
+  return createJSONDocument(Schema, {
+    cells: {
+      A1: "1",
+      B1: "2",
+    },
+    styles: {},
+    rows: [],
+  });
+}
+
 function keyForCell({ row, column }: { row: number; column: number }) {
   return `${String.fromCharCode(65 + column)}${row + 1}`;
 }
@@ -127,6 +138,40 @@ describe("@zod-crud/grid-range", () => {
     expect(doc.value.cells.B4).toBe("same");
   });
 
+  test("lets the host generate product fill series while zod-crud owns sparse application", () => {
+    const doc = createSeriesDoc();
+    const grid = createGridRange(doc);
+
+    const result = expectOk(grid.fill({
+      root: "/cells",
+      source: { row: 0, column: 0, rowCount: 1, columnCount: 2 },
+      target: { row: 0, column: 2, rowCount: 1, columnCount: 2 },
+      keyForCell,
+    }, {
+      generateFillIntent({ sourceCells, targetIndex }) {
+        const first = Number(sourceCells[0]?.value);
+        const second = Number(sourceCells[1]?.value);
+        const step = second - first;
+        return { intent: "set", value: String(second + step * (targetIndex + 1)) };
+      },
+    }));
+
+    expect(result.operations).toEqual([
+      { op: "add", path: "/cells/C1", value: "3" },
+      { op: "add", path: "/cells/D1", value: "4" },
+    ]);
+    expect(result.decisions).toMatchObject([
+      { key: "C1", intent: "set", action: "add", value: "3" },
+      { key: "D1", intent: "set", action: "add", value: "4" },
+    ]);
+    expect(doc.value.cells).toEqual({
+      A1: "1",
+      B1: "2",
+      C1: "3",
+      D1: "4",
+    });
+  });
+
   test("copies absent source cells as remove intents during fill", () => {
     const doc = createDoc();
     const grid = createGridRange(doc);
@@ -147,6 +192,33 @@ describe("@zod-crud/grid-range", () => {
     });
     expect(doc.value.cells.A1).toBeUndefined();
     expect(doc.value.cells.B1).toBeUndefined();
+  });
+
+  test("rejects fill generator failures before mutating", () => {
+    const doc = createSeriesDoc();
+    const grid = createGridRange(doc);
+
+    const result = grid.fill({
+      root: "/cells",
+      source: { row: 0, column: 0, rowCount: 1, columnCount: 2 },
+      target: { row: 0, column: 2, rowCount: 1, columnCount: 2 },
+      keyForCell,
+    }, {
+      generateFillIntent({ targetIndex }) {
+        if (targetIndex === 1) throw new Error("series stopped");
+        return { intent: "set", value: "3" };
+      },
+    });
+
+    expect(result).toMatchObject({
+      ok: false,
+      code: "fill_failed",
+      pointer: "/cells/D1",
+    });
+    expect(doc.value.cells).toEqual({
+      A1: "1",
+      B1: "2",
+    });
   });
 
   test("uses host equality for product-normalized no-ops", () => {
