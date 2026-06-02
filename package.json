@@ -19,6 +19,7 @@
     "extensions:verify": "npm run extensions:check && npm run extensions:typecheck && npm run extensions:test && npm run extensions:build",
     "labs:extensions:check": "node scripts/evaluate-extension-lab.mjs",
     "labs:extensions:verify": "node scripts/evaluate-extension-lab.mjs --verify",
+    "labs:extensions:verify:changed": "node scripts/evaluate-extension-lab.mjs --verify --changed",
     "perf:core": "npm run build -w zod-crud && node scripts/benchmark-core.mjs",
     "release:check": "npm run verify && npm run standard:check && npm run perf:core && npm run pack:library",
     "standard:check": "node scripts/evaluate-standardization.mjs && npm test -w zod-crud -- standard-conformance",

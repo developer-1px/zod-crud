@@ -32,13 +32,18 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify lab extension dist imports
-        run: npm run build && npm run labs:extensions:verify
+      - name: Verify changed lab extension dist imports
+        env:
+          LAB_EXTENSIONS_BASE: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+          LAB_EXTENSIONS_HEAD: ${{ github.sha }}
+        run: npm run build && npm run labs:extensions:verify:changed
 
   playground-site:
     name: Playgrounds and site

@@ -1,0 +1,23 @@
+name: Lab Extension Catalog
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 18 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  lab-extensions:
+    name: Full lab extension verification
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify all lab extension dist imports
+        run: npm run build && npm run labs:extensions:verify

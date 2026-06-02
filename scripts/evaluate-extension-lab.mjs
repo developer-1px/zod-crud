@@ -1,4 +1,4 @@
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { availableParallelism } from "node:os";
 import { join } from "node:path";
@@ -7,6 +7,12 @@ const root = new URL("..", import.meta.url).pathname;
 const labRoot = "labs/extensions";
 const officialRoot = "packages";
 const verify = process.argv.includes("--verify");
+const verifyChanged = process.argv.includes("--changed");
+const fullVerificationPathPatterns = [
+  /^package(?:-lock)?\.json$/,
+  /^packages\/zod-crud\//,
+  /^scripts\/evaluate-extension-lab\.mjs$/,
+];
 const retiredLabNames = new Set([
   "annotations",
   "comments",
@@ -32,6 +38,12 @@ function read(path) {
 function fail(message) {
   console.error(message);
   process.exitCode = 1;
+}
+
+function option(name) {
+  const index = process.argv.indexOf(name);
+  if (index === -1) return null;
+  return process.argv[index + 1] ?? null;
 }
 
 function packages() {
@@ -86,6 +98,54 @@ function verifyConcurrency() {
   return Math.min(4, Math.max(1, availableParallelism()));
 }
 
+function gitChangedFiles() {
+  const base = option("--base") ?? process.env.LAB_EXTENSIONS_BASE ?? null;
+  const head = option("--head") ?? process.env.LAB_EXTENSIONS_HEAD ?? "HEAD";
+  if (base === null || /^0+$/.test(base)) {
+    return { files: null, reason: "missing diff base" };
+  }
+
+  const result = spawnSync("git", ["diff", "--name-only", base, head], { cwd: root, encoding: "utf8" });
+  if (result.status !== 0) {
+    return { files: null, reason: `git diff failed for ${base}..${head}` };
+  }
+
+  return {
+    files: result.stdout.split(/\r?\n/).filter((path) => path.length > 0),
+    reason: `${base}..${head}`,
+  };
+}
+
+function labDirFromPath(path) {
+  const parts = path.split("/");
+  if (parts[0] !== "labs" || parts[1] !== "extensions" || parts[2] === undefined) return null;
+  return `${labRoot}/${parts[2]}`;
+}
+
+function verificationSelection(labs) {
+  if (!verifyChanged) {
+    return { dirs: new Set(labs), reason: "full verification requested" };
+  }
+
+  const { files: changedFiles, reason } = gitChangedFiles();
+  if (changedFiles === null) {
+    return { dirs: new Set(labs), reason: `${reason}; falling back to full verification` };
+  }
+  if (changedFiles.some((path) => fullVerificationPathPatterns.some((pattern) => pattern.test(path)))) {
+    return { dirs: new Set(labs), reason: `${reason}; shared lab dependency changed` };
+  }
+
+  const availableLabs = new Set(labs);
+  const selectedLabs = new Set();
+  for (const file of changedFiles) {
+    const labDir = labDirFromPath(file);
+    if (labDir !== null && availableLabs.has(labDir)) {
+      selectedLabs.add(labDir);
+    }
+  }
+  return { dirs: selectedLabs, reason };
+}
+
 async function verifyPackage({ dir, name }) {
   const packageRoot = join(root, dir);
   await run("npx", ["--no-install", "tsc", "-p", "tsconfig.test.json", "--noEmit"], packageRoot);
@@ -125,6 +185,7 @@ if (labs.length === 0) {
   fail("extension lab: no lab packages found.");
 }
 const officialPackageNames = new Set(officialPackages().map((pkg) => pkg.name));
+const selectedVerification = verify ? verificationSelection(labs) : { dirs: new Set(), reason: "check only" };
 const verificationTargets = [];
 
 for (const dir of labs) {
@@ -189,16 +250,19 @@ for (const dir of labs) {
     }
   }
 
-  if (verify) {
+  if (verify && selectedVerification.dirs.has(dir)) {
     verificationTargets.push({ dir, name: pkg.name });
   }
 }
 
 if (verify && process.exitCode !== 1) {
-  await verifyPackages(verificationTargets);
+  console.log(`extension lab verify scope: ${verificationTargets.length}/${labs.length} package(s); ${selectedVerification.reason}`);
+  if (verificationTargets.length > 0) {
+    await verifyPackages(verificationTargets);
+  }
 }
 
-console.log(`extension lab evaluation ok: ${labs.length} package(s)${verify ? " verified" : " checked"}`);
+console.log(`extension lab evaluation ok: ${labs.length} package(s) checked${verify ? `, ${verificationTargets.length} verified` : ""}`);
 
 function officialPackages() {
   const absoluteRoot = join(root, officialRoot);
