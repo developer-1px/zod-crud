@@ -22,7 +22,7 @@ Official extensions: 16
 | `@zod-crud/proposed-changes` | 19 | review, accept, or reject proposed document patches | slash commands or mention autocomplete | Official headless proposed document change review extension for `zod-crud` documents. |
 | `@zod-crud/protected-ranges` | 22 | guard edits to protected JSON Pointer ranges | 2D spreadsheet selection UI or server authorization | Official headless protected range guard extension for `zod-crud` documents. |
 | `@zod-crud/schema-form` | 9 | derive schema-backed field descriptors | form rendering or input widgets | Official headless schema-backed field descriptor extension for `zod-crud` documents. |
-| `@zod-crud/search-replace` | 23 | find and replace text across document string fields | rendered text extraction or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
+| `@zod-crud/search-replace` | 23 | find and replace text across document string fields | regex engines, rendered text extraction, or search UI | Official headless search and replace extension for text fields in `zod-crud` documents. |
 | `@zod-crud/snippets` | 12 | insert reusable JSON payloads with schema-safe paste checks | slash palette UI or snippet storage | Official headless snippet insertion extension for `zod-crud` documents. |
 
 Lab extensions: 37

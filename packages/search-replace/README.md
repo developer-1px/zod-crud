@@ -31,6 +31,34 @@ text.replaceAll("draft", "published", {
 });
 ```
 
+## Advanced Search Modes
+
+`@zod-crud/search-replace` intentionally standardizes literal JSON string-field
+find/replace. Regex, fuzzy search, stemming, tokenization, locale collation, and
+rendered-text search stay host-owned until those behaviors repeat across
+products with the same safety and result semantics.
+
+For regex search, the host owns:
+
+- pattern syntax and invalid-pattern diagnostics
+- flags, capture groups, backreference replacement, and match overlap policy
+- regex safety policy, such as timeout, length, and catastrophic-backtracking
+  limits
+- rendered text extraction, ranking, grouping, and advanced-mode UI
+- deciding whether a stale search snapshot should be recomputed or rejected
+
+`zod-crud` still owns the document mutation boundary once the host has a current
+JSON string target. A host can compute a regex match range itself, then call
+`canReplaceMatch` or `replaceMatch` with `{ pointer, range }` to reuse stale text
+checks, schema preflight, and the atomic `doc.replace` operation for that one
+current match.
+
+Regex replace-all remains host-owned in this package because capture
+substitution and product safety rules decide the replacement text. Hosts that
+compute a full next document or patch batch can still delegate final document
+validation and mutation through core `doc.canPatch` / `doc.patch`,
+`@zod-crud/patch-preview`, or a diff/apply feature.
+
 ## Scope
 
 - Traverse a document or subtree through `doc.entries`.
@@ -47,7 +75,7 @@ text.replaceAll("draft", "published", {
 - No rendered text extraction from Markdown, HTML, ProseMirror, canvas text, or
   custom rich text formats.
 - No full-text indexing, stemming, language analysis, fuzzy search, or regex
-  engine.
+  engine or regex replacement grammar.
 - No built-in product-specific field taxonomy, weighting, ranking, or result
   grouping.
 - No plugin registration; this package composes functions and does not call

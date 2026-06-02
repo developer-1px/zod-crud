@@ -190,7 +190,7 @@ const extensionGuidance = {
   },
   "@zod-crud/search-replace": {
     useFor: "find and replace text across document string fields",
-    notFor: "rendered text extraction or search UI",
+    notFor: "regex engines, rendered text extraction, or search UI",
   },
   "@zod-crud/swap-items": {
     useFor: "exchange the positions of two items in the same array",

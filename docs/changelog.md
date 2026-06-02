@@ -25,6 +25,10 @@ All notable changes to this project are documented here.
 
 ### Changed
 
+- Clarified the `@zod-crud/search-replace` delegation boundary: literal JSON
+  string-field find/replace is standardized, while regex engines, rendered text
+  extraction, advanced search ranking, and regex replace-all capture policy
+  remain host-owned.
 - Renamed lab extension packages toward common editor command names: `batch-set`
   to `batch-update`, `clear-values` to `clear-contents`, `coerce` to
   `convert-type`, `collection-sort` to `sort-items`, `computed-fields` to

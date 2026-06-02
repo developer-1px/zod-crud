@@ -568,7 +568,7 @@ export const repoCatalog = {
       "summary": "Official headless search and replace extension for text fields in `zod-crud`\ndocuments.",
       "guidance": {
         "useFor": "find and replace text across document string fields",
-        "notFor": "rendered text extraction or search UI"
+        "notFor": "regex engines, rendered text extraction, or search UI"
       },
       "publicExports": [
         "SearchReplace",
@@ -1343,7 +1343,7 @@ export const repoCatalog = {
       "summary": "Official headless search and replace extension for text fields in `zod-crud`\ndocuments.",
       "guidance": {
         "useFor": "find and replace text across document string fields",
-        "notFor": "rendered text extraction or search UI"
+        "notFor": "regex engines, rendered text extraction, or search UI"
       },
       "publicExports": [
         "SearchReplace",

@@ -124,6 +124,7 @@ const officialExtensions = [
       /createSearchReplace\(doc\)/,
       /block documents,\s*CMS copy review,\s*generated admin editors,\s*slide notes,\s*import cleanup,\s*or settings search/,
       /Find occurrences inside string values/,
+      /Regex replace-all remains host-owned/,
       /No rendered text extraction from Markdown,\s*HTML,\s*ProseMirror,\s*canvas text,\s*or\s*custom rich text formats/,
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
