@@ -20,9 +20,35 @@ jobs:
           node-version: "22"
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Verify workspace
-        run: npm run verify
+      - name: Verify package and official extensions
+        run: npm run typecheck && npm test && npm run build && npm run smoke:package && npm run extensions:verify && npm run docs:evaluate
       - name: Check package contents
         env:
           npm_config_cache: ${{ runner.temp }}/npm-cache
         run: npm pack -w zod-crud --dry-run
+
+  lab-extensions:
+    name: Lab extensions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify lab extension dist imports
+        run: npm run build && npm run labs:extensions:verify
+
+  playground-site:
+    name: Playgrounds and site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Verify playgrounds and site
+        run: npm run playground:typecheck && npm run playground:test && npm run playground:build && npm run site:evaluate && npm run site:verify:pages && npm run browser:test
