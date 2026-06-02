@@ -2549,6 +2549,46 @@
       ]
     },
     {
+      "path": "labs/extensions/sparse-record",
+      "name": "@zod-crud/sparse-record",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab sparse-record entry editing extension functions for zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab sparse-record entry editing extension for `zod-crud` documents.",
+      "guidance": {
+        "useFor": "set or remove keyed entries in sparse JSON records with add/replace/remove/no-op planning",
+        "notFor": "2D grid coordinate expansion, product key normalization, or rendered selection"
+      },
+      "publicExports": [
+        "SparseRecord",
+        "SparseRecordAction",
+        "SparseRecordChange",
+        "SparseRecordDecision",
+        "SparseRecordEdit",
+        "SparseRecordEqualityContext",
+        "SparseRecordError",
+        "SparseRecordErrorCode",
+        "SparseRecordIntent",
+        "SparseRecordOptions",
+        "SparseRecordResult",
+        "canEditSparseRecords",
+        "createSparseRecord",
+        "editSparseRecords"
+      ],
+      "publicExportCount": 14,
+      "keywords": [
+        "entries",
+        "headless",
+        "json",
+        "record",
+        "sparse-record",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/split-text",
       "name": "@zod-crud/split-text",
       "status": "lab-extension",
@@ -2955,7 +2995,7 @@
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 37,
+    "labExtensions": 38,
     "apps": 12
   }
 }

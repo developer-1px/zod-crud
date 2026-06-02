@@ -208,6 +208,10 @@ const extensionGuidance = {
     useFor: "split a string into array items by a delimiter (tag input, paste-as-list)",
     notFor: "CSV/TSV quoting, split-to-columns, or clipboard access",
   },
+  "@zod-crud/sparse-record": {
+    useFor: "set or remove keyed entries in sparse JSON records with add/replace/remove/no-op planning",
+    notFor: "2D grid coordinate expansion, product key normalization, or rendered selection",
+  },
   "@zod-crud/toggle-option": {
     useFor: "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
     notFor: "ordered insertion position or deduping an existing array",
