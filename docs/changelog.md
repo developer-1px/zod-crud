@@ -6,6 +6,9 @@ All notable changes to this project are documented here.
 
 ### Added
 
+- Added lab `@zod-crud/grid-range` to delegate rectangular grid paste/fill
+  planning over sparse JSON records while hosts own coordinate naming and
+  parsing.
 - Added lab `@zod-crud/sparse-record` to delegate sparse JSON record entry
   add/replace/remove/no-op patch planning across one or more record roots.
 - Added `@zod-crud/id-resolver` as an official headless extension for resolving

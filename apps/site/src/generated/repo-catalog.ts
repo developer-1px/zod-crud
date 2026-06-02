@@ -2031,6 +2031,57 @@ export const repoCatalog = {
       ]
     },
     {
+      "path": "labs/extensions/grid-range",
+      "name": "@zod-crud/grid-range",
+      "status": "lab-extension",
+      "private": true,
+      "publishable": false,
+      "version": "0.1.0",
+      "description": "Lab grid-range editing extension functions for sparse-record-backed zod-crud documents.",
+      "license": "MIT",
+      "summary": "Lab grid-range editing extension for sparse-record-backed `zod-crud` documents.",
+      "guidance": {
+        "useFor": "paste or fill rectangular grid ranges backed by sparse JSON records",
+        "notFor": "DOM grid selection, coordinate naming policy, formulas, or TSV/CSV parsing"
+      },
+      "publicExports": [
+        "GridRange",
+        "GridRangeBounds",
+        "GridRangeCellAction",
+        "GridRangeCellAddress",
+        "GridRangeCellIntent",
+        "GridRangeCellIntentKind",
+        "GridRangeChange",
+        "GridRangeDecision",
+        "GridRangeEqualityContext",
+        "GridRangeError",
+        "GridRangeErrorCode",
+        "GridRangeFillInput",
+        "GridRangeIntentContext",
+        "GridRangeKeyResolver",
+        "GridRangeOptions",
+        "GridRangePasteInput",
+        "GridRangeRect",
+        "GridRangeResolvedCell",
+        "GridRangeResult",
+        "canFillGridRange",
+        "canPasteGridRange",
+        "createGridRange",
+        "fillGridRange",
+        "pasteGridRange"
+      ],
+      "publicExportCount": 24,
+      "keywords": [
+        "cell-range",
+        "fill",
+        "grid-range",
+        "headless",
+        "paste",
+        "sparse-record",
+        "zod-crud"
+      ]
+    },
+    {
       "path": "labs/extensions/grouping",
       "name": "@zod-crud/grouping",
       "status": "lab-extension",
@@ -2996,7 +3047,7 @@ export const repoCatalog = {
   "totals": {
     "packages": 17,
     "officialExtensions": 16,
-    "labExtensions": 38,
+    "labExtensions": 39,
     "apps": 12
   }
 } as const;

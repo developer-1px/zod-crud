@@ -112,6 +112,10 @@ const extensionGuidance = {
     useFor: "paste a 2D value matrix onto a rectangular array-of-records region",
     notFor: "TSV/CSV parsing, clipboard I/O, or auto-growing the array",
   },
+  "@zod-crud/grid-range": {
+    useFor: "paste or fill rectangular grid ranges backed by sparse JSON records",
+    notFor: "DOM grid selection, coordinate naming policy, formulas, or TSV/CSV parsing",
+  },
   "@zod-crud/grouping": {
     useFor: "group and ungroup selected sibling JSON items",
     notFor: "Airtable group-by views",
