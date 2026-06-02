@@ -65,7 +65,7 @@ async function checkOnce() {
   }
 
   const llms = await fetchText("/llms.txt");
-  if (!/Stable Identity/.test(llms) || !/Import Boundary/.test(llms)) {
+  if (!/Import 경계/.test(llms) || !/@zod-crud\/id-resolver/.test(llms)) {
     fail("live llms.txt is missing expected content.");
   }
 
