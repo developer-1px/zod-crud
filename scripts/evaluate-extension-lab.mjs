@@ -1,5 +1,6 @@
-import { execFileSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { availableParallelism } from "node:os";
 import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -51,10 +52,72 @@ function files(dir) {
   });
 }
 
-function run(command, args, cwd = root) {
+function formatCommand(command, args, cwd = root) {
   const relativeCwd = cwd === root ? "." : cwd.slice(root.length).replace(/^\//, "");
-  console.log(`$ ${command} ${args.join(" ")}  # cwd=${relativeCwd}`);
-  execFileSync(command, args, { cwd, stdio: "inherit" });
+  return `$ ${command} ${args.join(" ")}  # cwd=${relativeCwd}`;
+}
+
+function run(command, args, cwd = root) {
+  const label = formatCommand(command, args, cwd);
+  console.log(label);
+  return new Promise((resolve, reject) => {
+    const child = spawn(command, args, { cwd, stdio: ["ignore", "pipe", "pipe"] });
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk;
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk;
+    });
+    child.on("error", reject);
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolve();
+        return;
+      }
+      reject(new Error(`${label} failed with exit code ${code}\n${output}`));
+    });
+  });
+}
+
+function verifyConcurrency() {
+  const configured = Number(process.env.LAB_EXTENSIONS_VERIFY_CONCURRENCY);
+  if (Number.isInteger(configured) && configured > 0) return configured;
+  return Math.min(4, Math.max(1, availableParallelism()));
+}
+
+async function verifyPackage({ dir, name }) {
+  const packageRoot = join(root, dir);
+  await run("npx", ["--no-install", "tsc", "-p", "tsconfig.test.json", "--noEmit"], packageRoot);
+  await run("npx", ["--no-install", "vitest", "run", "--config", "vitest.config.ts"], packageRoot);
+  rmSync(join(packageRoot, "dist"), { recursive: true, force: true });
+  await run("npx", ["--no-install", "tsc", "-p", "tsconfig.json"], packageRoot);
+  await run("node", ["--input-type=module", "--eval", `await import(${JSON.stringify(name)});`], packageRoot);
+  console.log(`[ok] ${name}`);
+}
+
+async function verifyPackages(targets) {
+  const concurrency = Math.min(verifyConcurrency(), targets.length);
+  console.log(`extension lab verify concurrency: ${concurrency}`);
+
+  let cursor = 0;
+  const failures = [];
+  async function worker() {
+    while (cursor < targets.length) {
+      const target = targets[cursor];
+      cursor += 1;
+      try {
+        await verifyPackage(target);
+      } catch (error) {
+        failures.push(error);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  for (const failure of failures) {
+    fail(failure.message);
+  }
 }
 
 const labs = packages();
@@ -62,6 +125,7 @@ if (labs.length === 0) {
   fail("extension lab: no lab packages found.");
 }
 const officialPackageNames = new Set(officialPackages().map((pkg) => pkg.name));
+const verificationTargets = [];
 
 for (const dir of labs) {
   const pkg = JSON.parse(read(`${dir}/package.json`));
@@ -125,14 +189,13 @@ for (const dir of labs) {
     }
   }
 
-  if (!verify) continue;
+  if (verify) {
+    verificationTargets.push({ dir, name: pkg.name });
+  }
+}
 
-  const packageRoot = join(root, dir);
-  run("npx", ["--no-install", "tsc", "-p", "tsconfig.test.json", "--noEmit"], packageRoot);
-  run("npx", ["--no-install", "vitest", "run", "--config", "vitest.config.ts"], packageRoot);
-  rmSync(join(packageRoot, "dist"), { recursive: true, force: true });
-  run("npx", ["--no-install", "tsc", "-p", "tsconfig.json"], packageRoot);
-  run("node", ["--input-type=module", "--eval", `await import(${JSON.stringify(pkg.name)});`], packageRoot);
+if (verify && process.exitCode !== 1) {
+  await verifyPackages(verificationTargets);
 }
 
 console.log(`extension lab evaluation ok: ${labs.length} package(s)${verify ? " verified" : " checked"}`);
