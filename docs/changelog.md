@@ -48,6 +48,8 @@ All notable changes to this project are documented here.
 
 ### Fixed
 
+- Added lab extension runtime import smoke coverage so generated `dist`
+  artifacts cannot contain invalid JavaScript identifiers after feature renames.
 - Clarified clipboard spread docs: multi-source clipboard buffer paste spreads
   by default at array insertion targets, while direct array payload paste needs
   explicit `spread: true`.

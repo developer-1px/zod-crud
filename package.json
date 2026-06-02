@@ -22,7 +22,7 @@
     "perf:core": "npm run build -w zod-crud && node scripts/benchmark-core.mjs",
     "release:check": "npm run verify && npm run standard:check && npm run perf:core && npm run pack:library",
     "standard:check": "node scripts/evaluate-standardization.mjs && npm test -w zod-crud -- standard-conformance",
-    "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package && npm run extensions:verify && npm run docs:evaluate && npm run playground:typecheck && npm run playground:test && npm run playground:build && npm run site:evaluate && npm run site:verify:pages && npm run browser:test",
+    "verify": "npm run typecheck && npm test && npm run build && npm run smoke:package && npm run extensions:verify && npm run labs:extensions:verify && npm run docs:evaluate && npm run playground:typecheck && npm run playground:test && npm run playground:build && npm run site:evaluate && npm run site:verify:pages && npm run browser:test",
     "pack:library": "npm pack -w zod-crud --cache ./.npm-cache",
     "playground:dev": "npm run dev -w @zod-crud/site",
     "playground:build": "npm run build -w @zod-crud/site",

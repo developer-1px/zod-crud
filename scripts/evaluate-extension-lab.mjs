@@ -132,6 +132,7 @@ for (const dir of labs) {
   run("npx", ["--no-install", "vitest", "run", "--config", "vitest.config.ts"], packageRoot);
   rmSync(join(packageRoot, "dist"), { recursive: true, force: true });
   run("npx", ["--no-install", "tsc", "-p", "tsconfig.json"], packageRoot);
+  run("node", ["--input-type=module", "--eval", `await import(${JSON.stringify(pkg.name)});`], packageRoot);
 }
 
 console.log(`extension lab evaluation ok: ${labs.length} package(s)${verify ? " verified" : " checked"}`);
