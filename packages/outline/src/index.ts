@@ -416,7 +416,7 @@ function changeWithCapability<TDocument>(
   if (change.operations.length > 0) {
     const capability = doc.canPatch(change.operations);
     if (!capability.ok) {
-      return capabilityError(capability);
+      return { ...editError("patch_rejected", capability.reason ?? "outline patch rejected", capability.pointer), capability };
     }
   }
   return copyChange(change);
@@ -429,7 +429,7 @@ function applyChange<TDocument>(
   const result: JSONResult = change.operations.length === 0
     ? { ok: true }
     : doc.patch(change.operations);
-  if (!result.ok) return patchError(result);
+  if (!result.ok) return { ...editError("patch_failed", result.reason ?? "outline patch failed", result.pointer), result };
 
   return {
     ...copyChange(change),
@@ -519,16 +519,6 @@ function editError(
   pointer?: Pointer,
 ): OutlineEditError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
-}
-
-function capabilityError(
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): OutlineEditError {
-  return { ...editError("patch_rejected", capability.reason ?? "outline patch rejected", capability.pointer), capability };
-}
-
-function patchError(result: Exclude<JSONResult, { ok: true }>): OutlineEditError {
-  return { ...editError("patch_failed", result.reason ?? "outline patch failed", result.pointer), result };
 }
 
 function copyChange(change: OutlineEditChange): OutlineEditChange {
