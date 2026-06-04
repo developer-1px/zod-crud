@@ -95,18 +95,10 @@ export function createGrouping<TDocument>(
   adapter: GroupingAdapter,
 ): Grouping<TDocument> {
   return {
-    canGroup(source) {
-      return canGroupSelection(doc, adapter, source);
-    },
-    group(source) {
-      return groupSelection(doc, adapter, source);
-    },
-    canUngroup(source) {
-      return canUngroupSelection(doc, adapter, source);
-    },
-    ungroup(source) {
-      return ungroupSelection(doc, adapter, source);
-    },
+    canGroup: (source) => canGroupSelection(doc, adapter, source),
+    group: (source) => groupSelection(doc, adapter, source),
+    canUngroup: (source) => canUngroupSelection(doc, adapter, source),
+    ungroup: (source) => ungroupSelection(doc, adapter, source),
   };
 }
 
