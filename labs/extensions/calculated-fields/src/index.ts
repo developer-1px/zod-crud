@@ -146,7 +146,14 @@ export function planCalculatedFields<TDocument>(
   return {
     ok: true,
     changed: operations.length > 0,
-    fields: changes.map(copyChange),
+    fields: changes.map((change) => ({
+      key: change.key,
+      path: change.path,
+      current: cloneJson(change.current),
+      computed: cloneJson(change.computed),
+      changed: change.changed,
+      operation: change.operation === null ? null : cloneJson(change.operation),
+    })),
     operations: cloneJson(operations),
   };
 }
@@ -189,17 +196,6 @@ function capabilityError(
   if (capability.pointer !== undefined) error.pointer = capability.pointer;
   else if (pointer !== undefined) error.pointer = pointer;
   return error;
-}
-
-function copyChange(change: CalculatedFieldChange): CalculatedFieldChange {
-  return {
-    key: change.key,
-    path: change.path,
-    current: cloneJson(change.current),
-    computed: cloneJson(change.computed),
-    changed: change.changed,
-    operation: change.operation === null ? null : cloneJson(change.operation),
-  };
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

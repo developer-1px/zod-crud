@@ -159,7 +159,21 @@ function applyReplayEntry<T>(
   options: PatchLogReplayOptions,
 ): JSONResult {
   if (options.mode === "commit") {
-    return targetDoc.commit(applied, resolveCommitOptions(entry, index, options));
+    if (options.commitOptions !== undefined) {
+      const selected = typeof options.commitOptions === "function"
+        ? options.commitOptions(copyEntry(entry), index)
+        : options.commitOptions;
+      return targetDoc.commit(applied, selected === undefined ? undefined : copyValue(selected));
+    }
+
+    const metadata = resolvePatchMetadata(entry, index, options.metadata);
+    if (metadata === undefined) return targetDoc.commit(applied);
+
+    const commitOptions: JSONDocumentCommitOptions = {};
+    if (metadata.label !== undefined) commitOptions.label = metadata.label;
+    if (metadata.origin !== undefined) commitOptions.origin = metadata.origin;
+    if (metadata.mergeKey !== undefined) commitOptions.mergeKey = metadata.mergeKey;
+    return targetDoc.commit(applied, Object.keys(commitOptions).length > 0 ? commitOptions : undefined);
   }
 
   return targetDoc.patch(applied, resolvePatchMetadata(entry, index, options.metadata));
@@ -178,33 +192,6 @@ function resolvePatchMetadata(
     ? metadataOption(copyEntry(entry), index)
     : metadataOption;
   return copyMetadata(metadata);
-}
-
-function resolveCommitOptions(
-  entry: PatchLogEntry,
-  index: number,
-  options: PatchLogReplayOptions,
-): JSONDocumentCommitOptions | undefined {
-  if (options.commitOptions !== undefined) {
-    const selected = typeof options.commitOptions === "function"
-      ? options.commitOptions(copyEntry(entry), index)
-      : options.commitOptions;
-    return selected === undefined ? undefined : copyValue(selected);
-  }
-
-  return commitOptionsFromMetadata(resolvePatchMetadata(entry, index, options.metadata));
-}
-
-function commitOptionsFromMetadata(
-  metadata: JSONChangeMetadata | undefined,
-): JSONDocumentCommitOptions | undefined {
-  if (metadata === undefined) return undefined;
-
-  const options: JSONDocumentCommitOptions = {};
-  if (metadata.label !== undefined) options.label = metadata.label;
-  if (metadata.origin !== undefined) options.origin = metadata.origin;
-  if (metadata.mergeKey !== undefined) options.mergeKey = metadata.mergeKey;
-  return Object.keys(options).length > 0 ? options : undefined;
 }
 
 function copyEntry(entry: PatchLogEntry): PatchLogEntry {

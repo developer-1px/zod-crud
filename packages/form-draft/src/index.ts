@@ -254,7 +254,7 @@ function readBatch<TDocument, TInput>(
 
   const snapshots: FormDraftSnapshot<TInput>[] = [];
   for (const draft of [...drafts.values()].sort((left, right) => left.pointer.localeCompare(right.pointer))) {
-    if (!isInScope(draft.pointer, readable.path)) continue;
+    if (readable.path !== "" && draft.pointer !== readable.path && !draft.pointer.startsWith(`${readable.path}/`)) continue;
     const snapshot = readSnapshot(doc, draft, parse);
     if (!snapshot.ok) return snapshot;
     snapshots.push(snapshot.snapshot);
@@ -446,10 +446,6 @@ function readError(
     reason: reason ?? `field path not found: ${pointer}`,
     pointer,
   };
-}
-
-function isInScope(pointer: Pointer, root: Pointer): boolean {
-  return root === "" || pointer === root || pointer.startsWith(`${root}/`);
 }
 
 function emit<TInput>(

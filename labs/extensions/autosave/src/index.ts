@@ -115,7 +115,8 @@ export function createAutoSave<TValue>(
   let latest: PendingEvent | null = null;
 
   const emitSnapshot = (): void => {
-    emit(listeners, snapshot(runtime, disposed));
+    const event = snapshot(runtime, disposed);
+    for (const listener of [...listeners]) listener(event);
   };
 
   const scheduleFlush = (): void => {
@@ -241,28 +242,6 @@ function snapshot(runtime: AutoSaveRuntime, disposed: boolean): AutoSaveSnapshot
     sequence: runtime.sequence,
     lastSavedAt: runtime.lastSavedAt,
     error: runtime.error,
-  };
-}
-
-function emit(
-  listeners: Set<AutoSaveListener>,
-  value: AutoSaveSnapshot,
-): void {
-  const event = copySnapshot(value);
-  for (const listener of [...listeners]) {
-    listener(event);
-  }
-}
-
-function copySnapshot(value: AutoSaveSnapshot): AutoSaveSnapshot {
-  return {
-    state: value.state,
-    pending: value.pending,
-    saving: value.saving,
-    saveCount: value.saveCount,
-    sequence: value.sequence,
-    lastSavedAt: value.lastSavedAt,
-    error: value.error,
   };
 }
 

@@ -93,11 +93,18 @@ export const defaultWebClipboardCodec: WebClipboardCodec = {
   },
   decode(text) {
     const value = JSON.parse(text) as unknown;
-    if (isWebClipboardEnvelope(value)) {
+    const candidate = value as { kind?: unknown; version?: unknown; payload?: unknown; source?: unknown; sources?: unknown };
+    if (
+      typeof value === "object"
+      && value !== null
+      && candidate.kind === WEB_CLIPBOARD_KIND
+      && candidate.version === WEB_CLIPBOARD_VERSION
+      && "payload" in candidate
+    ) {
       return {
-        payload: value.payload,
-        source: typeof value.source === "string" ? value.source : null,
-        sources: Array.isArray(value.sources) && value.sources.every((item) => typeof item === "string") ? value.sources : null,
+        payload: candidate.payload,
+        source: typeof candidate.source === "string" ? candidate.source : null,
+        sources: Array.isArray(candidate.sources) && candidate.sources.every((item) => typeof item === "string") ? candidate.sources : null,
       };
     }
     return {
@@ -115,11 +122,13 @@ export function createWebClipboard<T>(
   const codec = options.codec ?? defaultWebClipboardCodec;
 
   const read = async (): Promise<WebClipboardReadResult> => {
-    const host = resolveReadHost(options.host);
-    if (!host.ok) return host;
+    const host = options.host ?? globalThis.navigator?.clipboard;
+    if (typeof host?.readText !== "function") {
+      return webClipboardError("clipboard_unavailable", "text clipboard read is unavailable");
+    }
 
     try {
-      const text = await host.readText();
+      const text = await host.readText.bind(host)();
       return decodeText(codec, text);
     } catch (cause) {
       return webClipboardError("clipboard_read_failed", "failed to read text from clipboard", cause);
@@ -130,18 +139,24 @@ export function createWebClipboard<T>(
     payload: unknown,
     metadata: Partial<Omit<WebClipboardPayload, "payload">> = {},
   ): Promise<WebClipboardWriteResult> => {
-    const host = resolveWriteHost(options.host);
-    if (!host.ok) return host;
+    const host = options.host ?? globalThis.navigator?.clipboard;
+    if (typeof host?.writeText !== "function") {
+      return webClipboardError("clipboard_unavailable", "text clipboard write is unavailable");
+    }
 
-    const encoded = encodePayload(codec, {
-      payload,
-      source: metadata.source ?? null,
-      sources: metadata.sources ?? null,
-    });
-    if (!encoded.ok) return encoded;
+    let text: string;
+    try {
+      text = codec.encode({
+        payload,
+        source: metadata.source ?? null,
+        sources: metadata.sources ?? null,
+      });
+    } catch (cause) {
+      return webClipboardError("clipboard_serialize_failed", "failed to serialize clipboard payload", cause);
+    }
 
     try {
-      await host.writeText(encoded.text);
+      await host.writeText.bind(host)(text);
       return { ok: true };
     } catch (cause) {
       return webClipboardError("clipboard_write_failed", "failed to write text to clipboard", cause);
@@ -230,41 +245,12 @@ export function createWebClipboard<T>(
   };
 }
 
-function resolveReadHost(host?: TextClipboardHost): { ok: true; readText: () => MaybePromise<string> } | WebClipboardError {
-  const resolved = host ?? globalThis.navigator?.clipboard;
-  if (typeof resolved?.readText === "function") return { ok: true, readText: resolved.readText.bind(resolved) };
-  return webClipboardError("clipboard_unavailable", "text clipboard read is unavailable");
-}
-
-function resolveWriteHost(host?: TextClipboardHost): { ok: true; writeText: (text: string) => MaybePromise<void> } | WebClipboardError {
-  const resolved = host ?? globalThis.navigator?.clipboard;
-  if (typeof resolved?.writeText === "function") return { ok: true, writeText: resolved.writeText.bind(resolved) };
-  return webClipboardError("clipboard_unavailable", "text clipboard write is unavailable");
-}
-
-function encodePayload(
-  codec: WebClipboardCodec,
-  payload: WebClipboardPayload,
-): { ok: true; text: string } | WebClipboardError {
-  try {
-    return { ok: true, text: codec.encode(payload) };
-  } catch (cause) {
-    return webClipboardError("clipboard_serialize_failed", "failed to serialize clipboard payload", cause);
-  }
-}
-
 function decodeText(codec: WebClipboardCodec, text: string): WebClipboardReadResult {
   try {
     return { ok: true, ...codec.decode(text) };
   } catch (cause) {
     return webClipboardError("clipboard_parse_failed", "failed to parse clipboard text", cause);
   }
-}
-
-function isWebClipboardEnvelope(value: unknown): value is WebClipboardEnvelope {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as { kind?: unknown; version?: unknown; payload?: unknown };
-  return candidate.kind === WEB_CLIPBOARD_KIND && candidate.version === WEB_CLIPBOARD_VERSION && "payload" in candidate;
 }
 
 function restoreClipboard<T>(

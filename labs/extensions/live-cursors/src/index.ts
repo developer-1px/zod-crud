@@ -82,7 +82,8 @@ export function createLiveCursors<T>(
   const emitIfChanged = (before: string): void => {
     const after = snapshotSignature(cursors);
     if (before === after) return;
-    emit(listeners, snapshot(cursors));
+    const event = snapshot(cursors);
+    for (const listener of [...listeners]) listener(event);
   };
 
   const unsubscribeDocument = doc.subscribe((applied) => {
@@ -289,24 +290,6 @@ function snapshot(cursors: ReadonlyMap<string, PresenceCursor>): PresenceCursorS
 
 function list(cursors: ReadonlyMap<string, PresenceCursor>): PresenceCursor[] {
   return [...cursors.values()].sort((left, right) => left.peerId.localeCompare(right.peerId));
-}
-
-function emit(
-  listeners: Set<PresenceCursorListener>,
-  value: PresenceCursorSnapshot,
-): void {
-  const event = copySnapshot(value);
-  for (const listener of [...listeners]) {
-    listener(event);
-  }
-}
-
-function copySnapshot(value: PresenceCursorSnapshot): PresenceCursorSnapshot {
-  return {
-    cursors: value.cursors.map(copyCursor),
-    active: value.active,
-    lost: value.lost,
-  };
 }
 
 function copyCursor(cursor: PresenceCursor): PresenceCursor {

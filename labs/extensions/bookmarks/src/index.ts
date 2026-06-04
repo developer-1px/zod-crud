@@ -60,7 +60,8 @@ export function createBookmarks<T>(
   const emitIfChanged = (before: string): void => {
     const after = snapshotSignature(bookmarks);
     if (before === after) return;
-    emit(listeners, snapshot(bookmarks));
+    const event = snapshot(bookmarks);
+    for (const listener of [...listeners]) listener(event);
   };
 
   const unsubscribeDocument = doc.subscribe((applied) => {
@@ -146,24 +147,6 @@ function snapshot(bookmarks: ReadonlyMap<string, Pointer | null>): BookmarksSnap
     bookmarks: items,
     tracked: items.filter((bookmark) => !bookmark.lost).length,
     lost: items.filter((bookmark) => bookmark.lost).length,
-  };
-}
-
-function emit(
-  listeners: Set<BookmarksListener>,
-  value: BookmarksSnapshot,
-): void {
-  const event = copySnapshot(value);
-  for (const listener of [...listeners]) {
-    listener(event);
-  }
-}
-
-function copySnapshot(value: BookmarksSnapshot): BookmarksSnapshot {
-  return {
-    bookmarks: value.bookmarks.map(copyBookmark),
-    tracked: value.tracked,
-    lost: value.lost,
   };
 }
 

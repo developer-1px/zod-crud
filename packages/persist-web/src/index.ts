@@ -144,11 +144,18 @@ export const defaultDocumentPersistenceCodec: DocumentPersistenceCodec = {
   },
   decode(text) {
     const value = JSON.parse(text) as unknown;
-    if (isDocumentPersistenceEnvelope(value)) {
+    const candidate = value as { kind?: unknown; version?: unknown; value?: unknown; selection?: unknown; savedAt?: unknown };
+    if (
+      typeof value === "object"
+      && value !== null
+      && candidate.kind === WEB_PERSISTENCE_KIND
+      && candidate.version === WEB_PERSISTENCE_VERSION
+      && "value" in candidate
+    ) {
       return {
-        value: value.value,
-        selection: normalizeSelection(value.selection),
-        savedAt: typeof value.savedAt === "string" ? value.savedAt : null,
+        value: candidate.value,
+        selection: normalizeSelection(candidate.selection),
+        savedAt: typeof candidate.savedAt === "string" ? candidate.savedAt : null,
       };
     }
 
@@ -168,8 +175,11 @@ export function createDocumentPersistence<T>(
   const { key } = options;
 
   const save = async (): Promise<DocumentPersistenceSaveResult> => {
-    const host = resolveWriteHost(options.host);
-    if (!host.ok) return host;
+    const host = options.host ?? getLocalStorageHost();
+    const write = typeof host?.write === "function" ? host.write.bind(host) : host?.setItem?.bind(host);
+    if (write === undefined) {
+      return persistenceError("persistence_unavailable", "document persistence write is unavailable");
+    }
 
     const savedAt = new Date().toISOString();
     const snapshot: DocumentPersistencePayload = {
@@ -177,11 +187,15 @@ export function createDocumentPersistence<T>(
       selection: doc.selection?.snapshot() ?? null,
       savedAt,
     };
-    const encoded = encodeSnapshot(codec, snapshot);
-    if (!encoded.ok) return encoded;
+    let text: string;
+    try {
+      text = codec.encode(snapshot);
+    } catch (cause) {
+      return persistenceError("persistence_serialize_failed", "failed to serialize persisted document", cause);
+    }
 
     try {
-      await host.write(key, encoded.text);
+      await write(key, text);
       return {
         ok: true,
         key,
@@ -194,24 +208,46 @@ export function createDocumentPersistence<T>(
   };
 
   const readSnapshot = async (): Promise<SnapshotReadResult> => {
-    const host = resolveReadHost(options.host);
-    if (!host.ok) return host;
+    const host = options.host ?? getLocalStorageHost();
+    const read = typeof host?.read === "function" ? host.read.bind(host) : host?.getItem?.bind(host);
+    if (read === undefined) {
+      return persistenceError("persistence_unavailable", "document persistence read is unavailable");
+    }
 
+    let text: string;
     try {
-      const text = await host.read(key);
-      if (text == null) return persistenceError("persistence_empty", "no persisted document exists");
-      return decodeSnapshot(codec, text);
+      const stored = await read(key);
+      if (stored == null) return persistenceError("persistence_empty", "no persisted document exists");
+      text = stored;
     } catch (cause) {
       return persistenceError("persistence_read_failed", "failed to read persisted document", cause);
+    }
+
+    try {
+      const decoded = codec.decode(text);
+      const candidate = decoded as { value?: unknown; selection?: unknown; savedAt?: unknown };
+      return {
+        ok: true,
+        snapshot: {
+          value: candidate.value,
+          selection: normalizeSelection(candidate.selection),
+          savedAt: typeof candidate.savedAt === "string" ? candidate.savedAt : null,
+        },
+      };
+    } catch (cause) {
+      return persistenceError("persistence_parse_failed", "failed to parse persisted document", cause);
     }
   };
 
   const clear = async (): Promise<DocumentPersistenceClearResult> => {
-    const host = resolveRemoveHost(options.host);
-    if (!host.ok) return host;
+    const host = options.host ?? getLocalStorageHost();
+    const remove = typeof host?.remove === "function" ? host.remove.bind(host) : host?.removeItem?.bind(host);
+    if (remove === undefined) {
+      return persistenceError("persistence_unavailable", "document persistence remove is unavailable");
+    }
 
     try {
-      await host.remove(key);
+      await remove(key);
       return { ok: true, key };
     } catch (cause) {
       return persistenceError("persistence_remove_failed", "failed to remove persisted document", cause);
@@ -311,51 +347,11 @@ export function createDocumentPersistence<T>(
   };
 }
 
-function resolveReadHost(host?: DocumentPersistenceHost): { ok: true; read: (key: string) => MaybePromise<string | null | undefined> } | DocumentPersistenceError {
-  const resolved = host ?? getLocalStorageHost();
-  if (typeof resolved?.read === "function") return { ok: true, read: resolved.read.bind(resolved) };
-  if (typeof resolved?.getItem === "function") return { ok: true, read: resolved.getItem.bind(resolved) };
-  return persistenceError("persistence_unavailable", "document persistence read is unavailable");
-}
-
-function resolveWriteHost(host?: DocumentPersistenceHost): { ok: true; write: (key: string, value: string) => MaybePromise<void> } | DocumentPersistenceError {
-  const resolved = host ?? getLocalStorageHost();
-  if (typeof resolved?.write === "function") return { ok: true, write: resolved.write.bind(resolved) };
-  if (typeof resolved?.setItem === "function") return { ok: true, write: resolved.setItem.bind(resolved) };
-  return persistenceError("persistence_unavailable", "document persistence write is unavailable");
-}
-
-function resolveRemoveHost(host?: DocumentPersistenceHost): { ok: true; remove: (key: string) => MaybePromise<void> } | DocumentPersistenceError {
-  const resolved = host ?? getLocalStorageHost();
-  if (typeof resolved?.remove === "function") return { ok: true, remove: resolved.remove.bind(resolved) };
-  if (typeof resolved?.removeItem === "function") return { ok: true, remove: resolved.removeItem.bind(resolved) };
-  return persistenceError("persistence_unavailable", "document persistence remove is unavailable");
-}
-
 function getLocalStorageHost(): DocumentPersistenceHost | undefined {
   try {
     return globalThis.localStorage;
   } catch {
     return undefined;
-  }
-}
-
-function encodeSnapshot(
-  codec: DocumentPersistenceCodec,
-  snapshot: DocumentPersistencePayload,
-): { ok: true; text: string } | DocumentPersistenceError {
-  try {
-    return { ok: true, text: codec.encode(snapshot) };
-  } catch (cause) {
-    return persistenceError("persistence_serialize_failed", "failed to serialize persisted document", cause);
-  }
-}
-
-function decodeSnapshot(codec: DocumentPersistenceCodec, text: string): SnapshotReadResult {
-  try {
-    return { ok: true, snapshot: normalizePersistencePayload(codec.decode(text)) };
-  } catch (cause) {
-    return persistenceError("persistence_parse_failed", "failed to parse persisted document", cause);
   }
 }
 
@@ -370,25 +366,6 @@ function loadDocument<T>(
     if (cause instanceof JSONCrudError) return cause.result;
     throw cause;
   }
-}
-
-function normalizePersistencePayload(input: DocumentPersistencePayload): DocumentPersistencePayload {
-  const candidate = input as {
-    value?: unknown;
-    selection?: unknown;
-    savedAt?: unknown;
-  };
-  return {
-    value: candidate.value,
-    selection: normalizeSelection(candidate.selection),
-    savedAt: typeof candidate.savedAt === "string" ? candidate.savedAt : null,
-  };
-}
-
-function isDocumentPersistenceEnvelope(value: unknown): value is DocumentPersistenceEnvelope {
-  if (typeof value !== "object" || value === null) return false;
-  const candidate = value as { kind?: unknown; version?: unknown; value?: unknown };
-  return candidate.kind === WEB_PERSISTENCE_KIND && candidate.version === WEB_PERSISTENCE_VERSION && "value" in candidate;
 }
 
 function normalizeSelection(value: unknown): SelectionSnap | null {

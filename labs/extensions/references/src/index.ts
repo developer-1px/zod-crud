@@ -164,7 +164,7 @@ export function createReferences<TDocument>(
       const links = indexReferences(doc, descriptor).links;
       return source === undefined
         ? links
-        : links.filter((link) => containsPointer(source, link.source));
+        : links.filter((link) => source === "" || link.source === source || link.source.startsWith(`${source}/`));
     },
     backlinks(target, id) {
       const resolved = resolveReference(doc, descriptor, target, id);
@@ -519,11 +519,6 @@ function createSnapshot(
     )).length,
     duplicateTargets: diagnostics.filter((entry) => entry.code === "duplicate_target_id").length,
   };
-}
-
-function containsPointer(base: Pointer, path: Pointer): boolean {
-  if (base === "") return true;
-  return path === base || path.startsWith(`${base}/`);
 }
 
 function referenceKey(target: string, id: string): string {

@@ -106,7 +106,13 @@ export function canReorderLayers<TDocument>(
   const capability = doc.canPatch(plan.operations);
   if (!capability.ok) return capabilityError("patch_rejected", plan.parent, capability);
 
-  return copyChange(plan);
+  return {
+    ok: true,
+    action: plan.action,
+    parent: plan.parent,
+    source: [...plan.source],
+    operations: cloneJson(plan.operations) as JSONPatchOperation[],
+  };
 }
 
 export function reorderLayers<TDocument>(
@@ -246,16 +252,6 @@ function sameOrder(
     && current.every((item, index) => item === next[index]);
 }
 
-
-function copyChange(plan: LayerOrderPlan): LayerOrderChange {
-  return {
-    ok: true,
-    action: plan.action,
-    parent: plan.parent,
-    source: [...plan.source],
-    operations: cloneJson(plan.operations) as JSONPatchOperation[],
-  };
-}
 
 function capabilityError(
   code: "patch_rejected",
