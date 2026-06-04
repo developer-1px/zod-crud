@@ -122,7 +122,15 @@ export function canMoveSelected<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(range.parent, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `move patch rejected at ${range.parent}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   const selectionAfter: Pointer[] = [];
@@ -149,7 +157,15 @@ export function moveSelected<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(change.path, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `move patch failed at ${change.path}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -173,32 +189,6 @@ function normalizeRange(source: ReadonlyArray<Pointer>): NormalizedRange | MoveS
   const range = resolveSiblingRange(source, { requireContiguous: true });
   if (!range.ok) return error(MOVE_ERROR_CODE[range.code], range.reason, range.pointer);
   return { ok: true, parent: range.parent, indices: range.locations.map((location) => location.index) };
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): MoveSelectedError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `move patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(
-  pointer: Pointer,
-  patch: Extract<JSONResult, { ok: false }>,
-): MoveSelectedError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `move patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: MoveSelectedErrorCode, reason: string, pointer?: Pointer): MoveSelectedError {

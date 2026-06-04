@@ -95,7 +95,15 @@ export function canClearContents<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? "clear-contents patch rejected",
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return {
@@ -117,7 +125,15 @@ export function clearContents<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? "clear-contents patch failed",
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -154,28 +170,6 @@ function deriveEmpty(
       // unknown, any — empty is host policy, not derivable from `describe`.
       return { ok: false };
   }
-}
-
-function capabilityError(
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): ClearContentsError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? "clear-contents patch rejected",
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(patch: Extract<JSONResult, { ok: false }>): ClearContentsError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? "clear-contents patch failed",
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: ClearContentsErrorCode, reason: string, pointer?: Pointer): ClearContentsError {

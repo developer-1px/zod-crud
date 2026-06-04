@@ -188,7 +188,15 @@ function changeWithCapability<TDocument, TValue>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(path, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `collection sort patch rejected for ${path}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return {
@@ -207,36 +215,16 @@ function applyChange<TDocument, TValue>(
 ): SortItemsResult<TValue> {
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(change.path, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `collection sort patch failed for ${change.path}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
-}
-
-function capabilityError(
-  path: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): SortItemsError {
-  const error: SortItemsError = {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `collection sort patch rejected for ${path}`,
-    capability,
-  };
-  if (capability.pointer !== undefined) error.pointer = capability.pointer;
-  return error;
-}
-
-function patchError(
-  path: Pointer,
-  patch: Extract<JSONResult, { ok: false }>,
-): SortItemsError {
-  const error: SortItemsError = {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `collection sort patch failed for ${path}`,
-    patch,
-  };
-  if (patch.pointer !== undefined) error.pointer = patch.pointer;
-  return error;
 }
 
 function sortItemsError(

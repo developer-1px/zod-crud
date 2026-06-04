@@ -61,7 +61,15 @@ export function diffDocument<TDocument, TValue = unknown>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? "document diff patch rejected",
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return {
@@ -89,7 +97,15 @@ export function applyDocumentDiff<TDocument, TValue = unknown>(
   if (change.operations.length === 0) return change;
 
   const patched = doc.patch(change.operations, metadata);
-  if (!patched.ok) return patchError(patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? "document diff patch failed",
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -167,32 +183,6 @@ function jsonEqual(left: unknown, right: unknown): boolean {
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function capabilityError(
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): DocumentDiffError {
-  const error: DocumentDiffError = {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? "document diff patch rejected",
-    capability,
-  };
-  if (capability.pointer !== undefined) error.pointer = capability.pointer;
-  return error;
-}
-
-function patchError(
-  patch: Extract<JSONResult, { ok: false }>,
-): DocumentDiffError {
-  const error: DocumentDiffError = {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? "document diff patch failed",
-    patch,
-  };
-  if (patch.pointer !== undefined) error.pointer = patch.pointer;
-  return error;
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

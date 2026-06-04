@@ -86,7 +86,15 @@ export function canStep<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(pointer, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `increment-number patch rejected at ${pointer}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return { ok: true, pointer, from: current, to: next, changed, operations };
@@ -101,31 +109,16 @@ export function step<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(pointer, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `increment-number patch failed at ${pointer}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): IncrementNumberError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `increment-number patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): IncrementNumberError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `increment-number patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: IncrementNumberErrorCode, reason: string, pointer?: Pointer): IncrementNumberError {

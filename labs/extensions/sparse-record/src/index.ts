@@ -152,7 +152,15 @@ export function canEditSparseRecords<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? "sparse-record patch rejected",
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   const added = decisions.filter((item) => item.action === "add").length;
@@ -184,7 +192,15 @@ export function editSparseRecords<TDocument>(
   if (change.operations.length === 0) return change;
 
   const patched = doc.patch(change.operations, metadata);
-  if (!patched.ok) return patchError(patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? "sparse-record patch failed",
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -222,26 +238,6 @@ function decision(
   value?: unknown,
 ): SparseRecordDecision {
   return { root, key, pointer, intent, action, ...(current === undefined ? {} : { current: cloneJson(current) }), ...(value === undefined ? {} : { value: cloneJson(value) }) };
-}
-
-function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): SparseRecordError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? "sparse-record patch rejected",
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(patch: Extract<JSONResult, { ok: false }>): SparseRecordError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? "sparse-record patch failed",
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: SparseRecordErrorCode, reason: string, pointer?: Pointer): SparseRecordError {

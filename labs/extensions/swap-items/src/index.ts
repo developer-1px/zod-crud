@@ -82,7 +82,15 @@ export function canSwapItems<TDocument>(doc: JSONDocument<TDocument>, a: Pointer
     next[right.index] = tmp;
     operations = [{ op: "replace", path: parent, value: cloneJson(next) }];
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(parent, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `swapItems patch rejected at ${parent}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return { ok: true, path: parent, a, b, changed, operations };
@@ -93,7 +101,15 @@ export function swapItems<TDocument>(doc: JSONDocument<TDocument>, a: Pointer, b
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(change.path, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `swapItems patch failed at ${change.path}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -113,26 +129,6 @@ function locate(pointer: Pointer): Located | SwapItemsError {
     return error("not_array_item", `pointer does not address an array item: ${pointer}`, pointer);
   }
   return { ok: true, parent, index };
-}
-
-function capabilityError(pointer: Pointer, capability: Exclude<JSONCapabilityResult, { ok: true }>): SwapItemsError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `swapItems patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): SwapItemsError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `swapItems patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: SwapItemsErrorCode, reason: string, pointer?: Pointer): SwapItemsError {

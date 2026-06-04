@@ -102,7 +102,15 @@ export function canBatchUpdate<TDocument, TValue = unknown>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? "batch-update patch rejected",
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return {
@@ -125,28 +133,16 @@ export function batchUpdate<TDocument, TValue = unknown>(
   if (!change.ok) return change;
   if (change.operations.length === 0) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? "batch-update patch failed",
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
-}
-
-function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): BatchUpdateError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? "batch-update patch rejected",
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(patch: Extract<JSONResult, { ok: false }>): BatchUpdateError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? "batch-update patch failed",
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: BatchUpdateErrorCode, reason: string, pointer?: Pointer): BatchUpdateError {

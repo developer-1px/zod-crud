@@ -71,7 +71,15 @@ export function canConvertType<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(pointer, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `convert-type patch rejected at ${pointer}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return { ok: true, pointer, from: current, to: next, changed, operations };
@@ -86,7 +94,15 @@ export function convertType<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(pointer, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `convert-type patch failed at ${pointer}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -124,29 +140,6 @@ function stringify(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): ConvertTypeError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `convert-type patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): ConvertTypeError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `convert-type patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: ConvertTypeErrorCode, reason: string, pointer?: Pointer): ConvertTypeError {

@@ -92,7 +92,15 @@ export function canRound<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(pointer, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `round patch rejected at ${pointer}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return { ok: true, pointer, from: current, to: next, changed, operations };
@@ -107,7 +115,15 @@ export function round<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(pointer, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `round patch failed at ${pointer}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -129,29 +145,6 @@ function roundToPrecision(value: number, precision: number, mode: RoundMode): nu
   // scale, apply, unscale; round-trip through a string to avoid float drift.
   const scaled = apply(Number((value * factor).toFixed(8)), mode);
   return Number((scaled / factor).toFixed(Math.max(0, precision)));
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): RoundError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `round patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): RoundError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `round patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: RoundErrorCode, reason: string, pointer?: Pointer): RoundError {

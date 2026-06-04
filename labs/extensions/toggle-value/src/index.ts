@@ -82,7 +82,15 @@ export function canToggleValue<TDocument, TValue = unknown>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(pointer, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `toggle-value patch rejected at ${pointer}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return {
@@ -104,7 +112,15 @@ export function toggleValue<TDocument, TValue = unknown>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(pointer, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `toggle-value patch failed at ${pointer}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -142,29 +158,6 @@ function nextValue<TValue>(
   return {
     ok: false,
     reason: "field is not a boolean; pass options.values to toggle non-boolean fields.",
-  };
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): ToggleValueError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `toggle-value patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): ToggleValueError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `toggle-value patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
 }
 

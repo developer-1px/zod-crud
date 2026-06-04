@@ -112,7 +112,15 @@ export function canFillBlanks<TDocument, TValue = unknown>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? "fill-blanks patch rejected",
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return {
@@ -136,29 +144,18 @@ export function fillBlanks<TDocument, TValue = unknown>(
   if (!change.ok) return change;
   if (change.operations.length === 0) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? "fill-blanks patch failed",
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
-function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): FillBlanksError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? "fill-blanks patch rejected",
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(patch: Extract<JSONResult, { ok: false }>): FillBlanksError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? "fill-blanks patch failed",
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
-}
 
 function error(code: FillBlanksErrorCode, reason: string, pointer?: Pointer): FillBlanksError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };

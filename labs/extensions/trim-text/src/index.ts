@@ -81,7 +81,15 @@ export function canTrimText<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(pointer, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `trim-text patch rejected at ${pointer}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return { ok: true, pointer, from: current, to: next, changed, operations };
@@ -97,7 +105,15 @@ export function trimText<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(pointer, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `trim-text patch failed at ${pointer}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -114,29 +130,6 @@ function cut(text: string, maxLength: number, options?: TrimTextOptions): string
   const result = head + ellipsis;
   // Guard: never exceed maxLength even when ellipsis is longer than the budget.
   return result.length <= maxLength ? result : result.slice(0, maxLength);
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): TrimTextError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `trim-text patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): TrimTextError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `trim-text patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: TrimTextErrorCode, reason: string, pointer?: Pointer): TrimTextError {

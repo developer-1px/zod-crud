@@ -83,7 +83,15 @@ export function canSplit<TDocument>(
 
   if (operations.length > 0) {
     const capability = doc.canPatch(operations);
-    if (!capability.ok) return capabilityError(path, capability);
+    if (!capability.ok) {
+      return {
+        ok: false,
+        code: "patch_rejected",
+        reason: capability.reason ?? `split-text patch rejected at ${path}`,
+        capability,
+        ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
+      };
+    }
   }
 
   return { ok: true, path, parts, changed, operations };
@@ -99,7 +107,15 @@ export function split<TDocument>(
   if (!change.ok) return change;
   if (!change.changed) return change;
   const patched = doc.patch(change.operations);
-  if (!patched.ok) return patchError(path, patched);
+  if (!patched.ok) {
+    return {
+      ok: false,
+      code: "patch_failed",
+      reason: patched.reason ?? `split-text patch failed at ${path}`,
+      patch: patched,
+      ...(patched.pointer === undefined ? {} : { pointer: patched.pointer }),
+    };
+  }
   return change;
 }
 
@@ -113,29 +129,6 @@ function parse(text: string, options?: SplitTextOptions): string[] {
   if (dropEmpty) parts = parts.filter((part) => part.length > 0);
   if (options?.dedupe) parts = [...new Set(parts)];
   return parts;
-}
-
-function capabilityError(
-  pointer: Pointer,
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): SplitTextError {
-  return {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? `split-text patch rejected at ${pointer}`,
-    capability,
-    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
-  };
-}
-
-function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): SplitTextError {
-  return {
-    ok: false,
-    code: "patch_failed",
-    reason: patch.reason ?? `split-text patch failed at ${pointer}`,
-    patch,
-    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
-  };
 }
 
 function error(code: SplitTextErrorCode, reason: string, pointer?: Pointer): SplitTextError {
