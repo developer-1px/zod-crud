@@ -6,7 +6,7 @@ import {
   applyOperation,
   applyPatch,
   applySingleTrustedValuePatchToTrustedState,
-  applyPatchToTrustedState,
+  applyPatchToTrustedState as applyPatchToTrustedStateCore,
 } from "../../../foundation/patch/schema.js";
 import { applyAcceptedPatch } from "../../../foundation/patch/trusted.js";
 import type {
@@ -17,7 +17,10 @@ import type {
 import { jsonSerializableError } from "../../../foundation/json/serializable.js";
 import { handleResult, type ErrorPolicy } from "../../../foundation/error.js";
 import { schemaOutputIsKnownJson } from "../../../domain/schema/shared/schema.js";
-import { applyPatchWithLocalSchemaValidation } from "../../../domain/schema/validation/patch.js";
+import {
+  applyPatchToTrustedState,
+  applyPatchWithLocalSchemaValidation,
+} from "../../../domain/schema/validation/patch.js";
 import type {
   JSONChangeMetadata,
   JSONStateOps,
@@ -119,8 +122,7 @@ export function createJSONState<S extends z.ZodType>(
     operations: ReadonlyArray<JSONPatchOperation>,
   ): ApplyResult<S> => {
     if (!stateJsonTrusted) return applyPatch(schema, from, operations);
-    return applyPatchWithLocalSchemaValidation(schema, from, operations)
-      ?? applyPatchToTrustedState(schema, from, operations);
+    return applyPatchToTrustedState(schema, from, operations);
   };
   const previewTrustedValuesPatchFrom = (
     from: z.output<S>,
@@ -129,7 +131,7 @@ export function createJSONState<S extends z.ZodType>(
     if (!stateJsonTrusted) return applyPatch(schema, from, operations);
     return applyPatchWithLocalSchemaValidation(schema, from, operations, { valuesTrusted: true })
       ?? applySingleTrustedValuePatchToTrustedState(schema, from, operations)
-      ?? applyPatchToTrustedState(schema, from, operations);
+      ?? applyPatchToTrustedStateCore(schema, from, operations);
   };
 
   const single = (operation: JSONPatchOperation): JSONResult => dispatch(operation, [operation]);
