@@ -51,8 +51,10 @@ export function reduceSelection(
       return applyActionContext(prev, extentOf(mode, prev.anchor ?? actionPoint(action), actionPoint(action), state), action);
     case "addRange":
       return applyActionContext(prev, withAdded(prev, mode, actionRange(action), state), action);
-    case "removeRange":
-      return applyActionContext(prev, withRemoved(prev, actionRemoveTarget(action), mode, state), action);
+    case "removeRange": {
+      const target = "index" in action ? action.index : "range" in action ? action.range : actionPoint(action);
+      return applyActionContext(prev, withRemoved(prev, target, mode, state), action);
+    }
     case "toggleRange": {
       const range = actionRange(action);
       const next = prev.selectionRanges.some((candidate) => sameRange(candidate, range))
@@ -209,10 +211,6 @@ function actionPoint(action: { pointer?: Pointer; point?: SelectionPoint }): Sel
 
 function actionRange(action: { pointer?: Pointer; point?: SelectionPoint; range?: SelectionRange }): SelectionRange {
   return action.range ?? collapsedRange(actionPoint(action));
-}
-
-function actionRemoveTarget(action: { pointer?: Pointer; point?: SelectionPoint; range?: SelectionRange; index?: number }): SelectionPoint | SelectionRange | number {
-  return action.index ?? action.range ?? actionPoint(action);
 }
 
 function selectionInputMatches(candidate: SelectionRange, input: SelectionPoint | SelectionRange, selectedPointers: ReadonlyArray<Pointer>): boolean {

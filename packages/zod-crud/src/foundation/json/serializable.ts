@@ -131,7 +131,7 @@ function jsonSerializableErrorDetailed(value: unknown): string | null {
       if (Object.getOwnPropertyNames(v).length !== v.length + 1) {
         for (const key of Object.getOwnPropertyNames(v)) {
           if (key === "length" || isArrayIndexKey(key)) continue;
-          path.push(arrayPropertyPathSegment(key));
+          path.push(key);
           const message = `${at()}: non-index array property is not JSON`;
           path.pop();
           return message;
@@ -176,8 +176,4 @@ function isArrayIndexKey(key: string): boolean {
   if (key === "") return false;
   const index = Number(key);
   return Number.isInteger(index) && index >= 0 && index < 2 ** 32 - 1 && String(index) === key;
-}
-
-function arrayPropertyPathSegment(key: string): string | number {
-  return isArrayIndexKey(key) ? Number(key) : key;
 }

@@ -33,8 +33,8 @@ export function selectionSpansForPointer(
   if (!ordered.ok) return ordered;
 
   const length = pointerLength(pointer, state, options);
-  const before = pointBefore(pointer);
-  const after = pointAfter(pointer);
+  const before: SelectionPointObject = { path: pointer, edge: "before" };
+  const after: SelectionPointObject = { path: pointer, edge: "after" };
   const spans: SelectionPointerSpan[] = [];
   for (const range of ordered.ranges) {
     const endBefore = compareSelectionPoints(range.end, before, state, options);
@@ -63,22 +63,6 @@ export function selectionSpansForPointer(
   }
 
   return { ok: true, pointer, spans };
-}
-
-function pointBefore(pointer: Pointer): SelectionPointObject {
-  return { path: pointer, edge: "before" };
-}
-
-function pointAfter(pointer: Pointer): SelectionPointObject {
-  return { path: pointer, edge: "after" };
-}
-
-function isBeforeBoundary(point: SelectionPoint, pointer: Pointer): boolean {
-  return typeof point !== "string" && point.path === pointer && point.edge === "before";
-}
-
-function isAfterBoundary(point: SelectionPoint, pointer: Pointer): boolean {
-  return typeof point !== "string" && point.path === pointer && point.edge === "after";
 }
 
 export function pointerLength(pointer: Pointer, state: unknown, options: SelectionSpanOptions): number | null {
@@ -110,7 +94,9 @@ function spanOffset(point: SelectionPoint, side: "start" | "end", length: number
 }
 
 function spanIsFull(pointer: Pointer, start: SelectionPoint, end: SelectionPoint, length: number | null): boolean {
-  if (isBeforeBoundary(start, pointer) && isAfterBoundary(end, pointer)) return true;
+  const startsBefore = typeof start !== "string" && start.path === pointer && start.edge === "before";
+  const endsAfter = typeof end !== "string" && end.path === pointer && end.edge === "after";
+  if (startsBefore && endsAfter) return true;
   if (length === null) return false;
   return spanOffset(start, "start", length) === 0 && spanOffset(end, "end", length) === length;
 }

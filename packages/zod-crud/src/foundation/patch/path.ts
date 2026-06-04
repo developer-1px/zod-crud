@@ -93,7 +93,7 @@ export function parseFirstArrayNestedPath(state: unknown, path: Pointer): ArrayN
       arrayPath,
       arraySegments,
       index: rowIndex,
-      prefixText: arrayNestedPrefixText(arrayPath),
+      prefixText: arrayPath === "" ? "/" : `${arrayPath}/`,
       suffixText: buildPointer(suffixSegments),
       suffixSegments,
     };
@@ -124,10 +124,6 @@ export function parseKnownArrayNestedIndex(
   if (buildPointer(arraySegments) !== arrayPath) return null;
 
   return numericSegment(parsed.segs[arraySegmentsLength]!);
-}
-
-function arrayNestedPrefixText(arrayPath: Pointer): string {
-  return arrayPath === "" ? "/" : `${arrayPath}/`;
 }
 
 function parseKnownArrayNestedIndexText(

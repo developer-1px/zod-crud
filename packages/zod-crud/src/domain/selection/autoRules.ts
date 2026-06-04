@@ -296,7 +296,7 @@ function pickMonotonicInsertAutoTargets(
       const location = arrayElementLocation(op.path);
       if (location === null) return null;
       parent = location.parent;
-      prefixText = arrayElementPrefixText(parent);
+      prefixText = parent === "" ? "/" : `${parent}/`;
       targetIndex = location.index;
     } else {
       const knownIndex = parseKnownArrayElementIndex(op.path, prefixText);
@@ -327,10 +327,6 @@ function pickMonotonicInsertAutoTargets(
     finalIndexes[index] = indexes[index]! + indexes.length - index - 1;
   }
   return { targets: appendArrayIndexes(parent, finalIndexes), unique: true };
-}
-
-function arrayElementPrefixText(parent: Pointer): Pointer {
-  return parent === "" ? "/" : `${parent}/`;
 }
 
 function parseKnownArrayElementIndex(path: Pointer, prefixText: Pointer): number | null {

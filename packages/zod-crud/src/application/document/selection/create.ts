@@ -72,6 +72,7 @@ import {
   type DeleteSelectionTextResult,
   type SelectionTextDeleteOptions,
 } from "../../../domain/selection/textDelete.js";
+import { isSelectionRange, samePoint, sameRange } from "../../../domain/selection/point.js";
 
 interface CreateSelectionOptions extends SelectionOptions {
   onChange?: () => void;
@@ -169,25 +170,9 @@ function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boole
     && left.selectionRanges.every((range, index) => sameRange(range, right.selectionRanges[index]!));
 }
 
-function sameRange(left: SelectionRange, right: SelectionRange): boolean {
-  return samePoint(left.anchor, right.anchor) && samePoint(left.focus, right.focus);
-}
-
 function samePointOrNull(left: SelectionPoint | null, right: SelectionPoint | null): boolean {
   if (left === null || right === null) return left === right;
   return samePoint(left, right);
-}
-
-function samePoint(left: SelectionPoint, right: SelectionPoint): boolean {
-  if (typeof left === "string" || typeof right === "string") return left === right;
-  return left.path === right.path
-    && left.offset === right.offset
-    && left.edge === right.edge
-    && left.affinity === right.affinity;
-}
-
-function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
-  return typeof input === "object" && "anchor" in input && "focus" in input;
 }
 
 export function createSelection<T>(
