@@ -85,15 +85,9 @@ export function previewPatch<T>(
   return {
     ok: true,
     value: cloneJson(applied.state) as T,
-    applied: copyPatch(applied.applied),
+    applied: applied.applied.map((operation) => cloneJson(operation) as JSONPatchOperation),
     changed: jsonSignature(doc.value) !== jsonSignature(applied.state),
   };
-}
-
-function copyPatch(
-  operations: ReadonlyArray<JSONPatchOperation>,
-): ReadonlyArray<JSONPatchOperation> {
-  return operations.map((operation) => cloneJson(operation) as JSONPatchOperation);
 }
 
 function cloneJson<T>(value: T): T {

@@ -189,7 +189,7 @@ function resolveCommitOptions(
     const selected = typeof options.commitOptions === "function"
       ? options.commitOptions(copyEntry(entry), index)
       : options.commitOptions;
-    return copyCommitOptions(selected);
+    return selected === undefined ? undefined : copyValue(selected);
   }
 
   return commitOptionsFromMetadata(resolvePatchMetadata(entry, index, options.metadata));
@@ -228,12 +228,6 @@ function copyPatch(
 
 function copyMetadata(metadata: JSONChangeMetadata | undefined): JSONChangeMetadata | undefined {
   return metadata === undefined ? undefined : copyValue(metadata);
-}
-
-function copyCommitOptions(
-  options: JSONDocumentCommitOptions | undefined,
-): JSONDocumentCommitOptions | undefined {
-  return options === undefined ? undefined : copyValue(options);
 }
 
 function copySteps(steps: ReadonlyArray<PatchLogReplayStep>): ReadonlyArray<PatchLogReplayStep> {
