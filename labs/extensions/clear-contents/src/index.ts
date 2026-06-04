@@ -159,25 +159,23 @@ function deriveEmpty(
 function capabilityError(
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): ClearContentsError {
-  const result: ClearContentsError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? "clear-contents patch rejected",
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(patch: Extract<JSONResult, { ok: false }>): ClearContentsError {
-  const result: ClearContentsError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? "clear-contents patch failed",
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: ClearContentsErrorCode, reason: string, pointer?: Pointer): ClearContentsError {

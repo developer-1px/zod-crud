@@ -508,25 +508,23 @@ function decision(
 }
 
 function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): GridRangeError {
-  const result: GridRangeError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? "grid-range patch rejected",
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(patch: Extract<JSONResult, { ok: false }>): GridRangeError {
-  const result: GridRangeError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? "grid-range patch failed",
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: GridRangeErrorCode, reason: string, pointer?: Pointer): GridRangeError {

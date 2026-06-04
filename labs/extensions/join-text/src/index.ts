@@ -121,25 +121,23 @@ function capabilityError(
   pointer: Pointer,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): JoinTextError {
-  const result: JoinTextError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `join-text patch rejected at ${pointer}`,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): JoinTextError {
-  const result: JoinTextError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `join-text patch failed at ${pointer}`,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: JoinTextErrorCode, reason: string, pointer?: Pointer): JoinTextError {

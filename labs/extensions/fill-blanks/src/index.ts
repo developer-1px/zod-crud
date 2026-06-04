@@ -144,25 +144,23 @@ function defaultIsEmpty(current: unknown): boolean {
 }
 
 function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): FillBlanksError {
-  const result: FillBlanksError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? "fill-blanks patch rejected",
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(patch: Extract<JSONResult, { ok: false }>): FillBlanksError {
-  const result: FillBlanksError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? "fill-blanks patch failed",
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: FillBlanksErrorCode, reason: string, pointer?: Pointer): FillBlanksError {

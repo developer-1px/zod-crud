@@ -228,25 +228,23 @@ function decision(
 }
 
 function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): SparseRecordError {
-  const result: SparseRecordError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? "sparse-record patch rejected",
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(patch: Extract<JSONResult, { ok: false }>): SparseRecordError {
-  const result: SparseRecordError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? "sparse-record patch failed",
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: SparseRecordErrorCode, reason: string, pointer?: Pointer): SparseRecordError {

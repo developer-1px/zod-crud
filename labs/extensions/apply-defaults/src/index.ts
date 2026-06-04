@@ -93,25 +93,23 @@ function capabilityError(
   pointer: Pointer,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): ApplyDefaultsError {
-  const result: ApplyDefaultsError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `apply-defaults patch rejected at ${pointer}`,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): ApplyDefaultsError {
-  const result: ApplyDefaultsError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `apply-defaults patch failed at ${pointer}`,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: ApplyDefaultsErrorCode, reason: string, pointer?: Pointer): ApplyDefaultsError {

@@ -179,28 +179,26 @@ function capabilityError(
   pointer: Pointer,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): MoveSelectedError {
-  const result: MoveSelectedError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `move patch rejected at ${pointer}`,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(
   pointer: Pointer,
   patch: Extract<JSONResult, { ok: false }>,
 ): MoveSelectedError {
-  const result: MoveSelectedError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `move patch failed at ${pointer}`,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: MoveSelectedErrorCode, reason: string, pointer?: Pointer): MoveSelectedError {

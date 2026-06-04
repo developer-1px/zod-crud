@@ -248,28 +248,26 @@ function capabilityError(
   pointer: Pointer,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): FillSeriesError {
-  const result: FillSeriesError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `fill patch rejected at ${pointer}`,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(
   pointer: Pointer,
   patch: Extract<JSONResult, { ok: false }>,
 ): FillSeriesError {
-  const result: FillSeriesError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `fill patch failed at ${pointer}`,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: FillSeriesErrorCode, reason: string, pointer?: Pointer): FillSeriesError {

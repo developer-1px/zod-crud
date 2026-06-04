@@ -109,25 +109,23 @@ function capabilityError(
   pointer: Pointer,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): IncrementNumberError {
-  const result: IncrementNumberError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `increment-number patch rejected at ${pointer}`,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) result.pointer = capability.pointer;
-  return result;
 }
 
 function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>): IncrementNumberError {
-  const result: IncrementNumberError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `increment-number patch failed at ${pointer}`,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) result.pointer = patch.pointer;
-  return result;
 }
 
 function error(code: IncrementNumberErrorCode, reason: string, pointer?: Pointer): IncrementNumberError {
