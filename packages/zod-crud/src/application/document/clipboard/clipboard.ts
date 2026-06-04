@@ -378,7 +378,7 @@ function clipboardWritePayload(
     : { ok: false, reason };
 }
 
-function splitPasteOptions(options?: JSONDocumentPasteOptions):
+export function splitPasteOptions(options?: JSONDocumentPasteOptions):
   | { kind: "clipboard"; options?: PasteOptions }
   | { kind: "payload"; payload: unknown; options?: PasteOptions } {
   if (!options || !Object.prototype.hasOwnProperty.call(options, "payload")) {

@@ -25,7 +25,7 @@ import { cut } from "../../domain/cut.js";
 import { paste, rekeyProducesTrustedPayload, resolvePasteArgs } from "../../domain/paste.js";
 import { deleteSelectionText, type SelectionTextDeleteOptions } from "../../domain/selection/textDelete.js";
 import { replaceSelectionText, type SelectionTextEditOptions } from "../../domain/selection/textEdit.js";
-import { INTERNAL_CLIPBOARD_PEEK, createClipboard } from "./clipboard/clipboard.js";
+import { INTERNAL_CLIPBOARD_PEEK, createClipboard, splitPasteOptions } from "./clipboard/clipboard.js";
 import { createJSONState } from "./state/json.js";
 import { createSchemaState } from "./schema.js";
 import { createSelection } from "./selection/create.js";
@@ -650,16 +650,4 @@ export function createJSONDocument<S extends z.ZodType>(
     canUndo: () => capabilities.undo,
     canRedo: () => capabilities.redo,
   };
-}
-
-function splitPasteOptions(options?: JSONDocumentPasteOptions):
-  | { kind: "clipboard"; options?: JSONDocumentPasteOptions }
-  | { kind: "payload"; payload: unknown; options?: JSONDocumentPasteOptions } {
-  if (!options || !Object.prototype.hasOwnProperty.call(options, "payload")) {
-    return options === undefined ? { kind: "clipboard" } : { kind: "clipboard", options };
-  }
-  const { payload, ...pasteOptions } = options;
-  return Object.keys(pasteOptions).length === 0
-    ? { kind: "payload", payload }
-    : { kind: "payload", payload, options: pasteOptions };
 }
