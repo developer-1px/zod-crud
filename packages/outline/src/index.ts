@@ -267,7 +267,7 @@ function planDemote<TDocument>(
     operations.push({
       op: "move",
       from: current,
-      path: appendSegment(childArrayPointer(previousSibling, options.childrenKey), "-"),
+      path: appendSegment(appendSegment(previousSibling, options.childrenKey), "-"),
     });
   }
 
@@ -297,7 +297,7 @@ function planPromote<TDocument>(
     const originalLocation = outlineItemLocation(original, options);
     if (!originalLocation.ok) return originalLocation;
 
-    const originalOwner = ownerPointer(originalLocation);
+    const originalOwner = parentPointer(originalLocation.parentArray);
     if (originalOwner === null || originalOwner === "") {
       return editError("path_not_found", "outline item is already top-level", original);
     }
@@ -308,7 +308,7 @@ function planPromote<TDocument>(
     const location = outlineItemLocation(current, options);
     if (!location.ok) return location;
 
-    const owner = ownerPointer(location);
+    const owner = parentPointer(location.parentArray);
     if (owner === null || owner === "") {
       return editError("path_not_found", "outline item is already top-level", current);
     }
@@ -329,7 +329,7 @@ function planPromote<TDocument>(
       operations.push({
         op: "move",
         from: appendSegment(location.parentArray, location.index),
-        path: appendSegment(childArrayPointer(promotedPath, options.childrenKey), "-"),
+        path: appendSegment(appendSegment(promotedPath, options.childrenKey), "-"),
       });
     }
   }
@@ -394,10 +394,6 @@ function outlineItemLocation(
     return editError("not_outline_item", `pointer does not address an outline item: ${pointer}`, pointer);
   }
   return { ok: true, pointer, parentArray, index };
-}
-
-function ownerPointer(location: OutlineItemLocation): Pointer | null {
-  return parentPointer(location.parentArray);
 }
 
 function trailingUnselectedSiblingCount<TDocument>(
@@ -560,10 +556,6 @@ function copyChange(change: OutlineEditChange): OutlineEditChange {
     source: [...change.source],
     operations: cloneJson(change.operations) as JSONPatchOperation[],
   };
-}
-
-function childArrayPointer(pointer: Pointer, childrenKey: string): Pointer {
-  return appendSegment(pointer, childrenKey);
 }
 
 function lastPointerSegment(pointer: Pointer): string | null {
