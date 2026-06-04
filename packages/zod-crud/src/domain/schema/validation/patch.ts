@@ -2,6 +2,7 @@ import type * as z from "zod";
 import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/types.js";
 import { applyAcceptedPatch, applyTrustedPatch } from "../../../foundation/patch/trusted.js";
 import { validateOperationShape } from "../../../foundation/patch/apply.js";
+import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "../../../foundation/patch/schema.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import {
   applyAppendOnlyAddPatchWithLocalSchemaValidation,
@@ -92,6 +93,17 @@ export function applyPatchWithLocalSchemaValidation<S extends z.ZodType>(
   const arrayBatch = applySameArrayPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
   if (arrayBatch) return arrayBatch;
   return applySequentialPatchWithLocalSchemaValidation(schema, state, ops, valuesTrusted);
+}
+
+// schema-인지 trusted-state patch 적용: 먼저 local schema validation 경로를 시도하고,
+// 다루지 못하는 형태면 foundation 의 trusted-state core 로 위임한다.
+export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
+  schema: S,
+  state: z.output<S>,
+  ops: ReadonlyArray<JSONPatchOperation>,
+): ApplyResult<S> {
+  return applyPatchWithLocalSchemaValidation(schema, state, ops)
+    ?? applyPatchToTrustedStateCore(schema, state, ops);
 }
 
 export function applySameArrayPatchWithLocalSchemaValidation<S extends z.ZodType>(

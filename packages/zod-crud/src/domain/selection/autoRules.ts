@@ -1,7 +1,7 @@
 import type { JSONPatchOperation } from "../../foundation/patch/types.js";
 import { buildPointer, isPrefix, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
-import { appendArrayIndexes, arrayElementLocation, arrayIndexValue } from "../pointer/array.js";
-import { exists, recoverLostPointer, trackPointer, trackPointerFrom } from "../pointer/track.js";
+import { appendArrayIndexes, arrayElementLocation, arrayIndexValue } from "../../foundation/pointer/array.js";
+import { exists, recoverLostPointer, trackPointer, trackPointerFrom } from "../../foundation/pointer/track.js";
 import type {
   SelectionPoint,
   SelectionMode,
