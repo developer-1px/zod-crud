@@ -105,7 +105,7 @@ export function canPatchProtectedRanges<TDocument>(
   ranges: ReadonlyArray<ProtectedRange>,
   operations: JSONPatchInput,
 ): ProtectedRangeCapabilityResult {
-  const patch = toPatchArray(operations);
+  const patch = Array.isArray(operations) ? operations : [operations as JSONPatchOperation];
   for (const operation of patch) {
     const blocked = protectedPatchOperation(ranges, operation);
     if (blocked) return blocked;
@@ -283,17 +283,12 @@ function protectedWrite(
   }
 
   for (const range of ranges) {
-    const direct = overlapsProtectedSubtree(pointer, range.pointer);
+    const direct = isSameOrDescendant(pointer, range.pointer) || isSameOrDescendant(range.pointer, pointer);
     if (direct || shiftsProtectedArrayItem(pointer, range.pointer, kind)) {
       return protectedRangeError(operation, pointer, range);
     }
   }
   return null;
-}
-
-function overlapsProtectedSubtree(pointer: Pointer, protectedPointer: Pointer): boolean {
-  return isSameOrDescendant(pointer, protectedPointer)
-    || isSameOrDescendant(protectedPointer, pointer);
 }
 
 function isSameOrDescendant(pointer: Pointer, ancestor: Pointer): boolean {
@@ -359,10 +354,6 @@ function patchFailure(result: Exclude<JSONResult, { ok: true }>): ProtectedRange
   };
   if (result.pointer !== undefined) error.pointer = result.pointer;
   return error;
-}
-
-function toPatchArray(operations: JSONPatchInput): ReadonlyArray<JSONPatchOperation> {
-  return Array.isArray(operations) ? operations : [operations as JSONPatchOperation];
 }
 
 function copyRange(range: ProtectedRange): ProtectedRange {
