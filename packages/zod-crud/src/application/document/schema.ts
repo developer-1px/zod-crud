@@ -98,12 +98,8 @@ type DocumentSchemaResolutionResult = DocumentSchemaResolutionOk | SchemaErrorRe
 export function createSchemaState<S extends z.ZodType>(
   schema: S,
 ): SchemaState {
-  const at = (path: Pointer, mode: SchemaPathMode = "value"): SchemaQueryResult => {
-    return queryDocumentSchema(schema, path, mode);
-  };
-
   return {
-    at,
+    at: (path, mode = "value") => queryDocumentSchema(schema, path, mode),
     kind: (path, mode = "value") => readDocumentSchemaKind(schema, path, mode),
     accepts: (path, value, mode = "value") => canDocumentSchemaAccepts(schema, path, value, mode),
     describe: (path, mode = "value") => describeDocumentSchema(schema, path, mode),
@@ -145,13 +141,12 @@ function canDocumentSchemaAccepts<S extends z.ZodType>(
 ): CapabilityResult {
   const resolved = resolveDocumentSchema(schema, path, mode);
   if (!resolved.ok) {
-    const error: Extract<CapabilityResult, { ok: false }> = {
+    return {
       ok: false,
       code: resolved.code,
       pointer: resolved.pointer,
+      ...(resolved.reason === undefined ? {} : { reason: resolved.reason }),
     };
-    if (resolved.reason !== undefined) error.reason = resolved.reason;
-    return error;
   }
 
   const parsed = resolved.schema.safeParse(value);
@@ -161,7 +156,7 @@ function canDocumentSchemaAccepts<S extends z.ZodType>(
     code: "schema_violation",
     reason: JSON.stringify(parsed.error.issues),
     violations: parsed.error.issues.map((issue) => ({
-      path: absoluteIssuePath(path, issue.path),
+      path: issue.path.reduce<Pointer>((base, segment) => appendSegment(base, String(segment)), path),
       message: issue.message,
     })),
   };
@@ -270,8 +265,4 @@ function safeJSONSchema(schema: z.ZodType): unknown {
   } catch {
     return null;
   }
-}
-
-function absoluteIssuePath(base: Pointer, issuePath: PropertyKey[]): Pointer {
-  return issuePath.reduce<Pointer>((path, segment) => appendSegment(path, String(segment)), base);
 }
