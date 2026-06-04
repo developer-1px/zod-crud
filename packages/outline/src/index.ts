@@ -123,21 +123,11 @@ export function createOutline<TDocument>(
   const structureOptions = normalizeStructureOptions(options);
 
   return {
-    tree(rootPointer = "", treeOptions = {}) {
-      return readOutline(doc, rootPointer, treeOptions);
-    },
-    canDemote(source) {
-      return canDemoteOutline(doc, source, structureOptions);
-    },
-    demote(source) {
-      return demoteOutline(doc, source, structureOptions);
-    },
-    canPromote(source) {
-      return canPromoteOutline(doc, source, structureOptions);
-    },
-    promote(source) {
-      return promoteOutline(doc, source, structureOptions);
-    },
+    tree: (rootPointer = "", treeOptions = {}) => readOutline(doc, rootPointer, treeOptions),
+    canDemote: (source) => canDemoteOutline(doc, source, structureOptions),
+    demote: (source) => demoteOutline(doc, source, structureOptions),
+    canPromote: (source) => canPromoteOutline(doc, source, structureOptions),
+    promote: (source) => promoteOutline(doc, source, structureOptions),
   };
 }
 

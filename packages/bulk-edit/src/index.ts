@@ -86,18 +86,10 @@ export function createBulkEdit<TDocument>(
   doc: JSONDocument<TDocument>,
 ): BulkEdit<TDocument> {
   return {
-    canReplaceAll: (jsonPath: string, valueOrMapper: unknown): BulkEditChangeResult => {
-      return canReplaceAll(doc, jsonPath, valueOrMapper);
-    },
-    replaceAll: (jsonPath: string, valueOrMapper: unknown, metadata?: JSONChangeMetadata): BulkEditResult => {
-      return replaceAll(doc, jsonPath, valueOrMapper, metadata);
-    },
-    canDeleteAll(jsonPath) {
-      return canDeleteAll(doc, jsonPath);
-    },
-    deleteAll(jsonPath, metadata) {
-      return deleteAll(doc, jsonPath, metadata);
-    },
+    canReplaceAll: (jsonPath: string, valueOrMapper: unknown): BulkEditChangeResult => canReplaceAll(doc, jsonPath, valueOrMapper),
+    replaceAll: (jsonPath: string, valueOrMapper: unknown, metadata?: JSONChangeMetadata): BulkEditResult => replaceAll(doc, jsonPath, valueOrMapper, metadata),
+    canDeleteAll: (jsonPath) => canDeleteAll(doc, jsonPath),
+    deleteAll: (jsonPath, metadata) => deleteAll(doc, jsonPath, metadata),
   };
 }
 
@@ -164,7 +156,7 @@ export function replaceAll<TDocument, TValue = unknown>(
   if (!change.ok) return change;
 
   const patched = doc.patch(change.operations, metadata);
-  if (!patched.ok) return patchError("patch_failed", jsonPath, patched);
+  if (!patched.ok) return patchError(jsonPath, patched);
   return change;
 }
 
@@ -194,7 +186,7 @@ export function deleteAll<TDocument>(
   if (!change.ok) return change;
 
   const patched = doc.patch(change.operations, metadata);
-  if (!patched.ok) return patchError("patch_failed", jsonPath, patched);
+  if (!patched.ok) return patchError(jsonPath, patched);
   return change;
 }
 
@@ -210,7 +202,13 @@ function readQueryMatches<TDocument, TValue>(
     const pointer = pointers.pointers[index]!;
     const read = doc.at(pointer);
     if (!read.ok) {
-      return readError(jsonPath, pointer, read.reason ?? `read failed: ${pointer}`);
+      return {
+        ok: false,
+        code: "read_failed",
+        reason: read.reason ?? `read failed: ${pointer}`,
+        jsonPath,
+        pointer,
+      };
     }
     matches.push({
       jsonPath,
@@ -352,31 +350,16 @@ function capabilityError(
 }
 
 function patchError(
-  code: "patch_failed",
   jsonPath: string,
   patch: Extract<JSONResult, { ok: false }>,
 ): BulkEditError {
   const error: BulkEditError = {
     ok: false,
-    code,
+    code: "patch_failed",
     reason: patch.reason ?? `bulk edit patch failed for ${jsonPath}`,
     jsonPath,
     patch,
   };
   if (patch.pointer !== undefined) error.pointer = patch.pointer;
   return error;
-}
-
-function readError(
-  jsonPath: string,
-  pointer: Pointer,
-  reason: string,
-): BulkEditError {
-  return {
-    ok: false,
-    code: "read_failed",
-    reason,
-    jsonPath,
-    pointer,
-  };
 }

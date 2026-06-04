@@ -87,9 +87,9 @@ export interface SearchReplaceMatchChange {
 
 export type SearchReplaceResult = SearchReplaceSnapshot | SearchReplaceError;
 export type SearchReplaceMatchChangeResult = SearchReplaceMatchChange | SearchReplaceError;
-export type SearchReplaceMatchApplyResult = SearchReplaceMatchChange | SearchReplaceError;
+export type SearchReplaceMatchApplyResult = SearchReplaceMatchChangeResult;
 export type SearchReplaceChangeResult = SearchReplaceChange | SearchReplaceError;
-export type SearchReplaceApplyResult = SearchReplaceChange | SearchReplaceError;
+export type SearchReplaceApplyResult = SearchReplaceChangeResult;
 
 export interface SearchReplace<TDocument> {
   find(search: string, options?: SearchReplaceOptions): SearchReplaceResult;
@@ -109,21 +109,11 @@ export function createSearchReplace<TDocument>(
   doc: JSONDocument<TDocument>,
 ): SearchReplace<TDocument> {
   return {
-    find(search, options) {
-      return findText(doc, search, options);
-    },
-    canReplaceMatch(target, replacement) {
-      return canReplaceTextMatch(doc, target, replacement);
-    },
-    replaceMatch(target, replacement) {
-      return replaceTextMatch(doc, target, replacement);
-    },
-    canReplaceAll(search, replacement, options) {
-      return canReplaceAllText(doc, search, replacement, options);
-    },
-    replaceAll(search, replacement, options) {
-      return replaceAllText(doc, search, replacement, options);
-    },
+    find: (search, options) => findText(doc, search, options),
+    canReplaceMatch: (target, replacement) => canReplaceTextMatch(doc, target, replacement),
+    replaceMatch: (target, replacement) => replaceTextMatch(doc, target, replacement),
+    canReplaceAll: (search, replacement, options) => canReplaceAllText(doc, search, replacement, options),
+    replaceAll: (search, replacement, options) => replaceAllText(doc, search, replacement, options),
   };
 }
 

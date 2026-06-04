@@ -47,12 +47,8 @@ export function createPatchPreview<T>(
   options: PatchPreviewOptions = {},
 ): PatchPreview<T> {
   return {
-    canPreview(operations) {
-      return doc.canPatch(operations);
-    },
-    preview(operations) {
-      return previewPatch(schema, doc, operations, options);
-    },
+    canPreview: (operations) => doc.canPatch(operations),
+    preview: (operations) => previewPatch(schema, doc, operations, options),
   };
 }
 
