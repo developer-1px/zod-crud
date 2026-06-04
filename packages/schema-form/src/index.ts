@@ -73,11 +73,12 @@ export function createSchemaForm<T>(
   const rootKind = doc.schema.kind(rootPointer);
   const kind = containerKind(entries.kind, rootKind.ok ? rootKind.kind : "unknown");
   if (kind === null) {
+    const rootRead = doc.at(rootPointer);
     return schemaFormError(
       "not_container",
       `schema form root must be an object, record, or array: ${rootPointer}`,
       rootPointer,
-      rootKind.ok ? rootKind.kind : valueKind(readValue(doc, rootPointer)),
+      rootKind.ok ? rootKind.kind : valueKind(rootRead.ok ? rootRead.value : undefined),
     );
   }
 
@@ -166,11 +167,6 @@ function valueKind(value: unknown): SchemaKind {
     default:
       return "unknown";
   }
-}
-
-function readValue<T>(doc: JSONDocument<T>, path: Pointer): unknown {
-  const result = doc.at(path);
-  return result.ok ? result.value : undefined;
 }
 
 function cloneJson(value: unknown): unknown {

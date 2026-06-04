@@ -11,12 +11,8 @@ export class JSONCrudError extends Error {
     public readonly op: JSONCrudOpLabel,
     public readonly result: Extract<JSONResult, { ok: false }>,
   ) {
-    super(`zod-crud ${formatOp(op)} failed: ${result.code}${result.reason ? ` — ${result.reason}` : ""}`);
+    super(`zod-crud ${typeof op === "string" ? op : op.op} failed: ${result.code}${result.reason ? ` — ${result.reason}` : ""}`);
   }
-}
-
-function formatOp(op: JSONCrudOpLabel): string {
-  return typeof op === "string" ? op : op.op;
 }
 
 export interface ErrorPolicy {

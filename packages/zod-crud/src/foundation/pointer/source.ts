@@ -25,7 +25,7 @@ export function normalizePointerSources(source: PointerSource): NormalizePointer
       return { ok: false, code: "invalid_pointer", pointer: item };
     }
 
-    if (parsedSources.some((existing) => sameSegments(existing, segments))) continue;
+    if (parsedSources.some((existing) => existing.length === segments.length && isPrefix(existing, segments))) continue;
     if (parsedSources.some((existing) => existing.length < segments.length && isPrefix(existing, segments))) continue;
 
     for (let i = parsedSources.length - 1; i >= 0; i -= 1) {
@@ -41,8 +41,4 @@ export function normalizePointerSources(source: PointerSource): NormalizePointer
   }
 
   return sources.length > 0 ? { ok: true, sources } : { ok: false, code: "empty_selection" };
-}
-
-function sameSegments(left: ReadonlyArray<string>, right: ReadonlyArray<string>): boolean {
-  return left.length === right.length && isPrefix(left, right);
 }

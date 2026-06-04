@@ -20,14 +20,10 @@ export function removeSourcesPatch(source: PointerSource): RemoveSourcesPatchRes
   if (!result.ok) return result;
   return {
     ok: true,
-    patch: sortRemoveSources(result.sources).map((path) => ({ op: "remove", path })),
+    patch: [...result.sources].sort(compareRemoveSource).map((path) => ({ op: "remove", path })),
     source: result.sources[0]!,
     sources: result.sources,
   };
-}
-
-function sortRemoveSources(sources: ReadonlyArray<Pointer>): Pointer[] {
-  return [...sources].sort(compareRemoveSource);
 }
 
 function compareRemoveSource(left: Pointer, right: Pointer): number {
