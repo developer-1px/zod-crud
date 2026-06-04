@@ -1,6 +1,7 @@
 import { jsonSerializableError } from "../../json/serializable.js";
+import { cloneTrustedPlainJson } from "../../json/trustedClone.js";
 import { appendSegment, type Pointer } from "../../pointer/index.js";
-import { deepCloneTrusted, getValueAt, parseSafe } from "../container.js";
+import { getValueAt, parseSafe } from "../container.js";
 import { appendArrayIndexPath, arrayLocation, arrayRemoveLocation } from "../path.js";
 import { replaceValueAtSegments } from "../replaceValue.js";
 import { validateOperationShape } from "../apply.js";
@@ -264,7 +265,7 @@ export function applySameArrayStructuralPatch(
       if (item.fromIndex < 0 || item.fromIndex >= next.length) return { handled: false };
       const index = item.index === "-" ? next.length : item.index;
       if (index < 0 || index > next.length) return { handled: false };
-      const value = deepCloneTrusted(next[item.fromIndex]);
+      const value = cloneTrustedPlainJson(next[item.fromIndex]);
       if (index === next.length) next.push(value);
       else next.splice(index, 0, value);
       applied.push({ op: "copy", from: item.from, path: appendSegment(parent, index) });
@@ -335,7 +336,7 @@ function applySingleStructuralItem(
   const index = item.index === "-" ? current.length : item.index;
   if (index < 0 || index > current.length) return { handled: false };
   if (index !== current.length) return null;
-  const value = deepCloneTrusted(current[item.fromIndex]);
+  const value = cloneTrustedPlainJson(current[item.fromIndex]);
   const stateWithArray = replaceValueAtSegments(state, parentSegments, 0, current.concat([value]));
   return stateWithArray === null
     ? { handled: false }
@@ -504,7 +505,7 @@ function applyNonIncreasingArrayCopyPatch(
     if (item.fromIndex < 0 || item.fromIndex >= current.length) return { handled: false };
     if (item.fromIndex >= previousMinimumInsertIndex) return null;
 
-    const value = deepCloneTrusted(current[item.fromIndex]);
+    const value = cloneTrustedPlainJson(current[item.fromIndex]);
     const bucket = buckets[item.index];
     if (bucket === undefined) buckets[item.index] = [value];
     else bucket.push(value);

@@ -2,8 +2,9 @@
 
 import type { JSONPatchOperation } from "./types.js";
 import { appendSegment, parsePointer, readAt } from "../pointer/index.js";
+import { cloneTrustedPlainJson } from "../json/trustedClone.js";
 import { applyOpRaw } from "./apply.js";
-import { deepCloneTrusted, getValueAt, resolveAppendPath } from "./container.js";
+import { getValueAt, resolveAppendPath } from "./container.js";
 import { objectHasOwn } from "./object.js";
 import {
   arrayFieldText,
@@ -644,7 +645,7 @@ function computeSameArrayStructuralInverses(
     const concretePath = appendSegment(parent, index);
     if (op.op === "copy") {
       if (index < 0 || index > cur.length) return null;
-      const value = deepCloneTrusted(cur[op.fromIndex]);
+      const value = cloneTrustedPlainJson(cur[op.fromIndex]);
       if (index === cur.length) cur.push(value);
       else cur.splice(index, 0, value);
       inverses.push({ op: "remove", path: concretePath });

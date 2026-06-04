@@ -1,11 +1,11 @@
 // applyOpRaw — RFC 6902 6 op 의 raw 적용 (schema 검증 없음). public 노출은 patch.ts.
 
 import { isPrefix, type Pointer } from "../pointer/index.js";
+import { cloneJson } from "../json/clone.js";
 import { jsonSerializableError } from "../json/serializable.js";
 import type { ErrorCode, JSONPatchOperation } from "./types.js";
 import {
   attachPointer,
-  deepClone,
   deepEqual,
   getValueAt,
   mutateContainer,
@@ -92,7 +92,7 @@ export function applyOpRaw(state: unknown, op: JSONPatchOperation): RawResult {
       const got = getValueAt(state, fromSeg);
       if (!got.ok) return attachPointer(got, op.from);
       if (op.op === "copy") {
-        return applyOpRaw(state, { op: "add", path: op.path, value: deepClone(got.value) });
+        return applyOpRaw(state, { op: "add", path: op.path, value: cloneJson(got.value) });
       }
       const removed = applyOpRaw(state, { op: "remove", path: op.from });
       if ("error" in removed) return removed;

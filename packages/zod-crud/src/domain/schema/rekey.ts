@@ -1,5 +1,5 @@
 import { cloneJson } from "../../foundation/json/clone.js";
-import { cloneTrustedJson } from "../../foundation/json/trustedClone.js";
+import { cloneTrustedPlainJson } from "../../foundation/json/trustedClone.js";
 
 const hasOwn = Object.prototype.hasOwnProperty;
 const COPY_SUFFIX = "-copy";
@@ -51,7 +51,7 @@ export function rekeyPayload(
   const fields = uniqueFields(options.fields);
   if (fields.length === 0) return payload;
 
-  const next = executionOptions.trustedPayload ? cloneTrustedJson(payload) : cloneJson(payload);
+  const next = executionOptions.trustedPayload ? cloneTrustedPlainJson(payload) : cloneJson(payload);
   if (options.strategy === "suffix") {
     const payloadEntries: Array<Record<string, unknown>> = [];
     const existing = collectSuffixExistingValues(state, next, fields, payloadEntries);

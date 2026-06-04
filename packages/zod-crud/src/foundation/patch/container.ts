@@ -1,8 +1,6 @@
 // patch.ts 내부 헬퍼 — public API 아님. docs/standard/zod-crud-spec.md §3 의 RFC 6902 구현 디테일.
 
 import { parsePointer, readAt, type Pointer, PointerSyntaxError } from "../pointer/index.js";
-import { cloneJson } from "../json/clone.js";
-import { cloneTrustedJson } from "../json/trustedClone.js";
 import type { ErrorCode, JSONPatchOperation } from "./types.js";
 
 // RFC 6902 §4.1: `/-` 는 array append marker. 적용 시점의 array 길이로 concrete index 정규화.
@@ -67,14 +65,6 @@ export function deepEqual(a: unknown, b: unknown): boolean {
     if (!deepEqual(ao[k], bo[k])) return false;
   }
   return true;
-}
-
-export function deepClone<T>(v: T): T {
-  return cloneJson(v);
-}
-
-export function deepCloneTrusted<T>(v: T): T {
-  return cloneTrustedJson(v);
 }
 
 function parseArrayIndex(seg: string): number | null {

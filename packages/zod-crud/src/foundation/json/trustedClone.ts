@@ -1,9 +1,5 @@
 const objectHasOwn = Object.prototype.hasOwnProperty;
 
-export function cloneTrustedJson<T>(value: T): T {
-  return cloneTrustedPlainJsonFast(value);
-}
-
 export function cloneTrustedPlainJson<T>(value: T): T {
   return cloneTrustedPlainJsonFast(value);
 }
