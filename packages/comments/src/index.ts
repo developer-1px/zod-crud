@@ -127,9 +127,7 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
   });
 
   return {
-    current(filter = {}) {
-      return snapshot(state.comments, filter);
-    },
+    current: (filter = {}) => snapshot(state.comments, filter),
     byId(id) {
       const comment = state.comments.get(id);
       return comment === undefined ? null : copyComment(comment);
@@ -143,9 +141,7 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
         .map(copyComment);
       return { ok: true, comments };
     },
-    canAdd(input) {
-      return canAdd(doc, state.comments, input);
-    },
+    canAdd: (input) => canAdd(doc, state.comments, input),
     add(input) {
       const capability = canAdd(doc, state.comments, input);
       if (!capability.ok) return capability;
@@ -187,12 +183,8 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
       emitIfChanged(before);
       return { ok: true, comment: copyComment(comment) };
     },
-    resolve(id) {
-      return setStatus(state.comments, listeners, id, "resolved");
-    },
-    reopen(id) {
-      return setStatus(state.comments, listeners, id, "open");
-    },
+    resolve: (id) => setStatus(state.comments, listeners, id, "resolved"),
+    reopen: (id) => setStatus(state.comments, listeners, id, "open"),
     remove(id) {
       const before = snapshotSignature(state.comments);
       const removed = state.comments.delete(id);

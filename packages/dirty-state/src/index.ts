@@ -51,14 +51,10 @@ export function createDirtyState<T>(
     return copySnapshot(snapshot);
   };
 
-  const unsubscribeDocument = doc.subscribe(() => {
-    refresh();
-  });
+  const unsubscribeDocument = doc.subscribe(refresh);
 
   return {
-    current() {
-      return copySnapshot(readSnapshot(doc, baseline, baselineSignature, equals));
-    },
+    current: () => copySnapshot(readSnapshot(doc, baseline, baselineSignature, equals)),
 
     markClean() {
       baseline = cloneJson(doc.value);
@@ -66,9 +62,7 @@ export function createDirtyState<T>(
       return refresh();
     },
 
-    isDirty() {
-      return readDirtyValue(cloneJson(doc.value), baseline, baselineSignature, equals);
-    },
+    isDirty: () => readDirtyValue(cloneJson(doc.value), baseline, baselineSignature, equals),
 
     discard(discardOptions = {}) {
       const loaded = doc.load(cloneJson(baseline), {

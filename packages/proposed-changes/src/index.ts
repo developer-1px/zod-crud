@@ -134,16 +134,12 @@ export function createProposedChanges<TDocument>(
   };
 
   return {
-    current(filter = {}) {
-      return snapshot(state.changes, filter);
-    },
+    current: (filter = {}) => snapshot(state.changes, filter),
     byId(id) {
       const change = state.changes.get(id);
       return change === undefined ? null : copyChange(change);
     },
-    canPropose(input) {
-      return canProposeChange(doc, state.changes, input);
-    },
+    canPropose: (input) => canProposeChange(doc, state.changes, input),
     propose(input) {
       const plan = canProposeChange(doc, state.changes, input);
       if (!plan.ok) return plan;
@@ -155,9 +151,7 @@ export function createProposedChanges<TDocument>(
       emitIfChanged(before);
       return { ok: true, change: copyChange(change) };
     },
-    canAccept(id) {
-      return canAcceptChange(doc, state.changes, id);
-    },
+    canAccept: (id) => canAcceptChange(doc, state.changes, id),
     accept(id, metadata) {
       const capability = canAcceptChange(doc, state.changes, id);
       if (!capability.ok) return capability;
@@ -171,11 +165,9 @@ export function createProposedChanges<TDocument>(
       emitIfChanged(before);
       return { ok: true, change: copyChange(change), result };
     },
-    canReject(id) {
-      return canCloseChange(state.changes, id, "reject");
-    },
+    canReject: (id) => canCloseChange(state.changes, id),
     reject(id) {
-      const capability = canCloseChange(state.changes, id, "reject");
+      const capability = canCloseChange(state.changes, id);
       if (!capability.ok) return capability;
 
       const before = snapshotSignature(state.changes);
@@ -267,11 +259,10 @@ export function canAcceptChange<TDocument>(
 function canCloseChange(
   changes: ReadonlyMap<string, ProposedChange>,
   id: string,
-  action: "reject",
 ): ProposedChangeResult {
   const change = changes.get(id);
   if (change === undefined) return notFound(id);
-  if (change.status !== "open") return notOpen(id, change.status, action);
+  if (change.status !== "open") return notOpen(id, change.status, "reject");
   return { ok: true, change: copyChange(change) };
 }
 
