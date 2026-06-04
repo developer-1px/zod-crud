@@ -71,9 +71,7 @@ export function createIdResolver<T>(
   options: IdResolverOptions,
 ): IdResolver {
   return {
-    current() {
-      return readCurrentSnapshot(doc, options.scopes);
-    },
+    current: () => readCurrentSnapshot(doc, options.scopes),
     resolve(scope, id) {
       if (!options.scopes.some((candidate) => candidate.scope === scope)) {
         return resolveError("scope_not_found", `scope is not registered: ${scope}`, scope, id);

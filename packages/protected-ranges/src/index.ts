@@ -83,48 +83,20 @@ export function createProtectedRanges<TDocument>(
   const protectedRanges = ranges.map(copyRange);
 
   return {
-    list() {
-      return protectedRanges.map(copyRange);
-    },
-    isProtected(pointer) {
-      return protectedWrite(protectedRanges, "patch", pointer, "replace") ?? { ok: true };
-    },
-    canPatch(operations) {
-      return canPatchProtectedRanges(doc, protectedRanges, operations);
-    },
-    patch(operations) {
-      return patchProtectedRanges(doc, protectedRanges, operations);
-    },
-    canInsert(path, value) {
-      return canInsertProtectedRange(doc, protectedRanges, path, value);
-    },
-    insert(path, value) {
-      return insertProtectedRange(doc, protectedRanges, path, value);
-    },
-    canReplace(path, value) {
-      return canReplaceProtectedRange(doc, protectedRanges, path, value);
-    },
-    replace(path, value) {
-      return replaceProtectedRange(doc, protectedRanges, path, value);
-    },
-    canDelete(path) {
-      return canDeleteProtectedRange(doc, protectedRanges, path);
-    },
-    delete(path) {
-      return deleteProtectedRange(doc, protectedRanges, path);
-    },
-    canMove(source, target) {
-      return canMoveProtectedRange(doc, protectedRanges, source, target);
-    },
-    move(source, target) {
-      return moveProtectedRange(doc, protectedRanges, source, target);
-    },
-    canPaste(target, options) {
-      return canPasteProtectedRange(doc, protectedRanges, target, options);
-    },
-    paste(target, options) {
-      return pasteProtectedRange(doc, protectedRanges, target, options);
-    },
+    list: () => protectedRanges.map(copyRange),
+    isProtected: (pointer) => protectedWrite(protectedRanges, "patch", pointer, "replace") ?? { ok: true },
+    canPatch: (operations) => canPatchProtectedRanges(doc, protectedRanges, operations),
+    patch: (operations) => patchProtectedRanges(doc, protectedRanges, operations),
+    canInsert: (path, value) => canInsertProtectedRange(doc, protectedRanges, path, value),
+    insert: (path, value) => insertProtectedRange(doc, protectedRanges, path, value),
+    canReplace: (path, value) => canReplaceProtectedRange(doc, protectedRanges, path, value),
+    replace: (path, value) => replaceProtectedRange(doc, protectedRanges, path, value),
+    canDelete: (path) => canDeleteProtectedRange(doc, protectedRanges, path),
+    delete: (path) => deleteProtectedRange(doc, protectedRanges, path),
+    canMove: (source, target) => canMoveProtectedRange(doc, protectedRanges, source, target),
+    move: (source, target) => moveProtectedRange(doc, protectedRanges, source, target),
+    canPaste: (target, options) => canPasteProtectedRange(doc, protectedRanges, target, options),
+    paste: (target, options) => pasteProtectedRange(doc, protectedRanges, target, options),
   };
 }
 

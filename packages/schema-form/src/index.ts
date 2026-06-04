@@ -95,12 +95,8 @@ export function createSchemaForm<T>(
         value: cloneJson(entry.value),
         kind,
         canReplace: doc.canReplace(entry.path, entry.value),
-        canSet(value) {
-          return doc.canReplace(entry.path, value);
-        },
-        set(value) {
-          return doc.replace(entry.path, value);
-        },
+        canSet: (value) => doc.canReplace(entry.path, value),
+        set: (value) => doc.replace(entry.path, value),
       };
       if (described.ok) field.description = described.description;
       return field;

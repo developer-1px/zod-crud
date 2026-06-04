@@ -71,24 +71,18 @@ export function createSnippets<TDocument>(
   const byId = new Map(snippets.map((snippet) => [snippet.id, copySnippet(snippet)]));
 
   return {
-    list() {
-      return [...byId.values()].map(snippetSummary);
-    },
-    get(id) {
+    list: () => [...byId.values()].map(snippetSummary),
+    get: (id) => {
       const snippet = byId.get(id);
       return snippet === undefined ? null : copySnippet(snippet);
     },
-    canInsert(id, target, options) {
+    canInsert: (id, target, options) => {
       const snippet = byId.get(id);
-      return snippet === undefined
-        ? snippetNotFound(id)
-        : canInsertSnippet(doc, snippet, target, options);
+      return snippet === undefined ? snippetNotFound(id) : canInsertSnippet(doc, snippet, target, options);
     },
-    insert(id, target, options) {
+    insert: (id, target, options) => {
       const snippet = byId.get(id);
-      return snippet === undefined
-        ? snippetNotFound(id)
-        : insertSnippet(doc, snippet, target, options);
+      return snippet === undefined ? snippetNotFound(id) : insertSnippet(doc, snippet, target, options);
     },
   };
 }

@@ -76,74 +76,39 @@ type CollectionMovePlan =
   | CollectionError;
 
 export function createCollection<T>(doc: JSONDocument<T>): Collection<T> {
+  const canApplyMovePlan = (plan: CollectionMovePlan): CollectionCapabilityResult => {
+    if (!plan.ok) return plan;
+    return plan.noop ? { ok: true } : doc.canMove(plan.from, plan.path);
+  };
+  const checkedItems = (source: CollectionSource): NormalizedCollectionSource => {
+    const normalized = normalizeCollectionSource(source);
+    return normalized.ok ? ensureCollectionItems(doc, normalized.sources) : normalized;
+  };
+
   return {
-    canMoveUp(pointer) {
-      const plan = planMoveByOffset(doc, pointer, -1);
-      if (!plan.ok) return plan;
-      if (plan.noop) return { ok: true };
-      return doc.canMove(plan.from, plan.path);
-    },
-    moveUp(pointer) {
-      const plan = planMoveByOffset(doc, pointer, -1);
-      if (!plan.ok) return plan;
-      return applyMovePlan(doc, plan);
-    },
-    canMoveDown(pointer) {
-      const plan = planMoveByOffset(doc, pointer, 1);
-      if (!plan.ok) return plan;
-      if (plan.noop) return { ok: true };
-      return doc.canMove(plan.from, plan.path);
-    },
-    moveDown(pointer) {
-      const plan = planMoveByOffset(doc, pointer, 1);
-      if (!plan.ok) return plan;
-      return applyMovePlan(doc, plan);
-    },
-    canMoveBefore(source, target) {
-      const plan = planRelativeMove(doc, source, target, "before");
-      if (!plan.ok) return plan;
-      if (plan.noop) return { ok: true };
-      return doc.canMove(plan.from, plan.path);
-    },
-    moveBefore(source, target) {
-      const plan = planRelativeMove(doc, source, target, "before");
-      if (!plan.ok) return plan;
-      return applyMovePlan(doc, plan);
-    },
-    canMoveAfter(source, target) {
-      const plan = planRelativeMove(doc, source, target, "after");
-      if (!plan.ok) return plan;
-      if (plan.noop) return { ok: true };
-      return doc.canMove(plan.from, plan.path);
-    },
-    moveAfter(source, target) {
-      const plan = planRelativeMove(doc, source, target, "after");
-      if (!plan.ok) return plan;
-      return applyMovePlan(doc, plan);
-    },
+    canMoveUp: (pointer) => canApplyMovePlan(planMoveByOffset(doc, pointer, -1)),
+    moveUp: (pointer) => applyMovePlan(doc, planMoveByOffset(doc, pointer, -1)),
+    canMoveDown: (pointer) => canApplyMovePlan(planMoveByOffset(doc, pointer, 1)),
+    moveDown: (pointer) => applyMovePlan(doc, planMoveByOffset(doc, pointer, 1)),
+    canMoveBefore: (source, target) => canApplyMovePlan(planRelativeMove(doc, source, target, "before")),
+    moveBefore: (source, target) => applyMovePlan(doc, planRelativeMove(doc, source, target, "before")),
+    canMoveAfter: (source, target) => canApplyMovePlan(planRelativeMove(doc, source, target, "after")),
+    moveAfter: (source, target) => applyMovePlan(doc, planRelativeMove(doc, source, target, "after")),
     canDuplicateAfter(pointer, options) {
       const location = readCollectionItemLocation(doc, pointer);
-      if (!location.ok) return location;
-      return doc.canDuplicate(pointer, duplicateOptions(options));
+      return location.ok ? doc.canDuplicate(pointer, duplicateOptions(options)) : location;
     },
     duplicateAfter(pointer, options) {
       const location = readCollectionItemLocation(doc, pointer);
-      if (!location.ok) return location;
-      return doc.duplicate(pointer, duplicateOptions(options));
+      return location.ok ? doc.duplicate(pointer, duplicateOptions(options)) : location;
     },
     canDeleteItems(source) {
-      const normalized = normalizeCollectionSource(source);
-      if (!normalized.ok) return normalized;
-      const checked = ensureCollectionItems(doc, normalized.sources);
-      if (!checked.ok) return checked;
-      return doc.canDelete(checked.sources);
+      const checked = checkedItems(source);
+      return checked.ok ? doc.canDelete(checked.sources) : checked;
     },
     deleteItems(source) {
-      const normalized = normalizeCollectionSource(source);
-      if (!normalized.ok) return normalized;
-      const checked = ensureCollectionItems(doc, normalized.sources);
-      if (!checked.ok) return checked;
-      return doc.delete(checked.sources);
+      const checked = checkedItems(source);
+      return checked.ok ? doc.delete(checked.sources) : checked;
     },
   };
 }

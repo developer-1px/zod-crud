@@ -109,10 +109,6 @@ export function createFormDraft<TDocument, TInput = unknown>(
   const listeners = new Set<FormDraftListener<TInput>>();
   let disposed = false;
 
-  const emitSnapshot = (snapshot: FormDraftSnapshot<TInput>): void => {
-    emit(listeners, snapshot);
-  };
-
   return {
     current(path) {
       const draft = drafts.get(path);
@@ -133,7 +129,7 @@ export function createFormDraft<TDocument, TInput = unknown>(
       drafts.set(readable.path, draft);
       const snapshot = readSnapshot(doc, draft, parse);
       if (!snapshot.ok) return snapshot;
-      emitSnapshot(snapshot.snapshot);
+      emit(listeners, snapshot.snapshot);
       return { ok: true, snapshot: copySnapshot(snapshot.snapshot) };
     },
     canCommit(path) {
@@ -156,7 +152,7 @@ export function createFormDraft<TDocument, TInput = unknown>(
 
       drafts.delete(path);
       const committed = readCommittedSnapshot(doc, path, draft.input);
-      emitSnapshot(committed);
+      emit(listeners, committed);
       return {
         ok: true,
         snapshot: committed,
@@ -180,7 +176,7 @@ export function createFormDraft<TDocument, TInput = unknown>(
         return readCommittedSnapshot(doc, snapshot.pointer, snapshot.input);
       });
       for (const snapshot of committed) {
-        emitSnapshot(snapshot);
+        emit(listeners, snapshot);
       }
 
       return {
@@ -196,13 +192,11 @@ export function createFormDraft<TDocument, TInput = unknown>(
       if (!removed) return false;
       const readable = doc.at(path);
       if (readable.ok) {
-        emitSnapshot(readCommittedSnapshot(doc, readable.path, readable.value as TInput));
+        emit(listeners, readCommittedSnapshot(doc, readable.path, readable.value as TInput));
       }
       return true;
     },
-    clear() {
-      drafts.clear();
-    },
+    clear: () => { drafts.clear(); },
     subscribe(listener) {
       if (disposed) return () => {};
       listeners.add(listener);

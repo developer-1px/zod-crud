@@ -83,21 +83,11 @@ export function createPatchLog<T>(doc: JSONDocument<T>): PatchLog<T> {
   });
 
   return {
-    entries() {
-      return copyEntries(log);
-    },
-    clear() {
-      log.length = 0;
-    },
-    pause() {
-      paused = true;
-    },
-    resume() {
-      if (!disposed) paused = false;
-    },
-    replayInto(targetDoc, options) {
-      return replayEntries(targetDoc, copyEntries(log), options);
-    },
+    entries: () => copyEntries(log),
+    clear: () => { log.length = 0; },
+    pause: () => { paused = true; },
+    resume: () => { if (!disposed) paused = false; },
+    replayInto: (targetDoc, options) => replayEntries(targetDoc, copyEntries(log), options),
     dispose() {
       if (disposed) return;
       disposed = true;
