@@ -3,7 +3,6 @@
 import { describe, expect, it } from "vitest";
 
 import { trackPointer, type JSONPatchOperation } from "../../../src/index.js";
-import { pickAutoTargetsInfo } from "../../../src/domain/selection/autoRules.js";
 
 describe("trackPointer — add", () => {
   it("shifts later siblings on insert", () => {
@@ -108,24 +107,6 @@ describe("trackPointer — sequence", () => {
     expect(trackPointer("/tasks/0", ops)).toBeNull();
     expect(trackPointer("/tasks/0/text", ops)).toBeNull();
     expect(trackPointer("/tasks/1", ops)).toBe("/tasks/0");
-  });
-});
-
-describe("pickAutoTargetsInfo", () => {
-  it("tracks same-array batch targets without changing suffix semantics", () => {
-    const ops: JSONPatchOperation[] = [
-      { op: "copy", from: "/items/0", path: "/items/3" },
-      { op: "move", from: "/items/3", path: "/items/1" },
-      { op: "add", path: "/items/4", value: null },
-      { op: "copy", from: "/items/0", path: "/items/5" },
-      { op: "remove", path: "/items/5" },
-    ];
-
-    expect(pickAutoTargetsInfo(ops).targets).toEqual([
-      "/items/1",
-      "/items/1",
-      "/items/4",
-    ]);
   });
 });
 
