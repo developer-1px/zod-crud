@@ -17,7 +17,6 @@ import type { JSONDocumentHistory } from "./history/types.js";
 import type {
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
-  JSONDocumentDuplicateError,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
   JSONDocumentPasteOptions,

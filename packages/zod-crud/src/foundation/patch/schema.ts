@@ -2,7 +2,7 @@ import type * as z from "zod";
 import { jsonSerializableError } from "../json/serializable.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeAppliedOp, normalizeOp } from "./container.js";
-import { applyPublicTrustedStateFastPatch } from "./fast/apply.js";
+import { applyFastPatchStrategies, publicTrustedStateStrategies } from "./fast/apply.js";
 import { fail, ok, zodIssuesReason } from "./result.js";
 import { applyTrustedValueMutation } from "./value.js";
 import type { ApplyResult, JSONPatchOperation } from "./types.js";
@@ -42,7 +42,7 @@ export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
   ops: ReadonlyArray<JSONPatchOperation>,
 ): ApplyResult<S> {
   if (!Array.isArray(ops)) return { state, result: fail("invalid_pointer", "patch must be an array"), applied: [] };
-  const fast = applyPublicTrustedStateFastPatch(state, ops);
+  const fast = applyFastPatchStrategies(state, ops, publicTrustedStateStrategies, false);
   if (fast !== null) {
     const parsed = schema.safeParse(fast.state);
     if (!parsed.success) return { state, result: fail("schema_violation", zodIssuesReason(parsed.error)), applied: [] };

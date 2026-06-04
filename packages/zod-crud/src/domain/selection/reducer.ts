@@ -14,7 +14,6 @@ import type {
   SelectionCursorTarget,
   SelectionMode,
   SelectionRange,
-  SelectionRangeInput,
   SelectionSnap,
 } from "./types.js";
 import { EMPTY_SELECTION } from "./types.js";

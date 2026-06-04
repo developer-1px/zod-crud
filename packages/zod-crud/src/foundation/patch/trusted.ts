@@ -1,7 +1,7 @@
 import { jsonSerializableError } from "../json/serializable.js";
 import { applyOpRaw, validateOperationShape } from "./apply.js";
 import { normalizeAppliedOp, normalizeOp } from "./container.js";
-import { applyAcceptedFastPatch, applyTrustedFastPatch } from "./fast/apply.js";
+import { acceptedStrategies, applyFastPatchStrategies, trustedStrategies } from "./fast/apply.js";
 import { fail, ok } from "./result.js";
 import { applyTrustedValueMutation } from "./value.js";
 import type {
@@ -20,7 +20,7 @@ export function applyTrustedPatch<T>(
   const singleValueFast = applySingleTrustedValuePatch(state, ops, valuesTrusted);
   if (singleValueFast !== null) return singleValueFast as TrustedApplyResult<T>;
 
-  const fast = applyTrustedFastPatch(state, ops, valuesTrusted);
+  const fast = applyFastPatchStrategies(state, ops, trustedStrategies, valuesTrusted);
   if (fast !== null) return { state: fast.state as T, result: ok, applied: fast.applied };
 
   let cur: unknown = state;
@@ -51,7 +51,7 @@ export function applyAcceptedPatch<T>(
     if (single !== null) return single as TrustedApplyResult<T>;
   }
 
-  const fast = applyAcceptedFastPatch(state, ops);
+  const fast = applyFastPatchStrategies(state, ops, acceptedStrategies, true);
   if (fast !== null) return { state: fast.state as T, result: ok, applied: fast.applied };
 
   return applyTrustedPatch(state, ops, { valuesTrusted: true });

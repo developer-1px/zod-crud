@@ -33,7 +33,7 @@ const rootObjectReplaceWhenValuesTrusted: FastPatchStrategy = (state, ops, value
     ? applyRootObjectReplacePatch(state, ops, true)
     : { handled: false };
 
-const publicTrustedStateStrategies: readonly FastPatchStrategy[] = [
+export const publicTrustedStateStrategies: readonly FastPatchStrategy[] = [
   applyAppendOnlyAddPatch,
   applyTailRemovePatch,
   applyRootObjectRemovePatch,
@@ -46,7 +46,7 @@ const publicTrustedStateStrategies: readonly FastPatchStrategy[] = [
   applySameArrayStructuralPatch,
 ];
 
-const trustedStrategies: readonly FastPatchStrategy[] = [
+export const trustedStrategies: readonly FastPatchStrategy[] = [
   applyAppendOnlyAddPatch,
   applyTailRemovePatch,
   applyRootObjectRemovePatch,
@@ -59,7 +59,7 @@ const trustedStrategies: readonly FastPatchStrategy[] = [
   applySameArrayStructuralPatch,
 ];
 
-const acceptedStrategies: readonly FastPatchStrategy[] = [
+export const acceptedStrategies: readonly FastPatchStrategy[] = [
   applyRootObjectRemovePatch,
   applyRootObjectAddPatch,
   applyRootObjectReplacePatch,
@@ -68,29 +68,7 @@ const acceptedStrategies: readonly FastPatchStrategy[] = [
   applySameArrayElementReplacePatch,
 ];
 
-export function applyPublicTrustedStateFastPatch(
-  state: unknown,
-  ops: ReadonlyArray<JSONPatchOperation>,
-): FastPatchSuccess | null {
-  return applyFastPatchStrategies(state, ops, publicTrustedStateStrategies, false);
-}
-
-export function applyTrustedFastPatch(
-  state: unknown,
-  ops: ReadonlyArray<JSONPatchOperation>,
-  valuesTrusted: boolean,
-): FastPatchSuccess | null {
-  return applyFastPatchStrategies(state, ops, trustedStrategies, valuesTrusted);
-}
-
-export function applyAcceptedFastPatch(
-  state: unknown,
-  ops: ReadonlyArray<JSONPatchOperation>,
-): FastPatchSuccess | null {
-  return applyFastPatchStrategies(state, ops, acceptedStrategies, true);
-}
-
-function applyFastPatchStrategies(
+export function applyFastPatchStrategies(
   state: unknown,
   ops: ReadonlyArray<JSONPatchOperation>,
   strategies: readonly FastPatchStrategy[],

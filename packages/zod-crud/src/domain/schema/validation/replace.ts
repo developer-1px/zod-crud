@@ -10,7 +10,7 @@ import {
 } from "../array/path.js";
 import { failedLocalSchemaValidation, okLocalSchemaValidation } from "../shared/result.js";
 import {
-  applySingleArrayFieldReplacePatchWithLocalSchemaValidation,
+  applySingleArrayFieldReplace,
   applyKnownJsonSameArrayElementReplacePatchWithLocalSchemaValidation,
 } from "../array/replace.js";
 import {
@@ -21,7 +21,6 @@ import {
 import {
   evaluateLocalSchemaValidationValueValidationPlan,
   planLocalSchemaValidationValueValidation,
-  toAppliedReplaceOperations,
 } from "../shared/value.js";
 
 export function applyReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
@@ -105,7 +104,7 @@ export function applySingleReplaceOperation(
   state: unknown,
   operation: Extract<JSONPatchOperation, { op: "replace" }>,
 ): { state: unknown; result: ApplyResult<z.ZodTypeAny>["result"]; applied: ReadonlyArray<JSONPatchOperation> } {
-  const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, operation);
+  const singleArrayFieldReplace = applySingleArrayFieldReplace({ state, path: operation.path, value: operation.value });
   if (singleArrayFieldReplace !== null) return { state: singleArrayFieldReplace, result: { ok: true }, applied: [operation] };
   const root = readRootRecordForLocalSchemaValidation(state);
   if (root.ok) {

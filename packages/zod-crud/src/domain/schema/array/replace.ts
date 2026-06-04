@@ -81,13 +81,6 @@ export interface SameArrayNestedReplaceOperationPlan extends IndexedReplaceValue
   op: "replace";
 }
 
-export function applySingleArrayFieldReplacePatchWithLocalSchemaValidation(
-  state: unknown,
-  op: Extract<JSONPatchOperation, { op: "replace" }>,
-): unknown | null {
-  return applySingleArrayFieldReplace({ state, path: op.path, value: op.value });
-}
-
 export function applySameArrayFieldReplacePatchWithLocalSchemaValidation<S extends z.ZodType>(
   schema: S,
   state: z.output<S>,

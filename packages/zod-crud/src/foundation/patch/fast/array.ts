@@ -204,7 +204,6 @@ export function applySameArrayStructuralPatch(
 
   const nonDecreasingRemoveFast = applyNonDecreasingArrayRemovePatch(
     state,
-    parent,
     parsedParent.segs,
     current.value,
     items,
@@ -553,7 +552,6 @@ function insertBuckets(
 
 function applyNonDecreasingArrayRemovePatch(
   state: unknown,
-  parent: Pointer,
   parentSegments: ReadonlyArray<string>,
   current: ReadonlyArray<unknown>,
   items: ReadonlyArray<SameArrayStructuralItem>,

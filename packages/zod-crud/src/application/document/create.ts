@@ -43,7 +43,6 @@ import type {
   JSONDocumentDuplicateResult,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-  JSONPatchInput,
   JSONDocumentOptions,
   QueryResult,
   ReadEntry,

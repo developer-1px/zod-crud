@@ -17,7 +17,6 @@ import {
 import {
   clonePoint,
   cloneRange,
-  collapsedRange,
   normalizeSelectionRange,
   pointPath,
   samePoint,
@@ -184,7 +183,7 @@ export function sameSelectionSnap(left: SelectionSnap, right: SelectionSnap): bo
   return left.primaryIndex === right.primaryIndex
     && samePointOrNull(left.anchor, right.anchor)
     && samePointOrNull(left.focus, right.focus)
-    && sameSelectionContext(left.context, right.context)
+    && jsonEqual(left.context, right.context)
     && left.selectedPointers.length === right.selectedPointers.length
     && left.selectedPointers.every((p, i) => p === right.selectedPointers[i])
     && left.selectionRanges.length === right.selectionRanges.length
@@ -265,10 +264,6 @@ function clampPrimaryIndex(index: number, length: number): number {
   if (length <= 0) return -1;
   if (!Number.isFinite(index)) return length - 1;
   return Math.min(Math.max(Math.trunc(index), 0), length - 1);
-}
-
-function sameSelectionContext(left: SelectionContext | undefined, right: SelectionContext | undefined): boolean {
-  return jsonEqual(left, right);
 }
 
 function samePointOrNull(left: SelectionPoint | null, right: SelectionPoint | null): boolean {
