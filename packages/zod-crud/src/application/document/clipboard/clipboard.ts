@@ -17,9 +17,8 @@ import {
 } from "../../../domain/paste.js";
 import {
   copy,
-  type CopyError,
 } from "../../../domain/copy.js";
-import { cut, type CutError } from "../../../domain/cut.js";
+import { cut } from "../../../domain/cut.js";
 import type {
   ClipboardBuffer,
   ClipboardCutResult,
@@ -204,7 +203,13 @@ export function createClipboard<S extends z.ZodType>(
 
     copy(source, options = {}) {
       const resolvedSource = source ?? getSelectionSource?.() ?? null;
-      if (resolvedSource === null) return emptyCopySource();
+      if (resolvedSource === null) {
+        return {
+          ok: false,
+          code: "empty_selection",
+          reason: "copy source selection is empty",
+        };
+      }
       const copyOptions: { trusted: boolean; clonePayload?: boolean } = {
         trusted: getStateJsonTrusted?.() === true,
       };
@@ -218,7 +223,13 @@ export function createClipboard<S extends z.ZodType>(
 
     cut(source, options = {}) {
       const resolvedSource = source ?? getSelectionSource?.() ?? null;
-      if (resolvedSource === null) return emptyCutSource();
+      if (resolvedSource === null) {
+        return {
+          ok: false,
+          code: "empty_selection",
+          reason: "cut source selection is empty",
+        };
+      }
       const cutOptions: {
         trusted: boolean;
         clonePayload?: boolean;
@@ -388,20 +399,4 @@ export function splitPasteOptions(options?: JSONDocumentPasteOptions):
   return Object.keys(pasteOptions).length === 0
     ? { kind: "payload", payload }
     : { kind: "payload", payload, options: pasteOptions };
-}
-
-function emptyCopySource(): CopyError {
-  return {
-    ok: false,
-    code: "empty_selection",
-    reason: "copy source selection is empty",
-  };
-}
-
-function emptyCutSource(): CutError {
-  return {
-    ok: false,
-    code: "empty_selection",
-    reason: "cut source selection is empty",
-  };
 }

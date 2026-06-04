@@ -6,7 +6,7 @@ import type { Pointer } from "../foundation/pointer/index.js";
 import { jsonSerializableError } from "../foundation/json/serializable.js";
 import { cloneTrustedPlainJson } from "../foundation/json/trustedClone.js";
 import { readAt, tryParsePointer } from "../foundation/pointer/index.js";
-import { normalizePointerSources, type PointerSource, type PointerSourceError } from "../foundation/pointer/source.js";
+import { normalizePointerSources, type PointerSource } from "../foundation/pointer/source.js";
 
 export interface CopyOk {
   ok: true;
@@ -79,12 +79,9 @@ function copyOne(
 
 function normalizeSources(source: ClipboardSource): { ok: true; sources: Pointer[] } | CopyError {
   const result = normalizePointerSources(source);
-  return result.ok ? result : copySourceError(result);
-}
-
-function copySourceError(error: PointerSourceError): CopyError {
-  return error.code === "invalid_pointer"
-    ? copyError("invalid_pointer", `invalid source pointer: ${error.pointer}`)
+  if (result.ok) return result;
+  return result.code === "invalid_pointer"
+    ? copyError("invalid_pointer", `invalid source pointer: ${result.pointer}`)
     : copyError("empty_selection", "copy source selection is empty");
 }
 

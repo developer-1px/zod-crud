@@ -9,7 +9,6 @@ import type { ApplyResult, JSONPatchOperation } from "../foundation/patch/types.
 import { removeSourcesPatch } from "../foundation/patch/source.js";
 import type { Pointer } from "../foundation/pointer/index.js";
 import { readAt, tryParsePointer } from "../foundation/pointer/index.js";
-import type { PointerSourceError } from "../foundation/pointer/source.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "./schema/patch.js";
 import type { ClipboardSource } from "./copy.js";
 
@@ -45,7 +44,11 @@ export function cut<S extends z.ZodType>(
   options: CutOptions = {},
 ): CutOk<z.output<S>> | CutError {
   const removePlan = removeSourcesPatch(source);
-  if (!removePlan.ok) return cutSourceError(removePlan);
+  if (!removePlan.ok) {
+    return removePlan.code === "invalid_pointer"
+      ? cutError("invalid_pointer", `invalid cut source pointer: ${removePlan.pointer}`)
+      : cutError("empty_selection", "cut source selection is empty");
+  }
 
   const payloads: unknown[] = [];
   for (const item of removePlan.sources) {
@@ -98,12 +101,6 @@ function readPayload(
   }
   const payload = options.clonePayload === false ? v.value : cloneTrustedPlainJson(v.value);
   return { ok: true, payload };
-}
-
-function cutSourceError(error: PointerSourceError): CutError {
-  return error.code === "invalid_pointer"
-    ? cutError("invalid_pointer", `invalid cut source pointer: ${error.pointer}`)
-    : cutError("empty_selection", "cut source selection is empty");
 }
 
 function cutError(
