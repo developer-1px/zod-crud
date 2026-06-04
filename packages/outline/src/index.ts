@@ -510,9 +510,7 @@ function outlineError(
   pointer: Pointer,
   reason?: string,
 ): OutlineError {
-  const error: OutlineError = { ok: false, code, pointer };
-  if (reason !== undefined) error.reason = reason;
-  return error;
+  return { ok: false, code, pointer, ...(reason === undefined ? {} : { reason }) };
 }
 
 function editError(
@@ -520,23 +518,17 @@ function editError(
   reason: string,
   pointer?: Pointer,
 ): OutlineEditError {
-  const error: OutlineEditError = { ok: false, code, reason };
-  if (pointer !== undefined) error.pointer = pointer;
-  return error;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function capabilityError(
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): OutlineEditError {
-  const error = editError("patch_rejected", capability.reason ?? "outline patch rejected", capability.pointer);
-  error.capability = capability;
-  return error;
+  return { ...editError("patch_rejected", capability.reason ?? "outline patch rejected", capability.pointer), capability };
 }
 
 function patchError(result: Exclude<JSONResult, { ok: true }>): OutlineEditError {
-  const error = editError("patch_failed", result.reason ?? "outline patch failed", result.pointer);
-  error.result = result;
-  return error;
+  return { ...editError("patch_failed", result.reason ?? "outline patch failed", result.pointer), result };
 }
 
 function copyChange(change: OutlineEditChange): OutlineEditChange {

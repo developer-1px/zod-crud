@@ -346,21 +346,19 @@ function protectedRangeError(
 }
 
 function patchFailure(result: Exclude<JSONResult, { ok: true }>): ProtectedRangeError {
-  const error: ProtectedRangeError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: result.reason ?? "protected range patch failed",
     result,
+    ...(result.pointer === undefined ? {} : { pointer: result.pointer }),
   };
-  if (result.pointer !== undefined) error.pointer = result.pointer;
-  return error;
 }
 
 function copyRange(range: ProtectedRange): ProtectedRange {
-  const copy: ProtectedRange = {
+  return {
     id: range.id,
     pointer: range.pointer,
+    ...(range.label === undefined ? {} : { label: range.label }),
   };
-  if (range.label !== undefined) copy.label = range.label;
-  return copy;
 }

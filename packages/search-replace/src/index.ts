@@ -364,28 +364,26 @@ function capabilityError(
   root: Pointer,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): SearchReplaceError {
-  const error: SearchReplaceError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `text replacement patch rejected for ${root}`,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) error.pointer = capability.pointer;
-  return error;
 }
 
 function patchError(
   root: Pointer,
   patch: Extract<JSONResult | JSONCapabilityResult, { ok: false }>,
 ): SearchReplaceError {
-  const error: SearchReplaceError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `text replacement patch failed for ${root}`,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) error.pointer = patch.pointer;
-  return error;
 }
 
 function searchReplaceError(
@@ -393,7 +391,5 @@ function searchReplaceError(
   reason: string,
   pointer?: Pointer,
 ): SearchReplaceError {
-  const error: SearchReplaceError = { ok: false, code, reason };
-  if (pointer !== undefined) error.pointer = pointer;
-  return error;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

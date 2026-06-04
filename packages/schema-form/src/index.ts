@@ -176,7 +176,5 @@ function schemaFormError(
   pointer: Pointer,
   kind?: EntryKind | SchemaKind,
 ): SchemaFormError {
-  const error: SchemaFormError = { ok: false, code, reason, pointer };
-  if (kind !== undefined) error.kind = kind;
-  return error;
+  return { ok: false, code, reason, pointer, ...(kind === undefined ? {} : { kind }) };
 }

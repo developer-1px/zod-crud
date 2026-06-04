@@ -142,13 +142,12 @@ function snippetSummary(snippet: Snippet): SnippetSummary {
 }
 
 function copySnippet(snippet: Snippet): Snippet {
-  const copied: Snippet = {
+  return {
     id: snippet.id,
     payload: copyPayload(snippet.payload),
+    ...(snippet.label === undefined ? {} : { label: snippet.label }),
+    ...(snippet.options === undefined ? {} : { options: copyPayload(snippet.options) as SnippetInsertOptions }),
   };
-  if (snippet.label !== undefined) copied.label = snippet.label;
-  if (snippet.options !== undefined) copied.options = copyPayload(snippet.options) as SnippetInsertOptions;
-  return copied;
 }
 
 function copyOptions(options: SnippetInsertOptions | undefined): SnippetInsertOptions | undefined {

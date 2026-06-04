@@ -338,28 +338,26 @@ function capabilityError(
   jsonPath: string,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): BulkEditError {
-  const error: BulkEditError = {
+  return {
     ok: false,
     code: "patch_rejected",
     reason: capability.reason ?? `bulk edit patch rejected for ${jsonPath}`,
     jsonPath,
     capability,
+    ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
   };
-  if (capability.pointer !== undefined) error.pointer = capability.pointer;
-  return error;
 }
 
 function patchError(
   jsonPath: string,
   patch: Extract<JSONResult, { ok: false }>,
 ): BulkEditError {
-  const error: BulkEditError = {
+  return {
     ok: false,
     code: "patch_failed",
     reason: patch.reason ?? `bulk edit patch failed for ${jsonPath}`,
     jsonPath,
     patch,
+    ...(patch.pointer === undefined ? {} : { pointer: patch.pointer }),
   };
-  if (patch.pointer !== undefined) error.pointer = patch.pointer;
-  return error;
 }
