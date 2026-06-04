@@ -3,7 +3,8 @@ import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/t
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { commitMutable, historyDepth } from "../../../foundation/history.js";
 import { duplicate as duplicateVerb } from "../../../domain/duplicate.js";
-import type { SelectionSnap } from "../../../domain/selection/types.js";
+import { restoreSelection } from "../../../domain/selection/snap.js";
+import { EMPTY_SELECTION, type SelectionSnap } from "../../../domain/selection/types.js";
 import type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
@@ -12,22 +13,7 @@ import type {
   JSONDocumentDuplicateResult,
   JSONPatchInput,
 } from "../runtime/types.js";
-import type { DocumentChangeApplyResultPlan } from "./change.js";
-import {
-  planDocumentCommitPreview,
-  planDocumentCommitRoute,
-  planDocumentCommitSelection,
-  planDocumentDuplicateApplyResult,
-  planDocumentPatchCall,
-} from "./commit.js";
-import {
-  planDocumentChangeApplyResult,
-  planDocumentChangeCapture,
-  planDocumentChangeHistoryRecord,
-  planDocumentChangeMetadata,
-  planDocumentChangeSelection,
-} from "./change.js";
-import { shouldRecordDocumentCommitHistory } from "./commit.js";
+import { buildChangeMetadata, compactHistoryMetadata } from "../history/metadata.js";
 import { planDocumentHistoryRecord } from "../history/restore.js";
 import type {
   DocumentHistoryRuntimeState,
@@ -38,13 +24,23 @@ import type {
   TrustedDocumentStateOps,
 } from "../runtime/types.js";
 
-export interface CreateDocumentMutationRuntimeInput<S extends z.ZodType> {
+interface CreateDocumentMutationRuntimeInput<S extends z.ZodType> {
   schema: S;
   rawOps: TrustedDocumentStateOps<z.output<S>>;
   historyLimit: number;
   historyState: DocumentHistoryRuntimeState;
   patchState: DocumentPatchRuntimeState;
   selection: SelectionRuntimeAccess;
+}
+
+interface DocumentChangeHistoryRecord {
+  before: unknown;
+  after: unknown;
+  operations: ReadonlyArray<JSONPatchOperation>;
+  selectionBefore: SelectionSnap;
+  selectionAfter: SelectionSnap;
+  metadata?: JSONChangeMetadata;
+  operationsOwned: boolean;
 }
 
 export function createDocumentMutationRuntime<S extends z.ZodType>(
@@ -82,9 +78,46 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
     commitMutable(historyState.stack, recordPlan.entry, historyLimit);
   };
 
-  const applyDocumentChangePlan = (plan: DocumentChangeApplyResultPlan): void => {
-    if (plan.lastPatch !== null) patchState.lastPatch = plan.lastPatch;
-    const history = plan.history;
+  const shouldRecordHistory = (operationCount: number): boolean =>
+    historyLimit > 0 && !historyState.isRestoring && operationCount > 0;
+  const shouldCaptureMetadata = (
+    record: boolean,
+    metadata: JSONChangeMetadata | undefined,
+  ): boolean =>
+    record
+    || historyState.activeHistoryMetadata !== undefined
+    || metadata !== undefined
+    || (selection.selectionEnabled && patchState.documentSubscriberCount > 0);
+  const historyRecord = (
+    record: boolean,
+    before: unknown,
+    after: unknown,
+    operations: ReadonlyArray<JSONPatchOperation>,
+    selectionBefore: SelectionSnap,
+    selectionAfter: SelectionSnap,
+    metadata: JSONChangeMetadata | undefined,
+    operationsOwned = false,
+  ): DocumentChangeHistoryRecord | null => {
+    if (!record) return null;
+    const out: DocumentChangeHistoryRecord = {
+      before,
+      after,
+      operations,
+      selectionBefore,
+      selectionAfter,
+      operationsOwned,
+    };
+    if (metadata !== undefined) out.metadata = metadata;
+    return out;
+  };
+  const applyDocumentChangeResult = (
+    result: JSONResult,
+    operationCount: number,
+    applied: ReadonlyArray<JSONPatchOperation>,
+    history: DocumentChangeHistoryRecord | null,
+  ): void => {
+    if (!result.ok) return;
+    patchState.lastPatch = operationCount === 0 ? [] : applied;
     if (history === null) return;
     recordHistory(
       history.before as z.output<S>,
@@ -102,52 +135,39 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
     metadata?: JSONChangeMetadata,
     operationsOwned = false,
   ): JSONResult => {
-    const capture = planDocumentChangeCapture({
-      historyLimit,
-      isRestoring: historyState.isRestoring,
-      operationCount: operations.length,
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
-      metadata,
-      selectionEnabled: selection.selectionEnabled,
-      documentSubscriberCount: patchState.documentSubscriberCount,
-    });
-    if (!capture.shouldCaptureMetadata) {
+    const record = shouldRecordHistory(operations.length);
+    const captureMetadata = shouldCaptureMetadata(record, metadata);
+    if (!captureMetadata) {
       const r = rawOps.patch(operations);
-      applyDocumentChangePlan(planDocumentChangeApplyResult({
-        result: r,
-        lastPatchOperationCount: operations.length,
-        applied: rawOps.lastApplied,
-        history: null,
-      }));
+      applyDocumentChangeResult(r, operations.length, rawOps.lastApplied, null);
       return r;
     }
 
-    const before = capture.shouldRecordHistory ? rawOps.state : undefined;
+    const before = record ? rawOps.state : undefined;
     const selectionBefore = selection.snapSelection();
-    const changeMetadata = planDocumentChangeMetadata({
-      shouldCaptureMetadata: capture.shouldCaptureMetadata,
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
+    const changeMetadata = buildChangeMetadata(
+      historyState.activeHistoryMetadata,
       metadata,
       selectionBefore,
-      selectionEnabled: selection.selectionEnabled,
-    });
+      selection.selectionEnabled,
+    );
     const r = rawOps.patch(operations, changeMetadata);
     const selectionAfter = selection.snapSelection();
-    applyDocumentChangePlan(planDocumentChangeApplyResult({
-      result: r,
-      lastPatchOperationCount: operations.length,
-      applied: rawOps.lastApplied,
-      history: planDocumentChangeHistoryRecord({
-        shouldRecordHistory: capture.shouldRecordHistory,
+    applyDocumentChangeResult(
+      r,
+      operations.length,
+      rawOps.lastApplied,
+      historyRecord(
+        record,
         before,
-        after: rawOps.state,
+        rawOps.state,
         operations,
         selectionBefore,
         selectionAfter,
-        metadata: changeMetadata,
+        changeMetadata,
         operationsOwned,
-      }),
-    }));
+      ),
+    );
     return r;
   };
 
@@ -157,100 +177,84 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
     applied: ReadonlyArray<JSONPatchOperation>,
     metadata?: JSONChangeMetadata,
   ): JSONResult => {
-    const capture = planDocumentChangeCapture({
-      historyLimit,
-      isRestoring: historyState.isRestoring,
-      operationCount: operations.length,
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
-      metadata,
-      selectionEnabled: selection.selectionEnabled,
-      documentSubscriberCount: patchState.documentSubscriberCount,
-    });
-    if (!capture.shouldCaptureMetadata) {
+    const record = shouldRecordHistory(operations.length);
+    const captureMetadata = shouldCaptureMetadata(record, metadata);
+    if (!captureMetadata) {
       const r = rawOps.trustedApply(next, applied);
-      applyDocumentChangePlan(planDocumentChangeApplyResult({
-        result: r,
-        lastPatchOperationCount: applied.length,
-        applied: rawOps.lastApplied,
-        history: null,
-      }));
+      applyDocumentChangeResult(r, applied.length, rawOps.lastApplied, null);
       return r;
     }
 
-    const before = capture.shouldRecordHistory ? rawOps.state : undefined;
+    const before = record ? rawOps.state : undefined;
     const selectionBefore = selection.snapSelection();
-    const changeMetadata = planDocumentChangeMetadata({
-      shouldCaptureMetadata: capture.shouldCaptureMetadata,
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
+    const changeMetadata = buildChangeMetadata(
+      historyState.activeHistoryMetadata,
       metadata,
       selectionBefore,
-      selectionEnabled: selection.selectionEnabled,
-    });
+      selection.selectionEnabled,
+    );
     const r = rawOps.trustedApply(next, applied, changeMetadata);
     const selectionAfter = selection.snapSelection();
-    applyDocumentChangePlan(planDocumentChangeApplyResult({
-      result: r,
-      lastPatchOperationCount: applied.length,
-      applied: rawOps.lastApplied,
-      history: planDocumentChangeHistoryRecord({
-        shouldRecordHistory: capture.shouldRecordHistory,
+    applyDocumentChangeResult(
+      r,
+      applied.length,
+      rawOps.lastApplied,
+      historyRecord(
+        record,
         before,
-        after: next,
+        next,
         operations,
         selectionBefore,
         selectionAfter,
-        metadata: changeMetadata,
-      }),
-    }));
+        changeMetadata,
+      ),
+    );
     return r;
   };
 
   const patch = (operations: JSONPatchInput, metadata?: JSONChangeMetadata): JSONResult => {
-    const plan = planDocumentPatchCall({ operations });
-    return applyDocumentPatch(plan.operations, metadata, plan.operationsOwned);
+    return Array.isArray(operations)
+      ? applyDocumentPatch(operations, metadata, false)
+      : applyDocumentPatch([operations as JSONPatchOperation], metadata, true);
   };
 
   const commit = (
     operations: ReadonlyArray<JSONPatchOperation>,
     commitOptions?: JSONDocumentCommitOptions,
   ): JSONResult => {
-    const route = planDocumentCommitRoute({ options: commitOptions });
-    if (route.kind === "patch") return applyDocumentPatch(operations, route.metadata);
+    const metadata = commitOptions === undefined ? undefined : compactHistoryMetadata(commitOptions);
+    if (commitOptions?.selection === undefined) return applyDocumentPatch(operations, metadata);
     const before = rawOps.state;
     const selectionBefore = selection.snapSelection();
     const predicted = rawOps.previewPatch(operations);
-    const preview = planDocumentCommitPreview(predicted);
-    if (preview.kind === "fallbackPatch") return patch(operations, route.metadata);
-    const plan = planDocumentCommitSelection({
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
-      metadata: route.metadata,
-      selection: route.selection,
+    if (!predicted.result.ok) return patch(operations, metadata);
+    const selectionAfter = restoreSelection(commitOptions.selection, selection.selectionMode, predicted.state);
+    const directMetadata: JSONChangeMetadata = metadata === undefined
+      ? { selectionAfter }
+      : { ...metadata, selectionAfter };
+    const changeMetadata = buildChangeMetadata(
+      historyState.activeHistoryMetadata,
+      directMetadata,
       selectionBefore,
-      state: preview.state,
-      selectionMode: selection.selectionMode,
-      selectionEnabled: selection.selectionEnabled,
-    });
-    const r = rawOps.trustedApply(preview.state as z.output<S>, preview.applied, plan.changeMetadata);
+      selection.selectionEnabled,
+    );
+    const r = rawOps.trustedApply(predicted.state as z.output<S>, predicted.applied, changeMetadata);
     if (!r.ok) return r;
-    selection.restoreSelection(plan.selectionAfter);
-    applyDocumentChangePlan(planDocumentChangeApplyResult({
-      result: r,
-      lastPatchOperationCount: operations.length,
-      applied: rawOps.lastApplied,
-      history: planDocumentChangeHistoryRecord({
-        shouldRecordHistory: shouldRecordDocumentCommitHistory({
-          historyLimit,
-          isRestoring: historyState.isRestoring,
-          operationCount: operations.length,
-        }),
+    selection.restoreSelection(selectionAfter);
+    applyDocumentChangeResult(
+      r,
+      operations.length,
+      rawOps.lastApplied,
+      historyRecord(
+        shouldRecordHistory(operations.length),
         before,
-        after: predicted.state,
+        predicted.state,
         operations,
         selectionBefore,
-        selectionAfter: plan.selectionAfter,
-        metadata: plan.changeMetadata,
-      }),
-    }));
+        selectionAfter,
+        changeMetadata,
+      ),
+    );
     return r;
   };
 
@@ -264,45 +268,41 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
       trustedPayload: rawOps.stateJsonTrusted,
     });
     if (!planned.ok) return planned;
-    const capture = planDocumentChangeCapture({
-      historyLimit,
-      isRestoring: historyState.isRestoring,
-      operationCount: planned.patch.length,
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
-      metadata: undefined,
-      selectionEnabled: selection.selectionEnabled,
-      documentSubscriberCount: patchState.documentSubscriberCount,
-    });
-    const selectionBefore = planDocumentChangeSelection({ shouldCaptureMetadata: capture.shouldCaptureMetadata, snapshot: selection.snapSelection });
-    const changeMetadata = planDocumentChangeMetadata({
-      shouldCaptureMetadata: capture.shouldCaptureMetadata,
-      activeHistoryMetadata: historyState.activeHistoryMetadata,
-      metadata: undefined,
-      selectionBefore,
-      selectionEnabled: selection.selectionEnabled,
-    });
+    const record = shouldRecordHistory(planned.patch.length);
+    const captureMetadata = shouldCaptureMetadata(record, undefined);
+    const selectionBefore = captureMetadata ? selection.snapSelection() : EMPTY_SELECTION;
+    const changeMetadata = captureMetadata
+      ? buildChangeMetadata(
+          historyState.activeHistoryMetadata,
+          undefined,
+          selectionBefore,
+          selection.selectionEnabled,
+        )
+      : undefined;
     const r = rawOps.trustedApply(planned.next, planned.patch, changeMetadata);
-    const selectionAfter = planDocumentChangeSelection({ shouldCaptureMetadata: capture.shouldCaptureMetadata, snapshot: selection.snapSelection });
-    applyDocumentChangePlan(planDocumentChangeApplyResult({
-      result: r,
-      lastPatchOperationCount: planned.patch.length,
-      applied: rawOps.lastApplied,
-      history: planDocumentChangeHistoryRecord({
-        shouldRecordHistory: capture.shouldRecordHistory,
+    const selectionAfter = captureMetadata ? selection.snapSelection() : EMPTY_SELECTION;
+    applyDocumentChangeResult(
+      r,
+      planned.patch.length,
+      rawOps.lastApplied,
+      historyRecord(
+        record,
         before,
-        after: planned.next,
-        operations: planned.patch,
+        planned.next,
+        planned.patch,
         selectionBefore,
         selectionAfter,
-        metadata: changeMetadata,
-      }),
-    }));
-    return planDocumentDuplicateApplyResult({
-      result: r,
-      state: rawOps.state,
-      applied: patchState.lastPatch,
-      duplicatedTo: planned.duplicatedTo,
-    });
+        changeMetadata,
+      ),
+    );
+    return r.ok
+      ? {
+          ok: true,
+          value: rawOps.state,
+          applied: patchState.lastPatch,
+          duplicatedTo: planned.duplicatedTo,
+        }
+      : r;
   };
 
   return { applyDocumentPatch, applyPreviewedDocumentPatch, patch, commit, duplicate };

@@ -9,27 +9,16 @@ import {
   redoDepth,
 } from "../../../foundation/history.js";
 import {
-  planDocumentActiveHistoryMetadata,
-  planDocumentHistoryMergeLast,
-  planDocumentHistoryMergeLastWrite,
-  planDocumentTransactionCall,
-  planDocumentTransactionScope,
-  type DocumentTransactionCallPlan,
+  planMergedDocumentHistoryEntry,
 } from "./metadata.js";
 import {
   planDocumentTransactionMerge,
-  planDocumentTransactionMergeRange,
-  planDocumentTransactionMergeWrite,
 } from "./transaction.js";
 import {
   planDocumentHistoryRestore,
-  planDocumentHistoryRestoreApply,
-  planDocumentHistoryRestoreCompletion,
-  planDocumentHistoryRestoreFlow,
 } from "./restore.js";
 import type {
   DocumentHistoryRuntimeState,
-  DocumentHistoryRestoreCompletionPlan,
   JSONDocumentHistory,
 } from "./types.js";
 import type {
@@ -38,7 +27,7 @@ import type {
 } from "../runtime/types.js";
 import type { HistoryTransactionOptions } from "../runtime/types.js";
 
-export interface CreateDocumentHistoryRuntimeInput<T> {
+interface CreateDocumentHistoryRuntimeInput<T> {
   rawOps: TrustedDocumentStateOps<T>;
   historyState: DocumentHistoryRuntimeState;
   selection: SelectionRuntimeAccess;
@@ -59,9 +48,8 @@ export function createDocumentHistoryRuntime<T>(
   const { rawOps, historyState, selection, syncLastPatch } = input;
 
   const restore = (direction: "undo" | "redo"): boolean => {
-    const flow = planDocumentHistoryRestoreFlow({ direction });
-    const restoreStack = flow.entryStack === "undo" ? historyState.stack.undo : historyState.stack.redo;
-    const entry = flow.entryStack === "undo" ? backEntry(historyState.stack) : forwardEntry(historyState.stack);
+    const restoreStack = direction === "undo" ? historyState.stack.undo : historyState.stack.redo;
+    const entry = direction === "undo" ? backEntry(historyState.stack) : forwardEntry(historyState.stack);
     if (!entry) return false;
     const plan = planDocumentHistoryRestore({
       direction,
@@ -69,32 +57,23 @@ export function createDocumentHistoryRuntime<T>(
       currentState: rawOps.state,
       currentSelection: selection.snapSelection(),
     });
-    if (flow.writeEntryPhase === "beforeApply") restoreStack[restoreStack.length - 1] = plan.entry;
+    if (direction === "undo") restoreStack[restoreStack.length - 1] = plan.entry;
     historyState.isRestoring = true;
-    let completion: DocumentHistoryRestoreCompletionPlan | null = null;
     try {
-      const applyPlan = planDocumentHistoryRestoreApply({ patch: plan.patch, state: plan.state });
-      const r = applyPlan.kind === "patch"
-        ? rawOps.applyTrustedPatch(applyPlan.patch)
-        : rawOps.trustedApply(applyPlan.state as T, applyPlan.patch);
-      completion = planDocumentHistoryRestoreCompletion({
-        result: r,
-        flow,
-        entry: plan.entry,
-        selectionAfter: plan.selectionAfter,
-      });
-      if (!completion.ok) return false;
-      if (completion.writeEntryAfterApply !== null) restoreStack[restoreStack.length - 1] = completion.writeEntryAfterApply;
-      if (completion.syncLastPatch) syncLastPatch();
+      const result = plan.state === undefined
+        ? rawOps.applyTrustedPatch(plan.patch)
+        : rawOps.trustedApply(plan.state as T, plan.patch);
+      if (!result.ok) return false;
+      if (direction === "redo") restoreStack[restoreStack.length - 1] = plan.entry;
+      syncLastPatch();
     } catch {
       return false;
     } finally {
       historyState.isRestoring = false;
     }
-    if (completion === null || !completion.ok) return false;
-    if (completion.move === "back") moveBack(historyState.stack);
+    if (direction === "undo") moveBack(historyState.stack);
     else moveForward(historyState.stack);
-    selection.restoreSelection(completion.selectionAfter);
+    selection.restoreSelection(plan.selectionAfter);
     return true;
   };
 
@@ -106,38 +85,34 @@ export function createDocumentHistoryRuntime<T>(
   };
 
   const mergeLast = (mergeOptions?: { mergeKey?: string }): boolean => {
-    const merged = planDocumentHistoryMergeLast({
-      isRestoring: historyState.isRestoring,
-      historyDepth: historyDepth(historyState.stack),
-      previous: historyState.stack.undo[historyState.stack.undo.length - 2],
-      top: historyState.stack.undo[historyState.stack.undo.length - 1],
-      ...(mergeOptions !== undefined ? { options: mergeOptions } : {}),
-    });
-    const write = planDocumentHistoryMergeLastWrite({ undoLength: historyState.stack.undo.length, merged });
-    if (write.kind === "skip") return false;
-    historyState.stack.undo[write.index] = write.entry;
-    historyState.stack.undo.length = write.length;
+    if (historyState.isRestoring || historyDepth(historyState.stack) < 2) return false;
+    const undoLength = historyState.stack.undo.length;
+    const previous = historyState.stack.undo[undoLength - 2];
+    const top = historyState.stack.undo[undoLength - 1];
+    if (previous === undefined || top === undefined) return false;
+    historyState.stack.undo[undoLength - 2] = planMergedDocumentHistoryEntry(
+      previous,
+      top,
+      mergeHistoryOptions(previous.metadata, top.metadata, mergeOptions),
+    );
+    historyState.stack.undo.length = undoLength - 1;
     return true;
   };
 
   const mergeTransactionEntries = (depthBefore: number): void => {
-    const range = planDocumentTransactionMergeRange({
-      undoStart: historyState.stack.undoStart,
-      undoLength: historyState.stack.undo.length,
-      depthBefore,
-      currentDepth: historyDepth(historyState.stack),
-    });
-    if (range === null) return;
-    const merged = planDocumentTransactionMerge({ entries: historyState.stack.undo, start: range.start, end: range.end });
-    const write = planDocumentTransactionMergeWrite({ range, merged });
-    if (write.kind === "skip") return;
-    historyState.stack.undo[write.index] = write.entry;
-    historyState.stack.undo.length = write.length;
+    if (historyDepth(historyState.stack) <= depthBefore + 1) return;
+    const start = historyState.stack.undoStart + depthBefore;
+    const end = historyState.stack.undo.length;
+    if (start < historyState.stack.undoStart || end - start <= 1) return;
+    const merged = planDocumentTransactionMerge({ entries: historyState.stack.undo, start, end });
+    if (merged === null) return;
+    historyState.stack.undo[start] = merged;
+    historyState.stack.undo.length = start + 1;
   };
 
   const withHistoryMetadata = (metadata: HistoryTransactionOptions | undefined, fn: () => void): void => {
     const previous = historyState.activeHistoryMetadata;
-    historyState.activeHistoryMetadata = planDocumentActiveHistoryMetadata({ active: previous, next: metadata });
+    historyState.activeHistoryMetadata = metadata === undefined ? previous : { ...previous, ...metadata };
     try {
       fn();
     } finally {
@@ -149,18 +124,16 @@ export function createDocumentHistoryRuntime<T>(
     optionsOrFn: HistoryTransactionOptions | (() => void),
     maybeFn?: () => void,
   ): void => {
-    const call: DocumentTransactionCallPlan = planDocumentTransactionCall({ optionsOrFn, maybeFn });
-    if (call.kind === "skip") return;
+    const fn = typeof optionsOrFn === "function" ? optionsOrFn : maybeFn;
+    if (fn === undefined) return;
+    const metadata = typeof optionsOrFn === "function" ? undefined : optionsOrFn;
     const depthBefore = historyDepth(historyState.stack);
-    const scope = planDocumentTransactionScope({
-      activeTransactionStartDepth: historyState.activeTransactionStartDepth,
-      depthBefore,
-    });
-    historyState.activeTransactionStartDepth = scope.activeTransactionStartDepth;
+    const previousTransactionStartDepth = historyState.activeTransactionStartDepth;
+    historyState.activeTransactionStartDepth = previousTransactionStartDepth ?? depthBefore;
     try {
-      withHistoryMetadata(call.metadata, call.fn);
+      withHistoryMetadata(metadata, fn);
     } finally {
-      historyState.activeTransactionStartDepth = scope.restoreTransactionStartDepth;
+      historyState.activeTransactionStartDepth = previousTransactionStartDepth;
     }
     mergeTransactionEntries(depthBefore);
   };
@@ -177,4 +150,14 @@ export function createDocumentHistoryRuntime<T>(
   };
 
   return { history, historyControls };
+}
+
+function mergeHistoryOptions(
+  previous: HistoryTransactionOptions | undefined,
+  next: HistoryTransactionOptions | undefined,
+  options: { mergeKey?: string } | undefined,
+): HistoryTransactionOptions | undefined {
+  if (previous === undefined && next === undefined && options === undefined) return undefined;
+  const merged = { ...previous, ...next, ...options };
+  return Object.keys(merged).length > 0 ? merged : undefined;
 }

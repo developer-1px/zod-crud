@@ -15,32 +15,6 @@ interface PlanDocumentTransactionMergeInput {
   end: number;
 }
 
-interface PlanDocumentTransactionMergeRangeInput {
-  undoStart: number;
-  undoLength: number;
-  depthBefore: number;
-  currentDepth: number;
-}
-
-interface DocumentTransactionMergeRange {
-  start: number;
-  end: number;
-}
-
-interface PlanDocumentTransactionMergeWriteInput {
-  range: DocumentTransactionMergeRange | null;
-  merged: DocumentHistoryEntry | null;
-}
-
-type DocumentTransactionMergeWritePlan =
-  | { kind: "skip" }
-  | {
-      kind: "replaceRange";
-      index: number;
-      length: number;
-      entry: DocumentHistoryEntry;
-    };
-
 interface PlanDocumentTransactionAppendCompactInput {
   previous: DocumentHistoryEntry;
   operations: ReadonlyArray<JSONPatchOperation>;
@@ -152,30 +126,7 @@ export function planDocumentTransactionMerge(
   return merged;
 }
 
-export function planDocumentTransactionMergeRange(
-  input: PlanDocumentTransactionMergeRangeInput,
-): DocumentTransactionMergeRange | null {
-  if (input.currentDepth <= input.depthBefore + 1) return null;
-
-  const start = input.undoStart + input.depthBefore;
-  const end = input.undoLength;
-  if (start < input.undoStart || end - start <= 1) return null;
-  return { start, end };
-}
-
-export function planDocumentTransactionMergeWrite(
-  input: PlanDocumentTransactionMergeWriteInput,
-): DocumentTransactionMergeWritePlan {
-  if (input.range === null || input.merged === null) return { kind: "skip" };
-  return {
-    kind: "replaceRange",
-    index: input.range.start,
-    length: input.range.start + 1,
-    entry: input.merged,
-  };
-}
-
-export function planDocumentTransactionAppendCompact(
+function planDocumentTransactionAppendCompact(
   input: PlanDocumentTransactionAppendCompactInput,
 ): DocumentHistoryEntry | null {
   const { previous, operations } = input;

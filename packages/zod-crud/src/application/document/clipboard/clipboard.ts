@@ -12,32 +12,25 @@ import {
   paste,
   rekeyProducesTrustedPayload,
   resolvePasteArgs,
-  type PasteDiscriminatorMismatch,
-  type PasteError,
   type PasteOptions,
   type PasteTarget,
 } from "../../../domain/paste.js";
 import {
   copy,
-  type ClipboardSource,
   type CopyError,
-  type CopyOk,
 } from "../../../domain/copy.js";
 import { cut, type CutError } from "../../../domain/cut.js";
 import type {
   ClipboardBuffer,
   ClipboardCutResult,
   ClipboardEmpty,
-  ClipboardMutationOk,
   ClipboardPasteResult,
   ClipboardPeekResult,
-  ClipboardReadOptions,
-  ClipboardReadResult,
   ClipboardState,
   ClipboardWriteOptions,
 } from "./types.js";
 
-export const EMPTY_CLIPBOARD: ClipboardEmpty = {
+const EMPTY_CLIPBOARD: ClipboardEmpty = {
   ok: false,
   code: "empty_clipboard",
   reason: "clipboard is empty",
@@ -66,117 +59,9 @@ interface ClipboardWritePayloadInput {
   clonePayload: boolean;
 }
 
-export interface ClipboardWriteBufferInput {
-  state: unknown;
-  stateJsonTrusted: boolean;
-  payload: unknown;
-  options?: ClipboardWriteOptions;
-}
-
-export type ClipboardWriteBufferPlan =
+type ClipboardWriteBufferPlan =
   | { ok: true; buffer: ClipboardBuffer }
   | { ok: false; result: Exclude<JSONResult, { ok: true }> };
-
-export interface ClipboardCutPlanContext<S extends z.ZodType> {
-  schema: S;
-  state: z.output<S>;
-  source: ClipboardSource;
-  stateJsonTrusted?: boolean;
-  clonePayload?: boolean;
-  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-}
-
-export interface ClipboardPastePlanContext<S extends z.ZodType> {
-  schema: S;
-  state: z.output<S>;
-  payload: unknown;
-  target?: PasteTarget;
-  selectionTarget?: Pointer | null;
-  options?: PasteOptions;
-  spreadByDefault?: boolean;
-  trustedPayload?: boolean;
-  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-}
-
-interface ClipboardPastePreviewInput<S extends z.ZodType> {
-  trustedPayload: boolean;
-  options: PasteOptions;
-  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-}
-
-interface ClipboardPastePreviewPlan<S extends z.ZodType> {
-  trustedPayload: boolean;
-  patchValuesTrusted: boolean;
-  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-}
-
-export interface ClipboardCopyPlanContext {
-  state: unknown;
-  source: ClipboardSource;
-  stateJsonTrusted?: boolean;
-  clonePayload?: boolean;
-}
-
-export interface ClipboardPasteApplyResultInput<T> {
-  result: JSONResult;
-  state: T;
-  applied: ReadonlyArray<JSONPatchOperation>;
-}
-
-export interface ClipboardCutApplyResultInput<T> {
-  result: JSONResult;
-  state: T;
-  applied: ReadonlyArray<JSONPatchOperation>;
-  payload: unknown;
-  source: Pointer;
-  sources: ReadonlyArray<Pointer>;
-}
-
-export interface ClipboardSchemaTrustedSourceBufferInput {
-  payload: unknown;
-  source: Pointer;
-  sources: ReadonlyArray<Pointer>;
-}
-
-export type ClipboardSourceOperation = "copy" | "cut";
-
-export interface ClipboardSourcePlanInput {
-  operation: ClipboardSourceOperation;
-  source?: ClipboardSource;
-  selectionSource?: SelectionSource | null;
-}
-
-export type ClipboardCopySourcePlan =
-  | { ok: true; source: ClipboardSource }
-  | { ok: false; result: CopyError };
-
-export type ClipboardCutSourcePlan =
-  | { ok: true; source: ClipboardSource }
-  | { ok: false; result: CutError };
-
-export type ClipboardCutPlanResult<T> =
-  | {
-      ok: true;
-      next: T;
-      patch: JSONPatchOperation[];
-      applied: ReadonlyArray<JSONPatchOperation>;
-      payload: unknown;
-      source: Pointer;
-      sources: ReadonlyArray<Pointer>;
-    }
-  | CutError;
-
-export type ClipboardPastePlanResult<T> =
-  | {
-      ok: true;
-      next: T;
-      patch: JSONPatchOperation[];
-      applied: ReadonlyArray<JSONPatchOperation>;
-    }
-  | PasteError
-  | PasteDiscriminatorMismatch;
 
 interface InternalClipboardState<T> extends ClipboardState<T> {
   [INTERNAL_CLIPBOARD_PEEK](): ClipboardPeekResult;
@@ -200,53 +85,27 @@ interface CreateClipboardOptions<S extends z.ZodType> {
   onChange?: () => void;
 }
 
-export function planClipboardReadBuffer(
-  buffer: ClipboardBuffer | null,
-  options: ClipboardReadOptions = {},
-): ClipboardReadResult {
-  if (!buffer) return EMPTY_CLIPBOARD;
-  return {
-    ok: true,
-    payload: options.clonePayload === false
-      ? buffer.payload
-      : cloneTrustedPlainJson(buffer.payload),
-    source: buffer.source,
-    sources: buffer.sources ? [...buffer.sources] : null,
-  };
-}
-
-export function planClipboardPeekBuffer(
-  buffer: ClipboardBuffer | null,
-): ClipboardPeekResult {
-  if (!buffer) return EMPTY_CLIPBOARD;
-  return {
-    ok: true,
-    payload: buffer.payload,
-    source: buffer.source,
-    sources: buffer.sources ? [...buffer.sources] : null,
-    schemaTrusted: buffer.schemaTrusted,
-  };
-}
-
-export function planClipboardWriteBuffer(
-  input: ClipboardWriteBufferInput,
+function writeClipboardBuffer(
+  state: unknown,
+  stateJsonTrusted: boolean,
+  payload: unknown,
+  options: ClipboardWriteOptions,
 ): ClipboardWriteBufferPlan {
-  const options = input.options ?? {};
-  const writtenSources = planClipboardWriteSources(options);
+  const writtenSources = clipboardWriteSources(options);
   if (!writtenSources.ok) return writtenSources;
 
   const sources = writtenSources.sources;
   const schemaTrustedPayload = options.trustedPayload === true && sources === null
     ? false
     : isClipboardSchemaTrustedPayload({
-        state: input.state,
-        stateJsonTrusted: input.stateJsonTrusted,
-        payload: input.payload,
+        state,
+        stateJsonTrusted,
+        payload,
         sources,
       });
   const trustedPayload = options.trustedPayload === true || schemaTrustedPayload;
-  const cloned = planClipboardWritePayload({
-    payload: input.payload,
+  const cloned = clipboardWritePayload({
+    payload,
     trustedPayload,
     clonePayload: options.clonePayload !== false,
   });
@@ -268,121 +127,16 @@ export function planClipboardWriteBuffer(
   };
 }
 
-export function planClipboardCopy(
-  context: ClipboardCopyPlanContext,
-): CopyOk | CopyError {
-  const copyOptions: { trusted: boolean; clonePayload?: boolean } = {
-    trusted: context.stateJsonTrusted === true,
-  };
-  if (context.clonePayload !== undefined) copyOptions.clonePayload = context.clonePayload;
-  return copy(context.state, context.source, copyOptions);
-}
-
-export function planClipboardCut<S extends z.ZodType>(
-  context: ClipboardCutPlanContext<S>,
-): ClipboardCutPlanResult<z.output<S>> {
-  const cutOptions: {
-    trusted: boolean;
-    clonePayload?: boolean;
-    previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
-  } = {
-    trusted: context.stateJsonTrusted === true,
-  };
-  if (context.clonePayload !== undefined) cutOptions.clonePayload = context.clonePayload;
-  if (context.previewPatch !== undefined) cutOptions.previewPatch = context.previewPatch;
-  return cut(context.schema, context.state, context.source, cutOptions);
-}
-
-export function planClipboardPaste<S extends z.ZodType>(
-  context: ClipboardPastePlanContext<S>,
-): ClipboardPastePlanResult<z.output<S>> {
-  const args = resolvePasteArgs(context.target, context.options);
-  const target = args.target ?? context.selectionTarget ?? null;
-  if (target === null) {
-    return {
-      ok: false,
-      code: "empty_selection",
-      reason: "paste target selection is empty",
-    };
-  }
-  const spread = args.options.spread ?? context.spreadByDefault ?? false;
-  const preview = planClipboardPastePreview({
-    trustedPayload: context.trustedPayload === true,
-    options: args.options,
-    ...(context.previewPatch !== undefined ? { previewPatch: context.previewPatch } : {}),
-    ...(context.previewTrustedValuesPatch !== undefined ? { previewTrustedValuesPatch: context.previewTrustedValuesPatch } : {}),
-  });
-  return paste(context.schema, context.state, context.payload, target, args.mode, {
-    ...args.options,
-    spread,
-    previewPatch: preview.previewPatch,
-    trustedPayload: preview.trustedPayload,
-  });
-}
-
-export function planClipboardPasteApplyResult<T>(
-  input: ClipboardPasteApplyResultInput<T>,
-): ClipboardMutationOk<T> | PasteError {
-  if (input.result.ok) {
-    return {
-      ok: true,
-      value: input.state,
-      applied: input.applied,
-    };
-  }
-  return {
-    ok: false,
-    code: input.result.code,
-    reason: input.result.reason ?? input.result.code,
-  };
-}
-
-export function planClipboardCutApplyResult<T>(
-  input: ClipboardCutApplyResultInput<T>,
-): ClipboardCutResult<T> {
-  if (!input.result.ok) {
-    return {
-      ok: false,
-      code: input.result.code,
-      reason: input.result.reason ?? input.result.code,
-      violations: [],
-    };
-  }
-  return {
-    ok: true,
-    value: input.state,
-    applied: input.applied,
-    payload: input.payload,
-    source: input.source,
-    sources: input.sources,
-  };
-}
-
-export function planClipboardSchemaTrustedSourceBuffer(
-  input: ClipboardSchemaTrustedSourceBufferInput,
+function trustedSourceBuffer(
+  payload: unknown,
+  source: Pointer,
+  sources: ReadonlyArray<Pointer>,
 ): ClipboardBuffer {
   return {
-    payload: input.payload,
-    source: input.source,
-    sources: [...input.sources],
+    payload,
+    source,
+    sources: [...sources],
     schemaTrusted: true,
-  };
-}
-
-export function planClipboardSource(
-  input: ClipboardSourcePlanInput & { operation: "copy" },
-): ClipboardCopySourcePlan;
-export function planClipboardSource(
-  input: ClipboardSourcePlanInput & { operation: "cut" },
-): ClipboardCutSourcePlan;
-export function planClipboardSource(
-  input: ClipboardSourcePlanInput,
-): ClipboardCopySourcePlan | ClipboardCutSourcePlan {
-  const source = input.source ?? input.selectionSource ?? null;
-  if (source !== null) return { ok: true, source };
-  return {
-    ok: false,
-    result: input.operation === "copy" ? emptyCopySource() : emptyCutSource(),
   };
 }
 
@@ -415,20 +169,30 @@ export function createClipboard<S extends z.ZodType>(
     get sources() { return buffer?.sources ? [...buffer.sources] : null; },
 
     read(options = {}) {
-      return planClipboardReadBuffer(buffer, options);
+      if (!buffer) return EMPTY_CLIPBOARD;
+      return {
+        ok: true,
+        payload: options.clonePayload === false
+          ? buffer.payload
+          : cloneTrustedPlainJson(buffer.payload),
+        source: buffer.source,
+        sources: buffer.sources ? [...buffer.sources] : null,
+      };
     },
 
     [INTERNAL_CLIPBOARD_PEEK]() {
-      return planClipboardPeekBuffer(buffer);
+      if (!buffer) return EMPTY_CLIPBOARD;
+      return {
+        ok: true,
+        payload: buffer.payload,
+        source: buffer.source,
+        sources: buffer.sources ? [...buffer.sources] : null,
+        schemaTrusted: buffer.schemaTrusted,
+      };
     },
 
     write(payload, options = {}) {
-      const plan = planClipboardWriteBuffer({
-        state: getState(),
-        stateJsonTrusted: getStateJsonTrusted?.() === true,
-        payload,
-        options,
-      });
+      const plan = writeClipboardBuffer(getState(), getStateJsonTrusted?.() === true, payload, options);
       if (!plan.ok) return plan.result;
       setBuffer(plan.buffer);
       return { ok: true };
@@ -439,53 +203,53 @@ export function createClipboard<S extends z.ZodType>(
     },
 
     copy(source, options = {}) {
-      const sourcePlan = planClipboardSource({
-        operation: "copy",
-        ...(source !== undefined ? { source } : {}),
-        selectionSource: getSelectionSource?.() ?? null,
-      });
-      if (!sourcePlan.ok) return sourcePlan.result;
-      const result = planClipboardCopy({
-        state: getState(),
-        source: sourcePlan.source,
-        stateJsonTrusted: getStateJsonTrusted?.() === true,
-        ...(options.clonePayload !== undefined ? { clonePayload: options.clonePayload } : {}),
-      });
+      const resolvedSource = source ?? getSelectionSource?.() ?? null;
+      if (resolvedSource === null) return emptyCopySource();
+      const copyOptions: { trusted: boolean; clonePayload?: boolean } = {
+        trusted: getStateJsonTrusted?.() === true,
+      };
+      if (options.clonePayload !== undefined) copyOptions.clonePayload = options.clonePayload;
+      const result = copy(getState(), resolvedSource, copyOptions);
       if (result.ok) {
-        setBuffer(planClipboardSchemaTrustedSourceBuffer(result));
+        setBuffer(trustedSourceBuffer(result.payload, result.source, result.sources));
       }
       return result;
     },
 
     cut(source, options = {}) {
-      const sourcePlan = planClipboardSource({
-        operation: "cut",
-        ...(source !== undefined ? { source } : {}),
-        selectionSource: getSelectionSource?.() ?? null,
-      });
-      if (!sourcePlan.ok) return sourcePlan.result;
-      const result = planClipboardCut({
-        schema,
-        state: getState(),
-        source: sourcePlan.source,
-        stateJsonTrusted: getStateJsonTrusted?.() === true,
-        ...(options.clonePayload !== undefined ? { clonePayload: options.clonePayload } : {}),
-        ...(previewPatch !== undefined ? { previewPatch } : {}),
-      });
+      const resolvedSource = source ?? getSelectionSource?.() ?? null;
+      if (resolvedSource === null) return emptyCutSource();
+      const cutOptions: {
+        trusted: boolean;
+        clonePayload?: boolean;
+        previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+      } = {
+        trusted: getStateJsonTrusted?.() === true,
+      };
+      if (options.clonePayload !== undefined) cutOptions.clonePayload = options.clonePayload;
+      if (previewPatch !== undefined) cutOptions.previewPatch = previewPatch;
+      const result = cut(schema, getState(), resolvedSource, cutOptions);
       if (!result.ok) return result;
       const patchResult = applyPreviewedPatch
         ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
         : ops.patch(result.patch);
-      const applyResult = planClipboardCutApplyResult({
-        result: patchResult,
-        state: getState(),
-        applied: getAppliedPatch?.() ?? result.patch,
-        payload: result.payload,
-        source: result.source,
-        sources: result.sources,
-      });
+      const applyResult: ClipboardCutResult<z.output<S>> = patchResult.ok
+        ? {
+            ok: true,
+            value: getState(),
+            applied: getAppliedPatch?.() ?? result.patch,
+            payload: result.payload,
+            source: result.source,
+            sources: result.sources,
+          }
+        : {
+            ok: false,
+            code: patchResult.code,
+            reason: patchResult.reason ?? patchResult.code,
+            violations: [],
+          };
       if (applyResult.ok) {
-        setBuffer(planClipboardSchemaTrustedSourceBuffer(applyResult));
+        setBuffer(trustedSourceBuffer(applyResult.payload, applyResult.source, applyResult.sources));
       }
       return applyResult;
     },
@@ -507,31 +271,48 @@ export function createClipboard<S extends z.ZodType>(
     spreadByDefault: boolean,
     trustedPayload: boolean,
   ): ClipboardPasteResult<z.output<S>> {
-    const result = planClipboardPaste({
-      schema,
-      state: getState(),
-      payload,
-      selectionTarget: getSelectionTarget?.() ?? null,
-      spreadByDefault,
-      trustedPayload,
-      ...(targetOrSelectionTarget !== undefined ? { target: targetOrSelectionTarget } : {}),
-      ...(options !== undefined ? { options } : {}),
-      ...(previewPatch !== undefined ? { previewPatch } : {}),
-      ...(previewTrustedValuesPatch !== undefined ? { previewTrustedValuesPatch } : {}),
-    });
+    const args = resolvePasteArgs(targetOrSelectionTarget, options);
+    const target = args.target ?? getSelectionTarget?.() ?? null;
+    if (target === null) {
+      return {
+        ok: false,
+        code: "empty_selection",
+        reason: "paste target selection is empty",
+      };
+    }
+    const nextTrustedPayload = trustedPayload || args.options.trustedPayload === true;
+    const patchValuesTrusted = nextTrustedPayload || rekeyProducesTrustedPayload(args.options);
+    const executionOptions: PasteOptions & {
+      previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+    } = {
+      ...args.options,
+      spread: args.options.spread ?? spreadByDefault,
+      trustedPayload: nextTrustedPayload,
+    };
+    const pastePreview = patchValuesTrusted && previewTrustedValuesPatch
+      ? previewTrustedValuesPatch
+      : previewPatch;
+    if (pastePreview !== undefined) executionOptions.previewPatch = pastePreview;
+    const result = paste(schema, getState(), payload, target, args.mode, executionOptions);
     if (!result.ok) return result;
     const patchResult = applyPreviewedPatch
       ? applyPreviewedPatch(result.next as z.output<S>, result.patch, result.applied)
       : ops.patch(result.patch);
-    return planClipboardPasteApplyResult({
-      result: patchResult,
-      state: getState(),
-      applied: getAppliedPatch?.() ?? result.patch,
-    });
+    return patchResult.ok
+      ? {
+          ok: true,
+          value: getState(),
+          applied: getAppliedPatch?.() ?? result.patch,
+        }
+      : {
+          ok: false,
+          code: patchResult.code,
+          reason: patchResult.reason ?? patchResult.code,
+        };
   }
 }
 
-function planClipboardWriteSources(
+function clipboardWriteSources(
   options: ClipboardWriteOptions,
 ): ClipboardWriteSourcesResult {
   const candidates: Pointer[] = [];
@@ -581,7 +362,7 @@ function isClipboardSchemaTrustedPayload(
   return false;
 }
 
-function planClipboardWritePayload(
+function clipboardWritePayload(
   input: ClipboardWritePayloadInput,
 ): ClipboardWritePayloadPlan {
   if (input.clonePayload) {
@@ -595,22 +376,6 @@ function planClipboardWritePayload(
   return reason === null
     ? { ok: true, value: input.payload }
     : { ok: false, reason };
-}
-
-function planClipboardPastePreview<S extends z.ZodType>(
-  input: ClipboardPastePreviewInput<S>,
-): ClipboardPastePreviewPlan<S> {
-  const trustedPayload = input.trustedPayload || input.options.trustedPayload === true;
-  const patchValuesTrusted = trustedPayload || rekeyProducesTrustedPayload(input.options);
-  const previewPatch = patchValuesTrusted && input.previewTrustedValuesPatch
-    ? input.previewTrustedValuesPatch
-    : input.previewPatch;
-  const plan: ClipboardPastePreviewPlan<S> = {
-    trustedPayload,
-    patchValuesTrusted,
-  };
-  if (previewPatch !== undefined) plan.previewPatch = previewPatch;
-  return plan;
 }
 
 function splitPasteOptions(options?: JSONDocumentPasteOptions):

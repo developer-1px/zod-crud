@@ -2,62 +2,6 @@ import type { SelectionSnap } from "../../../domain/selection/types.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "../runtime/types.js";
 import type { DocumentHistoryEntry } from "./types.js";
 
-interface PlanDocumentHistoryMergeMetadataInput {
-  previous: HistoryTransactionOptions | undefined;
-  next: HistoryTransactionOptions | undefined;
-  options?: { mergeKey?: string };
-}
-
-interface PlanDocumentHistoryMergeLastInput {
-  isRestoring: boolean;
-  historyDepth: number;
-  previous: DocumentHistoryEntry | undefined;
-  top: DocumentHistoryEntry | undefined;
-  options?: { mergeKey?: string };
-}
-
-interface PlanDocumentHistoryMergeLastWriteInput {
-  undoLength: number;
-  merged: DocumentHistoryEntry | null;
-}
-
-type DocumentHistoryMergeLastWritePlan =
-  | { kind: "skip" }
-  | {
-      kind: "replaceLastPair";
-      index: number;
-      length: number;
-      entry: DocumentHistoryEntry;
-    };
-
-interface PlanDocumentActiveHistoryMetadataInput {
-  active: HistoryTransactionOptions | undefined;
-  next: HistoryTransactionOptions | undefined;
-}
-
-interface PlanDocumentTransactionScopeInput {
-  activeTransactionStartDepth: number | undefined;
-  depthBefore: number;
-}
-
-interface DocumentTransactionScopePlan {
-  activeTransactionStartDepth: number;
-  restoreTransactionStartDepth: number | undefined;
-}
-
-interface PlanDocumentTransactionCallInput {
-  optionsOrFn: HistoryTransactionOptions | (() => void);
-  maybeFn: (() => void) | undefined;
-}
-
-export type DocumentTransactionCallPlan =
-  | { kind: "skip" }
-  | {
-      kind: "run";
-      metadata: HistoryTransactionOptions | undefined;
-      fn: () => void;
-    };
-
 export function buildChangeMetadata(
   active: HistoryTransactionOptions | undefined,
   direct: JSONChangeMetadata | undefined,
@@ -93,75 +37,6 @@ export function compactHistoryMetadata(
   if (origin !== undefined) compact.origin = origin;
   if (mergeKey !== undefined) compact.mergeKey = mergeKey;
   return compact;
-}
-
-export function planDocumentHistoryMergeMetadata(
-  input: PlanDocumentHistoryMergeMetadataInput,
-): HistoryTransactionOptions | undefined {
-  if (input.previous === undefined && input.next === undefined && input.options === undefined) {
-    return undefined;
-  }
-  const merged = { ...input.previous, ...input.next, ...input.options };
-  return Object.keys(merged).length > 0 ? merged : undefined;
-}
-
-export function planDocumentHistoryMergeLast(
-  input: PlanDocumentHistoryMergeLastInput,
-): DocumentHistoryEntry | null {
-  if (input.isRestoring || input.historyDepth < 2) return null;
-  if (input.previous === undefined || input.top === undefined) return null;
-  const metadata = planDocumentHistoryMergeMetadata({
-    previous: input.previous.metadata,
-    next: input.top.metadata,
-    ...(input.options !== undefined ? { options: input.options } : {}),
-  });
-  return planMergedDocumentHistoryEntry(input.previous, input.top, metadata);
-}
-
-export function planDocumentHistoryMergeLastWrite(
-  input: PlanDocumentHistoryMergeLastWriteInput,
-): DocumentHistoryMergeLastWritePlan {
-  if (input.merged === null || input.undoLength < 2) return { kind: "skip" };
-  return {
-    kind: "replaceLastPair",
-    index: input.undoLength - 2,
-    length: input.undoLength - 1,
-    entry: input.merged,
-  };
-}
-
-export function planDocumentActiveHistoryMetadata(
-  input: PlanDocumentActiveHistoryMetadataInput,
-): HistoryTransactionOptions | undefined {
-  if (input.next === undefined) return input.active;
-  return { ...input.active, ...input.next };
-}
-
-export function planDocumentTransactionScope(
-  input: PlanDocumentTransactionScopeInput,
-): DocumentTransactionScopePlan {
-  return {
-    activeTransactionStartDepth: input.activeTransactionStartDepth ?? input.depthBefore,
-    restoreTransactionStartDepth: input.activeTransactionStartDepth,
-  };
-}
-
-export function planDocumentTransactionCall(
-  input: PlanDocumentTransactionCallInput,
-): DocumentTransactionCallPlan {
-  if (typeof input.optionsOrFn === "function") {
-    return {
-      kind: "run",
-      metadata: undefined,
-      fn: input.optionsOrFn,
-    };
-  }
-  if (input.maybeFn === undefined) return { kind: "skip" };
-  return {
-    kind: "run",
-    metadata: input.optionsOrFn,
-    fn: input.maybeFn,
-  };
 }
 
 export function mergeGeneralTransactionMetadata(

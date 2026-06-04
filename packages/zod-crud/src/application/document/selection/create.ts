@@ -3,6 +3,7 @@
 
 import type { JSONStateOps, SelectionOptions } from "../runtime/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
+import { jsonEqual } from "../../../foundation/json/equal.js";
 import {
   anchorPointer,
   caretPoint,
@@ -57,6 +58,8 @@ import type {
   SelectionSpanOptions,
   SelectionType,
 } from "../../../domain/selection/types.js";
+import { EMPTY_SELECTION } from "../../../domain/selection/types.js";
+import { applySelectionAutoRules } from "../../../domain/selection/autoRules.js";
 import {
   replaceSelectionText,
   selectionTextEdits,
@@ -69,15 +72,6 @@ import {
   type DeleteSelectionTextResult,
   type SelectionTextDeleteOptions,
 } from "../../../domain/selection/textDelete.js";
-import {
-  planInitialSelection,
-  planSelectionPatchUpdate,
-  planSelectionStateUpdate,
-  selectionAddRangeAction,
-  selectionRemoveRangeAction,
-  selectionSelectRangesAction,
-  selectionToggleRangeAction,
-} from "./action.js";
 
 interface CreateSelectionOptions extends SelectionOptions {
   onChange?: () => void;
@@ -140,22 +134,72 @@ export interface SelectionState extends SelectionSnap {
   subscribe(listener: SelectionChangeListener): () => void;
 }
 
-interface HeadlessSelectionState extends SelectionState {
-  dispose(): void;
+function initialSelection(
+  options: SelectionOptions,
+  mode: SelectionMode,
+  state: unknown,
+): SelectionSnap {
+  const init = options.initial;
+  let snap: SelectionSnap;
+  if (!init?.length) {
+    snap = EMPTY_SELECTION;
+  } else if (init.some(isSelectionRange)) {
+    snap = reduceSelection(EMPTY_SELECTION, { type: "selectRanges", ranges: init }, mode, state);
+  } else {
+    snap = reduceSelection(
+      EMPTY_SELECTION,
+      { type: "setBaseAndExtent", anchor: init[0] as SelectionPoint, focus: init[init.length - 1] as SelectionPoint },
+      mode,
+      state,
+    );
+  }
+  return options.context === undefined
+    ? snap
+    : reduceSelection(snap, { type: "setContext", context: options.context }, mode, state);
+}
+
+function sameSelectionSnapshot(left: SelectionSnap, right: SelectionSnap): boolean {
+  return left.primaryIndex === right.primaryIndex
+    && samePointOrNull(left.anchor, right.anchor)
+    && samePointOrNull(left.focus, right.focus)
+    && jsonEqual(left.context, right.context)
+    && left.selectedPointers.length === right.selectedPointers.length
+    && left.selectedPointers.every((pointer, index) => pointer === right.selectedPointers[index])
+    && left.selectionRanges.length === right.selectionRanges.length
+    && left.selectionRanges.every((range, index) => sameRange(range, right.selectionRanges[index]!));
+}
+
+function sameRange(left: SelectionRange, right: SelectionRange): boolean {
+  return samePoint(left.anchor, right.anchor) && samePoint(left.focus, right.focus);
+}
+
+function samePointOrNull(left: SelectionPoint | null, right: SelectionPoint | null): boolean {
+  if (left === null || right === null) return left === right;
+  return samePoint(left, right);
+}
+
+function samePoint(left: SelectionPoint, right: SelectionPoint): boolean {
+  if (typeof left === "string" || typeof right === "string") return left === right;
+  return left.path === right.path
+    && left.offset === right.offset
+    && left.edge === right.edge
+    && left.affinity === right.affinity;
+}
+
+function isSelectionRange(input: SelectionRangeInput): input is SelectionRange {
+  return typeof input === "object" && "anchor" in input && "focus" in input;
 }
 
 export function createSelection<T>(
   ops: JSONStateOps<T>,
   options: CreateSelectionOptions = {},
-): HeadlessSelectionState {
+): SelectionState {
   const mode: SelectionMode = options.mode ?? "single";
   const applyMetadataSelectionAfter =
     (options as InternalCreateSelectionOptions).applyMetadataSelectionAfter === true;
-  let snap = planInitialSelection(options, mode, ops.state);
-  let disposed = false;
+  let snap = initialSelection(options, mode, ops.state);
   const listeners = new Set<SelectionChangeListener>();
   const emit = (previous: SelectionSnap): void => {
-    if (disposed) return;
     options.onChange?.();
     for (const listener of listeners) {
       listener(selectionSnapshot(snap), selectionSnapshot(previous));
@@ -163,22 +207,22 @@ export function createSelection<T>(
   };
   const hasObservers = (): boolean => options.onChange !== undefined || listeners.size > 0;
   const setSnap = (next: SelectionSnap): void => {
-    const plan = planSelectionStateUpdate(snap, next, hasObservers());
-    snap = plan.snap;
-    if (plan.emit) emit(plan.previous);
+    if (!hasObservers()) {
+      snap = next;
+      return;
+    }
+    const previous = selectionSnapshot(snap);
+    if (sameSelectionSnapshot(previous, next)) return;
+    snap = next;
+    emit(previous);
   };
   const dispatch = (action: SelectionAction): void => {
     setSnap(reduceSelection(snap, action, mode, ops.state));
   };
-  const unsubscribe = ops.subscribe((applied, metadata) => {
-    setSnap(planSelectionPatchUpdate({
-      current: snap,
-      applied,
-      state: ops.state,
-      mode,
-      applyMetadataSelectionAfter,
-      metadata,
-    }));
+  ops.subscribe((applied, metadata) => {
+    setSnap(applyMetadataSelectionAfter && metadata?.selectionAfter
+      ? restoreSelection(metadata.selectionAfter, mode, ops.state)
+      : applySelectionAutoRules(snap, applied, ops.state, mode));
   });
 
   return {
@@ -204,13 +248,21 @@ export function createSelection<T>(
     setBaseAndExtent(anchor, focus) { dispatch({ type: "setBaseAndExtent", anchor, focus }); },
     extend(point) { dispatch({ type: "extend", point }); },
     addRange(pointOrRange) {
-      dispatch(selectionAddRangeAction(pointOrRange));
+      dispatch(isSelectionRange(pointOrRange)
+        ? { type: "addRange", range: pointOrRange }
+        : { type: "addRange", point: pointOrRange });
     },
     removeRange(pointOrRangeOrIndex) {
-      dispatch(selectionRemoveRangeAction(pointOrRangeOrIndex));
+      dispatch(typeof pointOrRangeOrIndex === "number"
+        ? { type: "removeRange", index: pointOrRangeOrIndex }
+        : isSelectionRange(pointOrRangeOrIndex)
+          ? { type: "removeRange", range: pointOrRangeOrIndex }
+          : { type: "removeRange", point: pointOrRangeOrIndex });
     },
     toggleRange(pointOrRange) {
-      dispatch(selectionToggleRangeAction(pointOrRange));
+      dispatch(isSelectionRange(pointOrRange)
+        ? { type: "toggleRange", range: pointOrRange }
+        : { type: "toggleRange", point: pointOrRange });
     },
     togglePointer(pointer) { dispatch({ type: "togglePointer", pointer }); },
     moveCursor(direction, cursorOptions) {
@@ -256,7 +308,13 @@ export function createSelection<T>(
       return resolveSelectionScope(ops.state, scopeOptions);
     },
     selectRanges(ranges, anchor, focus, primaryIndex) {
-      dispatch(selectionSelectRangesAction(ranges, anchor, focus, primaryIndex));
+      dispatch({
+        type: "selectRanges",
+        ranges,
+        ...(anchor !== undefined ? { anchor } : {}),
+        ...(focus !== undefined ? { focus } : {}),
+        ...(primaryIndex !== undefined ? { primaryIndex } : {}),
+      });
     },
     setContext(context) { dispatch({ type: "setContext", context }); },
     clearContext() { dispatch({ type: "clearContext" }); },
@@ -266,14 +324,8 @@ export function createSelection<T>(
     toJSON() { return selectionSnapshot(snap); },
     restore(snapshot) { setSnap(restoreSelection(snapshot, mode, ops.state)); },
     subscribe(listener) {
-      if (disposed) return () => undefined;
       listeners.add(listener);
       return () => { listeners.delete(listener); };
-    },
-    dispose() {
-      disposed = true;
-      listeners.clear();
-      unsubscribe();
     },
   };
 }

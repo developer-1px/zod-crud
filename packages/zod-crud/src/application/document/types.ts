@@ -10,7 +10,6 @@ import type {
   ClipboardPasteResult,
   ClipboardState,
 } from "./clipboard/types.js";
-import type { EntriesResult, QueryResult, ReadResult } from "./read.js";
 import type { SchemaState } from "./schema.js";
 import type { SelectionState } from "./selection/create.js";
 import type { JSONCrudError } from "../../foundation/error.js";
@@ -26,6 +25,31 @@ import type {
   JSONPatchInput,
   SelectionOptions,
 } from "./runtime/types.js";
+
+export type ReadResult =
+  | { ok: true; path: Pointer; value: unknown }
+  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
+
+export type QueryResult =
+  | { ok: true; query: string; pointers: Pointer[] }
+  | { ok: false; code: "invalid_query"; reason?: string };
+
+export type EntryKind = "root" | "object" | "array" | "record" | "primitive";
+
+export interface ReadEntry {
+  key: string;
+  path: Pointer;
+  value: unknown;
+}
+
+export type EntriesResult =
+  | {
+      ok: true;
+      path: Pointer;
+      kind: EntryKind;
+      entries: ReadonlyArray<ReadEntry>;
+    }
+  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
 
 export type { JSONDocumentHistory } from "./history/types.js";
 export type {

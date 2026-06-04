@@ -61,7 +61,7 @@ export type {
   QueryResult,
   ReadEntry,
   ReadResult,
-} from "./application/document/read.js";
+} from "./application/document/types.js";
 export type {
   SchemaDescription,
   SchemaDescriptionResult,

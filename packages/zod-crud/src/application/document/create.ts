@@ -1,43 +1,42 @@
 import type * as z from "zod";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/patch/types.js";
-import type { Pointer } from "../../foundation/pointer/index.js";
-import { EMPTY_SELECTION } from "../../domain/selection/types.js";
+import { query as jsonpathQuery } from "../../foundation/jsonpath/index.js";
+import { parse as parseJSONPath } from "../../foundation/jsonpath/parse.js";
+import { JSONPathSyntaxError } from "../../foundation/jsonpath/tokenize.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../foundation/patch/types.js";
+import { appendSegment, parsePointer, readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
+import {
+  EMPTY_SELECTION,
+  type SelectionSource,
+  type SelectionSnap,
+} from "../../domain/selection/types.js";
+import {
+  primaryPointer,
+  selectedSource,
+} from "../../domain/selection/read.js";
 import { emptyMutableHistory } from "../../foundation/history.js";
 import { removeSourcesPatch } from "../../foundation/patch/source.js";
+import { patchPreflight, patchPreflightFromApplyResult } from "../../domain/schema/patch.js";
+import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/validation/schema.js";
+import { schemaAtPointer } from "../../domain/schema/introspection.js";
+import { getDef } from "../../domain/schema/zod.js";
+import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "../../domain/duplicate.js";
+import { copy } from "../../domain/copy.js";
+import { cut } from "../../domain/cut.js";
+import { paste, rekeyProducesTrustedPayload, resolvePasteArgs } from "../../domain/paste.js";
+import { deleteSelectionText, type SelectionTextDeleteOptions } from "../../domain/selection/textDelete.js";
+import { replaceSelectionText, type SelectionTextEditOptions } from "../../domain/selection/textEdit.js";
 import { INTERNAL_CLIPBOARD_PEEK, createClipboard } from "./clipboard/clipboard.js";
 import { createJSONState } from "./state/json.js";
-import { buildReadFacade } from "./read.js";
 import { createSchemaState } from "./schema.js";
 import { createSelection } from "./selection/create.js";
 import {
-  canDocumentCopy,
-  canDocumentCut,
-  canDocumentDelete,
-  canDocumentDeleteText,
-  canDocumentDuplicate,
-  canDocumentExtendCursor,
-  canDocumentFind,
-  canDocumentInsert,
-  canDocumentMove,
-  canDocumentMoveCursor,
-  canDocumentPatch,
-  canDocumentPaste,
-  canDocumentReplace,
-  canDocumentReplaceText,
-  canDocumentSelectScope,
-  planDocumentInsertArgs,
-  planDocumentReplaceArgs,
-} from "./can/check.js";
-import {
   OK,
   type CapabilityResult,
+  type DocumentCapabilitySourceResult,
 } from "./can/result.js";
 import type {
-  BuildDocumentCapabilitiesArgs,
-  DocumentCapabilities,
-  DocumentCapabilityContext,
-} from "./can/types.js";
-import type {
+  EntriesResult,
+  EntryKind,
   JSONDocument,
   JSONDocumentCommitOptions,
   JSONDocumentDuplicateOptions,
@@ -46,13 +45,11 @@ import type {
   JSONDocumentPasteTarget,
   JSONPatchInput,
   JSONDocumentOptions,
+  QueryResult,
+  ReadEntry,
+  ReadResult,
+  SelectionOptions,
 } from "./types.js";
-import { planDocumentCanPaste, planDocumentPatchCall, planDocumentSelectionRuntime } from "./state/commit.js";
-import {
-  planDocumentLifecycleChange,
-  planDocumentSubscriptionChange,
-  planDocumentSubscriptionMetadata,
-} from "./state/change.js";
 import { createDocumentMutationRuntime } from "./state/patch.js";
 import { createDocumentHistoryRuntime } from "./history/undoRedo.js";
 import type {
@@ -68,68 +65,176 @@ type TrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial: tru
 type UntrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial?: false | undefined };
 type JSONDocumentEditError = Extract<CapabilityResult, { ok: false }>;
 type JSONDocumentEditResult = JSONResult | JSONDocumentEditError;
+type DocumentPathValueArgs = { target?: Pointer; value: unknown };
+type CapabilityPasteExecutionOptions = { trustedPayload?: boolean };
+
+interface DocumentCapabilities {
+  find(jsonpath: string): CapabilityResult;
+  insert(pathOrValue: Pointer | unknown, value?: unknown): CapabilityResult;
+  replace(pathOrValue: Pointer | unknown, value?: unknown): CapabilityResult;
+  move(fromOrTo: Pointer, to?: Pointer): CapabilityResult;
+  duplicate(sourceOrOpts?: Pointer | DuplicateOpts, opts?: DuplicateOpts): CapabilityResult;
+  delete(source?: SelectionSource): CapabilityResult;
+  replaceText(replacement: string, options?: SelectionTextEditOptions & JSONDocumentCommitOptions): CapabilityResult;
+  deleteText(options?: SelectionTextDeleteOptions & JSONDocumentCommitOptions): CapabilityResult;
+  cut(source?: SelectionSource): CapabilityResult;
+  copy(source?: SelectionSource): CapabilityResult;
+  paste(
+    payload: unknown,
+    target?: JSONDocumentPasteTarget,
+    options?: JSONDocumentPasteOptions,
+    executionOptions?: CapabilityPasteExecutionOptions,
+  ): CapabilityResult;
+  patch(ops: ReadonlyArray<JSONPatchOperation>): CapabilityResult;
+  readonly undo: CapabilityResult;
+  readonly redo: CapabilityResult;
+}
+
+interface BuildDocumentCapabilitiesArgs<S extends z.ZodType> {
+  schema: S;
+  ops: JSONStateOps<z.output<S>>;
+  history: { canUndo(): boolean; canRedo(): boolean };
+  previewPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  previewTrustedValuesPatch?: (operations: ReadonlyArray<JSONPatchOperation>) => ApplyResult<S>;
+  getStateJsonTrusted?: () => boolean;
+  selectionRef?: { current: SelectionSnap };
+}
+
+function resolvePathValueArgs(
+  pathOrValue: Pointer | unknown,
+  value: unknown,
+  hasValueArg: boolean,
+): DocumentPathValueArgs {
+  return hasValueArg
+    ? { target: pathOrValue as Pointer, value }
+    : { value: pathOrValue };
+}
 
 function buildDocumentCapabilities<S extends z.ZodType>(
   args: BuildDocumentCapabilitiesArgs<S>,
 ): DocumentCapabilities {
   const { schema, ops, previewPatch, previewTrustedValuesPatch, getStateJsonTrusted, history, selectionRef } = args;
-  const context = (): DocumentCapabilityContext<S> => {
-    const current: DocumentCapabilityContext<S> = {
-      schema,
-      state: ops.state,
-      stateJsonTrusted: getStateJsonTrusted?.() === true,
-    };
-    if (selectionRef !== undefined) current.selection = selectionRef.current;
-    if (previewPatch !== undefined) current.previewPatch = previewPatch;
-    if (previewTrustedValuesPatch !== undefined) current.previewTrustedValuesPatch = previewTrustedValuesPatch;
-    return current;
-  };
+  const state = () => ops.state;
+  const selection = () => selectionRef?.current ?? EMPTY_SELECTION;
+  const stateJsonTrusted = () => getStateJsonTrusted?.() === true;
+  const patch = (operations: ReadonlyArray<JSONPatchOperation>) => capabilityResult(
+    previewPatch
+      ? patchPreflightFromApplyResult(previewPatch(operations))
+      : patchPreflight(schema, state(), operations),
+  );
 
   return {
-    selectScope(options) {
-      return canDocumentSelectScope(context(), options);
-    },
-    moveCursor(direction, options) {
-      return canDocumentMoveCursor(context(), direction, options);
-    },
-    extendCursor(direction, options) {
-      return canDocumentExtendCursor(context(), direction, options);
-    },
     find(jsonpath) {
-      return canDocumentFind(jsonpath);
+      try {
+        parseJSONPath(jsonpath);
+        return OK;
+      } catch (error) {
+        if (error instanceof JSONPathSyntaxError) {
+          return { ok: false, code: "syntax_error", reason: error.message };
+        }
+        throw error;
+      }
     },
     insert(pathOrValue, maybeValue) {
-      return canDocumentInsert(context(), pathOrValue, maybeValue, arguments.length >= 2);
+      const input = resolvePathValueArgs(pathOrValue, maybeValue, arguments.length >= 2);
+      const target = input.target ?? primaryPointer(selection()) ?? null;
+      return target === null
+        ? emptySelectionCapability("insert target selection is empty")
+        : patch([{ op: "add", path: target, value: input.value }]);
     },
     move(fromOrTo, maybeTo) {
-      return canDocumentMove(context(), fromOrTo, maybeTo, arguments.length >= 2);
+      const hasSourceArg = arguments.length >= 2;
+      const source = hasSourceArg ? fromOrTo : primaryPointer(selection()) ?? null;
+      return source === null
+        ? emptySelectionCapability("move source selection is empty")
+        : patch([{ op: "move", from: source, path: hasSourceArg ? maybeTo! : fromOrTo }]);
     },
     duplicate(sourceOrOpts, opts) {
-      return canDocumentDuplicate(context(), sourceOrOpts, opts);
+      const input = resolveDuplicateArgs(sourceOrOpts, opts);
+      const source = input.source ?? primaryPointer(selection()) ?? null;
+      return source === null
+        ? emptySelectionCapability("duplicate source selection is empty")
+        : capabilityResult(duplicate(schema, state(), source, input.opts, {
+            previewPatch,
+            trustedPayload: stateJsonTrusted(),
+          }));
     },
     delete(source) {
-      return canDocumentDelete(context(), source);
+      const resolved = source ?? selectedSource(selection()) ?? null;
+      if (resolved === null) return emptySelectionCapability("delete source selection is empty");
+      const planned = removeSourcesPatch(resolved);
+      if (!planned.ok) {
+        return planned.code === "invalid_pointer"
+          ? { ok: false, code: "invalid_pointer", reason: `invalid delete source pointer: ${planned.pointer}`, pointer: planned.pointer }
+          : emptySelectionCapability("delete source selection is empty");
+      }
+      return patch(planned.patch);
     },
     replace(pathOrValue, maybeValue) {
-      return canDocumentReplace(context(), pathOrValue, maybeValue, arguments.length >= 2);
+      const input = resolvePathValueArgs(pathOrValue, maybeValue, arguments.length >= 2);
+      const target = input.target ?? primaryPointer(selection()) ?? null;
+      if (target === null) return emptySelectionCapability("replace target selection is empty");
+      if (target.startsWith("$")) {
+        let pointers: Pointer[];
+        try {
+          pointers = jsonpathQuery(target, state());
+        } catch (error) {
+          if (error instanceof JSONPathSyntaxError) {
+            return { ok: false, code: "syntax_error", reason: error.message };
+          }
+          throw error;
+        }
+        return pointers.length === 0
+          ? { ok: false, code: "empty_match", reason: `no matches for ${target}` }
+          : patch([...pointers]
+              .sort((a, b) => b.length - a.length)
+              .map((path) => ({ op: "replace", path, value: input.value })));
+      }
+      return patch([{ op: "replace", path: target, value: input.value }]);
     },
     replaceText(replacement, textOptions) {
-      return canDocumentReplaceText(context(), replacement, textOptions);
+      const planned = replaceSelectionText(selection(), state(), replacement, textOptions);
+      return planned.ok ? patch(planned.patch) : capabilityResult(planned);
     },
     deleteText(textOptions) {
-      return canDocumentDeleteText(context(), textOptions);
+      const planned = deleteSelectionText(selection(), state(), textOptions);
+      return planned.ok ? patch(planned.patch) : capabilityResult(planned);
     },
     cut(source) {
-      return canDocumentCut(context(), source);
+      const resolved = source ?? selectedSource(selection()) ?? null;
+      return resolved === null
+        ? emptySelectionCapability("cut source selection is empty")
+        : capabilityResult(cut(schema, state(), resolved, {
+            trusted: stateJsonTrusted(),
+            clonePayload: false,
+            previewPatch,
+          }));
     },
     copy(source) {
-      return canDocumentCopy(context(), source);
+      const resolved = source ?? selectedSource(selection()) ?? null;
+      return resolved === null
+        ? emptySelectionCapability("copy source selection is empty")
+        : capabilityResult(copy(state(), resolved, {
+            trusted: stateJsonTrusted(),
+            clonePayload: false,
+          }));
     },
     paste(payload, target, options, executionOptions) {
-      return canDocumentPaste(context(), payload, target, options, executionOptions);
+      const input = resolvePasteArgs(target, options);
+      const resolvedTarget = input.target ?? primaryPointer(selection()) ?? null;
+      const inputTrustedPayload = executionOptions?.trustedPayload === true || input.options.trustedPayload === true;
+      const patchValuesTrusted = inputTrustedPayload || rekeyProducesTrustedPayload(input.options);
+      const pastePreview = patchValuesTrusted && previewTrustedValuesPatch ? previewTrustedValuesPatch : previewPatch;
+      return resolvedTarget === null
+        ? emptySelectionCapability("paste target selection is empty")
+        : capabilityResult(paste(schema, state(), payload, resolvedTarget, input.mode, {
+            ...input.options,
+            previewPatch: pastePreview,
+            trustedPayload: inputTrustedPayload,
+          }));
     },
     patch(operations) {
-      return canDocumentPatch(context(), operations);
+      return patch(operations);
     },
 
     get undo() {
@@ -139,6 +244,98 @@ function buildDocumentCapabilities<S extends z.ZodType>(
       return history.canRedo() ? OK : emptyStack("redo");
     },
   };
+}
+
+function readDocumentPointer(state: unknown, path: Pointer): ReadResult {
+  let segments: string[];
+  try {
+    segments = parsePointer(path);
+  } catch (error) {
+    return {
+      ok: false,
+      code: "invalid_pointer",
+      reason: error instanceof Error ? error.message : "invalid pointer",
+      pointer: path,
+    };
+  }
+
+  const result = readAt(state, segments);
+  return result.ok
+    ? { ok: true, path, value: result.value }
+    : {
+        ok: false,
+        code: "path_not_found",
+        reason: `path not found: ${path}`,
+        pointer: path,
+      };
+}
+
+function queryDocumentPointers(state: unknown, jsonpath: string): QueryResult {
+  try {
+    return { ok: true, query: jsonpath, pointers: jsonpathQuery(jsonpath, state) };
+  } catch (error) {
+    if (error instanceof JSONPathSyntaxError) {
+      return { ok: false, code: "invalid_query", reason: error.message };
+    }
+    throw error;
+  }
+}
+
+function readDocumentEntries(schema: z.ZodType, state: unknown, path: Pointer): EntriesResult {
+  const result = readDocumentPointer(state, path);
+  if (!result.ok) return result;
+  return {
+    ok: true,
+    path,
+    kind: entryKind(schema, path, result.value),
+    entries: readChildEntries(path, result.value),
+  };
+}
+
+function entryKind(schema: z.ZodType, path: Pointer, value: unknown): EntryKind {
+  if (path === "") return "root";
+  if (Array.isArray(value)) return "array";
+  if (isPlainRecord(value)) {
+    const targetSchema = schemaAtPointer(schema, path);
+    return targetSchema && getDef(targetSchema).type === "record" ? "record" : "object";
+  }
+  return "primitive";
+}
+
+function readChildEntries(path: Pointer, value: unknown): ReadonlyArray<ReadEntry> {
+  if (Array.isArray(value)) {
+    return value.map((entryValue, index) => ({
+      key: String(index),
+      path: appendSegment(path, index),
+      value: entryValue,
+    }));
+  }
+  if (isPlainRecord(value)) {
+    return Object.entries(value).map(([key, entryValue]) => ({
+      key,
+      path: appendSegment(path, key),
+      value: entryValue,
+    }));
+  }
+  return [];
+}
+
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function capabilityResult(result: DocumentCapabilitySourceResult): CapabilityResult {
+  if (result.ok) return OK;
+  const out: Extract<CapabilityResult, { ok: false }> = { ok: false, code: result.code };
+  const reason = result.reason ?? result.message;
+  if (reason !== undefined) out.reason = reason;
+  if (result.pointer !== undefined && result.pointer !== null) out.pointer = result.pointer;
+  if (result.violations !== undefined) out.violations = result.violations;
+  return out;
+}
+
+function emptySelectionCapability(reason: string): CapabilityResult {
+  return { ok: false, code: "empty_selection", reason };
 }
 
 function emptyStack(kind: "undo" | "redo"): CapabilityResult {
@@ -174,8 +371,7 @@ export function createJSONDocument<S extends z.ZodType>(
   initial: z.input<S> | z.output<S>,
   options: JSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
-  const json = createJSONState(schema, initial, options);
-  const rawOps: TrustedDocumentStateOps<z.output<S>> = json.ops;
+  const rawOps: TrustedDocumentStateOps<z.output<S>> = createJSONState(schema, initial, options);
   const historyLimit = options.history ?? 0;
   const historyState: DocumentHistoryRuntimeState = {
     stack: emptyMutableHistory(),
@@ -188,8 +384,14 @@ export function createJSONDocument<S extends z.ZodType>(
     documentSubscriberCount: 0,
   };
 
-  const selectionRuntime = planDocumentSelectionRuntime({ selection: options.selection, onChange: options.onChange });
-  const { selectionEnabled, selectionMode, createSelectionOptions } = selectionRuntime;
+  const selectionEnabled = options.selection !== undefined && options.selection !== false;
+  const selectionOptions: SelectionOptions = typeof options.selection === "object" ? options.selection : {};
+  const createSelectionOptions: SelectionOptions & { onChange?: () => void; applyMetadataSelectionAfter: true } = {
+    ...selectionOptions,
+    applyMetadataSelectionAfter: true,
+  };
+  if (options.onChange !== undefined) createSelectionOptions.onChange = options.onChange;
+  const selectionMode = selectionOptions.mode ?? "single";
   const selectionState = selectionEnabled ? createSelection<z.output<S>>(rawOps, createSelectionOptions) : undefined;
   const syncLastPatch = (): void => { patchState.lastPatch = rawOps.lastApplied; };
   const snapSelection = () => selectionState?.snapshot() ?? EMPTY_SELECTION;
@@ -224,39 +426,35 @@ export function createJSONDocument<S extends z.ZodType>(
     patch: mutation.applyDocumentPatch,
     load(value, loadOptions?: { preserveHistory?: boolean }) {
       const r = rawOps.load(value);
-      const plan = planDocumentLifecycleChange({ result: r, preserveHistory: loadOptions?.preserveHistory === true });
-      if (plan.syncLastPatch) syncLastPatch();
-      if (plan.clearHistory) historyState.stack = emptyMutableHistory();
+      if (r.ok) {
+        syncLastPatch();
+        if (loadOptions?.preserveHistory !== true) historyState.stack = emptyMutableHistory();
+      }
       return r;
     },
     reset(value) {
       const r = rawOps.reset(value);
-      const plan = planDocumentLifecycleChange({ result: r, preserveHistory: false });
-      if (plan.syncLastPatch) syncLastPatch();
-      if (plan.clearHistory) historyState.stack = emptyMutableHistory();
+      if (r.ok) {
+        syncLastPatch();
+        historyState.stack = emptyMutableHistory();
+      }
       return r;
     },
     subscribe(listener) {
-      const subscribePlan = planDocumentSubscriptionChange({
-        event: "subscribe",
-        subscriberCount: patchState.documentSubscriberCount,
-        subscribed: false,
-      });
-      patchState.documentSubscriberCount = subscribePlan.subscriberCount;
+      patchState.documentSubscriberCount += 1;
       const unsubscribe = rawOps.subscribe((applied, metadata) => {
         patchState.lastPatch = applied;
-        listener(applied, planDocumentSubscriptionMetadata({ metadata, selectionAfter: snapSelection() }));
-      });
-      let subscribed = subscribePlan.subscribed;
-      return () => {
-        const unsubscribePlan = planDocumentSubscriptionChange({
-          event: "unsubscribe",
-          subscriberCount: patchState.documentSubscriberCount,
-          subscribed,
+        listener(applied, {
+          ...metadata,
+          selectionAfter: metadata?.selectionAfter ?? snapSelection(),
         });
-        patchState.documentSubscriberCount = unsubscribePlan.subscriberCount;
-        subscribed = unsubscribePlan.subscribed;
-        if (unsubscribePlan.shouldCallUnderlyingUnsubscribe) unsubscribe();
+      });
+      let subscribed = true;
+      return () => {
+        if (!subscribed) return;
+        patchState.documentSubscriberCount = Math.max(0, patchState.documentSubscriberCount - 1);
+        subscribed = false;
+        unsubscribe();
       };
     },
     get state() { return rawOps.state; },
@@ -298,14 +496,11 @@ export function createJSONDocument<S extends z.ZodType>(
           reason: `${direction} failed to apply history entry`,
         };
   };
-  const read = buildReadFacade({ schema, getState: () => rawOps.state });
-  const schemaState = createSchemaState({ schema });
+  const readPointer = (path: Pointer): ReadResult => readDocumentPointer(rawOps.state, path);
+  const queryPointers = (jsonpath: string): QueryResult => queryDocumentPointers(rawOps.state, jsonpath);
+  const schemaState = createSchemaState(schema);
   function insert(pathOrValue: Pointer | unknown, maybeValue?: unknown): JSONDocumentEditResult {
-    const args = planDocumentInsertArgs({
-      pathOrValue,
-      value: maybeValue,
-      hasValueArg: arguments.length >= 2,
-    });
+    const args = resolvePathValueArgs(pathOrValue, maybeValue, arguments.length >= 2);
     const target = args.target ?? selectionState?.primaryPointer ?? null;
     if (target === null) {
       return editError("empty_selection", "insert target selection is empty");
@@ -313,11 +508,7 @@ export function createJSONDocument<S extends z.ZodType>(
     return mutation.patch({ op: "add", path: target, value: args.value });
   }
   function replace(pathOrValue: Pointer | unknown, maybeValue?: unknown): JSONDocumentEditResult {
-    const args = planDocumentReplaceArgs({
-      pathOrValue,
-      value: maybeValue,
-      hasValueArg: arguments.length >= 2,
-    });
+    const args = resolvePathValueArgs(pathOrValue, maybeValue, arguments.length >= 2);
     const target = args.target ?? selectionState?.primaryPointer ?? null;
     if (target === null) {
       return editError("empty_selection", "replace target selection is empty");
@@ -325,7 +516,7 @@ export function createJSONDocument<S extends z.ZodType>(
     if (target.startsWith("$")) {
       const capability = capabilities.find(target);
       if (!capability.ok) return capability;
-      const matches = read.query(target);
+      const matches = queryPointers(target);
       if (!matches.ok) return editError("syntax_error", matches.reason ?? `invalid JSONPath query: ${target}`);
       if (matches.pointers.length === 0) return editError("empty_match", `no matches for ${target}`);
       const operations: JSONPatchOperation[] = [...matches.pointers]
@@ -379,7 +570,7 @@ export function createJSONDocument<S extends z.ZodType>(
     schema: schemaState,
     patch: mutation.patch,
     commit: mutation.commit,
-    find: read.query,
+    find: queryPointers,
     insert,
     replace,
     delete: deleteSelection,
@@ -393,11 +584,11 @@ export function createJSONDocument<S extends z.ZodType>(
     load: ops.load,
     reset: ops.reset,
     subscribe: ops.subscribe,
-    at: read.at,
-    exists: read.exists,
-    query: read.query,
-    entries: read.entries,
-    canPatch: (operations) => capabilities.patch(planDocumentPatchCall({ operations }).operations),
+    at: readPointer,
+    exists: (path) => readPointer(path).ok,
+    query: queryPointers,
+    entries: (path) => readDocumentEntries(schema, rawOps.state, path),
+    canPatch: (operations) => capabilities.patch(Array.isArray(operations) ? operations : [operations]),
     canFind: capabilities.find,
     canInsert: capabilities.insert,
     canReplace: capabilities.replace,
@@ -428,15 +619,36 @@ export function createJSONDocument<S extends z.ZodType>(
           { trustedPayload: true },
         );
       }
-      const plan = planDocumentCanPaste({
-        schema,
-        state: rawOps.state,
-        clipboard: clipboard[INTERNAL_CLIPBOARD_PEEK](),
+      const buffered = clipboard[INTERNAL_CLIPBOARD_PEEK]();
+      if (!buffered.ok) {
+        return {
+          ok: false,
+          code: "empty_clipboard",
+          reason: "clipboard is empty",
+        };
+      }
+      const replaceTarget = typeof target === "object" && target !== null && "replace" in target ? target.replace : null;
+      const replaceSegments = replaceTarget === null ? null : tryParsePointer(replaceTarget);
+      if (
+        buffered.schemaTrusted
+        && buffered.source !== null
+        && (buffered.sources?.length ?? 1) === 1
+        && pasteOptions.options?.rekey === undefined
+        && pasteOptions.options?.spread !== true
+        && isPlainStructuralSchemaForLocalValidation(schema)
+        && replaceTarget === buffered.source
+        && replaceSegments !== null
+        && readAt(rawOps.state, replaceSegments).ok
+      ) {
+        return OK;
+      }
+      const spread = pasteOptions.options?.spread ?? ((buffered.sources?.length ?? 0) > 1);
+      return capabilities.paste(
+        buffered.payload,
         target,
-        ...(pasteOptions.options !== undefined ? { options: pasteOptions.options } : {}),
-      });
-      if (plan.kind === "result") return plan.result;
-      return capabilities.paste(plan.payload, plan.target, plan.options, plan.executionOptions);
+        { ...pasteOptions.options, spread },
+        { trustedPayload: true },
+      );
     },
     canUndo: () => capabilities.undo,
     canRedo: () => capabilities.redo,
