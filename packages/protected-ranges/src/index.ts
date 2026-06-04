@@ -18,11 +18,7 @@ export interface ProtectedRange {
   label?: string;
 }
 
-export interface ProtectedRangeSummary {
-  id: string;
-  pointer: Pointer;
-  label?: string;
-}
+export interface ProtectedRangeSummary extends ProtectedRange {}
 
 export type ProtectedRangeErrorCode =
   | "invalid_pointer"
@@ -88,7 +84,7 @@ export function createProtectedRanges<TDocument>(
 
   return {
     list() {
-      return protectedRanges.map(rangeSummary);
+      return protectedRanges.map(copyRange);
     },
     isProtected(pointer) {
       return protectedWrite(protectedRanges, "patch", pointer, "replace") ?? { ok: true };
@@ -378,7 +374,7 @@ function protectedRangeError(
     reason: `${pointer} touches protected range ${range.pointer}`,
     operation,
     pointer,
-    range: rangeSummary(range),
+    range: copyRange(range),
   };
 }
 
@@ -404,13 +400,4 @@ function copyRange(range: ProtectedRange): ProtectedRange {
   };
   if (range.label !== undefined) copy.label = range.label;
   return copy;
-}
-
-function rangeSummary(range: ProtectedRange): ProtectedRangeSummary {
-  const summary: ProtectedRangeSummary = {
-    id: range.id,
-    pointer: range.pointer,
-  };
-  if (range.label !== undefined) summary.label = range.label;
-  return summary;
 }

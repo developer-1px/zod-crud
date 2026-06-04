@@ -233,7 +233,7 @@ export function canProposeChange<TDocument>(
 
   const operations = toPatchArray(input.operations);
   if (operations.length === 0) {
-    return proposedChangeError("empty_patch", "proposed change patch is empty", idOption(input.id));
+    return proposedChangeError("empty_patch", "proposed change patch is empty", input.id === undefined ? {} : { id: input.id });
   }
 
   const capability = doc.canPatch(operations);
@@ -288,7 +288,7 @@ function createChange(
   };
   if (input.label !== undefined) change.label = input.label;
   if (input.description !== undefined) change.description = input.description;
-  if (input.data !== undefined) change.data = copyData(input.data);
+  if (input.data !== undefined) change.data = cloneJson(input.data);
   return change;
 }
 
@@ -407,7 +407,7 @@ function copyChange(change: ProposedChange): ProposedChange {
   };
   if (change.label !== undefined) copy.label = change.label;
   if (change.description !== undefined) copy.description = change.description;
-  if (change.data !== undefined) copy.data = copyData(change.data);
+  if (change.data !== undefined) copy.data = cloneJson(change.data);
   return copy;
 }
 
@@ -422,16 +422,12 @@ function copyGuards(guards: ReadonlyArray<ProposedChangeGuard>): ProposedChangeG
   }));
 }
 
-function copyData(data: Readonly<Record<string, unknown>>): Readonly<Record<string, unknown>> {
-  return cloneJson(data);
-}
-
 function capabilityError(
   id: string | undefined,
   capability: Exclude<JSONCapabilityResult, { ok: true }>,
 ): ProposedChangeError {
   return proposedChangeError("patch_rejected", capability.reason ?? "proposed change patch rejected", {
-    ...idOption(id),
+    ...(id === undefined ? {} : { id }),
     ...(capability.pointer === undefined ? {} : { pointer: capability.pointer }),
     capability: cloneJson(capability) as Exclude<JSONCapabilityResult, { ok: true }>,
   });
@@ -472,10 +468,6 @@ function proposedChangeError(
   if (options.capability !== undefined) error.capability = options.capability;
   if (options.result !== undefined) error.result = options.result;
   return error;
-}
-
-function idOption(id: string | undefined): { id?: string } {
-  return id === undefined ? {} : { id };
 }
 
 function cloneJson<T>(value: T): T {

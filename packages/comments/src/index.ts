@@ -161,7 +161,7 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
       const comment = state.comments.get(id);
       if (comment === undefined) return notFound(id);
 
-      if (hasOwn(patch, "text") && isEmptyText(patch.text)) {
+      if (Object.hasOwn(patch, "text") && isEmptyText(patch.text)) {
         return commentError("empty_text", "comment text must not be empty", { id });
       }
 
@@ -177,11 +177,11 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
       }
       if (patch.text !== undefined) comment.text = patch.text;
       if (patch.status !== undefined) comment.status = patch.status;
-      if (hasOwn(patch, "data")) {
+      if (Object.hasOwn(patch, "data")) {
         if (patch.data === null) {
           delete comment.data;
         } else if (patch.data !== undefined) {
-          comment.data = copyData(patch.data);
+          comment.data = { ...patch.data };
         }
       }
       emitIfChanged(before);
@@ -249,7 +249,7 @@ function createComment(id: string, input: CommentInput): Comment {
     status: input.status ?? "open",
     lost: false,
   };
-  if (input.data !== undefined) comment.data = copyData(input.data);
+  if (input.data !== undefined) comment.data = { ...input.data };
   return comment;
 }
 
@@ -336,12 +336,8 @@ function copyComment(comment: Comment): Comment {
     status: comment.status,
     lost: comment.lost,
   };
-  if (comment.data !== undefined) copy.data = copyData(comment.data);
+  if (comment.data !== undefined) copy.data = { ...comment.data };
   return copy;
-}
-
-function copyData(data: Readonly<Record<string, unknown>>): Record<string, unknown> {
-  return { ...data };
 }
 
 function snapshotSignature(comments: ReadonlyMap<string, Comment>): string {
@@ -385,11 +381,4 @@ function commentError(
   if (options.id !== undefined) error.id = options.id;
   if (options.pointer !== undefined) error.pointer = options.pointer;
   return error;
-}
-
-function hasOwn<T extends object, K extends PropertyKey>(
-  value: T,
-  key: K,
-): value is T & Record<K, unknown> {
-  return Object.prototype.hasOwnProperty.call(value, key);
 }
