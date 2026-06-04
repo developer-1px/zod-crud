@@ -83,11 +83,11 @@ export function createPatchLog<T>(doc: JSONDocument<T>): PatchLog<T> {
   });
 
   return {
-    entries: () => copyEntries(log),
+    entries: () => log.map(copyEntry),
     clear: () => { log.length = 0; },
     pause: () => { paused = true; },
     resume: () => { if (!disposed) paused = false; },
-    replayInto: (targetDoc, options) => replayEntries(targetDoc, copyEntries(log), options),
+    replayInto: (targetDoc, options) => replayEntries(targetDoc, log.map(copyEntry), options),
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -205,10 +205,6 @@ function commitOptionsFromMetadata(
   if (metadata.origin !== undefined) options.origin = metadata.origin;
   if (metadata.mergeKey !== undefined) options.mergeKey = metadata.mergeKey;
   return Object.keys(options).length > 0 ? options : undefined;
-}
-
-function copyEntries(entries: ReadonlyArray<PatchLogEntry>): ReadonlyArray<PatchLogEntry> {
-  return entries.map(copyEntry);
 }
 
 function copyEntry(entry: PatchLogEntry): PatchLogEntry {
