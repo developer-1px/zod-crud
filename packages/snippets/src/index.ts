@@ -71,7 +71,7 @@ export function createSnippets<TDocument>(
   const byId = new Map(snippets.map((snippet) => [snippet.id, copySnippet(snippet)]));
 
   return {
-    list: () => [...byId.values()].map(snippetSummary),
+    list: () => [...byId.values()].map(({ id, label }) => label === undefined ? { id } : { id, label }),
     get: (id) => {
       const snippet = byId.get(id);
       return snippet === undefined ? null : copySnippet(snippet);
@@ -133,12 +133,6 @@ function pasteOptions(
     ...copyOptions(options),
     payload: copyPayload(snippet.payload),
   };
-}
-
-function snippetSummary(snippet: Snippet): SnippetSummary {
-  return snippet.label === undefined
-    ? { id: snippet.id }
-    : { id: snippet.id, label: snippet.label };
 }
 
 function copySnippet(snippet: Snippet): Snippet {

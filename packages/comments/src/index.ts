@@ -234,15 +234,14 @@ function canAdd<T>(
 }
 
 function createComment(id: string, input: CommentInput): Comment {
-  const comment: Comment = {
+  return {
     id,
     pointer: input.pointer,
     text: input.text,
     status: input.status ?? "open",
     lost: false,
+    ...(input.data === undefined ? {} : { data: { ...input.data } }),
   };
-  if (input.data !== undefined) comment.data = { ...input.data };
-  return comment;
 }
 
 function setStatus(
@@ -321,15 +320,14 @@ function copySnapshot(value: CommentSnapshot): CommentSnapshot {
 }
 
 function copyComment(comment: Comment): Comment {
-  const copy: Comment = {
+  return {
     id: comment.id,
     pointer: comment.pointer,
     text: comment.text,
     status: comment.status,
     lost: comment.lost,
+    ...(comment.data === undefined ? {} : { data: { ...comment.data } }),
   };
-  if (comment.data !== undefined) copy.data = { ...comment.data };
-  return copy;
 }
 
 function snapshotSignature(comments: ReadonlyMap<string, Comment>): string {
