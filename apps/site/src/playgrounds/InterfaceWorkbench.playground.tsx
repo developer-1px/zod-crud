@@ -602,7 +602,6 @@ export function InterfaceWorkbench() {
     [doc.value],
   );
   const clipboardSnapshot = doc.clipboard.read();
-  const hasClipboard = doc.clipboard.hasData;
   const payloadValue = useMemo(() => {
     const parsed = parseJson(payload);
     if (!parsed.ok) return { __invalid_json: parsed.message };

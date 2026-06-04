@@ -164,12 +164,9 @@ function moveNode(doc: JSONDocument<OutlineDocument>, from: Pointer, path: Point
   const can = doc.canPatch([operation]);
   if (!can.ok) return null;
   doc.commit([operation], { label, origin: "toolbar" });
-  selectNode(doc, trackMovedPointer(from, path));
-  return trackMovedPointer(from, path);
-}
-
-function trackMovedPointer(from: Pointer, path: Pointer): Pointer {
-  return path.endsWith("/-") ? path.replace(/\/-$/, "") as Pointer : path;
+  const moved = path.endsWith("/-") ? path.replace(/\/-$/, "") as Pointer : path;
+  selectNode(doc, moved);
+  return moved;
 }
 
 export function findRow(value: OutlineDocument, pointer: Pointer): OutlineRow | undefined {
