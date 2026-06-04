@@ -66,7 +66,8 @@ export function canFillDown<TDocument>(
   if (field !== "" && !field.startsWith("/")) {
     return error("invalid_field", `field must be empty or start with '/': ${field}`, field);
   }
-  const isEmpty = options?.isEmpty ?? defaultIsEmpty;
+  const isEmpty =
+    options?.isEmpty ?? ((value: unknown) => value === null || value === undefined || value === "");
   const up = options?.direction === "up";
 
   const read = doc.at(path);
@@ -123,10 +124,6 @@ export function fillDown<TDocument>(
   const patched = doc.patch(change.operations);
   if (!patched.ok) return patchError(path, patched);
   return change;
-}
-
-function defaultIsEmpty(value: unknown): boolean {
-  return value === null || value === undefined || value === "";
 }
 
 function range(start: number, end: number, step: number): number[] {

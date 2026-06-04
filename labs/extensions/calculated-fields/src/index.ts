@@ -123,7 +123,7 @@ export function planCalculatedFields<TDocument>(
     const accepted = doc.schema.accepts(read.path, computed);
     if (!accepted.ok) return capabilityError("value_rejected", key, read.path, accepted);
 
-    const changed = !jsonEqual(read.value, computed);
+    const changed = JSON.stringify(read.value) !== JSON.stringify(computed);
     const operation: JSONPatchOperation | null = changed
       ? { op: "replace", path: read.path, value: cloneJson(computed) }
       : null;
@@ -200,10 +200,6 @@ function copyChange(change: CalculatedFieldChange): CalculatedFieldChange {
     changed: change.changed,
     operation: change.operation === null ? null : cloneJson(change.operation),
   };
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

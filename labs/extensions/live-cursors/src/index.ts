@@ -117,7 +117,7 @@ export function createLiveCursors<T>(
     },
     update(peerId, patch) {
       const cursor = cursors.get(peerId);
-      if (cursor === undefined) return notFound(peerId);
+      if (cursor === undefined) return { ok: false, code: "not_found", peerId };
 
       if (patch.selection !== undefined) {
         const capability = validateSelection(doc, patch.selection, peerId);
@@ -339,10 +339,6 @@ function copyData(data: Readonly<Record<string, unknown>>): Record<string, unkno
 
 function snapshotSignature(cursors: ReadonlyMap<string, PresenceCursor>): string {
   return JSON.stringify(list(cursors));
-}
-
-function notFound(peerId: string): PresenceCursorError {
-  return { ok: false, code: "not_found", peerId };
 }
 
 function hasOwn<T extends object, K extends PropertyKey>(

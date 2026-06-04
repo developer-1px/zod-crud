@@ -68,7 +68,7 @@ export function diffDocument<TDocument, TValue = unknown>(
     ok: true,
     changed: operations.length > 0,
     value: cloneJson(target),
-    operations: cloneOperations(operations),
+    operations: JSON.parse(JSON.stringify(operations)) as JSONPatchOperation[],
   };
 }
 
@@ -193,12 +193,6 @@ function patchError(
   };
   if (patch.pointer !== undefined) error.pointer = patch.pointer;
   return error;
-}
-
-function cloneOperations(
-  operations: ReadonlyArray<JSONPatchOperation>,
-): JSONPatchOperation[] {
-  return JSON.parse(JSON.stringify(operations)) as JSONPatchOperation[];
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

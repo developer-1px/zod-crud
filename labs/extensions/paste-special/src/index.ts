@@ -121,7 +121,7 @@ export function canPasteSpecial<TDocument>(
       ...(input.data !== undefined ? { data: copyPayload(input.data) } : {}),
     });
   } catch (error) {
-    return pasteSpecialError("adapter_failed", errorReason(error, "paste special adapter failed"), {
+    return pasteSpecialError("adapter_failed", error instanceof Error ? error.message : "paste special adapter failed", {
       target: input.target,
     });
   }
@@ -258,8 +258,4 @@ function pasteFailureReason(result: Exclude<ClipboardPasteResult<unknown>, { ok:
   if ("reason" in result && typeof result.reason === "string") return result.reason;
   if ("message" in result && typeof result.message === "string") return result.message;
   return "paste special execution failed";
-}
-
-function errorReason(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
 }

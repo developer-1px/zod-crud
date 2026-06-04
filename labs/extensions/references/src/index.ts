@@ -185,7 +185,7 @@ export function createReferences<TDocument>(
 
       const result = doc.patch(plan.operation, metadata);
       if (!result.ok) return patchError(input, result);
-      return { ok: true, operation: copyOperation(plan.operation), result };
+      return { ok: true, operation: cloneJson(plan.operation) as JSONPatchOperation, result };
     },
   };
 }
@@ -615,10 +615,6 @@ function copyDiagnostic(entry: ReferenceDiagnostic): ReferenceDiagnostic {
     ...(entry.pointers === undefined ? {} : { pointers: entry.pointers }),
     ...(entry.value === undefined ? {} : { value: entry.value }),
   });
-}
-
-function copyOperation(operation: JSONPatchOperation): JSONPatchOperation {
-  return cloneJson(operation) as JSONPatchOperation;
 }
 
 function cloneJson<T>(value: T): T {

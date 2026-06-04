@@ -124,7 +124,7 @@ export function canConvertBlockType<TDocument>(
   try {
     nextValue = descriptor.createValue(factoryInput);
   } catch (error) {
-    return conversionError("factory_failed", errorReason(error, "block type conversion factory failed"), {
+    return conversionError("factory_failed", error instanceof Error ? error.message : "block type conversion factory failed", {
       pointer: input.pointer,
       from,
       to: input.to,
@@ -165,7 +165,7 @@ export function convertBlockType<TDocument>(
     pointer: plan.pointer,
     from: plan.from,
     to: plan.to,
-    operation: copyOperation(plan.operation),
+    operation: cloneJson(plan.operation) as JSONPatchOperation,
     result,
   };
 }
@@ -232,14 +232,6 @@ function conversionError(
   } = {},
 ): BlockTypeConversionError {
   return { ok: false, code, reason, ...(options.pointer === undefined ? {} : { pointer: options.pointer }), ...(options.from === undefined ? {} : { from: options.from }), ...(options.to === undefined ? {} : { to: options.to }), ...(options.capability === undefined ? {} : { capability: options.capability }), ...(options.result === undefined ? {} : { result: options.result }) };
-}
-
-function errorReason(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
-
-function copyOperation(operation: JSONPatchOperation): JSONPatchOperation {
-  return cloneJson(operation) as JSONPatchOperation;
 }
 
 function cloneJson<T>(value: T): T {

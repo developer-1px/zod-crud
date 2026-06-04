@@ -115,7 +115,7 @@ export function canMoveSelected<TDocument>(
   const insertAt = side === "before" ? referencePositionInRest : referencePositionInRest + 1;
   const nextItems = [...rest.slice(0, insertAt), ...block, ...rest.slice(insertAt)];
 
-  const changed = !jsonEqual(items, nextItems);
+  const changed = JSON.stringify(items) !== JSON.stringify(nextItems);
   const operations: JSONPatchOperation[] = changed
     ? [{ op: "replace", path: range.parent, value: cloneJson(nextItems) }]
     : [];
@@ -203,10 +203,6 @@ function patchError(
 
 function error(code: MoveSelectedErrorCode, reason: string, pointer?: Pointer): MoveSelectedError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

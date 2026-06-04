@@ -117,7 +117,7 @@ export function canPasteGrid<TDocument>(
       const pointer = field === "" ? itemPointer : itemPointer + field;
       const next = cells[col];
       const current = doc.at(pointer);
-      if (!current.ok || !jsonEqual(current.value, next)) {
+      if (!current.ok || JSON.stringify(current.value) !== JSON.stringify(next)) {
         operations.push({ op: "replace", path: pointer, value: cloneJson(next) });
       }
     }
@@ -180,10 +180,6 @@ function patchError(
 
 function error(code: PasteCellsErrorCode, reason: string, pointer?: Pointer): PasteCellsError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

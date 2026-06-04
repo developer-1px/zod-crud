@@ -88,7 +88,7 @@ export function canClearContents<TDocument>(
     }
 
     const current = doc.at(pointer);
-    if (!current.ok || !jsonEqual(current.value, empty.value)) {
+    if (!current.ok || JSON.stringify(current.value) !== JSON.stringify(empty.value)) {
       operations.push({ op: "replace", path: pointer, value: cloneJson(empty.value) });
     }
   }
@@ -180,10 +180,6 @@ function patchError(patch: Extract<JSONResult, { ok: false }>): ClearContentsErr
 
 function error(code: ClearContentsErrorCode, reason: string, pointer?: Pointer): ClearContentsError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

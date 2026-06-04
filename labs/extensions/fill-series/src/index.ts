@@ -149,7 +149,7 @@ export function canFill<TDocument, TValue = unknown>(
   for (let offset = 0; offset < cells.length; offset += 1) {
     const cell = cells[offset] as FillCell;
     const next = values[offset] as TValue;
-    if (!jsonEqual(cell.current, next)) {
+    if (JSON.stringify(cell.current) !== JSON.stringify(next)) {
       operations.push({ op: "replace", path: cell.pointer, value: cloneJson(next) });
     }
   }
@@ -272,10 +272,6 @@ function patchError(
 
 function error(code: FillSeriesErrorCode, reason: string, pointer?: Pointer): FillSeriesError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

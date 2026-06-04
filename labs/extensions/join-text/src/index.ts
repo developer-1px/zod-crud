@@ -71,7 +71,8 @@ export function canJoin<TDocument>(
   const items = read.value as unknown[];
 
   const separator = options?.separator ?? ", ";
-  const map = options?.map ?? defaultMap;
+  const map =
+    options?.map ?? ((item: unknown) => (typeof item === "string" ? item : JSON.stringify(item ?? "")));
   let parts: string[];
   try {
     parts = items.map((item, index) => map(item, index));
@@ -111,10 +112,6 @@ export function join<TDocument>(
   const patched = doc.patch(change.operations);
   if (!patched.ok) return patchError(target, patched);
   return change;
-}
-
-function defaultMap(item: unknown): string {
-  return typeof item === "string" ? item : JSON.stringify(item ?? "");
 }
 
 function capabilityError(

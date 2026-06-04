@@ -156,7 +156,7 @@ function sortValues<TValue>(
   try {
     const sorted = values
       .map((value, index) => ({
-        pointer: itemPointer(path, index),
+        pointer: path === "" ? `/${index}` : `${path}/${index}`,
         value,
         index,
       }))
@@ -245,10 +245,6 @@ function sortItemsError(
   pointer?: Pointer,
 ): SortItemsError {
   return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
-}
-
-function itemPointer(path: Pointer, index: number): Pointer {
-  return path === "" ? `/${index}` : `${path}/${index}`;
 }
 
 function cloneJson<TValue>(value: TValue): TValue {
