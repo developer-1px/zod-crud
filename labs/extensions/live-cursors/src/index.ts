@@ -99,16 +99,12 @@ export function createLiveCursors<T>(
   });
 
   return {
-    current() {
-      return snapshot(cursors);
-    },
+    current: () => snapshot(cursors),
     byPeer(peerId) {
       const cursor = cursors.get(peerId);
       return cursor === undefined ? null : copyCursor(cursor);
     },
-    canUpsert(input) {
-      return validateCursorInput(doc, input);
-    },
+    canUpsert: (input) => validateCursorInput(doc, input),
     upsert(input) {
       const capability = validateCursorInput(doc, input);
       if (!capability.ok) return capability;

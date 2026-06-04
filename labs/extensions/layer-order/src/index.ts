@@ -82,36 +82,16 @@ export function createLayerOrder<TDocument>(
   doc: JSONDocument<TDocument>,
 ): LayerOrder<TDocument> {
   return {
-    canReorder(source, action) {
-      return canReorderLayers(doc, source, action);
-    },
-    reorder(source, action) {
-      return reorderLayers(doc, source, action);
-    },
-    canBringForward(source) {
-      return canReorderLayers(doc, source, "bringForward");
-    },
-    bringForward(source) {
-      return reorderLayers(doc, source, "bringForward");
-    },
-    canBringToFront(source) {
-      return canReorderLayers(doc, source, "bringToFront");
-    },
-    bringToFront(source) {
-      return reorderLayers(doc, source, "bringToFront");
-    },
-    canSendBackward(source) {
-      return canReorderLayers(doc, source, "sendBackward");
-    },
-    sendBackward(source) {
-      return reorderLayers(doc, source, "sendBackward");
-    },
-    canSendToBack(source) {
-      return canReorderLayers(doc, source, "sendToBack");
-    },
-    sendToBack(source) {
-      return reorderLayers(doc, source, "sendToBack");
-    },
+    canReorder: (source, action) => canReorderLayers(doc, source, action),
+    reorder: (source, action) => reorderLayers(doc, source, action),
+    canBringForward: (source) => canReorderLayers(doc, source, "bringForward"),
+    bringForward: (source) => reorderLayers(doc, source, "bringForward"),
+    canBringToFront: (source) => canReorderLayers(doc, source, "bringToFront"),
+    bringToFront: (source) => reorderLayers(doc, source, "bringToFront"),
+    canSendBackward: (source) => canReorderLayers(doc, source, "sendBackward"),
+    sendBackward: (source) => reorderLayers(doc, source, "sendBackward"),
+    canSendToBack: (source) => canReorderLayers(doc, source, "sendToBack"),
+    sendToBack: (source) => reorderLayers(doc, source, "sendToBack"),
   };
 }
 

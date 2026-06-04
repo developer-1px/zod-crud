@@ -80,12 +80,8 @@ export function createDragDrop<TDocument>(
   doc: JSONDocument<TDocument>,
 ): DragDrop<TDocument> {
   return {
-    canDrop(input) {
-      return canDrop(doc, input);
-    },
-    perform(input) {
-      return performDrop(doc, input);
-    },
+    canDrop: (input) => canDrop(doc, input),
+    perform: (input) => performDrop(doc, input),
   };
 }
 

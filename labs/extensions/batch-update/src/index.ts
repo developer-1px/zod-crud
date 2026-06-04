@@ -55,12 +55,8 @@ export interface BatchUpdate<TDocument> {
 
 export function createBatchUpdate<TDocument>(doc: JSONDocument<TDocument>): BatchUpdate<TDocument> {
   return {
-    canBatchUpdate(targets, value, options) {
-      return canBatchUpdate(doc, targets, value, options);
-    },
-    batchUpdate(targets, value, options) {
-      return batchUpdate(doc, targets, value, options);
-    },
+    canBatchUpdate: (targets, value, options) => canBatchUpdate(doc, targets, value, options),
+    batchUpdate: (targets, value, options) => batchUpdate(doc, targets, value, options),
   };
 }
 

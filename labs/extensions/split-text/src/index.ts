@@ -53,12 +53,8 @@ export interface SplitText<TDocument> {
 
 export function createSplitText<TDocument>(doc: JSONDocument<TDocument>): SplitText<TDocument> {
   return {
-    canSplit(path, text, options) {
-      return canSplit(doc, path, text, options);
-    },
-    split(path, text, options) {
-      return split(doc, path, text, options);
-    },
+    canSplit: (path, text, options) => canSplit(doc, path, text, options),
+    split: (path, text, options) => split(doc, path, text, options),
   };
 }
 

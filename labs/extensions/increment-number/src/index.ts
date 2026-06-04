@@ -51,15 +51,9 @@ export interface IncrementNumber<TDocument> {
 
 export function createIncrementNumber<TDocument>(doc: JSONDocument<TDocument>): IncrementNumber<TDocument> {
   return {
-    canStep(pointer, options) {
-      return canStep(doc, pointer, options);
-    },
-    step(pointer, options) {
-      return step(doc, pointer, options);
-    },
-    increment(pointer, options) {
-      return step(doc, pointer, options);
-    },
+    canStep: (pointer, options) => canStep(doc, pointer, options),
+    step: (pointer, options) => step(doc, pointer, options),
+    increment: (pointer, options) => step(doc, pointer, options),
     decrement(pointer, options) {
       return step(doc, pointer, { ...options, step: -(options?.step ?? 1) });
     },

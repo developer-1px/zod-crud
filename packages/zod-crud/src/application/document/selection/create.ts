@@ -281,32 +281,18 @@ export function createSelection<T>(
         ? { ...result, selection: selectionSnapshot(snap) }
         : { ...result, selection: selectionSnapshot(snap) };
     },
-    orderPrimaryRange(orderOptions) {
-      return orderPrimarySelectionRange(snap, ops.state, orderOptions);
-    },
-    orderRanges(orderOptions) {
-      return orderSelectionRanges(snap, ops.state, orderOptions);
-    },
-    spansForPointer(pointer, spanOptions) {
-      return selectionSpansForPointer(snap, pointer, ops.state, spanOptions);
-    },
-    textEdits(replacement, textEditOptions) {
-      return selectionTextEdits(snap, ops.state, replacement, textEditOptions);
-    },
-    textPatch(replacement, textEditOptions) {
-      return replaceSelectionText(snap, ops.state, replacement, textEditOptions);
-    },
-    deleteText(textDeleteOptions) {
-      return deleteSelectionText(snap, ops.state, textDeleteOptions);
-    },
+    orderPrimaryRange: (orderOptions) => orderPrimarySelectionRange(snap, ops.state, orderOptions),
+    orderRanges: (orderOptions) => orderSelectionRanges(snap, ops.state, orderOptions),
+    spansForPointer: (pointer, spanOptions) => selectionSpansForPointer(snap, pointer, ops.state, spanOptions),
+    textEdits: (replacement, textEditOptions) => selectionTextEdits(snap, ops.state, replacement, textEditOptions),
+    textPatch: (replacement, textEditOptions) => replaceSelectionText(snap, ops.state, replacement, textEditOptions),
+    deleteText: (textDeleteOptions) => deleteSelectionText(snap, ops.state, textDeleteOptions),
     selectScope(scopeOptions) {
       const result = selectSelectionScope(snap, mode, ops.state, scopeOptions);
       if (result.ok) setSnap(result.selection);
       return result;
     },
-    resolveScope(scopeOptions) {
-      return resolveSelectionScope(ops.state, scopeOptions);
-    },
+    resolveScope: (scopeOptions) => resolveSelectionScope(ops.state, scopeOptions),
     selectRanges(ranges, anchor, focus, primaryIndex) {
       dispatch({
         type: "selectRanges",

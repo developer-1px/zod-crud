@@ -153,9 +153,7 @@ export function createReferences<TDocument>(
   descriptor: ReferencesDescriptor,
 ): References<TDocument> {
   return {
-    current() {
-      return indexReferences(doc, descriptor);
-    },
+    current: () => indexReferences(doc, descriptor),
     targets(target) {
       const targets = indexReferences(doc, descriptor).targets;
       return target === undefined
@@ -179,12 +177,8 @@ export function createReferences<TDocument>(
           .map(copyLink),
       };
     },
-    resolve(target, id) {
-      return resolveReference(doc, descriptor, target, id);
-    },
-    canSet(input) {
-      return canSetReference(doc, descriptor, input);
-    },
+    resolve: (target, id) => resolveReference(doc, descriptor, target, id),
+    canSet: (input) => canSetReference(doc, descriptor, input),
     set(input, metadata) {
       const plan = canSetReference(doc, descriptor, input);
       if (!plan.ok) return plan;

@@ -48,12 +48,8 @@ export interface TrimText<TDocument> {
 
 export function createTrimText<TDocument>(doc: JSONDocument<TDocument>): TrimText<TDocument> {
   return {
-    canTrimText(pointer, maxLength, options) {
-      return canTrimText(doc, pointer, maxLength, options);
-    },
-    trimText(pointer, maxLength, options) {
-      return trimText(doc, pointer, maxLength, options);
-    },
+    canTrimText: (pointer, maxLength, options) => canTrimText(doc, pointer, maxLength, options),
+    trimText: (pointer, maxLength, options) => trimText(doc, pointer, maxLength, options),
   };
 }
 

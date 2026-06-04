@@ -95,12 +95,8 @@ export function createFillSeries<TDocument>(
   doc: JSONDocument<TDocument>,
 ): FillSeries<TDocument> {
   return {
-    canFill(target, source, options) {
-      return canFill(doc, target, source, options);
-    },
-    fill(target, source, options) {
-      return fill(doc, target, source, options);
-    },
+    canFill: (target, source, options) => canFill(doc, target, source, options),
+    fill: (target, source, options) => fill(doc, target, source, options),
   };
 }
 

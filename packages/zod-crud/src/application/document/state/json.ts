@@ -170,27 +170,13 @@ export function createJSONState<S extends z.ZodType>(
       const result = applyOperation(schema, state, op);
       return handleResult(policy, op, result.result);
     },
-    patch(operations, metadata) {
-      return dispatch("patch", operations, metadata);
-    },
-    previewPatch(operations) {
-      return previewPatchFrom(state, operations);
-    },
-    previewTrustedValuesPatch(operations) {
-      return previewTrustedValuesPatchFrom(state, operations);
-    },
-    applyTrustedPatch(operations, metadata) {
-      return dispatchTrusted(operations, metadata);
-    },
-    trustedApply(next, applied, metadata) {
-      return applyTrustedState(next, applied, metadata);
-    },
-    load(value) {
-      return replaceRoot("load", value);
-    },
-    reset(value) {
-      return replaceRoot("reset", value ?? initialState);
-    },
+    patch: (operations, metadata) => dispatch("patch", operations, metadata),
+    previewPatch: (operations) => previewPatchFrom(state, operations),
+    previewTrustedValuesPatch: (operations) => previewTrustedValuesPatchFrom(state, operations),
+    applyTrustedPatch: (operations, metadata) => dispatchTrusted(operations, metadata),
+    trustedApply: (next, applied, metadata) => applyTrustedState(next, applied, metadata),
+    load: (value) => replaceRoot("load", value),
+    reset: (value) => replaceRoot("reset", value ?? initialState),
     subscribe(listener) {
       listeners.add(listener);
       return () => { listeners.delete(listener); };

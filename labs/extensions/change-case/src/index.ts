@@ -50,12 +50,8 @@ export interface ChangeCase<TDocument> {
 
 export function createChangeCase<TDocument>(doc: JSONDocument<TDocument>): ChangeCase<TDocument> {
   return {
-    canTransform(pointer, transform) {
-      return canTransform(doc, pointer, transform);
-    },
-    transform(pointer, transform) {
-      return applyTransform(doc, pointer, transform);
-    },
+    canTransform: (pointer, transform) => canTransform(doc, pointer, transform),
+    transform: (pointer, transform) => applyTransform(doc, pointer, transform),
   };
 }
 

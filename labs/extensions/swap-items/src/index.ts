@@ -47,12 +47,8 @@ export interface SwapItems<TDocument> {
 
 export function createSwapItems<TDocument>(doc: JSONDocument<TDocument>): SwapItems<TDocument> {
   return {
-    canSwapItems(a, b) {
-      return canSwapItems(doc, a, b);
-    },
-    swapItems(a, b) {
-      return swapItems(doc, a, b);
-    },
+    canSwapItems: (a, b) => canSwapItems(doc, a, b),
+    swapItems: (a, b) => swapItems(doc, a, b),
   };
 }
 

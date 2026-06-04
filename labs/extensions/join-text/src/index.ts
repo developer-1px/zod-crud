@@ -50,12 +50,8 @@ export interface JoinText<TDocument> {
 
 export function createJoinText<TDocument>(doc: JSONDocument<TDocument>): JoinText<TDocument> {
   return {
-    canJoin(source, target, options) {
-      return canJoin(doc, source, target, options);
-    },
-    join(source, target, options) {
-      return join(doc, source, target, options);
-    },
+    canJoin: (source, target, options) => canJoin(doc, source, target, options),
+    join: (source, target, options) => join(doc, source, target, options),
   };
 }
 

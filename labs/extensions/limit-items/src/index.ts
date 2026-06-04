@@ -50,12 +50,8 @@ export interface LimitItems<TDocument> {
 
 export function createLimitItems<TDocument>(doc: JSONDocument<TDocument>): LimitItems<TDocument> {
   return {
-    canLimitItems(path, max, options) {
-      return canLimitItems(doc, path, max, options);
-    },
-    limitItems(path, max, options) {
-      return limitItems(doc, path, max, options);
-    },
+    canLimitItems: (path, max, options) => canLimitItems(doc, path, max, options),
+    limitItems: (path, max, options) => limitItems(doc, path, max, options),
   };
 }
 

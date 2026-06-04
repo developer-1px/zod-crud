@@ -94,18 +94,10 @@ export function createWrapSelection<TDocument>(
   adapter: WrapSelectionAdapter,
 ): WrapSelection<TDocument> {
   return {
-    canWrap(source) {
-      return canWrapSelection(doc, adapter, source);
-    },
-    wrap(source) {
-      return wrapSelection(doc, adapter, source);
-    },
-    canUnwrap(source) {
-      return canUnwrapSelection(doc, adapter, source);
-    },
-    unwrap(source) {
-      return unwrapSelection(doc, adapter, source);
-    },
+    canWrap: (source) => canWrapSelection(doc, adapter, source),
+    wrap: (source) => wrapSelection(doc, adapter, source),
+    canUnwrap: (source) => canUnwrapSelection(doc, adapter, source),
+    unwrap: (source) => unwrapSelection(doc, adapter, source),
   };
 }
 

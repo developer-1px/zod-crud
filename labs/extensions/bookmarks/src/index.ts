@@ -74,12 +74,8 @@ export function createBookmarks<T>(
   });
 
   return {
-    current() {
-      return snapshot(bookmarks);
-    },
-    pointerFor(key) {
-      return bookmarks.get(key) ?? null;
-    },
+    current: () => snapshot(bookmarks),
+    pointerFor: (key) => bookmarks.get(key) ?? null,
     canSet(pointer) {
       const readable = doc.at(pointer);
       if (readable.ok) return { ok: true };

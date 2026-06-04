@@ -103,12 +103,8 @@ export function createPasteSpecial<TDocument>(
   adapter: PasteSpecialAdapter,
 ): PasteSpecial<TDocument> {
   return {
-    canPaste(input) {
-      return canPasteSpecial(doc, adapter, input);
-    },
-    paste(input) {
-      return pasteSpecial(doc, adapter, input);
-    },
+    canPaste: (input) => canPasteSpecial(doc, adapter, input),
+    paste: (input) => pasteSpecial(doc, adapter, input),
   };
 }
 

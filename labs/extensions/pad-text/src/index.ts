@@ -48,12 +48,8 @@ export interface PadText<TDocument> {
 
 export function createPadText<TDocument>(doc: JSONDocument<TDocument>): PadText<TDocument> {
   return {
-    canPadText(pointer, length, options) {
-      return canPadText(doc, pointer, length, options);
-    },
-    padText(pointer, length, options) {
-      return padText(doc, pointer, length, options);
-    },
+    canPadText: (pointer, length, options) => canPadText(doc, pointer, length, options),
+    padText: (pointer, length, options) => padText(doc, pointer, length, options),
   };
 }
 

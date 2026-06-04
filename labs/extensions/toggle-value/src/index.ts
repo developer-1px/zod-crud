@@ -49,12 +49,8 @@ export interface ToggleValue<TDocument> {
 
 export function createToggleValue<TDocument>(doc: JSONDocument<TDocument>): ToggleValue<TDocument> {
   return {
-    canToggleValue(pointer, options) {
-      return canToggleValue(doc, pointer, options);
-    },
-    toggleValue(pointer, options) {
-      return toggleValue(doc, pointer, options);
-    },
+    canToggleValue: (pointer, options) => canToggleValue(doc, pointer, options),
+    toggleValue: (pointer, options) => toggleValue(doc, pointer, options),
   };
 }
 

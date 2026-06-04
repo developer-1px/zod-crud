@@ -61,12 +61,8 @@ export function createMoveSelected<TDocument>(
   doc: JSONDocument<TDocument>,
 ): MoveSelected<TDocument> {
   return {
-    canMoveSelected(source, target) {
-      return canMoveSelected(doc, source, target);
-    },
-    moveSelected(source, target) {
-      return moveSelected(doc, source, target);
-    },
+    canMoveSelected: (source, target) => canMoveSelected(doc, source, target),
+    moveSelected: (source, target) => moveSelected(doc, source, target),
   };
 }
 

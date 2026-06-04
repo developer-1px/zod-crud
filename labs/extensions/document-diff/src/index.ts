@@ -46,15 +46,9 @@ export function createDocumentDiff<TDocument>(
   doc: JSONDocument<TDocument>,
 ): DocumentDiff<TDocument> {
   return {
-    diff(target) {
-      return diffDocument(doc, target);
-    },
-    canApply(target) {
-      return canApplyDocumentDiff(doc, target);
-    },
-    apply(target, metadata) {
-      return applyDocumentDiff(doc, target, metadata);
-    },
+    diff: (target) => diffDocument(doc, target),
+    canApply: (target) => canApplyDocumentDiff(doc, target),
+    apply: (target, metadata) => applyDocumentDiff(doc, target, metadata),
   };
 }
 

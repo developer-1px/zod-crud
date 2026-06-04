@@ -84,12 +84,8 @@ export function createCheckpoints<TDocument>(
   };
 
   return {
-    current() {
-      return snapshot(checkpoints);
-    },
-    list() {
-      return snapshot(checkpoints).entries;
-    },
+    current: () => snapshot(checkpoints),
+    list: () => snapshot(checkpoints).entries,
     get(key) {
       const checkpoint = checkpoints.get(key);
       if (checkpoint === undefined) return missingCheckpoint(key);

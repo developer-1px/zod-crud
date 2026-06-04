@@ -232,9 +232,7 @@ function buildDocumentCapabilities<S extends z.ZodType>(
             trustedPayload: inputTrustedPayload,
           }));
     },
-    patch(operations) {
-      return patch(operations);
-    },
+    patch: (operations) => patch(operations),
 
     get undo() {
       return history.canUndo() ? OK : emptyStack("undo");

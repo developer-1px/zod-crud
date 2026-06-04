@@ -76,12 +76,8 @@ export interface SparseRecord<TDocument> {
 
 export function createSparseRecord<TDocument>(doc: JSONDocument<TDocument>): SparseRecord<TDocument> {
   return {
-    canEdit(edits, options) {
-      return canEditSparseRecords(doc, edits, options);
-    },
-    edit(edits, options, metadata) {
-      return editSparseRecords(doc, edits, options, metadata);
-    },
+    canEdit: (edits, options) => canEditSparseRecords(doc, edits, options),
+    edit: (edits, options, metadata) => editSparseRecords(doc, edits, options, metadata),
   };
 }
 

@@ -104,15 +104,9 @@ export function createSchemaState<S extends z.ZodType>(
 
   return {
     at,
-    kind(path, mode = "value") {
-      return readDocumentSchemaKind(schema, path, mode);
-    },
-    accepts(path, value, mode = "value") {
-      return canDocumentSchemaAccepts(schema, path, value, mode);
-    },
-    describe(path, mode = "value") {
-      return describeDocumentSchema(schema, path, mode);
-    },
+    kind: (path, mode = "value") => readDocumentSchemaKind(schema, path, mode),
+    accepts: (path, value, mode = "value") => canDocumentSchemaAccepts(schema, path, value, mode),
+    describe: (path, mode = "value") => describeDocumentSchema(schema, path, mode),
   };
 }
 

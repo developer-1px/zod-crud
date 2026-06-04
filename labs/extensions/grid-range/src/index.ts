@@ -150,18 +150,10 @@ export interface GridRange<TDocument> {
 
 export function createGridRange<TDocument>(doc: JSONDocument<TDocument>): GridRange<TDocument> {
   return {
-    canPaste(input, options) {
-      return canPasteGridRange(doc, input, options);
-    },
-    paste(input, options, metadata) {
-      return pasteGridRange(doc, input, options, metadata);
-    },
-    canFill(input, options) {
-      return canFillGridRange(doc, input, options);
-    },
-    fill(input, options, metadata) {
-      return fillGridRange(doc, input, options, metadata);
-    },
+    canPaste: (input, options) => canPasteGridRange(doc, input, options),
+    paste: (input, options, metadata) => pasteGridRange(doc, input, options, metadata),
+    canFill: (input, options) => canFillGridRange(doc, input, options),
+    fill: (input, options, metadata) => fillGridRange(doc, input, options, metadata),
   };
 }
 

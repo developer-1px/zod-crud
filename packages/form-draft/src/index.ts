@@ -159,9 +159,7 @@ export function createFormDraft<TDocument, TInput = unknown>(
         result,
       };
     },
-    canCommitAll(root = "") {
-      return canCommitBatch(doc, drafts, parse, root);
-    },
+    canCommitAll: (root = "") => canCommitBatch(doc, drafts, parse, root),
     commitAll(root = "") {
       const change = canCommitBatch(doc, drafts, parse, root);
       if (!change.ok) return change;

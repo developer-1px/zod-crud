@@ -52,12 +52,8 @@ export interface Round<TDocument> {
 
 export function createRound<TDocument>(doc: JSONDocument<TDocument>): Round<TDocument> {
   return {
-    canRound(pointer, options) {
-      return canRound(doc, pointer, options);
-    },
-    round(pointer, options) {
-      return round(doc, pointer, options);
-    },
+    canRound: (pointer, options) => canRound(doc, pointer, options),
+    round: (pointer, options) => round(doc, pointer, options),
   };
 }
 

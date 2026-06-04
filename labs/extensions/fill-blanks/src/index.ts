@@ -57,12 +57,8 @@ export interface FillBlanks<TDocument> {
 
 export function createFillBlanks<TDocument>(doc: JSONDocument<TDocument>): FillBlanks<TDocument> {
   return {
-    canFillBlanks(targets, value, options) {
-      return canFillBlanks(doc, targets, value, options);
-    },
-    fillBlanks(targets, value, options) {
-      return fillBlanks(doc, targets, value, options);
-    },
+    canFillBlanks: (targets, value, options) => canFillBlanks(doc, targets, value, options),
+    fillBlanks: (targets, value, options) => fillBlanks(doc, targets, value, options),
   };
 }
 

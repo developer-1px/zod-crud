@@ -53,12 +53,8 @@ export interface RenumberItems<TDocument> {
 
 export function createRenumberItems<TDocument>(doc: JSONDocument<TDocument>): RenumberItems<TDocument> {
   return {
-    canRenumberItems(path, options) {
-      return canRenumberItems(doc, path, options);
-    },
-    renumberItems(path, options) {
-      return renumberItems(doc, path, options);
-    },
+    canRenumberItems: (path, options) => canRenumberItems(doc, path, options),
+    renumberItems: (path, options) => renumberItems(doc, path, options),
   };
 }
 

@@ -73,15 +73,9 @@ export function createCalculatedFields<TDocument>(
   fields: ReadonlyArray<CalculatedFieldDefinition<TDocument>>,
 ): CalculatedFields<TDocument> {
   return {
-    current() {
-      return planCalculatedFields(doc, fields);
-    },
-    canSync() {
-      return planCalculatedFields(doc, fields);
-    },
-    sync() {
-      return syncCalculatedFields(doc, fields);
-    },
+    current: () => planCalculatedFields(doc, fields),
+    canSync: () => planCalculatedFields(doc, fields),
+    sync: () => syncCalculatedFields(doc, fields),
   };
 }
 

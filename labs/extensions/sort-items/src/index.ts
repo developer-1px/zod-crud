@@ -76,18 +76,10 @@ export function createSortItems<TDocument>(
   doc: JSONDocument<TDocument>,
 ): SortItems<TDocument> {
   return {
-    canSort(path, compare) {
-      return canSort(doc, path, compare);
-    },
-    sort(path, compare) {
-      return sort(doc, path, compare);
-    },
-    canReverse(path) {
-      return canReverse(doc, path);
-    },
-    reverse(path) {
-      return reverse(doc, path);
-    },
+    canSort: (path, compare) => canSort(doc, path, compare),
+    sort: (path, compare) => sort(doc, path, compare),
+    canReverse: (path) => canReverse(doc, path),
+    reverse: (path) => reverse(doc, path),
   };
 }
 

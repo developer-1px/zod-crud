@@ -58,12 +58,8 @@ export interface PasteCells<TDocument> {
 
 export function createPasteCells<TDocument>(doc: JSONDocument<TDocument>): PasteCells<TDocument> {
   return {
-    canPasteGrid(target, matrix) {
-      return canPasteGrid(doc, target, matrix);
-    },
-    pasteGrid(target, matrix) {
-      return pasteGrid(doc, target, matrix);
-    },
+    canPasteGrid: (target, matrix) => canPasteGrid(doc, target, matrix),
+    pasteGrid: (target, matrix) => pasteGrid(doc, target, matrix),
   };
 }
 

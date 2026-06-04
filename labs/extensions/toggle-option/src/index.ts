@@ -51,18 +51,10 @@ export interface ToggleOption<TDocument> {
 
 export function createToggleOption<TDocument>(doc: JSONDocument<TDocument>): ToggleOption<TDocument> {
   return {
-    canToggle(path, value, options) {
-      return plan(doc, path, value, "toggle", options);
-    },
-    toggle(path, value, options) {
-      return apply(doc, path, value, "toggle", options);
-    },
-    add(path, value, options) {
-      return apply(doc, path, value, "add", options);
-    },
-    remove(path, value, options) {
-      return apply(doc, path, value, "remove", options);
-    },
+    canToggle: (path, value, options) => plan(doc, path, value, "toggle", options),
+    toggle: (path, value, options) => apply(doc, path, value, "toggle", options),
+    add: (path, value, options) => apply(doc, path, value, "add", options),
+    remove: (path, value, options) => apply(doc, path, value, "remove", options),
   };
 }
 

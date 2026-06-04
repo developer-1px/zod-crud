@@ -54,12 +54,8 @@ export interface Dedupe<TDocument> {
 
 export function createDedupe<TDocument>(doc: JSONDocument<TDocument>): Dedupe<TDocument> {
   return {
-    canDedupe(path, options) {
-      return canDedupe(doc, path, options);
-    },
-    dedupe(path, options) {
-      return dedupe(doc, path, options);
-    },
+    canDedupe: (path, options) => canDedupe(doc, path, options),
+    dedupe: (path, options) => dedupe(doc, path, options),
   };
 }
 

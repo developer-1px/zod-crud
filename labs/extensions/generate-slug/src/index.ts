@@ -49,12 +49,8 @@ export interface GenerateSlug<TDocument> {
 
 export function createGenerateSlug<TDocument>(doc: JSONDocument<TDocument>): GenerateSlug<TDocument> {
   return {
-    canGenerateSlug(source, target, options) {
-      return canGenerateSlug(doc, source, target, options);
-    },
-    generateSlug(source, target, options) {
-      return generateSlug(doc, source, target, options);
-    },
+    canGenerateSlug: (source, target, options) => canGenerateSlug(doc, source, target, options),
+    generateSlug: (source, target, options) => generateSlug(doc, source, target, options),
   };
 }
 

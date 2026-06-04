@@ -197,16 +197,12 @@ export function createAutoSave<TValue>(
   });
 
   const api: AutoSave = {
-    current() {
-      return snapshot(runtime, disposed);
-    },
+    current: () => snapshot(runtime, disposed),
     request(reason = "manual") {
       runtime.sequence += 1;
       markPending({ reason, sequence: runtime.sequence });
     },
-    flush(reason = "manual") {
-      return flushLatest(reason);
-    },
+    flush: (reason = "manual") => flushLatest(reason),
     subscribe(listener) {
       if (disposed) return () => {};
       listeners.add(listener);

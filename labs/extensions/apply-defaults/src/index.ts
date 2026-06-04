@@ -41,12 +41,8 @@ export interface ApplyDefaults<TDocument> {
 
 export function createApplyDefaults<TDocument>(doc: JSONDocument<TDocument>): ApplyDefaults<TDocument> {
   return {
-    canEnsure(path, defaults) {
-      return canEnsure(doc, path, defaults);
-    },
-    ensure(path, defaults) {
-      return ensure(doc, path, defaults);
-    },
+    canEnsure: (path, defaults) => canEnsure(doc, path, defaults),
+    ensure: (path, defaults) => ensure(doc, path, defaults),
   };
 }
 

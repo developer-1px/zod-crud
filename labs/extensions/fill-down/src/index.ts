@@ -52,12 +52,8 @@ export interface FillDown<TDocument> {
 
 export function createFillDown<TDocument>(doc: JSONDocument<TDocument>): FillDown<TDocument> {
   return {
-    canFillDown(path, options) {
-      return canFillDown(doc, path, options);
-    },
-    fillDown(path, options) {
-      return fillDown(doc, path, options);
-    },
+    canFillDown: (path, options) => canFillDown(doc, path, options),
+    fillDown: (path, options) => fillDown(doc, path, options),
   };
 }
 

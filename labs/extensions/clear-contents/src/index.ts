@@ -56,12 +56,8 @@ export interface ClearContents<TDocument> {
 
 export function createClearContents<TDocument>(doc: JSONDocument<TDocument>): ClearContents<TDocument> {
   return {
-    canClearContents(targets, options) {
-      return canClearContents(doc, targets, options);
-    },
-    clearContents(targets, options) {
-      return clearContents(doc, targets, options);
-    },
+    canClearContents: (targets, options) => canClearContents(doc, targets, options),
+    clearContents: (targets, options) => clearContents(doc, targets, options),
   };
 }
 

@@ -42,12 +42,8 @@ export interface ConvertType<TDocument> {
 
 export function createConvertType<TDocument>(doc: JSONDocument<TDocument>): ConvertType<TDocument> {
   return {
-    canConvertType(pointer, to) {
-      return canConvertType(doc, pointer, to);
-    },
-    convertType(pointer, to) {
-      return convertType(doc, pointer, to);
-    },
+    canConvertType: (pointer, to) => canConvertType(doc, pointer, to),
+    convertType: (pointer, to) => convertType(doc, pointer, to),
   };
 }
 

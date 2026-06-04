@@ -73,12 +73,8 @@ export function createBlockTypeConverter<TDocument>(
   descriptor: BlockTypeConversionDescriptor,
 ): BlockTypeConverter<TDocument> {
   return {
-    canConvert(input) {
-      return canConvertBlockType(doc, descriptor, input);
-    },
-    convert(input, metadata) {
-      return convertBlockType(doc, descriptor, input, metadata);
-    },
+    canConvert: (input) => canConvertBlockType(doc, descriptor, input),
+    convert: (input, metadata) => convertBlockType(doc, descriptor, input, metadata),
   };
 }
 
