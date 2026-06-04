@@ -80,7 +80,8 @@ export function createCheckpoints<TDocument>(
   const emitIfChanged = (before: string): void => {
     const after = snapshotSignature(checkpoints);
     if (before === after) return;
-    emit(listeners, snapshot(checkpoints));
+    const event = snapshot(checkpoints);
+    for (const listener of [...listeners]) listener(event);
   };
 
   return {
@@ -161,25 +162,6 @@ function snapshot<TValue>(
   return {
     entries,
     count: entries.length,
-  };
-}
-
-function emit<TValue>(
-  listeners: Set<CheckpointsListener<TValue>>,
-  value: CheckpointsSnapshot<TValue>,
-): void {
-  const event = copySnapshot(value);
-  for (const listener of [...listeners]) {
-    listener(event);
-  }
-}
-
-function copySnapshot<TValue>(
-  value: CheckpointsSnapshot<TValue>,
-): CheckpointsSnapshot<TValue> {
-  return {
-    entries: value.entries.map(copyCheckpoint),
-    count: value.count,
   };
 }
 

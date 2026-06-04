@@ -103,7 +103,8 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
   const emitIfChanged = (before: string): void => {
     const after = snapshotSignature(state.comments);
     if (before === after) return;
-    emit(listeners, snapshot(state.comments));
+    const event = snapshot(state.comments);
+    for (const listener of [...listeners]) listener(event);
   };
 
   const unsubscribeDocument = doc.subscribe((applied) => {
@@ -148,7 +149,14 @@ export function createComments<T>(doc: JSONDocument<T>): Comments {
 
       const before = snapshotSignature(state.comments);
       const id = input.id ?? nextCommentId(state);
-      const comment = createComment(id, input);
+      const comment: Comment = {
+        id,
+        pointer: input.pointer,
+        text: input.text,
+        status: input.status ?? "open",
+        lost: false,
+        ...(input.data === undefined ? {} : { data: { ...input.data } }),
+      };
       state.comments.set(id, comment);
       emitIfChanged(before);
       return { ok: true, comment: copyComment(comment) };
@@ -233,17 +241,6 @@ function canAdd<T>(
   return { ok: true };
 }
 
-function createComment(id: string, input: CommentInput): Comment {
-  return {
-    id,
-    pointer: input.pointer,
-    text: input.text,
-    status: input.status ?? "open",
-    lost: false,
-    ...(input.data === undefined ? {} : { data: { ...input.data } }),
-  };
-}
-
 function setStatus(
   comments: Map<string, Comment>,
   listeners: Set<CommentListener>,
@@ -256,7 +253,10 @@ function setStatus(
   const before = snapshotSignature(comments);
   comment.status = status;
   const after = snapshotSignature(comments);
-  if (before !== after) emit(listeners, snapshot(comments));
+  if (before !== after) {
+    const event = snapshot(comments);
+    for (const listener of [...listeners]) listener(event);
+  }
   return { ok: true, comment: copyComment(comment) };
 }
 
@@ -298,25 +298,6 @@ function matchesPointer(
   if (comment.pointer === pointer) return true;
   if (filter.includeDescendants !== true) return false;
   return pointer === "" ? comment.pointer !== "" : comment.pointer.startsWith(`${pointer}/`);
-}
-
-function emit(
-  listeners: Set<CommentListener>,
-  value: CommentSnapshot,
-): void {
-  const event = copySnapshot(value);
-  for (const listener of [...listeners]) {
-    listener(event);
-  }
-}
-
-function copySnapshot(value: CommentSnapshot): CommentSnapshot {
-  return {
-    comments: value.comments.map(copyComment),
-    open: value.open,
-    resolved: value.resolved,
-    lost: value.lost,
-  };
 }
 
 function copyComment(comment: Comment): Comment {

@@ -130,7 +130,8 @@ export function createProposedChanges<TDocument>(
   const emitIfChanged = (before: string): void => {
     const after = snapshotSignature(state.changes);
     if (before === after) return;
-    emit(listeners, snapshot(state.changes));
+    const event = snapshot(state.changes);
+    for (const listener of listeners) listener(event);
   };
 
   return {
@@ -145,8 +146,17 @@ export function createProposedChanges<TDocument>(
       if (!plan.ok) return plan;
 
       const before = snapshotSignature(state.changes);
-      const id = input.id ?? nextChangeId(state);
-      const change = createChange(id, input, plan);
+      const id = input.id ?? `change-${state.nextId}`;
+      if (input.id === undefined) state.nextId += 1;
+      const change: ProposedChange = {
+        id,
+        status: "open",
+        operations: copyOperations(plan.operations),
+        guards: copyGuards(plan.guards),
+      };
+      if (input.label !== undefined) change.label = input.label;
+      if (input.description !== undefined) change.description = input.description;
+      if (input.data !== undefined) change.data = cloneJson(input.data);
       state.changes.set(id, change);
       emitIfChanged(before);
       return { ok: true, change: copyChange(change) };
@@ -268,23 +278,6 @@ function canCloseChange(
   return { ok: true, change: copyChange(change) };
 }
 
-function createChange(
-  id: string,
-  input: ProposedChangeInput,
-  plan: ProposedChangePlan,
-): ProposedChange {
-  const change: ProposedChange = {
-    id,
-    status: "open",
-    operations: copyOperations(plan.operations),
-    guards: copyGuards(plan.guards),
-  };
-  if (input.label !== undefined) change.label = input.label;
-  if (input.description !== undefined) change.description = input.description;
-  if (input.data !== undefined) change.data = cloneJson(input.data);
-  return change;
-}
-
 function guardsFor<TDocument>(
   doc: JSONDocument<TDocument>,
   operations: ReadonlyArray<JSONPatchOperation>,
@@ -339,12 +332,6 @@ function staleGuard<TDocument>(
   return null;
 }
 
-function nextChangeId(state: ProposedChangeState): string {
-  const id = `change-${state.nextId}`;
-  state.nextId += 1;
-  return id;
-}
-
 function nextChangeNumber(changes: ReadonlyMap<string, ProposedChange>): number {
   let next = 1;
   for (const id of changes.keys()) {
@@ -376,13 +363,6 @@ function snapshot(
 
 function snapshotSignature(changes: ReadonlyMap<string, ProposedChange>): string {
   return JSON.stringify([...changes.values()].map(copyChange));
-}
-
-function emit(
-  listeners: ReadonlySet<ProposedChangeListener>,
-  snapshotValue: ProposedChangeSnapshot,
-): void {
-  for (const listener of listeners) listener(snapshotValue);
 }
 
 function copyChange(change: ProposedChange): ProposedChange {
