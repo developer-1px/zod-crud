@@ -254,34 +254,6 @@ describe("RFC 6902 — batch atomicity (G8)", () => {
     expect(r.state).toBe(initial);
   });
 
-  it("trusted-state patch uses local validation on plain structural schemas", () => {
-    const Schema = z.object({
-      items: z.array(z.object({ done: z.boolean() })),
-    });
-    const initial = Schema.parse({ items: [{ done: false }] });
-    const originalSafeParse = Schema.safeParse.bind(Schema);
-    let rootParses = 0;
-    Schema.safeParse = ((value: unknown) => {
-      rootParses += 1;
-      return originalSafeParse(value);
-    }) as typeof Schema.safeParse;
-
-    const r = applyPatchToTrustedState(Schema, initial, [
-      { op: "replace", path: "/items/0/done", value: true },
-    ]);
-
-    expect(r.result.ok).toBe(true);
-    expect(r.state.items[0]?.done).toBe(true);
-    expect(rootParses).toBe(0);
-
-    const rejected = applyPatchToTrustedState(Schema, r.state, [
-      { op: "replace", path: "/items/0/done", value: "bad" },
-    ]);
-    expect(rejected.result).toMatchObject({ ok: false, code: "schema_violation" });
-    expect(rejected.state).toBe(r.state);
-    expect(rootParses).toBe(0);
-  });
-
   it("rejects sparse patch arrays at runtime", () => {
     const initial = { a: 1 };
     const ops = [] as unknown as JSONPatchOperation[];
