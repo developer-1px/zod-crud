@@ -33,10 +33,3 @@ export interface DocumentHistoryRuntimeState {
   activeHistoryMetadata: HistoryTransactionOptions | undefined;
   activeTransactionStartDepth: number | undefined;
 }
-
-export interface DocumentHistoryRestorePlan {
-  patch: ReadonlyArray<JSONPatchOperation>;
-  selectionAfter: SelectionSnap;
-  entry: DocumentHistoryEntry;
-  state?: unknown;
-}

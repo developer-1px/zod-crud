@@ -85,7 +85,7 @@ type BulkEditReadResult<TValue> = BulkEditReadOk<TValue> | BulkEditError;
 export function createBulkEdit<TDocument>(
   doc: JSONDocument<TDocument>,
 ): BulkEdit<TDocument> {
-  const bulk: BulkEdit<TDocument> = {
+  return {
     canReplaceAll: (jsonPath: string, valueOrMapper: unknown): BulkEditChangeResult => {
       return canReplaceAll(doc, jsonPath, valueOrMapper);
     },
@@ -99,7 +99,6 @@ export function createBulkEdit<TDocument>(
       return deleteAll(doc, jsonPath, metadata);
     },
   };
-  return bulk;
 }
 
 export function canReplaceAll<TDocument, TValue = unknown>(
@@ -248,7 +247,7 @@ function queryPointers<TDocument>(
     };
   }
 
-  const pointers = uniquePointers(queried.pointers);
+  const pointers = [...new Set(queried.pointers)];
   if (pointers.length === 0) {
     return {
       ok: false,
@@ -300,17 +299,6 @@ function changeWithCapability<TDocument>(
     pointers: [...pointers],
     operations,
   };
-}
-
-function uniquePointers(pointers: ReadonlyArray<Pointer>): Pointer[] {
-  const seen = new Set<Pointer>();
-  const unique: Pointer[] = [];
-  for (const pointer of pointers) {
-    if (seen.has(pointer)) continue;
-    seen.add(pointer);
-    unique.push(pointer);
-  }
-  return unique;
 }
 
 function comparePatchPointerOrder(left: Pointer, right: Pointer): number {

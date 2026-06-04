@@ -25,14 +25,6 @@ export function getDiscriminatedUnionInfo(schema: z.ZodType): DiscriminatedUnion
   return null;
 }
 
-export function getObjectLiteralValues(schema: z.ZodType, key: string): unknown[] {
-  const shape = getObjectShape(schema);
-  const valueSchema = shape?.[key];
-  if (!valueSchema) return [];
-  const def = getDef(valueSchema);
-  return Array.isArray(def.values) ? def.values : [];
-}
-
 export function schemaAtPointer(schema: z.ZodType, pointer: Pointer, mode: "value" | "insert" = "value"): z.ZodType | null {
   let cache = schemaPointerCaches.get(schema as object);
   if (!cache) {

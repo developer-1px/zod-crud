@@ -400,32 +400,18 @@ function ownerPointer(location: OutlineItemLocation): Pointer | null {
   return parentPointer(location.parentArray);
 }
 
-function trailingSiblingCount<TDocument>(
+function trailingUnselectedSiblingCount<TDocument>(
   doc: JSONDocument<TDocument>,
   location: OutlineItemLocation,
+  selected: ReadonlySet<Pointer>,
 ): { ok: true; count: number } | OutlineEditError {
   const read = doc.at(location.parentArray);
   if (!read.ok) return editError(read.code, read.reason ?? `parent not found: ${location.parentArray}`, read.pointer);
   if (!Array.isArray(read.value)) {
     return editError("not_outline_item", `parent is not an array: ${location.parentArray}`, location.pointer);
   }
-  return {
-    ok: true,
-    count: Math.max(0, read.value.length - location.index - 1),
-  };
-}
-
-function trailingUnselectedSiblingCount<TDocument>(
-  doc: JSONDocument<TDocument>,
-  location: OutlineItemLocation,
-  selected: ReadonlySet<Pointer>,
-): { ok: true; count: number } | OutlineEditError {
-  if (selected.size <= 1) return trailingSiblingCount(doc, location);
-
-  const read = doc.at(location.parentArray);
-  if (!read.ok) return editError(read.code, read.reason ?? `parent not found: ${location.parentArray}`, read.pointer);
-  if (!Array.isArray(read.value)) {
-    return editError("not_outline_item", `parent is not an array: ${location.parentArray}`, location.pointer);
+  if (selected.size <= 1) {
+    return { ok: true, count: Math.max(0, read.value.length - location.index - 1) };
   }
 
   let count = 0;
@@ -518,8 +504,11 @@ function copyNode(node: OutlineNode): OutlineNode {
 }
 
 function normalizeTreeOptions(options: OutlineTreeOptions): NormalizedTreeOptions {
+  const maxDepth = options.maxDepth;
   return {
-    maxDepth: normalizeMaxDepth(options.maxDepth),
+    maxDepth: maxDepth === undefined || !Number.isFinite(maxDepth)
+      ? Number.POSITIVE_INFINITY
+      : Math.max(0, Math.floor(maxDepth)),
     includeValues: options.includeValues === true,
   };
 }
@@ -528,12 +517,6 @@ function normalizeStructureOptions(options: OutlineStructureOptions): Normalized
   return {
     childrenKey: options.childrenKey ?? "children",
   };
-}
-
-function normalizeMaxDepth(maxDepth: number | undefined): number {
-  if (maxDepth === undefined) return Number.POSITIVE_INFINITY;
-  if (!Number.isFinite(maxDepth)) return Number.POSITIVE_INFINITY;
-  return Math.max(0, Math.floor(maxDepth));
 }
 
 function outlineError(

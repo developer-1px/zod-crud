@@ -96,8 +96,8 @@ export const defaultWebClipboardCodec: WebClipboardCodec = {
     if (isWebClipboardEnvelope(value)) {
       return {
         payload: value.payload,
-        source: normalizePointer(value.source),
-        sources: normalizePointerList(value.sources),
+        source: typeof value.source === "string" ? value.source : null,
+        sources: Array.isArray(value.sources) && value.sources.every((item) => typeof item === "string") ? value.sources : null,
       };
     }
     return {
@@ -269,14 +269,6 @@ function isWebClipboardEnvelope(value: unknown): value is WebClipboardEnvelope {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as { kind?: unknown; version?: unknown; payload?: unknown };
   return candidate.kind === WEB_CLIPBOARD_KIND && candidate.version === WEB_CLIPBOARD_VERSION && "payload" in candidate;
-}
-
-function normalizePointer(value: unknown): Pointer | null {
-  return typeof value === "string" ? value : null;
-}
-
-function normalizePointerList(value: unknown): ReadonlyArray<Pointer> | null {
-  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : null;
 }
 
 function restoreClipboard<T>(

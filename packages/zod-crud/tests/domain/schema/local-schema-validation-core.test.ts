@@ -23,7 +23,7 @@ import {
 } from "../../../src/domain/schema/array/replace.js";
 import {
   acceptsKnownJsonValue,
-} from "../../../src/domain/schema/validation/knownJson.js";
+} from "../../../src/domain/schema/shared/knownJson.js";
 import {
   applySequentialLocalOperation,
   applySequentialLocalOperationPatch,
@@ -76,10 +76,12 @@ import {
   planRootRecordRemovePatch,
 } from "../../../src/domain/schema/object/record.js";
 import {
-  arrayElementSchemaAtParent,
   arrayElementSchemaAtPath,
-  prefixIssues,
 } from "../../../src/domain/schema/validation/schema.js";
+import {
+  arrayElementSchemaAtParent,
+  prefixIssues,
+} from "../../../src/domain/schema/shared/schema.js";
 import {
   arrayIndexInParent,
   arrayIndexPathLocation,
@@ -104,7 +106,7 @@ import {
 import {
   failedLocalSchemaValidation,
   okLocalSchemaValidation,
-} from "../../../src/domain/schema/validation/result.js";
+} from "../../../src/domain/schema/shared/result.js";
 import {
   rootRecordValueSchemaForLocalSchemaValidation,
 } from "../../../src/domain/schema/object/record.js";
@@ -121,7 +123,7 @@ import {
   evaluateLocalSchemaValidationValueValidationPlan,
   planArrayAddAppliedOperations,
   planLocalSchemaValidationValueValidation,
-} from "../../../src/domain/schema/validation/value.js";
+} from "../../../src/domain/schema/shared/value.js";
 import type { JSONPatchOperation } from "../../../src/foundation/patch/types.js";
 
 describe("local patch value validation planning", () => {

@@ -63,12 +63,28 @@ export function previewPatch<T>(
   options: PatchPreviewOptions = {},
 ): PatchPreviewResult<T> {
   const capability = doc.canPatch(operations);
-  if (!capability.ok) return rejectedPreview(capability);
+  if (!capability.ok) {
+    return {
+      ok: false,
+      code: "patch_rejected",
+      reason: capability.reason ?? "patch rejected by document capability check",
+      capability: cloneJson(capability) as Exclude<JSONCapabilityResult, { ok: true }>,
+      ...(capability.pointer !== undefined ? { pointer: capability.pointer } : {}),
+    };
+  }
 
   const applied = options.trustedState === true
     ? applyPatchToTrustedState(schema, doc.value, operations)
     : applyPatch(schema, doc.value, operations);
-  if (!applied.result.ok) return failedPreview(applied.result);
+  if (!applied.result.ok) {
+    return {
+      ok: false,
+      code: "preview_failed",
+      reason: applied.result.reason ?? "patch preview failed",
+      result: cloneJson(applied.result) as Extract<JSONResult, { ok: false }>,
+      ...(applied.result.pointer !== undefined ? { pointer: applied.result.pointer } : {}),
+    };
+  }
 
   return {
     ok: true,
@@ -76,32 +92,6 @@ export function previewPatch<T>(
     applied: copyPatch(applied.applied),
     changed: jsonSignature(doc.value) !== jsonSignature(applied.state),
   };
-}
-
-function rejectedPreview(
-  capability: Exclude<JSONCapabilityResult, { ok: true }>,
-): PatchPreviewError {
-  const error: PatchPreviewError = {
-    ok: false,
-    code: "patch_rejected",
-    reason: capability.reason ?? "patch rejected by document capability check",
-    capability: cloneJson(capability) as Exclude<JSONCapabilityResult, { ok: true }>,
-  };
-  if (capability.pointer !== undefined) error.pointer = capability.pointer;
-  return error;
-}
-
-function failedPreview(
-  result: Extract<JSONResult, { ok: false }>,
-): PatchPreviewError {
-  const error: PatchPreviewError = {
-    ok: false,
-    code: "preview_failed",
-    reason: result.reason ?? "patch preview failed",
-    result: cloneJson(result) as Extract<JSONResult, { ok: false }>,
-  };
-  if (result.pointer !== undefined) error.pointer = result.pointer;
-  return error;
 }
 
 function copyPatch(

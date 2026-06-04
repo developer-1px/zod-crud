@@ -214,7 +214,7 @@ function commitOptionsFromMetadata(
   if (metadata.label !== undefined) options.label = metadata.label;
   if (metadata.origin !== undefined) options.origin = metadata.origin;
   if (metadata.mergeKey !== undefined) options.mergeKey = metadata.mergeKey;
-  return hasKeys(options) ? options : undefined;
+  return Object.keys(options).length > 0 ? options : undefined;
 }
 
 function copyEntries(entries: ReadonlyArray<PatchLogEntry>): ReadonlyArray<PatchLogEntry> {
@@ -262,8 +262,4 @@ function copyValue<T>(value: T): T {
   } catch {
     return JSON.parse(JSON.stringify(value)) as T;
   }
-}
-
-function hasKeys(value: object): boolean {
-  return Object.keys(value).length > 0;
 }

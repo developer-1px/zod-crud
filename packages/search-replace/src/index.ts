@@ -208,7 +208,7 @@ export function findText<TDocument>(
     search,
     root: normalized.options.root,
     caseSensitive: normalized.options.caseSensitive,
-    count: countRanges(matches),
+    count: matches.reduce((count, match) => count + match.ranges.length, 0),
     matches: copyMatches(matches),
   };
 }
@@ -360,10 +360,6 @@ function validateRange(range: TextMatchRange, value: string): { ok: true } | Sea
     return searchReplaceError("invalid_match", "match text length does not match its range");
   }
   return { ok: true };
-}
-
-function countRanges(matches: ReadonlyArray<SearchReplaceMatch>): number {
-  return matches.reduce((count, match) => count + match.ranges.length, 0);
 }
 
 function copyMatches(matches: ReadonlyArray<SearchReplaceMatch>): SearchReplaceMatch[] {

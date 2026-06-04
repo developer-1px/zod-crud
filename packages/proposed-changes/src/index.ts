@@ -336,7 +336,7 @@ function staleGuard<TDocument>(
         pointer: guard.path,
       });
     }
-    if (!jsonEqual(read.value, guard.value)) {
+    if (JSON.stringify(read.value) !== JSON.stringify(guard.value)) {
       return proposedChangeError("stale_change", `proposed change guard changed: ${guard.path}`, {
         id: change.id,
         pointer: guard.path,
@@ -476,10 +476,6 @@ function proposedChangeError(
 
 function idOption(id: string | undefined): { id?: string } {
   return id === undefined ? {} : { id };
-}
-
-function jsonEqual(left: unknown, right: unknown): boolean {
-  return JSON.stringify(left) === JSON.stringify(right);
 }
 
 function cloneJson<T>(value: T): T {

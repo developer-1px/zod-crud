@@ -16,7 +16,7 @@ import type {
 } from "../../../foundation/patch/types.js";
 import { jsonSerializableError } from "../../../foundation/json/serializable.js";
 import { handleResult, type ErrorPolicy } from "../../../foundation/error.js";
-import { schemaOutputIsKnownJson } from "../../../domain/schema/validation/schema.js";
+import { schemaOutputIsKnownJson } from "../../../domain/schema/shared/schema.js";
 import { applyPatchWithLocalSchemaValidation } from "../../../domain/schema/validation/patch.js";
 import type {
   JSONChangeMetadata,

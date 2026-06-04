@@ -231,7 +231,7 @@ export function createDocumentPersistence<T>(
       } catch (cause) {
         return persistenceError("persistence_restore_failed", "failed to restore persisted document", cause);
       }
-      if (!loaded.ok) return loadError(loaded);
+      if (!loaded.ok) return loaded;
 
       const selection = snapshot.snapshot.selection;
       const shouldRestoreSelection =
@@ -288,7 +288,7 @@ export function createDocumentPersistence<T>(
 
       if (watchOptions.immediate === true) enqueue({ applied: [] });
       const unsubscribe = doc.subscribe((applied, metadata) => {
-        enqueue(watchEvent(applied, metadata));
+        enqueue(metadata === undefined ? { applied } : { applied, metadata });
       });
 
       const stop = () => {
@@ -464,19 +464,6 @@ function isSelectionPoint(value: unknown): value is SelectionPoint {
 
 function cloneSelectionPoint(point: SelectionPoint): SelectionPoint {
   return typeof point === "string" ? point : { ...point };
-}
-
-function watchEvent(
-  applied: ReadonlyArray<JSONPatchOperation>,
-  metadata?: JSONChangeMetadata,
-): DocumentPersistenceWatchEvent {
-  const event: DocumentPersistenceWatchEvent = { applied };
-  if (metadata !== undefined) event.metadata = metadata;
-  return event;
-}
-
-function loadError(result: Extract<JSONResult, { ok: false }>): DocumentPersistenceLoadError {
-  return result;
 }
 
 function persistenceError(

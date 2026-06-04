@@ -39,7 +39,7 @@ interface DocumentChangeHistoryRecord {
   operations: ReadonlyArray<JSONPatchOperation>;
   selectionBefore: SelectionSnap;
   selectionAfter: SelectionSnap;
-  metadata?: JSONChangeMetadata;
+  metadata: JSONChangeMetadata | undefined;
   operationsOwned: boolean;
 }
 
@@ -67,8 +67,8 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
       operations,
       selectionBefore,
       selectionAfter,
-      ...(metadata !== undefined ? { metadata } : {}),
-      ...(operationsOwned ? { operationsOwned } : {}),
+      metadata,
+      operationsOwned,
     });
     if (recordPlan.kind === "skip") return;
     if (recordPlan.kind === "replaceLast") {
@@ -99,16 +99,15 @@ export function createDocumentMutationRuntime<S extends z.ZodType>(
     operationsOwned = false,
   ): DocumentChangeHistoryRecord | null => {
     if (!record) return null;
-    const out: DocumentChangeHistoryRecord = {
+    return {
       before,
       after,
       operations,
       selectionBefore,
       selectionAfter,
+      metadata,
       operationsOwned,
     };
-    if (metadata !== undefined) out.metadata = metadata;
-    return out;
   };
   const applyDocumentChangeResult = (
     result: JSONResult,

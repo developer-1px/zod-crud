@@ -8,21 +8,16 @@ export function buildChangeMetadata(
   selectionBefore: SelectionSnap,
   includeSelectionBefore: boolean,
 ): JSONChangeMetadata | undefined {
-  const metadata = mergeChangeMetadata(active, direct);
+  const metadata = active === undefined
+    ? direct
+    : direct === undefined
+      ? active
+      : { ...active, ...direct };
   if (!includeSelectionBefore && metadata === undefined) return undefined;
   return {
     ...metadata,
     selectionBefore,
   };
-}
-
-function mergeChangeMetadata(
-  active: HistoryTransactionOptions | undefined,
-  direct: JSONChangeMetadata | undefined,
-): JSONChangeMetadata | undefined {
-  if (active === undefined) return direct;
-  if (direct === undefined) return active;
-  return { ...active, ...direct };
 }
 
 export function compactHistoryMetadata(
@@ -39,42 +34,21 @@ export function compactHistoryMetadata(
   return compact;
 }
 
-export function mergeGeneralTransactionMetadata(
-  current: HistoryTransactionOptions | undefined,
-  next: HistoryTransactionOptions,
-): HistoryTransactionOptions {
-  return current === undefined ? next : { ...current, ...next };
-}
-
-export function mergeTransactionMetadataRange(
-  entries: ReadonlyArray<DocumentHistoryEntry>,
-  start: number,
-  end: number,
-): HistoryTransactionOptions | undefined {
-  let metadata: HistoryTransactionOptions | undefined;
-  for (let index = start; index < end; index += 1) {
-    const entryMetadata = entries[index]?.metadata;
-    if (entryMetadata === undefined) continue;
-    metadata = mergeGeneralTransactionMetadata(metadata, entryMetadata);
-  }
-  return metadata;
-}
-
 export function mergeRepeatedReplaceTransactionMetadata(
   current: HistoryTransactionOptions | undefined,
   next: HistoryTransactionOptions,
 ): HistoryTransactionOptions {
-  if (current === undefined || sameHistoryMetadata(current, next)) return next;
+  if (
+    current === undefined
+    || (
+      current.label === next.label
+      && current.origin === next.origin
+      && current.mergeKey === next.mergeKey
+    )
+  ) {
+    return next;
+  }
   return { ...current, ...next };
-}
-
-function sameHistoryMetadata(
-  left: HistoryTransactionOptions,
-  right: HistoryTransactionOptions,
-): boolean {
-  return left.label === right.label
-    && left.origin === right.origin
-    && left.mergeKey === right.mergeKey;
 }
 
 export function planMergedDocumentHistoryEntry(

@@ -12,12 +12,10 @@ import {
   planMergedDocumentHistoryEntry,
 } from "./metadata.js";
 import {
-  planDocumentTransactionMerge,
-} from "./transaction.js";
-import {
   planDocumentHistoryRestore,
 } from "./restore.js";
 import type {
+  DocumentHistoryEntry,
   DocumentHistoryRuntimeState,
   JSONDocumentHistory,
 } from "./types.js";
@@ -104,7 +102,7 @@ export function createDocumentHistoryRuntime<T>(
     const start = historyState.stack.undoStart + depthBefore;
     const end = historyState.stack.undo.length;
     if (start < historyState.stack.undoStart || end - start <= 1) return;
-    const merged = planDocumentTransactionMerge({ entries: historyState.stack.undo, start, end });
+    const merged = mergeTransactionHistoryRange(historyState.stack.undo, start, end);
     if (merged === null) return;
     historyState.stack.undo[start] = merged;
     historyState.stack.undo.length = start + 1;
@@ -150,6 +148,26 @@ export function createDocumentHistoryRuntime<T>(
   };
 
   return { history, historyControls };
+}
+
+function mergeTransactionHistoryRange(
+  entries: ReadonlyArray<DocumentHistoryEntry>,
+  start: number,
+  end: number,
+): DocumentHistoryEntry | null {
+  let merged = entries[start];
+  if (merged === undefined) return null;
+
+  for (let index = start + 1; index < end; index += 1) {
+    const entry = entries[index];
+    if (entry === undefined) return null;
+    merged = planMergedDocumentHistoryEntry(
+      merged,
+      entry,
+      mergeHistoryOptions(merged.metadata, entry.metadata, undefined),
+    );
+  }
+  return merged;
 }
 
 function mergeHistoryOptions(

@@ -34,10 +34,6 @@ export function arrayElementLocation(path: Pointer): { parent: Pointer; index: n
   };
 }
 
-export function appendArrayIndex(parent: Pointer, index: number): Pointer {
-  return parent === "" ? `/${index}` : `${parent}/${index}`;
-}
-
 export function appendArrayIndexes(parent: Pointer, indexes: ReadonlyArray<number>): Pointer[] {
   const targets = new Array<Pointer>(indexes.length);
   if (parent === "") {

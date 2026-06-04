@@ -14,10 +14,10 @@ import {
   applySameArrayNestedReplacePatchWithLocalSchemaValidation,
 } from "../array/replace.js";
 import {
-  arrayElementSchemaAtPath,
   cachedSchemaAtPointer,
   isPlainStructuralSchema,
-} from "./schema.js";
+} from "../shared/schema.js";
+import { arrayElementSchemaAtPath } from "./schema.js";
 import {
   applyReplacePatchWithLocalSchemaValidation,
   applySingleReplacePatchWithLocalSchemaValidation,
@@ -34,7 +34,7 @@ import {
   readAppliedLocalOpSourceValue,
   type AppliedLocalOpSourceValue,
 } from "../array/path.js";
-import { failedLocalSchemaValidation, okLocalSchemaValidation, schemaViolation } from "./result.js";
+import { failedLocalSchemaValidation, okLocalSchemaValidation, schemaViolation } from "../shared/result.js";
 
 export type LocalSchemaValidationResult<S extends z.ZodType> = ApplyResult<S> | null;
 

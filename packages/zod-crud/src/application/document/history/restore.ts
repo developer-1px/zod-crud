@@ -3,12 +3,8 @@ import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
 import { readAt, tryParsePointer } from "../../../foundation/pointer/index.js";
 import type { HistoryTransactionOptions, JSONChangeMetadata } from "../runtime/types.js";
 import type { SelectionSnap } from "../../../domain/selection/types.js";
-import type {
-  DocumentHistoryEntry,
-  DocumentHistoryRestorePlan,
-} from "./types.js";
+import type { DocumentHistoryEntry } from "./types.js";
 import { compactHistoryMetadata, mergeRepeatedReplaceTransactionMetadata, planCompactedRepeatedReplaceHistory } from "./metadata.js";
-import { planDocumentTransactionAppendFastPath } from "./transaction.js";
 
 const ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD = 512;
 
@@ -16,16 +12,6 @@ type DocumentHistoryAppendPlan =
   | { kind: "skip" }
   | { kind: "replaceLast"; entry: DocumentHistoryEntry }
   | { kind: "commit"; entry: DocumentHistoryEntry };
-
-interface PlanDocumentHistoryEntryInput {
-  before: unknown;
-  after: unknown;
-  operations: ReadonlyArray<JSONPatchOperation>;
-  selectionBefore: SelectionSnap;
-  selectionAfter: SelectionSnap;
-  metadata?: HistoryTransactionOptions;
-  operationsOwned?: boolean;
-}
 
 interface PlanDocumentHistoryRecordInput {
   activeTransactionStartDepth: number | undefined;
@@ -36,8 +22,8 @@ interface PlanDocumentHistoryRecordInput {
   operations: ReadonlyArray<JSONPatchOperation>;
   selectionBefore: SelectionSnap;
   selectionAfter: SelectionSnap;
-  metadata?: JSONChangeMetadata;
-  operationsOwned?: boolean;
+  metadata: JSONChangeMetadata | undefined;
+  operationsOwned: boolean | undefined;
 }
 
 interface PlanDocumentHistoryRestoreInput {
@@ -47,34 +33,18 @@ interface PlanDocumentHistoryRestoreInput {
   currentSelection: SelectionSnap;
 }
 
-interface PlanCompactedRepeatedReplaceBatchHistoryInput {
-  before: unknown;
-  operations: ReadonlyArray<JSONPatchOperation>;
-}
-
-interface CompactedRepeatedReplaceBatchHistoryPlan {
-  forward: JSONPatchOperation[];
-  inverse: JSONPatchOperation[];
-}
-
-interface PlanRootBulkHistorySnapshotInput {
-  before: unknown;
-  after: unknown;
-  forward: ReadonlyArray<JSONPatchOperation>;
-}
-
-interface RootBulkHistorySnapshotPlan {
-  before: unknown;
-  after?: unknown;
-}
-
 function planDocumentHistoryEntry(
-  input: PlanDocumentHistoryEntryInput,
+  input: {
+    before: unknown;
+    after: unknown;
+    operations: ReadonlyArray<JSONPatchOperation>;
+    selectionBefore: SelectionSnap;
+    selectionAfter: SelectionSnap;
+    metadata: HistoryTransactionOptions | undefined;
+    operationsOwned: boolean | undefined;
+  },
 ): DocumentHistoryEntry | null {
-  const repeatedReplace = planCompactedRepeatedReplaceBatchHistory({
-    before: input.before,
-    operations: input.operations,
-  });
+  const repeatedReplace = planCompactedRepeatedReplaceBatchHistory(input.before, input.operations);
   let forward: JSONPatchOperation[];
   let inverseOps: JSONPatchOperation[];
   if (repeatedReplace !== null) {
@@ -93,14 +63,9 @@ function planDocumentHistoryEntry(
     selectionBefore: input.selectionBefore,
     selectionAfter: input.selectionAfter,
   };
-  const snapshot = planRootBulkHistorySnapshot({
-    before: input.before,
-    after: input.after,
-    forward,
-  });
+  const snapshot = planRootBulkHistorySnapshot(input.before, input.after, forward);
   if (snapshot !== null) entry.snapshot = snapshot;
-  const historyMetadata = compactHistoryMetadata(input.metadata);
-  if (historyMetadata !== undefined) entry.metadata = historyMetadata;
+  if (input.metadata !== undefined) entry.metadata = input.metadata;
   return entry;
 }
 
@@ -108,24 +73,14 @@ export function planDocumentHistoryRecord(
   input: PlanDocumentHistoryRecordInput,
 ): DocumentHistoryAppendPlan {
   const historyMetadata = compactHistoryMetadata(input.metadata);
-  const fastPath = planDocumentTransactionAppendFastPath({
-    activeTransactionStartDepth: input.activeTransactionStartDepth,
-    currentDepth: input.currentDepth,
-    previous: input.previous,
-    operations: input.operations,
-    selectionAfter: input.selectionAfter,
-    metadata: historyMetadata,
-  });
-  if (fastPath.kind === "replaceLast") return fastPath;
-
   const entry = planDocumentHistoryEntry({
     before: input.before,
     after: input.after,
     operations: input.operations,
     selectionBefore: input.selectionBefore,
     selectionAfter: input.selectionAfter,
-    ...(historyMetadata !== undefined ? { metadata: historyMetadata } : {}),
-    ...(input.operationsOwned === true ? { operationsOwned: true } : {}),
+    metadata: historyMetadata,
+    operationsOwned: input.operationsOwned,
   });
   if (entry === null) return { kind: "skip" };
   if (
@@ -144,7 +99,7 @@ export function planDocumentHistoryRecord(
 
 export function planDocumentHistoryRestore(
   input: PlanDocumentHistoryRestoreInput,
-): DocumentHistoryRestorePlan {
+) {
   const { direction, entry } = input;
   const snapshot = entry.snapshot;
   const nextEntry: DocumentHistoryEntry = {
@@ -161,20 +116,19 @@ export function planDocumentHistoryRestore(
       : { before: snapshot.before };
   }
 
-  const plan: DocumentHistoryRestorePlan = {
+  const state = direction === "undo" ? snapshot?.before : snapshot?.after;
+  return {
     patch: direction === "undo" ? entry.inverse : entry.forward,
     selectionAfter: direction === "undo" ? entry.selectionBefore : entry.selectionAfter,
     entry: nextEntry,
+    ...(state !== undefined ? { state } : {}),
   };
-  const state = direction === "undo" ? snapshot?.before : snapshot?.after;
-  if (state !== undefined) plan.state = state;
-  return plan;
 }
 
 function planCompactedRepeatedReplaceBatchHistory(
-  input: PlanCompactedRepeatedReplaceBatchHistoryInput,
-): CompactedRepeatedReplaceBatchHistoryPlan | null {
-  const { before, operations } = input;
+  before: unknown,
+  operations: ReadonlyArray<JSONPatchOperation>,
+): { forward: JSONPatchOperation[]; inverse: JSONPatchOperation[] } | null {
   if (!Array.isArray(operations) || operations.length < 2 || !(0 in operations)) return null;
 
   const first = operations[0]!;
@@ -200,9 +154,10 @@ function planCompactedRepeatedReplaceBatchHistory(
 }
 
 function planRootBulkHistorySnapshot(
-  input: PlanRootBulkHistorySnapshotInput,
-): RootBulkHistorySnapshotPlan | null {
-  const { before, after, forward } = input;
+  before: unknown,
+  after: unknown,
+  forward: ReadonlyArray<JSONPatchOperation>,
+): { before: unknown; after?: unknown } | null {
   if (
     forward.length < ROOT_BULK_HISTORY_SNAPSHOT_THRESHOLD
     || before === null

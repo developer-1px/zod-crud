@@ -16,7 +16,7 @@ import {
 import { emptyMutableHistory } from "../../foundation/history.js";
 import { removeSourcesPatch } from "../../foundation/patch/source.js";
 import { patchPreflight, patchPreflightFromApplyResult } from "../../domain/schema/patch.js";
-import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/validation/schema.js";
+import { isPlainStructuralSchemaForLocalValidation } from "../../domain/schema/shared/schema.js";
 import { schemaAtPointer } from "../../domain/schema/introspection.js";
 import { getDef } from "../../domain/schema/zod.js";
 import { duplicate, resolveDuplicateArgs, type DuplicateOpts } from "../../domain/duplicate.js";

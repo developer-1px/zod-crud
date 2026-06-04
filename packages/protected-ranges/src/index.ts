@@ -91,7 +91,7 @@ export function createProtectedRanges<TDocument>(
       return protectedRanges.map(rangeSummary);
     },
     isProtected(pointer) {
-      return canEditPointer(protectedRanges, pointer, "patch");
+      return protectedWrite(protectedRanges, "patch", pointer, "replace") ?? { ok: true };
     },
     canPatch(operations) {
       return canPatchProtectedRanges(doc, protectedRanges, operations);
@@ -263,14 +263,6 @@ export function pasteProtectedRange<TDocument>(
   return doc.paste(target, options);
 }
 
-function canEditPointer(
-  ranges: ReadonlyArray<ProtectedRange>,
-  pointer: Pointer,
-  operation: ProtectedRangeOperation,
-): ProtectedRangeCapabilityResult {
-  return protectedWrite(ranges, operation, pointer, "replace") ?? { ok: true };
-}
-
 function protectedPatchOperation(
   ranges: ReadonlyArray<ProtectedRange>,
   operation: JSONPatchOperation,
@@ -402,11 +394,7 @@ function patchFailure(result: Exclude<JSONResult, { ok: true }>): ProtectedRange
 }
 
 function toPatchArray(operations: JSONPatchInput): ReadonlyArray<JSONPatchOperation> {
-  return isPatchOperation(operations) ? [operations] : operations;
-}
-
-function isPatchOperation(operations: JSONPatchInput): operations is JSONPatchOperation {
-  return !Array.isArray(operations);
+  return Array.isArray(operations) ? operations : [operations as JSONPatchOperation];
 }
 
 function copyRange(range: ProtectedRange): ProtectedRange {

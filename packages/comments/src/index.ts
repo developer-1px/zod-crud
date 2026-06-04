@@ -306,12 +306,7 @@ function matchesPointer(
   if (comment.status === "resolved" && filter.includeResolved !== true) return false;
   if (comment.pointer === pointer) return true;
   if (filter.includeDescendants !== true) return false;
-  return isPointerDescendant(comment.pointer, pointer);
-}
-
-function isPointerDescendant(candidate: Pointer, scope: Pointer): boolean {
-  if (scope === "") return candidate !== "";
-  return candidate.startsWith(`${scope}/`);
+  return pointer === "" ? comment.pointer !== "" : comment.pointer.startsWith(`${pointer}/`);
 }
 
 function emit(

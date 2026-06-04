@@ -67,7 +67,7 @@ export function createDirtyState<T>(
     },
 
     isDirty() {
-      return readDirty(doc, baseline, baselineSignature, equals);
+      return readDirtyValue(cloneJson(doc.value), baseline, baselineSignature, equals);
     },
 
     discard(discardOptions = {}) {
@@ -109,15 +109,6 @@ function readSnapshot<T>(
     value,
     baseline: cloneJson(baseline),
   };
-}
-
-function readDirty<T>(
-  doc: JSONDocument<T>,
-  baseline: T,
-  baselineSignature: string,
-  equals: DirtyStateComparator<T> | undefined,
-): boolean {
-  return readDirtyValue(cloneJson(doc.value), baseline, baselineSignature, equals);
 }
 
 function readDirtyValue<T>(

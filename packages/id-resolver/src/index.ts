@@ -104,10 +104,7 @@ export function createIdResolver<T>(
         };
       }
 
-      const [match] = matches;
-      if (!match) {
-        return resolveError("id_not_found", `id not found in scope ${scope}: ${id}`, scope, id);
-      }
+      const match = matches[0]!;
       return {
         ok: true,
         scope: match.scope,

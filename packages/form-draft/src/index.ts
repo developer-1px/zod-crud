@@ -104,7 +104,7 @@ export function createFormDraft<TDocument, TInput = unknown>(
   doc: JSONDocument<TDocument>,
   options: CreateFormDraftOptions<TInput> = {},
 ): FormDrafts<TInput> {
-  const parse = options.parse ?? identityParser<TInput>;
+  const parse: FormDraftParser<TInput> = options.parse ?? ((context) => ({ ok: true, value: context.input }));
   const drafts = new Map<Pointer, StoredDraft<TInput>>();
   const listeners = new Set<FormDraftListener<TInput>>();
   let disposed = false;
@@ -484,12 +484,6 @@ function copySnapshot<TInput>(
     error: snapshot.error,
     capability: snapshot.capability,
   };
-}
-
-function identityParser<TInput>(
-  context: FormDraftParseContext<TInput>,
-): FormDraftParseResult {
-  return { ok: true, value: context.input };
 }
 
 function cloneJson<TValue>(value: TValue): TValue {
