@@ -267,17 +267,6 @@ function readDocumentPointer(state: unknown, path: Pointer): ReadResult {
       };
 }
 
-function queryDocumentPointers(state: unknown, jsonpath: string): QueryResult {
-  try {
-    return { ok: true, query: jsonpath, pointers: jsonpathQuery(jsonpath, state) };
-  } catch (error) {
-    if (error instanceof JSONPathSyntaxError) {
-      return { ok: false, code: "invalid_query", reason: error.message };
-    }
-    throw error;
-  }
-}
-
 function readDocumentEntries(schema: z.ZodType, state: unknown, path: Pointer): EntriesResult {
   const result = readDocumentPointer(state, path);
   if (!result.ok) return result;
@@ -494,7 +483,14 @@ export function createJSONDocument<S extends z.ZodType>(
         };
   };
   const readPointer = (path: Pointer): ReadResult => readDocumentPointer(rawOps.state, path);
-  const queryPointers = (jsonpath: string): QueryResult => queryDocumentPointers(rawOps.state, jsonpath);
+  const queryPointers = (jsonpath: string): QueryResult => {
+    try {
+      return { ok: true, query: jsonpath, pointers: jsonpathQuery(jsonpath, rawOps.state) };
+    } catch (error) {
+      if (error instanceof JSONPathSyntaxError) return { ok: false, code: "invalid_query", reason: error.message };
+      throw error;
+    }
+  };
   const schemaState = createSchemaState(schema);
   function insert(pathOrValue: Pointer | unknown, maybeValue?: unknown): JSONDocumentEditResult {
     const args = resolvePathValueArgs(pathOrValue, maybeValue, arguments.length >= 2);
