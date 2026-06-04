@@ -449,12 +449,7 @@ function proposedChangeError(
     result?: Exclude<JSONResult, { ok: true }>;
   } = {},
 ): ProposedChangeError {
-  const error: ProposedChangeError = { ok: false, code, reason };
-  if (options.id !== undefined) error.id = options.id;
-  if (options.pointer !== undefined) error.pointer = options.pointer;
-  if (options.capability !== undefined) error.capability = options.capability;
-  if (options.result !== undefined) error.result = options.result;
-  return error;
+  return { ok: false, code, reason, ...(options.id === undefined ? {} : { id: options.id }), ...(options.pointer === undefined ? {} : { pointer: options.pointer }), ...(options.capability === undefined ? {} : { capability: options.capability }), ...(options.result === undefined ? {} : { result: options.result }) };
 }
 
 function cloneJson<T>(value: T): T {

@@ -215,13 +215,7 @@ function pasteSpecialError(
     result?: Exclude<ClipboardPasteResult<unknown>, { ok: true }>;
   } = {},
 ): PasteSpecialError {
-  const error: PasteSpecialError = { ok: false, code, reason };
-  if (options.target !== undefined) error.target = copyPayload(options.target) as JSONDocumentPasteTarget;
-  if (options.pointer !== undefined) error.pointer = options.pointer;
-  if (options.diagnostics !== undefined) error.diagnostics = copyDiagnostics(options.diagnostics);
-  if (options.capability !== undefined) error.capability = options.capability;
-  if (options.result !== undefined) error.result = options.result;
-  return error;
+  return { ok: false, code, reason, ...(options.target === undefined ? {} : { target: copyPayload(options.target) as JSONDocumentPasteTarget }), ...(options.pointer === undefined ? {} : { pointer: options.pointer }), ...(options.diagnostics === undefined ? {} : { diagnostics: copyDiagnostics(options.diagnostics) }), ...(options.capability === undefined ? {} : { capability: options.capability }), ...(options.result === undefined ? {} : { result: options.result }) };
 }
 
 function copyInput(input: PasteSpecialInput): PasteSpecialInput {

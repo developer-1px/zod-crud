@@ -27,11 +27,7 @@ export function compactHistoryMetadata(
   const { label, origin, mergeKey } = metadata;
   if (label === undefined && origin === undefined && mergeKey === undefined) return undefined;
 
-  const compact: HistoryTransactionOptions = {};
-  if (label !== undefined) compact.label = label;
-  if (origin !== undefined) compact.origin = origin;
-  if (mergeKey !== undefined) compact.mergeKey = mergeKey;
-  return compact;
+  return { ...(label === undefined ? {} : { label }), ...(origin === undefined ? {} : { origin }), ...(mergeKey === undefined ? {} : { mergeKey }) };
 }
 
 export function mergeRepeatedReplaceTransactionMetadata(

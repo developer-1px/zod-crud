@@ -276,7 +276,5 @@ function collectionError(
   reason: string,
   pointer?: Pointer,
 ): CollectionError {
-  const error: CollectionError = { ok: false, code, reason };
-  if (pointer !== undefined) error.pointer = pointer;
-  return error;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

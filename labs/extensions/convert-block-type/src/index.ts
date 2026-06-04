@@ -231,13 +231,7 @@ function conversionError(
     result?: Exclude<JSONResult, { ok: true }>;
   } = {},
 ): BlockTypeConversionError {
-  const error: BlockTypeConversionError = { ok: false, code, reason };
-  if (options.pointer !== undefined) error.pointer = options.pointer;
-  if (options.from !== undefined) error.from = options.from;
-  if (options.to !== undefined) error.to = options.to;
-  if (options.capability !== undefined) error.capability = options.capability;
-  if (options.result !== undefined) error.result = options.result;
-  return error;
+  return { ok: false, code, reason, ...(options.pointer === undefined ? {} : { pointer: options.pointer }), ...(options.from === undefined ? {} : { from: options.from }), ...(options.to === undefined ? {} : { to: options.to }), ...(options.capability === undefined ? {} : { capability: options.capability }), ...(options.result === undefined ? {} : { result: options.result }) };
 }
 
 function errorReason(error: unknown, fallback: string): string {

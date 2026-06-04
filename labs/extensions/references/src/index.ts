@@ -542,14 +542,7 @@ function diagnostic(
     value?: unknown;
   } = {},
 ): ReferenceDiagnostic {
-  const entry: ReferenceDiagnostic = { code, reason };
-  if (options.target !== undefined) entry.target = options.target;
-  if (options.field !== undefined) entry.field = options.field;
-  if (options.id !== undefined) entry.id = options.id;
-  if (options.pointer !== undefined) entry.pointer = options.pointer;
-  if (options.pointers !== undefined) entry.pointers = [...options.pointers];
-  if (options.value !== undefined) entry.value = cloneJson(options.value);
-  return entry;
+  return { code, reason, ...(options.target === undefined ? {} : { target: options.target }), ...(options.field === undefined ? {} : { field: options.field }), ...(options.id === undefined ? {} : { id: options.id }), ...(options.pointer === undefined ? {} : { pointer: options.pointer }), ...(options.pointers === undefined ? {} : { pointers: [...options.pointers] }), ...(options.value === undefined ? {} : { value: cloneJson(options.value) }) };
 }
 
 function referenceError(
@@ -566,16 +559,7 @@ function referenceError(
     result?: Exclude<JSONResult, { ok: true }>;
   } = {},
 ): ReferenceError {
-  const error: ReferenceError = { ok: false, code, reason };
-  if (options.target !== undefined) error.target = options.target;
-  if (options.field !== undefined) error.field = options.field;
-  if (options.id !== undefined) error.id = options.id;
-  if (options.pointer !== undefined) error.pointer = options.pointer;
-  if (options.pointers !== undefined) error.pointers = [...options.pointers];
-  if (options.value !== undefined) error.value = cloneJson(options.value);
-  if (options.capability !== undefined) error.capability = options.capability;
-  if (options.result !== undefined) error.result = options.result;
-  return error;
+  return { ok: false, code, reason, ...(options.target === undefined ? {} : { target: options.target }), ...(options.field === undefined ? {} : { field: options.field }), ...(options.id === undefined ? {} : { id: options.id }), ...(options.pointer === undefined ? {} : { pointer: options.pointer }), ...(options.pointers === undefined ? {} : { pointers: [...options.pointers] }), ...(options.value === undefined ? {} : { value: cloneJson(options.value) }), ...(options.capability === undefined ? {} : { capability: options.capability }), ...(options.result === undefined ? {} : { result: options.result }) };
 }
 
 function capabilityError(

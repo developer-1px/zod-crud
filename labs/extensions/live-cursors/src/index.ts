@@ -270,11 +270,7 @@ function pointPath(point: SelectionPoint): Pointer {
 
 function withPointPath(point: SelectionPoint, path: Pointer): SelectionPoint {
   if (typeof point === "string") return path;
-  const next: SelectionPointObject = { path };
-  if (point.offset !== undefined) next.offset = point.offset;
-  if (point.edge !== undefined) next.edge = point.edge;
-  if (point.affinity !== undefined) next.affinity = point.affinity;
-  return next;
+  return { path, ...(point.offset === undefined ? {} : { offset: point.offset }), ...(point.edge === undefined ? {} : { edge: point.edge }), ...(point.affinity === undefined ? {} : { affinity: point.affinity }) };
 }
 
 function primaryPointer(selection: ReadonlyArray<SelectionRange>): Pointer | null {

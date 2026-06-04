@@ -202,9 +202,7 @@ function patchError(
 }
 
 function error(code: MoveSelectedErrorCode, reason: string, pointer?: Pointer): MoveSelectedError {
-  const result: MoveSelectedError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function jsonEqual(left: unknown, right: unknown): boolean {

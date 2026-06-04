@@ -159,9 +159,7 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: FillDownErrorCode, reason: string, pointer?: Pointer): FillDownError {
-  const result: FillDownError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

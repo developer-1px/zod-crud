@@ -367,8 +367,5 @@ function commentError(
     pointer?: Pointer;
   } = {},
 ): CommentError {
-  const error: CommentError = { ok: false, code, reason };
-  if (options.id !== undefined) error.id = options.id;
-  if (options.pointer !== undefined) error.pointer = options.pointer;
-  return error;
+  return { ok: false, code, reason, ...(options.id === undefined ? {} : { id: options.id }), ...(options.pointer === undefined ? {} : { pointer: options.pointer }) };
 }

@@ -129,7 +129,5 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: IncrementNumberErrorCode, reason: string, pointer?: Pointer): IncrementNumberError {
-  const result: IncrementNumberError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

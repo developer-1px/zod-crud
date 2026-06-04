@@ -140,7 +140,5 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: TrimTextErrorCode, reason: string, pointer?: Pointer): TrimTextError {
-  const result: TrimTextError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

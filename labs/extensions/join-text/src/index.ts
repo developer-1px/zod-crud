@@ -141,7 +141,5 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: JoinTextErrorCode, reason: string, pointer?: Pointer): JoinTextError {
-  const result: JoinTextError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

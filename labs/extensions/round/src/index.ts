@@ -155,7 +155,5 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: RoundErrorCode, reason: string, pointer?: Pointer): RoundError {
-  const result: RoundError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

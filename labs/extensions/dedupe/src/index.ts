@@ -153,9 +153,7 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: DedupeErrorCode, reason: string, pointer?: Pointer): DedupeError {
-  const result: DedupeError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

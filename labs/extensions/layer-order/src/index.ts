@@ -286,10 +286,7 @@ function layerOrderError(
   pointer?: Pointer,
   options: { parent?: Pointer } = {},
 ): LayerOrderError {
-  const error: LayerOrderError = { ok: false, code, reason };
-  if (pointer !== undefined) error.pointer = pointer;
-  if (options.parent !== undefined) error.parent = options.parent;
-  return error;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }), ...(options.parent === undefined ? {} : { parent: options.parent }) };
 }
 
 function cloneJson<T>(value: T): T {

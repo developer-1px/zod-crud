@@ -139,9 +139,7 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: LimitItemsErrorCode, reason: string, pointer?: Pointer): LimitItemsError {
-  const result: LimitItemsError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

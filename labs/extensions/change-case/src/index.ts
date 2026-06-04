@@ -142,7 +142,5 @@ function patchError(pointer: Pointer, patch: Extract<JSONResult, { ok: false }>)
 }
 
 function error(code: ChangeCaseErrorCode, reason: string, pointer?: Pointer): ChangeCaseError {
-  const result: ChangeCaseError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }

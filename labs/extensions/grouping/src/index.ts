@@ -431,11 +431,7 @@ function groupingError(
   pointer?: Pointer,
   options: { operation?: GroupingOperation; parent?: Pointer } = {},
 ): GroupingError {
-  const error: GroupingError = { ok: false, code, reason };
-  if (pointer !== undefined) error.pointer = pointer;
-  if (options.operation !== undefined) error.operation = options.operation;
-  if (options.parent !== undefined) error.parent = options.parent;
-  return error;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }), ...(options.operation === undefined ? {} : { operation: options.operation }), ...(options.parent === undefined ? {} : { parent: options.parent }) };
 }
 
 function cloneJson<T>(value: T): T {

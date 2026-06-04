@@ -501,10 +501,7 @@ function decision(
   current?: unknown,
   value?: unknown,
 ): GridRangeDecision {
-  const result: GridRangeDecision = { ...cell, intent, action };
-  if (current !== undefined) result.current = cloneJson(current);
-  if (value !== undefined) result.value = cloneJson(value);
-  return result;
+  return { ...cell, intent, action, ...(current === undefined ? {} : { current: cloneJson(current) }), ...(value === undefined ? {} : { value: cloneJson(value) }) };
 }
 
 function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): GridRangeError {
@@ -528,9 +525,7 @@ function patchError(patch: Extract<JSONResult, { ok: false }>): GridRangeError {
 }
 
 function error(code: GridRangeErrorCode, reason: string, pointer?: Pointer): GridRangeError {
-  const result: GridRangeError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function cellError(

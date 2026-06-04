@@ -271,9 +271,7 @@ function patchError(
 }
 
 function error(code: FillSeriesErrorCode, reason: string, pointer?: Pointer): FillSeriesError {
-  const result: FillSeriesError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function jsonEqual(left: unknown, right: unknown): boolean {

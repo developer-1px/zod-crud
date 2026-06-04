@@ -179,9 +179,7 @@ function patchError(patch: Extract<JSONResult, { ok: false }>): ClearContentsErr
 }
 
 function error(code: ClearContentsErrorCode, reason: string, pointer?: Pointer): ClearContentsError {
-  const result: ClearContentsError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function jsonEqual(left: unknown, right: unknown): boolean {

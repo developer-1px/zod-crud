@@ -150,9 +150,7 @@ function patchError(patch: Extract<JSONResult, { ok: false }>): BatchUpdateError
 }
 
 function error(code: BatchUpdateErrorCode, reason: string, pointer?: Pointer): BatchUpdateError {
-  const result: BatchUpdateError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

@@ -221,10 +221,7 @@ function decision(
   current?: unknown,
   value?: unknown,
 ): SparseRecordDecision {
-  const result: SparseRecordDecision = { root, key, pointer, intent, action };
-  if (current !== undefined) result.current = cloneJson(current);
-  if (value !== undefined) result.value = cloneJson(value);
-  return result;
+  return { root, key, pointer, intent, action, ...(current === undefined ? {} : { current: cloneJson(current) }), ...(value === undefined ? {} : { value: cloneJson(value) }) };
 }
 
 function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): SparseRecordError {
@@ -248,9 +245,7 @@ function patchError(patch: Extract<JSONResult, { ok: false }>): SparseRecordErro
 }
 
 function error(code: SparseRecordErrorCode, reason: string, pointer?: Pointer): SparseRecordError {
-  const result: SparseRecordError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function isPlainRecord(value: unknown): value is Record<string, unknown> {

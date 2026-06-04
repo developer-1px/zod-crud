@@ -179,9 +179,7 @@ function patchError(
 }
 
 function error(code: PasteCellsErrorCode, reason: string, pointer?: Pointer): PasteCellsError {
-  const result: PasteCellsError = { ok: false, code, reason };
-  if (pointer !== undefined) result.pointer = pointer;
-  return result;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function jsonEqual(left: unknown, right: unknown): boolean {

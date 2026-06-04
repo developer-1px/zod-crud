@@ -244,9 +244,7 @@ function sortItemsError(
   reason: string,
   pointer?: Pointer,
 ): SortItemsError {
-  const error: SortItemsError = { ok: false, code, reason };
-  if (pointer !== undefined) error.pointer = pointer;
-  return error;
+  return { ok: false, code, reason, ...(pointer === undefined ? {} : { pointer }) };
 }
 
 function itemPointer(path: Pointer, index: number): Pointer {
