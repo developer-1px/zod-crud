@@ -101,7 +101,10 @@ export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSe
   const cached = knownJsonOutputSchemaCache.get(schema as object);
   if (cached !== undefined) return cached;
   const shouldCache = seen === undefined;
-  const finish = (value: boolean): boolean => shouldCache ? cacheKnownJsonOutputSchema(schema, value) : value;
+  const finish = (value: boolean): boolean => {
+    if (shouldCache) knownJsonOutputSchemaCache.set(schema as object, value);
+    return value;
+  };
   const activeSeen = seen ?? new WeakSet<object>();
   if (activeSeen.has(schema as object)) return true;
   activeSeen.add(schema as object);
@@ -169,11 +172,6 @@ export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSe
     default:
       return finish(false);
   }
-}
-
-function cacheKnownJsonOutputSchema(schema: z.ZodType, value: boolean): boolean {
-  knownJsonOutputSchemaCache.set(schema as object, value);
-  return value;
 }
 
 export function prefixIssues(path: Pointer, issues: z.ZodError["issues"]): z.ZodError["issues"] {

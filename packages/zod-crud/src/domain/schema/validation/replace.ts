@@ -107,8 +107,11 @@ export function applySingleReplaceOperation(
 ): { state: unknown; result: ApplyResult<z.ZodTypeAny>["result"]; applied: ReadonlyArray<JSONPatchOperation> } {
   const singleArrayFieldReplace = applySingleArrayFieldReplacePatchWithLocalSchemaValidation(state, operation);
   if (singleArrayFieldReplace !== null) return { state: singleArrayFieldReplace, result: { ok: true }, applied: [operation] };
-  const singleRootReplace = applySingleRootObjectReplacePatchWithLocalSchemaValidation(state, operation);
-  if (singleRootReplace !== null) return { state: singleRootReplace, result: { ok: true }, applied: [operation] };
+  const root = readRootRecordForLocalSchemaValidation(state);
+  if (root.ok) {
+    const plan = planSingleRootObjectReplacePatch(operation, root.sourceKeys);
+    if (plan !== null) return { state: applySingleRootObjectReplacePlan(root.source, plan), result: { ok: true }, applied: [operation] };
+  }
   const applied = applyAcceptedPatch(state, [operation]);
   return applied.result.ok
     ? { state: applied.state, result: applied.result, applied: applied.applied }
@@ -154,14 +157,4 @@ export function evaluateKnownJsonReplaceValues(schema: z.ZodType, operations: Re
 export function planIndependentReplacePatch(operations: ReadonlyArray<JSONPatchOperation>): boolean {
   const paths = planIndependentReplacePathsRaw(operations);
   return paths === null ? false : haveIndependentReplacePaths(paths);
-}
-
-function applySingleRootObjectReplacePatchWithLocalSchemaValidation(
-  state: unknown,
-  op: Extract<JSONPatchOperation, { op: "replace" }>,
-): unknown | null {
-  const root = readRootRecordForLocalSchemaValidation(state);
-  if (!root.ok) return null;
-  const plan = planSingleRootObjectReplacePatch(op, root.sourceKeys);
-  return plan === null ? null : applySingleRootObjectReplacePlan(root.source, plan);
 }

@@ -94,7 +94,7 @@ function buildObjectValueValidator(
     if (!childSchema) return null;
     const validate = buildKnownJsonValueValidator(childSchema, seenSchemas);
     if (validate === null) return null;
-    fields.push({ key, optional: isOptionalSchema(childSchema), validate });
+    fields.push({ key, optional: getDef(childSchema).type === "optional", validate });
   }
 
   return (value, seen) => {
@@ -192,10 +192,6 @@ export function isPlainStringKeySchema(schema: z.ZodType): boolean {
   return def.type === "string"
     && !def.coerce
     && (!Array.isArray(def.checks) || def.checks.length === 0);
-}
-
-function isOptionalSchema(schema: z.ZodType): boolean {
-  return getDef(schema).type === "optional";
 }
 
 export function isJsonPrimitive(value: unknown): boolean {
