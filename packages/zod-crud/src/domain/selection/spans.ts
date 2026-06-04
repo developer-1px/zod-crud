@@ -81,7 +81,7 @@ function isAfterBoundary(point: SelectionPoint, pointer: Pointer): boolean {
   return typeof point !== "string" && point.path === pointer && point.edge === "after";
 }
 
-function pointerLength(pointer: Pointer, state: unknown, options: SelectionSpanOptions): number | null {
+export function pointerLength(pointer: Pointer, state: unknown, options: SelectionSpanOptions): number | null {
   if (options.length !== undefined) return normalizeLength(options.length);
   const value = readPointerValue(state, pointer);
   const resolved = options.getLength?.(pointer, value);

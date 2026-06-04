@@ -9,7 +9,7 @@ import {
 import {
   orderSelectionRanges,
 } from "./order.js";
-import { selectionSpansForPointer } from "./spans.js";
+import { pointerLength, selectionSpansForPointer } from "./spans.js";
 import type {
   SelectionPoint,
   SelectionPointObject,
@@ -199,25 +199,6 @@ function uniquePointPointers(points: ReadonlyArray<SelectionPoint>): Pointer[] {
     if (!out.includes(pointer)) out.push(pointer);
   }
   return out;
-}
-
-function pointerLength(pointer: Pointer, state: unknown, options: SelectionSpanOptions): number | null {
-  if (options.length !== undefined) return normalizeLength(options.length);
-  const value = readPointerValue(state, pointer);
-  const resolved = options.getLength?.(pointer, value);
-  if (resolved !== undefined && resolved !== null) return normalizeLength(resolved);
-  return typeof value === "string" ? value.length : null;
-}
-
-function readPointerValue(state: unknown, pointer: Pointer): unknown {
-  const segments = tryParsePointer(pointer);
-  if (segments === null) return undefined;
-  const value = readAt(state, segments);
-  return value.ok ? value.value : undefined;
-}
-
-function normalizeLength(value: number): number | null {
-  return Number.isFinite(value) ? Math.max(0, Math.trunc(value)) : null;
 }
 
 function groupTextEditsByPointer(edits: ReadonlyArray<SelectionTextEdit>): Array<[Pointer, SelectionTextEdit[]]> {
