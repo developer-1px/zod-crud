@@ -231,19 +231,15 @@ export function createWebClipboard<T>(
 }
 
 function resolveReadHost(host?: TextClipboardHost): { ok: true; readText: () => MaybePromise<string> } | WebClipboardError {
-  const resolved = host ?? getNavigatorClipboard();
+  const resolved = host ?? globalThis.navigator?.clipboard;
   if (typeof resolved?.readText === "function") return { ok: true, readText: resolved.readText.bind(resolved) };
   return webClipboardError("clipboard_unavailable", "text clipboard read is unavailable");
 }
 
 function resolveWriteHost(host?: TextClipboardHost): { ok: true; writeText: (text: string) => MaybePromise<void> } | WebClipboardError {
-  const resolved = host ?? getNavigatorClipboard();
+  const resolved = host ?? globalThis.navigator?.clipboard;
   if (typeof resolved?.writeText === "function") return { ok: true, writeText: resolved.writeText.bind(resolved) };
   return webClipboardError("clipboard_unavailable", "text clipboard write is unavailable");
-}
-
-function getNavigatorClipboard(): TextClipboardHost | undefined {
-  return globalThis.navigator?.clipboard;
 }
 
 function encodePayload(

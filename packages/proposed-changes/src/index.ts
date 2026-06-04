@@ -223,7 +223,9 @@ export function canProposeChange<TDocument>(
     return proposedChangeError("duplicate_id", `proposed change already exists: ${input.id}`, { id: input.id });
   }
 
-  const operations = toPatchArray(input.operations);
+  const operations = Array.isArray(input.operations)
+    ? input.operations.map((operation) => cloneJson(operation) as JSONPatchOperation)
+    : [cloneJson(input.operations) as JSONPatchOperation];
   if (operations.length === 0) {
     return proposedChangeError("empty_patch", "proposed change patch is empty", input.id === undefined ? {} : { id: input.id });
   }
@@ -335,12 +337,6 @@ function staleGuard<TDocument>(
     }
   }
   return null;
-}
-
-function toPatchArray(input: JSONPatchInput): JSONPatchOperation[] {
-  return Array.isArray(input)
-    ? input.map((operation) => cloneJson(operation) as JSONPatchOperation)
-    : [cloneJson(input) as JSONPatchOperation];
 }
 
 function nextChangeId(state: ProposedChangeState): string {
