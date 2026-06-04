@@ -170,7 +170,7 @@ export function createAutoSave<TValue>(
       });
       runtime.saving = false;
       runtime.saveCount += 1;
-      runtime.lastSavedAt = isSaveResult(result) && result.savedAt !== undefined
+      runtime.lastSavedAt = typeof result === "object" && result !== null && result.savedAt !== undefined
         ? result.savedAt
         : new Date().toISOString();
       runtime.state = runtime.pending ? "pending" : "saved";
@@ -264,10 +264,6 @@ function copySnapshot(value: AutoSaveSnapshot): AutoSaveSnapshot {
     lastSavedAt: value.lastSavedAt,
     error: value.error,
   };
-}
-
-function isSaveResult(value: void | AutoSaveHostResult): value is AutoSaveHostResult {
-  return typeof value === "object" && value !== null;
 }
 
 function cloneJson<TValue>(value: TValue): TValue {

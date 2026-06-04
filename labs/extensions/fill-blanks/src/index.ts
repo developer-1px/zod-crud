@@ -75,7 +75,13 @@ export function canFillBlanks<TDocument, TValue = unknown>(
   if (field !== "" && !field.startsWith("/")) {
     return error("invalid_field", `field must be empty or start with '/': ${field}`, field);
   }
-  const isEmpty = options?.isEmpty ?? defaultIsEmpty;
+  const isEmpty =
+    options?.isEmpty ??
+    ((current: unknown) =>
+      current === null ||
+      current === undefined ||
+      current === "" ||
+      (Array.isArray(current) && current.length === 0));
 
   const pointers: Pointer[] = [];
   const operations: JSONPatchOperation[] = [];
@@ -132,15 +138,6 @@ export function fillBlanks<TDocument, TValue = unknown>(
   const patched = doc.patch(change.operations);
   if (!patched.ok) return patchError(patched);
   return change;
-}
-
-function defaultIsEmpty(current: unknown): boolean {
-  return (
-    current === null ||
-    current === undefined ||
-    current === "" ||
-    (Array.isArray(current) && current.length === 0)
-  );
 }
 
 function capabilityError(capability: Exclude<JSONCapabilityResult, { ok: true }>): FillBlanksError {
