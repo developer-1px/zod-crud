@@ -11,7 +11,7 @@ import {
   copyRootRecordKeys,
   createDataKeySet,
   objectHasOwn,
-  writeRootRecordValue,
+  writeObjectDataValue,
 } from "./value.js";
 import { okLocalSchemaValidation } from "../shared/result.js";
 import {
@@ -114,7 +114,7 @@ export function applyRootObjectReplacePlan(
   plan: RootObjectReplacePatchPlan,
 ): Record<string, unknown> {
   const next = plan.strategy === "orderedReplace" ? {} : copyRootRecordKeys(source, sourceKeys);
-  for (const op of plan.operations) writeRootRecordValue(next, op.key, op.value);
+  for (const op of plan.operations) writeObjectDataValue(next, op.key, op.value);
   return next;
 }
 
@@ -123,7 +123,7 @@ export function applySingleRootObjectReplacePlan(
   plan: SingleRootObjectReplacePatchPlan,
 ): Record<string, unknown> {
   const next = copyRootRecord(source);
-  writeRootRecordValue(next, plan.key, plan.operation.value);
+  writeObjectDataValue(next, plan.key, plan.operation.value);
   return next;
 }
 

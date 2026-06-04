@@ -13,7 +13,7 @@ import {
   createDataKeySet,
   objectHasOwn,
   removedRootKeysMatchSuffix,
-  writeRootRecordValue,
+  writeObjectDataValue,
 } from "./value.js";
 import { okLocalSchemaValidation } from "../shared/result.js";
 import { readRootRecordForLocalSchemaValidation } from "./replace.js";
@@ -117,7 +117,7 @@ export function rootRecordValueSchemaForLocalSchemaValidation(schema: z.ZodType)
 
 export function applyRootRecordAddPlan(source: Record<string, unknown>, plan: RootRecordAddPatchPlan): Record<string, unknown> {
   const next = copyRootRecord(source);
-  for (const op of plan.operations) writeRootRecordValue(next, op.key, op.value);
+  for (const op of plan.operations) writeObjectDataValue(next, op.key, op.value);
   return next;
 }
 
@@ -150,7 +150,7 @@ export function applyRootRecordRemovePlan(source: Record<string, unknown>, sourc
   const next: Record<string, unknown> = {};
   for (const key of sourceKeys) {
     if (objectHasOwn.call(removedKeys, key)) continue;
-    writeRootRecordValue(next, key, source[key]);
+    writeObjectDataValue(next, key, source[key]);
   }
   return next;
 }

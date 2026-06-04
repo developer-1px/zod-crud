@@ -13,14 +13,6 @@ const plainStructuralSchemaCache = new WeakMap<object, boolean>();
 const knownJsonOutputSchemaCache = new WeakMap<object, boolean>();
 const localSchemaCaches = new WeakMap<object, LocalSchemaCache>();
 
-export function isPlainStructuralSchemaForLocalValidation(schema: z.ZodType): boolean {
-  return isPlainStructuralSchema(schema);
-}
-
-export function schemaOutputIsKnownJson(schema: z.ZodType): boolean {
-  return schemaOutputIsKnownJsonInternal(schema);
-}
-
 export function arrayElementSchemaAtParent(schema: z.ZodType, parent: Pointer): z.ZodType | null {
   const parentSchema = cachedSchemaAtPointer(schema, parent, "value");
   return parentSchema ? getArrayElement(parentSchema) : null;
@@ -97,7 +89,7 @@ function cachePlainStructuralSchema(schema: z.ZodType, value: boolean): boolean 
   return value;
 }
 
-export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSet<object>): boolean {
+export function schemaOutputIsKnownJson(schema: z.ZodType, seen?: WeakSet<object>): boolean {
   const cached = knownJsonOutputSchemaCache.get(schema as object);
   if (cached !== undefined) return cached;
   const shouldCache = seen === undefined;
@@ -119,29 +111,29 @@ export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSe
       for (const key of Object.keys(shape)) {
         if (key === "__proto__") return finish(false);
         const child = shape[key];
-        if (!child || !schemaOutputIsKnownJsonInternal(child, activeSeen)) return finish(false);
+        if (!child || !schemaOutputIsKnownJson(child, activeSeen)) return finish(false);
       }
-      if (def.catchall && !schemaOutputIsKnownJsonInternal(def.catchall, activeSeen)) return finish(false);
+      if (def.catchall && !schemaOutputIsKnownJson(def.catchall, activeSeen)) return finish(false);
       return finish(true);
     }
     case "array": {
       const element = getArrayElement(schema);
-      return finish(element ? schemaOutputIsKnownJsonInternal(element, activeSeen) : false);
+      return finish(element ? schemaOutputIsKnownJson(element, activeSeen) : false);
     }
     case "nullable":
-      return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
+      return finish(!!def.innerType && schemaOutputIsKnownJson(def.innerType, activeSeen));
     case "nonoptional": {
       if (!def.innerType) return finish(false);
       const innerDef = getDef(def.innerType);
       const outputSchema = innerDef.type === "optional" ? innerDef.innerType : def.innerType;
-      return finish(!!outputSchema && schemaOutputIsKnownJsonInternal(outputSchema, activeSeen));
+      return finish(!!outputSchema && schemaOutputIsKnownJson(outputSchema, activeSeen));
     }
     case "prefault":
-      return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
+      return finish(!!def.innerType && schemaOutputIsKnownJson(def.innerType, activeSeen));
     case "pipe":
-      return finish(!!def.out && schemaOutputIsKnownJsonInternal(def.out, activeSeen));
+      return finish(!!def.out && schemaOutputIsKnownJson(def.out, activeSeen));
     case "intersection":
-      return finish(!!def.left && !!def.right && schemaOutputIsKnownJsonInternal(def.left, activeSeen) && schemaOutputIsKnownJsonInternal(def.right, activeSeen));
+      return finish(!!def.left && !!def.right && schemaOutputIsKnownJson(def.left, activeSeen) && schemaOutputIsKnownJson(def.right, activeSeen));
     case "string":
     case "number":
     case "boolean":
@@ -154,17 +146,17 @@ export function schemaOutputIsKnownJsonInternal(schema: z.ZodType, seen?: WeakSe
       return finish(values !== null && values.every(isJsonPrimitive));
     }
     case "record":
-      return finish((!def.keyType || isPlainStringKeySchema(def.keyType)) && !!def.valueType && schemaOutputIsKnownJsonInternal(def.valueType, activeSeen));
+      return finish((!def.keyType || isPlainStringKeySchema(def.keyType)) && !!def.valueType && schemaOutputIsKnownJson(def.valueType, activeSeen));
     case "union":
-      return finish(Array.isArray(def.options) && def.options.length > 0 && def.options.every((option) => schemaOutputIsKnownJsonInternal(option, activeSeen)));
+      return finish(Array.isArray(def.options) && def.options.length > 0 && def.options.every((option) => schemaOutputIsKnownJson(option, activeSeen)));
     case "tuple":
-      return finish(Array.isArray(def.items) && def.items.every((item) => schemaOutputIsKnownJsonInternal(item, activeSeen)) && (!def.rest || schemaOutputIsKnownJsonInternal(def.rest, activeSeen)));
+      return finish(Array.isArray(def.items) && def.items.every((item) => schemaOutputIsKnownJson(item, activeSeen)) && (!def.rest || schemaOutputIsKnownJson(def.rest, activeSeen)));
     case "readonly":
-      return finish(!!def.innerType && schemaOutputIsKnownJsonInternal(def.innerType, activeSeen));
+      return finish(!!def.innerType && schemaOutputIsKnownJson(def.innerType, activeSeen));
     case "lazy": {
       if (!def.getter) return finish(false);
       try {
-        return finish(schemaOutputIsKnownJsonInternal(def.getter(), activeSeen));
+        return finish(schemaOutputIsKnownJson(def.getter(), activeSeen));
       } catch {
         return finish(false);
       }
