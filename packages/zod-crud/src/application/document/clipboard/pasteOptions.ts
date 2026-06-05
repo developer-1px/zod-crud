@@ -1,5 +1,5 @@
 import type { PasteOptions } from "../../../domain/clipboard/paste.js";
-import type { JSONDocumentPasteOptions } from "./types.js";
+import type { JSONDocumentPasteOptions } from "./contract.js";
 
 export function splitPasteOptions(options?: JSONDocumentPasteOptions):
   | { kind: "clipboard"; options?: PasteOptions }

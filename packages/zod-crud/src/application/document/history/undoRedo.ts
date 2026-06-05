@@ -16,17 +16,28 @@ import {
 } from "./restore.js";
 import type {
   DocumentHistoryEntry,
-  DocumentHistoryRuntimeState,
-  HistoryTransactionOptions,
-  JSONDocumentHistory,
-} from "./types.js";
+} from "./entry.js";
+import type { HistoryTransactionOptions } from "./metadata.js";
+import type { DocumentHistoryRuntimeState } from "./state.js";
 import type {
-  TrustedDocumentStateOps,
-} from "../state/types.js";
-import type { SelectionRuntimeAccess } from "../selection/types.js";
+  TrustedJSONStateOps,
+} from "../state/json.js";
+import type { SelectionRuntimeAccess } from "../selection/runtime.js";
+
+export interface JSONDocumentHistory {
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  readonly undoDepth: number;
+  readonly redoDepth: number;
+  undo(): boolean;
+  redo(): boolean;
+  mergeLast(options?: { mergeKey?: string }): boolean;
+  transaction(fn: () => void): void;
+  transaction(options: HistoryTransactionOptions, fn: () => void): void;
+}
 
 interface CreateDocumentHistoryRuntimeInput<T> {
-  rawOps: TrustedDocumentStateOps<T>;
+  rawOps: TrustedJSONStateOps<T>;
   historyState: DocumentHistoryRuntimeState;
   selection: SelectionRuntimeAccess;
   syncLastPatch: () => void;

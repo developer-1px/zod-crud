@@ -2,10 +2,17 @@ import type { z } from "zod";
 
 import { schemaAtPointer } from "../../../domain/schema/introspection.js";
 import { tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
-import type {
-  SchemaErrorResult,
-  SchemaPathMode,
-} from "./types.js";
+
+export type SchemaPathMode = "value" | "insert";
+
+export type SchemaErrorCode = "invalid_pointer" | "path_not_found";
+
+export interface SchemaErrorResult {
+  ok: false;
+  code: SchemaErrorCode;
+  reason?: string;
+  pointer: Pointer;
+}
 
 interface DocumentSchemaResolutionOk {
   ok: true;

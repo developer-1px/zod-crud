@@ -1,14 +1,37 @@
 import type { z } from "zod";
 
 import type { Pointer } from "../../../foundation/pointer/index.js";
-import { describeSchema } from "./description.js";
+import { describeSchema, type SchemaDescription, type SchemaKind } from "./description.js";
 import { resolveDocumentSchema } from "./resolve.js";
-import type {
-  SchemaDescriptionResult,
-  SchemaKindResult,
-  SchemaPathMode,
-  SchemaQueryResult,
-} from "./types.js";
+import type { SchemaErrorResult, SchemaPathMode } from "./resolve.js";
+
+export type SchemaQueryResult =
+  | {
+      ok: true;
+      path: Pointer;
+      mode: SchemaPathMode;
+      kind: SchemaKind;
+      description: SchemaDescription;
+    }
+  | SchemaErrorResult;
+
+export type SchemaKindResult =
+  | {
+      ok: true;
+      path: Pointer;
+      mode: SchemaPathMode;
+      kind: SchemaKind;
+    }
+  | SchemaErrorResult;
+
+export type SchemaDescriptionResult =
+  | {
+      ok: true;
+      path: Pointer;
+      mode: SchemaPathMode;
+      description: SchemaDescription;
+    }
+  | SchemaErrorResult;
 
 export function queryDocumentSchema<S extends z.ZodType>(
   schema: S,

@@ -1,6 +1,6 @@
 import type * as z from "zod";
 import { readAt, tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
-import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
 import { isPlainStructuralSchema } from "../../../domain/schema/shared/schema.js";
 import {
   paste,
@@ -13,12 +13,12 @@ import {
   capabilityResult,
   type CapabilityResult,
 } from "../can/result.js";
-import type { JSONStateOps } from "../state/types.js";
+import type { JSONStateOps } from "../state/ops.js";
 import type {
   ClipboardBuffer,
   ClipboardPasteResult,
   JSONDocumentPasteTarget,
-} from "./types.js";
+} from "./contract.js";
 
 interface CreateClipboardPasteRuntimeOptions<S extends z.ZodType> {
   schema: S;

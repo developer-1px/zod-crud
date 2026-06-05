@@ -4,13 +4,31 @@ import { JSONPathSyntaxError } from "../../../foundation/jsonpath/tokenize.js";
 import { appendSegment, parsePointer, readAt, type Pointer } from "../../../foundation/pointer/index.js";
 import { schemaAtPointer } from "../../../domain/schema/introspection.js";
 import { getDef } from "../../../domain/schema/zod.js";
-import type {
-  EntriesResult,
-  EntryKind,
-  QueryResult,
-  ReadEntry,
-  ReadResult,
-} from "./types.js";
+
+export type ReadResult =
+  | { ok: true; path: Pointer; value: unknown }
+  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
+
+export type QueryResult =
+  | { ok: true; query: string; pointers: Pointer[] }
+  | { ok: false; code: "invalid_query"; reason?: string };
+
+export type EntryKind = "root" | "object" | "array" | "record" | "primitive";
+
+export interface ReadEntry {
+  key: string;
+  path: Pointer;
+  value: unknown;
+}
+
+export type EntriesResult =
+  | {
+      ok: true;
+      path: Pointer;
+      kind: EntryKind;
+      entries: ReadonlyArray<ReadEntry>;
+    }
+  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
 
 export interface DocumentReadState {
   at(path: Pointer): ReadResult;

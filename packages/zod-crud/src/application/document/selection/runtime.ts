@@ -1,19 +1,23 @@
 import {
   EMPTY_SELECTION,
+  type SelectionMode,
   type SelectionSnap,
-} from "../../../domain/selection/types.js";
-import type { JSONStateOps } from "../state/types.js";
-import { createSelection, type SelectionState } from "./create.js";
-import type {
-  SelectionOptions,
-  SelectionRuntimeAccess,
-} from "./types.js";
+} from "../../../domain/selection/snap.js";
+import type { JSONStateOps } from "../state/ops.js";
+import { createSelection, type SelectionOptions, type SelectionState } from "./create.js";
 
 export interface DocumentSelectionRuntime {
   enabled: boolean;
   state: SelectionState | undefined;
   access: SelectionRuntimeAccess;
   ref: { readonly current: SelectionSnap } | undefined;
+}
+
+export interface SelectionRuntimeAccess {
+  selectionEnabled: boolean;
+  selectionMode: SelectionMode;
+  snapSelection: () => SelectionSnap;
+  restoreSelection: (selection: SelectionSnap) => void;
 }
 
 interface CreateDocumentSelectionRuntimeInput<T> {

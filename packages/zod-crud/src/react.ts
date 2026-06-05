@@ -7,7 +7,7 @@ import { createJSONDocument } from "./application/document/create.js";
 import type {
   JSONDocument,
   JSONDocumentOptions,
-} from "./application/document/types.js";
+} from "./application/document/interface.js";
 
 type TrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial: true };
 type UntrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial?: false | undefined };

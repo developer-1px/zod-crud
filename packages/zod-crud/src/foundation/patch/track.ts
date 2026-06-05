@@ -3,7 +3,7 @@
 // 출력: 새 Pointer (또는 null = cascading drop)
 
 import { tryParsePointer, buildPointer, isPrefix, parentPointer, lastSegmentIndex, withLastSegment, readAt, type Pointer } from "../pointer/index.js";
-import type { JSONPatchOperation } from "./types.js";
+import type { JSONPatchOperation } from "./contract.js";
 import { arrayIndexValue } from "../pointer/array.js";
 
 export function exists(state: unknown, pointer: Pointer): boolean {

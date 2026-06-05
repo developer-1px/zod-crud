@@ -3,7 +3,7 @@
 import { isPrefix, type Pointer } from "../pointer/index.js";
 import { cloneJson } from "../json/clone.js";
 import { jsonSerializableError } from "../json/serializable.js";
-import type { ErrorCode, JSONPatchOperation } from "./types.js";
+import type { ErrorCode, JSONPatchOperation } from "./contract.js";
 import {
   attachPointer,
   deepEqual,

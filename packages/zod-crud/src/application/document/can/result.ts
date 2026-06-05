@@ -1,4 +1,4 @@
-import type { ErrorCode } from "../../../foundation/patch/types.js";
+import type { ErrorCode } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import type { PatchPreflightErrorCode } from "../../../domain/schema/patch.js";
 import type { SelectionTextEditErrorCode } from "../../../domain/selection/textEdit.js";

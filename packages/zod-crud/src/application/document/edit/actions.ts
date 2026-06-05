@@ -1,12 +1,9 @@
-import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
+import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
-import type { SelectionSource } from "../../../domain/selection/types.js";
+import type { SelectionSource } from "../../../domain/selection/read.js";
+import type { DuplicateError as DomainDuplicateError, DuplicateOpts } from "../../../domain/edit/duplicate.js";
 import type { CapabilityResult } from "../can/result.js";
 import type { SelectionState } from "../selection/create.js";
-import type {
-  JSONDocumentDuplicateOptions,
-  JSONDocumentDuplicateResult,
-} from "./types.js";
 import {
   planDocumentDelete,
   planDocumentInsert,
@@ -16,6 +13,18 @@ import {
 
 type JSONDocumentEditError = Extract<CapabilityResult, { ok: false }>;
 type JSONDocumentEditResult = JSONResult | JSONDocumentEditError;
+
+export type JSONDocumentDuplicateOptions = DuplicateOpts;
+export type JSONDocumentDuplicateError = DomainDuplicateError;
+export type JSONDocumentDuplicateResult<T> =
+  | {
+      ok: true;
+      value: T;
+      applied: ReadonlyArray<JSONPatchOperation>;
+      duplicatedTo: Pointer;
+    }
+  | JSONDocumentDuplicateError
+  | Extract<JSONResult, { ok: false }>;
 
 interface DocumentEditMutation<T> {
   patch(operations: ReadonlyArray<JSONPatchOperation>): JSONResult;

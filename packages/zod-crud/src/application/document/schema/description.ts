@@ -11,10 +11,33 @@ import {
   getObjectKeys,
   getObjectShape,
 } from "../../../domain/schema/zod.js";
-import type {
-  SchemaDescription,
-  SchemaKind,
-} from "./types.js";
+
+export type SchemaKind =
+  | "unknown"
+  | "string"
+  | "number"
+  | "boolean"
+  | "null"
+  | "literal"
+  | "enum"
+  | "object"
+  | "array"
+  | "record"
+  | "union"
+  | "discriminatedUnion"
+  | "optional"
+  | "nullable"
+  | "any";
+
+export interface SchemaDescription {
+  kind: SchemaKind;
+  jsonSchema: unknown;
+  keys?: string[];
+  elementKind?: SchemaKind;
+  valueKind?: SchemaKind;
+  discriminator?: string;
+  allowed?: unknown[];
+}
 
 export function describeSchema(schema: z.ZodType): SchemaDescription {
   const kind = schemaKind(schema);

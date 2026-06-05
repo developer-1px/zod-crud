@@ -6,17 +6,10 @@ import {
 } from "./traversal.js";
 import type {
   SelectionPoint,
-  SelectionAction,
-  SelectionContext,
-  SelectionCursorDirection,
-  SelectionCursorOptions,
-  SelectionCursorResult,
-  SelectionCursorTarget,
-  SelectionMode,
   SelectionRange,
-  SelectionSnap,
-} from "./types.js";
-import { EMPTY_SELECTION } from "./types.js";
+  SelectionRangeInput,
+} from "./point.js";
+import { EMPTY_SELECTION, type SelectionContext, type SelectionMode, type SelectionSnap } from "./snap.js";
 import {
   collapsedRange,
   normalizeRangeInput,
@@ -33,6 +26,79 @@ import {
   withSelectionContext,
   withoutSelectionContext,
 } from "./snap.js";
+
+export type SelectionCursorDirection = "first" | "previous" | "next" | "last";
+
+export type SelectionCursorErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "syntax_error"
+  | "empty_scope"
+  | "cursor_boundary";
+
+export interface SelectionCursorOptions {
+  points?: ReadonlyArray<SelectionPoint>;
+  query?: string;
+  scope?: Pointer;
+  includeScope?: boolean;
+  wrap?: boolean;
+}
+
+export type SelectionCursorResult =
+  | {
+      ok: true;
+      direction: SelectionCursorDirection;
+      pointer: Pointer;
+      point: SelectionPoint;
+      previousPointer: Pointer | null;
+      selection: SelectionSnap;
+    }
+  | {
+      ok: false;
+      direction: SelectionCursorDirection;
+      code: SelectionCursorErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      selection: SelectionSnap;
+    };
+
+export type SelectionCursorTarget =
+  | Omit<Extract<SelectionCursorResult, { ok: true }>, "selection">
+  | Omit<Extract<SelectionCursorResult, { ok: false }>, "selection">;
+
+type SelectionShapeAction =
+  | { type: "collapse"; pointer: Pointer }
+  | { type: "collapse"; point: SelectionPoint }
+  | { type: "setBaseAndExtent"; anchor: SelectionPoint; focus: SelectionPoint }
+  | { type: "extend"; pointer: Pointer }
+  | { type: "extend"; point: SelectionPoint }
+  | { type: "addRange"; pointer: Pointer }
+  | { type: "addRange"; point: SelectionPoint }
+  | { type: "addRange"; range: SelectionRange }
+  | { type: "removeRange"; pointer: Pointer }
+  | { type: "removeRange"; point: SelectionPoint }
+  | { type: "removeRange"; range: SelectionRange }
+  | { type: "removeRange"; index: number }
+  | { type: "toggleRange"; pointer: Pointer }
+  | { type: "toggleRange"; point: SelectionPoint }
+  | { type: "toggleRange"; range: SelectionRange }
+  | { type: "togglePointer"; pointer: Pointer }
+  | {
+      type: "selectRanges";
+      ranges: ReadonlyArray<SelectionRangeInput>;
+      anchor?: SelectionPoint | null;
+      focus?: SelectionPoint | null;
+      primaryIndex?: number;
+    }
+  | { type: "empty" };
+
+export type SelectionAction =
+  | (SelectionShapeAction & {
+      context?: SelectionContext;
+      clearContext?: boolean;
+    })
+  | { type: "setContext"; context: SelectionContext }
+  | { type: "clearContext" };
 
 const isMulti = (m: SelectionMode) => m === "extended" || m === "multiple";
 

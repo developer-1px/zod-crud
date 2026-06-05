@@ -13,7 +13,8 @@ import {
 } from "../path.js";
 import { replaceValueAtSegments } from "../replaceValue.js";
 import { validateOperationShape } from "../apply.js";
-import type { ArrayFieldPath, ArrayFieldText, FastPatchResult, JSONPatchOperation } from "../types.js";
+import type { FastPatchResult, JSONPatchOperation } from "../contract.js";
+import type { ArrayFieldPath, ArrayFieldText } from "../path.js";
 
 interface ReplaceTree {
   value?: unknown;

@@ -3,17 +3,46 @@ import { cursorPoints } from "./traversal.js";
 import type {
   SelectionPoint,
   SelectionPointObject,
-  SelectionPointerSpan,
-  SelectionPointerSpansResult,
-  SelectionSnap,
-  SelectionSpanOptions,
-} from "./types.js";
+} from "./point.js";
+import type { SelectionSnap } from "./snap.js";
+import type { SelectionOrderErrorCode, SelectionOrderOptions } from "./order.js";
 import {
   clampOffset,
   clonePoint,
   pointPath,
 } from "./point.js";
 import { compareSelectionPoints, orderSelectionRanges } from "./order.js";
+
+export interface SelectionSpanOptions extends SelectionOrderOptions {
+  length?: number;
+  getLength?: (pointer: Pointer, value: unknown) => number | null | undefined;
+}
+
+export interface SelectionPointerSpan {
+  pointer: Pointer;
+  rangeIndex: number;
+  primary: boolean;
+  start: SelectionPoint;
+  end: SelectionPoint;
+  startOffset: number | null;
+  endOffset: number | null;
+  collapsed: boolean;
+  full: boolean;
+}
+
+export type SelectionPointerSpansResult =
+  | {
+      ok: true;
+      pointer: Pointer;
+      spans: ReadonlyArray<SelectionPointerSpan>;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
+    };
 
 export function selectionSpansForPointer(
   selection: SelectionSnap,

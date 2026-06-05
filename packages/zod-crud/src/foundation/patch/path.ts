@@ -1,6 +1,25 @@
 import { buildPointer, parentPointer, type Pointer } from "../pointer/index.js";
 import { getValueAt, parseSafe } from "./container.js";
-import type { ArrayFieldPath, ArrayFieldText, ArrayNestedPath } from "./types.js";
+
+export interface ArrayFieldPath {
+  arrayPath: Pointer;
+  index: number;
+  key: string;
+}
+
+export interface ArrayNestedPath {
+  arrayPath: Pointer;
+  arraySegments: string[];
+  index: number;
+  prefixText: string;
+  suffixText: string;
+  suffixSegments: string[];
+}
+
+export interface ArrayFieldText {
+  prefixText: string;
+  suffixText: string;
+}
 
 export function arrayLocation(path: Pointer): { parent: Pointer; index: number | "-" } | null {
   const parent = parentPointer(path);

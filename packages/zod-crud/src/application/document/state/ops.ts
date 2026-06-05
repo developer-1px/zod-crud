@@ -1,15 +1,35 @@
-import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
-import type { SelectionSnap } from "../../../domain/selection/types.js";
+import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
+import type { Pointer } from "../../../foundation/pointer/index.js";
+import type { SelectionSnap } from "../../../domain/selection/snap.js";
 import { resetDocumentHistoryRuntimeState } from "../history/state.js";
 import type {
   DocumentHistoryRuntimeState,
-  JSONChangeMetadata,
-} from "../history/types.js";
+} from "../history/state.js";
 import type {
-  DocumentPatchRuntimeState,
-  JSONStateOps,
-  TrustedDocumentStateOps,
-} from "./types.js";
+  JSONChangeMetadata,
+} from "../history/metadata.js";
+import type { TrustedJSONStateOps } from "./json.js";
+import type { DocumentPatchRuntimeState } from "./runtime.js";
+
+export interface JSONStateOps<T> {
+  add(path: Pointer, value: unknown): JSONResult;
+  remove(path: Pointer): JSONResult;
+  replace(path: Pointer, value: unknown): JSONResult;
+  move(from: Pointer, path: Pointer): JSONResult;
+  copy(from: Pointer, path: Pointer): JSONResult;
+  test(path: Pointer, value: unknown): JSONResult;
+
+  patch(operations: ReadonlyArray<JSONPatchOperation>, metadata?: JSONChangeMetadata): JSONResult;
+
+  load(value: unknown, options?: { preserveHistory?: boolean }): JSONResult;
+  reset(value?: unknown): JSONResult;
+
+  subscribe(listener: (
+    applied: ReadonlyArray<JSONPatchOperation>,
+    metadata?: JSONChangeMetadata,
+  ) => void): () => void;
+  readonly state: T;
+}
 
 interface DocumentMutationOps {
   applyDocumentPatch(
@@ -20,7 +40,7 @@ interface DocumentMutationOps {
 }
 
 interface CreateDocumentStateOpsInput<T> {
-  rawOps: TrustedDocumentStateOps<T>;
+  rawOps: TrustedJSONStateOps<T>;
   mutation: DocumentMutationOps;
   historyState: DocumentHistoryRuntimeState;
   patchState: DocumentPatchRuntimeState;

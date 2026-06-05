@@ -1,7 +1,7 @@
 import type * as z from "zod";
 import { parse as parseJSONPath } from "../../../foundation/jsonpath/parse.js";
 import { JSONPathSyntaxError } from "../../../foundation/jsonpath/tokenize.js";
-import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { copy } from "../../../domain/clipboard/copy.js";
 import { cut } from "../../../domain/clipboard/cut.js";
@@ -14,23 +14,20 @@ import {
 } from "../../../domain/selection/read.js";
 import { deleteSelectionText, type SelectionTextDeleteOptions } from "../../../domain/selection/textDelete.js";
 import { replaceSelectionText, type SelectionTextEditOptions } from "../../../domain/selection/textEdit.js";
-import {
-  EMPTY_SELECTION,
-  type SelectionSource,
-  type SelectionSnap,
-} from "../../../domain/selection/types.js";
+import { EMPTY_SELECTION, type SelectionSnap } from "../../../domain/selection/snap.js";
+import type { SelectionSource } from "../../../domain/selection/read.js";
 import type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-} from "../clipboard/types.js";
+} from "../clipboard/contract.js";
 import {
   planDocumentDelete,
   planDocumentInsert,
   planDocumentMove,
   planDocumentReplace,
 } from "../edit/plan.js";
-import type { JSONDocumentCommitOptions } from "../history/types.js";
-import type { JSONStateOps } from "../state/types.js";
+import type { JSONDocumentCommitOptions } from "../history/metadata.js";
+import type { JSONStateOps } from "../state/ops.js";
 import {
   OK,
   capabilityResult,

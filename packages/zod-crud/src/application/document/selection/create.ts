@@ -1,8 +1,7 @@
 // Headless selection state facade.
 // React hook and JSONDocument use this same implementation.
 
-import type { JSONStateOps } from "../state/types.js";
-import type { SelectionOptions } from "./types.js";
+import type { JSONStateOps } from "../state/ops.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { jsonEqual } from "../../../foundation/json/equal.js";
 import {
@@ -35,31 +34,31 @@ import {
   moveSelectionCursor,
   reduceSelection,
   resolveSelectionCursor,
+  type SelectionAction,
+  type SelectionCursorDirection,
+  type SelectionCursorOptions,
+  type SelectionCursorResult,
 } from "../../../domain/selection/reducer.js";
-import { selectionSpansForPointer } from "../../../domain/selection/spans.js";
+import {
+  selectionSpansForPointer,
+  type SelectionPointerSpansResult,
+  type SelectionSpanOptions,
+} from "../../../domain/selection/spans.js";
 import type {
   SelectionPoint,
-  SelectionAction,
-  SelectionContext,
-  SelectionCursorDirection,
-  SelectionCursorOptions,
-  SelectionCursorResult,
-  SelectionMode,
-  SelectionOrderOptions,
-  SelectionPointerSpansResult,
   SelectionRange,
   SelectionRangeInput,
+} from "../../../domain/selection/point.js";
+import type {
+  SelectionOrderOptions,
   SelectionRangeOrderResult,
   SelectionRangesOrderResult,
   SelectionScopeOptions,
   SelectionScopeResult,
   SelectionScopeTarget,
-  SelectionSnap,
-  SelectionSource,
-  SelectionSpanOptions,
-  SelectionType,
-} from "../../../domain/selection/types.js";
-import { EMPTY_SELECTION } from "../../../domain/selection/types.js";
+} from "../../../domain/selection/order.js";
+import { EMPTY_SELECTION, type SelectionContext, type SelectionMode, type SelectionSnap } from "../../../domain/selection/snap.js";
+import type { SelectionSource, SelectionType } from "../../../domain/selection/read.js";
 import { applySelectionAutoRules } from "../../../domain/selection/autoRules.js";
 import {
   replaceSelectionText,
@@ -74,6 +73,12 @@ import {
   type SelectionTextDeleteOptions,
 } from "../../../domain/selection/textDelete.js";
 import { isSelectionRange, samePoint, sameRange } from "../../../domain/selection/point.js";
+
+export interface SelectionOptions {
+  mode?: SelectionMode;
+  initial?: ReadonlyArray<SelectionRangeInput>;
+  context?: SelectionContext;
+}
 
 interface CreateSelectionOptions extends SelectionOptions {
   onChange?: () => void;

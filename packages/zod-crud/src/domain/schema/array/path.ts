@@ -4,7 +4,7 @@ import {
   readAt,
   type Pointer,
 } from "../../../foundation/pointer/index.js";
-import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
+import type { JSONPatchOperation } from "../../../foundation/patch/contract.js";
 import { validateOperationShape } from "../../../foundation/patch/apply.js";
 import { numericSegment } from "../../../foundation/patch/path.js";
 

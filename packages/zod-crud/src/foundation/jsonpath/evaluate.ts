@@ -1,7 +1,7 @@
 // foundation/jsonpath/evaluate — Query AST + JSON 입력 → Match[] (Pointer + value).
 // RFC 9535 §2 의 normalized 의미. Pointer 는 RFC 6901.
 
-import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./types.js";
+import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, FunctionExpr, Match } from "./ast.js";
 import { jsonEqual } from "../json/equal.js";
 import { evaluateArrayRegexFilter, evaluateArrayWildcardField } from "./fast.js";
 import { evaluateSimpleQuery, evaluateSinglePathQuery } from "./simple.js";

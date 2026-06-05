@@ -1,4 +1,4 @@
-import type { FilterExpr, Match, Query } from "./types.js";
+import type { FilterExpr, Match, Query } from "./ast.js";
 import { compiledRegex, escapeSeg, objectHasOwn, plainRegexLiteral } from "./support.js";
 
 interface ArrayWildcardFieldQuery {

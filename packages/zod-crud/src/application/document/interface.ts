@@ -1,7 +1,7 @@
 import type { CapabilityResult } from "./can/result.js";
-import type { JSONPatchOperation, JSONResult } from "../../foundation/patch/types.js";
+import type { JSONPatchOperation, JSONResult } from "../../foundation/patch/contract.js";
 import type { Pointer } from "../../foundation/pointer/index.js";
-import type { SelectionSource } from "../../domain/selection/types.js";
+import type { SelectionSource } from "../../domain/selection/read.js";
 import type {
   ClipboardCopyOptions,
   ClipboardCopyResult,
@@ -11,51 +11,25 @@ import type {
   ClipboardState,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-} from "./clipboard/types.js";
-import type { SchemaState } from "./schema/types.js";
-import type { SelectionState } from "./selection/create.js";
+} from "./clipboard/contract.js";
+import type { SchemaState } from "./schema/state.js";
+import type { SelectionState, SelectionOptions } from "./selection/create.js";
 import type { JSONCrudError } from "../../foundation/error.js";
 import type {
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
-  JSONDocumentHistory,
-} from "./history/types.js";
+} from "./history/metadata.js";
+import type { JSONDocumentHistory } from "./history/undoRedo.js";
 import type {
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
-} from "./edit/types.js";
+} from "./edit/actions.js";
 import type {
   EntriesResult,
   QueryResult,
   ReadResult,
-} from "./read/types.js";
-import type { JSONPatchInput } from "./state/types.js";
-import type { SelectionOptions } from "./selection/types.js";
-
-export type {
-  EntriesResult,
-  EntryKind,
-  QueryResult,
-  ReadEntry,
-  ReadResult,
-} from "./read/types.js";
-export type { JSONDocumentHistory } from "./history/types.js";
-export type {
-  HistoryTransactionOptions,
-  JSONChangeMetadata,
-  JSONDocumentCommitOptions,
-} from "./history/types.js";
-export type {
-  JSONDocumentDuplicateError,
-  JSONDocumentDuplicateOptions,
-  JSONDocumentDuplicateResult,
-} from "./edit/types.js";
-export type {
-  JSONDocumentPasteOptions,
-  JSONDocumentPasteTarget,
-} from "./clipboard/types.js";
-export type { JSONPatchInput } from "./state/types.js";
-export type { SelectionOptions } from "./selection/types.js";
+} from "./read/read.js";
+import type { JSONPatchInput } from "./state/patch.js";
 
 export interface JSONDocumentOptions {
   strict?: boolean | undefined;
@@ -69,7 +43,9 @@ export interface JSONDocumentOptions {
   selection?: boolean | SelectionOptions;
   onChange?: () => void;
 }
+
 export type JSONCapabilityResult = CapabilityResult;
+
 type JSONDocumentEditError = Extract<JSONCapabilityResult, { ok: false }>;
 type JSONDocumentEditResult = JSONResult | JSONDocumentEditError;
 

@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/contract.js";
 import { validateOperationShape } from "../../../foundation/patch/apply.js";
 import {
   acceptsKnownJsonValue,

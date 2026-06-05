@@ -1,4 +1,4 @@
-import { tryParsePointer } from "../../foundation/pointer/index.js";
+import { tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import {
   cursorPoints,
   emptyTraversalPointer,
@@ -7,18 +7,9 @@ import {
 } from "./traversal.js";
 import type {
   SelectionPoint,
-  SelectionOrderedRangeEntry,
-  SelectionMode,
-  SelectionOrderOptions,
-  SelectionPointOrderResult,
   SelectionRange,
-  SelectionRangeOrderResult,
-  SelectionRangesOrderResult,
-  SelectionScopeOptions,
-  SelectionScopeResult,
-  SelectionScopeTarget,
-  SelectionSnap,
-} from "./types.js";
+} from "./point.js";
+import type { SelectionMode, SelectionSnap } from "./snap.js";
 import {
   clonePoint,
   collapsedRange,
@@ -29,6 +20,113 @@ import {
   samePoint,
 } from "./point.js";
 import { selectionSnapshot, snapFromRanges } from "./snap.js";
+
+export type SelectionDirection = "forward" | "backward" | "none";
+
+export type SelectionScopeErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "syntax_error"
+  | "empty_scope";
+
+export type SelectionOrderErrorCode =
+  | "invalid_pointer"
+  | "path_not_found"
+  | "syntax_error"
+  | "empty_scope"
+  | "point_not_in_order"
+  | "empty_selection";
+
+export interface SelectionScopeOptions {
+  points?: ReadonlyArray<SelectionPoint>;
+  query?: string;
+  scope?: Pointer;
+  includeScope?: boolean;
+  primaryIndex?: number;
+}
+
+export interface SelectionOrderOptions {
+  points?: ReadonlyArray<SelectionPoint>;
+  query?: string;
+  scope?: Pointer;
+  includeScope?: boolean;
+}
+
+export type SelectionScopeResult =
+  | {
+      ok: true;
+      points: ReadonlyArray<SelectionPoint>;
+      selection: SelectionSnap;
+    }
+  | {
+      ok: false;
+      code: SelectionScopeErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      selection: SelectionSnap;
+    };
+
+export type SelectionScopeTarget =
+  | Omit<Extract<SelectionScopeResult, { ok: true }>, "selection">
+  | Omit<Extract<SelectionScopeResult, { ok: false }>, "selection">;
+
+export type SelectionPointOrderResult =
+  | {
+      ok: true;
+      order: -1 | 0 | 1;
+      direction: SelectionDirection;
+      left: SelectionPoint;
+      right: SelectionPoint;
+      leftPointer: Pointer;
+      rightPointer: Pointer;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+    };
+
+export interface SelectionOrderedRange {
+  anchor: SelectionPoint;
+  focus: SelectionPoint;
+  start: SelectionPoint;
+  end: SelectionPoint;
+  direction: SelectionDirection;
+  collapsed: boolean;
+}
+
+export interface SelectionOrderedRangeEntry extends SelectionOrderedRange {
+  index: number;
+  primary: boolean;
+}
+
+export type SelectionRangeOrderResult =
+  | {
+      ok: true;
+      range: SelectionOrderedRange;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+    };
+
+export type SelectionRangesOrderResult =
+  | {
+      ok: true;
+      ranges: ReadonlyArray<SelectionOrderedRangeEntry>;
+      primaryIndex: number;
+      primaryRange: SelectionOrderedRangeEntry | null;
+    }
+  | {
+      ok: false;
+      code: SelectionOrderErrorCode;
+      reason: string;
+      pointer: Pointer | null;
+      index: number | null;
+    };
 
 export function selectSelectionScope(
   prev: SelectionSnap,

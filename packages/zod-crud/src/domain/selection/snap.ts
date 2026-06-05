@@ -7,21 +7,42 @@ import {
   type Pointer,
 } from "../../foundation/pointer/index.js";
 import {
-  EMPTY_SELECTION,
-  type SelectionPoint,
-  type SelectionContext,
-  type SelectionMode,
-  type SelectionRange,
-  type SelectionSnap,
-} from "./types.js";
-import {
   clonePoint,
   cloneRange,
   normalizeSelectionRange,
   pointPath,
   samePoint,
   sameRange,
+  type SelectionPoint,
+  type SelectionRange,
 } from "./point.js";
+
+type JSONPrimitive = string | number | boolean | null;
+
+type JSONValue =
+  | JSONPrimitive
+  | { readonly [key: string]: JSONValue }
+  | ReadonlyArray<JSONValue>;
+
+export type SelectionMode = "single" | "multiple" | "extended";
+export type SelectionContext = JSONValue;
+
+export interface SelectionSnap {
+  selectedPointers: ReadonlyArray<Pointer>;
+  selectionRanges: ReadonlyArray<SelectionRange>;
+  primaryIndex: number;
+  anchor: SelectionPoint | null;
+  focus: SelectionPoint | null;
+  context?: SelectionContext | undefined;
+}
+
+export const EMPTY_SELECTION: SelectionSnap = {
+  selectedPointers: [],
+  selectionRanges: [],
+  primaryIndex: -1,
+  anchor: null,
+  focus: null,
+};
 
 type ValueKind = "null" | "object" | "array" | "string" | "number" | "boolean" | "undefined";
 

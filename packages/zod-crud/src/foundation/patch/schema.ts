@@ -5,7 +5,7 @@ import { normalizeAppliedOp, normalizeOp } from "./container.js";
 import { applyFastPatchStrategies, publicTrustedStateStrategies } from "./fast/apply.js";
 import { fail, ok, zodIssuesReason } from "./result.js";
 import { applyTrustedValueMutation } from "./value.js";
-import type { ApplyResult, JSONPatchOperation } from "./types.js";
+import type { ApplyResult, JSONPatchOperation } from "./contract.js";
 
 export function applyOperation<S extends z.ZodTypeAny>(
   schema: S,

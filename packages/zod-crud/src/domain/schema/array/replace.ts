@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation } from "../../../foundation/patch/contract.js";
 import { validateOperationShape } from "../../../foundation/patch/apply.js";
 import {
   arrayFieldText,
@@ -8,7 +8,7 @@ import {
   parseKnownArrayFieldIndex,
   parseKnownArrayNestedIndex,
 } from "../../../foundation/patch/path.js";
-import type { ArrayFieldText } from "../../../foundation/patch/types.js";
+import type { ArrayFieldText } from "../../../foundation/patch/path.js";
 import { replaceValueAtSegments } from "../../../foundation/patch/replaceValue.js";
 import { parsePointer, type Pointer } from "../../../foundation/pointer/index.js";
 import {

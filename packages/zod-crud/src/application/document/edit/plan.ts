@@ -1,6 +1,6 @@
 import { query as jsonpathQuery } from "../../../foundation/jsonpath/index.js";
 import { JSONPathSyntaxError } from "../../../foundation/jsonpath/tokenize.js";
-import type { JSONPatchOperation } from "../../../foundation/patch/types.js";
+import type { JSONPatchOperation } from "../../../foundation/patch/contract.js";
 import { removeSourcesPatch } from "../../../foundation/patch/source.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import {
@@ -9,9 +9,9 @@ import {
 } from "../../../domain/selection/read.js";
 import {
   EMPTY_SELECTION,
-  type SelectionSource,
   type SelectionSnap,
-} from "../../../domain/selection/types.js";
+} from "../../../domain/selection/snap.js";
+import type { SelectionSource } from "../../../domain/selection/read.js";
 import type { CapabilityResult } from "../can/result.js";
 
 export type DocumentEditPlan =

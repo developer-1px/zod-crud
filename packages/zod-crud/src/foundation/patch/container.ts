@@ -1,7 +1,7 @@
 // patch.ts 내부 헬퍼 — public API 아님. docs/standard/zod-crud-spec.md §3 의 RFC 6902 구현 디테일.
 
 import { parsePointer, readAt, type Pointer, PointerSyntaxError } from "../pointer/index.js";
-import type { ErrorCode, JSONPatchOperation } from "./types.js";
+import type { ErrorCode, JSONPatchOperation } from "./contract.js";
 
 // RFC 6902 §4.1: `/-` 는 array append marker. 적용 시점의 array 길이로 concrete index 정규화.
 // 비-array 부모거나 path 가 `/-` 가 아니면 원본 path 유지.

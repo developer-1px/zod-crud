@@ -1,13 +1,12 @@
-import type { JSONPatchOperation } from "../../foundation/patch/types.js";
+import type { JSONPatchOperation } from "../../foundation/patch/contract.js";
 import { buildPointer, isPrefix, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import { appendArrayIndexes, arrayElementLocation, arrayIndexValue } from "../../foundation/pointer/array.js";
 import { exists, recoverLostPointer, trackPointer, trackPointerFrom } from "../../foundation/patch/track.js";
 import type {
   SelectionPoint,
-  SelectionMode,
   SelectionRange,
-  SelectionSnap,
-} from "./types.js";
+} from "./point.js";
+import type { SelectionMode, SelectionSnap } from "./snap.js";
 import {
   collapsedRange,
   normalizePoint,

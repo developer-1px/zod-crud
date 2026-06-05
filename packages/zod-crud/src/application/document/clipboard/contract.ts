@@ -10,7 +10,7 @@ import type {
   PasteOptions,
   PasteTarget,
 } from "../../../domain/clipboard/paste.js";
-import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
+import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 
 export interface JSONDocumentPasteOptions extends PasteOptions {

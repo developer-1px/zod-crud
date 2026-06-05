@@ -5,7 +5,7 @@
 import type * as z from "zod";
 import { jsonSerializableError } from "../../foundation/json/serializable.js";
 import { cloneTrustedPlainJson } from "../../foundation/json/trustedClone.js";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/patch/contract.js";
 import { removeSourcesPatch } from "../../foundation/patch/source.js";
 import type { Pointer } from "../../foundation/pointer/index.js";
 import { readAt, tryParsePointer } from "../../foundation/pointer/index.js";

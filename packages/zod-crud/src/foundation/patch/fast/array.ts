@@ -5,7 +5,13 @@ import { getValueAt, parseSafe } from "../container.js";
 import { appendArrayIndexPath, arrayLocation, arrayRemoveLocation } from "../path.js";
 import { replaceValueAtSegments } from "../replaceValue.js";
 import { validateOperationShape } from "../apply.js";
-import type { FastPatchResult, JSONPatchOperation, SameArrayStructuralItem } from "../types.js";
+import type { FastPatchResult, JSONPatchOperation } from "../contract.js";
+
+type SameArrayStructuralItem =
+  | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
+  | { op: "remove"; path: Pointer; index: number }
+  | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
+  | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" };
 
 export function applyAppendOnlyAddPatch(
   state: unknown,

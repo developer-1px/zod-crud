@@ -8,7 +8,7 @@ import type {
   JSONPatchOperation,
   TrustedApplyResult,
   TrustedPatchOptions,
-} from "./types.js";
+} from "./contract.js";
 
 export function applyTrustedPatch<T>(
   state: T,

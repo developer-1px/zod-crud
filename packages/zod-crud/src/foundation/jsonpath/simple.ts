@@ -1,4 +1,4 @@
-import type { Match, Query, Selector } from "./types.js";
+import type { Match, Query, Selector } from "./ast.js";
 import { matchArrayWildcardFieldPointers } from "./fast.js";
 import { escapeSeg, normalizeSliceIndex, objectHasOwn } from "./support.js";
 

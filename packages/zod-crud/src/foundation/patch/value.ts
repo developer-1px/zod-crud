@@ -6,7 +6,7 @@ import {
 } from "./container.js";
 import { objectHasOwn } from "./object.js";
 import { numericSegment } from "./path.js";
-import type { ErrorCode, JSONPatchOperation } from "./types.js";
+import type { ErrorCode, JSONPatchOperation } from "./contract.js";
 
 export function applyTrustedValueMutation(
   state: unknown,

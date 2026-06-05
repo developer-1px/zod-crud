@@ -1,7 +1,7 @@
 // foundation/jsonpath/parser — Token[] -> Query AST (RFC 9535).
 // 구현 범위: name / index / slice / wildcard / descendant / filter + RFC 9535 function extensions.
 
-import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, CompareOp, FunctionExpr } from "./types.js";
+import type { Query, Segment, Selector, FilterExpr, Comparable, FilterQuery, CompareOp, FunctionExpr } from "./ast.js";
 import { tokenize, JSONPathSyntaxError, type Token } from "./tokenize.js";
 
 export function parse(src: string): Query {

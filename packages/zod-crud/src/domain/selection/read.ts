@@ -2,16 +2,17 @@ import type { Pointer } from "../../foundation/pointer/index.js";
 import type {
   SelectionPoint,
   SelectionRange,
-  SelectionSnap,
-  SelectionSource,
-  SelectionType,
-} from "./types.js";
+} from "./point.js";
+import type { SelectionSnap } from "./snap.js";
 import {
   clonePoint,
   cloneRange,
   pointPath,
   samePoint,
 } from "./point.js";
+
+export type SelectionType = "None" | "Caret" | "Range";
+export type SelectionSource = Pointer | ReadonlyArray<Pointer>;
 
 export function isCollapsed(s: SelectionSnap): boolean {
   return s.selectionRanges.length === 1

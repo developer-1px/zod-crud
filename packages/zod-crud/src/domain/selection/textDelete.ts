@@ -3,8 +3,8 @@ import { orderSelectionRanges } from "./order.js";
 import type {
   SelectionPoint,
   SelectionRange,
-  SelectionSnap,
-} from "./types.js";
+} from "./point.js";
+import type { SelectionSnap } from "./snap.js";
 import {
   clonePoint,
   cloneRange,

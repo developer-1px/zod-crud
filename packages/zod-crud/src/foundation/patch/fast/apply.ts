@@ -18,7 +18,7 @@ import {
   applySameArrayFieldReplacePatch,
   applySameArrayNestedReplacePatch,
 } from "./replace.js";
-import type { FastPatchResult, JSONPatchOperation } from "../types.js";
+import type { FastPatchResult, JSONPatchOperation } from "../contract.js";
 
 type FastPatchSuccess = Extract<FastPatchResult, { handled: true }>;
 

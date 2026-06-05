@@ -9,7 +9,7 @@ import type {
   ApplyResult,
   JSONPatchOperation,
   ErrorCode,
-} from "../../foundation/patch/types.js";
+} from "../../foundation/patch/contract.js";
 import { buildPointer } from "../../foundation/pointer/index.js";
 
 export interface PatchPreflightOk<T> {

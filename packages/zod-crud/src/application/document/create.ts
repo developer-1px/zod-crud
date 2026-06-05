@@ -14,14 +14,14 @@ import {
 import type {
   JSONDocument,
   JSONDocumentOptions,
-} from "./types.js";
+} from "./interface.js";
 import { createDocumentRead } from "./read/read.js";
 import { createDocumentMutationRuntime } from "./state/patch.js";
 import { createDocumentHistoryRuntime } from "./history/undoRedo.js";
 import { createDocumentHistoryRuntimeState } from "./history/state.js";
 import type {
-  TrustedDocumentStateOps,
-} from "./state/types.js";
+  TrustedJSONStateOps,
+} from "./state/json.js";
 
 type TrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial: true };
 type UntrustedInitialDocumentOptions = JSONDocumentOptions & { trustedInitial?: false | undefined };
@@ -41,7 +41,7 @@ export function createJSONDocument<S extends z.ZodType>(
   initial: z.input<S> | z.output<S>,
   options: JSONDocumentOptions = {},
 ): JSONDocument<z.output<S>> {
-  const rawOps: TrustedDocumentStateOps<z.output<S>> = createJSONState(schema, initial, options);
+  const rawOps: TrustedJSONStateOps<z.output<S>> = createJSONState(schema, initial, options);
   const historyLimit = options.history ?? 0;
   const historyState = createDocumentHistoryRuntimeState();
   const patchState = createDocumentPatchRuntimeState();

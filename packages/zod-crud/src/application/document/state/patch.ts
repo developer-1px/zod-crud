@@ -1,36 +1,33 @@
 import type * as z from "zod";
-import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
+import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { commitMutable, historyDepth } from "../../../foundation/history.js";
 import { duplicate as duplicateVerb } from "../../../domain/edit/duplicate.js";
 import { restoreSelection } from "../../../domain/selection/snap.js";
-import { EMPTY_SELECTION, type SelectionSnap } from "../../../domain/selection/types.js";
+import { EMPTY_SELECTION, type SelectionSnap } from "../../../domain/selection/snap.js";
 import type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
-} from "../history/types.js";
+} from "../history/metadata.js";
 import type {
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
-} from "../edit/types.js";
-import type {
-  JSONPatchInput,
-} from "./types.js";
+} from "../edit/actions.js";
 import { buildChangeMetadata, compactHistoryMetadata } from "../history/metadata.js";
 import { planDocumentHistoryRecord } from "../history/restore.js";
 import type {
   DocumentHistoryRuntimeState,
-} from "../history/types.js";
-import type {
-  DocumentPatchRuntimeState,
-  TrustedDocumentStateOps,
-} from "./types.js";
-import type { SelectionRuntimeAccess } from "../selection/types.js";
+} from "../history/state.js";
+import type { TrustedJSONStateOps } from "./json.js";
+import type { DocumentPatchRuntimeState } from "./runtime.js";
+import type { SelectionRuntimeAccess } from "../selection/runtime.js";
+
+export type JSONPatchInput = JSONPatchOperation | ReadonlyArray<JSONPatchOperation>;
 
 interface CreateDocumentMutationRuntimeInput<S extends z.ZodType> {
   schema: S;
-  rawOps: TrustedDocumentStateOps<z.output<S>>;
+  rawOps: TrustedJSONStateOps<z.output<S>>;
   historyLimit: number;
   historyState: DocumentHistoryRuntimeState;
   patchState: DocumentPatchRuntimeState;

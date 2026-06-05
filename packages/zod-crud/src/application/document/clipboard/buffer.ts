@@ -1,13 +1,13 @@
 import { cloneJsonSerializable } from "../../../foundation/json/clone.js";
 import { jsonSerializableError } from "../../../foundation/json/serializable.js";
 import { cloneTrustedPlainJson } from "../../../foundation/json/trustedClone.js";
-import type { JSONResult } from "../../../foundation/patch/types.js";
+import type { JSONResult } from "../../../foundation/patch/contract.js";
 import { readAt, tryParsePointer, type Pointer } from "../../../foundation/pointer/index.js";
 import { normalizePointerSources } from "../../../foundation/pointer/source.js";
 import type {
   ClipboardBuffer,
   ClipboardWriteOptions,
-} from "./types.js";
+} from "./contract.js";
 
 type ClipboardWriteSourcesResult =
   | { ok: true; sources: Pointer[] | null }

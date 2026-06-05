@@ -40,29 +40,3 @@ export interface TrustedPatchOptions {
 export type FastPatchResult =
   | { handled: true; state: unknown; applied: ReadonlyArray<JSONPatchOperation> }
   | { handled: false };
-
-export interface ArrayFieldPath {
-  arrayPath: Pointer;
-  index: number;
-  key: string;
-}
-
-export interface ArrayNestedPath {
-  arrayPath: Pointer;
-  arraySegments: string[];
-  index: number;
-  prefixText: string;
-  suffixText: string;
-  suffixSegments: string[];
-}
-
-export interface ArrayFieldText {
-  prefixText: string;
-  suffixText: string;
-}
-
-export type SameArrayStructuralItem =
-  | { op: "add"; path: Pointer; index: number | "-"; value: unknown }
-  | { op: "remove"; path: Pointer; index: number }
-  | { op: "copy"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" }
-  | { op: "move"; from: Pointer; path: Pointer; fromIndex: number; index: number | "-" };

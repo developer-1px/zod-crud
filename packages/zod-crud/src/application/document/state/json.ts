@@ -13,7 +13,7 @@ import type {
   ApplyResult,
   JSONPatchOperation,
   JSONResult,
-} from "../../../foundation/patch/types.js";
+} from "../../../foundation/patch/contract.js";
 import { jsonSerializableError } from "../../../foundation/json/serializable.js";
 import { handleResult, type ErrorPolicy } from "../../../foundation/error.js";
 import { schemaOutputIsKnownJson } from "../../../domain/schema/shared/schema.js";
@@ -23,8 +23,8 @@ import {
 } from "../../../domain/schema/validation/patch.js";
 import type {
   JSONStateOps,
-} from "./types.js";
-import type { JSONChangeMetadata } from "../history/types.js";
+} from "./ops.js";
+import type { JSONChangeMetadata } from "../history/metadata.js";
 
 type JSONChangeListener = (
   applied: ReadonlyArray<JSONPatchOperation>,
@@ -36,7 +36,7 @@ interface CreateJSONStateOptions extends ErrorPolicy {
   trustedInitial?: boolean | undefined;
 }
 
-interface TrustedJSONStateOps<T> extends JSONStateOps<T> {
+export interface TrustedJSONStateOps<T> extends JSONStateOps<T> {
   readonly lastApplied: ReadonlyArray<JSONPatchOperation>;
   readonly stateJsonTrusted: boolean;
   previewPatch(operations: ReadonlyArray<JSONPatchOperation>): ApplyResult<z.ZodTypeAny> & { state: T };

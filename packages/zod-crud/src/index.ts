@@ -9,23 +9,31 @@ export { JSONCrudError } from "./foundation/error.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "./application/document/history/types.js";
+} from "./application/document/history/metadata.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./application/document/create.js";
 export type {
   JSONCapabilityResult,
-  JSONDocumentCommitOptions,
+  JSONDocument,
+  JSONDocumentOptions,
+} from "./application/document/interface.js";
+export type {
   JSONDocumentDuplicateError,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
+} from "./application/document/edit/actions.js";
+export type {
   JSONDocumentHistory,
-  JSONDocumentOptions,
+} from "./application/document/history/undoRedo.js";
+export type {
+  JSONDocumentCommitOptions,
+} from "./application/document/history/metadata.js";
+export type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-  JSONDocument,
-  JSONPatchInput,
-} from "./application/document/types.js";
+} from "./application/document/clipboard/contract.js";
+export type { JSONPatchInput } from "./application/document/state/patch.js";
 export type {
   ClipboardCopyOptions,
   ClipboardCopyError,
@@ -46,36 +54,40 @@ export type {
   ClipboardState,
   ClipboardWriteOptions,
   ClipboardSource,
-} from "./application/document/clipboard/types.js";
+} from "./application/document/clipboard/contract.js";
 export type {
   EntriesResult,
   EntryKind,
   QueryResult,
   ReadEntry,
   ReadResult,
-} from "./application/document/types.js";
+} from "./application/document/read/read.js";
 export type {
   SchemaDescription,
-  SchemaDescriptionResult,
+  SchemaKind,
+} from "./application/document/schema/description.js";
+export type {
   SchemaErrorCode,
   SchemaErrorResult,
-  SchemaKind,
-  SchemaKindResult,
   SchemaPathMode,
-  SchemaQueryResult,
-  SchemaState,
-} from "./application/document/schema/types.js";
+} from "./application/document/schema/resolve.js";
 export type {
+  SchemaDescriptionResult,
+  SchemaKindResult,
+  SchemaQueryResult,
+} from "./application/document/schema/query.js";
+export type { SchemaState } from "./application/document/schema/state.js";
+export type {
+  SelectionOptions,
   SelectionState,
 } from "./application/document/selection/create.js";
-export type { SelectionOptions } from "./application/document/selection/types.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/patch/schema.js";
 export type {
   JSONPatchOperation,
   JSONResult,
-} from "./foundation/patch/types.js";
+} from "./foundation/patch/contract.js";
 
 export { applyPatchToTrustedState } from "./domain/schema/validation/patch.js";
 
@@ -104,38 +116,48 @@ export type {
 
 // === Selection — W3C Selection API 정합 ===
 export type {
-  SelectionPointObject,
-  SelectionPoint,
-  SelectionOrderedRange,
-  SelectionOrderedRangeEntry,
   SelectionAffinity,
+  SelectionEdge,
+  SelectionPoint,
+  SelectionPointObject,
+  SelectionRange,
+  SelectionRangeInput,
+} from "./domain/selection/point.js";
+export type {
   SelectionContext,
+  SelectionMode,
+  SelectionSnap,
+} from "./domain/selection/snap.js";
+export type {
   SelectionCursorDirection,
   SelectionCursorErrorCode,
   SelectionCursorOptions,
   SelectionCursorResult,
   SelectionCursorTarget,
+} from "./domain/selection/reducer.js";
+export type {
   SelectionDirection,
-  SelectionEdge,
-  SelectionMode,
+  SelectionOrderedRange,
+  SelectionOrderedRangeEntry,
   SelectionOrderErrorCode,
   SelectionOrderOptions,
   SelectionPointOrderResult,
-  SelectionPointerSpan,
-  SelectionPointerSpansResult,
-  SelectionRange,
-  SelectionRangeInput,
   SelectionRangeOrderResult,
   SelectionRangesOrderResult,
   SelectionScopeErrorCode,
   SelectionScopeOptions,
   SelectionScopeResult,
   SelectionScopeTarget,
-  SelectionSource,
+} from "./domain/selection/order.js";
+export type {
+  SelectionPointerSpan,
+  SelectionPointerSpansResult,
   SelectionSpanOptions,
-  SelectionSnap,
+} from "./domain/selection/spans.js";
+export type {
+  SelectionSource,
   SelectionType,
-} from "./domain/selection/types.js";
+} from "./domain/selection/read.js";
 export type {
   ReplaceSelectionTextResult,
   SelectionTextEdit,

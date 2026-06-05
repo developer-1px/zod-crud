@@ -1,6 +1,6 @@
 // computeInverses — undo 용 RFC 6902 inverse op 계산.
 
-import type { JSONPatchOperation } from "./types.js";
+import type { JSONPatchOperation } from "./contract.js";
 import { appendSegment, parsePointer, readAt } from "../pointer/index.js";
 import { cloneTrustedPlainJson } from "../json/trustedClone.js";
 import { applyOpRaw } from "./apply.js";
@@ -20,7 +20,7 @@ import type {
   ArrayFieldPath,
   ArrayFieldText,
   ArrayNestedPath,
-} from "./types.js";
+} from "./path.js";
 
 type SeenRootKeys = Record<string, true>;
 

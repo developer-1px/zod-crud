@@ -1,10 +1,23 @@
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
-import type {
-  SelectionPoint,
-  SelectionEdge,
-  SelectionRange,
-  SelectionRangeInput,
-} from "./types.js";
+
+export type SelectionEdge = "before" | "after";
+export type SelectionAffinity = "forward" | "backward";
+
+export interface SelectionPointObject {
+  path: Pointer;
+  offset?: number;
+  edge?: SelectionEdge;
+  affinity?: SelectionAffinity;
+}
+
+export type SelectionPoint = Pointer | SelectionPointObject;
+
+export interface SelectionRange {
+  anchor: SelectionPoint;
+  focus: SelectionPoint;
+}
+
+export type SelectionRangeInput = SelectionPoint | SelectionRange;
 
 export function normalizeRangeInput(input: SelectionRangeInput): SelectionRange {
   return isSelectionRange(input) ? input : collapsedRange(input);

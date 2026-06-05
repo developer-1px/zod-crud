@@ -4,7 +4,7 @@
 // 내부적으로 RFC 6902 copy op 으로 환원.
 
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation } from "../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation } from "../../foundation/patch/contract.js";
 import { parentPointer, lastSegment, lastSegmentIndex, withLastSegment, readAt, tryParsePointer } from "../../foundation/pointer/index.js";
 import type { Pointer } from "../../foundation/pointer/index.js";
 import { patchPreflight, patchPreflightFromApplyResult, type PatchPreflightErrorCode } from "../schema/patch.js";

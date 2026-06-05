@@ -1,5 +1,5 @@
 import type * as z from "zod";
-import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { prefixIssues } from "./schema.js";
 

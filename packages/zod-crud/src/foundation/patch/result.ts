@@ -1,6 +1,6 @@
 import type * as z from "zod";
 import type { Pointer } from "../pointer/index.js";
-import type { ErrorCode, JSONResult } from "./types.js";
+import type { ErrorCode, JSONResult } from "./contract.js";
 
 export const ok: JSONResult = { ok: true };
 

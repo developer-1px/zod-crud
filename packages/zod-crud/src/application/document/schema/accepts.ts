@@ -4,7 +4,7 @@ import type { Pointer } from "../../../foundation/pointer/index.js";
 import { appendSegment } from "../../../foundation/pointer/index.js";
 import type { CapabilityResult } from "../can/result.js";
 import { resolveDocumentSchema } from "./resolve.js";
-import type { SchemaPathMode } from "./types.js";
+import type { SchemaPathMode } from "./resolve.js";
 
 export function canDocumentSchemaAccepts<S extends z.ZodType>(
   schema: S,

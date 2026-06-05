@@ -1,9 +1,9 @@
 import type * as z from "zod";
 
 import { cloneTrustedPlainJson } from "../../../foundation/json/trustedClone.js";
-import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
+import type { ApplyResult, JSONPatchOperation, JSONResult } from "../../../foundation/patch/contract.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
-import type { SelectionSource } from "../../../domain/selection/types.js";
+import type { SelectionSource } from "../../../domain/selection/read.js";
 import {
   copy,
 } from "../../../domain/clipboard/copy.js";
@@ -20,8 +20,8 @@ import type {
   ClipboardState,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-} from "./types.js";
-import type { JSONStateOps } from "../state/types.js";
+} from "./contract.js";
+import type { JSONStateOps } from "../state/ops.js";
 import {
   trustedSourceBuffer,
   writeClipboardBuffer,

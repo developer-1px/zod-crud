@@ -1,5 +1,5 @@
 import { cloneJson } from "../../foundation/json/clone.js";
-import type { JSONPatchOperation } from "../../foundation/patch/types.js";
+import type { JSONPatchOperation } from "../../foundation/patch/contract.js";
 import { readAt, tryParsePointer, type Pointer } from "../../foundation/pointer/index.js";
 import {
   cursorPoints,
@@ -14,12 +14,11 @@ import type {
   SelectionPoint,
   SelectionPointObject,
   SelectionAffinity,
-  SelectionOrderErrorCode,
-  SelectionPointerSpan,
   SelectionRange,
-  SelectionSnap,
-  SelectionSpanOptions,
-} from "./types.js";
+} from "./point.js";
+import type { SelectionSnap } from "./snap.js";
+import type { SelectionOrderErrorCode } from "./order.js";
+import type { SelectionPointerSpan, SelectionSpanOptions } from "./spans.js";
 import { clonePoint, pointPath } from "./point.js";
 
 export interface SelectionTextEditOptions extends SelectionSpanOptions {
