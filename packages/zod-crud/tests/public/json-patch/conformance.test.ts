@@ -3,7 +3,7 @@
 
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
-import { applyPatch, type JSONPatchOperation } from "../../../src/index.js";
+import { applyPatch, type JSONPatchOperation } from "zod-crud";
 import tests from "./conformance/tests.json" with { type: "json" };
 import specTests from "./conformance/spec_tests.json" with { type: "json" };
 

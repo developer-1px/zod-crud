@@ -5,7 +5,7 @@ import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
 import cts from "./conformance/jsonpath-cts.json" with { type: "json" };
-import { createJSONDocument } from "../../../src/index.js";
+import { createJSONDocument } from "zod-crud";
 
 interface JsonPathCtsCase {
   name: string;

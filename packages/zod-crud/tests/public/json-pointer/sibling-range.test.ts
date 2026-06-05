@@ -2,7 +2,7 @@
 // See docs/standard/contract-pressure-register.md "sibling-range 정규화" (RFC #87).
 
 import { describe, expect, test } from "vitest";
-import { resolveSiblingRange } from "../../../src/index.js";
+import { resolveSiblingRange } from "zod-crud";
 
 describe("resolveSiblingRange", () => {
   test("shares the parent and sorts by index", () => {

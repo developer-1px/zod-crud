@@ -2,9 +2,16 @@ import { describe, expect, test } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
-const root = resolve(__dirname, "..", "..");
-const packageJson = JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as {
+import * as rootApi from "zod-crud";
+import * as reactApi from "zod-crud/react";
+
+const packageRoot = resolve(__dirname, "..", "..");
+const packageJson = JSON.parse(readFileSync(resolve(packageRoot, "package.json"), "utf8")) as {
   exports: Record<string, { import?: string; types?: string }>;
+};
+const publicContract = JSON.parse(readFileSync(resolve(packageRoot, "public-contract.json"), "utf8")) as {
+  root: { values: string[]; types: string[] };
+  react: { values: string[]; types: string[] };
 };
 
 describe("package exports", () => {
@@ -23,5 +30,10 @@ describe("package exports", () => {
 
   test("package subpaths are limited to root and react", () => {
     expect(Object.keys(packageJson.exports).sort()).toEqual([".", "./react"]);
+  });
+
+  test("runtime value exports match public-contract.json", () => {
+    expect(Object.keys(rootApi).sort()).toEqual([...publicContract.root.values].sort());
+    expect(Object.keys(reactApi).sort()).toEqual([...publicContract.react.values].sort());
   });
 });

@@ -2,7 +2,7 @@
 
 import { describe, it, expect } from "vitest";
 import { z } from "zod";
-import { applyPatch } from "../../src/index.js";
+import { applyPatch } from "zod-crud";
 
 describe("#57 structural sharing", () => {
   const Schema = z.object({

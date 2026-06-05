@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { applyPatch, applyPatchToTrustedState } from "../../../src/index.js";
+import { applyPatch, applyPatchToTrustedState } from "zod-crud";
 
 describe("applyPatch public contract", () => {
   test("validates the whole resulting state", () => {

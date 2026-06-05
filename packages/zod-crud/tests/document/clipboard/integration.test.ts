@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../../../src/index.js";
+import { createJSONDocument } from "zod-crud";
 
 describe("JSONDocument clipboard", () => {
   const Item = z.object({
