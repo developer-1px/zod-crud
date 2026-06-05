@@ -9,60 +9,53 @@ import type {
   ClipboardCutResult,
   ClipboardPasteResult,
   ClipboardState,
+  JSONDocumentPasteOptions,
+  JSONDocumentPasteTarget,
 } from "./clipboard/types.js";
-import type { SchemaState } from "./schema.js";
+import type { SchemaState } from "./schema/types.js";
 import type { SelectionState } from "./selection/create.js";
 import type { JSONCrudError } from "../../foundation/error.js";
-import type { JSONDocumentHistory } from "./history/types.js";
 import type {
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
+  JSONDocumentHistory,
+} from "./history/types.js";
+import type {
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
-  JSONDocumentPasteOptions,
-  JSONDocumentPasteTarget,
-  JSONPatchInput,
-  SelectionOptions,
-} from "./runtime/types.js";
+} from "./edit/types.js";
+import type {
+  EntriesResult,
+  QueryResult,
+  ReadResult,
+} from "./read/types.js";
+import type { JSONPatchInput } from "./state/types.js";
+import type { SelectionOptions } from "./selection/types.js";
 
-export type ReadResult =
-  | { ok: true; path: Pointer; value: unknown }
-  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
-
-export type QueryResult =
-  | { ok: true; query: string; pointers: Pointer[] }
-  | { ok: false; code: "invalid_query"; reason?: string };
-
-export type EntryKind = "root" | "object" | "array" | "record" | "primitive";
-
-export interface ReadEntry {
-  key: string;
-  path: Pointer;
-  value: unknown;
-}
-
-export type EntriesResult =
-  | {
-      ok: true;
-      path: Pointer;
-      kind: EntryKind;
-      entries: ReadonlyArray<ReadEntry>;
-    }
-  | { ok: false; code: "invalid_pointer" | "path_not_found"; reason?: string; pointer: Pointer };
-
+export type {
+  EntriesResult,
+  EntryKind,
+  QueryResult,
+  ReadEntry,
+  ReadResult,
+} from "./read/types.js";
 export type { JSONDocumentHistory } from "./history/types.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
+} from "./history/types.js";
+export type {
   JSONDocumentDuplicateError,
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
+} from "./edit/types.js";
+export type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-  JSONPatchInput,
-  SelectionOptions,
-} from "./runtime/types.js";
+} from "./clipboard/types.js";
+export type { JSONPatchInput } from "./state/types.js";
+export type { SelectionOptions } from "./selection/types.js";
 
 export interface JSONDocumentOptions {
   strict?: boolean | undefined;

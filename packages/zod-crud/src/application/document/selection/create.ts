@@ -1,7 +1,8 @@
 // Headless selection state facade.
 // React hook and JSONDocument use this same implementation.
 
-import type { JSONStateOps, SelectionOptions } from "../runtime/types.js";
+import type { JSONStateOps } from "../state/types.js";
+import type { SelectionOptions } from "./types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { jsonEqual } from "../../../foundation/json/equal.js";
 import {

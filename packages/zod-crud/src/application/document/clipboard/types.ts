@@ -2,15 +2,26 @@ import type {
   ClipboardSource as DomainClipboardSource,
   CopyError as DomainCopyError,
   CopyOk as DomainCopyOk,
-} from "../../../domain/copy.js";
-import type { CutError as DomainCutError } from "../../../domain/cut.js";
+} from "../../../domain/clipboard/copy.js";
+import type { CutError as DomainCutError } from "../../../domain/clipboard/cut.js";
 import type {
   PasteDiscriminatorMismatch as DomainPasteDiscriminatorMismatch,
   PasteError as DomainPasteError,
-} from "../../../domain/paste.js";
+  PasteOptions,
+  PasteTarget,
+} from "../../../domain/clipboard/paste.js";
 import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
-import type { JSONDocumentPasteOptions, JSONDocumentPasteTarget } from "../runtime/types.js";
+
+export interface JSONDocumentPasteOptions extends PasteOptions {
+  /**
+   * Paste this payload directly instead of reading the document clipboard buffer.
+   * Use this for external clipboard, drag/drop, and extension-provided payloads.
+   */
+  payload?: unknown;
+}
+
+export type JSONDocumentPasteTarget = PasteTarget;
 
 export interface ClipboardWriteOptions {
   source?: Pointer | null;
@@ -48,10 +59,6 @@ export interface ClipboardReadOk {
   sources: ReadonlyArray<Pointer> | null;
 }
 
-interface ClipboardPeekOk extends ClipboardReadOk {
-  schemaTrusted: boolean;
-}
-
 export interface ClipboardEmpty {
   ok: false;
   code: "empty_clipboard";
@@ -59,7 +66,6 @@ export interface ClipboardEmpty {
 }
 
 export type ClipboardReadResult = ClipboardReadOk | ClipboardEmpty;
-export type ClipboardPeekResult = ClipboardPeekOk | ClipboardEmpty;
 
 export interface ClipboardMutationOk<T> {
   ok: true;

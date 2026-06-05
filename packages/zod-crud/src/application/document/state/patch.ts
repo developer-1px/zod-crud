@@ -2,17 +2,21 @@ import type * as z from "zod";
 import type { JSONPatchOperation, JSONResult } from "../../../foundation/patch/types.js";
 import type { Pointer } from "../../../foundation/pointer/index.js";
 import { commitMutable, historyDepth } from "../../../foundation/history.js";
-import { duplicate as duplicateVerb } from "../../../domain/duplicate.js";
+import { duplicate as duplicateVerb } from "../../../domain/edit/duplicate.js";
 import { restoreSelection } from "../../../domain/selection/snap.js";
 import { EMPTY_SELECTION, type SelectionSnap } from "../../../domain/selection/types.js";
 import type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
   JSONDocumentCommitOptions,
+} from "../history/types.js";
+import type {
   JSONDocumentDuplicateOptions,
   JSONDocumentDuplicateResult,
+} from "../edit/types.js";
+import type {
   JSONPatchInput,
-} from "../runtime/types.js";
+} from "./types.js";
 import { buildChangeMetadata, compactHistoryMetadata } from "../history/metadata.js";
 import { planDocumentHistoryRecord } from "../history/restore.js";
 import type {
@@ -20,9 +24,9 @@ import type {
 } from "../history/types.js";
 import type {
   DocumentPatchRuntimeState,
-  SelectionRuntimeAccess,
   TrustedDocumentStateOps,
-} from "../runtime/types.js";
+} from "./types.js";
+import type { SelectionRuntimeAccess } from "../selection/types.js";
 
 interface CreateDocumentMutationRuntimeInput<S extends z.ZodType> {
   schema: S;

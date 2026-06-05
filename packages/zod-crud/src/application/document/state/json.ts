@@ -22,9 +22,9 @@ import {
   applyPatchWithLocalSchemaValidation,
 } from "../../../domain/schema/validation/patch.js";
 import type {
-  JSONChangeMetadata,
   JSONStateOps,
-} from "../runtime/types.js";
+} from "./types.js";
+import type { JSONChangeMetadata } from "../history/types.js";
 
 type JSONChangeListener = (
   applied: ReadonlyArray<JSONPatchOperation>,
