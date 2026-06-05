@@ -17,13 +17,13 @@ import {
 import type {
   DocumentHistoryEntry,
   DocumentHistoryRuntimeState,
+  HistoryTransactionOptions,
   JSONDocumentHistory,
 } from "./types.js";
 import type {
-  SelectionRuntimeAccess,
   TrustedDocumentStateOps,
-} from "../runtime/types.js";
-import type { HistoryTransactionOptions } from "../runtime/types.js";
+} from "../state/types.js";
+import type { SelectionRuntimeAccess } from "../selection/types.js";
 
 interface CreateDocumentHistoryRuntimeInput<T> {
   rawOps: TrustedDocumentStateOps<T>;

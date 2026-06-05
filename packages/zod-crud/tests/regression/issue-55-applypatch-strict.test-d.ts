@@ -1,5 +1,5 @@
 import * as z from "zod";
-import { applyPatch, applyPatchToTrustedState } from "../../src/index.js";
+import { applyPatch, applyPatchToTrustedState } from "zod-crud";
 
 const Doc = z.object({
   blocks: z.array(z.discriminatedUnion("kind", [

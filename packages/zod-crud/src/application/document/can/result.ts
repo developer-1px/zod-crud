@@ -47,3 +47,13 @@ export type DocumentCapabilitySourceResult =
     };
 
 export const OK: CapabilityResult = { ok: true };
+
+export function capabilityResult(result: DocumentCapabilitySourceResult): CapabilityResult {
+  if (result.ok) return OK;
+  const out: Extract<CapabilityResult, { ok: false }> = { ok: false, code: result.code };
+  const reason = result.reason ?? result.message;
+  if (reason !== undefined) out.reason = reason;
+  if (result.pointer !== undefined && result.pointer !== null) out.pointer = result.pointer;
+  if (result.violations !== undefined) out.violations = result.violations;
+  return out;
+}

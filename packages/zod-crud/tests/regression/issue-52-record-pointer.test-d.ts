@@ -2,7 +2,7 @@
 // public JSONPatchOperation path 는 Pointer(string) 이므로 dynamic key 에 `as never` 캐스팅이 필요 없다.
 
 import * as z from "zod";
-import type { JSONDocument } from "../../src/index.js";
+import type { JSONDocument } from "zod-crud";
 
 const Schema = z.object({ cells: z.record(z.string(), z.string()) });
 type T = z.output<typeof Schema>;

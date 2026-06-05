@@ -1,5 +1,5 @@
 import type { SelectionSnap } from "../../../domain/selection/types.js";
-import type { HistoryTransactionOptions, JSONChangeMetadata } from "../runtime/types.js";
+import type { HistoryTransactionOptions, JSONChangeMetadata } from "./types.js";
 import type { DocumentHistoryEntry } from "./types.js";
 
 export function buildChangeMetadata(

@@ -760,15 +760,7 @@ try {
 
   const privateSubpaths = [
     "package.json",
-    "dist/index.js",
-    "dist/react.js",
-    "src/index.ts",
-    "src/react.ts",
-    "src/application/document/createJSONDocument.js",
-    "src/domain/verbs",
-    "src/domain/verbs/duplicate.js",
-    "src/domain/verbs/paste.js",
-    "src/foundation/json-patch",
+    ...Object.values(packageJson.exports).map((exportMap) => exportMap.import.replace(/^\.\//, "")),
   ];
   for (const privateSubpath of privateSubpaths) {
     expectCommandFailure(

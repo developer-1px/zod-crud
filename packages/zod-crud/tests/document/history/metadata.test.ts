@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "../../../src/index.js";
+import { createJSONDocument } from "zod-crud";
 
 const Schema = z.object({
   title: z.string(),

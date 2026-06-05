@@ -4,20 +4,12 @@
 // Headless entrypoint. React APIs live under `zod-crud/react` so the optional
 // React peer is not required for pure JSON Patch / Pointer consumers.
 
-import type * as z from "zod";
-import { applyPatchWithLocalSchemaValidation } from "./domain/schema/validation/patch.js";
-import { applyPatchToTrustedState as applyPatchToTrustedStateCore } from "./foundation/patch/schema.js";
-import type {
-  ApplyResult,
-  JSONPatchOperation,
-} from "./foundation/patch/types.js";
-
 // === Boundary error + document metadata ===
 export { JSONCrudError } from "./foundation/error.js";
 export type {
   HistoryTransactionOptions,
   JSONChangeMetadata,
-} from "./application/document/runtime/types.js";
+} from "./application/document/history/types.js";
 
 // === Headless document facade ===
 export { createJSONDocument } from "./application/document/create.js";
@@ -72,11 +64,11 @@ export type {
   SchemaPathMode,
   SchemaQueryResult,
   SchemaState,
-} from "./application/document/schema.js";
+} from "./application/document/schema/types.js";
 export type {
   SelectionState,
 } from "./application/document/selection/create.js";
-export type { SelectionOptions } from "./application/document/runtime/types.js";
+export type { SelectionOptions } from "./application/document/selection/types.js";
 
 // === RFC 6902 — JSON Patch ===
 export { applyOperation, applyPatch } from "./foundation/patch/schema.js";
@@ -85,14 +77,7 @@ export type {
   JSONResult,
 } from "./foundation/patch/types.js";
 
-export function applyPatchToTrustedState<S extends z.ZodTypeAny>(
-  schema: S,
-  state: z.output<S>,
-  ops: ReadonlyArray<JSONPatchOperation>,
-): ApplyResult<S> {
-  return applyPatchWithLocalSchemaValidation(schema, state, ops)
-    ?? applyPatchToTrustedStateCore(schema, state, ops);
-}
+export { applyPatchToTrustedState } from "./domain/schema/validation/patch.js";
 
 // === RFC 6901 — JSON Pointer ===
 export {
@@ -163,4 +148,4 @@ export type {
   SelectionTextDeleteDirection,
   SelectionTextDeleteOptions,
 } from "./domain/selection/textDelete.js";
-export { trackPointer } from "./domain/pointer/track.js";
+export { trackPointer } from "./foundation/patch/track.js";
