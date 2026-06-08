@@ -6,10 +6,16 @@ const root = dirname(dirname(fileURLToPath(import.meta.url)));
 const check = process.argv.includes("--check");
 
 const outputs = [
-  ["docs/generated/repo-catalog.json", () => `${JSON.stringify(createRepoCatalog(), null, 2)}\n`],
-  ["docs/generated/extensions-catalog.md", () => renderExtensionsCatalog(createRepoCatalog())],
-  ["apps/site/src/generated/repo-catalog.ts", () => renderSiteCatalog(createRepoCatalog())],
+  ["docs/generated/repo-catalog.json", () => `${JSON.stringify(repoCatalog(), null, 2)}\n`],
+  ["docs/generated/extensions-catalog.md", () => renderExtensionsCatalog(repoCatalog())],
+  ["apps/site/src/generated/repo-catalog.ts", () => renderSiteCatalog(repoCatalog())],
 ];
+
+let cachedRepoCatalog = null;
+function repoCatalog() {
+  cachedRepoCatalog ??= createRepoCatalog();
+  return cachedRepoCatalog;
+}
 
 const extensionGuidance = {
   "@zod-crud/autosave": {
@@ -268,6 +274,10 @@ function createRepoCatalog() {
   const apps = packageEntries("apps").map((entry) => packageDoc(entry.path, "app"));
   const rootPackage = readJson("package.json");
   const readme = readIfExists("README.md");
+  assertCompleteExtensionGuidance([
+    ...packages.filter((item) => item.status === "official-extension"),
+    ...labExtensions,
+  ]);
 
   return {
     schemaVersion: 1,
@@ -289,6 +299,20 @@ function createRepoCatalog() {
       apps: apps.length,
     },
   };
+}
+
+function assertCompleteExtensionGuidance(extensionItems) {
+  const extensionNames = new Set(extensionItems.map((item) => item.name));
+  const missing = [...extensionNames].filter((name) => extensionGuidance[name] === undefined);
+  const stale = Object.keys(extensionGuidance).filter((name) => !extensionNames.has(name));
+
+  if (missing.length > 0 || stale.length > 0) {
+    throw new Error([
+      "Extension guidance metadata is out of sync.",
+      ...missing.map((name) => `missing guidance: ${name}`),
+      ...stale.map((name) => `stale guidance: ${name}`),
+    ].join("\n"));
+  }
 }
 
 function packageEntries(dir) {

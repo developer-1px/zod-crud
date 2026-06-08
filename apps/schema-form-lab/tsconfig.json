@@ -1,4 +1,5 @@
 {
+  "extends": "../../tsconfig.zod-crud-paths.json",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
@@ -12,13 +13,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "resolveJsonModule": true,
-    "useDefineForClassFields": true,
-    "paths": {
-      "@zod-crud/form-draft": ["../../packages/form-draft/src/index.ts"],
-      "@zod-crud/schema-form": ["../../packages/schema-form/src/index.ts"],
-      "zod-crud/react": ["../../packages/zod-crud/src/react.ts"],
-      "zod-crud": ["../../packages/zod-crud/src/index.ts"]
-    }
+    "useDefineForClassFields": true
   },
   "include": ["src"]
 }

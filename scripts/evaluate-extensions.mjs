@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = new URL("..", import.meta.url).pathname;
@@ -193,9 +193,7 @@ const officialExtensions = [
 const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
 const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));
 const outlinerVitestConfig = read("apps/outliner/vitest.config.ts");
-const outlinerTsconfig = JSON.parse(read("apps/outliner/tsconfig.json"));
 const siteViteConfig = read("apps/site/vite.config.ts");
-const siteTsconfig = JSON.parse(read("apps/site/tsconfig.json"));
 
 function read(path) {
   return readFileSync(join(root, path), "utf8");
@@ -212,6 +210,42 @@ function files(dir) {
     if (entry.isDirectory()) return files(path);
     return entry.isFile() && path.endsWith(".ts") ? [path] : [];
   });
+}
+
+function packageDirs(dir) {
+  return readdirSync(join(root, dir), { withFileTypes: true })
+    .filter((entry) => entry.isDirectory())
+    .map((entry) => `${dir}/${entry.name}`)
+    .filter((path) => readJsonIfExists(`${path}/package.json`) !== null)
+    .sort();
+}
+
+function readJsonIfExists(path) {
+  if (!existsSync(join(root, path))) return null;
+  return JSON.parse(read(path));
+}
+
+const officialExtensionRoots = new Set(officialExtensions.map((extension) => extension.root));
+for (const dir of packageDirs("packages")) {
+  const pkg = readJsonIfExists(`${dir}/package.json`);
+  if (pkg?.name === "zod-crud") continue;
+  if (!officialExtensionRoots.has(dir)) {
+    fail(`${dir}: official extension package is missing from scripts/evaluate-extensions.mjs metadata.`);
+  }
+}
+
+const tsconfigPathAliases = tsconfigPaths.compilerOptions?.paths ?? {};
+if (!tsconfigPathAliases["@zod-crud/*"]?.includes("packages/*/src/index.ts")) {
+  fail("tsconfig.zod-crud-paths.json: missing package wildcard source path.");
+}
+if (!tsconfigPathAliases["@zod-crud/*"]?.includes("labs/extensions/*/src/index.ts")) {
+  fail("tsconfig.zod-crud-paths.json: missing lab extension wildcard source path.");
+}
+if (tsconfigPathAliases["zod-crud/react"]?.[0] !== "packages/zod-crud/src/react.ts") {
+  fail("tsconfig.zod-crud-paths.json: missing zod-crud/react source path.");
+}
+if (tsconfigPathAliases["zod-crud"]?.[0] !== "packages/zod-crud/src/index.ts") {
+  fail("tsconfig.zod-crud-paths.json: missing zod-crud source path.");
 }
 
 for (const extension of officialExtensions) {
@@ -262,9 +296,6 @@ for (const extension of officialExtensions) {
   if (!sourceAliasHelper.includes(`"${packageName}"`)) {
     fail(`${label}: missing from shared source alias helper.`);
   }
-  if (tsconfigPaths.compilerOptions?.paths?.[extension.name]?.[0] !== `${extension.root}/src/index.ts`) {
-    fail(`${label}: missing from shared tsconfig paths.`);
-  }
 }
 
 for (const [label, source] of [
@@ -276,11 +307,15 @@ for (const [label, source] of [
   }
 }
 
-if (outlinerTsconfig.extends !== "../../tsconfig.zod-crud-paths.json") {
-  fail("apps/outliner/tsconfig.json: must extend shared zod-crud paths.");
-}
-if (siteTsconfig.extends !== "../../tsconfig.zod-crud-paths.json") {
-  fail("apps/site/tsconfig.json: must extend shared zod-crud paths.");
+for (const tsconfigPath of packageDirs("apps").map((dir) => `${dir}/tsconfig.json`)) {
+  const tsconfig = readJsonIfExists(tsconfigPath);
+  if (tsconfig?.extends !== "../../tsconfig.zod-crud-paths.json") {
+    fail(`${tsconfigPath}: must extend shared zod-crud paths.`);
+  }
+  const paths = tsconfig?.compilerOptions?.paths;
+  if (paths !== undefined) {
+    fail(`${tsconfigPath}: must not duplicate zod-crud source paths.`);
+  }
 }
 
 for (const configPath of files("apps").filter((path) => /vite(?:st)?\.config\.ts$/.test(path))) {
