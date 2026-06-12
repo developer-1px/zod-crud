@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canRound, createRound, type RoundResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: RoundResult): Extract<RoundResult, { ok: true }> {
   return result;
 }
 
-describe("@zod-crud/round", () => {
+describe("@interactive-os/json-document-round", () => {
   test("rounds to a precision", () => {
     const doc = createDoc(3.14159);
     const r = createRound(doc);

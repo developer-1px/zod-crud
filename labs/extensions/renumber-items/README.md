@@ -1,12 +1,12 @@
-# @zod-crud/renumber-items
+# @interactive-os/json-document-renumber-items
 
-Lab renumber-items extension for `zod-crud` documents.
+Lab renumber-items extension for `@interactive-os/json-document` documents.
 
 Use it to sync an order/position field to each item's array position (persisting
 a drag reorder), using only the public document facade.
 
 ```ts
-import { createRenumberItems } from "@zod-crud/renumber-items";
+import { createRenumberItems } from "@interactive-os/json-document-renumber-items";
 
 const r = createRenumberItems(doc);
 
@@ -24,10 +24,10 @@ r.renumberItems("/cards", { field: "/position", step: 10 }); // 0,10,20,...
 
 ## Non-goals
 
-- Reordering the array itself — run a reorder (`@zod-crud/collection`,
+- Reordering the array itself — run a reorder (`@interactive-os/json-document-collection`,
   `move-selected`, `swap-items`) first, then `renumberItems` to persist the new order.
 - Fractional/gap indexing strategies (LexoRank-style) — host-owned.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

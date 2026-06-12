@@ -1,9 +1,9 @@
-# zod-crud extension delegation standard
+# json-document extension delegation standard
 
 상태: 표준화 트랙 초안.
 
-이 문서는 `zod-crud` official extension이 무엇이어야 하는지 정의한다.
-핵심은 패키지 수를 늘리는 것이 아니다. `zod-crud`의 목표는 FE 편집 도구에서
+이 문서는 `@interactive-os/json-document` official extension이 무엇이어야 하는지 정의한다.
+핵심은 패키지 수를 늘리는 것이 아니다. `@interactive-os/json-document`의 목표는 FE 편집 도구에서
 이미 표준화된 feature를 두 번 다시 직접 개발하지 않아도 되게 하는 것이다.
 official extension은 host app이 반복해서 직접 구현하던 하나의 편집 개념을
 명확히 위임받아야 한다.
@@ -18,7 +18,7 @@ official extension
 
 ## 1. 철학
 
-`zod-crud` core는 primitive foundation이다. core는 schema로 보호되는 JSON
+`@interactive-os/json-document` core는 primitive foundation이다. core는 schema로 보호되는 JSON
 document, pointer, patch, query, selection, clipboard, history, capability를
 제공한다. core는 UI, DOM, keyboard, focus, storage lifecycle, system
 clipboard permission, product command naming을 소유하지 않는다.
@@ -26,7 +26,7 @@ clipboard permission, product command naming을 소유하지 않는다.
 extension은 core보다 편한 wrapper가 아니다. extension은 app과 core 사이에서
 반복되는 편집 feature의 의미론을 소유한다.
 
-사용자가 `zod-crud` extension을 쓸 때의 감각은 "라이브러리 함수 몇 개를 가져와
+사용자가 `@interactive-os/json-document` extension을 쓸 때의 감각은 "라이브러리 함수 몇 개를 가져와
 내가 feature를 조립한다"가 아니라 "이 편집 feature를 위임한다"여야 한다.
 app-owned는 남는 쓰레기통이 아니다. rendering, focus, product copy, server
 policy처럼 제품마다 달라질 수밖에 없는 마지막 책임만 app-owned로 남는다.
@@ -251,7 +251,7 @@ extension은 feature의 절차를 충분히 소유해야 한다.
 
 extension은 core implementation detail에 기대면 안 된다.
 
-- MUST: `zod-crud` public package entrypoint만 import해야 한다.
+- MUST: `@interactive-os/json-document` public package entrypoint만 import해야 한다.
 - MUST NOT: `src/application`, `src/domain`, `src/foundation` 같은 internal path를 import하면 안 된다.
 - MUST NOT: private symbol, test helper, implementation-only type을 public contract처럼 사용하면 안 된다.
 - SHOULD: extension evaluator로 import boundary를 검사해야 한다.
@@ -397,7 +397,7 @@ doc.patch({ op: "move", from: pointer, path: `${previous}/children/-` });
 
 ## 7. Dogfood 판정
 
-### 7.1 성공: `@zod-crud/collection`
+### 7.1 성공: `@interactive-os/json-document-collection`
 
 위임 concept:
 
@@ -421,7 +421,7 @@ ordered collection item editing
 
 판정: 성공. helper가 아니라 편집도구 공통 feature concept이다.
 
-### 7.2 강한 성공: `@zod-crud/outline`
+### 7.2 강한 성공: `@interactive-os/json-document-outline`
 
 위임 concept:
 
@@ -446,7 +446,7 @@ hierarchical outline structure editing
 판정: 강한 성공. `demote/promote`는 Markdown list, outliner, document block tree에
 반복되는 de facto editing vocabulary다.
 
-### 7.3 성공: `@zod-crud/clipboard-web`
+### 7.3 성공: `@interactive-os/json-document-clipboard-web`
 
 위임 concept:
 
@@ -472,7 +472,7 @@ web clipboard boundary
 다만 여러 app에서 동일한 queue가 반복되면 `clipboard-web`의 추가 concept이
 아니라 command sequencing extension 후보인지 별도로 검토해야 한다.
 
-### 7.4 조건부 성공: `@zod-crud/dirty-state`
+### 7.4 조건부 성공: `@interactive-os/json-document-dirty-state`
 
 위임 concept:
 
@@ -498,7 +498,7 @@ clean baseline tracking
 편집기 기능 추가 성격이 강하다. official 유지 가능하지만 workflow wrapper로
 확장하면 안 된다.
 
-### 7.5 조건부 성공: `@zod-crud/persist-web`
+### 7.5 조건부 성공: `@interactive-os/json-document-persist-web`
 
 위임 concept:
 
@@ -576,7 +576,7 @@ packages/*
 |-- app code를 concept 수준에서 얇게 만들어야 한다
 `-- breaking 가능성이 낮아야 한다
 
-packages/zod-crud core
+packages/json-document core
 |-- 가장 늦게 승격한다
 |-- 여러 extension이 같은 primitive를 재구현할 때만 검토한다
 |-- product feature 이름을 가져오면 안 된다
@@ -642,7 +642,7 @@ official 승격 전에는 다음 표를 작성해야 한다.
 | Residual app responsibility | 앱에 남아야 하는 UX/product 책임은 무엇인가? |
 | Cross-app evidence | outliner 외 어느 편집도구에서도 같은 이름으로 필요한가? |
 | can/execute parity | `can*`와 실행 method가 같은 feature semantics를 공유하는가? |
-| Public facade | public `zod-crud` entrypoint만으로 구현되는가? |
+| Public facade | public `@interactive-os/json-document` entrypoint만으로 구현되는가? |
 | Non-goals | UI, focus, keyboard, product workflow를 명시적으로 제외했는가? |
 | Failure model | structured result와 error code가 충분한가? |
 | Tests | feature 규칙이 app test가 아니라 extension test에 있는가? |
@@ -664,7 +664,7 @@ official 승격 전에는 다음 표를 작성해야 한다.
 
 Hard fail conditions:
 
-- imports zod-crud internals.
+- imports json-document internals.
 - owns DOM rendering or keyboard policy.
 - exists only to shorten one app file.
 - has no feature-level tests.

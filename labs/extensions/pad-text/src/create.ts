@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { padText } from "./operations.js";
 import { canPadText } from "./plan.js";
 import type { PadText } from "./types.js";

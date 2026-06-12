@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   createCalculatedFields,
   planCalculatedFields,
@@ -59,7 +59,7 @@ const fields: Array<CalculatedFieldDefinition<DocumentValue>> = [
   },
 ];
 
-describe("@zod-crud/calculated-fields", () => {
+describe("@interactive-os/json-document-calculated-fields", () => {
   test("plans calculated field replacements without mutating", () => {
     const doc = createDoc();
 

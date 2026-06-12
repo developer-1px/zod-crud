@@ -1,12 +1,12 @@
-# @zod-crud/toggle-option
+# @interactive-os/json-document-toggle-option
 
-Lab toggle-option extension for `zod-crud` documents.
+Lab toggle-option extension for `@interactive-os/json-document` documents.
 
 Use it to treat a JSON array as a set: toggle, add, or remove a value's presence
 (tag toggles, multi-select chips), using only the public document facade.
 
 ```ts
-import { createToggleOption } from "@zod-crud/toggle-option";
+import { createToggleOption } from "@interactive-os/json-document-toggle-option";
 
 const m = createToggleOption(doc);
 
@@ -28,9 +28,9 @@ m.toggle("/refs", { id: "x" }, { keyOf: (r) => r.id }); // object membership
 ## Non-goals
 
 - Ordered insertion position (appends at the end) — sort with
-  `@zod-crud/sort-items` if order matters.
-- Deduping an existing array — that is `@zod-crud/dedupe`.
-- No plugin registration; no `zod-crud` internal imports.
+  `@interactive-os/json-document-sort-items` if order matters.
+- Deduping an existing array — that is `@interactive-os/json-document-dedupe`.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

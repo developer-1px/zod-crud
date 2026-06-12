@@ -2,7 +2,7 @@ import {
   trackPointer,
   type JSONDocument,
   type JSONPatchOperation,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   Comment,

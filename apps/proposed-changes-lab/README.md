@@ -1,3 +1,3 @@
 # Proposed Changes Lab
 
-Dogfoods `@zod-crud/proposed-changes` as a small proposed document change review feature.
+Dogfoods `@interactive-os/json-document-proposed-changes` as a small proposed document change review feature.

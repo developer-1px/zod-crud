@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, Pointer } from "@interactive-os/json-document";
 import type { PadTextError, PadTextErrorCode, PadTextOptions, PadTextResult } from "./types.js";
 
 export function canPadText<TDocument>(

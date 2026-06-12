@@ -1,6 +1,6 @@
-# @zod-crud/bulk-edit
+# @interactive-os/json-document-bulk-edit
 
-Official headless JSONPath bulk editing extension for `zod-crud` documents.
+Official headless JSONPath bulk editing extension for `@interactive-os/json-document` documents.
 
 Use it when a product needs command-grade "replace all" or "delete all matches"
 behavior without putting query mutation commands in core: find/replace panels,
@@ -8,7 +8,7 @@ batch cleanup tools, generated admin actions, CMS moderation queues, spreadsheet
 normalizers, or kanban maintenance commands.
 
 ```ts
-import { createBulkEdit } from "@zod-crud/bulk-edit";
+import { createBulkEdit } from "@interactive-os/json-document-bulk-edit";
 
 const bulk = createBulkEdit(doc);
 
@@ -39,11 +39,11 @@ bulk.deleteAll("$.items[?@.archived == true]", { label: "delete archived" });
 - No stable identity lookup; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/bulk-edit` delegates to the public `zod-crud` facade:
+`@interactive-os/json-document-bulk-edit` delegates to the public `@interactive-os/json-document` facade:
 `canFind`, `query`, `at`, `canPatch`, and `patch`.
 
 Core remains the owner of JSONPath search and JSON Patch execution. This

@@ -1,6 +1,6 @@
 # Review comments lab
 
-Dogfoods `@zod-crud/comments` as an editorial review product surface.
+Dogfoods `@interactive-os/json-document-comments` as an editorial review product surface.
 
 The app owns target selection, document editing controls, input text, and visual
 status. The extension owns comment identity, validation, filtering, resolution,

@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONDocumentPasteTarget, Pointer } from "zod-crud";
+import type { JSONDocument, JSONDocumentPasteTarget, Pointer } from "@interactive-os/json-document";
 import { canDrop, pasteOptions, readCopyPayload } from "./plan.js";
 import type { DragDropInput, DragDropPerformError, DragDropPerformResult } from "./types.js";
 

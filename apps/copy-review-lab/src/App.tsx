@@ -3,8 +3,8 @@ import {
   createSearchReplace,
   type SearchReplaceMatch,
   type TextMatchRange,
-} from "@zod-crud/search-replace";
-import { useJSONDocument } from "zod-crud/react";
+} from "@interactive-os/json-document-search-replace";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import { z } from "zod";
 import "./copy-review-lab.css";
 

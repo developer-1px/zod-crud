@@ -1,12 +1,12 @@
-# @zod-crud/move-selected
+# @interactive-os/json-document-move-selected
 
-Lab move-selected extension for `zod-crud` documents.
+Lab move-selected extension for `@interactive-os/json-document` documents.
 
 Use it to test whether moving a contiguous block of selected sibling items to a
 new position can stay outside core while using only the public document facade.
 
 ```ts
-import { createMoveSelected } from "@zod-crud/move-selected";
+import { createMoveSelected } from "@interactive-os/json-document-move-selected";
 
 const mover = createMoveSelected(doc);
 
@@ -28,14 +28,14 @@ mover.moveSelected(["/rows/3"], { before: "/rows/1" });
 
 ## Non-goals
 
-- Single-item moves — use `@zod-crud/collection` (`moveUp`/`moveDown`/`moveBefore`/`moveAfter`).
+- Single-item moves — use `@interactive-os/json-document-collection` (`moveUp`/`moveDown`/`moveBefore`/`moveAfter`).
 - Drag/drop DOM intent — use the `drag-drop` lab.
 - Cross-array moves (that is clipboard `cut`/`paste`), 2D grid moves, rendered
   list UI, keyboard, or focus policy.
 - No stable identity tracking; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

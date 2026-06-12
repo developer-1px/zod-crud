@@ -21,8 +21,8 @@ const foundationGate = read("docs/standard/foundation-gate.md");
 const resultContract = read("docs/standard/result-contract.md");
 const selectionContract = read("docs/standard/selection-contract.md");
 const schemaIntrospectionContract = read("docs/standard/schema-introspection-contract.md");
-const conformance = read("packages/zod-crud/tests/public/standard-conformance.test.ts");
-const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json"));
+const conformance = read("packages/json-document/tests/public/standard-conformance.test.ts");
+const publicContract = JSON.parse(read("packages/json-document/public-contract.json"));
 const rootPackage = JSON.parse(read("package.json"));
 
 for (const [label, pattern] of [
@@ -100,7 +100,7 @@ for (const [label, pattern] of [
   requirePattern("schema introspection contract", schemaIntrospectionContract, pattern);
 }
 
-if (!/from "zod-crud"/.test(conformance)) {
+if (!/from "@interactive-os/json-document"/.test(conformance)) {
   fail("standard conformance: must import from the public root package.");
 }
 if (/from "\.\.|from '\.\.|\/src\//.test(conformance)) {
@@ -142,7 +142,7 @@ if (!rootPackage.scripts?.["release:check"]?.includes("standard:check")) {
   fail("package scripts: release:check must include standard:check.");
 }
 
-const libraryPackage = JSON.parse(read("packages/zod-crud/package.json"));
+const libraryPackage = JSON.parse(read("packages/json-document/package.json"));
 if (!libraryPackage.files?.includes("public-contract.json")) {
-  fail("zod-crud package: public-contract.json must be published with the package.");
+  fail("json-document package: public-contract.json must be published with the package.");
 }

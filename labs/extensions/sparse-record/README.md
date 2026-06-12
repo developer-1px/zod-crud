@@ -1,12 +1,12 @@
-# @zod-crud/sparse-record
+# @interactive-os/json-document-sparse-record
 
-Lab sparse-record entry editing extension for `zod-crud` documents.
+Lab sparse-record entry editing extension for `@interactive-os/json-document` documents.
 
 Use it when a product stores editor state in keyed JSON records and wants to
-delegate add/replace/remove/no-op patch planning to zod-crud:
+delegate add/replace/remove/no-op patch planning to json-document:
 
 ```ts
-import { createSparseRecord } from "@zod-crud/sparse-record";
+import { createSparseRecord } from "@interactive-os/json-document-sparse-record";
 
 const sparse = createSparseRecord(doc);
 
@@ -41,7 +41,7 @@ the app declares the keyed entry intent.
 - No rendered grid selection, focus recovery, keyboard policy, or UI error
   presentation.
 - No deep merge, nested object defaulting, or array row/table editing.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

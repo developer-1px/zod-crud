@@ -2,7 +2,7 @@ import type {
   JSONChangeMetadata,
   JSONDocument,
   JSONPatchOperation,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   patchError,

@@ -1,4 +1,4 @@
-import type { ClipboardPasteResult, JSONCapabilityResult, JSONDocument, JSONDocumentPasteTarget, Pointer } from "zod-crud";
+import type { ClipboardPasteResult, JSONCapabilityResult, JSONDocument, JSONDocumentPasteTarget, Pointer } from "@interactive-os/json-document";
 import { canPasteSpecial, copyDiagnostics, copyInput, copyOptions, copyPayload, pasteSpecialError } from "./plan.js";
 import type { PasteSpecialAdapter, PasteSpecialApplyResult, PasteSpecialDiagnostic, PasteSpecialError, PasteSpecialInput, PasteSpecialPlan } from "./types.js";
 

@@ -1,4 +1,4 @@
-import type { ClipboardPasteResult, JSONCapabilityResult, JSONDocument, JSONDocumentPasteTarget, Pointer } from "zod-crud";
+import type { ClipboardPasteResult, JSONCapabilityResult, JSONDocument, JSONDocumentPasteTarget, Pointer } from "@interactive-os/json-document";
 import type { PasteSpecialAdapter, PasteSpecialAdapterResult, PasteSpecialDiagnostic, PasteSpecialError, PasteSpecialErrorCode, PasteSpecialInput, PasteSpecialOptions, PasteSpecialPlanResult } from "./types.js";
 
 export function canPasteSpecial<TDocument>(

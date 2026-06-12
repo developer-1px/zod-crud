@@ -194,9 +194,9 @@ describe("outliner coverage — keyboard & mouse only", () => {
     await user.keyboard("{Control>}a{/Control}");
     await user.keyboard("{Backspace}");
 
-    // root 만 남아야 함 — root 는 SAMPLE.text "zod-crud outliner"
+    // root 만 남아야 함 — root 는 SAMPLE.text "json-document outliner"
     const remaining = treeTexts();
-    expect(remaining).toEqual(["zod-crud outliner"]);
+    expect(remaining).toEqual(["json-document outliner"]);
   });
 
   test("paste with no clipboard surfaces a path_not_found error toast", async () => {

@@ -2,7 +2,7 @@ import type {
   JSONDocument,
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   decodeText,

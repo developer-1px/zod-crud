@@ -1,8 +1,8 @@
 import {
-  JSONCrudError,
+  JSONDocumentError,
   type JSONDocument,
   type JSONResult,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   persistenceError,
@@ -63,7 +63,7 @@ function loadDocument<T>(
   try {
     return doc.load(value, { preserveHistory });
   } catch (cause) {
-    if (cause instanceof JSONCrudError) return cause.result;
+    if (cause instanceof JSONDocumentError) return cause.result;
     throw cause;
   }
 }

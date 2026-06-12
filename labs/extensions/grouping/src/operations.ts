@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONResult, Pointer } from "zod-crud";
+import type { JSONDocument, JSONResult, Pointer } from "@interactive-os/json-document";
 import { canGroupSelection, canUngroupSelection, groupingError } from "./plan.js";
 import type { GroupingAdapter, GroupingApplyResult, GroupingError, GroupingOperation, GroupingSource } from "./types.js";
 

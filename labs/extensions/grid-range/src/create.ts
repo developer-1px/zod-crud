@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { fillGridRange, pasteGridRange } from "./operations.js";
 import { canFillGridRange, canPasteGridRange } from "./plan.js";
 import type { GridRange } from "./types.js";

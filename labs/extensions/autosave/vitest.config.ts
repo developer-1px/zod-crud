@@ -3,7 +3,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      "zod-crud": new URL("../../../packages/zod-crud/src/index.ts", import.meta.url).pathname,
+      "@interactive-os/json-document": new URL("../../../packages/json-document/src/index.ts", import.meta.url).pathname,
     },
   },
   test: {

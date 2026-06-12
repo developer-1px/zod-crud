@@ -12,8 +12,8 @@ import { renderHook } from "@testing-library/react";
 import { afterEach, describe, expect, test } from "vitest";
 import { z } from "zod";
 import { Outliner, OutlineSchema, SAMPLE } from "../src/index.js";
-import type { JSONCrudError } from "zod-crud";
-import { useJSONDocument } from "zod-crud/react";
+import type { JSONDocumentError } from "@interactive-os/json-document";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 
 afterEach(cleanup);
 
@@ -39,7 +39,7 @@ async function clickRow(text: string) {
 
 describe("stress — pre-flight (zod schema_violation)", () => {
   test("doc.patch 의 값이 schema 모양과 어긋나면 거부 + onError", () => {
-    const errors: JSONCrudError[] = [];
+    const errors: JSONDocumentError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
@@ -56,7 +56,7 @@ describe("stress — pre-flight (zod schema_violation)", () => {
   });
 
   test("doc.load 가 schema 모양 어긋난 JSON 거부", () => {
-    const errors: JSONCrudError[] = [];
+    const errors: JSONDocumentError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
@@ -75,7 +75,7 @@ describe("stress — pre-flight (zod schema_violation)", () => {
       children: z.array(z.never()),
     });
     const init = { text: "ok", children: [] };
-    const errors: JSONCrudError[] = [];
+    const errors: JSONDocumentError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(TightSchema, init, { strict: false, onError: (e) => errors.push(e) })
     );
@@ -91,7 +91,7 @@ describe("stress — pre-flight (zod schema_violation)", () => {
 
 describe("stress — G8 batch atomicity", () => {
   test("배치 중 한 op 실패 → 전체 롤백, state·history 불변", () => {
-    const errors: JSONCrudError[] = [];
+    const errors: JSONDocumentError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { history: 50, strict: false, onError: (e) => errors.push(e) })
     );
@@ -114,7 +114,7 @@ describe("stress — G8 batch atomicity", () => {
   });
 
   test("root 제거 시도는 거부 (RFC 6902 — root remove 금지)", () => {
-    const errors: JSONCrudError[] = [];
+    const errors: JSONDocumentError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );
@@ -129,7 +129,7 @@ describe("stress — G8 batch atomicity", () => {
   });
 
   test("자기 자신 자손으로 move → move_into_self 거부", () => {
-    const errors: JSONCrudError[] = [];
+    const errors: JSONDocumentError[] = [];
     const { result } = renderHook(() =>
       useJSONDocument(OutlineSchema, SAMPLE, { strict: false, onError: (e) => errors.push(e) })
     );

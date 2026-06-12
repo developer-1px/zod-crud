@@ -1,13 +1,13 @@
-# @zod-crud/layer-order
+# @interactive-os/json-document-layer-order
 
-Lab layer ordering extension for `zod-crud` documents.
+Lab layer ordering extension for `@interactive-os/json-document` documents.
 
 Use it to implement drawing and presentation commands such as bring forward,
 bring to front, send backward, and send to back when a JSON array represents
 visual stack order.
 
 ```ts
-import { createLayerOrder } from "@zod-crud/layer-order";
+import { createLayerOrder } from "@interactive-os/json-document-layer-order";
 
 const layers = createLayerOrder(doc);
 
@@ -42,7 +42,7 @@ option while the package is still in lab.
 - No nested group pruning; host code decides which selected pointers are active.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

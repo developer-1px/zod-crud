@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONResult, Pointer } from "zod-crud";
+import type { JSONDocument, JSONResult, Pointer } from "@interactive-os/json-document";
 import { canReorderLayers, layerOrderError } from "./plan.js";
 import type { LayerOrderAction, LayerOrderApplyResult, LayerOrderError, LayerOrderSource } from "./types.js";
 

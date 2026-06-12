@@ -25,12 +25,12 @@ function markdownFiles(dir = ".") {
 
 function officialExtensionNames() {
   return readdirSync(join(root, "packages"), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name !== "zod-crud")
+    .filter((entry) => entry.isDirectory() && entry.name !== "@interactive-os/json-document")
     .map((entry) => {
       const pkg = JSON.parse(read(`packages/${entry.name}/package.json`));
       return pkg.name;
     })
-    .filter((name) => typeof name === "string" && name.startsWith("@zod-crud/"))
+    .filter((name) => typeof name === "string" && name.startsWith("@interactive-os/json-document-"))
     .sort();
 }
 
@@ -53,8 +53,8 @@ const generatedDocs = {
 };
 const surfaces = {
   rootReadme: read("README.md"),
-  readme: read("packages/zod-crud/README.md"),
-  spec: read("docs/standard/zod-crud-spec.md"),
+  readme: read("packages/json-document/README.md"),
+  spec: read("docs/standard/json-document-spec.md"),
   foundationGate: read("docs/standard/foundation-gate.md"),
   contractPressure: read("docs/standard/contract-pressure-register.md"),
   resultContract: read("docs/standard/result-contract.md"),
@@ -66,8 +66,8 @@ const surfaces = {
 };
 const siteRoutes = JSON.parse(read("apps/site/src/site-routes.json"));
 const docsRoute = read("apps/site/src/routes/Docs.tsx");
-const packageJson = JSON.parse(read("packages/zod-crud/package.json"));
-const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json"));
+const packageJson = JSON.parse(read("packages/json-document/package.json"));
+const publicContract = JSON.parse(read("packages/json-document/public-contract.json"));
 const officialExtensions = officialExtensionNames();
 const generatedOfficialExtensions = generatedDocs.repoCatalog.officialExtensions.map((item) => item.name).sort();
 
@@ -80,10 +80,10 @@ for (const removedPath of [
   "docs/review/extension-package-doubt-audit.md",
   "docs/review/sibling-product-extension-map.md",
   "CHANGELOG.md",
-  "packages/zod-crud/SPEC.md",
-  "apps/site/src/docs/zod-crud-concepts.md",
-  "apps/site/src/docs/zod-crud-tutorial.md",
-  "apps/site/src/docs/zod-crud-api.md",
+  "packages/json-document/SPEC.md",
+  "apps/site/src/docs/json-document-concepts.md",
+  "apps/site/src/docs/json-document-tutorial.md",
+  "apps/site/src/docs/json-document-api.md",
 ]) {
   if (exists(removedPath)) fail(`Removed history or duplicate doc still exists: ${removedPath}`);
 }
@@ -153,9 +153,9 @@ for (const [name, source] of Object.entries({
   extensions: surfaces.extensions,
 })) {
   for (const token of [
-    "@zod-crud/record-index",
-    "@zod-crud/selection-model",
-    "@zod-crud/query-watch",
+    "@interactive-os/json-document-record-index",
+    "@interactive-os/json-document-selection-model",
+    "@interactive-os/json-document-query-watch",
   ]) {
     if (source.includes(token)) fail(`${name}: unshipped extension listed as official: ${token}.`);
   }
@@ -220,9 +220,9 @@ const required = [
   ["api", /구조만 가진 Zod schema/],
   ["api", /전체 루트 schema 검증/],
   ["api", /기본값은 `strict: false`/],
-  ["extensions", /@zod-crud\/collection/],
-  ["extensions", /@zod-crud\/clipboard-web/],
-  ["extensions", /@zod-crud\/outline/],
+  ["extensions", /@json-document\/collection/],
+  ["extensions", /@json-document\/clipboard-web/],
+  ["extensions", /@json-document\/outline/],
   ["extensions", /labs\/extensions\/\*/],
   ["extensionsCatalog", /Generated extension catalog/],
   ["extensionsCatalog", /Official extensions: \d+/],
@@ -245,11 +245,11 @@ const required = [
   ["rootReadme", /docs\/public\/api\.md/],
   ["rootReadme", /docs\/public\/recipes\.md/],
   ["rootReadme", /## 코드 지도/],
-  ["rootReadme", /packages\/zod-crud/],
+  ["rootReadme", /packages\/json-document/],
   ["rootReadme", /apps\/site/],
   ["rootReadme", /labs\/extensions/],
-  ["readme", /npm install zod-crud zod/],
-  ["readme", /왜 zod-crud인가/],
+  ["readme", /npm install json-document zod/],
+  ["readme", /왜 json-document인가/],
   ["readme", /작업별 진입점/],
   ["readme", /React — `useJSONDocument`/],
   ["readme", /순수 core/],
@@ -315,20 +315,20 @@ if (!publicContract.root.values.includes("createJSONDocument") || !publicContrac
 }
 
 if (
-  packageJson.homepage !== "https://developer-1px.github.io/zod-crud/"
-  || packageJson.repository?.url !== "git+https://github.com/developer-1px/zod-crud.git"
-  || packageJson.repository?.directory !== "packages/zod-crud"
-  || packageJson.bugs?.url !== "https://github.com/developer-1px/zod-crud/issues"
+  packageJson.homepage !== "https://developer-1px.github.io/json-document/"
+  || packageJson.repository?.url !== "git+https://github.com/developer-1px/json-document.git"
+  || packageJson.repository?.directory !== "packages/json-document"
+  || packageJson.bugs?.url !== "https://github.com/developer-1px/json-document/issues"
 ) {
   fail("package metadata: missing official site, repository, or issue tracker URL.");
 }
 
 for (const route of [
-  ["/docs", "zod-crud Docs - zod-crud"],
-  ["/docs/tutorial", "Tutorial - zod-crud"],
-  ["/docs/api", "zod-crud API - zod-crud"],
-  ["/docs/extensions", "Extensions - zod-crud"],
-  ["/docs/recipes", "Product Recipes - zod-crud"],
+  ["/docs", "json-document Docs - json-document"],
+  ["/docs/tutorial", "Tutorial - json-document"],
+  ["/docs/api", "json-document API - json-document"],
+  ["/docs/extensions", "Extensions - json-document"],
+  ["/docs/recipes", "Product Recipes - json-document"],
 ]) {
   if (!siteRoutes.some((item) => item.path === route[0] && item.title === route[1])) {
     fail(`site routes: missing ${route[0]} ${route[1]} metadata.`);

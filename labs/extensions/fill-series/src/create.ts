@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { fill } from "./operations.js";
 import { canFill } from "./plan.js";
 import type { FillSeries } from "./types.js";

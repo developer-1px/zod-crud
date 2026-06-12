@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canJoin, createJoinText, type JoinTextResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -19,7 +19,7 @@ function expectOk(result: JoinTextResult): Extract<JoinTextResult, { ok: true }>
   return result;
 }
 
-describe("@zod-crud/join-text", () => {
+describe("@interactive-os/json-document-join-text", () => {
   test("joins string items with the default separator", () => {
     const doc = createDoc();
     const j = createJoinText(doc);

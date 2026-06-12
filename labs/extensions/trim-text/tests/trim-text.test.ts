@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canTrimText, createTrimText, type TrimTextResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: TrimTextResult): Extract<TrimTextResult, { ok: true }>
   return result;
 }
 
-describe("@zod-crud/trim-text", () => {
+describe("@interactive-os/json-document-trim-text", () => {
   test("trims to max length", () => {
     const doc = createDoc("the quick brown fox");
     const t = createTrimText(doc);

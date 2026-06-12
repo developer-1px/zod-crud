@@ -39,14 +39,14 @@ Core 승격은 마지막 단계다. 다음 중 하나라도 불명확하면 core
 
 | 후보 | 반복 신호 | 현재 판정 | 다음 증거 |
 | --- | --- | --- | --- |
-| guard composition | `protected-ranges`, `proposed-changes`, `search-replace`, paste/drop 계열이 guard와 core capability 실패를 조합 | 부분 반영: `@zod-crud/protected-ranges` | 같은 guard result shape가 3개 이상 package에서 자연스럽게 맞는지 확인 |
-| patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | 반영됨: `@zod-crud/patch-preview` | downstream dogfood에서 visual diff/review workflow가 host-owned로 남는지 확인 |
+| guard composition | `protected-ranges`, `proposed-changes`, `search-replace`, paste/drop 계열이 guard와 core capability 실패를 조합 | 부분 반영: `@interactive-os/json-document-protected-ranges` | 같은 guard result shape가 3개 이상 package에서 자연스럽게 맞는지 확인 |
+| patch preview / dry-run | `patch-preview`, `document-diff`, `proposed-changes`, import/review workflow가 apply 전 next value를 요구 | 반영됨: `@interactive-os/json-document-patch-preview` | downstream dogfood에서 visual diff/review workflow가 host-owned로 남는지 확인 |
 | structural change result | `grouping`, `wrap-selection`, `outline`, `bulk-edit`가 prospective operations와 execution result를 노출 | lab convention | `operations`, `selectionAfter`, `diagnostics` naming을 통일할 수 있는지 확인 |
-| anchored pointer lifecycle | `comments`, `bookmarks`, `live-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle이 bookmark/presence 밖에서도 같은지 확인 |
-| stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
-| invalid form draft | form builder, settings, CMS property panel, spreadsheet cell editing에서 valid JSON commit 전 temporary input이 반복 | 반영됨: `@zod-crud/form-draft` | parser/widget/focus policy가 host-owned로 남는지 확인 |
-| text search/replace | block docs, review editor, import cleanup, object notes에서 반복 | 반영됨: `@zod-crud/search-replace` | rendered text extraction과 ranking이 host-owned로 남는지 확인 |
-| proposed changes | AI edit review, import review, CMS copy review, moderation queues에서 반복 | 반영됨: `@zod-crud/proposed-changes` | approval workflow와 storage/sync가 host-owned로 남는지 확인 |
+| anchored pointer lifecycle | `comments`, `bookmarks`, `live-cursors`, review anchor가 `trackPointer` 이후 lost/recovered 상태를 반복 | 부분 반영: `@interactive-os/json-document-comments` | generic anchor lifecycle이 bookmark/presence 밖에서도 같은지 확인 |
+| stable id to Pointer | Kanban, form builder, import/review, slide/layer selection, blind object editor review에서 반복 | 반영됨: `@interactive-os/json-document-id-resolver` | downstream dogfood에서 id policy가 host-owned로 남는지 확인 |
+| invalid form draft | form builder, settings, CMS property panel, spreadsheet cell editing에서 valid JSON commit 전 temporary input이 반복 | 반영됨: `@interactive-os/json-document-form-draft` | parser/widget/focus policy가 host-owned로 남는지 확인 |
+| text search/replace | block docs, review editor, import cleanup, object notes에서 반복 | 반영됨: `@interactive-os/json-document-search-replace` | rendered text extraction과 ranking이 host-owned로 남는지 확인 |
+| proposed changes | AI edit review, import review, CMS copy review, moderation queues에서 반복 | 반영됨: `@interactive-os/json-document-proposed-changes` | approval workflow와 storage/sync가 host-owned로 남는지 확인 |
 | TSV/CSV grid paste | grid/table product에서 반복 | lab `paste-cells` (#91) | **별개 확인됨**: `paste-cells`는 2D matrix→rectangle 매핑, `paste-special`은 payload shape 적응. TSV/CSV 파싱·clipboard·auto-grow는 host-owned |
 | result diagnostic normalization | result diagnostic text를 `reason`으로 통일 | 반영됨 | official/lab extension도 `reason` 우선 유지 |
 | lab result boilerplate | 여러 lab이 `capabilityError`/`patchError`/`error`/`cloneJson` helper를 반복 | lab convention | helper 모양만으로 shared package/core를 만들지 않는다. 같은 실패 의미론이나 실행 단계가 반복될 때만 후보로 기록 |
@@ -106,7 +106,7 @@ plan pressure
 
 현재 방향:
 
-- `patch-preview`는 `@zod-crud/patch-preview` official extension으로 승격했다.
+- `patch-preview`는 `@interactive-os/json-document-patch-preview` official extension으로 승격했다.
 - `PatchPlan`은 core 타입으로 만들지 않는다.
 - lab에서는 `operations`, `preview`, `apply`, `diagnostics`, `selectionAfter`를
   같은 의미로 쓰는지 확인한다.
@@ -135,7 +135,7 @@ anchor
 ```
 
 이것은 core `trackPointer`보다 한 단계 높은 concept이다. review comment
-feature는 `@zod-crud/comments` official extension으로 반영했다. 그러나 generic
+feature는 `@interactive-os/json-document-comments` official extension으로 반영했다. 그러나 generic
 anchor lifecycle을 core나 shared package로 올릴 증거는 아직 부족하다.
 
 ## Stable Id To Pointer
@@ -145,7 +145,7 @@ id field, uniqueness scope, nested lookup, deleted item 처리, server identity
 정책이 제품마다 다르다.
 
 2026-05-30 blind product review 3회에서는 spreadsheet, block docs, object editor가
-모두 이 후보를 다시 제기했다. 따라서 `@zod-crud/id-resolver`를 official
+모두 이 후보를 다시 제기했다. 따라서 `@interactive-os/json-document-id-resolver`를 official
 extension으로 승격했다. 단, core 승격은 여전히 금지한다.
 
 ```txt
@@ -172,7 +172,7 @@ diagnostic text
 `-- extension result도 `reason` 우선으로 수렴
 ```
 
-`violations[].message`와 `JSONCrudError.message`는 result diagnostic이 아니라
+`violations[].message`와 `JSONDocumentError.message`는 result diagnostic이 아니라
 각각 validation issue text와 JavaScript Error contract이므로 예외다.
 
 ## Lab Boilerplate Duplication

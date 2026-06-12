@@ -1,6 +1,6 @@
-# zod-crud Extensions
+# json-document Extensions
 
-zod-crud core는 JSON editing foundation만 소유합니다. UI, persistence, system clipboard, collection command, stable id lookup 같은 앱별 책임은 extension이나 host code에서 조립합니다.
+json-document core는 JSON editing foundation만 소유합니다. UI, persistence, system clipboard, collection command, stable id lookup 같은 앱별 책임은 extension이나 host code에서 조립합니다.
 
 Extension은 core에 plugin으로 등록하지 않습니다. public `JSONDocument` surface를 받아 함수로 compose합니다.
 
@@ -9,12 +9,12 @@ Extension은 core에 plugin으로 등록하지 않습니다. public `JSONDocumen
 필요한 package만 설치합니다.
 
 ```sh
-npm install zod-crud @zod-crud/collection
+npm install json-document @interactive-os/json-document-collection
 ```
 
 ## 공식 extension
 
-공식 extension 목록과 lab 후보 목록은 repo catalog에서 생성됩니다. `packages/*`에 있는 publishable `@zod-crud/*` package가 공식 extension이고, `labs/extensions/*`는 후보입니다. public 문서에서 lab package를 공식 extension이라고 부르지 않습니다.
+공식 extension 목록과 lab 후보 목록은 repo catalog에서 생성됩니다. `packages/*`에 있는 publishable `@interactive-os/json-document-*` package가 공식 extension이고, `labs/extensions/*`는 후보입니다. public 문서에서 lab package를 공식 extension이라고 부르지 않습니다.
 
 Lab package는 제품 feature 압력을 검증하기 위한 실험입니다. 설치 가능한 공식
 package로 안내하지 않고, 제품별 조합은 Recipes에서 먼저 확인합니다.
@@ -24,20 +24,20 @@ package로 안내하지 않고, 제품별 조합은 Recipes에서 먼저 확인�
 | 상황 | 먼저 쓰는 표면 |
 | --- | --- |
 | 한 위치를 정확히 바꿈 | core `doc.insert`, `doc.replace`, `doc.delete`, `doc.move` |
-| ordered array item UX | `@zod-crud/collection` |
-| outliner promote/demote | `@zod-crud/outline` |
-| JSONPath 결과 일괄 변경 | `@zod-crud/bulk-edit` |
-| temporary invalid form input | `@zod-crud/form-draft` |
-| protected JSON Pointer edit guard | `@zod-crud/protected-ranges` |
-| reusable JSON payload insertion | `@zod-crud/snippets` |
-| 저장됨/dirty 표시 | `@zod-crud/dirty-state` |
-| local draft save/restore | `@zod-crud/persist-web` |
-| browser clipboard I/O | `@zod-crud/clipboard-web` |
-| stable id를 현재 Pointer로 해석 | `@zod-crud/id-resolver` |
-| apply 전 patch dry-run | `@zod-crud/patch-preview` |
-| JSON string field search/replace | `@zod-crud/search-replace` |
-| proposed patch accept/reject | `@zod-crud/proposed-changes` |
-| review comments anchored to Pointer | `@zod-crud/comments` |
+| ordered array item UX | `@interactive-os/json-document-collection` |
+| outliner promote/demote | `@interactive-os/json-document-outline` |
+| JSONPath 결과 일괄 변경 | `@interactive-os/json-document-bulk-edit` |
+| temporary invalid form input | `@interactive-os/json-document-form-draft` |
+| protected JSON Pointer edit guard | `@interactive-os/json-document-protected-ranges` |
+| reusable JSON payload insertion | `@interactive-os/json-document-snippets` |
+| 저장됨/dirty 표시 | `@interactive-os/json-document-dirty-state` |
+| local draft save/restore | `@interactive-os/json-document-persist-web` |
+| browser clipboard I/O | `@interactive-os/json-document-clipboard-web` |
+| stable id를 현재 Pointer로 해석 | `@interactive-os/json-document-id-resolver` |
+| apply 전 patch dry-run | `@interactive-os/json-document-patch-preview` |
+| JSON string field search/replace | `@interactive-os/json-document-search-replace` |
+| proposed patch accept/reject | `@interactive-os/json-document-proposed-changes` |
+| review comments anchored to Pointer | `@interactive-os/json-document-comments` |
 | product search ranking, focus, keyboard, rendered value 검색 | host app |
 
 ## 제품별 fit
@@ -73,7 +73,7 @@ package로 안내하지 않고, 제품별 조합은 Recipes에서 먼저 확인�
 
 ## Rich editor host pattern
 
-ProseMirror 같은 editor는 DOM/contenteditable state를 소유하고, zod-crud document는 저장할 JSON truth layer를 소유합니다.
+ProseMirror 같은 editor는 DOM/contenteditable state를 소유하고, json-document document는 저장할 JSON truth layer를 소유합니다.
 
 ```ts
 const persistence = createDocumentPersistence(doc, { key: "article-draft" });
@@ -86,12 +86,12 @@ doc.commit([
 await persistence.save();
 ```
 
-Editor selection, schema-specific parsing, Markdown/HTML serialization, IME handling은 host editor 책임입니다. zod-crud는 최종 JSON payload의 validation, persistence, dirty state, undo/redo boundary를 조립합니다.
+Editor selection, schema-specific parsing, Markdown/HTML serialization, IME handling은 host editor 책임입니다. json-document는 최종 JSON payload의 validation, persistence, dirty state, undo/redo boundary를 조립합니다.
 
 ## collection
 
 ```ts
-import { createCollection } from "@zod-crud/collection";
+import { createCollection } from "@interactive-os/json-document-collection";
 
 const collection = createCollection(doc);
 
@@ -105,7 +105,7 @@ collection.deleteItems(["/tabs/1", "/tabs/3"]);
 ## outline
 
 ```ts
-import { createOutline } from "@zod-crud/outline";
+import { createOutline } from "@interactive-os/json-document-outline";
 
 const outline = createOutline(doc);
 
@@ -116,7 +116,7 @@ outline.promote("/children/0/children/1");
 ## schema-form
 
 ```ts
-import { createSchemaForm } from "@zod-crud/schema-form";
+import { createSchemaForm } from "@interactive-os/json-document-schema-form";
 
 const form = createSchemaForm(doc, "/settings");
 
@@ -129,7 +129,7 @@ if (form.ok) {
 ## form-draft
 
 ```ts
-import { createFormDraft } from "@zod-crud/form-draft";
+import { createFormDraft } from "@interactive-os/json-document-form-draft";
 
 const drafts = createFormDraft(doc, {
   parse({ input }) {
@@ -150,7 +150,7 @@ if (drafts.canCommit("/settings/count").ok) {
 ## protected-ranges
 
 ```ts
-import { createProtectedRanges } from "@zod-crud/protected-ranges";
+import { createProtectedRanges } from "@interactive-os/json-document-protected-ranges";
 
 const protectedRanges = createProtectedRanges(doc, [
   { id: "published-slug", pointer: "/slug", label: "Published slug" },
@@ -164,7 +164,7 @@ if (protectedRanges.canReplace("/slug", "next").ok) {
 ## snippets
 
 ```ts
-import { createSnippets } from "@zod-crud/snippets";
+import { createSnippets } from "@interactive-os/json-document-snippets";
 
 const snippets = createSnippets(doc, [
   {
@@ -186,7 +186,7 @@ if (snippets.canInsert("todo-card", "/cards/-", {
 ## dirty-state
 
 ```ts
-import { createDirtyState } from "@zod-crud/dirty-state";
+import { createDirtyState } from "@interactive-os/json-document-dirty-state";
 
 const dirty = createDirtyState(doc);
 
@@ -197,7 +197,7 @@ dirty.markClean();
 ## bulk-edit
 
 ```ts
-import { createBulkEdit } from "@zod-crud/bulk-edit";
+import { createBulkEdit } from "@interactive-os/json-document-bulk-edit";
 
 const bulk = createBulkEdit(doc);
 
@@ -209,7 +209,7 @@ if (bulk.canReplaceAll("$.items[*].done", true).ok) {
 ## search-replace
 
 ```ts
-import { createSearchReplace } from "@zod-crud/search-replace";
+import { createSearchReplace } from "@interactive-os/json-document-search-replace";
 
 const text = createSearchReplace(doc);
 
@@ -236,7 +236,7 @@ host-owned.
 ## proposed-changes
 
 ```ts
-import { createProposedChanges } from "@zod-crud/proposed-changes";
+import { createProposedChanges } from "@interactive-os/json-document-proposed-changes";
 
 const proposedChanges = createProposedChanges(doc);
 
@@ -253,7 +253,7 @@ if (proposedChanges.canAccept("rename-title").ok) {
 ## comments
 
 ```ts
-import { createComments } from "@zod-crud/comments";
+import { createComments } from "@interactive-os/json-document-comments";
 
 const comments = createComments(doc);
 
@@ -269,7 +269,7 @@ comments.resolve("review-title");
 ## patch-log
 
 ```ts
-import { createPatchLog } from "@zod-crud/patch-log";
+import { createPatchLog } from "@interactive-os/json-document-patch-log";
 
 const log = createPatchLog(doc);
 
@@ -280,7 +280,7 @@ log.replayInto(otherDoc);
 ## persist-web
 
 ```ts
-import { createDocumentPersistence } from "@zod-crud/persist-web";
+import { createDocumentPersistence } from "@interactive-os/json-document-persist-web";
 
 const persistence = createDocumentPersistence(doc, { key: "draft" });
 
@@ -296,7 +296,7 @@ watch.stop();
 ## patch-preview
 
 ```ts
-import { createPatchPreview } from "@zod-crud/patch-preview";
+import { createPatchPreview } from "@interactive-os/json-document-patch-preview";
 
 const previewer = createPatchPreview(Schema, doc);
 const preview = previewer.preview([
@@ -312,7 +312,7 @@ if (preview.ok) {
 ## id-resolver
 
 ```ts
-import { createIdResolver } from "@zod-crud/id-resolver";
+import { createIdResolver } from "@interactive-os/json-document-id-resolver";
 
 const ids = createIdResolver(doc, {
   scopes: [
@@ -331,7 +331,7 @@ ids.current();
 ## clipboard-web
 
 ```ts
-import { createWebClipboard } from "@zod-crud/clipboard-web";
+import { createWebClipboard } from "@interactive-os/json-document-clipboard-web";
 
 const webClipboard = createWebClipboard(doc);
 

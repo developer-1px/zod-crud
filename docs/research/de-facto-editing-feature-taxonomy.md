@@ -1,11 +1,11 @@
 # De Facto Editing Feature Taxonomy
 
-Tracking issue: https://github.com/developer-1px/zod-crud/issues/78
+Tracking issue: https://github.com/developer-1px/json-document/issues/78
 
 Status: external research note.
 
 Purpose: collect editing/document features by feature vocabulary, not by product,
-then judge whether the current `zod-crud` core primitives hold as an editing
+then judge whether the current `@interactive-os/json-document` core primitives hold as an editing
 document foundation.
 
 ## Method
@@ -22,7 +22,7 @@ same product-neutral primitive.
 
 Classification:
 
-- `core-covered`: current `zod-crud` primitives can express the feature.
+- `core-covered`: current `@interactive-os/json-document` primitives can express the feature.
 - `official/lab-covered`: an official package or lab already owns the feature.
 - `lab-gap`: a small feature extension should pressure-test the feature.
 - `app-owned`: product UI, geometry, rendering, permission, or workflow policy.
@@ -98,7 +98,7 @@ Classification:
 | Promote/demote | outliners, block editors, nested lists | official `outline` | official-covered |
 | Collapse/expand | outliners, grouped records, toggles | app view state or host metadata | app-owned unless persisted; no core gap |
 | Convert node/block kind | Notion blocks, CMS fields, Figma components, forms | lab `convert-block-type` | lab-covered with host factory |
-| Align/distribute | slides, Figma, Miro | lab `layer-order` covers z-order only | app-owned geometry; possible non-core `object-surface` outside zod-crud |
+| Align/distribute | slides, Figma, Miro | lab `layer-order` covers z-order only | app-owned geometry; possible non-core `object-surface` outside json-document |
 | Lock/protect/readonly | Figma/Miro lock, Sheets protected ranges, CMS permissions | official `protected-ranges`; schema validation | official-covered; permissions remain app-owned |
 | Comments/mentions | docs, Notion, Figma, Miro, GitHub, Jira | official `comments`; lab `live-cursors` | official/lab-covered |
 | Suggested changes / review decisions | Google Docs, Word, GitHub review | official `proposed-changes` | official-covered; patch review, accept, and reject lifecycle |
@@ -184,7 +184,7 @@ The external feature set does not justify an immediate core expansion. The
 current core vocabulary remains the right center:
 
 ```text
-zod-crud core
+json-document core
 |-- JSON document state
 |-- JSON Pointer
 |-- JSON Patch

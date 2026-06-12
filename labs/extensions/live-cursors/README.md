@@ -1,4 +1,4 @@
-# @zod-crud/live-cursors
+# @interactive-os/json-document-live-cursors
 
 Lab package for remote collaborator cursor and selection presence.
 

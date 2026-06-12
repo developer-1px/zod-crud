@@ -3,7 +3,7 @@ import type {
   JSONPatchOperation,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type SearchReplaceErrorCode =
   | "empty_search"

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canReverse,
   canSort,
@@ -34,7 +34,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/sort-items", () => {
+describe("@interactive-os/json-document-sort-items", () => {
   test("plans collection sorting without mutating the document", () => {
     const doc = createDoc();
     const sorter = createSortItems(doc);

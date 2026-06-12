@@ -1,6 +1,6 @@
 // Command 들이 공유하는 ctx 형식 + 공용 헬퍼.
 
-import type { JSONDocument, Pointer, SelectionPoint, SelectionState } from "zod-crud";
+import type { JSONDocument, Pointer, SelectionPoint, SelectionState } from "@interactive-os/json-document";
 import type { OutlineNode } from "../schema.js";
 import type { ClipboardApi } from "../clipboard.js";
 import { comparePointer } from "../pointer-utils.js";

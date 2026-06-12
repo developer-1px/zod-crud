@@ -1,17 +1,17 @@
 # Extension Lab
 
-This directory is a pressure suite for `zod-crud` extensions.
+This directory is a pressure suite for `@interactive-os/json-document` extensions.
 
 Lab packages are not official public packages. They exist to test whether a FE
 editing feature can be fully delegated to a headless package by composing the
-public `zod-crud` document facade without adding core concepts.
+public `@interactive-os/json-document` document facade without adding core concepts.
 
 Concept:
 
 ```text
 app feature
 └─ extension capability
-   └─ zod-crud public primitives
+   └─ json-document public primitives
 ```
 
 An extension is a reusable headless editor capability. It is not the complete app
@@ -29,7 +29,7 @@ Naming test:
 - The package name should be a familiar command or feature name: something a
   developer could put in a command palette, toolbar, menu, or docs heading and
   expect editor users to recognize.
-- The package must fit: `Use @zod-crud/<name> to <known editor capability>.`
+- The package must fit: `Use @interactive-os/json-document-<name> to <known editor capability>.`
 - Prefer frequently used de-facto editor terms over internal implementation
   terms. A commonly called command name is better than a technically precise
   but unfamiliar library word.
@@ -47,8 +47,8 @@ Naming test:
 
 Rules:
 
-- Import `zod-crud` only through the public package entrypoint.
-- Do not import `packages/zod-crud/src/**`.
+- Import `@interactive-os/json-document` only through the public package entrypoint.
+- Do not import `packages/json-document/src/**`.
 - Do not add `doc.use(...)`, plugin registration, or global mutation.
 - Keep every lab package `private: true`.
 - In the package README, keep `Scope`, `Non-goals`, and `Friction report`
@@ -71,7 +71,7 @@ Escalation strategy:
 - Dogfood the package in an app or focused lab before promotion.
 - Promote to `packages/*` only after repeated evidence shows a stable feature
   boundary.
-- Promote to `packages/zod-crud` core last, only when several extensions are
+- Promote to `packages/json-document` core last, only when several extensions are
   recreating the same product-neutral primitive.
 
 Promotion path:

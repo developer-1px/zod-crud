@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { createProposedChanges, type ProposedChangePlanResult } from "@zod-crud/proposed-changes";
-import { useJSONDocument } from "zod-crud/react";
+import { createProposedChanges, type ProposedChangePlanResult } from "@interactive-os/json-document-proposed-changes";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import { z } from "zod";
 import "./proposed-changes-lab.css";
 

@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { toggleValue } from "./operations.js";
 import { canToggleValue } from "./plan.js";
 import type { ToggleValue } from "./types.js";

@@ -1,20 +1,20 @@
-# zod-crud API
+# json-document API
 
 이 문서는 앱 코드에서 직접 쓰는 공개 API만 다룹니다. 내부 폴더 구조를 몰라도 `schema -> document -> can* -> change -> result` 흐름으로 사용할 수 있습니다.
 
 ```txt
 import 표면
-|-- zod-crud
+|-- json-document
 |   |-- createJSONDocument
 |   |-- applyPatch / JSON Pointer helper
 |   `-- public type
-`-- zod-crud/react
+`-- @interactive-os/json-document/react
     `-- useJSONDocument
 ```
 
 ## 기준
 
-- 공개 import는 `zod-crud`와 `zod-crud/react`입니다.
+- 공개 import는 `@interactive-os/json-document`와 `@interactive-os/json-document/react`입니다.
 - JSON Pointer는 정확한 주소입니다. patch, selection, clipboard target은 Pointer를 씁니다.
 - JSONPath는 검색입니다. `doc.find(...)`는 여러 match를 찾고 Pointer 목록을 돌려줍니다.
 - JSON Patch는 변경 형식입니다. 실행 진입점은 `doc.patch(...)`와 `doc.commit(...)`입니다.
@@ -24,7 +24,7 @@ import 표면
 
 ```ts
 import { z } from "zod";
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 
 const Card = z.object({
   id: z.string(),
@@ -40,7 +40,7 @@ const doc = createJSONDocument(Card, { id: "c1", title: "Draft" }, {
 React에서는 같은 표면을 hook으로 받습니다.
 
 ```tsx
-import { useJSONDocument } from "zod-crud/react";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 
 function Editor() {
   const doc = useJSONDocument(Card, { id: "c1", title: "Draft" });
@@ -102,10 +102,10 @@ doc.replace("", nextDocument);
 doc.canReplace("", nextDocument);
 ```
 
-앱 adapter에서 plain string path를 받으면 zod-crud 경계에서 한 번 확인합니다.
+앱 adapter에서 plain string path를 받으면 json-document 경계에서 한 번 확인합니다.
 
 ```ts
-import { tryParsePointer, type Pointer } from "zod-crud";
+import { tryParsePointer, type Pointer } from "@interactive-os/json-document";
 
 function asPointer(path: string): Pointer | null {
   return tryParsePointer(path) === null ? null : path as Pointer;
@@ -193,7 +193,7 @@ Validation failure의 `violations[].path`는 RFC 6901 JSON Pointer입니다. `do
 예상 가능한 편집 실패는 Result로 표현합니다. `strict`는 `doc.patch`, `doc.commit`, `doc.load`, `doc.reset` 실행 실패 정책입니다.
 
 기본값은 `strict: false`입니다. `strict: true`를 명시한 document에서 처리된
-execution failure는 `JSONCrudError`를 throw할 수 있습니다. `can*`와 top-level
+execution failure는 `JSONDocumentError`를 throw할 수 있습니다. `can*`와 top-level
 `doc.undo()` / `doc.redo()`는 Result를 반환합니다.
 
 ## duplicate
@@ -278,7 +278,7 @@ Document 내부 state는 신뢰된 document state입니다. schema가 구조만 
 
 ## 트리 편집 cookbook
 
-Tree 의미는 앱 책임입니다. zod-crud는 JSON을 검증하고 patch/selection/clipboard/history를 처리합니다. indent, outdent, visible row focus, toolbar action은 앱이 JSON Pointer와 JSON Patch로 번역합니다.
+Tree 의미는 앱 책임입니다. json-document는 JSON을 검증하고 patch/selection/clipboard/history를 처리합니다. indent, outdent, visible row focus, toolbar action은 앱이 JSON Pointer와 JSON Patch로 번역합니다.
 
 ```ts
 doc.patch({ op: "add", path: "/nodes/0/children/-", value: node });

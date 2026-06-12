@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "jsx": "react-jsx",
+    "lib": [
+      "ES2022",
+      "DOM",
+      "DOM.Iterable"
+    ],
+    "paths": {
+      "@interactive-os/json-document": [
+        "./src/index.ts"
+      ],
+      "@interactive-os/json-document/react": [
+        "./src/react.ts"
+      ]
+    },
+    "types": [
+      "node"
+    ],
+    "noEmit": true,
+    "rootDir": ".",
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*.ts",
+    "tests/**/*.ts",
+    "vitest.config.ts"
+  ]
+}

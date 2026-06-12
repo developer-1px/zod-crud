@@ -1,6 +1,6 @@
-# @zod-crud/dirty-state
+# @interactive-os/json-document-dirty-state
 
-Official headless dirty state tracking extension for `zod-crud` documents.
+Official headless dirty state tracking extension for `@interactive-os/json-document` documents.
 
 Use it when a product needs to compare the current document against a clean
 baseline without owning document diff plumbing: draft editors, document
@@ -8,7 +8,7 @@ workbenches, generated admin forms, slide editors, spreadsheet tabs, or CMS
 resource editors.
 
 ```ts
-import { createDirtyState } from "@zod-crud/dirty-state";
+import { createDirtyState } from "@interactive-os/json-document-dirty-state";
 
 const dirty = createDirtyState(doc);
 
@@ -37,11 +37,11 @@ dirty.discard({ preserveHistory: true });
   needs selection-aware state.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/dirty-state` delegates to the public `zod-crud` facade:
+`@interactive-os/json-document-dirty-state` delegates to the public `@interactive-os/json-document` facade:
 `value`, `load`, and `subscribe`.
 
 Core remains the owner of document mutation and history behavior. This

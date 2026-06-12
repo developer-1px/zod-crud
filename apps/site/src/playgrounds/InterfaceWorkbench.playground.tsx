@@ -8,7 +8,7 @@ import {
   buildPointer,
   createJSONDocument,
   escapeSegment,
-  JSONCrudError,
+  JSONDocumentError,
   lastSegment,
   lastSegmentIndex,
   parentPointer,
@@ -22,8 +22,8 @@ import {
   type JSONCapabilityResult,
   type Pointer,
   type SelectionSnap,
-} from "zod-crud";
-import { useJSONDocument } from "zod-crud/react";
+} from "@interactive-os/json-document";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 
 const Card = z.object({
   id: z.string(),
@@ -856,13 +856,13 @@ export function InterfaceWorkbench() {
     } catch (error) {
       pointerError = error instanceof PointerSyntaxError;
     }
-    const crudError = new JSONCrudError("patch", {
+    const crudError = new JSONDocumentError("patch", {
       ok: false,
       code: "path_not_found",
       reason: "demo",
     } as never);
     return {
-      JSONCrudError: { name: crudError.name, message: crudError.message },
+      JSONDocumentError: { name: crudError.name, message: crudError.message },
       PointerSyntaxError: pointerError,
     };
   };
@@ -1595,7 +1595,7 @@ export function InterfaceWorkbench() {
         {apiCoverageOpen ? (
         <section className="mt-3 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
         <ActionGroup title="root API">
-          <ApiRow action={<ActionButton onClick={() => run("JSONCrudError / PointerSyntaxError", inspectBoundaryErrors)}>JSONCrudError</ActionButton>} />
+          <ApiRow action={<ActionButton onClick={() => run("JSONDocumentError / PointerSyntaxError", inspectBoundaryErrors)}>JSONDocumentError</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("PointerSyntaxError", inspectBoundaryErrors)}>PointerSyntaxError</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("createJSONDocument(schema, value, options)", inspectCreateJSONDocument)}>createJSONDocument</ActionButton>} />
           <ApiRow action={<ActionButton onClick={() => run("applyOperation(schema, state, operation)", inspectApplyOperation)}>applyOperation</ActionButton>} />

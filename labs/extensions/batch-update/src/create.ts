@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { batchUpdate } from "./operations.js";
 import { canBatchUpdate } from "./plan.js";
 import type { BatchUpdate } from "./types.js";

@@ -1,13 +1,13 @@
-# @zod-crud/clear-contents
+# @interactive-os/json-document-clear-contents
 
-Lab clear-contents extension for `zod-crud` documents.
+Lab clear-contents extension for `@interactive-os/json-document` documents.
 
 Use it to test whether resetting selected fields to an empty value (keeping
 structure) can be driven from schema introspection alone, using only the public
 document facade.
 
 ```ts
-import { createClearContents } from "@zod-crud/clear-contents";
+import { createClearContents } from "@interactive-os/json-document-clear-contents";
 
 const clearer = createClearContents(doc);
 
@@ -34,10 +34,10 @@ clearer.clearContents(["/status"], { emptyFor: () => "todo" });
 ## Non-goals
 
 - Structural removal — use `delete`.
-- Replacing many positions with a caller-supplied value — use `@zod-crud/bulk-edit`.
+- Replacing many positions with a caller-supplied value — use `@interactive-os/json-document-bulk-edit`.
 - Choosing the "default option" for enums/objects — host policy via `emptyFor`.
 - Rendered UI, keyboard, or focus policy.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

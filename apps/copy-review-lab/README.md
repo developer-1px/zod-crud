@@ -1,6 +1,6 @@
 # Copy review lab
 
-Dogfoods `@zod-crud/search-replace` as a copy cleanup product surface.
+Dogfoods `@interactive-os/json-document-search-replace` as a copy cleanup product surface.
 
 The app owns search inputs, scope choice, result rendering, and status text.
 The extension owns document traversal, match ranges, stale-match checks,

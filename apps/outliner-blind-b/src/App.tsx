@@ -1,6 +1,6 @@
 import { useMemo } from "react";
-import type { Pointer } from "zod-crud";
-import { useJSONDocument } from "zod-crud/react";
+import type { Pointer } from "@interactive-os/json-document";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import {
   addChild,
   addSibling,

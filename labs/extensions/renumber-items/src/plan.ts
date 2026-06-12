@@ -1,4 +1,4 @@
-import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer } from "zod-crud";
+import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer } from "@interactive-os/json-document";
 import type { RenumberItemsError, RenumberItemsErrorCode, RenumberItemsOptions, RenumberItemsResult } from "./types.js";
 
 export function canRenumberItems<TDocument>(

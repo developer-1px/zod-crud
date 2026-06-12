@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, Pointer } from "@interactive-os/json-document";
 import type { MembershipAction, Mode, ToggleOptionError, ToggleOptionErrorCode, ToggleOptionOptions, ToggleOptionResult } from "./types.js";
 
 export function plan<TDocument, TValue = unknown>(

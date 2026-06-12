@@ -1,4 +1,4 @@
-// Outliner clipboard adapter. @zod-crud/clipboard-web owns the bridge between
+// Outliner clipboard adapter. @interactive-os/json-document-clipboard-web owns the bridge between
 // core JSON clipboard payloads and a text clipboard host; this app keeps only
 // sibling/child paste UX and compact status state.
 
@@ -9,8 +9,8 @@ import {
   type WebClipboardCopyResult,
   type WebClipboardCutResult,
   type WebClipboardPasteResult,
-} from "@zod-crud/clipboard-web";
-import type { JSONDocument, Pointer } from "zod-crud";
+} from "@interactive-os/json-document-clipboard-web";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import type { OutlineNode } from "./schema.js";
 
 export type ClipboardMode = "empty" | "copy" | "cut";

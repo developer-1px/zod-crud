@@ -1,13 +1,13 @@
-# @zod-crud/persist-web
+# @interactive-os/json-document-persist-web
 
-Official headless web persistence extension for `zod-crud` documents.
+Official headless web persistence extension for `@interactive-os/json-document` documents.
 
 Use it when a product needs local draft save/restore without putting storage
 policy in core: browser drafts, settings editors, generated admin forms, CMS
 resource editors, slide editors, spreadsheet tabs, or embedded workbenches.
 
 ```ts
-import { createDocumentPersistence } from "@zod-crud/persist-web";
+import { createDocumentPersistence } from "@interactive-os/json-document-persist-web";
 
 const persistence = createDocumentPersistence(doc, { key: "draft" });
 
@@ -46,11 +46,11 @@ watch.stop();
   migration.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/persist-web` delegates to the public `zod-crud` facade:
+`@interactive-os/json-document-persist-web` delegates to the public `@interactive-os/json-document` facade:
 `value`, `load`, `subscribe`, and optional `selection.snapshot` /
 `selection.restore`.
 

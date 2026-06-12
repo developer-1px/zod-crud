@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createDirtyState } from "@zod-crud/dirty-state";
+import { createDirtyState } from "@interactive-os/json-document-dirty-state";
 import {
   createDocumentPersistence,
   type DocumentPersistenceRestoreResult,
   type DocumentPersistenceSaveResult,
-} from "@zod-crud/persist-web";
-import type { JSONDocument } from "zod-crud";
+} from "@interactive-os/json-document-persist-web";
+import type { JSONDocument } from "@interactive-os/json-document";
 import type { OutlineNode } from "../schema.js";
 
-const DRAFT_KEY = "zod-crud.outliner.draft";
+const DRAFT_KEY = "json-document.outliner.draft";
 
 export type DraftCommandResult =
   | DocumentPersistenceSaveResult

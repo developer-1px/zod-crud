@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { createJSONDocument, type Pointer } from "zod-crud";
+import { createJSONDocument, type Pointer } from "@interactive-os/json-document";
 import {
   canGroupSelection,
   canUngroupSelection,
@@ -60,7 +60,7 @@ function createBoard() {
   });
 }
 
-describe("@zod-crud/grouping", () => {
+describe("@interactive-os/json-document-grouping", () => {
   test("groups selected sibling items into one schema-valid group", () => {
     const doc = createBoard();
     const grouping = createGrouping(doc, groupingAdapter);

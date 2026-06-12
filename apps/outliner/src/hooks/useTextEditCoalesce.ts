@@ -1,4 +1,4 @@
-// 텍스트 편집 coalesce 정책 — UI 결정. zod-crud 는 시간을 모름.
+// 텍스트 편집 coalesce 정책 — UI 결정. json-document 는 시간을 모름.
 // 같은 path 의 연속 dispatch 가 500ms 안에 일어나면 history.mergeLast() 로 한 entry.
 
 import { useCallback, useRef } from "react";

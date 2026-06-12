@@ -5,7 +5,7 @@ import {
   type JSONDocument,
   type JSONPatchOperation,
   type JSONResult,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   PatchPreviewOptions,

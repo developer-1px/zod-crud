@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canBatchUpdate, createBatchUpdate, type BatchUpdateResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -23,7 +23,7 @@ function expectOk(result: BatchUpdateResult): Extract<BatchUpdateResult, { ok: t
   return result;
 }
 
-describe("@zod-crud/batch-update", () => {
+describe("@interactive-os/json-document-batch-update", () => {
   test("sets one field across selected items to a constant", () => {
     const doc = createDoc();
     const b = createBatchUpdate(doc);

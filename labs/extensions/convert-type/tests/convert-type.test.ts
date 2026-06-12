@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canConvertType, createConvertType, type ConvertTypeResult } from "../src/index.js";
 
 // convert-type is meaningful on permissive (union) fields, where changing the runtime
@@ -21,7 +21,7 @@ function expectOk(result: ConvertTypeResult): Extract<ConvertTypeResult, { ok: t
   return result;
 }
 
-describe("@zod-crud/convert-type", () => {
+describe("@interactive-os/json-document-convert-type", () => {
   test("string to number", () => {
     const doc = createDoc("5");
     const c = createConvertType(doc);

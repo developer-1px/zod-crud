@@ -1,6 +1,6 @@
 // Focus navigation — DFS visible order 위에서 좌표 이동만 (state 미변경).
 
-import type { Pointer } from "zod-crud";
+import type { Pointer } from "@interactive-os/json-document";
 import type { OutlineNode } from "../schema.js";
 import {
   parentOf, nextVisible, prevVisible, firstVisible, lastVisible, firstChildOf,

@@ -1,12 +1,12 @@
-# @zod-crud/increment-number
+# @interactive-os/json-document-increment-number
 
-Lab increment-number extension for `zod-crud` documents.
+Lab increment-number extension for `@interactive-os/json-document` documents.
 
 Use it to increment, decrement, or step a numeric field by an amount, with
 optional clamping, using only the public document facade.
 
 ```ts
-import { createIncrementNumber } from "@zod-crud/increment-number";
+import { createIncrementNumber } from "@interactive-os/json-document-increment-number";
 
 const n = createIncrementNumber(doc);
 
@@ -28,7 +28,7 @@ n.step("/qty", { step: 2, max: 10 }); // +2, clamped to 10
 
 - Rendered spinner/stepper controls, hold-to-repeat, or keyboard policy.
 - Formatting, units, or currency.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

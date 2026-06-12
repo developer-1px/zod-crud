@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   createLayerOrder,
   reorderLayers,
@@ -43,7 +43,7 @@ function layerIds(doc: ReturnType<typeof createCanvas>): string[] {
   return doc.value.layers.map((layer) => layer.id);
 }
 
-describe("@zod-crud/layer-order", () => {
+describe("@interactive-os/json-document-layer-order", () => {
   test("brings a layer forward by one slot", () => {
     const doc = createCanvas();
     const order = createLayerOrder(doc);

@@ -1,6 +1,6 @@
 import type {
   JSONDocument,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   copyComment,

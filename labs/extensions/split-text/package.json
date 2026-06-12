@@ -1,7 +1,7 @@
 {
-  "name": "@zod-crud/split-text",
+  "name": "@interactive-os/json-document-split-text",
   "version": "0.1.0",
-  "description": "Lab split-text (split a string into array items) extension functions for zod-crud documents.",
+  "description": "Lab split-text (split a string into array items) extension functions for json-document documents.",
   "private": true,
   "type": "module",
   "license": "MIT",
@@ -10,11 +10,11 @@
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/developer-1px/zod-crud.git",
+    "url": "git+https://github.com/developer-1px/json-document.git",
     "directory": "labs/extensions/split-text"
   },
   "keywords": [
-    "zod-crud",
+    "@interactive-os/json-document",
     "split",
     "text",
     "tags",
@@ -39,12 +39,12 @@
     "verify": "npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
-    "zod-crud": "^1.0.0"
+    "@interactive-os/json-document": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "vitest": "^4.1.7",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   }
 }

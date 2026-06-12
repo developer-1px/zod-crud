@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument, type JSONChangeMetadata, type JSONPatchOperation } from "zod-crud";
+import { createJSONDocument, type JSONChangeMetadata, type JSONPatchOperation } from "@interactive-os/json-document";
 import { createPatchLog } from "../src/index.js";
 
 const Item = z.object({
@@ -29,7 +29,7 @@ function createDoc(
   });
 }
 
-describe("@zod-crud/patch-log", () => {
+describe("@interactive-os/json-document-patch-log", () => {
   test("records applied patches and metadata from document subscriptions", () => {
     const doc = createDoc();
     const log = createPatchLog(doc);

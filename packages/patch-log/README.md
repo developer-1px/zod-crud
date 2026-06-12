@@ -1,6 +1,6 @@
-# @zod-crud/patch-log
+# @interactive-os/json-document-patch-log
 
-Official headless patch recording and replay extension for `zod-crud`
+Official headless patch recording and replay extension for `@interactive-os/json-document`
 documents.
 
 Use it when a product needs a copied applied-patch stream without reading core
@@ -8,7 +8,7 @@ history internals: audit mirrors, replay fixtures, support repro scripts,
 command debugging panels, import dry runs, or synchronization adapters.
 
 ```ts
-import { createPatchLog } from "@zod-crud/patch-log";
+import { createPatchLog } from "@interactive-os/json-document-patch-log";
 
 const log = createPatchLog(doc);
 
@@ -36,11 +36,11 @@ log.replayInto(otherDoc);
 - No durable log format versioning.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/patch-log` delegates to the public `zod-crud` facade:
+`@interactive-os/json-document-patch-log` delegates to the public `@interactive-os/json-document` facade:
 `subscribe`, `canPatch`, `patch`, and `commit`.
 
 Core remains the owner of mutation, validation, metadata emission, and history.

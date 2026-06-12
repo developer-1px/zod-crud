@@ -1,6 +1,6 @@
 import type {
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type IdResolverDiagnosticCode =
   | "invalid_query"

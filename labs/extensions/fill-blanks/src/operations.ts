@@ -1,4 +1,4 @@
-import type { JSONDocument, Pointer } from "zod-crud";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import { canFillBlanks } from "./plan.js";
 import type { FillBlanksOptions, FillBlanksResult, FillBlanksValue } from "./types.js";
 

@@ -1,7 +1,7 @@
 import type {
   JSONChangeMetadata,
   JSONPatchOperation,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   PatchLogEntry,

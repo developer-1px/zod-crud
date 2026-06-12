@@ -1,12 +1,12 @@
-# @zod-crud/batch-update
+# @interactive-os/json-document-batch-update
 
-Lab batch-update extension for `zod-crud` documents.
+Lab batch-update extension for `@interactive-os/json-document` documents.
 
 Use it to set one field (or whole item) across a list of selected item pointers
 to a constant or computed value, using only the public document facade.
 
 ```ts
-import { createBatchUpdate } from "@zod-crud/batch-update";
+import { createBatchUpdate } from "@interactive-os/json-document-batch-update";
 
 const b = createBatchUpdate(doc);
 
@@ -30,15 +30,15 @@ b.batchUpdate(selected, { compute: (current) => Number(current) + 1 }, { field: 
 
 - Selecting which items to edit — the host passes the target pointers (e.g. from
   a multi-select).
-- Query-driven replacement across matches — that is `@zod-crud/bulk-edit`.
-- No plugin registration; no `zod-crud` internal imports.
+- Query-driven replacement across matches — that is `@interactive-os/json-document-bulk-edit`.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 
 The public facade is enough: one `replace` per target preflighted as one
 `doc.canPatch` batch, then applied with `doc.patch` (atomic).
 
-This is distinct from `@zod-crud/bulk-edit`, which replaces positions matched by a
+This is distinct from `@interactive-os/json-document-bulk-edit`, which replaces positions matched by a
 JSONPath query. batch-update is **selection-driven**: it takes the explicit pointer
 list a multi-select produces ("set status on these 5 rows"), which a JSONPath
 cannot express when the selection is arbitrary. The two are complementary —

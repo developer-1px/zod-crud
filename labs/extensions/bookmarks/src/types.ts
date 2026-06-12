@@ -1,4 +1,4 @@
-import type { Pointer } from "zod-crud";
+import type { Pointer } from "@interactive-os/json-document";
 
 export type BookmarkErrorCode =
   | "invalid_pointer"

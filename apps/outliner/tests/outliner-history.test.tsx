@@ -13,7 +13,7 @@ afterEach(() => {
 
 function renderOutliner() {
   render(<Outliner />);
-  expect(screen.getByRole("heading", { name: "zod-crud outliner" })).toBeTruthy();
+  expect(screen.getByRole("heading", { name: "json-document outliner" })).toBeTruthy();
   expect(screen.getByRole("tree", { name: "outline" })).toBeTruthy();
 }
 

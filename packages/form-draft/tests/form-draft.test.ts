@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   createFormDraft,
   type FormDraftParser,
@@ -53,7 +53,7 @@ const parseFormInput: FormDraftParser<string> = ({ input, kind }) => {
   return parseNumberInput(input);
 };
 
-describe("@zod-crud/form-draft", () => {
+describe("@interactive-os/json-document-form-draft", () => {
   test("holds a valid draft without mutating document state", () => {
     const doc = createDoc();
     const drafts = createFormDraft(doc, { parse: parseNumber });

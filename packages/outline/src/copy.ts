@@ -1,6 +1,6 @@
 import type {
   JSONPatchOperation,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   OutlineEditChange,

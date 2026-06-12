@@ -1,5 +1,5 @@
 {
-  "name": "@zod-crud/protected-ranges-lab",
+  "name": "@interactive-os/json-document-protected-ranges-lab",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,11 +12,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zod-crud/protected-ranges": "file:../../packages/protected-ranges",
+    "@interactive-os/json-document-protected-ranges": "file:../../packages/protected-ranges",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

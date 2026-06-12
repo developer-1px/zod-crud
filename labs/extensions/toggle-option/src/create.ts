@@ -1,4 +1,4 @@
-import type { JSONDocument, Pointer } from "zod-crud";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import { plan } from "./plan.js";
 import type { Mode, ToggleOption, ToggleOptionOptions, ToggleOptionResult } from "./types.js";
 

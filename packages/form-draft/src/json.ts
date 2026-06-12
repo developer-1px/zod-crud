@@ -1,6 +1,6 @@
 import type {
   SchemaKind,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export function valueKind(value: unknown): SchemaKind {
   if (value === null) return "null";

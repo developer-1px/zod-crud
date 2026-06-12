@@ -1,4 +1,4 @@
-import type { JSONDocument, Pointer } from "zod-crud";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import { canBatchUpdate } from "./plan.js";
 import type { BatchUpdateOptions, BatchUpdateResult, BatchUpdateValue } from "./types.js";
 

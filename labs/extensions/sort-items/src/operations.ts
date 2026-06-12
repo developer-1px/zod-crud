@@ -1,4 +1,4 @@
-import type { JSONDocument, Pointer } from "zod-crud";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import { canReverse, canSort } from "./plan.js";
 import type { SortItemsChange, SortItemsCompare, SortItemsResult } from "./types.js";
 

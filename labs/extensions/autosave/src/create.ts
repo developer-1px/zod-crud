@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import type { AutoSave, AutoSaveFlushResult, AutoSaveListener, AutoSaveOptions, AutoSaveReason, AutoSaveRuntime, AutoSaveScheduler, AutoSaveSnapshot, PendingEvent } from "./types.js";
 
 const defaultScheduler: AutoSaveScheduler = {

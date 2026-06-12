@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createCheckpoints } from "../src/index.js";
 
 const Schema = z.object({
@@ -23,7 +23,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/checkpoints", () => {
+describe("@interactive-os/json-document-checkpoints", () => {
   test("saves and lists named checkpoints without mutating", () => {
     const doc = createDoc();
     let tick = 100;

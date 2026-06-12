@@ -6,34 +6,34 @@ All notable changes to this project are documented here.
 
 ### Added
 
-- Added lab `@zod-crud/grid-range` to delegate rectangular grid paste/fill
+- Added lab `@interactive-os/json-document-grid-range` to delegate rectangular grid paste/fill
   planning over sparse JSON records while hosts own coordinate naming and
   parsing.
-- Added lab `@zod-crud/sparse-record` to delegate sparse JSON record entry
+- Added lab `@interactive-os/json-document-sparse-record` to delegate sparse JSON record entry
   add/replace/remove/no-op patch planning across one or more record roots.
-- Added `@zod-crud/id-resolver` as an official headless extension for resolving
+- Added `@interactive-os/json-document-id-resolver` as an official headless extension for resolving
   scoped stable ids to current JSON Pointers.
-- Added `@zod-crud/patch-preview` as an official headless extension for
+- Added `@interactive-os/json-document-patch-preview` as an official headless extension for
   previewing schema-safe JSON Patch changes before applying them.
-- Added `@zod-crud/search-replace` as an official headless extension for
+- Added `@interactive-os/json-document-search-replace` as an official headless extension for
   searching and replacing JSON string fields.
-- Added `@zod-crud/proposed-changes` as an official headless extension for
+- Added `@interactive-os/json-document-proposed-changes` as an official headless extension for
   reviewing, accepting, and rejecting proposed JSON Patch changes.
-- Added `@zod-crud/comments` as an official headless extension for review
+- Added `@interactive-os/json-document-comments` as an official headless extension for review
   comments anchored to JSON Pointers.
-- Added `@zod-crud/form-draft` as an official headless extension for keeping
+- Added `@interactive-os/json-document-form-draft` as an official headless extension for keeping
   temporary invalid input outside schema-valid JSON documents until commit.
-- Added `@zod-crud/protected-ranges` as an official headless extension for
+- Added `@interactive-os/json-document-protected-ranges` as an official headless extension for
   guarding edits to locked JSON Pointer ranges before core capability checks.
-- Added `@zod-crud/snippets` as an official headless extension for inserting
+- Added `@interactive-os/json-document-snippets` as an official headless extension for inserting
   reusable JSON payload snippets through schema-safe paste.
 
 ### Changed
 
-- Changed lab `@zod-crud/grid-range` fill to accept a host-owned
+- Changed lab `@interactive-os/json-document-grid-range` fill to accept a host-owned
   `generateFillIntent` hook so products can preserve arithmetic/date/formula
-  series semantics while zod-crud owns sparse record application.
-- Clarified the `@zod-crud/search-replace` delegation boundary: literal JSON
+  series semantics while json-document owns sparse record application.
+- Clarified the `@interactive-os/json-document-search-replace` delegation boundary: literal JSON
   string-field find/replace is standardized, while regex engines, rendered text
   extraction, advanced search ranking, and regex replace-all capture policy
   remain host-owned.
@@ -50,7 +50,7 @@ All notable changes to this project are documented here.
   `generate-slug`, `swap` to `swap-items`, `text-transform` to `change-case`,
   `truncate` to `trim-text`, and `wrap-unwrap` to `wrap-selection`.
 - Changed the default document execution error policy to `strict: false`.
-  Callers that want `JSONCrudError` throws now opt in with `strict: true`.
+  Callers that want `JSONDocumentError` throws now opt in with `strict: true`.
 - Changed top-level `doc.undo()` and `doc.redo()` to return
   `JSONCapabilityResult` instead of boolean so command execution follows the
   same `can* -> command -> result` shape.
@@ -79,7 +79,7 @@ All notable changes to this project are documented here.
   show disabled reasons without mutating state.
 - Added selection-backed defaults for editing verbs where the source or target is
   naturally the current selection.
-- Added `zod-crud/react` as the React adapter entrypoint for the same
+- Added `@interactive-os/json-document/react` as the React adapter entrypoint for the same
   `JSONDocument` surface.
 - Added extension-lab packages to test whether core concepts can support
   annotation anchors, autosave, checkpoints, clipboard, persistence, dirty
@@ -87,18 +87,18 @@ All notable changes to this project are documented here.
   fields, collection sorting, document diffs, document outlines, field drafts,
   patch previews, Pointer bookmarks, document-wide text search, and drag/drop
   intents without expanding the core API.
-- Added `@zod-crud/clipboard-web` as a browser clipboard extension boundary.
-- Added `@zod-crud/collection` as the first official collection editing
+- Added `@interactive-os/json-document-clipboard-web` as a browser clipboard extension boundary.
+- Added `@interactive-os/json-document-collection` as the first official collection editing
   extension for ordered JSON arrays.
-- Added `@zod-crud/schema-form` as an official schema-backed field descriptor
+- Added `@interactive-os/json-document-schema-form` as an official schema-backed field descriptor
   extension.
-- Added `@zod-crud/dirty-state` as an official clean-baseline dirty tracking
+- Added `@interactive-os/json-document-dirty-state` as an official clean-baseline dirty tracking
   extension.
-- Added `@zod-crud/bulk-edit` as an official JSONPath replace-all/delete-all
+- Added `@interactive-os/json-document-bulk-edit` as an official JSONPath replace-all/delete-all
   extension.
-- Added `@zod-crud/patch-log` as an official applied-patch recording and replay
+- Added `@interactive-os/json-document-patch-log` as an official applied-patch recording and replay
   extension.
-- Added `@zod-crud/persist-web` as an official local document persistence
+- Added `@interactive-os/json-document-persist-web` as an official local document persistence
   extension for browser storage-like hosts.
 - Added deterministic `persist-web.watch().flush()` / `status()` affordances for
   downstream integration tests.
@@ -119,7 +119,7 @@ All notable changes to this project are documented here.
   composition.
 - Updated Workbench/API Lab to expose the public facade directly instead of
   teaching nested internal paths first.
-- Kept React lifecycle concerns in `zod-crud/react`; the root package remains
+- Kept React lifecycle concerns in `@interactive-os/json-document/react`; the root package remains
   headless and React-free.
 
 ### Fixed

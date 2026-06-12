@@ -1,12 +1,12 @@
-# @zod-crud/checkpoints
+# @interactive-os/json-document-checkpoints
 
-Lab checkpoint extension for `zod-crud` documents.
+Lab checkpoint extension for `@interactive-os/json-document` documents.
 
 Use it to test whether named restore points can stay outside core history while
 using the public document facade.
 
 ```ts
-import { createCheckpoints } from "@zod-crud/checkpoints";
+import { createCheckpoints } from "@interactive-os/json-document-checkpoints";
 
 const checkpoints = createCheckpoints(doc);
 
@@ -30,7 +30,7 @@ checkpoints.restore("before-import");
 - No storage host; compose with persistence separately.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

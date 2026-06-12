@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { buildIndex, copyTarget, referenceError, referenceKey } from "./plan.js";
 import type { ReferenceResolveResult, ReferencesDescriptor, ReferenceSnapshot } from "./types.js";
 

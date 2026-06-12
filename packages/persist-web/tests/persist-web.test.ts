@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   WEB_PERSISTENCE_KIND,
   WEB_PERSISTENCE_VERSION,
@@ -52,7 +52,7 @@ function tick() {
   });
 }
 
-describe("@zod-crud/persist-web", () => {
+describe("@interactive-os/json-document-persist-web", () => {
   test("saves document value and selection to a storage-like host", async () => {
     const doc = createDoc();
     doc.selection?.collapse("/items/1/name");

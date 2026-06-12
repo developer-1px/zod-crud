@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { createSnippets, type Snippet, type SnippetInsertOptions } from "@zod-crud/snippets";
-import { useJSONDocument } from "zod-crud/react";
-import type { JSONCapabilityResult, JSONDocumentPasteTarget, Pointer } from "zod-crud";
+import { createSnippets, type Snippet, type SnippetInsertOptions } from "@interactive-os/json-document-snippets";
+import { useJSONDocument } from "@interactive-os/json-document/react";
+import type { JSONCapabilityResult, JSONDocumentPasteTarget, Pointer } from "@interactive-os/json-document";
 import { z } from "zod";
 import "./snippet-composer-lab.css";
 

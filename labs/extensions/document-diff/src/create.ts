@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { applyDocumentDiff } from "./operations.js";
 import { canApplyDocumentDiff, diffDocument } from "./plan.js";
 import type { DocumentDiff } from "./types.js";

@@ -10,7 +10,7 @@ export const OutlineSchema: z.ZodType<OutlineNode> = z.object({
 });
 
 export const SAMPLE: OutlineNode = {
-  text: "zod-crud outliner",
+  text: "json-document outliner",
   children: [
     { text: "Enter edit; Shift/Cmd+Enter insert", children: [] },
     { text: "Tab demote", children: [] },

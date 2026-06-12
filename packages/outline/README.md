@@ -1,13 +1,13 @@
-# @zod-crud/outline
+# @interactive-os/json-document-outline
 
-Official headless outline tree and structure editing extension for `zod-crud`
+Official headless outline tree and structure editing extension for `@interactive-os/json-document`
 documents.
 
 Use it when a product has nested outline rows: outliners, Markdown list editors,
 document block trees, note outlines, or generated content review tools.
 
 ```ts
-import { createOutline } from "@zod-crud/outline";
+import { createOutline } from "@interactive-os/json-document-outline";
 
 const outline = createOutline(doc);
 
@@ -34,15 +34,15 @@ outline.promote("/children/0/children/1");
 - No stable id lookup; host code translates selected ids to JSON Pointers.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/outline` assumes each outline item stores nested rows in a child array
+`@interactive-os/json-document-outline` assumes each outline item stores nested rows in a child array
 field named `children` by default. Pass `childrenKey` when a product uses another
 field name.
 
-It delegates actual document mutation to the public `zod-crud` facade:
+It delegates actual document mutation to the public `@interactive-os/json-document` facade:
 `at`, `canPatch`, and `patch`. Invalid pointers, root promotion/demotion,
 missing siblings, and rejected patches return structured extension errors
 without mutating the document.

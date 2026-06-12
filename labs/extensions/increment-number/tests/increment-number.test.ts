@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canStep, createIncrementNumber, type IncrementNumberResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: IncrementNumberResult): Extract<IncrementNumberResult,
   return result;
 }
 
-describe("@zod-crud/increment-number", () => {
+describe("@interactive-os/json-document-increment-number", () => {
   test("increments by 1 by default", () => {
     const doc = createDoc();
     const n = createIncrementNumber(doc);

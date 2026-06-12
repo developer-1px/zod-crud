@@ -1,7 +1,7 @@
 {
-  "name": "@zod-crud/id-resolver",
+  "name": "@interactive-os/json-document-id-resolver",
   "version": "0.1.0",
-  "description": "Official stable id resolver extension functions for locating zod-crud document nodes by scope and id.",
+  "description": "Official stable id resolver extension functions for locating json-document document nodes by scope and id.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -9,7 +9,7 @@
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/developer-1px/zod-crud.git",
+    "url": "git+https://github.com/developer-1px/json-document.git",
     "directory": "packages/id-resolver"
   },
   "publishConfig": {
@@ -17,7 +17,7 @@
     "provenance": true
   },
   "keywords": [
-    "zod-crud",
+    "@interactive-os/json-document",
     "id",
     "json",
     "headless",
@@ -41,12 +41,12 @@
     "verify": "npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
-    "zod-crud": "^1.0.0"
+    "@interactive-os/json-document": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "vitest": "^4.1.7",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   }
 }

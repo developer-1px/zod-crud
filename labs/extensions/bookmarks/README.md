@@ -1,11 +1,11 @@
-# @zod-crud/bookmarks
+# @interactive-os/json-document-bookmarks
 
-Headless bookmark tracking extension for `zod-crud` documents.
+Headless bookmark tracking extension for `@interactive-os/json-document` documents.
 
 Lab status: private prototype. Not an official package.
 
 ```ts
-import { createBookmarks } from "@zod-crud/bookmarks";
+import { createBookmarks } from "@interactive-os/json-document-bookmarks";
 
 const bookmarks = createBookmarks(doc, {
   focusedTitle: "/items/0/title",

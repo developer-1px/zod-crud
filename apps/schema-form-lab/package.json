@@ -1,5 +1,5 @@
 {
-  "name": "@zod-crud/schema-form-lab",
+  "name": "@interactive-os/json-document-schema-form-lab",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,12 +12,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zod-crud/form-draft": "file:../../packages/form-draft",
-    "@zod-crud/schema-form": "*",
+    "@interactive-os/json-document-form-draft": "file:../../packages/form-draft",
+    "@interactive-os/json-document-schema-form": "*",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

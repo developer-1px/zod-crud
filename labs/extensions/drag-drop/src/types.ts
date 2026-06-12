@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONDocumentPasteOptions, JSONDocumentPasteTarget, Pointer } from "zod-crud";
+import type { JSONCapabilityResult, JSONDocumentPasteOptions, JSONDocumentPasteTarget, Pointer } from "@interactive-os/json-document";
 
 export type DragDropPayloadOptions = Omit<JSONDocumentPasteOptions, "payload">;
 

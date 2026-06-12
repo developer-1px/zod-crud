@@ -1,7 +1,7 @@
 {
-  "name": "@zod-crud/clipboard-web",
+  "name": "@interactive-os/json-document-clipboard-web",
   "version": "0.1.0",
-  "description": "Web clipboard extension functions for zod-crud documents.",
+  "description": "Web clipboard extension functions for json-document documents.",
   "type": "module",
   "license": "MIT",
   "sideEffects": false,
@@ -9,7 +9,7 @@
   "types": "./dist/index.d.ts",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/developer-1px/zod-crud.git",
+    "url": "git+https://github.com/developer-1px/json-document.git",
     "directory": "packages/clipboard-web"
   },
   "publishConfig": {
@@ -17,7 +17,7 @@
     "provenance": true
   },
   "keywords": [
-    "zod-crud",
+    "@interactive-os/json-document",
     "clipboard",
     "web",
     "json",
@@ -41,12 +41,12 @@
     "verify": "npm run typecheck && npm test && npm run build"
   },
   "peerDependencies": {
-    "zod-crud": "^1.0.0"
+    "@interactive-os/json-document": "^1.0.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "vitest": "^4.1.7",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   }
 }

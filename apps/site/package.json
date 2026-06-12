@@ -1,5 +1,5 @@
 {
-  "name": "@zod-crud/site",
+  "name": "@interactive-os/json-document-site",
   "private": true,
   "type": "module",
   "scripts": {
@@ -10,15 +10,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@zod-crud/mobile-cms": "*",
-    "@zod-crud/outliner": "*",
+    "@interactive-os/json-document-mobile-cms": "*",
+    "@interactive-os/json-document-outliner": "*",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-markdown": "^10.1.0",
     "rehype-slug": "^6.0.0",
     "remark-gfm": "^4.0.1",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

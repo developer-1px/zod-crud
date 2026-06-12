@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
-import { createProtectedRanges, type ProtectedRange } from "@zod-crud/protected-ranges";
-import { useJSONDocument } from "zod-crud/react";
+import { createProtectedRanges, type ProtectedRange } from "@interactive-os/json-document-protected-ranges";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import { z } from "zod";
 import "./protected-ranges-lab.css";
 

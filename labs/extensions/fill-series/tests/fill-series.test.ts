@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canFill, createFillSeries, type FillSeriesResult } from "../src/index.js";
 
 const Row = z.object({
@@ -30,7 +30,7 @@ function expectOk<T>(result: FillSeriesResult<T>): Extract<FillSeriesResult<T>, 
 
 const RANGE = ["/rows/1", "/rows/2", "/rows/3"];
 
-describe("@zod-crud/fill-series", () => {
+describe("@interactive-os/json-document-fill-series", () => {
   test("constant fill writes one value into a field across the range", () => {
     const doc = createDoc();
     const filler = createFillSeries(doc);

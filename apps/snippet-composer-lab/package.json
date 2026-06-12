@@ -1,5 +1,5 @@
 {
-  "name": "@zod-crud/snippet-composer-lab",
+  "name": "@interactive-os/json-document-snippet-composer-lab",
   "private": true,
   "type": "module",
   "exports": {
@@ -12,11 +12,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@zod-crud/snippets": "file:../../packages/snippets",
+    "@interactive-os/json-document-snippets": "file:../../packages/snippets",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "zod": "^4.0.0",
-    "zod-crud": "*"
+    "@interactive-os/json-document": "*"
   },
   "devDependencies": {
     "@testing-library/react": "^16.3.2",

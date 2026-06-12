@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canDemoteOutline,
   canPromoteOutline,
@@ -76,7 +76,7 @@ function rows(doc: ReturnType<typeof createRows>): unknown {
   return doc.value;
 }
 
-describe("@zod-crud/outline tree", () => {
+describe("@interactive-os/json-document-outline tree", () => {
   test("builds a pointer-first tree and preorder flat list", () => {
     const outline = readOutline(createBoard());
 
@@ -149,7 +149,7 @@ describe("@zod-crud/outline tree", () => {
   });
 });
 
-describe("@zod-crud/outline structure", () => {
+describe("@interactive-os/json-document-outline structure", () => {
   test("demotes one row under its previous sibling", () => {
     const doc = createRows();
 

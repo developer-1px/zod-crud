@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { renumberItems } from "./operations.js";
 import { canRenumberItems } from "./plan.js";
 import type { RenumberItems } from "./types.js";

@@ -1,7 +1,7 @@
 import type {
   JSONDocument,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type CommentStatus = "open" | "resolved";
 

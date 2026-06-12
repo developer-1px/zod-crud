@@ -10,7 +10,7 @@ import type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   WEB_CLIPBOARD_KIND,

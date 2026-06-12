@@ -1,8 +1,8 @@
-# zod-crud Docs
+# json-document Docs
 
-zod-crud는 Zod schema로 보호되는 headless JSON 편집 엔진입니다. UI component가 아니라 앱의 JSON state를 안전하게 읽고 바꾸는 document facade입니다.
+json-document는 Zod schema로 보호되는 headless JSON 편집 엔진입니다. UI component가 아니라 앱의 JSON state를 안전하게 읽고 바꾸는 document facade입니다.
 
-앱은 rendering, focus, button, shortcut, drag/drop, 제품별 command 이름을 소유합니다. zod-crud는 JSON Pointer 주소, JSON Patch 변경, JSONPath 검색, schema validation, selection, clipboard payload, undo/redo history를 소유합니다.
+앱은 rendering, focus, button, shortcut, drag/drop, 제품별 command 이름을 소유합니다. json-document는 JSON Pointer 주소, JSON Patch 변경, JSONPath 검색, schema validation, selection, clipboard payload, undo/redo history를 소유합니다.
 
 ```txt
 schema
@@ -18,7 +18,7 @@ schema
 
 프론트엔드 편집 기능은 대부분 JSON state를 바꾸는 일입니다. Form, CMS block, kanban card, outliner, settings editor는 UI는 달라도 삽입, 변경, 삭제, 이동, 복제, 선택, 복사, 붙여넣기, 되돌리기를 다룹니다.
 
-이 규칙을 앱마다 다시 만들면 patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 UI 코드에 흩어집니다. zod-crud는 이 공통 규칙을 document API로 고정합니다.
+이 규칙을 앱마다 다시 만들면 patch 형식, pointer 주소, multi-selection, clipboard payload, undo stack, schema validation이 UI 코드에 흩어집니다. json-document는 이 공통 규칙을 document API로 고정합니다.
 
 ## 핵심 개념
 
@@ -48,7 +48,7 @@ schema
 
 ```ts
 import { z } from "zod";
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 
 const Card = z.object({
   id: z.string(),
@@ -75,7 +75,7 @@ if (doc.canPatch(patch).ok) {
 React에서는 같은 document 표면을 hook으로 받습니다.
 
 ```tsx
-import { useJSONDocument } from "zod-crud/react";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 
 const doc = useJSONDocument(Card, initialCard, {
   history: 100,

@@ -1,4 +1,4 @@
-# @zod-crud/grouping
+# @interactive-os/json-document-grouping
 
 Lab extension for structural `group` and `ungroup`.
 
@@ -8,7 +8,7 @@ Lab extension for structural `group` and `ungroup`.
 - create one host-defined group value
 - ungroup a host-defined group value back into sibling items
 - return JSON Patch operations and `selectionAfter`
-- validate through the public `zod-crud` document facade
+- validate through the public `@interactive-os/json-document` document facade
 
 ## Non-goals
 

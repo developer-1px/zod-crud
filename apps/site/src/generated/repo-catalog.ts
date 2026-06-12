@@ -2,21 +2,21 @@
 export const repoCatalog = {
   "schemaVersion": 1,
   "repo": {
-    "name": "zod-crud-monorepo",
+    "name": "@interactive-os/json-document-monorepo",
     "private": true,
-    "summary": "zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다."
+    "summary": "json-document는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다."
   },
   "packages": [
     {
       "path": "packages/bulk-edit",
-      "name": "@zod-crud/bulk-edit",
+      "name": "@interactive-os/json-document-bulk-edit",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official JSONPath bulk editing extension functions for zod-crud documents.",
+      "description": "Official JSONPath bulk editing extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless JSONPath bulk editing extension for `zod-crud` documents.",
+      "summary": "Official headless JSONPath bulk editing extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "apply JSONPath replace/delete operations to many document positions",
         "notFor": "rendered text search UI or product workflow approval"
@@ -40,25 +40,25 @@ export const repoCatalog = {
       ],
       "publicExportCount": 15,
       "keywords": [
+        "@interactive-os/json-document",
         "bulk-edit",
         "headless",
         "json",
-        "jsonpath",
-        "zod-crud"
+        "jsonpath"
       ]
     },
     {
       "path": "packages/clipboard-web",
-      "name": "@zod-crud/clipboard-web",
+      "name": "@interactive-os/json-document-clipboard-web",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Web clipboard extension functions for zod-crud documents.",
+      "description": "Web clipboard extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Web clipboard extension functions for `zod-crud`.",
+      "summary": "Web clipboard extension functions for `@interactive-os/json-document`.",
       "guidance": {
-        "useFor": "bridge zod-crud clipboard payloads to the browser clipboard",
+        "useFor": "bridge json-document clipboard payloads to the browser clipboard",
         "notFor": "TSV/CSV spreadsheet paste engines"
       },
       "publicExports": [
@@ -85,23 +85,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 20,
       "keywords": [
+        "@interactive-os/json-document",
         "clipboard",
         "headless",
         "json",
-        "web",
-        "zod-crud"
+        "web"
       ]
     },
     {
       "path": "packages/collection",
-      "name": "@zod-crud/collection",
+      "name": "@interactive-os/json-document-collection",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official collection editing extension functions for ordered JSON array item commands in zod-crud documents.",
+      "description": "Official collection editing extension functions for ordered JSON array item commands in json-document documents.",
       "license": "MIT",
-      "summary": "Official headless collection editing extension for `zod-crud` documents.",
+      "summary": "Official headless collection editing extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "edit ordered JSON arrays with item-level commands",
         "notFor": "database collections or rendered list UI"
@@ -119,23 +119,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "collection",
         "editing",
         "headless",
-        "json",
-        "zod-crud"
+        "json"
       ]
     },
     {
       "path": "packages/comments",
-      "name": "@zod-crud/comments",
+      "name": "@interactive-os/json-document-comments",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official comments extension functions for review notes anchored to zod-crud documents.",
+      "description": "Official comments extension functions for review notes anchored to json-document documents.",
       "license": "MIT",
-      "summary": "Official headless comments extension for review notes anchored to `zod-crud`\ndocuments.",
+      "summary": "Official headless comments extension for review notes anchored to `@interactive-os/json-document`\ndocuments.",
       "guidance": {
         "useFor": "anchor review comments to document structure",
         "notFor": "comment UI, moderation, or author storage"
@@ -158,22 +158,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 14,
       "keywords": [
+        "@interactive-os/json-document",
         "comment",
         "headless",
-        "review",
-        "zod-crud"
+        "review"
       ]
     },
     {
       "path": "packages/dirty-state",
-      "name": "@zod-crud/dirty-state",
+      "name": "@interactive-os/json-document-dirty-state",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official dirty state tracking extension functions for zod-crud documents.",
+      "description": "Official dirty state tracking extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless dirty state tracking extension for `zod-crud` documents.",
+      "summary": "Official headless dirty state tracking extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "compare a document to a clean baseline",
         "notFor": "persistence or server save status"
@@ -189,23 +189,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 7,
       "keywords": [
+        "@interactive-os/json-document",
         "dirty",
         "editor",
         "headless",
-        "json",
-        "zod-crud"
+        "json"
       ]
     },
     {
       "path": "packages/form-draft",
-      "name": "@zod-crud/form-draft",
+      "name": "@interactive-os/json-document-form-draft",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official form draft extension functions for temporary invalid input before committing valid zod-crud JSON.",
+      "description": "Official form draft extension functions for temporary invalid input before committing valid json-document JSON.",
       "license": "MIT",
-      "summary": "Official headless form draft extension for temporary input that is not ready to\nenter a schema-valid `zod-crud` document.",
+      "summary": "Official headless form draft extension for temporary input that is not ready to\nenter a schema-valid `@interactive-os/json-document` document.",
       "guidance": {
         "useFor": "hold temporary invalid form input before committing valid JSON",
         "notFor": "rendered form components"
@@ -229,23 +229,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 15,
       "keywords": [
+        "@interactive-os/json-document",
         "draft",
         "field",
         "form",
-        "headless",
-        "zod-crud"
+        "headless"
       ]
     },
     {
       "path": "packages/id-resolver",
-      "name": "@zod-crud/id-resolver",
+      "name": "@interactive-os/json-document-id-resolver",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official stable id resolver extension functions for locating zod-crud document nodes by scope and id.",
+      "description": "Official stable id resolver extension functions for locating json-document document nodes by scope and id.",
       "license": "MIT",
-      "summary": "Official headless stable id resolver extension for `zod-crud` documents.",
+      "summary": "Official headless stable id resolver extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "resolve scoped stable ids to current JSON Pointers",
         "notFor": "id generation, relation graphs, routing, or server identity"
@@ -264,393 +264,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "editing",
         "headless",
         "id",
-        "json",
-        "zod-crud"
+        "json"
       ]
     },
     {
-      "path": "packages/outline",
-      "name": "@zod-crud/outline",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official outline tree and structure editing extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless outline tree and structure editing extension for `zod-crud`\ndocuments.",
-      "guidance": {
-        "useFor": "project and edit nested document outline structures",
-        "notFor": "Figma layer panels without a tree schema adapter"
-      },
-      "publicExports": [
-        "Outline",
-        "OutlineEditChange",
-        "OutlineEditChangeResult",
-        "OutlineEditError",
-        "OutlineEditErrorCode",
-        "OutlineEditResult",
-        "OutlineError",
-        "OutlineErrorCode",
-        "OutlineNode",
-        "OutlineResult",
-        "OutlineSource",
-        "OutlineStructureOptions",
-        "OutlineTreeOptions",
-        "canDemoteOutline",
-        "canPromoteOutline",
-        "createOutline",
-        "demoteOutline",
-        "promoteOutline",
-        "readOutline"
-      ],
-      "publicExportCount": 19,
-      "keywords": [
-        "headless",
-        "markdown",
-        "outline",
-        "outliner",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/patch-log",
-      "name": "@zod-crud/patch-log",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official patch log and replay extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless patch recording and replay extension for `zod-crud`\ndocuments.",
-      "guidance": {
-        "useFor": "record and replay applied JSON Patch records",
-        "notFor": "product activity feeds or audit authorization"
-      },
-      "publicExports": [
-        "PatchLog",
-        "PatchLogEntry",
-        "PatchLogReplayCommitOptions",
-        "PatchLogReplayMetadataOption",
-        "PatchLogReplayMode",
-        "PatchLogReplayOptions",
-        "PatchLogReplayResult",
-        "PatchLogReplayStep",
-        "createPatchLog"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "headless",
-        "log",
-        "patch",
-        "replay",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/patch-preview",
-      "name": "@zod-crud/patch-preview",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official patch preview extension functions for dry-running zod-crud document patches.",
-      "license": "MIT",
-      "summary": "Official headless patch preview extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "preview patch effects before confirmation",
-        "notFor": "visual diff rendering"
-      },
-      "publicExports": [
-        "PatchPreview",
-        "PatchPreviewError",
-        "PatchPreviewErrorCode",
-        "PatchPreviewOk",
-        "PatchPreviewOptions",
-        "PatchPreviewResult",
-        "createPatchPreview",
-        "previewPatch"
-      ],
-      "publicExportCount": 8,
-      "keywords": [
-        "dry-run",
-        "headless",
-        "patch",
-        "preview",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/persist-web",
-      "name": "@zod-crud/persist-web",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official web persistence extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless web persistence extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "save and restore documents in browser storage-like hosts",
-        "notFor": "server sync, auth, or conflict resolution"
-      },
-      "publicExports": [
-        "CreateDocumentPersistenceOptions",
-        "DocumentPersistence",
-        "DocumentPersistenceClearOk",
-        "DocumentPersistenceClearResult",
-        "DocumentPersistenceCodec",
-        "DocumentPersistenceEnvelope",
-        "DocumentPersistenceError",
-        "DocumentPersistenceErrorCode",
-        "DocumentPersistenceHost",
-        "DocumentPersistenceLoadError",
-        "DocumentPersistencePayload",
-        "DocumentPersistenceRestoreOk",
-        "DocumentPersistenceRestoreOptions",
-        "DocumentPersistenceRestoreResult",
-        "DocumentPersistenceSaveOk",
-        "DocumentPersistenceSaveResult",
-        "DocumentPersistenceWatchEvent",
-        "DocumentPersistenceWatchHandle",
-        "DocumentPersistenceWatchOptions",
-        "DocumentPersistenceWatchStatus",
-        "WEB_PERSISTENCE_KIND",
-        "WEB_PERSISTENCE_VERSION",
-        "createDocumentPersistence",
-        "defaultDocumentPersistenceCodec"
-      ],
-      "publicExportCount": 24,
-      "keywords": [
-        "headless",
-        "json",
-        "persistence",
-        "web",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/proposed-changes",
-      "name": "@zod-crud/proposed-changes",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official proposed document change review extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless proposed document change review extension for `zod-crud`\ndocuments.",
-      "guidance": {
-        "useFor": "review, accept, or reject proposed document patches",
-        "notFor": "slash commands or mention autocomplete"
-      },
-      "publicExports": [
-        "ProposedChange",
-        "ProposedChangeAcceptResult",
-        "ProposedChangeAuditData",
-        "ProposedChangeError",
-        "ProposedChangeErrorCode",
-        "ProposedChangeFilter",
-        "ProposedChangeGuard",
-        "ProposedChangeInput",
-        "ProposedChangeListener",
-        "ProposedChangePlan",
-        "ProposedChangePlanResult",
-        "ProposedChangeResult",
-        "ProposedChangeSnapshot",
-        "ProposedChangeStatus",
-        "ProposedChanges",
-        "ProposedChangesOptions",
-        "canAcceptChange",
-        "canProposeChange",
-        "createProposedChanges"
-      ],
-      "publicExportCount": 19,
-      "keywords": [
-        "headless",
-        "patch",
-        "proposed-changes",
-        "review",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/protected-ranges",
-      "name": "@zod-crud/protected-ranges",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official protected range guard extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless protected range guard extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "guard edits to protected JSON Pointer ranges",
-        "notFor": "2D spreadsheet selection UI or server authorization"
-      },
-      "publicExports": [
-        "ProtectedRange",
-        "ProtectedRangeCapabilityResult",
-        "ProtectedRangeEditResult",
-        "ProtectedRangeError",
-        "ProtectedRangeErrorCode",
-        "ProtectedRangeOperation",
-        "ProtectedRangePasteResult",
-        "ProtectedRangeSummary",
-        "ProtectedRanges",
-        "canDeleteProtectedRange",
-        "canInsertProtectedRange",
-        "canMoveProtectedRange",
-        "canPasteProtectedRange",
-        "canPatchProtectedRanges",
-        "canReplaceProtectedRange",
-        "createProtectedRanges",
-        "deleteProtectedRange",
-        "insertProtectedRange",
-        "moveProtectedRange",
-        "pasteProtectedRange",
-        "patchProtectedRanges",
-        "replaceProtectedRange"
-      ],
-      "publicExportCount": 22,
-      "keywords": [
-        "headless",
-        "lock",
-        "protected",
-        "ranges",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/schema-form",
-      "name": "@zod-crud/schema-form",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official schema-backed field descriptor extension functions for zod-crud documents; no rendered form UI.",
-      "license": "MIT",
-      "summary": "Official headless schema-backed field descriptor extension for `zod-crud`\ndocuments.",
-      "guidance": {
-        "useFor": "derive schema-backed field descriptors",
-        "notFor": "form rendering or input widgets"
-      },
-      "publicExports": [
-        "SchemaFormContainerKind",
-        "SchemaFormError",
-        "SchemaFormErrorCode",
-        "SchemaFormField",
-        "SchemaFormResult",
-        "SchemaFormTreeField",
-        "SchemaFormTreeResult",
-        "createSchemaForm",
-        "createSchemaFormTree"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "field",
-        "form",
-        "headless",
-        "schema",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/search-replace",
-      "name": "@zod-crud/search-replace",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official search and replace extension functions for text fields in zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless search and replace extension for text fields in `zod-crud`\ndocuments.",
-      "guidance": {
-        "useFor": "find and replace text across document string fields",
-        "notFor": "regex engines, rendered text extraction, or search UI"
-      },
-      "publicExports": [
-        "SearchReplace",
-        "SearchReplaceApplyResult",
-        "SearchReplaceChange",
-        "SearchReplaceChangeResult",
-        "SearchReplaceError",
-        "SearchReplaceErrorCode",
-        "SearchReplaceMatch",
-        "SearchReplaceMatchApplyResult",
-        "SearchReplaceMatchChange",
-        "SearchReplaceMatchChangeResult",
-        "SearchReplaceMatchTarget",
-        "SearchReplaceOptions",
-        "SearchReplaceResult",
-        "SearchReplaceSnapshot",
-        "SearchReplaceTargetFilter",
-        "SearchReplaceTextTarget",
-        "TextMatchRange",
-        "canReplaceAllText",
-        "canReplaceTextMatch",
-        "createSearchReplace",
-        "findText",
-        "replaceAllText",
-        "replaceTextMatch"
-      ],
-      "publicExportCount": 23,
-      "keywords": [
-        "headless",
-        "replace",
-        "search",
-        "text",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/snippets",
-      "name": "@zod-crud/snippets",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official snippet insertion extension functions for reusable JSON payloads in zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless snippet insertion extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "insert reusable JSON payloads with schema-safe paste checks",
-        "notFor": "slash palette UI or snippet storage"
-      },
-      "publicExports": [
-        "Snippet",
-        "SnippetError",
-        "SnippetErrorCode",
-        "SnippetInsertOptions",
-        "SnippetInsertResult",
-        "SnippetPlan",
-        "SnippetPlanResult",
-        "SnippetSummary",
-        "Snippets",
-        "canInsertSnippet",
-        "createSnippets",
-        "insertSnippet"
-      ],
-      "publicExportCount": 12,
-      "keywords": [
-        "headless",
-        "insert",
-        "snippets",
-        "template",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/zod-crud",
-      "name": "zod-crud",
+      "path": "packages/json-document",
+      "name": "@interactive-os/json-document",
       "status": "core",
       "private": false,
       "publishable": true,
       "version": "1.0.0",
       "description": "Headless JSON editing primitives guarded by Zod schemas.",
       "license": "MIT",
-      "summary": "zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다.",
+      "summary": "json-document는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document\nengine입니다.",
       "guidance": null,
       "publicExports": [
         "ClipboardCopyError",
@@ -678,12 +308,12 @@ export const repoCatalog = {
         "HistoryTransactionOptions",
         "JSONCapabilityResult",
         "JSONChangeMetadata",
-        "JSONCrudError",
         "JSONDocument",
         "JSONDocumentCommitOptions",
         "JSONDocumentDuplicateError",
         "JSONDocumentDuplicateOptions",
         "JSONDocumentDuplicateResult",
+        "JSONDocumentError",
         "JSONDocumentHistory",
         "JSONDocumentOptions",
         "JSONDocumentPasteOptions",
@@ -779,283 +409,17 @@ export const repoCatalog = {
         "undo",
         "zod"
       ]
-    }
-  ],
-  "officialExtensions": [
-    {
-      "path": "packages/bulk-edit",
-      "name": "@zod-crud/bulk-edit",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official JSONPath bulk editing extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless JSONPath bulk editing extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "apply JSONPath replace/delete operations to many document positions",
-        "notFor": "rendered text search UI or product workflow approval"
-      },
-      "publicExports": [
-        "BulkEdit",
-        "BulkEditCanReplaceAll",
-        "BulkEditChange",
-        "BulkEditChangeResult",
-        "BulkEditError",
-        "BulkEditErrorCode",
-        "BulkEditMatch",
-        "BulkEditReplaceAll",
-        "BulkEditResult",
-        "BulkEditValueMapper",
-        "canDeleteAll",
-        "canReplaceAll",
-        "createBulkEdit",
-        "deleteAll",
-        "replaceAll"
-      ],
-      "publicExportCount": 15,
-      "keywords": [
-        "bulk-edit",
-        "headless",
-        "json",
-        "jsonpath",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/clipboard-web",
-      "name": "@zod-crud/clipboard-web",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Web clipboard extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Web clipboard extension functions for `zod-crud`.",
-      "guidance": {
-        "useFor": "bridge zod-crud clipboard payloads to the browser clipboard",
-        "notFor": "TSV/CSV spreadsheet paste engines"
-      },
-      "publicExports": [
-        "CreateWebClipboardOptions",
-        "JSONCapabilityError",
-        "TextClipboardHost",
-        "WEB_CLIPBOARD_KIND",
-        "WEB_CLIPBOARD_VERSION",
-        "WebClipboard",
-        "WebClipboardCanPasteResult",
-        "WebClipboardCodec",
-        "WebClipboardCopyResult",
-        "WebClipboardCutResult",
-        "WebClipboardEnvelope",
-        "WebClipboardError",
-        "WebClipboardErrorCode",
-        "WebClipboardPasteResult",
-        "WebClipboardPayload",
-        "WebClipboardReadResult",
-        "WebClipboardWriteOk",
-        "WebClipboardWriteResult",
-        "createWebClipboard",
-        "defaultWebClipboardCodec"
-      ],
-      "publicExportCount": 20,
-      "keywords": [
-        "clipboard",
-        "headless",
-        "json",
-        "web",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/collection",
-      "name": "@zod-crud/collection",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official collection editing extension functions for ordered JSON array item commands in zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless collection editing extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "edit ordered JSON arrays with item-level commands",
-        "notFor": "database collections or rendered list UI"
-      },
-      "publicExports": [
-        "Collection",
-        "CollectionCapabilityResult",
-        "CollectionDuplicateOptions",
-        "CollectionDuplicateResult",
-        "CollectionEditResult",
-        "CollectionError",
-        "CollectionErrorCode",
-        "CollectionSource",
-        "createCollection"
-      ],
-      "publicExportCount": 9,
-      "keywords": [
-        "collection",
-        "editing",
-        "headless",
-        "json",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/comments",
-      "name": "@zod-crud/comments",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official comments extension functions for review notes anchored to zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless comments extension for review notes anchored to `zod-crud`\ndocuments.",
-      "guidance": {
-        "useFor": "anchor review comments to document structure",
-        "notFor": "comment UI, moderation, or author storage"
-      },
-      "publicExports": [
-        "Comment",
-        "CommentError",
-        "CommentErrorCode",
-        "CommentFilter",
-        "CommentInput",
-        "CommentListResult",
-        "CommentListener",
-        "CommentPointerFilter",
-        "CommentResult",
-        "CommentSnapshot",
-        "CommentStatus",
-        "CommentUpdate",
-        "Comments",
-        "createComments"
-      ],
-      "publicExportCount": 14,
-      "keywords": [
-        "comment",
-        "headless",
-        "review",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/dirty-state",
-      "name": "@zod-crud/dirty-state",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official dirty state tracking extension functions for zod-crud documents.",
-      "license": "MIT",
-      "summary": "Official headless dirty state tracking extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "compare a document to a clean baseline",
-        "notFor": "persistence or server save status"
-      },
-      "publicExports": [
-        "CreateDirtyStateOptions",
-        "DirtyState",
-        "DirtyStateComparator",
-        "DirtyStateDiscardOptions",
-        "DirtyStateListener",
-        "DirtyStateSnapshot",
-        "createDirtyState"
-      ],
-      "publicExportCount": 7,
-      "keywords": [
-        "dirty",
-        "editor",
-        "headless",
-        "json",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/form-draft",
-      "name": "@zod-crud/form-draft",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official form draft extension functions for temporary invalid input before committing valid zod-crud JSON.",
-      "license": "MIT",
-      "summary": "Official headless form draft extension for temporary input that is not ready to\nenter a schema-valid `zod-crud` document.",
-      "guidance": {
-        "useFor": "hold temporary invalid form input before committing valid JSON",
-        "notFor": "rendered form components"
-      },
-      "publicExports": [
-        "CreateFormDraftOptions",
-        "FormDraftBatchChange",
-        "FormDraftBatchCommitResult",
-        "FormDraftBatchResult",
-        "FormDraftCommitResult",
-        "FormDraftError",
-        "FormDraftErrorCode",
-        "FormDraftListener",
-        "FormDraftParseContext",
-        "FormDraftParseResult",
-        "FormDraftParser",
-        "FormDraftSetResult",
-        "FormDraftSnapshot",
-        "FormDrafts",
-        "createFormDraft"
-      ],
-      "publicExportCount": 15,
-      "keywords": [
-        "draft",
-        "field",
-        "form",
-        "headless",
-        "zod-crud"
-      ]
-    },
-    {
-      "path": "packages/id-resolver",
-      "name": "@zod-crud/id-resolver",
-      "status": "official-extension",
-      "private": false,
-      "publishable": true,
-      "version": "0.1.0",
-      "description": "Official stable id resolver extension functions for locating zod-crud document nodes by scope and id.",
-      "license": "MIT",
-      "summary": "Official headless stable id resolver extension for `zod-crud` documents.",
-      "guidance": {
-        "useFor": "resolve scoped stable ids to current JSON Pointers",
-        "notFor": "id generation, relation graphs, routing, or server identity"
-      },
-      "publicExports": [
-        "IdResolver",
-        "IdResolverDiagnostic",
-        "IdResolverDiagnosticCode",
-        "IdResolverEntry",
-        "IdResolverOptions",
-        "IdResolverScope",
-        "IdResolverSnapshot",
-        "ResolveIdErrorCode",
-        "ResolveIdResult",
-        "createIdResolver"
-      ],
-      "publicExportCount": 10,
-      "keywords": [
-        "editing",
-        "headless",
-        "id",
-        "json",
-        "zod-crud"
-      ]
     },
     {
       "path": "packages/outline",
-      "name": "@zod-crud/outline",
+      "name": "@interactive-os/json-document-outline",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official outline tree and structure editing extension functions for zod-crud documents.",
+      "description": "Official outline tree and structure editing extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless outline tree and structure editing extension for `zod-crud`\ndocuments.",
+      "summary": "Official headless outline tree and structure editing extension for `@interactive-os/json-document`\ndocuments.",
       "guidance": {
         "useFor": "project and edit nested document outline structures",
         "notFor": "Figma layer panels without a tree schema adapter"
@@ -1083,23 +447,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 19,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "markdown",
         "outline",
-        "outliner",
-        "zod-crud"
+        "outliner"
       ]
     },
     {
       "path": "packages/patch-log",
-      "name": "@zod-crud/patch-log",
+      "name": "@interactive-os/json-document-patch-log",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official patch log and replay extension functions for zod-crud documents.",
+      "description": "Official patch log and replay extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless patch recording and replay extension for `zod-crud`\ndocuments.",
+      "summary": "Official headless patch recording and replay extension for `@interactive-os/json-document`\ndocuments.",
       "guidance": {
         "useFor": "record and replay applied JSON Patch records",
         "notFor": "product activity feeds or audit authorization"
@@ -1117,23 +481,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "log",
         "patch",
-        "replay",
-        "zod-crud"
+        "replay"
       ]
     },
     {
       "path": "packages/patch-preview",
-      "name": "@zod-crud/patch-preview",
+      "name": "@interactive-os/json-document-patch-preview",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official patch preview extension functions for dry-running zod-crud document patches.",
+      "description": "Official patch preview extension functions for dry-running json-document document patches.",
       "license": "MIT",
-      "summary": "Official headless patch preview extension for `zod-crud` documents.",
+      "summary": "Official headless patch preview extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "preview patch effects before confirmation",
         "notFor": "visual diff rendering"
@@ -1150,23 +514,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 8,
       "keywords": [
+        "@interactive-os/json-document",
         "dry-run",
         "headless",
         "patch",
-        "preview",
-        "zod-crud"
+        "preview"
       ]
     },
     {
       "path": "packages/persist-web",
-      "name": "@zod-crud/persist-web",
+      "name": "@interactive-os/json-document-persist-web",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official web persistence extension functions for zod-crud documents.",
+      "description": "Official web persistence extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless web persistence extension for `zod-crud` documents.",
+      "summary": "Official headless web persistence extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "save and restore documents in browser storage-like hosts",
         "notFor": "server sync, auth, or conflict resolution"
@@ -1199,23 +563,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 24,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "json",
         "persistence",
-        "web",
-        "zod-crud"
+        "web"
       ]
     },
     {
       "path": "packages/proposed-changes",
-      "name": "@zod-crud/proposed-changes",
+      "name": "@interactive-os/json-document-proposed-changes",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official proposed document change review extension functions for zod-crud documents.",
+      "description": "Official proposed document change review extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless proposed document change review extension for `zod-crud`\ndocuments.",
+      "summary": "Official headless proposed document change review extension for `@interactive-os/json-document`\ndocuments.",
       "guidance": {
         "useFor": "review, accept, or reject proposed document patches",
         "notFor": "slash commands or mention autocomplete"
@@ -1243,23 +607,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 19,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "patch",
         "proposed-changes",
-        "review",
-        "zod-crud"
+        "review"
       ]
     },
     {
       "path": "packages/protected-ranges",
-      "name": "@zod-crud/protected-ranges",
+      "name": "@interactive-os/json-document-protected-ranges",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official protected range guard extension functions for zod-crud documents.",
+      "description": "Official protected range guard extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Official headless protected range guard extension for `zod-crud` documents.",
+      "summary": "Official headless protected range guard extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "guard edits to protected JSON Pointer ranges",
         "notFor": "2D spreadsheet selection UI or server authorization"
@@ -1290,23 +654,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 22,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "lock",
         "protected",
-        "ranges",
-        "zod-crud"
+        "ranges"
       ]
     },
     {
       "path": "packages/schema-form",
-      "name": "@zod-crud/schema-form",
+      "name": "@interactive-os/json-document-schema-form",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official schema-backed field descriptor extension functions for zod-crud documents; no rendered form UI.",
+      "description": "Official schema-backed field descriptor extension functions for json-document documents; no rendered form UI.",
       "license": "MIT",
-      "summary": "Official headless schema-backed field descriptor extension for `zod-crud`\ndocuments.",
+      "summary": "Official headless schema-backed field descriptor extension for `@interactive-os/json-document`\ndocuments.",
       "guidance": {
         "useFor": "derive schema-backed field descriptors",
         "notFor": "form rendering or input widgets"
@@ -1324,23 +688,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "field",
         "form",
         "headless",
-        "schema",
-        "zod-crud"
+        "schema"
       ]
     },
     {
       "path": "packages/search-replace",
-      "name": "@zod-crud/search-replace",
+      "name": "@interactive-os/json-document-search-replace",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official search and replace extension functions for text fields in zod-crud documents.",
+      "description": "Official search and replace extension functions for text fields in json-document documents.",
       "license": "MIT",
-      "summary": "Official headless search and replace extension for text fields in `zod-crud`\ndocuments.",
+      "summary": "Official headless search and replace extension for text fields in `@interactive-os/json-document`\ndocuments.",
       "guidance": {
         "useFor": "find and replace text across document string fields",
         "notFor": "regex engines, rendered text extraction, or search UI"
@@ -1372,23 +736,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 23,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "replace",
         "search",
-        "text",
-        "zod-crud"
+        "text"
       ]
     },
     {
       "path": "packages/snippets",
-      "name": "@zod-crud/snippets",
+      "name": "@interactive-os/json-document-snippets",
       "status": "official-extension",
       "private": false,
       "publishable": true,
       "version": "0.1.0",
-      "description": "Official snippet insertion extension functions for reusable JSON payloads in zod-crud documents.",
+      "description": "Official snippet insertion extension functions for reusable JSON payloads in json-document documents.",
       "license": "MIT",
-      "summary": "Official headless snippet insertion extension for `zod-crud` documents.",
+      "summary": "Official headless snippet insertion extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "insert reusable JSON payloads with schema-safe paste checks",
         "notFor": "slash palette UI or snippet storage"
@@ -1409,25 +773,661 @@ export const repoCatalog = {
       ],
       "publicExportCount": 12,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "insert",
         "snippets",
-        "template",
-        "zod-crud"
+        "template"
+      ]
+    }
+  ],
+  "officialExtensions": [
+    {
+      "path": "packages/bulk-edit",
+      "name": "@interactive-os/json-document-bulk-edit",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official JSONPath bulk editing extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless JSONPath bulk editing extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "apply JSONPath replace/delete operations to many document positions",
+        "notFor": "rendered text search UI or product workflow approval"
+      },
+      "publicExports": [
+        "BulkEdit",
+        "BulkEditCanReplaceAll",
+        "BulkEditChange",
+        "BulkEditChangeResult",
+        "BulkEditError",
+        "BulkEditErrorCode",
+        "BulkEditMatch",
+        "BulkEditReplaceAll",
+        "BulkEditResult",
+        "BulkEditValueMapper",
+        "canDeleteAll",
+        "canReplaceAll",
+        "createBulkEdit",
+        "deleteAll",
+        "replaceAll"
+      ],
+      "publicExportCount": 15,
+      "keywords": [
+        "@interactive-os/json-document",
+        "bulk-edit",
+        "headless",
+        "json",
+        "jsonpath"
+      ]
+    },
+    {
+      "path": "packages/clipboard-web",
+      "name": "@interactive-os/json-document-clipboard-web",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Web clipboard extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Web clipboard extension functions for `@interactive-os/json-document`.",
+      "guidance": {
+        "useFor": "bridge json-document clipboard payloads to the browser clipboard",
+        "notFor": "TSV/CSV spreadsheet paste engines"
+      },
+      "publicExports": [
+        "CreateWebClipboardOptions",
+        "JSONCapabilityError",
+        "TextClipboardHost",
+        "WEB_CLIPBOARD_KIND",
+        "WEB_CLIPBOARD_VERSION",
+        "WebClipboard",
+        "WebClipboardCanPasteResult",
+        "WebClipboardCodec",
+        "WebClipboardCopyResult",
+        "WebClipboardCutResult",
+        "WebClipboardEnvelope",
+        "WebClipboardError",
+        "WebClipboardErrorCode",
+        "WebClipboardPasteResult",
+        "WebClipboardPayload",
+        "WebClipboardReadResult",
+        "WebClipboardWriteOk",
+        "WebClipboardWriteResult",
+        "createWebClipboard",
+        "defaultWebClipboardCodec"
+      ],
+      "publicExportCount": 20,
+      "keywords": [
+        "@interactive-os/json-document",
+        "clipboard",
+        "headless",
+        "json",
+        "web"
+      ]
+    },
+    {
+      "path": "packages/collection",
+      "name": "@interactive-os/json-document-collection",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official collection editing extension functions for ordered JSON array item commands in json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless collection editing extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "edit ordered JSON arrays with item-level commands",
+        "notFor": "database collections or rendered list UI"
+      },
+      "publicExports": [
+        "Collection",
+        "CollectionCapabilityResult",
+        "CollectionDuplicateOptions",
+        "CollectionDuplicateResult",
+        "CollectionEditResult",
+        "CollectionError",
+        "CollectionErrorCode",
+        "CollectionSource",
+        "createCollection"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "@interactive-os/json-document",
+        "collection",
+        "editing",
+        "headless",
+        "json"
+      ]
+    },
+    {
+      "path": "packages/comments",
+      "name": "@interactive-os/json-document-comments",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official comments extension functions for review notes anchored to json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless comments extension for review notes anchored to `@interactive-os/json-document`\ndocuments.",
+      "guidance": {
+        "useFor": "anchor review comments to document structure",
+        "notFor": "comment UI, moderation, or author storage"
+      },
+      "publicExports": [
+        "Comment",
+        "CommentError",
+        "CommentErrorCode",
+        "CommentFilter",
+        "CommentInput",
+        "CommentListResult",
+        "CommentListener",
+        "CommentPointerFilter",
+        "CommentResult",
+        "CommentSnapshot",
+        "CommentStatus",
+        "CommentUpdate",
+        "Comments",
+        "createComments"
+      ],
+      "publicExportCount": 14,
+      "keywords": [
+        "@interactive-os/json-document",
+        "comment",
+        "headless",
+        "review"
+      ]
+    },
+    {
+      "path": "packages/dirty-state",
+      "name": "@interactive-os/json-document-dirty-state",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official dirty state tracking extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless dirty state tracking extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "compare a document to a clean baseline",
+        "notFor": "persistence or server save status"
+      },
+      "publicExports": [
+        "CreateDirtyStateOptions",
+        "DirtyState",
+        "DirtyStateComparator",
+        "DirtyStateDiscardOptions",
+        "DirtyStateListener",
+        "DirtyStateSnapshot",
+        "createDirtyState"
+      ],
+      "publicExportCount": 7,
+      "keywords": [
+        "@interactive-os/json-document",
+        "dirty",
+        "editor",
+        "headless",
+        "json"
+      ]
+    },
+    {
+      "path": "packages/form-draft",
+      "name": "@interactive-os/json-document-form-draft",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official form draft extension functions for temporary invalid input before committing valid json-document JSON.",
+      "license": "MIT",
+      "summary": "Official headless form draft extension for temporary input that is not ready to\nenter a schema-valid `@interactive-os/json-document` document.",
+      "guidance": {
+        "useFor": "hold temporary invalid form input before committing valid JSON",
+        "notFor": "rendered form components"
+      },
+      "publicExports": [
+        "CreateFormDraftOptions",
+        "FormDraftBatchChange",
+        "FormDraftBatchCommitResult",
+        "FormDraftBatchResult",
+        "FormDraftCommitResult",
+        "FormDraftError",
+        "FormDraftErrorCode",
+        "FormDraftListener",
+        "FormDraftParseContext",
+        "FormDraftParseResult",
+        "FormDraftParser",
+        "FormDraftSetResult",
+        "FormDraftSnapshot",
+        "FormDrafts",
+        "createFormDraft"
+      ],
+      "publicExportCount": 15,
+      "keywords": [
+        "@interactive-os/json-document",
+        "draft",
+        "field",
+        "form",
+        "headless"
+      ]
+    },
+    {
+      "path": "packages/id-resolver",
+      "name": "@interactive-os/json-document-id-resolver",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official stable id resolver extension functions for locating json-document document nodes by scope and id.",
+      "license": "MIT",
+      "summary": "Official headless stable id resolver extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "resolve scoped stable ids to current JSON Pointers",
+        "notFor": "id generation, relation graphs, routing, or server identity"
+      },
+      "publicExports": [
+        "IdResolver",
+        "IdResolverDiagnostic",
+        "IdResolverDiagnosticCode",
+        "IdResolverEntry",
+        "IdResolverOptions",
+        "IdResolverScope",
+        "IdResolverSnapshot",
+        "ResolveIdErrorCode",
+        "ResolveIdResult",
+        "createIdResolver"
+      ],
+      "publicExportCount": 10,
+      "keywords": [
+        "@interactive-os/json-document",
+        "editing",
+        "headless",
+        "id",
+        "json"
+      ]
+    },
+    {
+      "path": "packages/outline",
+      "name": "@interactive-os/json-document-outline",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official outline tree and structure editing extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless outline tree and structure editing extension for `@interactive-os/json-document`\ndocuments.",
+      "guidance": {
+        "useFor": "project and edit nested document outline structures",
+        "notFor": "Figma layer panels without a tree schema adapter"
+      },
+      "publicExports": [
+        "Outline",
+        "OutlineEditChange",
+        "OutlineEditChangeResult",
+        "OutlineEditError",
+        "OutlineEditErrorCode",
+        "OutlineEditResult",
+        "OutlineError",
+        "OutlineErrorCode",
+        "OutlineNode",
+        "OutlineResult",
+        "OutlineSource",
+        "OutlineStructureOptions",
+        "OutlineTreeOptions",
+        "canDemoteOutline",
+        "canPromoteOutline",
+        "createOutline",
+        "demoteOutline",
+        "promoteOutline",
+        "readOutline"
+      ],
+      "publicExportCount": 19,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "markdown",
+        "outline",
+        "outliner"
+      ]
+    },
+    {
+      "path": "packages/patch-log",
+      "name": "@interactive-os/json-document-patch-log",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official patch log and replay extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless patch recording and replay extension for `@interactive-os/json-document`\ndocuments.",
+      "guidance": {
+        "useFor": "record and replay applied JSON Patch records",
+        "notFor": "product activity feeds or audit authorization"
+      },
+      "publicExports": [
+        "PatchLog",
+        "PatchLogEntry",
+        "PatchLogReplayCommitOptions",
+        "PatchLogReplayMetadataOption",
+        "PatchLogReplayMode",
+        "PatchLogReplayOptions",
+        "PatchLogReplayResult",
+        "PatchLogReplayStep",
+        "createPatchLog"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "log",
+        "patch",
+        "replay"
+      ]
+    },
+    {
+      "path": "packages/patch-preview",
+      "name": "@interactive-os/json-document-patch-preview",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official patch preview extension functions for dry-running json-document document patches.",
+      "license": "MIT",
+      "summary": "Official headless patch preview extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "preview patch effects before confirmation",
+        "notFor": "visual diff rendering"
+      },
+      "publicExports": [
+        "PatchPreview",
+        "PatchPreviewError",
+        "PatchPreviewErrorCode",
+        "PatchPreviewOk",
+        "PatchPreviewOptions",
+        "PatchPreviewResult",
+        "createPatchPreview",
+        "previewPatch"
+      ],
+      "publicExportCount": 8,
+      "keywords": [
+        "@interactive-os/json-document",
+        "dry-run",
+        "headless",
+        "patch",
+        "preview"
+      ]
+    },
+    {
+      "path": "packages/persist-web",
+      "name": "@interactive-os/json-document-persist-web",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official web persistence extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless web persistence extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "save and restore documents in browser storage-like hosts",
+        "notFor": "server sync, auth, or conflict resolution"
+      },
+      "publicExports": [
+        "CreateDocumentPersistenceOptions",
+        "DocumentPersistence",
+        "DocumentPersistenceClearOk",
+        "DocumentPersistenceClearResult",
+        "DocumentPersistenceCodec",
+        "DocumentPersistenceEnvelope",
+        "DocumentPersistenceError",
+        "DocumentPersistenceErrorCode",
+        "DocumentPersistenceHost",
+        "DocumentPersistenceLoadError",
+        "DocumentPersistencePayload",
+        "DocumentPersistenceRestoreOk",
+        "DocumentPersistenceRestoreOptions",
+        "DocumentPersistenceRestoreResult",
+        "DocumentPersistenceSaveOk",
+        "DocumentPersistenceSaveResult",
+        "DocumentPersistenceWatchEvent",
+        "DocumentPersistenceWatchHandle",
+        "DocumentPersistenceWatchOptions",
+        "DocumentPersistenceWatchStatus",
+        "WEB_PERSISTENCE_KIND",
+        "WEB_PERSISTENCE_VERSION",
+        "createDocumentPersistence",
+        "defaultDocumentPersistenceCodec"
+      ],
+      "publicExportCount": 24,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "json",
+        "persistence",
+        "web"
+      ]
+    },
+    {
+      "path": "packages/proposed-changes",
+      "name": "@interactive-os/json-document-proposed-changes",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official proposed document change review extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless proposed document change review extension for `@interactive-os/json-document`\ndocuments.",
+      "guidance": {
+        "useFor": "review, accept, or reject proposed document patches",
+        "notFor": "slash commands or mention autocomplete"
+      },
+      "publicExports": [
+        "ProposedChange",
+        "ProposedChangeAcceptResult",
+        "ProposedChangeAuditData",
+        "ProposedChangeError",
+        "ProposedChangeErrorCode",
+        "ProposedChangeFilter",
+        "ProposedChangeGuard",
+        "ProposedChangeInput",
+        "ProposedChangeListener",
+        "ProposedChangePlan",
+        "ProposedChangePlanResult",
+        "ProposedChangeResult",
+        "ProposedChangeSnapshot",
+        "ProposedChangeStatus",
+        "ProposedChanges",
+        "ProposedChangesOptions",
+        "canAcceptChange",
+        "canProposeChange",
+        "createProposedChanges"
+      ],
+      "publicExportCount": 19,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "patch",
+        "proposed-changes",
+        "review"
+      ]
+    },
+    {
+      "path": "packages/protected-ranges",
+      "name": "@interactive-os/json-document-protected-ranges",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official protected range guard extension functions for json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless protected range guard extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "guard edits to protected JSON Pointer ranges",
+        "notFor": "2D spreadsheet selection UI or server authorization"
+      },
+      "publicExports": [
+        "ProtectedRange",
+        "ProtectedRangeCapabilityResult",
+        "ProtectedRangeEditResult",
+        "ProtectedRangeError",
+        "ProtectedRangeErrorCode",
+        "ProtectedRangeOperation",
+        "ProtectedRangePasteResult",
+        "ProtectedRangeSummary",
+        "ProtectedRanges",
+        "canDeleteProtectedRange",
+        "canInsertProtectedRange",
+        "canMoveProtectedRange",
+        "canPasteProtectedRange",
+        "canPatchProtectedRanges",
+        "canReplaceProtectedRange",
+        "createProtectedRanges",
+        "deleteProtectedRange",
+        "insertProtectedRange",
+        "moveProtectedRange",
+        "pasteProtectedRange",
+        "patchProtectedRanges",
+        "replaceProtectedRange"
+      ],
+      "publicExportCount": 22,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "lock",
+        "protected",
+        "ranges"
+      ]
+    },
+    {
+      "path": "packages/schema-form",
+      "name": "@interactive-os/json-document-schema-form",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official schema-backed field descriptor extension functions for json-document documents; no rendered form UI.",
+      "license": "MIT",
+      "summary": "Official headless schema-backed field descriptor extension for `@interactive-os/json-document`\ndocuments.",
+      "guidance": {
+        "useFor": "derive schema-backed field descriptors",
+        "notFor": "form rendering or input widgets"
+      },
+      "publicExports": [
+        "SchemaFormContainerKind",
+        "SchemaFormError",
+        "SchemaFormErrorCode",
+        "SchemaFormField",
+        "SchemaFormResult",
+        "SchemaFormTreeField",
+        "SchemaFormTreeResult",
+        "createSchemaForm",
+        "createSchemaFormTree"
+      ],
+      "publicExportCount": 9,
+      "keywords": [
+        "@interactive-os/json-document",
+        "field",
+        "form",
+        "headless",
+        "schema"
+      ]
+    },
+    {
+      "path": "packages/search-replace",
+      "name": "@interactive-os/json-document-search-replace",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official search and replace extension functions for text fields in json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless search and replace extension for text fields in `@interactive-os/json-document`\ndocuments.",
+      "guidance": {
+        "useFor": "find and replace text across document string fields",
+        "notFor": "regex engines, rendered text extraction, or search UI"
+      },
+      "publicExports": [
+        "SearchReplace",
+        "SearchReplaceApplyResult",
+        "SearchReplaceChange",
+        "SearchReplaceChangeResult",
+        "SearchReplaceError",
+        "SearchReplaceErrorCode",
+        "SearchReplaceMatch",
+        "SearchReplaceMatchApplyResult",
+        "SearchReplaceMatchChange",
+        "SearchReplaceMatchChangeResult",
+        "SearchReplaceMatchTarget",
+        "SearchReplaceOptions",
+        "SearchReplaceResult",
+        "SearchReplaceSnapshot",
+        "SearchReplaceTargetFilter",
+        "SearchReplaceTextTarget",
+        "TextMatchRange",
+        "canReplaceAllText",
+        "canReplaceTextMatch",
+        "createSearchReplace",
+        "findText",
+        "replaceAllText",
+        "replaceTextMatch"
+      ],
+      "publicExportCount": 23,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "replace",
+        "search",
+        "text"
+      ]
+    },
+    {
+      "path": "packages/snippets",
+      "name": "@interactive-os/json-document-snippets",
+      "status": "official-extension",
+      "private": false,
+      "publishable": true,
+      "version": "0.1.0",
+      "description": "Official snippet insertion extension functions for reusable JSON payloads in json-document documents.",
+      "license": "MIT",
+      "summary": "Official headless snippet insertion extension for `@interactive-os/json-document` documents.",
+      "guidance": {
+        "useFor": "insert reusable JSON payloads with schema-safe paste checks",
+        "notFor": "slash palette UI or snippet storage"
+      },
+      "publicExports": [
+        "Snippet",
+        "SnippetError",
+        "SnippetErrorCode",
+        "SnippetInsertOptions",
+        "SnippetInsertResult",
+        "SnippetPlan",
+        "SnippetPlanResult",
+        "SnippetSummary",
+        "Snippets",
+        "canInsertSnippet",
+        "createSnippets",
+        "insertSnippet"
+      ],
+      "publicExportCount": 12,
+      "keywords": [
+        "@interactive-os/json-document",
+        "headless",
+        "insert",
+        "snippets",
+        "template"
       ]
     }
   ],
   "labExtensions": [
     {
       "path": "labs/extensions/apply-defaults",
-      "name": "@zod-crud/apply-defaults",
+      "name": "@interactive-os/json-document-apply-defaults",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab apply-defaults (add missing object keys from defaults) extension functions for zod-crud documents.",
+      "description": "Lab apply-defaults (add missing object keys from defaults) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab apply-defaults extension for `zod-crud` documents.",
+      "summary": "Lab apply-defaults extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "add missing object keys from a defaults map without overwriting existing ones",
         "notFor": "filling existing empty values, removing unknown keys, or deep merge"
@@ -1444,24 +1444,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 8,
       "keywords": [
+        "@interactive-os/json-document",
         "defaults",
         "ensure",
         "headless",
         "json",
-        "object",
-        "zod-crud"
+        "object"
       ]
     },
     {
       "path": "labs/extensions/autosave",
-      "name": "@zod-crud/autosave",
+      "name": "@interactive-os/json-document-autosave",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab autosave orchestration extension functions for zod-crud documents.",
+      "description": "Lab autosave orchestration extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab autosave extension for `zod-crud` documents.",
+      "summary": "Lab autosave extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "schedule host-owned saves after document changes",
         "notFor": "retry queues, offline sync, or server conflict resolution"
@@ -1482,22 +1482,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 12,
       "keywords": [
+        "@interactive-os/json-document",
         "autosave",
         "draft",
-        "headless",
-        "zod-crud"
+        "headless"
       ]
     },
     {
       "path": "labs/extensions/batch-update",
-      "name": "@zod-crud/batch-update",
+      "name": "@interactive-os/json-document-batch-update",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab batch-update (set a field across selected items) extension functions for zod-crud documents.",
+      "description": "Lab batch-update (set a field across selected items) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab batch-update extension for `zod-crud` documents.",
+      "summary": "Lab batch-update extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "set a field across a list of selected item pointers to a constant or computed value",
         "notFor": "selecting which items to edit, or JSONPath query-driven replacement"
@@ -1516,24 +1516,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "batch",
         "headless",
         "json",
         "selection",
-        "set",
-        "zod-crud"
+        "set"
       ]
     },
     {
       "path": "labs/extensions/bookmarks",
-      "name": "@zod-crud/bookmarks",
+      "name": "@interactive-os/json-document-bookmarks",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab bookmark tracking extension functions for zod-crud documents.",
+      "description": "Lab bookmark tracking extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Headless bookmark tracking extension for `zod-crud` documents.",
+      "summary": "Headless bookmark tracking extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "keep named JSON Pointer locations stable across edits",
         "notFor": "browser bookmarks or route state"
@@ -1550,23 +1550,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 8,
       "keywords": [
+        "@interactive-os/json-document",
         "bookmark",
         "headless",
         "pointer",
-        "tracking",
-        "zod-crud"
+        "tracking"
       ]
     },
     {
       "path": "labs/extensions/calculated-fields",
-      "name": "@zod-crud/calculated-fields",
+      "name": "@interactive-os/json-document-calculated-fields",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab calculated-fields (sync host-calculated fields) extension functions for zod-crud documents.",
+      "description": "Lab calculated-fields (sync host-calculated fields) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab calculated field extension for `zod-crud` documents.",
+      "summary": "Lab calculated field extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "sync host-computed derived JSON fields",
         "notFor": "formula languages or dependency runtimes"
@@ -1587,22 +1587,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 12,
       "keywords": [
+        "@interactive-os/json-document",
         "computed",
         "formula",
-        "headless",
-        "zod-crud"
+        "headless"
       ]
     },
     {
       "path": "labs/extensions/change-case",
-      "name": "@zod-crud/change-case",
+      "name": "@interactive-os/json-document-change-case",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab change-case (case/whitespace transforms on a string field) extension functions for zod-crud documents.",
+      "description": "Lab change-case (case/whitespace transforms on a string field) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab change-case extension for `zod-crud` documents.",
+      "summary": "Lab change-case extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
         "notFor": "locale-aware casing, rich text formatting toolbars, or find/replace"
@@ -1620,24 +1620,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "case",
         "headless",
         "json",
         "text",
-        "transform",
-        "zod-crud"
+        "transform"
       ]
     },
     {
       "path": "labs/extensions/checkpoints",
-      "name": "@zod-crud/checkpoints",
+      "name": "@interactive-os/json-document-checkpoints",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab checkpoint snapshot extension functions for zod-crud documents.",
+      "description": "Lab checkpoint snapshot extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab checkpoint extension for `zod-crud` documents.",
+      "summary": "Lab checkpoint extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "name and restore document snapshots",
         "notFor": "durable version graphs or cloud backup"
@@ -1659,23 +1659,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 13,
       "keywords": [
+        "@interactive-os/json-document",
         "checkpoint",
         "headless",
         "restore",
-        "snapshot",
-        "zod-crud"
+        "snapshot"
       ]
     },
     {
       "path": "labs/extensions/clear-contents",
-      "name": "@zod-crud/clear-contents",
+      "name": "@interactive-os/json-document-clear-contents",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab clear-contents (reset fields to schema-derived empties) extension functions for zod-crud documents.",
+      "description": "Lab clear-contents (reset fields to schema-derived empties) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab clear-contents extension for `zod-crud` documents.",
+      "summary": "Lab clear-contents extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "reset selected fields to schema-derived empty values, keeping structure",
         "notFor": "structural delete, caller-supplied bulk replace, or enum/object default policy"
@@ -1694,22 +1694,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "clear",
         "empty",
         "headless",
         "json",
-        "reset",
-        "zod-crud"
+        "reset"
       ]
     },
     {
       "path": "labs/extensions/convert-block-type",
-      "name": "@zod-crud/convert-block-type",
+      "name": "@interactive-os/json-document-convert-block-type",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab block type conversion extension functions for zod-crud documents.",
+      "description": "Lab block type conversion extension functions for json-document documents.",
       "license": "MIT",
       "summary": "Lab extension for converting a JSON block/object from one host-described type to\nanother.",
       "guidance": {
@@ -1732,23 +1732,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 12,
       "keywords": [
+        "@interactive-os/json-document",
         "convert",
         "headless",
         "node-kind",
-        "structure",
-        "zod-crud"
+        "structure"
       ]
     },
     {
       "path": "labs/extensions/convert-type",
-      "name": "@zod-crud/convert-type",
+      "name": "@interactive-os/json-document-convert-type",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab convert-type (convert a field type: string/number/boolean) extension functions for zod-crud documents.",
+      "description": "Lab convert-type (convert a field type: string/number/boolean) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab convert-type extension for `zod-crud` documents.",
+      "summary": "Lab convert-type extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "convert a field type (string/number/integer/boolean) where the schema permits it",
         "notFor": "locale/format-aware parsing of currency or dates, or input masks"
@@ -1766,24 +1766,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "cast",
         "convert-type",
         "headless",
         "json",
-        "type",
-        "zod-crud"
+        "type"
       ]
     },
     {
       "path": "labs/extensions/dedupe",
-      "name": "@zod-crud/dedupe",
+      "name": "@interactive-os/json-document-dedupe",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab dedupe (remove duplicate array items) extension functions for zod-crud documents.",
+      "description": "Lab dedupe (remove duplicate array items) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab dedupe extension for `zod-crud` documents.",
+      "summary": "Lab dedupe extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "remove duplicate array items by whole value or a host key",
         "notFor": "fuzzy matching, cross-array dedupe, or JSONPath match deletion"
@@ -1802,24 +1802,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "array",
         "dedupe",
         "duplicate",
         "headless",
-        "json",
-        "zod-crud"
+        "json"
       ]
     },
     {
       "path": "labs/extensions/document-diff",
-      "name": "@zod-crud/document-diff",
+      "name": "@interactive-os/json-document-document-diff",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab document diff and apply extension functions for zod-crud documents.",
+      "description": "Lab document diff and apply extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab document diff and apply extension for `zod-crud` documents.",
+      "summary": "Lab document diff and apply extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "produce and apply patch changes toward a target document",
         "notFor": "visual diff UI or merge conflict resolution"
@@ -1838,23 +1838,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "diff",
         "headless",
         "json",
-        "patch",
-        "zod-crud"
+        "patch"
       ]
     },
     {
       "path": "labs/extensions/drag-drop",
-      "name": "@zod-crud/drag-drop",
+      "name": "@interactive-os/json-document-drag-drop",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab drag and drop extension functions for zod-crud documents.",
+      "description": "Lab drag and drop extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab drag and drop extension for `zod-crud` documents.",
+      "summary": "Lab drag and drop extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "turn drag/drop intent into move or paste operations",
         "notFor": "DOM drag/drop events, hit testing, or hover UI"
@@ -1878,24 +1878,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 15,
       "keywords": [
+        "@interactive-os/json-document",
         "copy",
         "drag",
         "drop",
         "headless",
-        "paste",
-        "zod-crud"
+        "paste"
       ]
     },
     {
       "path": "labs/extensions/fill-blanks",
-      "name": "@zod-crud/fill-blanks",
+      "name": "@interactive-os/json-document-fill-blanks",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab fill-blanks (fill only empty slots) extension functions for zod-crud documents.",
+      "description": "Lab fill-blanks (fill only empty slots) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab fill-blanks extension for `zod-crud` documents.",
+      "summary": "Lab fill-blanks extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "fill only empty slots across targets, preserving non-empty values",
         "notFor": "adding missing fields, choosing targets, or unconditional batch set"
@@ -1914,24 +1914,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "default",
         "empty",
         "fill",
         "headless",
-        "json",
-        "zod-crud"
+        "json"
       ]
     },
     {
       "path": "labs/extensions/fill-down",
-      "name": "@zod-crud/fill-down",
+      "name": "@interactive-os/json-document-fill-down",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab fill-down (carry last non-empty value into blanks) extension functions for zod-crud documents.",
+      "description": "Lab fill-down (carry last non-empty value into blanks) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab fill-down extension for `zod-crud` documents.",
+      "summary": "Lab fill-down extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "carry the last non-empty value into the empty slots that follow (ffill)",
         "notFor": "constant fill, numeric series interpolation, or rendered grid UI"
@@ -1949,24 +1949,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "ffill",
         "fill-down",
         "headless",
         "json",
-        "propagate",
-        "zod-crud"
+        "propagate"
       ]
     },
     {
       "path": "labs/extensions/fill-series",
-      "name": "@zod-crud/fill-series",
+      "name": "@interactive-os/json-document-fill-series",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab fill/series propagation extension functions for zod-crud documents.",
+      "description": "Lab fill/series propagation extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab fill/series propagation extension for `zod-crud` documents.",
+      "summary": "Lab fill/series propagation extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "fill a value or linear series across a contiguous sibling range",
         "notFor": "date/pattern series, 2D grid fill, or fill-handle drag UI"
@@ -1987,24 +1987,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 12,
       "keywords": [
+        "@interactive-os/json-document",
         "autofill",
         "fill",
         "headless",
         "json",
-        "series",
-        "zod-crud"
+        "series"
       ]
     },
     {
       "path": "labs/extensions/generate-slug",
-      "name": "@zod-crud/generate-slug",
+      "name": "@interactive-os/json-document-generate-slug",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab generate-slug (derive a URL-safe slug from a string) extension functions for zod-crud documents.",
+      "description": "Lab generate-slug (derive a URL-safe slug from a string) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab generate-slug extension for `zod-crud` documents.",
+      "summary": "Lab generate-slug extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "derive a URL-safe slug from a string field (CMS title to slug)",
         "notFor": "uniqueness/collision handling or non-Latin transliteration"
@@ -2022,24 +2022,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "generate-slug",
         "headless",
         "json",
         "slug",
-        "url",
-        "zod-crud"
+        "url"
       ]
     },
     {
       "path": "labs/extensions/grid-range",
-      "name": "@zod-crud/grid-range",
+      "name": "@interactive-os/json-document-grid-range",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab grid-range editing extension functions for sparse-record-backed zod-crud documents.",
+      "description": "Lab grid-range editing extension functions for sparse-record-backed json-document documents.",
       "license": "MIT",
-      "summary": "Lab grid-range editing extension for sparse-record-backed `zod-crud` documents.",
+      "summary": "Lab grid-range editing extension for sparse-record-backed `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "paste or fill rectangular grid ranges backed by sparse JSON records",
         "notFor": "DOM grid selection, coordinate naming policy, formulas, or TSV/CSV parsing"
@@ -2075,23 +2075,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 27,
       "keywords": [
+        "@interactive-os/json-document",
         "cell-range",
         "fill",
         "grid-range",
         "headless",
         "paste",
-        "sparse-record",
-        "zod-crud"
+        "sparse-record"
       ]
     },
     {
       "path": "labs/extensions/grouping",
-      "name": "@zod-crud/grouping",
+      "name": "@interactive-os/json-document-grouping",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab structural group and ungroup extension functions for zod-crud documents.",
+      "description": "Lab structural group and ungroup extension functions for json-document documents.",
       "license": "MIT",
       "summary": "Lab extension for structural `group` and `ungroup`.",
       "guidance": {
@@ -2117,23 +2117,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 15,
       "keywords": [
+        "@interactive-os/json-document",
         "group",
         "headless",
         "selection",
-        "ungroup",
-        "zod-crud"
+        "ungroup"
       ]
     },
     {
       "path": "labs/extensions/increment-number",
-      "name": "@zod-crud/increment-number",
+      "name": "@interactive-os/json-document-increment-number",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab increment-number (increment/decrement a numeric field) extension functions for zod-crud documents.",
+      "description": "Lab increment-number (increment/decrement a numeric field) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab increment-number extension for `zod-crud` documents.",
+      "summary": "Lab increment-number extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "increment, decrement, or step a numeric field with optional clamping",
         "notFor": "rendered spinners, formatting, units, or currency"
@@ -2151,24 +2151,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "increment",
         "json",
         "number",
-        "stepper",
-        "zod-crud"
+        "stepper"
       ]
     },
     {
       "path": "labs/extensions/join-text",
-      "name": "@zod-crud/join-text",
+      "name": "@interactive-os/json-document-join-text",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab join-text (join an array into a string field) extension functions for zod-crud documents.",
+      "description": "Lab join-text (join an array into a string field) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab join-text extension for `zod-crud` documents.",
+      "summary": "Lab join-text extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "join an array into a string field with a separator (inverse of split-text)",
         "notFor": "locale list formatting, or reading the result without writing"
@@ -2186,24 +2186,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "array",
         "headless",
         "join",
         "json",
-        "text",
-        "zod-crud"
+        "text"
       ]
     },
     {
       "path": "labs/extensions/layer-order",
-      "name": "@zod-crud/layer-order",
+      "name": "@interactive-os/json-document-layer-order",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab layer ordering extension functions for zod-crud documents.",
+      "description": "Lab layer ordering extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab layer ordering extension for `zod-crud` documents.",
+      "summary": "Lab layer ordering extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "reorder visual stack arrays with bring/send commands",
         "notFor": "canvas rendering or z-index CSS management"
@@ -2223,23 +2223,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 11,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "layer",
         "order",
-        "z-order",
-        "zod-crud"
+        "z-order"
       ]
     },
     {
       "path": "labs/extensions/limit-items",
-      "name": "@zod-crud/limit-items",
+      "name": "@interactive-os/json-document-limit-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab limit-items (cap an array to N items) extension functions for zod-crud documents.",
+      "description": "Lab limit-items (cap an array to N items) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab limit-items extension for `zod-crud` documents.",
+      "summary": "Lab limit-items extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "cap a JSON array to at most N items, keeping the start or end",
         "notFor": "choosing survivors beyond start/end, or auto-trimming on insert"
@@ -2257,22 +2257,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "cap",
         "headless",
         "json",
         "limit",
-        "slice",
-        "zod-crud"
+        "slice"
       ]
     },
     {
       "path": "labs/extensions/live-cursors",
-      "name": "@zod-crud/live-cursors",
+      "name": "@interactive-os/json-document-live-cursors",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab live-cursors (track remote collaborator cursors) extension functions for zod-crud documents.",
+      "description": "Lab live-cursors (track remote collaborator cursors) extension functions for json-document documents.",
       "license": "MIT",
       "summary": "Lab package for remote collaborator cursor and selection presence.",
       "guidance": {
@@ -2293,24 +2293,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "collaboration",
         "cursor",
         "headless",
         "presence",
-        "selection",
-        "zod-crud"
+        "selection"
       ]
     },
     {
       "path": "labs/extensions/move-selected",
-      "name": "@zod-crud/move-selected",
+      "name": "@interactive-os/json-document-move-selected",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab move-selected (move a contiguous selected block) extension functions for zod-crud documents.",
+      "description": "Lab move-selected (move a contiguous selected block) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab move-selected extension for `zod-crud` documents.",
+      "summary": "Lab move-selected extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "move a contiguous selection of sibling items to a new position",
         "notFor": "single-item moves, drag/drop events, or cross-array moves"
@@ -2328,24 +2328,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "json",
         "move",
         "reorder",
-        "selection",
-        "zod-crud"
+        "selection"
       ]
     },
     {
       "path": "labs/extensions/pad-text",
-      "name": "@zod-crud/pad-text",
+      "name": "@interactive-os/json-document-pad-text",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab pad-text (pad a string to a minimum length) extension functions for zod-crud documents.",
+      "description": "Lab pad-text (pad a string to a minimum length) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab pad-text extension for `zod-crud` documents.",
+      "summary": "Lab pad-text extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "pad a string field to a minimum length (zero-padded codes/IDs)",
         "notFor": "number formatting or display-time alignment"
@@ -2363,24 +2363,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "format",
         "headless",
         "json",
         "pad",
-        "string",
-        "zod-crud"
+        "string"
       ]
     },
     {
       "path": "labs/extensions/paste-cells",
-      "name": "@zod-crud/paste-cells",
+      "name": "@interactive-os/json-document-paste-cells",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab paste-cells (2D matrix into rectangular cells) extension functions for zod-crud documents.",
+      "description": "Lab paste-cells (2D matrix into rectangular cells) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab paste-cells extension for `zod-crud` documents.",
+      "summary": "Lab paste-cells extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "paste a 2D value matrix onto a rectangular array-of-records region",
         "notFor": "TSV/CSV parsing, clipboard I/O, or auto-growing the array"
@@ -2398,22 +2398,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "grid",
         "headless",
         "json",
         "paste",
-        "table",
-        "zod-crud"
+        "table"
       ]
     },
     {
       "path": "labs/extensions/paste-special",
-      "name": "@zod-crud/paste-special",
+      "name": "@interactive-os/json-document-paste-special",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab paste special extension functions for zod-crud documents.",
+      "description": "Lab paste special extension functions for json-document documents.",
       "license": "MIT",
       "summary": "Lab extension for paste special.",
       "guidance": {
@@ -2441,21 +2441,21 @@ export const repoCatalog = {
       ],
       "publicExportCount": 17,
       "keywords": [
+        "@interactive-os/json-document",
         "clipboard",
         "compatible",
         "headless",
-        "paste",
-        "zod-crud"
+        "paste"
       ]
     },
     {
       "path": "labs/extensions/references",
-      "name": "@zod-crud/references",
+      "name": "@interactive-os/json-document-references",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab stable reference and backlink extension functions for zod-crud documents.",
+      "description": "Lab stable reference and backlink extension functions for json-document documents.",
       "license": "MIT",
       "summary": "Lab extension for stable references and backlinks over JSON documents.",
       "guidance": {
@@ -2487,23 +2487,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 21,
       "keywords": [
+        "@interactive-os/json-document",
         "backlinks",
         "headless",
         "references",
-        "relations",
-        "zod-crud"
+        "relations"
       ]
     },
     {
       "path": "labs/extensions/renumber-items",
-      "name": "@zod-crud/renumber-items",
+      "name": "@interactive-os/json-document-renumber-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab renumber-items (sync an order field to array position) extension functions for zod-crud documents.",
+      "description": "Lab renumber-items (sync an order field to array position) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab renumber-items extension for `zod-crud` documents.",
+      "summary": "Lab renumber-items extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "sync an order/position field to each item array position after a reorder",
         "notFor": "reordering the array itself, or fractional/gap indexing"
@@ -2521,24 +2521,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "json",
         "order",
         "position",
-        "renumber-items",
-        "zod-crud"
+        "renumber-items"
       ]
     },
     {
       "path": "labs/extensions/round",
-      "name": "@zod-crud/round",
+      "name": "@interactive-os/json-document-round",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab round (round/floor/ceil a number) extension functions for zod-crud documents.",
+      "description": "Lab round (round/floor/ceil a number) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab round extension for `zod-crud` documents.",
+      "summary": "Lab round extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "round a number to a precision or nearest step (round/floor/ceil/trunc)",
         "notFor": "currency/locale formatting, or increment/clamp (see increment-number)"
@@ -2557,24 +2557,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "json",
         "number",
         "precision",
-        "round",
-        "zod-crud"
+        "round"
       ]
     },
     {
       "path": "labs/extensions/sort-items",
-      "name": "@zod-crud/sort-items",
+      "name": "@interactive-os/json-document-sort-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab sort-items (sort/reverse array items) extension functions for zod-crud documents.",
+      "description": "Lab sort-items (sort/reverse array items) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab collection sort extension for `zod-crud` documents.",
+      "summary": "Lab collection sort extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "sort or reverse JSON array items",
         "notFor": "query views, filters, or server sorting"
@@ -2596,23 +2596,23 @@ export const repoCatalog = {
       ],
       "publicExportCount": 13,
       "keywords": [
+        "@interactive-os/json-document",
         "collection",
         "headless",
         "json",
-        "sort",
-        "zod-crud"
+        "sort"
       ]
     },
     {
       "path": "labs/extensions/sparse-record",
-      "name": "@zod-crud/sparse-record",
+      "name": "@interactive-os/json-document-sparse-record",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab sparse-record entry editing extension functions for zod-crud documents.",
+      "description": "Lab sparse-record entry editing extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab sparse-record entry editing extension for `zod-crud` documents.",
+      "summary": "Lab sparse-record entry editing extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "set or remove keyed entries in sparse JSON records with add/replace/remove/no-op planning",
         "notFor": "2D grid coordinate expansion, product key normalization, or rendered selection"
@@ -2635,24 +2635,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 14,
       "keywords": [
+        "@interactive-os/json-document",
         "entries",
         "headless",
         "json",
         "record",
-        "sparse-record",
-        "zod-crud"
+        "sparse-record"
       ]
     },
     {
       "path": "labs/extensions/split-text",
-      "name": "@zod-crud/split-text",
+      "name": "@interactive-os/json-document-split-text",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab split-text (split a string into array items) extension functions for zod-crud documents.",
+      "description": "Lab split-text (split a string into array items) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab split-text extension for `zod-crud` documents.",
+      "summary": "Lab split-text extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "split a string into array items by a delimiter (tag input, paste-as-list)",
         "notFor": "CSV/TSV quoting, split-to-columns, or clipboard access"
@@ -2670,24 +2670,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "json",
         "split",
         "tags",
-        "text",
-        "zod-crud"
+        "text"
       ]
     },
     {
       "path": "labs/extensions/swap-items",
-      "name": "@zod-crud/swap-items",
+      "name": "@interactive-os/json-document-swap-items",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab swap-items (exchange two array items) extension functions for zod-crud documents.",
+      "description": "Lab swap-items (exchange two array items) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab swap-items extension for `zod-crud` documents.",
+      "summary": "Lab swap-items extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "exchange the positions of two items in the same array",
         "notFor": "cross-array swaps or moving to an arbitrary index"
@@ -2704,24 +2704,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 8,
       "keywords": [
+        "@interactive-os/json-document",
         "exchange",
         "headless",
         "json",
         "reorder",
-        "swap-items",
-        "zod-crud"
+        "swap-items"
       ]
     },
     {
       "path": "labs/extensions/toggle-option",
-      "name": "@zod-crud/toggle-option",
+      "name": "@interactive-os/json-document-toggle-option",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab toggle-option (toggle a value in an array set) extension functions for zod-crud documents.",
+      "description": "Lab toggle-option (toggle a value in an array set) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab toggle-option extension for `zod-crud` documents.",
+      "summary": "Lab toggle-option extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
         "notFor": "ordered insertion position or deduping an existing array"
@@ -2739,24 +2739,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "json",
         "membership",
         "set",
-        "toggle",
-        "zod-crud"
+        "toggle"
       ]
     },
     {
       "path": "labs/extensions/toggle-value",
-      "name": "@zod-crud/toggle-value",
+      "name": "@interactive-os/json-document-toggle-value",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab toggle-value (toggle/advance a field through values) extension functions for zod-crud documents.",
+      "description": "Lab toggle-value (toggle/advance a field through values) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab toggle-value extension for `zod-crud` documents.",
+      "summary": "Lab toggle-value extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "toggle a boolean or advance an enum/value field (enum options come from the schema)",
         "notFor": "rendered toggle controls or keyboard policy"
@@ -2775,24 +2775,24 @@ export const repoCatalog = {
       ],
       "publicExportCount": 10,
       "keywords": [
+        "@interactive-os/json-document",
         "enum",
         "headless",
         "json",
         "toggle",
-        "toggle-value",
-        "zod-crud"
+        "toggle-value"
       ]
     },
     {
       "path": "labs/extensions/trim-text",
-      "name": "@zod-crud/trim-text",
+      "name": "@interactive-os/json-document-trim-text",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab trim-text (cap a string to a max length) extension functions for zod-crud documents.",
+      "description": "Lab trim-text (cap a string to a max length) extension functions for json-document documents.",
       "license": "MIT",
-      "summary": "Lab trim-text extension for `zod-crud` documents.",
+      "summary": "Lab trim-text extension for `@interactive-os/json-document` documents.",
       "guidance": {
         "useFor": "cap a string field to a max length with optional ellipsis and word boundary",
         "notFor": "display-time CSS truncation or grapheme/locale-aware length"
@@ -2810,22 +2810,22 @@ export const repoCatalog = {
       ],
       "publicExportCount": 9,
       "keywords": [
+        "@interactive-os/json-document",
         "excerpt",
         "headless",
         "json",
         "text",
-        "trim-text",
-        "zod-crud"
+        "trim-text"
       ]
     },
     {
       "path": "labs/extensions/wrap-selection",
-      "name": "@zod-crud/wrap-selection",
+      "name": "@interactive-os/json-document-wrap-selection",
       "status": "lab-extension",
       "private": true,
       "publishable": false,
       "version": "0.1.0",
-      "description": "Lab wrap-selection (wrap/unwrap selected items) extension functions for zod-crud documents.",
+      "description": "Lab wrap-selection (wrap/unwrap selected items) extension functions for json-document documents.",
       "license": "MIT",
       "summary": "Lab extension for structural `wrap` and `unwrap`.",
       "guidance": {
@@ -2851,25 +2851,25 @@ export const repoCatalog = {
       ],
       "publicExportCount": 15,
       "keywords": [
+        "@interactive-os/json-document",
         "headless",
         "structure",
         "unwrap",
-        "wrap",
-        "zod-crud"
+        "wrap"
       ]
     }
   ],
   "apps": [
     {
       "path": "apps/copy-review-lab",
-      "name": "@zod-crud/copy-review-lab",
+      "name": "@interactive-os/json-document-copy-review-lab",
       "status": "app",
       "private": true,
       "publishable": false,
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `@zod-crud/search-replace` as a copy cleanup product surface.",
+      "summary": "Dogfoods `@interactive-os/json-document-search-replace` as a copy cleanup product surface.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -2877,14 +2877,14 @@ export const repoCatalog = {
     },
     {
       "path": "apps/grouping-lab",
-      "name": "@zod-crud/grouping-lab",
+      "name": "@interactive-os/json-document-grouping-lab",
       "status": "app",
       "private": true,
       "publishable": false,
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `@zod-crud/grouping` as a small structural editor feature.",
+      "summary": "Dogfoods `@interactive-os/json-document-grouping` as a small structural editor feature.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -2892,7 +2892,7 @@ export const repoCatalog = {
     },
     {
       "path": "apps/mobile-cms",
-      "name": "@zod-crud/mobile-cms",
+      "name": "@interactive-os/json-document-mobile-cms",
       "status": "app",
       "private": true,
       "publishable": false,
@@ -2907,7 +2907,7 @@ export const repoCatalog = {
     },
     {
       "path": "apps/outliner",
-      "name": "@zod-crud/outliner",
+      "name": "@interactive-os/json-document-outliner",
       "status": "app",
       "private": true,
       "publishable": false,
@@ -2928,7 +2928,7 @@ export const repoCatalog = {
     },
     {
       "path": "apps/outliner-blind-a",
-      "name": "@zod-crud/outliner-blind-a",
+      "name": "@interactive-os/json-document-outliner-blind-a",
       "status": "app",
       "private": true,
       "publishable": false,
@@ -2943,7 +2943,7 @@ export const repoCatalog = {
     },
     {
       "path": "apps/outliner-blind-b",
-      "name": "@zod-crud/outliner-blind-b",
+      "name": "@interactive-os/json-document-outliner-blind-b",
       "status": "app",
       "private": true,
       "publishable": false,
@@ -2958,14 +2958,14 @@ export const repoCatalog = {
     },
     {
       "path": "apps/proposed-changes-lab",
-      "name": "@zod-crud/proposed-changes-lab",
+      "name": "@interactive-os/json-document-proposed-changes-lab",
       "status": "app",
       "private": true,
       "publishable": false,
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `@zod-crud/proposed-changes` as a small proposed document change review feature.",
+      "summary": "Dogfoods `@interactive-os/json-document-proposed-changes` as a small proposed document change review feature.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -2973,14 +2973,14 @@ export const repoCatalog = {
     },
     {
       "path": "apps/protected-ranges-lab",
-      "name": "@zod-crud/protected-ranges-lab",
+      "name": "@interactive-os/json-document-protected-ranges-lab",
       "status": "app",
       "private": true,
       "publishable": false,
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods official `@zod-crud/protected-ranges` as a locked structured content editor.",
+      "summary": "Dogfoods official `@interactive-os/json-document-protected-ranges` as a locked structured content editor.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -2988,14 +2988,14 @@ export const repoCatalog = {
     },
     {
       "path": "apps/review-comments-lab",
-      "name": "@zod-crud/review-comments-lab",
+      "name": "@interactive-os/json-document-review-comments-lab",
       "status": "app",
       "private": true,
       "publishable": false,
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods `@zod-crud/comments` as an editorial review product surface.",
+      "summary": "Dogfoods `@interactive-os/json-document-comments` as an editorial review product surface.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,
@@ -3003,7 +3003,7 @@ export const repoCatalog = {
     },
     {
       "path": "apps/schema-form-lab",
-      "name": "@zod-crud/schema-form-lab",
+      "name": "@interactive-os/json-document-schema-form-lab",
       "status": "app",
       "private": true,
       "publishable": false,
@@ -3018,7 +3018,7 @@ export const repoCatalog = {
     },
     {
       "path": "apps/site",
-      "name": "@zod-crud/site",
+      "name": "@interactive-os/json-document-site",
       "status": "app",
       "private": true,
       "publishable": false,
@@ -3033,14 +3033,14 @@ export const repoCatalog = {
     },
     {
       "path": "apps/snippet-composer-lab",
-      "name": "@zod-crud/snippet-composer-lab",
+      "name": "@interactive-os/json-document-snippet-composer-lab",
       "status": "app",
       "private": true,
       "publishable": false,
       "version": null,
       "description": null,
       "license": null,
-      "summary": "Dogfoods official `@zod-crud/snippets` as a page block composer.",
+      "summary": "Dogfoods official `@interactive-os/json-document-snippets` as a page block composer.",
       "guidance": null,
       "publicExports": [],
       "publicExportCount": 0,

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canEnsure, createApplyDefaults, type ApplyDefaultsResult } from "../src/index.js";
 
 // apply-defaults is meaningful when the defaultable keys are schema-optional, so
@@ -25,7 +25,7 @@ function expectOk(result: ApplyDefaultsResult): Extract<ApplyDefaultsResult, { o
   return result;
 }
 
-describe("@zod-crud/apply-defaults", () => {
+describe("@interactive-os/json-document-apply-defaults", () => {
   test("adds only the missing keys, preserving existing ones", () => {
     const doc = createDoc({ theme: "dark" });
     const e = createApplyDefaults(doc);

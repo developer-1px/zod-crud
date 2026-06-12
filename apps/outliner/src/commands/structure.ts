@@ -1,6 +1,6 @@
-import { createCollection } from "@zod-crud/collection";
-import { createOutline } from "@zod-crud/outline";
-import { type JSONResult, type Pointer } from "zod-crud";
+import { createCollection } from "@interactive-os/json-document-collection";
+import { createOutline } from "@interactive-os/json-document-outline";
+import { type JSONResult, type Pointer } from "@interactive-os/json-document";
 import { lastIndex, parentOf } from "../pointer-utils.js";
 import { focusOf, type CommandContext, targetsOf, sortDfs } from "./context.js";
 

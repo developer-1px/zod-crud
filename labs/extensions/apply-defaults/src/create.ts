@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { ensure } from "./operations.js";
 import { canEnsure } from "./plan.js";
 import type { ApplyDefaults } from "./types.js";

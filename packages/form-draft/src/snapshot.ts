@@ -3,7 +3,7 @@ import type {
   JSONDocument,
   Pointer,
   SchemaKind,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   capabilityError,

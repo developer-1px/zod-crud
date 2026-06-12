@@ -1,7 +1,7 @@
 import type {
   JSONCapabilityResult,
   JSONResult,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   BulkEditError,

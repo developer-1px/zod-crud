@@ -7,7 +7,7 @@ import {
   type JSONPatchOperation,
   type JSONResult,
   type Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   copyChange,

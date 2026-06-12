@@ -4,7 +4,7 @@ import type {
   JSONDocumentCommitOptions,
   JSONPatchOperation,
   JSONResult,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   copyEntry,

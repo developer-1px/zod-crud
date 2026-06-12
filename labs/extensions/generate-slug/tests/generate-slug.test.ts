@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canGenerateSlug, createGenerateSlug, type GenerateSlugResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -19,7 +19,7 @@ function expectOk(result: GenerateSlugResult): Extract<GenerateSlugResult, { ok:
   return result;
 }
 
-describe("@zod-crud/generate-slug", () => {
+describe("@interactive-os/json-document-generate-slug", () => {
   test("slugifies a title into the slug field", () => {
     const doc = createDoc("Hello, World!");
     const s = createGenerateSlug(doc);

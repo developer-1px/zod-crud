@@ -5,7 +5,7 @@ import type {
   JSONResult,
   Pointer,
   SchemaKind,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type OutlineErrorCode =
   | "invalid_pointer"

@@ -1,13 +1,13 @@
-# @zod-crud/snippets
+# @interactive-os/json-document-snippets
 
-Official headless snippet insertion extension for `zod-crud` documents.
+Official headless snippet insertion extension for `@interactive-os/json-document` documents.
 
 Use it to keep reusable block/card/template insertion outside core while still
 using schema-safe public paste checks: block editors, CMS sections, kanban cards,
 form fields, generated admin templates, slide objects, or import presets.
 
 ```ts
-import { createSnippets } from "@zod-crud/snippets";
+import { createSnippets } from "@interactive-os/json-document-snippets";
 
 const snippets = createSnippets(doc, [
   {
@@ -38,11 +38,11 @@ snippets.insert("todo-card", "/cards/-", {
 - No snippet persistence or sharing protocol.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/snippets` treats a snippet as a reusable JSON payload. Core does not
+`@interactive-os/json-document-snippets` treats a snippet as a reusable JSON payload. Core does not
 need a template registry. Product-specific palette UX, dynamic id factories, and
 format-specific parsing stay outside this package; the final payload enters
 through direct payload paste.

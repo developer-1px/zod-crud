@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, Pointer } from "@interactive-os/json-document";
 import type { ClearContentsError, ClearContentsErrorCode, ClearContentsOptions, ClearContentsResult, EmptyFor, SchemaDescription } from "./types.js";
 
 export function canClearContents<TDocument>(

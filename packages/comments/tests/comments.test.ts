@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createComments } from "../src/index.js";
 
 const Item = z.object({
@@ -30,7 +30,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/comments", () => {
+describe("@interactive-os/json-document-comments", () => {
   test("adds comments only for valid live pointers", () => {
     const doc = createDoc();
     const comments = createComments(doc);

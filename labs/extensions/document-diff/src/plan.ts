@@ -1,4 +1,4 @@
-import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer } from "zod-crud";
+import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer } from "@interactive-os/json-document";
 import type { DocumentDiffChangeResult } from "./types.js";
 
 export function diffDocument<TDocument, TValue = unknown>(

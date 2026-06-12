@@ -5,7 +5,7 @@ test("official overview defers demo and engine code until a demo route opens", a
   page.on("request", (request) => requests.push(request.url()));
 
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "zod-crud" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "@interactive-os/json-document" })).toBeVisible();
   await expect(page.getByText("Interface bench")).toHaveCount(0);
   expect(requests.some(isDemoOrEngineRequest)).toBe(false);
 
@@ -17,22 +17,22 @@ test("official overview defers demo and engine code until a demo route opens", a
 test("official docs routes render with route metadata in a real browser", async ({ page }) => {
   await page.goto("/docs");
 
-  await expect(page).toHaveTitle("zod-crud Docs - zod-crud");
-  await expect(page.getByRole("heading", { level: 1, name: "zod-crud Docs" })).toBeVisible();
+  await expect(page).toHaveTitle("json-document Docs - json-document");
+  await expect(page.getByRole("heading", { level: 1, name: "json-document Docs" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "배경" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Documentation pages" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "On this page" })).toBeVisible();
 
   await page.getByRole("link", { name: "API reference" }).first().click();
-  await expect(page).toHaveTitle("zod-crud API - zod-crud");
-  await expect(page.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeVisible();
+  await expect(page).toHaveTitle("json-document API - json-document");
+  await expect(page.getByRole("heading", { level: 1, name: "json-document API" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "On this page" })).toBeVisible();
 });
 
 test("official site uses window scroll with sticky desktop navigation", async ({ page }) => {
   await page.setViewportSize({ width: 1366, height: 768 });
   await page.goto("/docs/api");
-  await expect(page.getByRole("heading", { level: 1, name: "zod-crud API" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "json-document API" })).toBeVisible();
 
   await page.evaluate(() => window.scrollTo(0, 1200));
 
@@ -44,7 +44,7 @@ test("official site uses window scroll with sticky desktop navigation", async ({
   });
 
   await page.getByRole("link", { name: "Overview" }).click();
-  await expect(page).toHaveTitle("zod-crud - Headless JSON editing");
+  await expect(page).toHaveTitle("json-document - Headless JSON editing");
   await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
 });
 
@@ -53,8 +53,8 @@ function isDemoOrEngineRequest(url: string): boolean {
     "/src/playgrounds/InterfaceWorkbench.playground",
     "/apps/outliner/src/",
     "/apps/mobile-cms/src/",
-    "/packages/zod-crud/src/index.ts",
-    "/packages/zod-crud/src/react.ts",
+    "/packages/json-document/src/index.ts",
+    "/packages/json-document/src/react.ts",
   ].some((part) => url.includes(part));
 }
 

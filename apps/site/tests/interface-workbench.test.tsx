@@ -138,7 +138,7 @@ describe("InterfaceWorkbench", () => {
     expect(commandRow("Pointer helpers")).toBeTruthy();
 
     expect(screen.getByText("API coverage index")).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "zod-crud API" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "json-document API" })).toBeNull();
   }, 10_000);
 
   test("exposes every public runtime API surface", async () => {
@@ -147,7 +147,7 @@ describe("InterfaceWorkbench", () => {
     await openApiCoverage(user);
 
     expectButtons("root API", [
-      "JSONCrudError",
+      "JSONDocumentError",
       "PointerSyntaxError",
       "createJSONDocument",
       "applyOperation",

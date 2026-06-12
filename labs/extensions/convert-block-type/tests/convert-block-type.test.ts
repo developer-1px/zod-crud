@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canConvertBlockType,
   convertBlockType,
@@ -98,7 +98,7 @@ const descriptor: BlockTypeConversionDescriptor = {
   },
 };
 
-describe("@zod-crud/convert-block-type", () => {
+describe("@interactive-os/json-document-convert-block-type", () => {
   test("plans and applies a schema-safe block type conversion", () => {
     const doc = createPage();
     const converter = createBlockTypeConverter(doc, descriptor);

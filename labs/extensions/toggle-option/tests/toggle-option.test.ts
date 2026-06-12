@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createToggleOption, plan, type ToggleOptionResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: ToggleOptionResult): Extract<ToggleOptionResult, { ok:
   return result;
 }
 
-describe("@zod-crud/toggle-option", () => {
+describe("@interactive-os/json-document-toggle-option", () => {
   test("toggle adds an absent value", () => {
     const doc = createDoc();
     const m = createToggleOption(doc);

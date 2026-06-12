@@ -1,4 +1,4 @@
-import type { JSONChangeMetadata, JSONDocument } from "zod-crud";
+import type { JSONChangeMetadata, JSONDocument } from "@interactive-os/json-document";
 import { canEditSparseRecords } from "./plan.js";
 import type { SparseRecordEdit, SparseRecordOptions, SparseRecordResult } from "./types.js";
 

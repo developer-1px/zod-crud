@@ -1,7 +1,7 @@
 // Toast 상태. error 는 클릭 시까지 유지 (zod 메시지가 길어서), info 는 2.5s.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { JSONCrudError } from "zod-crud";
+import type { JSONDocumentError } from "@interactive-os/json-document";
 
 export interface ToastMessage {
   id: number;
@@ -36,7 +36,7 @@ export function useToasts() {
     setErrors((prev) => prev.filter((m) => m.id !== id));
   }, []);
 
-  const onError = useCallback((e: JSONCrudError) => {
+  const onError = useCallback((e: JSONDocumentError) => {
     pushToast("error", `${e.result.code}${e.result.reason ? `: ${e.result.reason}` : ""}`);
   }, [pushToast]);
 

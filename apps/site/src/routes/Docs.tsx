@@ -13,7 +13,7 @@ const docPages = [
   {
     path: "/docs",
     label: "Concepts",
-    title: "zod-crud Docs",
+    title: "json-document Docs",
     source: overviewMarkdown,
   },
   {
@@ -25,13 +25,13 @@ const docPages = [
   {
     path: "/docs/api",
     label: "API reference",
-    title: "zod-crud API",
+    title: "json-document API",
     source: apiReferenceMarkdown,
   },
   {
     path: "/docs/extensions",
     label: "Extensions",
-    title: "zod-crud Extensions",
+    title: "json-document Extensions",
     source: `${extensionsMarkdown}\n\n${extensionsCatalogMarkdown}`,
   },
   {

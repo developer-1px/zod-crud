@@ -1,12 +1,12 @@
-# @zod-crud/document-diff
+# @interactive-os/json-document-document-diff
 
-Lab document diff and apply extension for `zod-crud` documents.
+Lab document diff and apply extension for `@interactive-os/json-document` documents.
 
 Use it to test whether import/reconcile/apply-target flows can stay outside
 core while still producing normal JSON Patch operations.
 
 ```ts
-import { createDocumentDiff } from "@zod-crud/document-diff";
+import { createDocumentDiff } from "@interactive-os/json-document-document-diff";
 
 const diff = createDocumentDiff(doc);
 
@@ -30,7 +30,7 @@ diff.apply(nextValue, { label: "import" });
   policy.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

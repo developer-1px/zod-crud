@@ -1,12 +1,12 @@
-# @zod-crud/calculated-fields
+# @interactive-os/json-document-calculated-fields
 
-Lab calculated field extension for `zod-crud` documents.
+Lab calculated field extension for `@interactive-os/json-document` documents.
 
 Use it to test whether formula-like derived values can stay outside core while
 still using public reads, schema checks, and patch execution.
 
 ```ts
-import { createCalculatedFields } from "@zod-crud/calculated-fields";
+import { createCalculatedFields } from "@interactive-os/json-document-calculated-fields";
 
 const computed = createCalculatedFields(doc, [
   {
@@ -35,7 +35,7 @@ computed.sync();
 - No automatic background sync; hosts decide when to call `sync`.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

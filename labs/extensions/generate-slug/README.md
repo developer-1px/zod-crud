@@ -1,12 +1,12 @@
-# @zod-crud/generate-slug
+# @interactive-os/json-document-generate-slug
 
-Lab generate-slug extension for `zod-crud` documents.
+Lab generate-slug extension for `@interactive-os/json-document` documents.
 
 Use it to derive a URL-safe slug from a string field (CMS title → slug), using
 only the public document facade.
 
 ```ts
-import { createGenerateSlug } from "@zod-crud/generate-slug";
+import { createGenerateSlug } from "@interactive-os/json-document-generate-slug";
 
 const s = createGenerateSlug(doc);
 
@@ -30,7 +30,7 @@ s.generateSlug("/title", "/slug", { maxLength: 60 });
 - Uniqueness/collision handling (appending `-2`) — host policy, often needs a
   lookup against other records.
 - Transliteration of non-Latin scripts (CJK, Cyrillic → Latin) — host-owned.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

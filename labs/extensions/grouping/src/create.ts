@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { groupSelection, ungroupSelection } from "./operations.js";
 import { canGroupSelection, canUngroupSelection } from "./plan.js";
 import type { Grouping, GroupingAdapter } from "./types.js";

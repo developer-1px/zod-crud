@@ -1,6 +1,6 @@
 import type {
   JSONDocumentPasteOptions,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   copyOptions,

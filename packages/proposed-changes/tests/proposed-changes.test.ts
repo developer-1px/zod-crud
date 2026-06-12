@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canAcceptChange,
   canProposeChange,
@@ -28,7 +28,7 @@ function createPage() {
   });
 }
 
-describe("@zod-crud/proposed-changes", () => {
+describe("@interactive-os/json-document-proposed-changes", () => {
   test("proposes a patch without mutating and accepts it later", () => {
     const doc = createPage();
     const changes = createProposedChanges(doc);

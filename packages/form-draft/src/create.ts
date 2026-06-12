@@ -2,7 +2,7 @@ import type {
   JSONDocument,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   canCommitBatch,

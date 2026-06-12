@@ -10,7 +10,7 @@ const verify = process.argv.includes("--verify");
 const verifyChanged = process.argv.includes("--changed");
 const fullVerificationPathPatterns = [
   /^package(?:-lock)?\.json$/,
-  /^packages\/zod-crud\//,
+  /^packages\/json-document\//,
   /^scripts\/evaluate-extension-lab\.mjs$/,
 ];
 const retiredLabNames = new Set([
@@ -192,12 +192,12 @@ for (const dir of labs) {
   const pkg = JSON.parse(read(`${dir}/package.json`));
   const label = pkg.name ?? dir;
   const folderName = dir.slice(dir.lastIndexOf("/") + 1);
-  const packageName = typeof pkg.name === "string" && pkg.name.startsWith("@zod-crud/")
-    ? pkg.name.slice("@zod-crud/".length)
+  const packageName = typeof pkg.name === "string" && pkg.name.startsWith("@interactive-os/json-document-")
+    ? pkg.name.slice("@interactive-os/json-document-".length)
     : null;
 
-  if (!pkg.name?.startsWith("@zod-crud/")) {
-    fail(`${label}: package name must stay under @zod-crud.`);
+  if (!pkg.name?.startsWith("@interactive-os/json-document-")) {
+    fail(`${label}: package name must stay under @json-document.`);
   }
   if (packageName !== folderName) {
     fail(`${label}: package name must match its lab folder (${folderName}).`);
@@ -211,11 +211,11 @@ for (const dir of labs) {
   if (pkg.private !== true) {
     fail(`${label}: lab packages must be private until promoted.`);
   }
-  if (pkg.peerDependencies?.["zod-crud"] !== "^1.0.0") {
-    fail(`${label}: zod-crud must stay a peer dependency.`);
+  if (pkg.peerDependencies?.["@interactive-os/json-document"] !== "^1.0.0") {
+    fail(`${label}: json-document must stay a peer dependency.`);
   }
-  if (pkg.dependencies?.["zod-crud"]) {
-    fail(`${label}: zod-crud must not be a runtime dependency.`);
+  if (pkg.dependencies?.["@interactive-os/json-document"]) {
+    fail(`${label}: json-document must not be a runtime dependency.`);
   }
   if (pkg.sideEffects !== false) {
     fail(`${label}: sideEffects must be false.`);
@@ -238,12 +238,12 @@ for (const dir of labs) {
     const source = read(sourcePath);
     for (const match of source.matchAll(/\bfrom\s+["']([^"']+)["']/g)) {
       const specifier = match[1];
-      if (specifier === "zod-crud") continue;
+      if (specifier === "@interactive-os/json-document") continue;
       if (specifier.startsWith(".")) continue;
-      fail(`${sourcePath}: lab source must import zod-crud only through the public package entrypoint (${specifier}).`);
+      fail(`${sourcePath}: lab source must import json-document only through the public package entrypoint (${specifier}).`);
     }
-    if (/src\/application|src\/domain|src\/foundation|\.\.\/zod-crud\/src/.test(source)) {
-      fail(`${sourcePath}: lab source must not import zod-crud internals.`);
+    if (/src\/application|src\/domain|src\/foundation|\.\.\/json-document\/src/.test(source)) {
+      fail(`${sourcePath}: lab source must not import json-document internals.`);
     }
     if (/doc\.use\s*\(/.test(source)) {
       fail(`${sourcePath}: lab extension must compose functions, not register plugins.`);
@@ -268,8 +268,8 @@ function officialPackages() {
   const absoluteRoot = join(root, officialRoot);
   if (!existsSync(absoluteRoot)) return [];
   return readdirSync(absoluteRoot, { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name !== "zod-crud")
+    .filter((entry) => entry.isDirectory() && entry.name !== "@interactive-os/json-document")
     .filter((entry) => existsSync(join(absoluteRoot, entry.name, "package.json")))
     .map((entry) => JSON.parse(read(`${officialRoot}/${entry.name}/package.json`)))
-    .filter((pkg) => typeof pkg.name === "string" && pkg.name.startsWith("@zod-crud/"));
+    .filter((pkg) => typeof pkg.name === "string" && pkg.name.startsWith("@interactive-os/json-document-"));
 }

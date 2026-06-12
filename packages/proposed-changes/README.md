@@ -1,6 +1,6 @@
-# @zod-crud/proposed-changes
+# @interactive-os/json-document-proposed-changes
 
-Official headless proposed document change review extension for `zod-crud`
+Official headless proposed document change review extension for `@interactive-os/json-document`
 documents.
 
 This package is not an autocomplete, combobox, mention, or slash-command
@@ -33,7 +33,7 @@ approval, or document cleanup suggestions.
 - storage adapter policy
 - plugin registration; this package composes functions and does not call
   `doc.use(...)`
-- `zod-crud` internal imports
+- `@interactive-os/json-document` internal imports
 
 ```ts
 const proposedChanges = createProposedChanges(doc);

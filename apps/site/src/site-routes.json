@@ -2,64 +2,64 @@
   {
     "path": "/",
     "label": "Overview",
-    "title": "zod-crud - Headless JSON editing",
-    "description": "zod-crud is a Zod-guarded headless JSON editing engine for JSON Patch, JSON Pointer, JSONPath, selection, clipboard, and history.",
+    "title": "json-document - Headless JSON editing",
+    "description": "json-document is a Zod-guarded headless JSON editing engine for JSON Patch, JSON Pointer, JSONPath, selection, clipboard, and history.",
     "group": "Start"
   },
   {
     "path": "/docs",
     "label": "Docs",
-    "title": "zod-crud Docs - zod-crud",
-    "description": "User guide to zod-crud's schema-first editing flow, can* checks, changes, results, and project model.",
+    "title": "json-document Docs - json-document",
+    "description": "User guide to json-document's schema-first editing flow, can* checks, changes, results, and project model.",
     "group": "Start"
   },
   {
     "path": "/docs/tutorial",
     "label": "Quickstart",
-    "title": "Tutorial - zod-crud",
-    "description": "Step-by-step zod-crud tutorial for building a small card editor with schema checks, selection, clipboard, and history.",
+    "title": "Tutorial - json-document",
+    "description": "Step-by-step json-document tutorial for building a small card editor with schema checks, selection, clipboard, and history.",
     "group": "Start"
   },
   {
     "path": "/docs/api",
     "label": "API reference",
-    "title": "zod-crud API - zod-crud",
-    "description": "Public zod-crud API reference for document changes, can* checks, selection, clipboard, history, Pointer, and JSONPath.",
+    "title": "json-document API - json-document",
+    "description": "Public json-document API reference for document changes, can* checks, selection, clipboard, history, Pointer, and JSONPath.",
     "group": "Start"
   },
   {
     "path": "/docs/extensions",
     "label": "Extensions",
-    "title": "Extensions - zod-crud",
-    "description": "Official zod-crud extension packages for collection editing, outline movement, schema forms, dirty state, bulk edit, patch logs, persistence, and web clipboard.",
+    "title": "Extensions - json-document",
+    "description": "Official json-document extension packages for collection editing, outline movement, schema forms, dirty state, bulk edit, patch logs, persistence, and web clipboard.",
     "group": "Start"
   },
   {
     "path": "/docs/recipes",
     "label": "Recipes",
-    "title": "Product Recipes - zod-crud",
-    "description": "Product-centered zod-crud feature recipes for Kanban, grid tables, slide object editors, and block docs editors.",
+    "title": "Product Recipes - json-document",
+    "description": "Product-centered json-document feature recipes for Kanban, grid tables, slide object editors, and block docs editors.",
     "group": "Start"
   },
   {
     "path": "/playground",
     "label": "Workbench",
-    "title": "Workbench - zod-crud",
-    "description": "Interactive zod-crud workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search.",
+    "title": "Workbench - json-document",
+    "description": "Interactive json-document workbench for trying document operations, can* checks, selection, clipboard, history, schema guards, and JSONPath search.",
     "group": "Demos"
   },
   {
     "path": "/playground/outliner",
     "label": "Outliner",
-    "title": "Outliner demo - zod-crud",
-    "description": "Keyboard-first outliner demo showing zod-crud selection, clipboard, history, structure edits, and JSON document movement.",
+    "title": "Outliner demo - json-document",
+    "description": "Keyboard-first outliner demo showing json-document selection, clipboard, history, structure edits, and JSON document movement.",
     "group": "Demos"
   },
   {
     "path": "/playground/mobile-cms",
     "label": "Mobile CMS",
-    "title": "Mobile CMS demo - zod-crud",
-    "description": "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and zod-crud document history.",
+    "title": "Mobile CMS demo - json-document",
+    "description": "Mobile CMS demo showing schema-guarded page editing, content block movement, paste targets, and json-document document history.",
     "group": "Demos"
   }
 ]

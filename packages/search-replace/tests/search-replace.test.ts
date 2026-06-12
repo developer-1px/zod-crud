@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canReplaceAllText,
   canReplaceTextMatch,
@@ -55,7 +55,7 @@ function firstRange(doc: ReturnType<typeof createDoc>, pointer: string) {
   return { pointer: match.pointer, range };
 }
 
-describe("@zod-crud/search-replace", () => {
+describe("@interactive-os/json-document-search-replace", () => {
   test("finds text occurrences across a document", () => {
     const doc = createDoc();
     const text = createSearchReplace(doc);

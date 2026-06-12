@@ -1,6 +1,6 @@
 import type {
   JSONResult,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export interface DirtyStateSnapshot<T> {
   dirty: boolean;

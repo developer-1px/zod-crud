@@ -1,4 +1,4 @@
-import type { JSONDocument, Pointer } from "zod-crud";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import { canSwapItems } from "./plan.js";
 import type { SwapItemsResult } from "./types.js";
 

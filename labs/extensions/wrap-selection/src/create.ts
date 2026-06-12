@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { unwrapSelection, wrapSelection } from "./operations.js";
 import { canUnwrapSelection, canWrapSelection } from "./plan.js";
 import type { WrapSelection, WrapSelectionAdapter } from "./types.js";

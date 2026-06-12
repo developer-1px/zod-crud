@@ -1,7 +1,7 @@
 import type {
   JSONDocument,
   JSONDocumentPasteTarget,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   disabled,

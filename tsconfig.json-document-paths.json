@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@interactive-os/json-document-*": ["packages/*/src/index.ts", "labs/extensions/*/src/index.ts"],
+      "@interactive-os/json-document/react": ["packages/json-document/src/react.ts"],
+      "@interactive-os/json-document": ["packages/json-document/src/index.ts"]
+    }
+  }
+}

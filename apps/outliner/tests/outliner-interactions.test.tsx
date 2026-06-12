@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test } from "vitest";
-import { defaultDocumentPersistenceCodec } from "@zod-crud/persist-web";
+import { defaultDocumentPersistenceCodec } from "@interactive-os/json-document-persist-web";
 import { Outliner } from "../src/index.js";
 import { findCommand } from "../src/keymap.js";
 
@@ -11,7 +11,7 @@ const thirdItem = "Shift+Tab promote";
 const selectionItem = "Selection";
 const firstSelectionChild = "Click focus";
 const editedFirstItem = "Edited first item";
-const draftKey = "zod-crud.outliner.draft";
+const draftKey = "json-document.outliner.draft";
 
 afterEach(() => {
   cleanup();
@@ -402,9 +402,9 @@ describe("outliner keyboard and mouse interactions", () => {
   test("Backspace on an empty edited root surfaces delete failure and stays in edit mode", async () => {
     renderOutliner();
     const before = treeItems().length;
-    const user = await clickAndEdit("zod-crud outliner");
+    const user = await clickAndEdit("json-document outliner");
 
-    await replaceFocusedText(user, "zod-crud outliner", "");
+    await replaceFocusedText(user, "json-document outliner", "");
     await user.keyboard("{Backspace}");
 
     expect(screen.getByText("path_not_found: cannot delete root")).toBeTruthy();

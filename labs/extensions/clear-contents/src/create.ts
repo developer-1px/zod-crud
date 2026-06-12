@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { clearContents } from "./operations.js";
 import { canClearContents } from "./plan.js";
 import type { ClearContents } from "./types.js";

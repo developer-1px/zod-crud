@@ -3,7 +3,7 @@ import type {
   Pointer,
   SelectionPoint,
   SelectionSnap,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export function normalizeSelection(value: unknown): SelectionSnap | null {
   if (!isSelectionSnap(value)) return null;

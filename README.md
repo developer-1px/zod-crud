@@ -1,17 +1,17 @@
-# zod-crud
+# json-document
 
-zod-crud는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document
+json-document는 Zod schema가 있는 JSON 문서를 편집하기 위한 headless document
 engine입니다.
 
 폼, CMS block, kanban board, outliner, settings editor처럼 UI가 다른 편집 툴도
 결국 schema가 있는 JSON document를 읽고, 바꾸고, 선택하고, 복사하고,
-붙여넣고, 되돌립니다. zod-crud는 이 공통 document engine을 UI 밖에 둡니다.
+붙여넣고, 되돌립니다. json-document는 이 공통 document engine을 UI 밖에 둡니다.
 
 ```txt
 schema -> document -> pointer/query -> can* -> change -> result
 ```
 
-공식 사이트: https://developer-1px.github.io/zod-crud/
+공식 사이트: https://developer-1px.github.io/json-document/
 
 ## 문서 지도
 
@@ -24,7 +24,7 @@ schema -> document -> pointer/query -> can* -> change -> result
 | 제품별 feature 지도 | [docs/public/recipes.md](docs/public/recipes.md) |
 | 문서 구조 | [docs/README.md](docs/README.md) |
 | 변경 기록 | [docs/changelog.md](docs/changelog.md) |
-| core 의미론 명세 | [docs/standard/zod-crud-spec.md](docs/standard/zod-crud-spec.md) |
+| core 의미론 명세 | [docs/standard/json-document-spec.md](docs/standard/json-document-spec.md) |
 | result/error 계약 | [docs/standard/result-contract.md](docs/standard/result-contract.md) |
 | selection 계약 | [docs/standard/selection-contract.md](docs/standard/selection-contract.md) |
 | schema introspection 계약 | [docs/standard/schema-introspection-contract.md](docs/standard/schema-introspection-contract.md) |
@@ -33,7 +33,7 @@ schema -> document -> pointer/query -> can* -> change -> result
 
 | 위치 | 역할 |
 | --- | --- |
-| [packages/zod-crud](packages/zod-crud) | core package. `createJSONDocument`, JSON Patch/Pointer/Path, selection, clipboard, history |
+| [packages/json-document](packages/json-document) | core package. `createJSONDocument`, JSON Patch/Pointer/Path, selection, clipboard, history |
 | [packages/collection](packages/collection) | ordered JSON array item 이동/복제/삭제 |
 | [packages/clipboard-web](packages/clipboard-web) | browser clipboard bridge |
 | [packages/schema-form](packages/schema-form) | schema-backed field descriptor |
@@ -57,7 +57,7 @@ schema -> document -> pointer/query -> can* -> change -> result
 
 ## 경계
 
-zod-crud가 제공하는 document engine:
+json-document가 제공하는 document engine:
 
 - Zod schema로 검증되는 JSON document state
 - JSON Pointer 주소, JSON Patch mutation, JSONPath search
@@ -82,7 +82,7 @@ npm run dev
 
 ```sh
 npm run docs:evaluate
-npm test -w zod-crud
-npm run typecheck -w zod-crud
-npm run build -w zod-crud
+npm test -w @interactive-os/json-document
+npm run typecheck -w @interactive-os/json-document
+npm run build -w @interactive-os/json-document
 ```

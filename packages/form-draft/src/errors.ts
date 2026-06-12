@@ -2,7 +2,7 @@ import type {
   JSONCapabilityResult,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   FormDraftError,

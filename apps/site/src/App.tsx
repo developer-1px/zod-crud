@@ -12,15 +12,15 @@ type SiteRoute = {
 type Route = SiteRoute & { Component: ComponentType };
 
 const BASE_PATH = import.meta.env.BASE_URL.replace(/\/$/, "");
-const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+const SITE_URL = (import.meta.env.VITE_SITE_URL ?? "https://developer-1px.github.io/json-document").replace(/\/$/, "");
 const Docs = lazy(() => import("./routes/Docs").then((module) => ({ default: module.Docs })));
 const DocsTutorial = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsTutorial })));
 const DocsApiReference = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsApiReference })));
 const DocsExtensions = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsExtensions })));
 const DocsRecipes = lazy(() => import("./routes/Docs").then((module) => ({ default: module.DocsRecipes })));
 const Playground = lazy(() => import("./routes/Playground").then((module) => ({ default: module.Playground })));
-const Outliner = lazy(() => import("@zod-crud/outliner").then((module) => ({ default: module.Outliner })));
-const MobileCms = lazy(() => import("@zod-crud/mobile-cms").then((module) => ({ default: module.App })));
+const Outliner = lazy(() => import("@interactive-os/json-document-outliner").then((module) => ({ default: module.Outliner })));
+const MobileCms = lazy(() => import("@interactive-os/json-document-mobile-cms").then((module) => ({ default: module.App })));
 const routeComponents: Record<string, ComponentType> = {
   "/": Home,
   "/docs": Docs,
@@ -168,7 +168,7 @@ export function App() {
         className="shrink-0 border-b border-stone-200 bg-white text-sm md:sticky md:top-0 md:h-screen md:w-52 md:self-start md:overflow-y-auto md:border-b-0 md:border-r"
       >
         <NavLink to="/" className="flex px-4 py-3 font-mono text-stone-950 no-underline hover:text-stone-600 md:border-b md:border-stone-200">
-          zod-crud
+          json-document
         </NavLink>
         <div className="flex gap-4 overflow-x-auto px-3 pb-3 md:grid md:gap-4 md:px-2">
           {Object.entries(groupedRoutes).map(([group, routes]) => (

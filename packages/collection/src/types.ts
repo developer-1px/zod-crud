@@ -4,7 +4,7 @@ import type {
   JSONDocumentDuplicateResult,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type CollectionErrorCode =
   | "empty_selection"

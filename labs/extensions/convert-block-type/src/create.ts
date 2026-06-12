@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { convertBlockType } from "./operations.js";
 import { canConvertBlockType } from "./plan.js";
 import type { BlockTypeConversionDescriptor, BlockTypeConverter } from "./types.js";

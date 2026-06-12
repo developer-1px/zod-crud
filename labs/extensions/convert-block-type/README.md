@@ -1,4 +1,4 @@
-# @zod-crud/convert-block-type
+# @interactive-os/json-document-convert-block-type
 
 Lab extension for converting a JSON block/object from one host-described type to
 another.

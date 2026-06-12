@@ -1,4 +1,4 @@
-import type { JSONDocument, Pointer } from "zod-crud";
+import type { JSONDocument, Pointer } from "@interactive-os/json-document";
 import { canGenerateSlug } from "./plan.js";
 import type { GenerateSlugOptions, GenerateSlugResult } from "./types.js";
 

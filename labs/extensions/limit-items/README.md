@@ -1,12 +1,12 @@
-# @zod-crud/limit-items
+# @interactive-os/json-document-limit-items
 
-Lab limit-items extension for `zod-crud` documents.
+Lab limit-items extension for `@interactive-os/json-document` documents.
 
 Use it to cap a JSON array to at most `max` items (recent-items lists, history
 rotation, "keep latest N"), using only the public document facade.
 
 ```ts
-import { createLimitItems } from "@zod-crud/limit-items";
+import { createLimitItems } from "@interactive-os/json-document-limit-items";
 
 const l = createLimitItems(doc);
 
@@ -25,9 +25,9 @@ l.limitItems("/recent", 10, { from: "end" }); // keep the last 10
 ## Non-goals
 
 - Choosing which items survive beyond start/end (sort first with
-  `@zod-crud/sort-items`).
+  `@interactive-os/json-document-sort-items`).
 - Auto-trimming on insert (host policy / a subscriber).
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

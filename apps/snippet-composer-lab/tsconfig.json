@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.zod-crud-paths.json",
+  "extends": "../../tsconfig.json-document-paths.json",
   "compilerOptions": {
     "target": "ES2022",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],

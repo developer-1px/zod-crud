@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { canPasteGrid } from "./plan.js";
 import type { PasteCellsResult, PasteCellsTarget } from "./types.js";
 

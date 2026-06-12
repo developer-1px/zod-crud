@@ -6,7 +6,7 @@ const editedFirstItem = "Edited first item";
 test("outliner supports keyboard editing and undo in a real browser", async ({ page }) => {
   await page.goto("/playground/outliner");
 
-  await expect(page.getByRole("heading", { name: "zod-crud outliner" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "json-document outliner" })).toBeVisible();
   await expect(page.getByRole("tree", { name: "outline" })).toBeVisible();
 
   const treeTextboxes = page.getByRole("tree").getByRole("textbox");

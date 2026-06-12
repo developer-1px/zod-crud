@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, Pointer } from "@interactive-os/json-document";
 import type { ToggleValueError, ToggleValueErrorCode, ToggleValueOptions, ToggleValueResult } from "./types.js";
 
 export function canToggleValue<TDocument, TValue = unknown>(
@@ -14,7 +14,7 @@ export function canToggleValue<TDocument, TValue = unknown>(
   const current = read.value as TValue;
   const step = options?.direction === "prev" ? -1 : 1;
   // When the host omits values, derive them from the schema: enum/literal now
-  // expose their option set via describe().allowed (zod-crud #130). Booleans
+  // expose their option set via describe().allowed (json-document #130). Booleans
   // still toggle without any value list.
   const values = options?.values ?? enumValuesFromSchema<TValue>(doc, pointer);
   const next = nextValue(current, values, step);

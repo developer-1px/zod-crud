@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canPasteSpecial,
   createPasteSpecial,
@@ -75,7 +75,7 @@ const adapter: PasteSpecialAdapter = {
   },
 };
 
-describe("@zod-crud/paste-special", () => {
+describe("@interactive-os/json-document-paste-special", () => {
   test("adapts and pastes an external payload with core rekeying", () => {
     const doc = createBoard();
     const paste = createPasteSpecial(doc, adapter);

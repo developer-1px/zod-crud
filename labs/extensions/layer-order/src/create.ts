@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { reorderLayers } from "./operations.js";
 import { canReorderLayers } from "./plan.js";
 import type { LayerOrder } from "./types.js";

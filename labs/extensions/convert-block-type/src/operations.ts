@@ -1,4 +1,4 @@
-import type { JSONChangeMetadata, JSONDocument, JSONPatchOperation, JSONResult } from "zod-crud";
+import type { JSONChangeMetadata, JSONDocument, JSONPatchOperation, JSONResult } from "@interactive-os/json-document";
 import { canConvertBlockType, cloneJson, conversionError } from "./plan.js";
 import type { BlockTypeConversionDescriptor, BlockTypeConversionError, BlockTypeConversionInput, BlockTypeConversionPlan, BlockTypeConversionResult } from "./types.js";
 

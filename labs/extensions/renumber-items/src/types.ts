@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONPatchOperation, JSONResult, Pointer } from "zod-crud";
+import type { JSONCapabilityResult, JSONPatchOperation, JSONResult, Pointer } from "@interactive-os/json-document";
 
 export type RenumberItemsErrorCode =
   | "invalid_pointer"

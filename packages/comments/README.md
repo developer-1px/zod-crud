@@ -1,13 +1,13 @@
-# @zod-crud/comments
+# @interactive-os/json-document-comments
 
-Official headless comments extension for review notes anchored to `zod-crud`
+Official headless comments extension for review notes anchored to `@interactive-os/json-document`
 documents.
 
 Use it when a product needs review comments anchored to JSON structure: block documents,
 CMS review, slide/object notes, import review, moderation queues, or generated admin editors.
 
 ```ts
-import { createComments } from "@zod-crud/comments";
+import { createComments } from "@interactive-os/json-document-comments";
 
 const comments = createComments(doc);
 
@@ -39,10 +39,10 @@ comments.resolve("review-title");
 - No automatic lost-anchor recovery. Recovery is product policy.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/comments` keeps comment state outside the core document while tracking
+`@interactive-os/json-document-comments` keeps comment state outside the core document while tracking
 anchors through public patch subscriptions. A removed anchor becomes a lost
 comment; the host decides whether to restore, discard, or show it.

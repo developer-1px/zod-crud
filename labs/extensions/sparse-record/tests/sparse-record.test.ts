@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canEditSparseRecords,
   createSparseRecord,
@@ -39,7 +39,7 @@ function expectOk(result: SparseRecordResult): Extract<SparseRecordResult, { ok:
   return result;
 }
 
-describe("@zod-crud/sparse-record", () => {
+describe("@interactive-os/json-document-sparse-record", () => {
   test("plans add, replace, remove, and no-op entries in one command", () => {
     const doc = createDoc();
     const sparse = createSparseRecord(doc);

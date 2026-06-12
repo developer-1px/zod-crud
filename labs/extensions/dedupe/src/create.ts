@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { dedupe } from "./operations.js";
 import { canDedupe } from "./plan.js";
 import type { Dedupe } from "./types.js";

@@ -1,13 +1,13 @@
-# @zod-crud/fill-blanks
+# @interactive-os/json-document-fill-blanks
 
-Lab fill-blanks extension for `zod-crud` documents.
+Lab fill-blanks extension for `@interactive-os/json-document` documents.
 
 Use it to fill only the empty slots across a list of targets (Sheets "fill
 blanks", "set a default for missing values"), using only the public document
 facade.
 
 ```ts
-import { createFillBlanks } from "@zod-crud/fill-blanks";
+import { createFillBlanks } from "@interactive-os/json-document-fill-blanks";
 
 const f = createFillBlanks(doc);
 
@@ -33,8 +33,8 @@ f.fillBlanks(targets, { compute: (p) => `auto:${p}` }, { field: "/note", isEmpty
 - Adding missing fields/keys (targets must resolve) — this fills existing empty
   slots, not absent ones.
 - Choosing the targets — host passes the pointer list.
-- Unconditional set across a selection — that is `@zod-crud/batch-update`.
-- No plugin registration; no `zod-crud` internal imports.
+- Unconditional set across a selection — that is `@interactive-os/json-document-batch-update`.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

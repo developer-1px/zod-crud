@@ -6,7 +6,7 @@ import type {
   JSONPatchOperation,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   protectedPasteTarget,

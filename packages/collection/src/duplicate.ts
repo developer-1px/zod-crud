@@ -2,7 +2,7 @@ import type {
   JSONDocument,
   JSONDocumentDuplicateOptions,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   readCollectionItemLocation,

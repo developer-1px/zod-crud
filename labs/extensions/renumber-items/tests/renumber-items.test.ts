@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canRenumberItems, createRenumberItems, type RenumberItemsResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -27,7 +27,7 @@ function expectOk(result: RenumberItemsResult): Extract<RenumberItemsResult, { o
   return result;
 }
 
-describe("@zod-crud/renumber-items", () => {
+describe("@interactive-os/json-document-renumber-items", () => {
   test("syncs the order field to array position", () => {
     const doc = createDoc();
     const r = createRenumberItems(doc);

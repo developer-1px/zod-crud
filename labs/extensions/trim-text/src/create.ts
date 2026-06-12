@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { trimText } from "./operations.js";
 import { canTrimText } from "./plan.js";
 import type { TrimText } from "./types.js";

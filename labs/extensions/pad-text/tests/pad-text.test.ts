@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canPadText, createPadText, type PadTextResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: PadTextResult): Extract<PadTextResult, { ok: true }> {
   return result;
 }
 
-describe("@zod-crud/pad-text", () => {
+describe("@interactive-os/json-document-pad-text", () => {
   test("zero-pads at the start by default", () => {
     const doc = createDoc("42");
     const p = createPadText(doc);

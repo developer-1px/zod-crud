@@ -1,12 +1,12 @@
-# @zod-crud/convert-type
+# @interactive-os/json-document-convert-type
 
-Lab convert-type extension for `zod-crud` documents.
+Lab convert-type extension for `@interactive-os/json-document` documents.
 
 Use it to convert a field's runtime type (string ↔ number ↔ boolean), using only
 the public document facade.
 
 ```ts
-import { createConvertType } from "@zod-crud/convert-type";
+import { createConvertType } from "@interactive-os/json-document-convert-type";
 
 const c = createConvertType(doc);
 
@@ -30,7 +30,7 @@ c.convertType("/val", "boolean");  // "yes" -> true
 
 - Locale/format-aware parsing (currency, grouped digits, dates) — host-owned.
 - Rendered input masks.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, Pointer } from "@interactive-os/json-document";
 import type { BatchUpdateError, BatchUpdateErrorCode, BatchUpdateOptions, BatchUpdateResult, BatchUpdateValue } from "./types.js";
 
 export function canBatchUpdate<TDocument, TValue = unknown>(

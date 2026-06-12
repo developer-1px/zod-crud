@@ -1,5 +1,5 @@
 import { defineConfig } from "vitest/config";
-import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
+import { jsonDocumentSourceAliases } from "../../config/json-document-source-aliases.ts";
 
 export default defineConfig({
   test: {
@@ -7,6 +7,6 @@ export default defineConfig({
     globals: true,
   },
   resolve: {
-    alias: zodCrudSourceAliases(),
+    alias: jsonDocumentSourceAliases(),
   },
 });

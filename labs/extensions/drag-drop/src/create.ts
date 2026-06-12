@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { performDrop } from "./operations.js";
 import { canDrop } from "./plan.js";
 import type { DragDrop } from "./types.js";

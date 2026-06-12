@@ -1,4 +1,4 @@
-import { type JSONDocument, type JSONPatchOperation, type Pointer, type SelectionPoint, type SelectionRange, trackPointer } from "zod-crud";
+import { type JSONDocument, type JSONPatchOperation, type Pointer, type SelectionPoint, type SelectionRange, trackPointer } from "@interactive-os/json-document";
 import type { LiveCursors, PresenceCursor, PresenceCursorError, PresenceCursorInput, PresenceCursorListener, PresenceCursorSnapshot } from "./types.js";
 
 export function createLiveCursors<T>(

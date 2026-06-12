@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createSchemaForm, createSchemaFormTree } from "../src/index.js";
 
 const Settings = z.object({
@@ -38,7 +38,7 @@ function createSettingsDoc() {
   });
 }
 
-describe("@zod-crud/schema-form", () => {
+describe("@interactive-os/json-document-schema-form", () => {
   test("reads root object entries as field descriptors", () => {
     const doc = createSettingsDoc();
 

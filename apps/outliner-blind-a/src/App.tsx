@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useJSONDocument } from "zod-crud/react";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import {
   arrayPointerOf,
   createNode,

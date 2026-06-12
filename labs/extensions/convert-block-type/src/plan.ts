@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONDocument, JSONPatchOperation, JSONResult, Pointer } from "zod-crud";
+import type { JSONCapabilityResult, JSONDocument, JSONPatchOperation, JSONResult, Pointer } from "@interactive-os/json-document";
 import type { BlockTypeConversionDescriptor, BlockTypeConversionError, BlockTypeConversionErrorCode, BlockTypeConversionFactoryInput, BlockTypeConversionInput, BlockTypeConversionPlanResult } from "./types.js";
 
 export function canConvertBlockType<TDocument>(

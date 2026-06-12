@@ -1,12 +1,12 @@
-# @zod-crud/fill-series
+# @interactive-os/json-document-fill-series
 
-Lab fill/series propagation extension for `zod-crud` documents.
+Lab fill/series propagation extension for `@interactive-os/json-document` documents.
 
 Use it to test whether spreadsheet-style autofill and linear series can stay
 outside core while using only the public document facade.
 
 ```ts
-import { createFillSeries } from "@zod-crud/fill-series";
+import { createFillSeries } from "@interactive-os/json-document-fill-series";
 
 const filler = createFillSeries(doc);
 
@@ -43,7 +43,7 @@ filler.fill(["/rows/1", "/rows/2"], { from: (cell) => `row-${cell.index}` }, { f
 - No stable identity tracking; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

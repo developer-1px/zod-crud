@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canPasteGrid, createPasteCells, type PasteCellsResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -25,7 +25,7 @@ function expectOk(result: PasteCellsResult): Extract<PasteCellsResult, { ok: tru
   return result;
 }
 
-describe("@zod-crud/paste-cells", () => {
+describe("@interactive-os/json-document-paste-cells", () => {
   test("pastes a 2D matrix onto a rectangular region", () => {
     const doc = createDoc();
     const grid = createPasteCells(doc);

@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONResult, Pointer } from "zod-crud";
+import type { JSONDocument, JSONResult, Pointer } from "@interactive-os/json-document";
 import { canUnwrapSelection, canWrapSelection, wrapSelectionError } from "./plan.js";
 import type { WrapSelectionAdapter, WrapSelectionApplyResult, WrapSelectionError, WrapSelectionOperation, WrapSource } from "./types.js";
 

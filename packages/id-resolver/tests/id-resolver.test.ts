@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createIdResolver } from "../src/index.js";
 
 const Card = z.object({
@@ -45,7 +45,7 @@ function createBoard() {
   });
 }
 
-describe("@zod-crud/id-resolver", () => {
+describe("@interactive-os/json-document-id-resolver", () => {
   test("resolves a stable id to the current JSON Pointer", () => {
     const doc = createBoard();
     const ids = createIdResolver(doc, {

@@ -4,7 +4,7 @@ import type {
   JSONDocumentPasteOptions,
   JSONDocumentPasteTarget,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type SnippetInsertOptions = Omit<JSONDocumentPasteOptions, "payload">;
 

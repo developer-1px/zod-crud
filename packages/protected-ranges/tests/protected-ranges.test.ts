@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canPatchProtectedRanges,
   createProtectedRanges,
@@ -38,7 +38,7 @@ function createRanges(): ProtectedRange[] {
   ];
 }
 
-describe("@zod-crud/protected-ranges", () => {
+describe("@interactive-os/json-document-protected-ranges", () => {
   test("lists protected ranges without exposing mutable range records", () => {
     const ranges = createRanges();
     const protectedRanges = createProtectedRanges(createPage(), ranges);

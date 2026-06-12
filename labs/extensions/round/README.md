@@ -1,12 +1,12 @@
-# @zod-crud/round
+# @interactive-os/json-document-round
 
-Lab round extension for `zod-crud` documents.
+Lab round extension for `@interactive-os/json-document` documents.
 
 Use it to round a numeric field to a precision or to the nearest step
 (currency, measurements, slider snap), using only the public document facade.
 
 ```ts
-import { createRound } from "@zod-crud/round";
+import { createRound } from "@interactive-os/json-document-round";
 
 const r = createRound(doc);
 
@@ -27,8 +27,8 @@ r.round("/price", { mode: "ceil" });          // round up to integer
 
 - Currency/locale formatting or display strings (this changes the stored
   number, not its rendering).
-- Incrementing/clamping — see `@zod-crud/increment-number`.
-- No plugin registration; no `zod-crud` internal imports.
+- Incrementing/clamping — see `@interactive-os/json-document-increment-number`.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

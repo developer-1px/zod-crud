@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONDocument, JSONPatchOperation, JSONResult, Pointer, ReadResult } from "zod-crud";
+import type { JSONCapabilityResult, JSONDocument, JSONPatchOperation, JSONResult, Pointer, ReadResult } from "@interactive-os/json-document";
 
 export type CalculatedFieldErrorCode =
   | "read_failed"

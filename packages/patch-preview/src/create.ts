@@ -1,7 +1,7 @@
 import type {
   JSONDocument,
   JSONPatchOperation,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import { previewPatch } from "./preview.js";
 import type {

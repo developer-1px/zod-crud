@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canSetReference,
   createReferences,
@@ -60,7 +60,7 @@ function createSite() {
   });
 }
 
-describe("@zod-crud/references", () => {
+describe("@interactive-os/json-document-references", () => {
   test("indexes targets, outgoing references, backlinks, and diagnostics", () => {
     const doc = createSite();
     const references = createReferences(doc, descriptor);

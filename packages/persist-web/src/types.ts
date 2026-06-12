@@ -4,7 +4,7 @@ import type {
   JSONPatchOperation,
   JSONResult,
   SelectionSnap,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   WEB_PERSISTENCE_KIND,

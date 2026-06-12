@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createCollection } from "../src/index.js";
 
 const Card = z.object({
@@ -85,7 +85,7 @@ function createBoard() {
   });
 }
 
-describe("@zod-crud/collection", () => {
+describe("@interactive-os/json-document-collection", () => {
   test("moves collection items up and down through public document verbs", () => {
     const doc = createBoard();
     const collection = createCollection(doc);

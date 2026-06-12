@@ -1,14 +1,14 @@
-# @zod-crud/form-draft
+# @interactive-os/json-document-form-draft
 
 Official headless form draft extension for temporary input that is not ready to
-enter a schema-valid `zod-crud` document.
+enter a schema-valid `@interactive-os/json-document` document.
 
 Use it when a product needs form, property panel, settings, CMS, generated admin,
 spreadsheet cell, or import mapping inputs that can be temporarily invalid while
 the saved JSON document stays valid.
 
 ```ts
-import { createFormDraft } from "@zod-crud/form-draft";
+import { createFormDraft } from "@interactive-os/json-document-form-draft";
 
 const drafts = createFormDraft(doc, {
   parse({ input }) {
@@ -41,11 +41,11 @@ drafts.commitAll("/settings");
 - No schema-derived UI widget selection.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/form-draft` keeps temporary invalid input outside `doc.value`, asks
+`@interactive-os/json-document-form-draft` keeps temporary invalid input outside `doc.value`, asks
 host code to parse, checks document capability, then commits one field through
 `replace` or a whole form/subtree as one JSON Patch batch.
 

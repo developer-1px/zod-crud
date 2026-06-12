@@ -1,12 +1,12 @@
 # 튜토리얼: 작은 카드 편집기 만들기
 
-작은 board state를 만들고, 추가, 변경, 검색, 선택, 붙여넣기, 검증, undo를 한 번씩 연결합니다. 앱 코드는 `zod-crud` 또는 `zod-crud/react`만 import합니다.
+작은 board state를 만들고, 추가, 변경, 검색, 선택, 붙여넣기, 검증, undo를 한 번씩 연결합니다. 앱 코드는 `@interactive-os/json-document` 또는 `@interactive-os/json-document/react`만 import합니다.
 
 ## 1. schema와 document 만들기
 
 ```ts
 import { z } from "zod";
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 
 const Card = z.object({
   id: z.string(),
@@ -146,7 +146,7 @@ if (doc.canUndo().ok) {
 React에서는 같은 document 표면을 hook으로 받습니다.
 
 ```tsx
-import { useJSONDocument } from "zod-crud/react";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 
 const doc = useJSONDocument(Board, initialBoard, {
   history: 100,
@@ -154,4 +154,4 @@ const doc = useJSONDocument(Board, initialBoard, {
 });
 ```
 
-Root package는 React-free입니다. React 앱에서만 `zod-crud/react`를 import합니다.
+Root package는 React-free입니다. React 앱에서만 `@interactive-os/json-document/react`를 import합니다.

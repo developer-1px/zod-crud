@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canClearContents, createClearContents, type ClearContentsResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -35,7 +35,7 @@ function expectOk(result: ClearContentsResult): Extract<ClearContentsResult, { o
   return result;
 }
 
-describe("@zod-crud/clear-contents", () => {
+describe("@interactive-os/json-document-clear-contents", () => {
   test("clears scalar fields to their type-empty value", () => {
     const doc = createDoc();
     const clearer = createClearContents(doc);

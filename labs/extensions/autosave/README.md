@@ -1,12 +1,12 @@
-# @zod-crud/autosave
+# @interactive-os/json-document-autosave
 
-Lab autosave extension for `zod-crud` documents.
+Lab autosave extension for `@interactive-os/json-document` documents.
 
 Use it to test whether autosave can stay outside core while using only the
 public document subscription and current value.
 
 ```ts
-import { createAutoSave } from "@zod-crud/autosave";
+import { createAutoSave } from "@interactive-os/json-document-autosave";
 
 const autosave = createAutoSave(doc, {
   save: async ({ value }) => {
@@ -33,7 +33,7 @@ await autosave.flush();
 - No persistence envelope; compose persistence separately if needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

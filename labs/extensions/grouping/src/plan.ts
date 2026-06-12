@@ -1,4 +1,4 @@
-import { appendSegment, type JSONCapabilityResult, type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, resolveSiblingRange, type SiblingRangeResult, tryParsePointer } from "zod-crud";
+import { appendSegment, type JSONCapabilityResult, type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, resolveSiblingRange, type SiblingRangeResult, tryParsePointer } from "@interactive-os/json-document";
 import type { GroupingAdapter, GroupingChange, GroupingChangeResult, GroupingError, GroupingErrorCode, GroupingOperation, GroupingPlan, GroupingSource, ItemLocation } from "./types.js";
 
 export function canGroupSelection<TDocument>(

@@ -5,7 +5,7 @@ import { routeFile, validateSiteRoutes } from "./site-route-checks.mjs";
 const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
 const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/");
-const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/json-document").replace(/\/$/, "");
 const siteRoutes = JSON.parse(readFileSync(join(root, "apps/site/src/site-routes.json"), "utf8"));
 validateSiteRoutes(siteRoutes, fail);
 const routes = siteRoutes.map((route) => ({ ...route, file: routeFile(route.path) }));
@@ -47,7 +47,7 @@ const sitemap = read("sitemap.xml");
 const manifest = JSON.parse(read("site.webmanifest"));
 
 for (const pattern of [
-  /<title>zod-crud - Headless JSON editing<\/title>/,
+  /<title>json-document - Headless JSON editing<\/title>/,
   /name="description"/,
   /property="og:title"/,
   /property="og:description"/,
@@ -60,7 +60,7 @@ for (const pattern of [
 }
 
 if (/%BASE_URL%/.test(index)) fail("site dist index contains an unexpanded Vite base placeholder.");
-if (/rel="modulepreload"[^>]+\/assets\/(?:playground-|zod-crud-)/.test(index)) {
+if (/rel="modulepreload"[^>]+\/assets\/(?:playground-|json-document-)/.test(index)) {
   fail("site dist index must not preload playground or engine chunks before a demo route is opened.");
 }
 
@@ -87,8 +87,8 @@ for (const route of routes) {
 }
 
 if (
-  manifest.name !== "zod-crud"
-  || manifest.short_name !== "zod-crud"
+  manifest.name !== "@interactive-os/json-document"
+  || manifest.short_name !== "@interactive-os/json-document"
   || manifest.theme_color !== "#fafaf9"
   || !Array.isArray(manifest.icons)
   || manifest.icons.length === 0

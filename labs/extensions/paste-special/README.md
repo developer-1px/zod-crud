@@ -1,4 +1,4 @@
-# @zod-crud/paste-special
+# @interactive-os/json-document-paste-special
 
 Lab extension for paste special.
 
@@ -21,7 +21,7 @@ adapted before it can be pasted into the current document.
 - visual paste target selection
 - custom ID policy beyond core `rekey`
 - plugin registration
-- `zod-crud` internal imports
+- `@interactive-os/json-document` internal imports
 
 ```ts
 const paste = createPasteSpecial(doc, {

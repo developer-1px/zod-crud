@@ -2,7 +2,7 @@
 
 상태: 활성.
 
-이 게이트는 현재 패키지가 릴리스 가능한지를 묻는 것이 아니라, zod-crud가
+이 게이트는 현재 패키지가 릴리스 가능한지를 묻는 것이 아니라, json-document가
 편집 도구의 표준 수준 foundation으로 쓰일 수 있는지를 묻는다.
 
 ```txt
@@ -44,8 +44,8 @@ RFC급 foundation
 | extension 위임 표준 | `docs/standard/extension-delegation-standard.md` | 초안 추가 |
 | contract pressure register | `docs/standard/contract-pressure-register.md` | 활성 |
 | self-improvement loop report | `docs/standard/self-improvement-loop-report.md` | 10회 루프 완료 |
-| export lock | `packages/zod-crud/public-contract.json` | 활성 |
-| 의미론 conformance | `packages/zod-crud/tests/public/standard-conformance.test.ts` | 활성 |
+| export lock | `packages/json-document/public-contract.json` | 활성 |
+| 의미론 conformance | `packages/json-document/tests/public/standard-conformance.test.ts` | 활성 |
 | 표준화 evaluator | `scripts/evaluate-standardization.mjs` | 활성 |
 | 릴리스 기계 검증 | `npm run release:check` | 활성 |
 

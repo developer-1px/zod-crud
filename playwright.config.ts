@@ -23,7 +23,7 @@ export default defineConfig({
   webServer: process.env.PLAYWRIGHT_BASE_URL
     ? undefined
     : {
-        command: `npm run dev -w @zod-crud/site -- --port ${port} --strictPort`,
+        command: `npm run dev -w @interactive-os/json-document-site -- --port ${port} --strictPort`,
         reuseExistingServer,
         timeout: 60_000,
         url: baseURL,

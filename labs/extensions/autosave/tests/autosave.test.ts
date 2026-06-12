@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   createAutoSave,
   type AutoSaveScheduler,
@@ -47,7 +47,7 @@ function createManualScheduler() {
   };
 }
 
-describe("@zod-crud/autosave", () => {
+describe("@interactive-os/json-document-autosave", () => {
   test("schedules autosave from document changes", async () => {
     const doc = createDoc();
     const manual = createManualScheduler();

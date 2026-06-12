@@ -1,12 +1,12 @@
-# @zod-crud/split-text
+# @interactive-os/json-document-split-text
 
-Lab split-text extension for `zod-crud` documents.
+Lab split-text extension for `@interactive-os/json-document` documents.
 
 Use it to split a string into array items (tag input, paste-as-list), using only
 the public document facade.
 
 ```ts
-import { createSplitText } from "@zod-crud/split-text";
+import { createSplitText } from "@interactive-os/json-document-split-text";
 
 const s = createSplitText(doc);
 
@@ -30,7 +30,7 @@ s.split("/tags", "a,b", { append: true });   // append to existing
 - CSV/TSV parsing with quoting/escaping, or split-to-columns (2D) — host owns
   real parsing; this is delimiter splitting into a 1D list.
 - Clipboard access or rendered tag/chip UI.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

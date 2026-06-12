@@ -1,4 +1,4 @@
-import { type JSONCapabilityResult, type JSONDocument, type JSONPatchOperation, type Pointer, resolveSiblingRange, type SiblingRangeErrorCode } from "zod-crud";
+import { type JSONCapabilityResult, type JSONDocument, type JSONPatchOperation, type Pointer, resolveSiblingRange, type SiblingRangeErrorCode } from "@interactive-os/json-document";
 import type { LayerItemLocation, LayerOrderAction, LayerOrderChange, LayerOrderChangeResult, LayerOrderError, LayerOrderErrorCode, LayerOrderPlan, LayerOrderSource } from "./types.js";
 
 export function canReorderLayers<TDocument>(

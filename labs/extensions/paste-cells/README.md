@@ -1,13 +1,13 @@
-# @zod-crud/paste-cells
+# @interactive-os/json-document-paste-cells
 
-Lab paste-cells extension for `zod-crud` documents.
+Lab paste-cells extension for `@interactive-os/json-document` documents.
 
 Use it to test whether pasting a 2D value matrix onto a rectangular region of an
 array-of-records can stay outside core while using only the public document
 facade.
 
 ```ts
-import { createPasteCells } from "@zod-crud/paste-cells";
+import { createPasteCells } from "@interactive-os/json-document-paste-cells";
 
 const grid = createPasteCells(doc);
 
@@ -37,7 +37,7 @@ grid.pasteGrid({ at: "/rows/1", fields: ["/name", "/qty"] }, [
 - Merged cells, 2D grid selection UI, rendered table, keyboard, or focus policy.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

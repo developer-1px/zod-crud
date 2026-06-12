@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canFillDown, createFillDown, type FillDownResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -27,7 +27,7 @@ function expectOk(result: FillDownResult): Extract<FillDownResult, { ok: true }>
   return result;
 }
 
-describe("@zod-crud/fill-down", () => {
+describe("@interactive-os/json-document-fill-down", () => {
   test("carries the previous non-empty value forward (down)", () => {
     const doc = createDoc();
     const f = createFillDown(doc);

@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { round } from "./operations.js";
 import { canRound } from "./plan.js";
 import type { Round } from "./types.js";

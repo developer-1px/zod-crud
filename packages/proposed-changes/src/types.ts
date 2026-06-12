@@ -5,7 +5,7 @@ import type {
   JSONPatchOperation,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type ProposedChangeStatus = "open" | "accepted" | "rejected";
 

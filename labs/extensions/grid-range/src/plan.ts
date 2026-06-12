@@ -1,4 +1,4 @@
-import { appendSegment, type JSONCapabilityResult, type JSONDocument, type JSONPatchOperation, type Pointer } from "zod-crud";
+import { appendSegment, type JSONCapabilityResult, type JSONDocument, type JSONPatchOperation, type Pointer } from "@interactive-os/json-document";
 import type { GridRangeBounds, GridRangeCellAction, GridRangeCellAddress, GridRangeCellIntent, GridRangeCellIntentKind, GridRangeDecision, GridRangeError, GridRangeErrorCode, GridRangeFillInput, GridRangeKeyResolver, GridRangeOptions, GridRangePasteInput, GridRangeRect, GridRangeResolvedCell, GridRangeResult, GridRangeSourceCell, PlannedCellInput } from "./types.js";
 
 export function canPasteGridRange<TDocument>(

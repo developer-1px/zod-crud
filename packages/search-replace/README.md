@@ -1,6 +1,6 @@
-# @zod-crud/search-replace
+# @interactive-os/json-document-search-replace
 
-Official headless search and replace extension for text fields in `zod-crud`
+Official headless search and replace extension for text fields in `@interactive-os/json-document`
 documents.
 
 Use it when a product needs document-wide or subtree text search over JSON
@@ -8,7 +8,7 @@ string fields: block documents, CMS copy review, generated admin editors,
 slide notes, import cleanup, or settings search.
 
 ```ts
-import { createSearchReplace } from "@zod-crud/search-replace";
+import { createSearchReplace } from "@interactive-os/json-document-search-replace";
 
 const text = createSearchReplace(doc);
 
@@ -33,7 +33,7 @@ text.replaceAll("draft", "published", {
 
 ## Advanced Search Modes
 
-`@zod-crud/search-replace` intentionally standardizes literal JSON string-field
+`@interactive-os/json-document-search-replace` intentionally standardizes literal JSON string-field
 find/replace. Regex, fuzzy search, stemming, tokenization, locale collation, and
 rendered-text search stay host-owned until those behaviors repeat across
 products with the same safety and result semantics.
@@ -47,7 +47,7 @@ For regex search, the host owns:
 - rendered text extraction, ranking, grouping, and advanced-mode UI
 - deciding whether a stale search snapshot should be recomputed or rejected
 
-`zod-crud` still owns the document mutation boundary once the host has a current
+`@interactive-os/json-document` still owns the document mutation boundary once the host has a current
 JSON string target. A host can compute a regex match range itself, then call
 `canReplaceMatch` or `replaceMatch` with `{ pointer, range }` to reuse stale text
 checks, schema preflight, and the atomic `doc.replace` operation for that one
@@ -57,7 +57,7 @@ Regex replace-all remains host-owned in this package because capture
 substitution and product safety rules decide the replacement text. Hosts that
 compute a full next document or patch batch can still delegate final document
 validation and mutation through core `doc.canPatch` / `doc.patch`,
-`@zod-crud/patch-preview`, or a diff/apply feature.
+`@interactive-os/json-document-patch-preview`, or a diff/apply feature.
 
 ## Scope
 
@@ -80,7 +80,7 @@ validation and mutation through core `doc.canPatch` / `doc.patch`,
   grouping.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 

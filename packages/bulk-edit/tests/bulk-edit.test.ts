@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canDeleteAll,
   canReplaceAll,
@@ -35,7 +35,7 @@ function createBoard() {
   });
 }
 
-describe("@zod-crud/bulk-edit", () => {
+describe("@interactive-os/json-document-bulk-edit", () => {
   test("replaces all JSONPath matches through public document patching", () => {
     const doc = createBoard();
     const bulk = createBulkEdit(doc);

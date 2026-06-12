@@ -1,4 +1,4 @@
-import { appendSegment, type JSONCapabilityResult, type JSONDocument, type JSONDocumentPasteOptions, type JSONDocumentPasteTarget, lastSegmentIndex, parentPointer, type Pointer, type ReadResult } from "zod-crud";
+import { appendSegment, type JSONCapabilityResult, type JSONDocument, type JSONDocumentPasteOptions, type JSONDocumentPasteTarget, lastSegmentIndex, parentPointer, type Pointer, type ReadResult } from "@interactive-os/json-document";
 import type { DragDropError, DragDropInput, DragDropPlanResult, DragDropSource, DragDropTarget } from "./types.js";
 
 export function canDrop<TDocument>(

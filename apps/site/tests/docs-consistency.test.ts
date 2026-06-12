@@ -36,21 +36,21 @@ const generatedRepoCatalog = JSON.parse(read("docs/generated/repo-catalog.json")
 };
 const docs = {
   rootReadme: read("README.md"),
-  readme: read("packages/zod-crud/README.md"),
-  spec: read("docs/standard/zod-crud-spec.md"),
+  readme: read("packages/json-document/README.md"),
+  spec: read("docs/standard/json-document-spec.md"),
   llms: read("llms.txt"),
   site: [...Object.values(publicDocs), generatedExtensionsCatalog].join("\n\n"),
   ...publicDocs,
   generatedExtensionsCatalog,
 };
-const publicContract = JSON.parse(read("packages/zod-crud/public-contract.json")) as {
+const publicContract = JSON.parse(read("packages/json-document/public-contract.json")) as {
   root: { values: string[]; types: string[] };
   react: { values: string[]; types: string[] };
 };
 
 function officialExtensionNames(): string[] {
   return readdirSync(join(root, "packages"), { withFileTypes: true })
-    .filter((entry) => entry.isDirectory() && entry.name !== "zod-crud")
+    .filter((entry) => entry.isDirectory() && entry.name !== "@interactive-os/json-document")
     .map((entry) => JSON.parse(read(`packages/${entry.name}/package.json`)) as { name: string })
     .map((pkg) => pkg.name)
     .sort();
@@ -63,9 +63,9 @@ describe("public docs consistency", () => {
     expect(exists("docs/public/api.md")).toBe(true);
     expect(exists("docs/public/extensions.md")).toBe(true);
 
-    expect(exists("apps/site/src/docs/zod-crud-concepts.md")).toBe(false);
-    expect(exists("apps/site/src/docs/zod-crud-tutorial.md")).toBe(false);
-    expect(exists("apps/site/src/docs/zod-crud-api.md")).toBe(false);
+    expect(exists("apps/site/src/docs/json-document-concepts.md")).toBe(false);
+    expect(exists("apps/site/src/docs/json-document-tutorial.md")).toBe(false);
+    expect(exists("apps/site/src/docs/json-document-api.md")).toBe(false);
   });
 
   test("keeps non-README markdown under docs", () => {
@@ -99,7 +99,7 @@ describe("public docs consistency", () => {
     expect(docs.rootReadme).toMatch(/## 문서 지도/);
     expect(docs.rootReadme).toMatch(/docs\/public\/overview\.md/);
     expect(docs.rootReadme).toMatch(/## 코드 지도/);
-    expect(docs.rootReadme).toMatch(/packages\/zod-crud/);
+    expect(docs.rootReadme).toMatch(/packages\/json-document/);
     expect(docs.overview).toMatch(/## 배경/);
     expect(docs.overview).toMatch(/## 핵심 개념/);
     expect(docs.overview).toMatch(/검색: JSONPath -> Pointer\[\]/);
@@ -107,12 +107,12 @@ describe("public docs consistency", () => {
     expect(docs.quickstart).toMatch(/튜토리얼: 작은 카드 편집기 만들기/);
     expect(docs.api).toMatch(/## 작업별 진입점/);
     expect(docs.api).toMatch(/ReadResult/);
-    expect(docs.extensions).toMatch(/@zod-crud\/collection/);
-    expect(docs.extensions).toMatch(/@zod-crud\/clipboard-web/);
+    expect(docs.extensions).toMatch(/@json-document\/collection/);
+    expect(docs.extensions).toMatch(/@json-document\/clipboard-web/);
     expect(docs.generatedExtensionsCatalog).toMatch(/Generated extension catalog/);
     expect(docs.generatedExtensionsCatalog).toMatch(/Official extensions: \d+/);
-    expect(docs.readme).toMatch(/npm install zod-crud zod/);
-    expect(docs.readme).toMatch(/왜 zod-crud인가/);
+    expect(docs.readme).toMatch(/npm install json-document zod/);
+    expect(docs.readme).toMatch(/왜 json-document인가/);
     expect(docs.llms).toMatch(/왜 \/ 핵심 \/ 튜토리얼 맥락/);
   });
 

@@ -3,7 +3,7 @@ import { defineConfig, type Plugin } from "vite";
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
+import { jsonDocumentSourceAliases } from "../../config/json-document-source-aliases.ts";
 import siteRoutes from "./src/site-routes.json";
 
 function rootLlmsTxt(): Plugin {
@@ -29,7 +29,7 @@ function rootLlmsTxt(): Plugin {
 }
 
 function productionSiteAssets(): Plugin {
-  const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+  const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/json-document").replace(/\/$/, "");
   const routePages = siteRoutes;
 
   return {
@@ -105,7 +105,7 @@ export default defineConfig({
   base: process.env.SITE_BASE ?? "/",
   plugins: [react(), rootLlmsTxt(), productionSiteAssets()],
   resolve: {
-    alias: zodCrudSourceAliases({ officialExtensions: true }),
+    alias: jsonDocumentSourceAliases({ officialExtensions: true }),
   },
   server: {
     host: "127.0.0.1",
@@ -121,7 +121,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes("/node_modules/react/") || id.includes("/node_modules/react-dom/")) return "react";
-          if (id.includes("/packages/zod-crud/src/")) return "zod-crud";
+          if (id.includes("/packages/json-document/src/")) return "@interactive-os/json-document";
           if (id.includes("/apps/outliner/src/")) return "playground-outliner";
           if (id.includes("/apps/mobile-cms/src/")) return "playground-mobile-cms";
         },

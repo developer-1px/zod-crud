@@ -4,9 +4,9 @@ import {
   type FormDraftParser,
   type FormDraftSnapshot,
   type FormDrafts,
-} from "@zod-crud/form-draft";
-import { createSchemaFormTree, type SchemaFormTreeField } from "@zod-crud/schema-form";
-import { useJSONDocument } from "zod-crud/react";
+} from "@interactive-os/json-document-form-draft";
+import { createSchemaFormTree, type SchemaFormTreeField } from "@interactive-os/json-document-schema-form";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import { z } from "zod";
 import "./schema-form-lab.css";
 

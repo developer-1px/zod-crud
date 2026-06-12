@@ -1,12 +1,12 @@
-# @zod-crud/apply-defaults
+# @interactive-os/json-document-apply-defaults
 
-Lab apply-defaults extension for `zod-crud` documents.
+Lab apply-defaults extension for `@interactive-os/json-document` documents.
 
 Use it to add missing object keys from a defaults map (settings/config
 normalization, form initialization), using only the public document facade.
 
 ```ts
-import { createApplyDefaults } from "@zod-crud/apply-defaults";
+import { createApplyDefaults } from "@interactive-os/json-document-apply-defaults";
 
 const e = createApplyDefaults(doc);
 
@@ -25,10 +25,10 @@ e.ensure("/settings", { theme: "light", fontSize: 14, compact: false });
 ## Non-goals
 
 - Overwriting or filling existing-but-empty values — that is
-  `@zod-crud/fill-blanks`.
+  `@interactive-os/json-document-fill-blanks`.
 - Removing unknown keys (the opposite direction), or deep/nested merging — keys
   are added at the object's top level only.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

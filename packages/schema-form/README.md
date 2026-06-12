@@ -1,6 +1,6 @@
-# @zod-crud/schema-form
+# @interactive-os/json-document-schema-form
 
-Official headless schema-backed field descriptor extension for `zod-crud`
+Official headless schema-backed field descriptor extension for `@interactive-os/json-document`
 documents.
 
 Use it when a product needs to render or inspect editable fields without
@@ -8,7 +8,7 @@ putting UI policy in core: settings forms, generated admin resource forms,
 document property panels, slide metadata panels, or spreadsheet tab settings.
 
 ```ts
-import { createSchemaForm, createSchemaFormTree } from "@zod-crud/schema-form";
+import { createSchemaForm, createSchemaFormTree } from "@interactive-os/json-document-schema-form";
 
 const form = createSchemaForm(doc, "/settings");
 
@@ -35,15 +35,15 @@ const tree = createSchemaFormTree(doc, "/page");
 - No rendered inputs, labels, layout, validation UI, focus, or keyboard policy.
 - No registry of field widgets.
 - No stale descriptor tracking. Recreate the form after document changes.
-- No collection movement; use `@zod-crud/collection`.
+- No collection movement; use `@interactive-os/json-document-collection`.
 - No stable identity lookup; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/schema-form` delegates to the public `zod-crud` facade:
+`@interactive-os/json-document-schema-form` delegates to the public `@interactive-os/json-document` facade:
 `entries`, `schema.kind`, `schema.accepts`, `canReplace`, and `replace`.
 
 Core remains an editing engine. Field rendering and product-specific form policy

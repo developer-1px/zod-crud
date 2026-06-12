@@ -3,9 +3,9 @@ import type {
   JSONPatchOperation,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
-export type PatchPreviewSchema = Parameters<typeof import("zod-crud").applyPatch>[0];
+export type PatchPreviewSchema = Parameters<typeof import("@interactive-os/json-document").applyPatch>[0];
 
 export type PatchPreviewErrorCode =
   | "patch_rejected"

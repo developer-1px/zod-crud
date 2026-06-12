@@ -1,4 +1,4 @@
-import { type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, tryParsePointer } from "zod-crud";
+import { type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, tryParsePointer } from "@interactive-os/json-document";
 import type { Located, SwapItemsError, SwapItemsErrorCode, SwapItemsResult } from "./types.js";
 
 export function canSwapItems<TDocument>(doc: JSONDocument<TDocument>, a: Pointer, b: Pointer): SwapItemsResult {

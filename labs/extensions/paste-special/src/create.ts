@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { pasteSpecial } from "./operations.js";
 import { canPasteSpecial } from "./plan.js";
 import type { PasteSpecial, PasteSpecialAdapter } from "./types.js";

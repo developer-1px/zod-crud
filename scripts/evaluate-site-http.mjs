@@ -6,8 +6,8 @@ import { validateSiteRoutes } from "./site-route-checks.mjs";
 
 const root = new URL("..", import.meta.url).pathname;
 const dist = join(root, "apps/site/dist");
-const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/zod-crud/");
-const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+const expectedBase = normalizeBase(process.env.SITE_BASE ?? "/json-document/");
+const expectedSiteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/json-document").replace(/\/$/, "");
 const routes = JSON.parse(readFileSync(join(root, "apps/site/src/site-routes.json"), "utf8"));
 validateSiteRoutes(routes, fail);
 const seenAssets = new Set();

@@ -1,12 +1,12 @@
-# @zod-crud/change-case
+# @interactive-os/json-document-change-case
 
-Lab change-case extension for `zod-crud` documents.
+Lab change-case extension for `@interactive-os/json-document` documents.
 
 Use it to apply a case/whitespace transform to a string field, using only the
 public document facade.
 
 ```ts
-import { createChangeCase } from "@zod-crud/change-case";
+import { createChangeCase } from "@interactive-os/json-document-change-case";
 
 const t = createChangeCase(doc);
 
@@ -28,7 +28,7 @@ t.transform("/title", (v) => v.normalize("NFC")); // host transform
 - Locale-aware casing, Unicode segmentation beyond JS string methods, or
   rendered text-format toolbars.
 - Multi-field/range application (call per pointer) — kept single-field for now.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

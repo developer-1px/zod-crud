@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createBookmarks } from "../src/index.js";
 
 const Item = z.object({
@@ -28,7 +28,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/bookmarks", () => {
+describe("@interactive-os/json-document-bookmarks", () => {
   test("tracks bookmarked pointers across array insertions and removals", () => {
     const doc = createDoc();
     const bookmarks = createBookmarks(doc, {

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
-import { createGrouping, type GroupingAdapter, type GroupingChangeResult } from "@zod-crud/grouping";
-import type { Pointer } from "zod-crud";
-import { useJSONDocument } from "zod-crud/react";
+import { createGrouping, type GroupingAdapter, type GroupingChangeResult } from "@interactive-os/json-document-grouping";
+import type { Pointer } from "@interactive-os/json-document";
+import { useJSONDocument } from "@interactive-os/json-document/react";
 import { z } from "zod";
 import "./grouping-lab.css";
 

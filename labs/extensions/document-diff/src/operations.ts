@@ -1,4 +1,4 @@
-import type { JSONChangeMetadata, JSONDocument } from "zod-crud";
+import type { JSONChangeMetadata, JSONDocument } from "@interactive-os/json-document";
 import { diffDocument } from "./plan.js";
 import type { DocumentDiffApplyResult } from "./types.js";
 

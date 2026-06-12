@@ -1,6 +1,6 @@
 # Product Recipes
 
-이 문서는 제품을 먼저 정하고, 필요한 editing feature가 `zod-crud` 어디에
+이 문서는 제품을 먼저 정하고, 필요한 editing feature가 `@interactive-os/json-document` 어디에
 있는지 찾기 위한 지도입니다.
 
 Lab extension은 공식 package가 아닙니다. 제품 요구사항이 반복되는지 확인하기
@@ -26,17 +26,17 @@ auth, remote sync는 앱 책임입니다.
 | --- | --- | --- |
 | Board/card schema | core `createJSONDocument` | schema 설계 |
 | Card field edit | core `replace`, `patch`, `canReplace` | field UI |
-| Card/list reorder | `@zod-crud/collection` | drag target 계산 |
+| Card/list reorder | `@interactive-os/json-document-collection` | drag target 계산 |
 | Duplicate card | core `duplicate`, paste `rekey` | id 정책 |
-| Browser clipboard | `@zod-crud/clipboard-web` | native shortcut UI |
-| Card form | `@zod-crud/schema-form` | widget rendering |
-| Dirty/save | `@zod-crud/dirty-state`, `@zod-crud/persist-web` | server sync |
-| Stable card id to Pointer | `@zod-crud/id-resolver` | id generation, route policy |
+| Browser clipboard | `@interactive-os/json-document-clipboard-web` | native shortcut UI |
+| Card form | `@interactive-os/json-document-schema-form` | widget rendering |
+| Dirty/save | `@interactive-os/json-document-dirty-state`, `@interactive-os/json-document-persist-web` | server sync |
+| Stable card id to Pointer | `@interactive-os/json-document-id-resolver` | id generation, route policy |
 | Drag/drop intent | lab `drag-drop` | DOM events, hit testing |
-| Comments/review | `@zod-crud/search-replace`, `@zod-crud/proposed-changes`, `@zod-crud/comments` | workflow, authoring |
+| Comments/review | `@interactive-os/json-document-search-replace`, `@interactive-os/json-document-proposed-changes`, `@interactive-os/json-document-comments` | workflow, authoring |
 
 Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아니라
-`@zod-crud/id-resolver` 같은 small extension 책임입니다.
+`@interactive-os/json-document-id-resolver` 같은 small extension 책임입니다.
 
 ## Grid Table
 
@@ -44,12 +44,12 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | --- | --- | --- |
 | Row schema | core `createJSONDocument` | column model |
 | Cell edit | core `replace`, `canReplace` | active cell UI |
-| Row add/delete/move | core + `@zod-crud/collection` | row handles |
-| Batch edit | `@zod-crud/bulk-edit` | selection policy |
-| Field descriptor | `@zod-crud/schema-form` | grid column rendering |
+| Row add/delete/move | core + `@interactive-os/json-document-collection` | row handles |
+| Batch edit | `@interactive-os/json-document-bulk-edit` | selection policy |
+| Field descriptor | `@interactive-os/json-document-schema-form` | grid column rendering |
 | Sort rows | lab `sort-items` | view state |
 | Derived values | lab `calculated-fields` | formula language |
-| Protected cells | `@zod-crud/protected-ranges` | role/auth policy |
+| Protected cells | `@interactive-os/json-document-protected-ranges` | role/auth policy |
 | TSV/CSV paste | missing candidate | parser, 2D range mapping |
 
 `clipboard-web`는 browser clipboard bridge입니다. Spreadsheet TSV/CSV paste는
@@ -61,13 +61,13 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | --- | --- | --- |
 | Form definition JSON | core `createJSONDocument` | form schema |
 | Field/section edit | core `replace`, `patch`, `canReplace` | property panel UI |
-| Field descriptors | `@zod-crud/schema-form` | rendered inputs, labels, layout |
-| Field/option reorder | `@zod-crud/collection` | drag target, keyboard policy |
-| Stable field id lookup | `@zod-crud/id-resolver` | id scope and routing |
-| Invalid input draft | `@zod-crud/form-draft` | parser, widget messages |
-| Templates/import paste | `@zod-crud/snippets`, lab `paste-special` | snippet catalog, parser |
-| Publish review | `@zod-crud/patch-preview`, `@zod-crud/proposed-changes` | approval workflow |
-| Locked published fields | `@zod-crud/protected-ranges` | auth/server policy |
+| Field descriptors | `@interactive-os/json-document-schema-form` | rendered inputs, labels, layout |
+| Field/option reorder | `@interactive-os/json-document-collection` | drag target, keyboard policy |
+| Stable field id lookup | `@interactive-os/json-document-id-resolver` | id scope and routing |
+| Invalid input draft | `@interactive-os/json-document-form-draft` | parser, widget messages |
+| Templates/import paste | `@interactive-os/json-document-snippets`, lab `paste-special` | snippet catalog, parser |
+| Publish review | `@interactive-os/json-document-patch-preview`, `@interactive-os/json-document-proposed-changes` | approval workflow |
+| Locked published fields | `@interactive-os/json-document-protected-ranges` | auth/server policy |
 
 `schema-form`은 form renderer가 아닙니다. Zod schema에서 field descriptor를
 읽고, 실제 input, label, layout, focus, accessibility는 host가 소유합니다.
@@ -79,65 +79,65 @@ Kanban에서 stable id에서 JSON Pointer를 찾는 일은 core primitive가 아
 | CSV/JSON parsing | app-owned | parser, column mapping |
 | External payload adaptation | lab `paste-special` | source format policy |
 | Current vs imported diff | lab `document-diff` | identity/move inference |
-| Dry-run preview | `@zod-crud/patch-preview`, core `applyPatch` | visual diff |
-| Proposed changes | `@zod-crud/proposed-changes` | review workflow, storage |
-| Reviewer comments | `@zod-crud/comments` | thread UI, authoring |
-| Protected targets | `@zod-crud/protected-ranges` | role/auth policy |
-| Patch audit/replay | `@zod-crud/patch-log` | product activity feed |
-| Stable id to Pointer | `@zod-crud/id-resolver` | row/card identity policy |
+| Dry-run preview | `@interactive-os/json-document-patch-preview`, core `applyPatch` | visual diff |
+| Proposed changes | `@interactive-os/json-document-proposed-changes` | review workflow, storage |
+| Reviewer comments | `@interactive-os/json-document-comments` | thread UI, authoring |
+| Protected targets | `@interactive-os/json-document-protected-ranges` | role/auth policy |
+| Patch audit/replay | `@interactive-os/json-document-patch-log` | product activity feed |
+| Stable id to Pointer | `@interactive-os/json-document-id-resolver` | row/card identity policy |
 
 Import review는 `PatchPlan`이라는 단일 core concept보다 여러 조각으로 남기는
 편이 안전합니다. Parser, visual diff, approval workflow는 host 책임이고,
-zod-crud 쪽 후보는 dry-run, proposed patch, guard reason, stable target lookup입니다.
+json-document 쪽 후보는 dry-run, proposed patch, guard reason, stable target lookup입니다.
 
 ## Slide Object Editor
 
 | Feature | Use | App-owned |
 | --- | --- | --- |
 | Slide JSON document | core `createJSONDocument` | object schema |
-| Object create/delete/move | core + `@zod-crud/collection` | command labels |
+| Object create/delete/move | core + `@interactive-os/json-document-collection` | command labels |
 | Shape property edit | core `replace`, `patch` | geometry semantics |
 | Layer order | lab `layer-order` | layer panel UI |
 | Group/ungroup | lab `grouping`, lab `wrap-selection` | group value factory |
 | Drag/drop | lab `drag-drop` | pointer events |
-| Lock/protect | `@zod-crud/protected-ranges` | visibility policy |
-| Search/replace | `@zod-crud/search-replace` | visible text policy |
+| Lock/protect | `@interactive-os/json-document-protected-ranges` | visibility policy |
+| Search/replace | `@interactive-os/json-document-search-replace` | visible text policy |
 | Resize/snap/align | missing candidate | hit testing, canvas math |
 
 Canvas rendering, zoom, pan, export, rich text editing, snapping, handles는
-`zod-crud`가 아니라 host/editor engine 책임입니다.
+`@interactive-os/json-document`가 아니라 host/editor engine 책임입니다.
 
 ## Diagram Whiteboard
 
 | Feature | Use | App-owned |
 | --- | --- | --- |
 | Shape JSON document | core `createJSONDocument` | object schema |
-| Shape CRUD/property edit | core + `@zod-crud/schema-form` | geometry semantics |
+| Shape CRUD/property edit | core + `@interactive-os/json-document-schema-form` | geometry semantics |
 | Layer stack | lab `layer-order` | layer panel, rendering |
 | Object group/ungroup | lab `grouping` | group factory, bounds policy |
 | Frame/container wrap | lab `wrap-selection` | frame semantics |
 | Connectors/references | lab `references` | ports, routing, geometry |
-| Comments | `@zod-crud/comments` | thread UI, workflow |
-| Lock/protect | `@zod-crud/protected-ranges` | auth/visibility policy |
-| Stable id to Pointer | `@zod-crud/id-resolver` | selected object id lookup |
+| Comments | `@interactive-os/json-document-comments` | thread UI, workflow |
+| Lock/protect | `@interactive-os/json-document-protected-ranges` | auth/visibility policy |
+| Stable id to Pointer | `@interactive-os/json-document-id-resolver` | selected object id lookup |
 
 Diagram/whiteboard products need stable object identity more strongly than slide
 decks because connectors, layer panels, comments, and selection usually address
 objects by id. Geometry, hit testing, snapping, routing, handles, zoom, and pan
-stay outside zod-crud.
+stay outside json-document.
 
 ## Block Docs
 
 | Feature | Use | App-owned |
 | --- | --- | --- |
 | Block JSON truth | core `createJSONDocument` | block schema |
-| Tree movement | `@zod-crud/outline`, `@zod-crud/collection` | keyboard focus |
-| Snippet insertion | `@zod-crud/snippets` | slash palette UI |
+| Tree movement | `@interactive-os/json-document-outline`, `@interactive-os/json-document-collection` | keyboard focus |
+| Snippet insertion | `@interactive-os/json-document-snippets` | slash palette UI |
 | Mention/reference | lab `references` | entity source, autocomplete |
-| Review comments | `@zod-crud/comments` | thread UI, workflow |
-| Proposed changes | `@zod-crud/proposed-changes`, `@zod-crud/patch-preview` | diff UI, approval |
+| Review comments | `@interactive-os/json-document-comments` | thread UI, workflow |
+| Proposed changes | `@interactive-os/json-document-proposed-changes`, `@interactive-os/json-document-patch-preview` | diff UI, approval |
 | External paste/import | lab `paste-special`, lab `document-diff` | HTML/Markdown parser |
-| Search/replace | `@zod-crud/search-replace` | rendered text extraction |
+| Search/replace | `@interactive-os/json-document-search-replace` | rendered text extraction |
 | Rich text body | app-owned | ProseMirror/Markdown/contenteditable |
 
 `proposed-changes`는 slash suggestion이나 mention popup이 아닙니다. JSON Patch
@@ -149,24 +149,24 @@ stay outside zod-crud.
 
 | Pressure | Current state | Direction |
 | --- | --- | --- |
-| Guard composition | `@zod-crud/protected-ranges` + labs | shared contract 후보 |
-| Patch preview / dry-run | `@zod-crud/patch-preview` | official extension |
+| Guard composition | `@interactive-os/json-document-protected-ranges` + labs | shared contract 후보 |
+| Patch preview / dry-run | `@interactive-os/json-document-patch-preview` | official extension |
 | Structural result shape | lab마다 `selectionAfter` 필요 | result contract 후보 |
-| Anchored comments | `@zod-crud/comments` | official extension |
+| Anchored comments | `@interactive-os/json-document-comments` | official extension |
 | Generic anchor lifecycle | core `trackPointer` + labs | bookmark/presence helper 후보 |
-| Stable id to Pointer | `@zod-crud/id-resolver` | official extension |
-| Text search/replace | `@zod-crud/search-replace` | official extension |
-| Proposed changes | `@zod-crud/proposed-changes` | official extension |
+| Stable id to Pointer | `@interactive-os/json-document-id-resolver` | official extension |
+| Text search/replace | `@interactive-os/json-document-search-replace` | official extension |
+| Proposed changes | `@interactive-os/json-document-proposed-changes` | official extension |
 | TSV/CSV grid paste | missing | grid clipboard lab 후보 |
-| Invalid draft | `@zod-crud/form-draft` | official extension |
-| Snippet insertion | `@zod-crud/snippets` | official extension |
+| Invalid draft | `@interactive-os/json-document-form-draft` | official extension |
+| Snippet insertion | `@interactive-os/json-document-snippets` | official extension |
 | Import review flow | labs 조합 | recipe 필요 |
 
 ## Misread Guardrails
 
 | Name | Do not read as |
 | --- | --- |
-| `zod-crud` | admin CRUD UI framework |
+| `@interactive-os/json-document` | admin CRUD UI framework |
 | `clipboard-web` | spreadsheet TSV clipboard engine |
 | `schema-form` | form renderer |
 | `grouping` | Airtable group-by |

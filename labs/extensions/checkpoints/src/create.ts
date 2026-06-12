@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONDocument, JSONResult } from "zod-crud";
+import type { JSONCapabilityResult, JSONDocument, JSONResult } from "@interactive-os/json-document";
 import type { CheckpointEntry, CheckpointError, Checkpoints, CheckpointsListener, CheckpointsSnapshot, CreateCheckpointsOptions } from "./types.js";
 
 export function createCheckpoints<TDocument>(

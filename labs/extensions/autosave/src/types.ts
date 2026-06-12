@@ -1,4 +1,4 @@
-import type { JSONChangeMetadata, JSONPatchOperation } from "zod-crud";
+import type { JSONChangeMetadata, JSONPatchOperation } from "@interactive-os/json-document";
 
 export type MaybePromise<T> = T | Promise<T>;
 

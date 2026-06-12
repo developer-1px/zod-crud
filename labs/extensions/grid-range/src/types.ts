@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONChangeMetadata, JSONPatchOperation, JSONResult, Pointer } from "zod-crud";
+import type { JSONCapabilityResult, JSONChangeMetadata, JSONPatchOperation, JSONResult, Pointer } from "@interactive-os/json-document";
 
 export type GridRangeErrorCode =
   | "empty_matrix"

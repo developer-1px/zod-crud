@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canTransform, createChangeCase, type ChangeCaseResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: ChangeCaseResult): Extract<ChangeCaseResult, { ok: tru
   return result;
 }
 
-describe("@zod-crud/change-case", () => {
+describe("@interactive-os/json-document-change-case", () => {
   test("upper / lower", () => {
     const doc = createDoc("Hello");
     const t = createChangeCase(doc);

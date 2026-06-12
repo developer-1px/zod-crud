@@ -1,4 +1,4 @@
-import type { Pointer, SelectionRange } from "zod-crud";
+import type { Pointer, SelectionRange } from "@interactive-os/json-document";
 
 export type PresenceCursorErrorCode =
   | "empty_peer_id"

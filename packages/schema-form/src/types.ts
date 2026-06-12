@@ -5,7 +5,7 @@ import type {
   Pointer,
   SchemaDescription,
   SchemaKind,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export type SchemaFormContainerKind = "object" | "array" | "record";
 

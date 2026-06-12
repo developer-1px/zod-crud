@@ -25,7 +25,7 @@ docs
     |-- schema-introspection-contract.md
     |-- selection-contract.md   # headless selection 의미론
     |-- self-improvement-loop-report.md
-    `-- zod-crud-spec.md        # 패키지 의미론 명세
+    `-- json-document-spec.md        # 패키지 의미론 명세
 ```
 
 ## 책임 기준

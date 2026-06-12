@@ -1,12 +1,12 @@
-# @zod-crud/join-text
+# @interactive-os/json-document-join-text
 
-Lab join-text extension for `zod-crud` documents.
+Lab join-text extension for `@interactive-os/json-document` documents.
 
-Use it to join an array into a string field (the inverse of `@zod-crud/split-text`),
+Use it to join an array into a string field (the inverse of `@interactive-os/json-document-split-text`),
 using only the public document facade.
 
 ```ts
-import { createJoinText } from "@zod-crud/join-text";
+import { createJoinText } from "@interactive-os/json-document-join-text";
 
 const j = createJoinText(doc);
 
@@ -29,7 +29,7 @@ j.join("/nums", "/display", { map: (n) => `#${n}` });
 - Locale-aware list formatting (`Intl.ListFormat`) — pass a host `map`/`separator`.
 - Reading the result without writing — this is an editing action that sets a
   field; use `doc.at` + a host join for pure display.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

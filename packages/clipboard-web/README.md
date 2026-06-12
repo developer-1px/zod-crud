@@ -1,14 +1,14 @@
-# @zod-crud/clipboard-web
+# @interactive-os/json-document-clipboard-web
 
-Web clipboard extension functions for `zod-crud`.
+Web clipboard extension functions for `@interactive-os/json-document`.
 
 ```sh
-npm install zod-crud @zod-crud/clipboard-web
+npm install json-document @interactive-os/json-document-clipboard-web
 ```
 
 ```ts
-import { createJSONDocument } from "zod-crud";
-import { createWebClipboard } from "@zod-crud/clipboard-web";
+import { createJSONDocument } from "@interactive-os/json-document";
+import { createWebClipboard } from "@interactive-os/json-document-clipboard-web";
 
 const doc = createJSONDocument(schema, initial);
 const clipboard = createWebClipboard(doc);
@@ -28,7 +28,7 @@ if (!pasted.ok) {
 
 This package is an extension. It does not add plugin registration to the core document. It composes the public `JSONDocument` interface with a small text clipboard host.
 
-Core `doc.clipboard` is the headless JSON payload buffer. `@zod-crud/clipboard-web` is only the system clipboard bridge.
+Core `doc.clipboard` is the headless JSON payload buffer. `@interactive-os/json-document-clipboard-web` is only the system clipboard bridge.
 
 ## Host
 
@@ -60,14 +60,14 @@ If the host is missing `readText`, read/paste/canPaste return `clipboard_unavail
 | --- | --- |
 | `copy(source?, options?)` | `doc.clipboard.copy` 후 text host에 JSON payload 쓰기 |
 | `cut(source?, options?)` | host write 성공 뒤 `doc.clipboard.cut` 실행 |
-| `read()` | text host에서 읽고 zod-crud clipboard payload로 decode |
+| `read()` | text host에서 읽고 json-document clipboard payload로 decode |
 | `writePayload(payload, metadata?)` | document 변경 없이 payload를 text host에 쓰기 |
 | `canPaste(target, options?)` | host text를 읽고 `doc.canPaste(target, { payload })` 실행 |
 | `canPasteText(target, text, options?)` | 주어진 text로 `doc.canPaste(target, { payload })` 실행 |
 | `paste(target, options?)` | host text를 읽고 `doc.paste(target, { payload })` 실행 |
 | `pasteText(target, text, options?)` | 주어진 text로 `doc.paste(target, { payload })` 실행 |
 
-All methods return zod-crud style Results. Check `.ok` before assuming success.
+All methods return json-document style Results. Check `.ok` before assuming success.
 
 Paste targets are the same as core clipboard targets: `"/items/-"`, `{ before: pointer }`, `{ after: pointer }`, or `{ replace: pointer }`. Pass the same paste options to `canPaste` and `paste`.
 
@@ -77,7 +77,7 @@ The default codec stores a JSON text envelope:
 
 ```ts
 {
-  kind: "zod-crud.clipboard+json",
+  kind: "json-document.clipboard+json",
   version: 1,
   payload,
   source,

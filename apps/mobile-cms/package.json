@@ -1,5 +1,5 @@
 {
-  "name": "@zod-crud/mobile-cms",
+  "name": "@interactive-os/json-document-mobile-cms",
   "private": true,
   "type": "module",
   "exports": {

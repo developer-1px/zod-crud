@@ -4,7 +4,7 @@ import {
   type JSONDocumentPasteTarget,
   type JSONPatchOperation,
   type Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   copyRange,

@@ -1,13 +1,13 @@
-# @zod-crud/fill-down
+# @interactive-os/json-document-fill-down
 
-Lab fill-down extension for `zod-crud` documents.
+Lab fill-down extension for `@interactive-os/json-document` documents.
 
 Use it to carry the last non-empty value into the empty slots that follow it
 (spreadsheet "fill down blanks", `pandas` ffill, unmerge cleanup), using only the
 public document facade.
 
 ```ts
-import { createFillDown } from "@zod-crud/fill-down";
+import { createFillDown } from "@interactive-os/json-document-fill-down";
 
 const f = createFillDown(doc);
 
@@ -27,10 +27,10 @@ f.fillDown("/rows", { field: "/group", direction: "up" }); // carry next up
 ## Non-goals
 
 - Interpolating between values (that is a numeric series — see
-  `@zod-crud/fill-series`).
-- Filling from a constant (that is `@zod-crud/fill-blanks`).
+  `@interactive-os/json-document-fill-series`).
+- Filling from a constant (that is `@interactive-os/json-document-fill-blanks`).
 - Nested field paths beyond one segment, or rendered grid UI.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

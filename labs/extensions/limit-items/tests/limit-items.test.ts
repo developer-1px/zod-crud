@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canLimitItems, createLimitItems, type LimitItemsResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk<T>(result: LimitItemsResult<T>): Extract<LimitItemsResult<T>, 
   return result;
 }
 
-describe("@zod-crud/limit-items", () => {
+describe("@interactive-os/json-document-limit-items", () => {
   test("keeps the first max items by default", () => {
     const doc = createDoc();
     const l = createLimitItems(doc);

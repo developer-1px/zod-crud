@@ -1,13 +1,13 @@
-# @zod-crud/patch-preview
+# @interactive-os/json-document-patch-preview
 
-Official headless patch preview extension for `zod-crud` documents.
+Official headless patch preview extension for `@interactive-os/json-document` documents.
 
 Use it when a product needs to preview schema-safe JSON Patch changes before
 applying them: import review, find/replace confirmation, AI proposed changes,
 bulk cleanup, dry-run save checks, or admin moderation.
 
 ```ts
-import { createPatchPreview } from "@zod-crud/patch-preview";
+import { createPatchPreview } from "@interactive-os/json-document-patch-preview";
 
 const previewer = createPatchPreview(Schema, doc);
 const preview = previewer.preview([
@@ -38,11 +38,11 @@ if (preview.ok) {
   it used to create the document.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/patch-preview` accepts a public `JSONDocument`, a Zod schema, and a
+`@interactive-os/json-document-patch-preview` accepts a public `JSONDocument`, a Zod schema, and a
 JSON Patch operation array. It delegates capability checks to `doc.canPatch`
 and dry-run application to public root helpers: `applyPatch` or
 `applyPatchToTrustedState`.

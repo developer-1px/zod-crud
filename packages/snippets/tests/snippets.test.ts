@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canInsertSnippet,
   createSnippets,
@@ -46,7 +46,7 @@ const cardSnippet: Snippet = {
   payload: { id: "a", title: "From snippet", done: false },
 };
 
-describe("@zod-crud/snippets", () => {
+describe("@interactive-os/json-document-snippets", () => {
   test("lists snippets without exposing the stored payload", () => {
     const snippets = createSnippets(createBoard(), [cardSnippet]);
 

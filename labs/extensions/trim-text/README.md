@@ -1,12 +1,12 @@
-# @zod-crud/trim-text
+# @interactive-os/json-document-trim-text
 
-Lab trim-text extension for `zod-crud` documents.
+Lab trim-text extension for `@interactive-os/json-document` documents.
 
 Use it to cap a string field to a maximum length (excerpts/summaries, SEO meta
 descriptions), using only the public document facade.
 
 ```ts
-import { createTrimText } from "@zod-crud/trim-text";
+import { createTrimText } from "@interactive-os/json-document-trim-text";
 
 const t = createTrimText(doc);
 
@@ -30,7 +30,7 @@ t.trimText("/excerpt", 120, { wordBoundary: true, ellipsis: "..." });
 - Display-time truncation (CSS ellipsis / render layer) — this changes the
   stored value.
 - Grapheme/locale-aware length (counts UTF-16 code units like `String.length`).
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

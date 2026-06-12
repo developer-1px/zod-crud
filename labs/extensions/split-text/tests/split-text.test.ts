@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canSplit, createSplitText, type SplitTextResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: SplitTextResult): Extract<SplitTextResult, { ok: true 
   return result;
 }
 
-describe("@zod-crud/split-text", () => {
+describe("@interactive-os/json-document-split-text", () => {
   test("splits a comma list into trimmed parts", () => {
     const doc = createDoc();
     const s = createSplitText(doc);

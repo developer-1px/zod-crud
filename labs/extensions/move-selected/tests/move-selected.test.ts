@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canMoveSelected, createMoveSelected, type MoveSelectedResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -25,7 +25,7 @@ function expectOk(result: MoveSelectedResult): Extract<MoveSelectedResult, { ok:
   return result;
 }
 
-describe("@zod-crud/move-selected", () => {
+describe("@interactive-os/json-document-move-selected", () => {
   test("moves a block after a later sibling, preserving internal order", () => {
     const doc = createDoc();
     const mover = createMoveSelected(doc);

@@ -1,4 +1,4 @@
-# @zod-crud/wrap-selection
+# @interactive-os/json-document-wrap-selection
 
 Lab extension for structural `wrap` and `unwrap`.
 
@@ -11,7 +11,7 @@ callout, toggle, container, or other host-defined structural node.
 - create one host-defined wrapper value
 - unwrap a host-defined wrapper back into sibling items
 - return JSON Patch operations and `selectionAfter`
-- validate through the public `zod-crud` document facade
+- validate through the public `@interactive-os/json-document` document facade
 
 ## Non-goals
 
@@ -20,7 +20,7 @@ callout, toggle, container, or other host-defined structural node.
 - product-specific wrapper names
 - field preservation policy beyond the host `createWrapper` function
 - plugin registration
-- `zod-crud` internal imports
+- `@interactive-os/json-document` internal imports
 
 ```ts
 const wrappers = createWrapSelection(doc, {

@@ -4,9 +4,9 @@ import {
   type Comment,
   type CommentSnapshot,
   type Comments,
-} from "@zod-crud/comments";
-import { useJSONDocument } from "zod-crud/react";
-import { type Pointer } from "zod-crud";
+} from "@interactive-os/json-document-comments";
+import { useJSONDocument } from "@interactive-os/json-document/react";
+import { type Pointer } from "@interactive-os/json-document";
 import { z } from "zod";
 import "./review-comments-lab.css";
 

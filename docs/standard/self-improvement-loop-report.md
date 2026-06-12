@@ -3,7 +3,7 @@
 상태: 10회 루프 완료 기록.
 
 목적은 더 많은 package를 만드는 것이 아니라, 외부 개발자와 LLM이
-`zod-crud`를 편집 도구 foundation으로 이해할 수 있는지 반복 검증하는 것이다.
+`@interactive-os/json-document`를 편집 도구 foundation으로 이해할 수 있는지 반복 검증하는 것이다.
 
 ## 루프 구성
 
@@ -38,7 +38,7 @@ stable strengths
 ```
 
 여러 blind 평가자가 공통으로 core와 app-owned 책임을 비슷하게 분리했다. 이는
-`zod-crud`가 headless JSON editing foundation으로 읽힌다는 강한 신호다.
+`@interactive-os/json-document`가 headless JSON editing foundation으로 읽힌다는 강한 신호다.
 
 ## 반복 Gap
 
@@ -47,14 +47,14 @@ stable strengths
 | Result/error code freeze | API freeze | blocker | code taxonomy와 violation shape 문서화 |
 | Selection semantics freeze | API freeze, grid, diagram | blocker | public `Selection*` 의미론 문서화 |
 | Schema introspection freeze | API freeze, schema-form | blocker | `SchemaKind`, `SchemaDescription`, path mode 문서화 |
-| stable id to Pointer | kanban, form, grid, import, diagram | 반영됨: `@zod-crud/id-resolver` | downstream dogfood에서 host-owned id policy 확인 |
+| stable id to Pointer | kanban, form, grid, import, diagram | 반영됨: `@interactive-os/json-document-id-resolver` | downstream dogfood에서 host-owned id policy 확인 |
 | TSV/CSV grid paste | grid, import | lab 후보 | grid clipboard lab 후보로 유지 |
-| Patch preview / dry-run | grid, form, import | 반영됨: `@zod-crud/patch-preview` | visual diff/review workflow가 host-owned로 남는지 확인 |
-| guard composition | form, import, grid, diagram | 부분 반영: `@zod-crud/protected-ranges` | core 금지, guard vocabulary는 계속 관찰 |
+| Patch preview / dry-run | grid, form, import | 반영됨: `@interactive-os/json-document-patch-preview` | visual diff/review workflow가 host-owned로 남는지 확인 |
+| guard composition | form, import, grid, diagram | 부분 반영: `@interactive-os/json-document-protected-ranges` | core 금지, guard vocabulary는 계속 관찰 |
 | `selectionAfter` | structural edits, grid, diagram, form | result convention 후보 | lab naming 통일 |
-| anchored pointer lifecycle | comments, bookmarks, presence, review | 부분 반영: `@zod-crud/comments` | generic anchor lifecycle은 core `trackPointer` 위의 helper 후보로 관찰 |
-| text search/replace | docs, review, import, object notes | 반영됨: `@zod-crud/search-replace` | rendered text extraction/ranking은 host-owned 유지 |
-| proposed changes | AI edit review, import, CMS copy review | 반영됨: `@zod-crud/proposed-changes` | approval workflow/storage/sync는 host-owned 유지 |
+| anchored pointer lifecycle | comments, bookmarks, presence, review | 부분 반영: `@interactive-os/json-document-comments` | generic anchor lifecycle은 core `trackPointer` 위의 helper 후보로 관찰 |
+| text search/replace | docs, review, import, object notes | 반영됨: `@interactive-os/json-document-search-replace` | rendered text extraction/ranking은 host-owned 유지 |
+| proposed changes | AI edit review, import, CMS copy review | 반영됨: `@interactive-os/json-document-proposed-changes` | approval workflow/storage/sync는 host-owned 유지 |
 | package name misreads | all | doc/catalog 보강 | `Use for` / `Not for` 유지 |
 
 ## 1.0 전 Blockers
@@ -104,11 +104,11 @@ stable strengths
 - Diagram Whiteboard recipe.
 - `collection` package description을 ordered JSON array command로 명확화.
 - `schema-form` package description에 rendered form UI가 아님을 명시.
-- `@zod-crud/id-resolver`를 official extension으로 승격.
-- `@zod-crud/comments`를 official extension으로 승격.
-- `@zod-crud/form-draft`를 official extension으로 승격.
-- `@zod-crud/protected-ranges`를 official extension으로 승격.
-- `@zod-crud/snippets`를 official extension으로 승격.
+- `@interactive-os/json-document-id-resolver`를 official extension으로 승격.
+- `@interactive-os/json-document-comments`를 official extension으로 승격.
+- `@interactive-os/json-document-form-draft`를 official extension으로 승격.
+- `@interactive-os/json-document-protected-ranges`를 official extension으로 승격.
+- `@interactive-os/json-document-snippets`를 official extension으로 승격.
 
 남은 문서 액션:
 

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canDrop,
   createDragDrop,
@@ -29,7 +29,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/drag-drop", () => {
+describe("@interactive-os/json-document-drag-drop", () => {
   test("plans an internal move drop without mutating", () => {
     const doc = createDoc();
     const drop = createDragDrop(doc);

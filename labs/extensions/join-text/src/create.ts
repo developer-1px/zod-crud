@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { join } from "./operations.js";
 import { canJoin } from "./plan.js";
 import type { JoinText } from "./types.js";

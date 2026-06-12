@@ -1,4 +1,4 @@
-# @zod-crud/references
+# @interactive-os/json-document-references
 
 Lab extension for stable references and backlinks over JSON documents.
 

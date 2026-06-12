@@ -1,12 +1,12 @@
-# @zod-crud/grid-range
+# @interactive-os/json-document-grid-range
 
-Lab grid-range editing extension for sparse-record-backed `zod-crud` documents.
+Lab grid-range editing extension for sparse-record-backed `@interactive-os/json-document` documents.
 
 Use it when a product stores grid cells in a keyed JSON record and wants to
 delegate rectangle paste/fill planning:
 
 ```ts
-import { createGridRange } from "@zod-crud/grid-range";
+import { createGridRange } from "@interactive-os/json-document-grid-range";
 
 const grid = createGridRange(doc);
 
@@ -47,7 +47,7 @@ preflight, and one document mutation boundary.
   formula language, displayed value semantics, or clipboard parsing.
 - No CSV/TSV quoting, merged cells, auto-grow rows/columns, or built-in
   date/pattern series inference.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 
@@ -61,7 +61,7 @@ boundary:
 
 Sparse-record-backed editors still need a reusable command that starts at grid
 intent: paste this rectangle, or fill that range from this source range. The
-host provides coordinate naming and product normalization; zod-crud owns the
+host provides coordinate naming and product normalization; json-document owns the
 document-safe sparse record edit procedure.
 
 `fill` keeps repeat-only behavior as the default because it is a common grid

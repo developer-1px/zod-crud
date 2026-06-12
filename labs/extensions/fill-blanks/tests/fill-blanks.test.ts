@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canFillBlanks, createFillBlanks, type FillBlanksResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -25,7 +25,7 @@ function expectOk(result: FillBlanksResult): Extract<FillBlanksResult, { ok: tru
 
 const TARGETS = ["/rows/0", "/rows/1", "/rows/2"];
 
-describe("@zod-crud/fill-blanks", () => {
+describe("@interactive-os/json-document-fill-blanks", () => {
   test("fills only the empty slots, preserving non-empty ones", () => {
     const doc = createDoc();
     const f = createFillBlanks(doc);

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canSwapItems, createSwapItems, type SwapItemsResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -18,7 +18,7 @@ function expectOk(result: SwapItemsResult): Extract<SwapItemsResult, { ok: true 
   return result;
 }
 
-describe("@zod-crud/swap-items", () => {
+describe("@interactive-os/json-document-swap-items", () => {
   test("swaps two items", () => {
     const doc = createDoc();
     const s = createSwapItems(doc);

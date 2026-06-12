@@ -4,7 +4,7 @@ import {
   tryParsePointer,
   type JSONDocument,
   type Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   collectionError,

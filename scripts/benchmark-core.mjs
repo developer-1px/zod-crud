@@ -2,15 +2,15 @@ import { existsSync } from "node:fs";
 import { performance } from "node:perf_hooks";
 import * as z from "zod";
 
-const distEntry = new URL("../packages/zod-crud/dist/index.js", import.meta.url);
-const distJsonCloneEntry = new URL("../packages/zod-crud/dist/foundation/json/clone.js", import.meta.url);
-const distJsonSerializableEntry = new URL("../packages/zod-crud/dist/foundation/json/serializable.js", import.meta.url);
-const distJsonPathEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/index.js", import.meta.url);
-const distJsonPathParseEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/parse.js", import.meta.url);
-const distJsonPathEvaluateEntry = new URL("../packages/zod-crud/dist/foundation/jsonpath/evaluate.js", import.meta.url);
-const distPatchEntry = new URL("../packages/zod-crud/dist/foundation/patch/trusted.js", import.meta.url);
-const distPatchInverseEntry = new URL("../packages/zod-crud/dist/foundation/patch/inverse.js", import.meta.url);
-const distHistoryEntry = new URL("../packages/zod-crud/dist/foundation/history.js", import.meta.url);
+const distEntry = new URL("../packages/json-document/dist/index.js", import.meta.url);
+const distJsonCloneEntry = new URL("../packages/json-document/dist/foundation/json/clone.js", import.meta.url);
+const distJsonSerializableEntry = new URL("../packages/json-document/dist/foundation/json/serializable.js", import.meta.url);
+const distJsonPathEntry = new URL("../packages/json-document/dist/foundation/jsonpath/index.js", import.meta.url);
+const distJsonPathParseEntry = new URL("../packages/json-document/dist/foundation/jsonpath/parse.js", import.meta.url);
+const distJsonPathEvaluateEntry = new URL("../packages/json-document/dist/foundation/jsonpath/evaluate.js", import.meta.url);
+const distPatchEntry = new URL("../packages/json-document/dist/foundation/patch/trusted.js", import.meta.url);
+const distPatchInverseEntry = new URL("../packages/json-document/dist/foundation/patch/inverse.js", import.meta.url);
+const distHistoryEntry = new URL("../packages/json-document/dist/foundation/history.js", import.meta.url);
 
 if (
   !existsSync(distEntry)
@@ -23,7 +23,7 @@ if (
   || !existsSync(distPatchInverseEntry)
   || !existsSync(distHistoryEntry)
 ) {
-  console.error("Missing package dist. Run `npm run build -w zod-crud` first.");
+  console.error("Missing package dist. Run `npm run build -w @interactive-os/json-document` first.");
   process.exit(1);
 }
 
@@ -99,7 +99,7 @@ const rounds = envNumber("PERF_ROUNDS", 5);
 const forceGc = process.env.PERF_GC === "1";
 const runtimeGc = typeof globalThis.gc === "function" ? globalThis.gc.bind(globalThis) : null;
 
-console.log("zod-crud core benchmark");
+console.log("json-document core benchmark");
 console.log(`items=${sizes.join(",")} batch=${batchSize} individual=${individualCount} rounds=${rounds}`);
 if (forceGc) {
   console.log(`gc=${runtimeGc ? "enabled" : "unavailable (run node with --expose-gc)"}`);

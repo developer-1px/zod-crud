@@ -1,12 +1,12 @@
-# @zod-crud/drag-drop
+# @interactive-os/json-document-drag-drop
 
-Lab drag and drop extension for `zod-crud` documents.
+Lab drag and drop extension for `@interactive-os/json-document` documents.
 
 Use it to test whether drag/drop behavior can stay outside core while still
 using the public read, move, and paste capability surface.
 
 ```ts
-import { createDragDrop } from "@zod-crud/drag-drop";
+import { createDragDrop } from "@interactive-os/json-document-drag-drop";
 
 const drop = createDragDrop(doc);
 
@@ -45,7 +45,7 @@ drop.perform({
   duplication, while copy-drag is copy plus paste to a drop target.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

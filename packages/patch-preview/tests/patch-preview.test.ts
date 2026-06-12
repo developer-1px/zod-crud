@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createPatchPreview, previewPatch } from "../src/index.js";
 
 const Item = z.object({
@@ -24,7 +24,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/patch-preview", () => {
+describe("@interactive-os/json-document-patch-preview", () => {
   test("previews the next document value without mutating", () => {
     const doc = createDoc();
     const previewer = createPatchPreview(Schema, doc);

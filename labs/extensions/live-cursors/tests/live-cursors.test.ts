@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { createLiveCursors } from "../src/index.js";
 
 const Block = z.object({
@@ -23,7 +23,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/live-cursors", () => {
+describe("@interactive-os/json-document-live-cursors", () => {
   test("stores remote cursor selections with host-owned metadata", () => {
     const doc = createDoc();
     const presence = createLiveCursors(doc);

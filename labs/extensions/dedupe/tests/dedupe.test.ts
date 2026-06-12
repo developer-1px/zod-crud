@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canDedupe, createDedupe, type DedupeResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -26,7 +26,7 @@ function expectOk<T>(result: DedupeResult<T>): Extract<DedupeResult<T>, { ok: tr
   return result;
 }
 
-describe("@zod-crud/dedupe", () => {
+describe("@interactive-os/json-document-dedupe", () => {
   test("removes whole-value duplicates, keeping first occurrence", () => {
     const doc = createDoc();
     const d = createDedupe(doc);

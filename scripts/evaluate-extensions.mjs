@@ -5,7 +5,7 @@ const root = new URL("..", import.meta.url).pathname;
 const officialExtensions = [
   {
     root: "packages/clipboard-web",
-    name: "@zod-crud/clipboard-web",
+    name: "@interactive-os/json-document-clipboard-web",
     description: /extension functions/,
     readme: [
       /createWebClipboard\(doc\)/,
@@ -15,7 +15,7 @@ const officialExtensions = [
   },
   {
     root: "packages/collection",
-    name: "@zod-crud/collection",
+    name: "@interactive-os/json-document-collection",
     description: /collection editing extension functions/,
     readme: [
       /createCollection\(doc\)/,
@@ -26,7 +26,7 @@ const officialExtensions = [
   },
   {
     root: "packages/outline",
-    name: "@zod-crud/outline",
+    name: "@interactive-os/json-document-outline",
     description: /outline tree and structure editing extension functions/,
     readme: [
       /createOutline\(doc\)/,
@@ -39,7 +39,7 @@ const officialExtensions = [
   },
   {
     root: "packages/schema-form",
-    name: "@zod-crud/schema-form",
+    name: "@interactive-os/json-document-schema-form",
     description: /schema-backed field descriptor extension functions/,
     readme: [
       /createSchemaForm\(doc/,
@@ -50,7 +50,7 @@ const officialExtensions = [
   },
   {
     root: "packages/dirty-state",
-    name: "@zod-crud/dirty-state",
+    name: "@interactive-os/json-document-dirty-state",
     description: /dirty state tracking extension functions/,
     readme: [
       /createDirtyState\(doc\)/,
@@ -61,7 +61,7 @@ const officialExtensions = [
   },
   {
     root: "packages/bulk-edit",
-    name: "@zod-crud/bulk-edit",
+    name: "@interactive-os/json-document-bulk-edit",
     description: /JSONPath bulk editing extension functions/,
     readme: [
       /createBulkEdit\(doc\)/,
@@ -72,7 +72,7 @@ const officialExtensions = [
   },
   {
     root: "packages/patch-log",
-    name: "@zod-crud/patch-log",
+    name: "@interactive-os/json-document-patch-log",
     description: /patch log and replay extension functions/,
     readme: [
       /createPatchLog\(doc\)/,
@@ -83,7 +83,7 @@ const officialExtensions = [
   },
   {
     root: "packages/persist-web",
-    name: "@zod-crud/persist-web",
+    name: "@interactive-os/json-document-persist-web",
     description: /web persistence extension functions/,
     readme: [
       /createDocumentPersistence\(doc/,
@@ -94,7 +94,7 @@ const officialExtensions = [
   },
   {
     root: "packages/id-resolver",
-    name: "@zod-crud/id-resolver",
+    name: "@interactive-os/json-document-id-resolver",
     description: /stable id resolver extension functions/,
     readme: [
       /createIdResolver\(doc/,
@@ -106,7 +106,7 @@ const officialExtensions = [
   },
   {
     root: "packages/patch-preview",
-    name: "@zod-crud/patch-preview",
+    name: "@interactive-os/json-document-patch-preview",
     description: /patch preview extension functions/,
     readme: [
       /createPatchPreview\(Schema, doc\)/,
@@ -118,7 +118,7 @@ const officialExtensions = [
   },
   {
     root: "packages/search-replace",
-    name: "@zod-crud/search-replace",
+    name: "@interactive-os/json-document-search-replace",
     description: /search and replace extension functions/,
     readme: [
       /createSearchReplace\(doc\)/,
@@ -131,7 +131,7 @@ const officialExtensions = [
   },
   {
     root: "packages/proposed-changes",
-    name: "@zod-crud/proposed-changes",
+    name: "@interactive-os/json-document-proposed-changes",
     description: /proposed document change review extension functions/,
     readme: [
       /createProposedChanges\(doc\)/,
@@ -143,7 +143,7 @@ const officialExtensions = [
   },
   {
     root: "packages/comments",
-    name: "@zod-crud/comments",
+    name: "@interactive-os/json-document-comments",
     description: /comments extension functions/,
     readme: [
       /createComments\(doc\)/,
@@ -155,7 +155,7 @@ const officialExtensions = [
   },
   {
     root: "packages/form-draft",
-    name: "@zod-crud/form-draft",
+    name: "@interactive-os/json-document-form-draft",
     description: /form draft extension functions/,
     readme: [
       /createFormDraft\(doc/,
@@ -167,19 +167,19 @@ const officialExtensions = [
   },
   {
     root: "packages/protected-ranges",
-    name: "@zod-crud/protected-ranges",
+    name: "@interactive-os/json-document-protected-ranges",
     description: /protected range guard extension functions/,
     readme: [
       /createProtectedRanges\(doc/,
       /published fields,\s*legal copy,\s*locked\s*settings,\s*import targets,\s*generated sections,\s*or moderated content/,
-      /Guard direct document edits before calling public `zod-crud` operations/,
+      /Guard direct document edits before calling public `@interactive-os/json-document` operations/,
       /No UI lock icons, focus handling, keyboard policy, or permissions dialog/,
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],
   },
   {
     root: "packages/snippets",
-    name: "@zod-crud/snippets",
+    name: "@interactive-os/json-document-snippets",
     description: /snippet insertion extension functions/,
     readme: [
       /createSnippets\(doc/,
@@ -190,8 +190,8 @@ const officialExtensions = [
     ],
   },
 ];
-const sourceAliasHelper = read("config/zod-crud-source-aliases.ts");
-const tsconfigPaths = JSON.parse(read("tsconfig.zod-crud-paths.json"));
+const sourceAliasHelper = read("config/json-document-source-aliases.ts");
+const tsconfigPaths = JSON.parse(read("tsconfig.json-document-paths.json"));
 const outlinerVitestConfig = read("apps/outliner/vitest.config.ts");
 const siteViteConfig = read("apps/site/vite.config.ts");
 
@@ -228,24 +228,24 @@ function readJsonIfExists(path) {
 const officialExtensionRoots = new Set(officialExtensions.map((extension) => extension.root));
 for (const dir of packageDirs("packages")) {
   const pkg = readJsonIfExists(`${dir}/package.json`);
-  if (pkg?.name === "zod-crud") continue;
+  if (pkg?.name === "@interactive-os/json-document") continue;
   if (!officialExtensionRoots.has(dir)) {
     fail(`${dir}: official extension package is missing from scripts/evaluate-extensions.mjs metadata.`);
   }
 }
 
 const tsconfigPathAliases = tsconfigPaths.compilerOptions?.paths ?? {};
-if (!tsconfigPathAliases["@zod-crud/*"]?.includes("packages/*/src/index.ts")) {
-  fail("tsconfig.zod-crud-paths.json: missing package wildcard source path.");
+if (!tsconfigPathAliases["@interactive-os/json-document-*"]?.includes("packages/*/src/index.ts")) {
+  fail("tsconfig.json-document-paths.json: missing package wildcard source path.");
 }
-if (!tsconfigPathAliases["@zod-crud/*"]?.includes("labs/extensions/*/src/index.ts")) {
-  fail("tsconfig.zod-crud-paths.json: missing lab extension wildcard source path.");
+if (!tsconfigPathAliases["@interactive-os/json-document-*"]?.includes("labs/extensions/*/src/index.ts")) {
+  fail("tsconfig.json-document-paths.json: missing lab extension wildcard source path.");
 }
-if (tsconfigPathAliases["zod-crud/react"]?.[0] !== "packages/zod-crud/src/react.ts") {
-  fail("tsconfig.zod-crud-paths.json: missing zod-crud/react source path.");
+if (tsconfigPathAliases["@interactive-os/json-document/react"]?.[0] !== "packages/json-document/src/react.ts") {
+  fail("tsconfig.json-document-paths.json: missing @interactive-os/json-document/react source path.");
 }
-if (tsconfigPathAliases["zod-crud"]?.[0] !== "packages/zod-crud/src/index.ts") {
-  fail("tsconfig.zod-crud-paths.json: missing zod-crud source path.");
+if (tsconfigPathAliases["@interactive-os/json-document"]?.[0] !== "packages/json-document/src/index.ts") {
+  fail("tsconfig.json-document-paths.json: missing json-document source path.");
 }
 
 for (const extension of officialExtensions) {
@@ -262,11 +262,11 @@ for (const extension of officialExtensions) {
   if (pkg.private === true) {
     fail(`${label}: official extension packages must be publishable.`);
   }
-  if (pkg.peerDependencies?.["zod-crud"] !== "^1.0.0") {
-    fail(`${label}: zod-crud must stay a peer dependency.`);
+  if (pkg.peerDependencies?.["@interactive-os/json-document"] !== "^1.0.0") {
+    fail(`${label}: json-document must stay a peer dependency.`);
   }
-  if (pkg.dependencies?.["zod-crud"]) {
-    fail(`${label}: zod-crud must not be a runtime dependency.`);
+  if (pkg.dependencies?.["@interactive-os/json-document"]) {
+    fail(`${label}: json-document must not be a runtime dependency.`);
   }
   if (pkg.sideEffects !== false) {
     fail(`${label}: sideEffects must be false.`);
@@ -276,12 +276,12 @@ for (const extension of officialExtensions) {
     const source = read(sourcePath);
     for (const match of source.matchAll(/\bfrom\s+["']([^"']+)["']/g)) {
       const specifier = match[1];
-      if (specifier === "zod-crud") continue;
-      if (specifier.startsWith(".") && !specifier.includes("../zod-crud")) continue;
-      fail(`${sourcePath}: extension source must import zod-crud only through the package entrypoint (${specifier}).`);
+      if (specifier === "@interactive-os/json-document") continue;
+      if (specifier.startsWith(".") && !specifier.includes("../json-document")) continue;
+      fail(`${sourcePath}: extension source must import json-document only through the package entrypoint (${specifier}).`);
     }
-    if (/src\/application|src\/domain|src\/foundation|\.\.\/zod-crud\/src/.test(source)) {
-      fail(`${sourcePath}: extension source must not import zod-crud internals.`);
+    if (/src\/application|src\/domain|src\/foundation|\.\.\/json-document\/src/.test(source)) {
+      fail(`${sourcePath}: extension source must not import json-document internals.`);
     }
     if (/doc\.use\s*\(/.test(source)) {
       fail(`${sourcePath}: extension must compose functions, not register plugins.`);
@@ -292,7 +292,7 @@ for (const extension of officialExtensions) {
     if (!pattern.test(readme)) fail(`${label} README: missing ${pattern}.`);
   }
 
-  const packageName = extension.name.replace("@zod-crud/", "");
+  const packageName = extension.name.replace("@interactive-os/json-document-", "");
   if (!sourceAliasHelper.includes(`"${packageName}"`)) {
     fail(`${label}: missing from shared source alias helper.`);
   }
@@ -302,25 +302,25 @@ for (const [label, source] of [
   ["apps/outliner/vitest.config.ts", outlinerVitestConfig],
   ["apps/site/vite.config.ts", siteViteConfig],
 ]) {
-  if (!source.includes("zodCrudSourceAliases({ officialExtensions: true })")) {
+  if (!source.includes("jsonDocumentSourceAliases({ officialExtensions: true })")) {
     fail(`${label}: official extension aliases must use the shared helper.`);
   }
 }
 
 for (const tsconfigPath of packageDirs("apps").map((dir) => `${dir}/tsconfig.json`)) {
   const tsconfig = readJsonIfExists(tsconfigPath);
-  if (tsconfig?.extends !== "../../tsconfig.zod-crud-paths.json") {
-    fail(`${tsconfigPath}: must extend shared zod-crud paths.`);
+  if (tsconfig?.extends !== "../../tsconfig.json-document-paths.json") {
+    fail(`${tsconfigPath}: must extend shared json-document paths.`);
   }
   const paths = tsconfig?.compilerOptions?.paths;
   if (paths !== undefined) {
-    fail(`${tsconfigPath}: must not duplicate zod-crud source paths.`);
+    fail(`${tsconfigPath}: must not duplicate json-document source paths.`);
   }
 }
 
 for (const configPath of files("apps").filter((path) => /vite(?:st)?\.config\.ts$/.test(path))) {
   const source = read(configPath);
   if (/\.\.\/\.\.\/(?:packages|labs\/extensions)\//.test(source)) {
-    fail(`${configPath}: zod-crud source aliases must use config/zod-crud-source-aliases.ts.`);
+    fail(`${configPath}: json-document source aliases must use config/json-document-source-aliases.ts.`);
   }
 }

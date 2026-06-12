@@ -1,11 +1,11 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
-import { zodCrudSourceAliases } from "../../config/zod-crud-source-aliases.ts";
+import { jsonDocumentSourceAliases } from "../../config/json-document-source-aliases.ts";
 
 export default defineConfig({
   plugins: [react()],
   resolve: {
-    alias: zodCrudSourceAliases({ officialExtensions: true }),
+    alias: jsonDocumentSourceAliases({ officialExtensions: true }),
   },
   test: {
     environment: "jsdom",

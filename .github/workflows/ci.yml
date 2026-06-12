@@ -25,7 +25,7 @@ jobs:
       - name: Check package contents
         env:
           npm_config_cache: ${{ runner.temp }}/npm-cache
-        run: npm pack -w zod-crud --dry-run
+        run: npm pack -w @interactive-os/json-document --dry-run
 
   lab-extensions:
     name: Lab extensions

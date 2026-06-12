@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { z } from "zod";
 
-import { createJSONDocument, type Pointer } from "zod-crud";
+import { createJSONDocument, type Pointer } from "@interactive-os/json-document";
 import {
   canUnwrapSelection,
   canWrapSelection,
@@ -60,7 +60,7 @@ function createPage() {
   });
 }
 
-describe("@zod-crud/wrap-selection", () => {
+describe("@interactive-os/json-document-wrap-selection", () => {
   test("wraps a single sibling item in one schema-valid wrapper", () => {
     const doc = createPage();
     const wrappers = createWrapSelection(doc, wrapAdapter);

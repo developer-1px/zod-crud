@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument, type JSONDocumentOptions } from "zod-crud";
+import { createJSONDocument, type JSONDocumentOptions } from "@interactive-os/json-document";
 import { createDirtyState } from "../src/index.js";
 
 const Draft = z.object({
@@ -26,7 +26,7 @@ function createDraft(
   }, options);
 }
 
-describe("@zod-crud/dirty-state", () => {
+describe("@interactive-os/json-document-dirty-state", () => {
   test("tracks dirty state against the initial JSON baseline", () => {
     const doc = createDraft();
     const dirty = createDirtyState(doc);

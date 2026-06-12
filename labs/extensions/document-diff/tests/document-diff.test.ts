@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   applyDocumentDiff,
   createDocumentDiff,
@@ -35,7 +35,7 @@ function createDoc() {
   });
 }
 
-describe("@zod-crud/document-diff", () => {
+describe("@interactive-os/json-document-document-diff", () => {
   test("plans object field changes without mutating", () => {
     const doc = createDoc();
     const target = {

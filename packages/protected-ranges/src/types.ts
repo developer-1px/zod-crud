@@ -6,7 +6,7 @@ import type {
   JSONPatchInput,
   JSONResult,
   Pointer,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export interface ProtectedRange {
   id: string;

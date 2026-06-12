@@ -18,223 +18,223 @@ function repoCatalog() {
 }
 
 const extensionGuidance = {
-  "@zod-crud/autosave": {
+  "@interactive-os/json-document-autosave": {
     useFor: "schedule host-owned saves after document changes",
     notFor: "retry queues, offline sync, or server conflict resolution",
   },
-  "@zod-crud/batch-update": {
+  "@interactive-os/json-document-batch-update": {
     useFor: "set a field across a list of selected item pointers to a constant or computed value",
     notFor: "selecting which items to edit, or JSONPath query-driven replacement",
   },
-  "@zod-crud/bookmarks": {
+  "@interactive-os/json-document-bookmarks": {
     useFor: "keep named JSON Pointer locations stable across edits",
     notFor: "browser bookmarks or route state",
   },
-  "@zod-crud/bulk-edit": {
+  "@interactive-os/json-document-bulk-edit": {
     useFor: "apply JSONPath replace/delete operations to many document positions",
     notFor: "rendered text search UI or product workflow approval",
   },
-  "@zod-crud/checkpoints": {
+  "@interactive-os/json-document-checkpoints": {
     useFor: "name and restore document snapshots",
     notFor: "durable version graphs or cloud backup",
   },
-  "@zod-crud/clear-contents": {
+  "@interactive-os/json-document-clear-contents": {
     useFor: "reset selected fields to schema-derived empty values, keeping structure",
     notFor: "structural delete, caller-supplied bulk replace, or enum/object default policy",
   },
-  "@zod-crud/clipboard-web": {
-    useFor: "bridge zod-crud clipboard payloads to the browser clipboard",
+  "@interactive-os/json-document-clipboard-web": {
+    useFor: "bridge json-document clipboard payloads to the browser clipboard",
     notFor: "TSV/CSV spreadsheet paste engines",
   },
-  "@zod-crud/convert-type": {
+  "@interactive-os/json-document-convert-type": {
     useFor: "convert a field type (string/number/integer/boolean) where the schema permits it",
     notFor: "locale/format-aware parsing of currency or dates, or input masks",
   },
-  "@zod-crud/collection": {
+  "@interactive-os/json-document-collection": {
     useFor: "edit ordered JSON arrays with item-level commands",
     notFor: "database collections or rendered list UI",
   },
-  "@zod-crud/id-resolver": {
+  "@interactive-os/json-document-id-resolver": {
     useFor: "resolve scoped stable ids to current JSON Pointers",
     notFor: "id generation, relation graphs, routing, or server identity",
   },
-  "@zod-crud/toggle-value": {
+  "@interactive-os/json-document-toggle-value": {
     useFor: "toggle a boolean or advance an enum/value field (enum options come from the schema)",
     notFor: "rendered toggle controls or keyboard policy",
   },
-  "@zod-crud/sort-items": {
+  "@interactive-os/json-document-sort-items": {
     useFor: "sort or reverse JSON array items",
     notFor: "query views, filters, or server sorting",
   },
-  "@zod-crud/comments": {
+  "@interactive-os/json-document-comments": {
     useFor: "anchor review comments to document structure",
     notFor: "comment UI, moderation, or author storage",
   },
-  "@zod-crud/calculated-fields": {
+  "@interactive-os/json-document-calculated-fields": {
     useFor: "sync host-computed derived JSON fields",
     notFor: "formula languages or dependency runtimes",
   },
-  "@zod-crud/convert-block-type": {
+  "@interactive-os/json-document-convert-block-type": {
     useFor: "convert selected nodes between host-described kinds",
     notFor: "schema migration systems",
   },
-  "@zod-crud/dedupe": {
+  "@interactive-os/json-document-dedupe": {
     useFor: "remove duplicate array items by whole value or a host key",
     notFor: "fuzzy matching, cross-array dedupe, or JSONPath match deletion",
   },
-  "@zod-crud/dirty-state": {
+  "@interactive-os/json-document-dirty-state": {
     useFor: "compare a document to a clean baseline",
     notFor: "persistence or server save status",
   },
-  "@zod-crud/document-diff": {
+  "@interactive-os/json-document-document-diff": {
     useFor: "produce and apply patch changes toward a target document",
     notFor: "visual diff UI or merge conflict resolution",
   },
-  "@zod-crud/drag-drop": {
+  "@interactive-os/json-document-drag-drop": {
     useFor: "turn drag/drop intent into move or paste operations",
     notFor: "DOM drag/drop events, hit testing, or hover UI",
   },
-  "@zod-crud/apply-defaults": {
+  "@interactive-os/json-document-apply-defaults": {
     useFor: "add missing object keys from a defaults map without overwriting existing ones",
     notFor: "filling existing empty values, removing unknown keys, or deep merge",
   },
-  "@zod-crud/fill-blanks": {
+  "@interactive-os/json-document-fill-blanks": {
     useFor: "fill only empty slots across targets, preserving non-empty values",
     notFor: "adding missing fields, choosing targets, or unconditional batch set",
   },
-  "@zod-crud/fill-series": {
+  "@interactive-os/json-document-fill-series": {
     useFor: "fill a value or linear series across a contiguous sibling range",
     notFor: "date/pattern series, 2D grid fill, or fill-handle drag UI",
   },
-  "@zod-crud/form-draft": {
+  "@interactive-os/json-document-form-draft": {
     useFor: "hold temporary invalid form input before committing valid JSON",
     notFor: "rendered form components",
   },
-  "@zod-crud/fill-down": {
+  "@interactive-os/json-document-fill-down": {
     useFor: "carry the last non-empty value into the empty slots that follow (ffill)",
     notFor: "constant fill, numeric series interpolation, or rendered grid UI",
   },
-  "@zod-crud/paste-cells": {
+  "@interactive-os/json-document-paste-cells": {
     useFor: "paste a 2D value matrix onto a rectangular array-of-records region",
     notFor: "TSV/CSV parsing, clipboard I/O, or auto-growing the array",
   },
-  "@zod-crud/grid-range": {
+  "@interactive-os/json-document-grid-range": {
     useFor: "paste or fill rectangular grid ranges backed by sparse JSON records",
     notFor: "DOM grid selection, coordinate naming policy, formulas, or TSV/CSV parsing",
   },
-  "@zod-crud/grouping": {
+  "@interactive-os/json-document-grouping": {
     useFor: "group and ungroup selected sibling JSON items",
     notFor: "Airtable group-by views",
   },
-  "@zod-crud/limit-items": {
+  "@interactive-os/json-document-limit-items": {
     useFor: "cap a JSON array to at most N items, keeping the start or end",
     notFor: "choosing survivors beyond start/end, or auto-trimming on insert",
   },
-  "@zod-crud/move-selected": {
+  "@interactive-os/json-document-move-selected": {
     useFor: "move a contiguous selection of sibling items to a new position",
     notFor: "single-item moves, drag/drop events, or cross-array moves",
   },
-  "@zod-crud/join-text": {
+  "@interactive-os/json-document-join-text": {
     useFor: "join an array into a string field with a separator (inverse of split-text)",
     notFor: "locale list formatting, or reading the result without writing",
   },
-  "@zod-crud/layer-order": {
+  "@interactive-os/json-document-layer-order": {
     useFor: "reorder visual stack arrays with bring/send commands",
     notFor: "canvas rendering or z-index CSS management",
   },
-  "@zod-crud/increment-number": {
+  "@interactive-os/json-document-increment-number": {
     useFor: "increment, decrement, or step a numeric field with optional clamping",
     notFor: "rendered spinners, formatting, units, or currency",
   },
-  "@zod-crud/outline": {
+  "@interactive-os/json-document-outline": {
     useFor: "project and edit nested document outline structures",
     notFor: "Figma layer panels without a tree schema adapter",
   },
-  "@zod-crud/paste-special": {
+  "@interactive-os/json-document-paste-special": {
     useFor: "adapt external payloads before schema-safe paste",
     notFor: "browser clipboard I/O or autocomplete dropdowns",
   },
-  "@zod-crud/pad-text": {
+  "@interactive-os/json-document-pad-text": {
     useFor: "pad a string field to a minimum length (zero-padded codes/IDs)",
     notFor: "number formatting or display-time alignment",
   },
-  "@zod-crud/patch-log": {
+  "@interactive-os/json-document-patch-log": {
     useFor: "record and replay applied JSON Patch records",
     notFor: "product activity feeds or audit authorization",
   },
-  "@zod-crud/patch-preview": {
+  "@interactive-os/json-document-patch-preview": {
     useFor: "preview patch effects before confirmation",
     notFor: "visual diff rendering",
   },
-  "@zod-crud/persist-web": {
+  "@interactive-os/json-document-persist-web": {
     useFor: "save and restore documents in browser storage-like hosts",
     notFor: "server sync, auth, or conflict resolution",
   },
-  "@zod-crud/live-cursors": {
+  "@interactive-os/json-document-live-cursors": {
     useFor: "track remote collaborator cursors and selections",
     notFor: "CRDT/OT or realtime transport",
   },
-  "@zod-crud/proposed-changes": {
+  "@interactive-os/json-document-proposed-changes": {
     useFor: "review, accept, or reject proposed document patches",
     notFor: "slash commands or mention autocomplete",
   },
-  "@zod-crud/protected-ranges": {
+  "@interactive-os/json-document-protected-ranges": {
     useFor: "guard edits to protected JSON Pointer ranges",
     notFor: "2D spreadsheet selection UI or server authorization",
   },
-  "@zod-crud/renumber-items": {
+  "@interactive-os/json-document-renumber-items": {
     useFor: "sync an order/position field to each item array position after a reorder",
     notFor: "reordering the array itself, or fractional/gap indexing",
   },
-  "@zod-crud/references": {
+  "@interactive-os/json-document-references": {
     useFor: "track stable references and backlinks over JSON documents",
     notFor: "route state or rendered links",
   },
-  "@zod-crud/schema-form": {
+  "@interactive-os/json-document-schema-form": {
     useFor: "derive schema-backed field descriptors",
     notFor: "form rendering or input widgets",
   },
-  "@zod-crud/round": {
+  "@interactive-os/json-document-round": {
     useFor: "round a number to a precision or nearest step (round/floor/ceil/trunc)",
     notFor: "currency/locale formatting, or increment/clamp (see increment-number)",
   },
-  "@zod-crud/search-replace": {
+  "@interactive-os/json-document-search-replace": {
     useFor: "find and replace text across document string fields",
     notFor: "regex engines, rendered text extraction, or search UI",
   },
-  "@zod-crud/swap-items": {
+  "@interactive-os/json-document-swap-items": {
     useFor: "exchange the positions of two items in the same array",
     notFor: "cross-array swaps or moving to an arbitrary index",
   },
-  "@zod-crud/trim-text": {
+  "@interactive-os/json-document-trim-text": {
     useFor: "cap a string field to a max length with optional ellipsis and word boundary",
     notFor: "display-time CSS truncation or grapheme/locale-aware length",
   },
-  "@zod-crud/change-case": {
+  "@interactive-os/json-document-change-case": {
     useFor: "apply case/whitespace transforms (upper, lower, trim, title) to a string field",
     notFor: "locale-aware casing, rich text formatting toolbars, or find/replace",
   },
-  "@zod-crud/split-text": {
+  "@interactive-os/json-document-split-text": {
     useFor: "split a string into array items by a delimiter (tag input, paste-as-list)",
     notFor: "CSV/TSV quoting, split-to-columns, or clipboard access",
   },
-  "@zod-crud/sparse-record": {
+  "@interactive-os/json-document-sparse-record": {
     useFor: "set or remove keyed entries in sparse JSON records with add/replace/remove/no-op planning",
     notFor: "2D grid coordinate expansion, product key normalization, or rendered selection",
   },
-  "@zod-crud/toggle-option": {
+  "@interactive-os/json-document-toggle-option": {
     useFor: "toggle, add, or remove a value's presence in a JSON array (tag/multi-select)",
     notFor: "ordered insertion position or deduping an existing array",
   },
-  "@zod-crud/generate-slug": {
+  "@interactive-os/json-document-generate-slug": {
     useFor: "derive a URL-safe slug from a string field (CMS title to slug)",
     notFor: "uniqueness/collision handling or non-Latin transliteration",
   },
-  "@zod-crud/snippets": {
+  "@interactive-os/json-document-snippets": {
     useFor: "insert reusable JSON payloads with schema-safe paste checks",
     notFor: "slash palette UI or snippet storage",
   },
-  "@zod-crud/wrap-selection": {
+  "@interactive-os/json-document-wrap-selection": {
     useFor: "wrap sibling JSON items in host-defined containers",
     notFor: "visual grouping or layout containers",
   },
@@ -266,7 +266,7 @@ if (stale.length > 0) {
 
 function createRepoCatalog() {
   const packages = packageEntries("packages").map((entry) =>
-    packageDoc(entry.path, entry.name === "zod-crud" ? "core" : "official-extension"),
+    packageDoc(entry.path, entry.name === "json-document" ? "core" : "official-extension"),
   );
   const labExtensions = packageEntries("labs/extensions").map((entry) =>
     packageDoc(entry.path, "lab-extension"),

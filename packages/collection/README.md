@@ -1,12 +1,12 @@
-# @zod-crud/collection
+# @interactive-os/json-document-collection
 
-Official headless collection editing extension for `zod-crud` documents.
+Official headless collection editing extension for `@interactive-os/json-document` documents.
 
 Use it when a product has ordered JSON arrays: kanban columns, outliner rows,
 slide rails, layer lists, admin tree sections, or spreadsheet tabs.
 
 ```ts
-import { createCollection } from "@zod-crud/collection";
+import { createCollection } from "@interactive-os/json-document-collection";
 
 const collection = createCollection(doc);
 
@@ -22,7 +22,7 @@ collection.deleteItems(["/tabs/1", "/tabs/3"]);
 
 - Move collection items up or down.
 - Move one item before or after another item, including across arrays.
-- Duplicate an item after itself with optional `zod-crud` rekeying.
+- Duplicate an item after itself with optional `@interactive-os/json-document` rekeying.
 - Delete one or more collection item pointers as a single document change.
 - Expose `can*` methods beside every edit method.
 
@@ -32,12 +32,12 @@ collection.deleteItems(["/tabs/1", "/tabs/3"]);
 - No product words such as kanban, slide, layer, row, or tab in the API.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Contract
 
-`@zod-crud/collection` accepts only RFC 6901 JSON Pointers that address array
-items. It delegates actual document mutation to the public `zod-crud` facade:
+`@interactive-os/json-document-collection` accepts only RFC 6901 JSON Pointers that address array
+items. It delegates actual document mutation to the public `@interactive-os/json-document` facade:
 `canMove`, `move`, `canDuplicate`, `duplicate`, `canDelete`, and `delete`.
 
 Invalid pointers, root pointers, object properties, and movement boundaries

@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   WEB_CLIPBOARD_KIND,
   WEB_CLIPBOARD_VERSION,
@@ -38,7 +38,7 @@ function createMemoryClipboard(initialText = ""): TextClipboardHost & { text: st
   };
 }
 
-describe("@zod-crud/clipboard-web", () => {
+describe("@interactive-os/json-document-clipboard-web", () => {
   test("copies a document payload to an injected text clipboard host", async () => {
     const doc = createDoc();
     const host = createMemoryClipboard();

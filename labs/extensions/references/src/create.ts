@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, JSONResult, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, JSONResult, Pointer } from "@interactive-os/json-document";
 import { indexReferences, resolveReference } from "./operations.js";
 import { canSetReference, cloneJson, copyLink, referenceError } from "./plan.js";
 import type { ReferenceError, References, ReferencesDescriptor, ReferenceSetInput } from "./types.js";

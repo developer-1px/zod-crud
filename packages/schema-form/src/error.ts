@@ -2,7 +2,7 @@ import type {
   EntryKind,
   Pointer,
   SchemaKind,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   SchemaFormError,

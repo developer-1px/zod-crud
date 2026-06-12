@@ -1,12 +1,12 @@
-# @zod-crud/swap-items
+# @interactive-os/json-document-swap-items
 
-Lab swap-items extension for `zod-crud` documents.
+Lab swap-items extension for `@interactive-os/json-document` documents.
 
 Use it to exchange the positions of two items in the same JSON array, using only
 the public document facade.
 
 ```ts
-import { createSwapItems } from "@zod-crud/swap-items";
+import { createSwapItems } from "@interactive-os/json-document-swap-items";
 
 const s = createSwapItems(doc);
 
@@ -23,8 +23,8 @@ s.swapItems("/items/0", "/items/2"); // exchange positions 0 and 2
 ## Non-goals
 
 - Cross-array swaps, or moving an item to an arbitrary index (use
-  `@zod-crud/move-selected` / `@zod-crud/collection`).
-- No plugin registration; no `zod-crud` internal imports.
+  `@interactive-os/json-document-move-selected` / `@interactive-os/json-document-collection`).
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

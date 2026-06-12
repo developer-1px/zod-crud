@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import { canToggleValue, createToggleValue, type ToggleValueResult } from "../src/index.js";
 
 const Schema = z.object({
@@ -21,7 +21,7 @@ function expectOk<T>(result: ToggleValueResult<T>): Extract<ToggleValueResult<T>
   return result;
 }
 
-describe("@zod-crud/toggle-value", () => {
+describe("@interactive-os/json-document-toggle-value", () => {
   test("toggles a boolean field", () => {
     const doc = createDoc();
     const c = createToggleValue(doc);

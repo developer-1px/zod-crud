@@ -1,7 +1,7 @@
 import type {
   JSONChangeMetadata,
   JSONDocument,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import {
   canDeleteAll,

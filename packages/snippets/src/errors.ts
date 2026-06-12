@@ -2,7 +2,7 @@ import type {
   ClipboardPasteResult,
   JSONCapabilityResult,
   JSONDocumentPasteTarget,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 import type {
   SnippetError,

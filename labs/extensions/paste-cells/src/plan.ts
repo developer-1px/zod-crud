@@ -1,4 +1,4 @@
-import { appendSegment, type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, tryParsePointer } from "zod-crud";
+import { appendSegment, type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, tryParsePointer } from "@interactive-os/json-document";
 import type { PasteCellsError, PasteCellsErrorCode, PasteCellsResult, PasteCellsTarget } from "./types.js";
 
 export function canPasteGrid<TDocument>(

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { validateSiteRoutes } from "./site-route-checks.mjs";
 
-const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/zod-crud").replace(/\/$/, "");
+const siteUrl = (process.env.SITE_URL ?? "https://developer-1px.github.io/json-document").replace(/\/$/, "");
 const attempts = Number(process.env.SITE_LIVE_ATTEMPTS ?? "18");
 const delayMs = Number(process.env.SITE_LIVE_DELAY_MS ?? "10000");
 const routes = JSON.parse(readFileSync(new URL("../apps/site/src/site-routes.json", import.meta.url), "utf8"));
@@ -29,7 +29,7 @@ async function fetchText(path, allowedStatuses = [200]) {
 async function checkOnce() {
   const index = await fetchText("/");
   for (const pattern of [
-    /<title>zod-crud - Headless JSON editing<\/title>/,
+    /<title>json-document - Headless JSON editing<\/title>/,
     /name="description"/,
     /property="og:title"/,
     /rel="icon"/,
@@ -37,7 +37,7 @@ async function checkOnce() {
   ]) {
     if (!pattern.test(index)) fail(`live index missing ${pattern}.`);
   }
-  if (/rel="modulepreload"[^>]+\/assets\/(?:playground-|zod-crud-)/.test(index)) {
+  if (/rel="modulepreload"[^>]+\/assets\/(?:playground-|json-document-)/.test(index)) {
     fail("live index must not preload playground or engine chunks before a demo route is opened.");
   }
 
@@ -65,14 +65,14 @@ async function checkOnce() {
   }
 
   const llms = await fetchText("/llms.txt");
-  if (!/Import 경계/.test(llms) || !/@zod-crud\/id-resolver/.test(llms)) {
+  if (!/Import 경계/.test(llms) || !/@json-document\/id-resolver/.test(llms)) {
     fail("live llms.txt is missing expected content.");
   }
 
   const manifest = JSON.parse(await fetchText("/site.webmanifest"));
   if (
-    manifest.name !== "zod-crud"
-    || manifest.short_name !== "zod-crud"
+    manifest.name !== "@interactive-os/json-document"
+    || manifest.short_name !== "@interactive-os/json-document"
     || manifest.theme_color !== "#fafaf9"
     || !Array.isArray(manifest.icons)
     || !manifest.icons.some((icon) => icon.src === "favicon.svg" && icon.type === "image/svg+xml")
@@ -81,7 +81,7 @@ async function checkOnce() {
   }
 
   const favicon = await fetchText("/favicon.svg");
-  if (!/<svg/.test(favicon) || !/aria-label="zod-crud"/.test(favicon)) {
+  if (!/<svg/.test(favicon) || !/aria-label="@interactive-os/json-document"/.test(favicon)) {
     fail("live favicon.svg is missing expected SVG content.");
   }
 

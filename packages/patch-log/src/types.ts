@@ -5,7 +5,7 @@ import type {
   JSONDocumentCommitOptions,
   JSONPatchOperation,
   JSONResult,
-} from "zod-crud";
+} from "@interactive-os/json-document";
 
 export interface PatchLogEntry {
   readonly applied: ReadonlyArray<JSONPatchOperation>;

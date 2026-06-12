@@ -1,3 +1,3 @@
 # Grouping Lab
 
-Dogfoods `@zod-crud/grouping` as a small structural editor feature.
+Dogfoods `@interactive-os/json-document-grouping` as a small structural editor feature.

@@ -1,6 +1,6 @@
 {
-  "name": "zod-crud",
-  "short_name": "zod-crud",
+  "name": "@interactive-os/json-document",
+  "short_name": "@interactive-os/json-document",
   "description": "Zod-guarded headless JSON editing.",
   "start_url": ".",
   "display": "standalone",

@@ -1,4 +1,4 @@
-import type { JSONDocument, JSONPatchOperation, Pointer } from "zod-crud";
+import type { JSONDocument, JSONPatchOperation, Pointer } from "@interactive-os/json-document";
 import type { DedupeError, DedupeErrorCode, DedupeOptions, DedupeResult } from "./types.js";
 
 export function canDedupe<TDocument, TValue = unknown>(

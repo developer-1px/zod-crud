@@ -1,4 +1,4 @@
-import type { JSONCapabilityResult, JSONResult } from "zod-crud";
+import type { JSONCapabilityResult, JSONResult } from "@interactive-os/json-document";
 
 export type CheckpointErrorCode =
   | "missing_checkpoint"

@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import * as z from "zod";
 
-import { createJSONDocument } from "zod-crud";
+import { createJSONDocument } from "@interactive-os/json-document";
 import {
   canPasteGridRange,
   createGridRange,
@@ -51,7 +51,7 @@ function expectOk(result: GridRangeResult): Extract<GridRangeResult, { ok: true 
   return result;
 }
 
-describe("@zod-crud/grid-range", () => {
+describe("@interactive-os/json-document-grid-range", () => {
   test("pastes a matrix into a sparse record range with add replace remove and no-op planning", () => {
     const doc = createDoc();
     const grid = createGridRange(doc);
@@ -138,7 +138,7 @@ describe("@zod-crud/grid-range", () => {
     expect(doc.value.cells.B4).toBe("same");
   });
 
-  test("lets the host generate product fill series while zod-crud owns sparse application", () => {
+  test("lets the host generate product fill series while json-document owns sparse application", () => {
     const doc = createSeriesDoc();
     const grid = createGridRange(doc);
 

@@ -1,4 +1,4 @@
-import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer } from "zod-crud";
+import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer } from "@interactive-os/json-document";
 import type { SparseRecordAction, SparseRecordDecision, SparseRecordEdit, SparseRecordEqualityContext, SparseRecordError, SparseRecordErrorCode, SparseRecordIntent, SparseRecordOptions, SparseRecordResult } from "./types.js";
 
 export function canEditSparseRecords<TDocument>(

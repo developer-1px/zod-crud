@@ -1,12 +1,12 @@
-# @zod-crud/toggle-value
+# @interactive-os/json-document-toggle-value
 
-Lab toggle-value extension for `zod-crud` documents.
+Lab toggle-value extension for `@interactive-os/json-document` documents.
 
 Use it to toggle a boolean or advance a field through an ordered set of values,
 using only the public document facade.
 
 ```ts
-import { createToggleValue } from "@zod-crud/toggle-value";
+import { createToggleValue } from "@interactive-os/json-document-toggle-value";
 
 const c = createToggleValue(doc);
 
@@ -28,7 +28,7 @@ c.toggleValue("/status", { values: STATUSES, direction: "prev" }); // previous
 - Guessing product-specific order when schema order is not the desired order;
   host passes `values` for that case.
 - Rendered controls, keyboard, or focus policy.
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 
@@ -37,7 +37,7 @@ the option set from `doc.schema.describe(pointer).allowed` when `values` is
 omitted, so a select/status field advances with no host input.
 
 This closes the introspection gap originally recorded here and by
-`@zod-crud/clear-contents`: zod-crud now exposes `allowed` for enum/literal (not
+`@interactive-os/json-document-clear-contents`: json-document now exposes `allowed` for enum/literal (not
 just `discriminatedUnion`), so the option order comes from the schema. A host
 `values` is still accepted to override the order or advance a non-enum field; a
 plain string/number with neither a boolean type, schema `allowed`, nor `values`

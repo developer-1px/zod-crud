@@ -1,12 +1,12 @@
-# @zod-crud/pad-text
+# @interactive-os/json-document-pad-text
 
-Lab pad-text extension for `zod-crud` documents.
+Lab pad-text extension for `@interactive-os/json-document` documents.
 
 Use it to pad a string field to a minimum length (zero-padded codes/IDs,
 fixed-width labels), using only the public document facade.
 
 ```ts
-import { createPadText } from "@zod-crud/pad-text";
+import { createPadText } from "@interactive-os/json-document-pad-text";
 
 const p = createPadText(doc);
 
@@ -25,10 +25,10 @@ p.padText("/label", 10, { fill: " ", side: "end" }); // right-pad
 
 ## Non-goals
 
-- Number formatting (use `@zod-crud/convert-type` to a string first, or format on the
+- Number formatting (use `@interactive-os/json-document-convert-type` to a string first, or format on the
   host) — pad operates on string fields.
 - Display-time alignment / monospace layout (render concern).
-- No plugin registration; no `zod-crud` internal imports.
+- No plugin registration; no `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

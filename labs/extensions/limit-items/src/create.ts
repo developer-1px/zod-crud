@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { limitItems } from "./operations.js";
 import { canLimitItems } from "./plan.js";
 import type { LimitItems } from "./types.js";

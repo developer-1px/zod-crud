@@ -1,12 +1,12 @@
-# @zod-crud/sort-items
+# @interactive-os/json-document-sort-items
 
-Lab collection sort extension for `zod-crud` documents.
+Lab collection sort extension for `@interactive-os/json-document` documents.
 
 Use it to test whether ordered JSON array sorting can stay outside core while
 still using only the public document facade.
 
 ```ts
-import { createSortItems } from "@zod-crud/sort-items";
+import { createSortItems } from "@interactive-os/json-document-sort-items";
 
 const sorter = createSortItems(doc);
 
@@ -30,7 +30,7 @@ sorter.reverse("/slides");
 - No stable identity tracking; host code owns id-to-pointer policy when needed.
 - No plugin registration; this package composes functions and does not call
   `doc.use(...)`.
-- No `zod-crud` internal imports.
+- No `@interactive-os/json-document` internal imports.
 
 ## Friction report
 

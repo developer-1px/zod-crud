@@ -1,4 +1,4 @@
-import type { JSONDocument } from "zod-crud";
+import type { JSONDocument } from "@interactive-os/json-document";
 import { applyTransform } from "./operations.js";
 import { canTransform } from "./plan.js";
 import type { ChangeCase } from "./types.js";

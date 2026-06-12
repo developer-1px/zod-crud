@@ -1,4 +1,4 @@
-import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer, resolveSiblingRange, type SiblingRangeErrorCode } from "zod-crud";
+import { appendSegment, type JSONDocument, type JSONPatchOperation, type Pointer, resolveSiblingRange, type SiblingRangeErrorCode } from "@interactive-os/json-document";
 import type { FillCell, FillOptions, FillSeriesError, FillSeriesErrorCode, FillSeriesResult, FillSource, NormalizedRange } from "./types.js";
 
 export function canFill<TDocument, TValue = unknown>(

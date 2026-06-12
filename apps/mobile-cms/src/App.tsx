@@ -262,7 +262,7 @@ function label(kind: string) {
   return kind.replace(/[A-Z]/g, (m) => ` ${m.toLowerCase()}`);
 }
 
-const clipboardPrefix = "zod-crud.cms-block:";
+const clipboardPrefix = "json-document.cms-block:";
 
 function serializeBlock(node: CmsNode) {
   if (node.kind === "page" || node.kind === "section") return "";

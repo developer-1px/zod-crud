@@ -1,4 +1,4 @@
-import { appendSegment, type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, resolveSiblingRange, type SiblingRangeErrorCode, tryParsePointer } from "zod-crud";
+import { appendSegment, type JSONDocument, type JSONPatchOperation, lastSegmentIndex, parentPointer, type Pointer, resolveSiblingRange, type SiblingRangeErrorCode, tryParsePointer } from "@interactive-os/json-document";
 import type { MoveSelectedError, MoveSelectedErrorCode, MoveSelectedResult, MoveSelectedTarget, NormalizedRange } from "./types.js";
 
 export function canMoveSelected<TDocument>(
