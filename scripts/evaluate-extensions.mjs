@@ -172,7 +172,7 @@ const officialExtensions = [
     readme: [
       /createProtectedRanges\(doc/,
       /published fields,\s*legal copy,\s*locked\s*settings,\s*import targets,\s*generated sections,\s*or moderated content/,
-      /Guard direct document edits before calling public `@interactive-os/json-document` operations/,
+      /Guard direct document edits before calling public `@interactive-os\/json-document` operations/,
       /No UI lock icons, focus handling, keyboard policy, or permissions dialog/,
       /does not call\s*`doc\.use\(\.\.\.\)`/,
     ],

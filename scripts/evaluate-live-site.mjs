@@ -81,7 +81,7 @@ async function checkOnce() {
   }
 
   const favicon = await fetchText("/favicon.svg");
-  if (!/<svg/.test(favicon) || !/aria-label="@interactive-os/json-document"/.test(favicon)) {
+  if (!/<svg/.test(favicon) || !/aria-label="@interactive-os\/json-document"/.test(favicon)) {
     fail("live favicon.svg is missing expected SVG content.");
   }
 

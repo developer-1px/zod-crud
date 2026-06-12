@@ -9,7 +9,7 @@ Extension은 core에 plugin으로 등록하지 않습니다. public `JSONDocumen
 필요한 package만 설치합니다.
 
 ```sh
-npm install json-document @interactive-os/json-document-collection
+npm install @interactive-os/json-document @interactive-os/json-document-collection
 ```
 
 ## 공식 extension

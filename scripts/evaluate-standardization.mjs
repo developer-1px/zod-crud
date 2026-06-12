@@ -100,7 +100,7 @@ for (const [label, pattern] of [
   requirePattern("schema introspection contract", schemaIntrospectionContract, pattern);
 }
 
-if (!/from "@interactive-os/json-document"/.test(conformance)) {
+if (!/from "@interactive-os\/json-document"/.test(conformance)) {
   fail("standard conformance: must import from the public root package.");
 }
 if (/from "\.\.|from '\.\.|\/src\//.test(conformance)) {
